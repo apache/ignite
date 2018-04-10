@@ -1203,6 +1203,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         }
                     };
 
+                    if (!hasPendingEntries && pendingTree.size() > 0)
+                        hasPendingEntries = true;
+
                     PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
                     delegate0 = new CacheDataStoreImpl(partId, name, rowStore, dataTree) {
@@ -1683,7 +1686,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int cleared = 0;
 
             cctx.shared().database().checkpointReadLock();
-
             try {
                 do {
                     PendingRow row = cur.get();

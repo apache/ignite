@@ -16,12 +16,12 @@
  */
 
 package org.apache.ignite.internal.processors.cache.persistence.migration;
+
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -48,9 +48,9 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree.WITHOUT_KEY;
 
 /**
- * TODO: IGNITE-5874: fix javadoc. Ignite native persistence migration task upgrades existed PendingTrees to
- * per-partition basis. It's ignore possible assertions errors when a pointer to an entry exists in tree but the entry
- * itself was removed due to some reason (e.g. when partition was evicted after restart).
+ * Ignite native persistence migration task upgrades existed PendingTrees to per-partition basis. It's ignore possible
+ * assertions errors when a pointer to an entry exists in tree but the entry itself was removed due to some reason (e.g.
+ * when partition was evicted after restart).
  *
  * Task goes through persistent cache groups and copy entries to certain partitions.
  */
@@ -62,9 +62,13 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
     private static final long serialVersionUID = 0L;
 
     /** */
+    public static final int BATCH_SIZE = 500;
+
+    /** */
     @IgniteInstanceResource
     private IgniteEx node;
 
+    /** */
     @LoggerResource
     private IgniteLogger log;
 
@@ -88,8 +92,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                 processCacheGroup(grp);
             }
             catch (Exception ex) {
-                if (Thread.interrupted() ||
-                    X.hasCause(ex, InterruptedException.class))
+                if (Thread.interrupted() || X.hasCause(ex, InterruptedException.class))
                     log.info("Upgrade pending tree has been cancelled.");
                 else
                     log.warning("Failed to upgrade pending tree for cache group:  [grpId=" + grp.groupId() +
@@ -110,8 +113,13 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
         return true;
     }
 
-    /** */
-    public void processCacheGroup(CacheGroupContext grp) throws IgniteCheckedException {
+    /**
+     * Converts CacheGroup pending tree to per-partition basis.
+     *
+     * @param grp Cache group.
+     * @throws IgniteCheckedException If error occurs.
+     */
+    private void processCacheGroup(CacheGroupContext grp) throws IgniteCheckedException {
         assert grp.offheap() instanceof GridCacheOffheapManager;
 
         PendingEntriesTree oldPendingTree;
@@ -122,7 +130,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
         try {
             IndexStorage indexStorage = ((GridCacheOffheapManager)grp.offheap()).getIndexStorage();
 
-            //TODO: IGNITE-5874 replace some check method to avoid unnecessary page allocation.
+            //TODO: IGNITE-5874: replace with some check-method to avoid unnecessary page allocation.
             RootPage pendingRootPage = indexStorage.getOrAllocateForTree(PENDING_ENTRIES_TREE_NAME);
 
             if (pendingRootPage.isAllocated()) {
@@ -163,11 +171,14 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
     }
 
     /**
-     * @param grp
-     * @param oldPendingEntries
-     * @throws IgniteCheckedException
+     * Move pending rows for CacheGroup entries to per-partition PendingTree.
+     * Invalid pending rows will be ignored.
+     *
+     * @param grp Cache group.
+     * @param oldPendingEntries Old-style PendingTree.
+     * @throws IgniteCheckedException If error occurs.
      */
-    protected void processPendingTree(CacheGroupContext grp, PendingEntriesTree oldPendingEntries)
+    private void processPendingTree(CacheGroupContext grp, PendingEntriesTree oldPendingEntries)
         throws IgniteCheckedException {
         final PageMemory pageMemory = grp.dataRegion().pageMemory();
 
@@ -180,19 +191,19 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
         int processedEntriesCnt = 0;
         int skippedEntries = 0;
 
-        final int batchSize = 500;
-        // Re-acquire checkpoint lock periodically.
+        // Re-acquire checkpoint lock for every next batch.
         while (!Thread.currentThread().isInterrupted()) {
             int cnt = 0;
 
             db.checkpointReadLock();
             try {
                 GridCursor<PendingRow> cursor = oldPendingEntries.find(row, null, WITHOUT_KEY);
-                while (cnt++ < batchSize && cursor.next()) {
+                while (cnt++ < BATCH_SIZE && cursor.next()) {
                     row = cursor.get();
 
                     assert row.link != 0 && row.expireTime != 0 : row;
 
+                    // Lost cache.
                     if (!cacheIds.contains(row.cacheId)) {
                         skippedEntries++;
 
@@ -203,6 +214,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
 
                     GridCacheEntryEx entry = getEntry(grp, row);
 
+                    // Lost entry.
                     if (entry == null) {
                         skippedEntries++;
 
@@ -225,7 +237,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
 
                 processedEntriesCnt += cnt;
 
-                if (cnt < batchSize)
+                if (cnt < BATCH_SIZE)
                     break;
             }
             finally {
@@ -241,8 +253,14 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
             ']');
     }
 
-    /** */
-    private GridCacheEntryEx getEntry(CacheGroupContext grp, PendingRow row) throws IgniteCheckedException {
+    /**
+     * Return CacheEntry instance for lock purpose.
+     *
+     * @param grp Cache group
+     * @param row Pending row.
+     * @return CacheEntry if found or null otherwise.
+     */
+    private GridCacheEntryEx getEntry(CacheGroupContext grp, PendingRow row) {
         try {
             CacheDataRowAdapter rowData = new CacheDataRowAdapter(row.link);
             rowData.initFromLink(grp, CacheDataRowAdapter.RowData.KEY_ONLY);
@@ -256,7 +274,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
         catch (Throwable ex) {
             if (Thread.currentThread().isInterrupted() ||
                 X.hasCause(ex, InterruptedException.class))
-                throw new IgniteInterruptedCheckedException(new InterruptedException());
+                throw new IgniteException(new InterruptedException());
 
             log.warning("Failed to move old-version pending entry " +
                 "to per-partition PendingTree: key not found (skipping): " +
@@ -269,11 +287,21 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
 
     }
 
-    /** */
+    /**
+     * Validates PendingRow and add it to per-partition PendingTree.
+     *
+     * @param pageMemory Page memory.
+     * @param grp Cache group.
+     * @param row Pending row.
+     * @return {@code True} if pending row successfully moved, {@code False} otherwise.
+     */
     private boolean processRow(PageMemory pageMemory, CacheGroupContext grp,
-        PendingRow row) throws IgniteCheckedException {
+        PendingRow row) {
         final long pageId = PageIdUtils.pageId(row.link);
+
         final int partition = PageIdUtils.partId(pageId);// row.key.partition();
+
+        assert partition >= 0;
 
         try {
             final long page = pageMemory.acquirePage(grp.groupId(), pageId);
@@ -281,6 +309,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
             try {
                 assert PageIO.getType(pageAddr) != 0;
                 assert PageIO.getVersion(pageAddr) != 0;
+
                 IgniteCacheOffheapManager.CacheDataStore store =
                     ((GridCacheOffheapManager)grp.offheap()).dataStore(partition);
 
@@ -304,10 +333,12 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                 pageMemory.readUnlock(grp.groupId(), pageId, page);
             }
         }
-        catch (AssertionError | IgniteCheckedException ex) {
-            if (Thread.currentThread().isInterrupted() ||
-                X.hasCause(ex, InterruptedException.class))
-                throw new IgniteInterruptedCheckedException(new InterruptedException());
+        catch (AssertionError | Exception ex) {
+            if (Thread.currentThread().isInterrupted() || X.hasCause(ex, InterruptedException.class)) {
+                Thread.currentThread().interrupt();
+
+                throw new IgniteException(ex);
+            }
 
             String msg = "Unexpected error occurs while moving old-version pending entry " +
                 "to per-partition PendingTree. Seems page doesn't longer exists (skipping): " +
