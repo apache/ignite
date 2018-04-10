@@ -20,6 +20,6 @@ public abstract class DataStructureSizeAdapter implements DataStructureSize {
     }
 
     @Override public String name() {
-        return null;
+        return "NOOP";
     }
 }

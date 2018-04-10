@@ -35,6 +35,7 @@ import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.size.DataStructureSizeContext;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeNoopContext;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -214,7 +215,9 @@ public class CacheGroupContext {
 
         caches = new ArrayList<>();
 
-        groupSize = dataRegion.dataStructureSize().createChild(this);
+        groupSize = dataRegion != null ?
+            dataRegion.dataStructureSize().createChild(this) :
+            new DataStructureSizeNoopContext();
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
     }

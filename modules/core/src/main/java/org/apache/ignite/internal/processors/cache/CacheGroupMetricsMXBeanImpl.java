@@ -73,7 +73,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
      */
     public CacheGroupMetricsMXBeanImpl(CacheGroupContext ctx) {
         this.ctx = ctx;
-        this.pageSize = ctx.dataRegion().pageMemory().pageSize();
+        this.pageSize = ctx.dataRegion() != null ? ctx.dataRegion().pageMemory().pageSize() : 0;
     }
 
     /** {@inheritDoc} */
