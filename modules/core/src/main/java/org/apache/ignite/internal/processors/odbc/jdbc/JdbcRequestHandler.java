@@ -42,9 +42,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -265,10 +265,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      */
     private ClientListenerResponse executeBatchOrdered(JdbcOrderedBatchExecuteRequest req) {
         try {
-            if (req.isLastStreamBatch()) {
-                while (orderedBatches.size() > 1)
-                    LockSupport.parkNanos(1000);
-            }
+            if (req.isLastStreamBatch())
+                cliCtx.waitTotalProcessedOrderedRequests(req.order());
 
             JdbcResponse resp = (JdbcResponse)executeBatch(req);
 
@@ -285,6 +283,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
 
         orderedBatches.poll();
+
+        cliCtx.orderedRequestProcessed();
 
         return null;
     }

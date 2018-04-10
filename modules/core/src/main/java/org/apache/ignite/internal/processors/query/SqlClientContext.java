@@ -20,10 +20,10 @@ package org.apache.ignite.internal.processors.query;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -37,9 +37,6 @@ import org.apache.ignite.thread.IgniteThread;
  * see JDBC thin driver
  */
 public class SqlClientContext implements AutoCloseable {
-    /** Worker thread join timeout. */
-    private static final long WORKER_THREAD_JOIN_TIMEOUT = 10_000;
-
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -80,13 +77,16 @@ public class SqlClientContext implements AutoCloseable {
     private boolean streamOrdered;
 
     /** Streamers for various caches. */
-    private Map<String, IgniteDataStreamer<?, ?>> streamers;
+    private volatile Map<String, IgniteDataStreamer<?, ?>> streamers;
 
     /** Ordered batch thread. */
     private IgniteThread orderedBatchThread;
 
     /** Ordered batch worker factory. */
     private Factory<GridWorker> orderedBatchWorkerFactory;
+
+    /** Last processed order. */
+    private AtomicLong totalProcesseOrderedQueris;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -138,6 +138,7 @@ public class SqlClientContext implements AutoCloseable {
             this.streamNodeBufSize = perNodeBufSize;
             this.streamNodeParOps = perNodeParOps;
             this.streamOrdered = ordered;
+            totalProcesseOrderedQueris = new AtomicLong();
 
             if (ordered) {
                 orderedBatchThread = new IgniteThread(orderedBatchWorkerFactory.create());
@@ -260,6 +261,23 @@ public class SqlClientContext implements AutoCloseable {
             return res;
         }
     }
+
+    /**
+     * Waits when total processed ordered requests count  to be equal to specified value.
+     * @param total Expected total processed request.
+     */
+    public void waitTotalProcessedOrderedRequests(long total) {
+        while (totalProcesseOrderedQueris.get() < total)
+            LockSupport.parkNanos(1000);
+    }
+
+    /**
+     *
+     */
+    public void orderedRequestProcessed() {
+        totalProcesseOrderedQueris.incrementAndGet();
+    }
+
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {

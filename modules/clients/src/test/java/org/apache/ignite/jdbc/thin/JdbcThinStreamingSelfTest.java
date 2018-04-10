@@ -268,13 +268,26 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     /**
      * @throws SQLException if failed.
      */
-    public void testStreamingOffToOn() throws SQLException {
+    public void testStreamingOffToOn() throws Exception {
         try (Connection conn = createOrdinaryConnection()) {
             assertStreamingState(false);
 
             execute(conn, "SET STREAMING 1");
 
             assertStreamingState(true);
+        }
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testStreamingOffToOff() throws Exception {
+        try (Connection conn = createOrdinaryConnection()) {
+            assertStreamingState(false);
+
+            execute(conn, "SET STREAMING 0");
+
+            assertStreamingState(false);
         }
     }
 
@@ -461,8 +474,10 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
      *
      * @param on Expected streaming state.
      */
-    protected void assertStreamingState(boolean on) {
+    protected void assertStreamingState(boolean on) throws Exception {
         SqlClientContext cliCtx = sqlClientContext();
+
+        GridTestUtils.waitForCondition(() -> cliCtx.isStream() == on, 1000);
 
         assertEquals(on, cliCtx.isStream());
     }
