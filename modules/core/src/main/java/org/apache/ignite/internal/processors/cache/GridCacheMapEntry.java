@@ -623,18 +623,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     long expireTime = expireTimeExtras();
 
                     if (expireTime > 0 && (expireTime - U.currentTimeMillis() <= 0)) {
-                            if (onExpired((CacheObject)cctx.unwrapTemporary(val), null)) {
-                                val = null;
-                                evt = false;
+                        if (onExpired((CacheObject)cctx.unwrapTemporary(val), null)) {
+                            val = null;
+                            evt = false;
 
-                                if (cctx.deferredDelete()) {
-                                    deferred = true;
-                                    ver0 = ver;
-                                }
-                                else
-                                    obsolete = true;
+                            if (cctx.deferredDelete()) {
+                                deferred = true;
+                                ver0 = ver;
                             }
+                            else
+                                obsolete = true;
                         }
+                    }
                 }
             }
             else
@@ -676,7 +676,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (ret != null && expiryPlc != null)
-                    updateTtl(expiryPlc);
+                updateTtl(expiryPlc);
 
             if (retVer) {
                 resVer = (isNear() && cctx.transactional()) ? ((GridNearCacheEntry)this).dhtVersion() : this.ver;
@@ -3357,7 +3357,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
         catch (NodeStoppingException ignore) {
             if (log.isDebugEnabled())
-                log.warning("Node stopping while removing expired value.", ignore);
+                log.warning("Node is stopping while removing expired value.", ignore);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to clean up expired cache entry: " + this, e);

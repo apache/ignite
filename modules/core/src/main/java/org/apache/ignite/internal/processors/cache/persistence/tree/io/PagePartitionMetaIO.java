@@ -191,8 +191,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
     }
 
     /** {@inheritDoc} */
-    @Override protected void printPage(long pageAddr, int pageSize,
-        GridStringBuilder sb) throws IgniteCheckedException {
+    @Override protected void printPage(long pageAddr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         super.printPage(pageAddr, pageSize, sb);
 
         byte state = getPartitionState(pageAddr);
@@ -204,6 +203,6 @@ public class PagePartitionMetaIO extends PageMetaIO {
             .a(",\n\tpartitionState=").a(state).a("(").a(GridDhtPartitionState.fromOrdinal(state)).a(")")
             .a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr))
             .a("\n]")
-        ;
+            ;
     }
 }

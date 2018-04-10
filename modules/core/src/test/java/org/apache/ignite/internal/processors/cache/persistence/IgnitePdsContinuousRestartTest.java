@@ -286,7 +286,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         busyFut.get();
     }
 
-
     /**
      *
      */
