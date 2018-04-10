@@ -399,6 +399,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             cctx.cache().cacheGroup(grpId).localWalEnabled(false);
     }
 
+    /**
+     * Callback when group rebalancing is finished. If there are no pending groups, it should trigger checkpoint and
+     * change partition states.
+     * @param grpId Group ID.
+     * @param topVer Topology version.
+     */
     public void onGroupRebalanceFinished(int grpId, AffinityTopologyVersion topVer) {
         TemporaryDisabledWal session0 = this.tmpDisabledWal.get();
 
