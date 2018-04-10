@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.springdata20.SpringDataExample;
+import org.apache.ignite.examples.springdata.SpringDataExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**

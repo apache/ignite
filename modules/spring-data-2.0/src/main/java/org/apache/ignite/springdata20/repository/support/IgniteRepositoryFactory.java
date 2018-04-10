@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.springdata.repository.support;
+package org.apache.ignite.springdata20.repository.support;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,12 +22,12 @@ import java.util.Optional;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.springdata.repository.IgniteRepository;
-import org.apache.ignite.springdata.repository.config.Query;
-import org.apache.ignite.springdata.repository.config.RepositoryConfig;
-import org.apache.ignite.springdata.repository.query.IgniteQuery;
-import org.apache.ignite.springdata.repository.query.IgniteQueryGenerator;
-import org.apache.ignite.springdata.repository.query.IgniteRepositoryQuery;
+import org.apache.ignite.springdata20.repository.IgniteRepository;
+import org.apache.ignite.springdata20.repository.config.Query;
+import org.apache.ignite.springdata20.repository.config.RepositoryConfig;
+import org.apache.ignite.springdata20.repository.query.IgniteQuery;
+import org.apache.ignite.springdata20.repository.query.IgniteQueryGenerator;
+import org.apache.ignite.springdata20.repository.query.IgniteRepositoryQuery;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;

@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata.repository.config;
+package org.apache.ignite.springdata20.repository.config;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * The annotation can be used to pass Ignite specific parameters to a bound repository.
+ * Annotation to provide a user defined SQL query for a method.
  */
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Inherited
-public @interface RepositoryConfig {
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface Query {
     /**
-     * @return A name of a distributed Apache Ignite cache an annotated repository will be mapped to.
+     * SQL query text string.
      */
-    String cacheName() default "";
+    String value() default "";
 }

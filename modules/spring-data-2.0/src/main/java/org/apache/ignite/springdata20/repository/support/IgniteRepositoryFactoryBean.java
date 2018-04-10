@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata.repository.support;
+package org.apache.ignite.springdata20.repository.support;
 
 import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.springdata.repository.IgniteRepository;
+import org.apache.ignite.springdata20.repository.IgniteRepository;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;

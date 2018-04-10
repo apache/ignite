@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.springdata.repository.support;
+package org.apache.ignite.springdata20.repository.support;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -27,7 +27,7 @@ import java.util.TreeSet;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.springdata.repository.IgniteRepository;
+import org.apache.ignite.springdata20.repository.IgniteRepository;
 import org.springframework.context.annotation.Conditional;
 
 /**

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata.repository.query;
+package org.apache.ignite.springdata20.repository.query;
 
 /**
  * Ignite query helper class. For internal use only.

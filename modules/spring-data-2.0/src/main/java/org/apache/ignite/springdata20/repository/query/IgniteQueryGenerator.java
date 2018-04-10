@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.springdata.repository.query;
+package org.apache.ignite.springdata20.repository.query;
 
 import java.lang.reflect.Method;
 import org.jetbrains.annotations.NotNull;

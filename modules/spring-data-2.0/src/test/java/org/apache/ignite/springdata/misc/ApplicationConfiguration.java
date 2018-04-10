@@ -25,7 +25,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
+import org.apache.ignite.springdata20.repository.config.EnableIgniteRepositories;
 
 /**
  *

@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Package includes classes that integrates with Apache Ignite SQL engine.
+ * Package contains supporting files required by Spring Data framework.
  */
-package org.apache.ignite.springdata.repository.query;
+package org.apache.ignite.springdata20.repository.support;

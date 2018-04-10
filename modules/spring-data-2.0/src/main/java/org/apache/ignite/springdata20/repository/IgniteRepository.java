@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.springdata.repository;
+package org.apache.ignite.springdata20.repository;
 
 import java.io.Serializable;
 import java.util.Map;

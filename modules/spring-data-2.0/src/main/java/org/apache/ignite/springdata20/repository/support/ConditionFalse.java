@@ -15,8 +15,19 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.springdata20.repository.support;
+
+import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.core.type.AnnotatedTypeMetadata;
+
 /**
- * <!-- Package description. -->
- * Package contains Apache Ignite Spring Data integration.
+ * Always false condition.
+ * Tells spring context never load bean with such Condition.
  */
-package org.apache.ignite.springdata.repository;
+public class ConditionFalse implements Condition {
+    /**{@inheritDoc}*/
+    @Override public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+        return false;
+    }
+}

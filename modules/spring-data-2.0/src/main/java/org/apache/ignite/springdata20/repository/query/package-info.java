@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Package includes Spring Data integration related configuration files.
+ * Package includes classes that integrates with Apache Ignite SQL engine.
  */
-package org.apache.ignite.springdata.repository.config;
+package org.apache.ignite.springdata20.repository.query;

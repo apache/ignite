@@ -14,20 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.springdata20.repository.config;
 
-package org.apache.ignite.springdata.repository.support;
-
-import org.springframework.context.annotation.Condition;
-import org.springframework.context.annotation.ConditionContext;
-import org.springframework.core.type.AnnotatedTypeMetadata;
+import java.lang.annotation.Annotation;
+import org.springframework.data.repository.config.RepositoryBeanDefinitionRegistrarSupport;
+import org.springframework.data.repository.config.RepositoryConfigurationExtension;
 
 /**
- * Always false condition.
- * Tells spring context never load bean with such Condition.
+ * Apache Ignite specific implementation of {@link RepositoryBeanDefinitionRegistrarSupport}.
  */
-public class ConditionFalse implements Condition {
-    /**{@inheritDoc}*/
-    @Override public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
-        return false;
+public class IgniteRepositoriesRegistar extends RepositoryBeanDefinitionRegistrarSupport {
+    /** {@inheritDoc} */
+    @Override protected Class<? extends Annotation> getAnnotation() {
+        return EnableIgniteRepositories.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected RepositoryConfigurationExtension getExtension() {
+        return new IgniteRepositoryConfigurationExtension();
     }
 }

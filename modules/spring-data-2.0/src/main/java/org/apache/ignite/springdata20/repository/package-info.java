@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Package contains supporting files required by Spring Data framework.
+ * Package contains Apache Ignite Spring Data integration.
  */
-package org.apache.ignite.springdata.repository.support;
+package org.apache.ignite.springdata20.repository;

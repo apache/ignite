@@ -14,23 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.springdata.repository.config;
-
-import java.lang.annotation.Annotation;
-import org.springframework.data.repository.config.RepositoryBeanDefinitionRegistrarSupport;
-import org.springframework.data.repository.config.RepositoryConfigurationExtension;
 
 /**
- * Apache Ignite specific implementation of {@link RepositoryBeanDefinitionRegistrarSupport}.
+ * <!-- Package description. -->
+ * Package includes Spring Data integration related configuration files.
  */
-public class IgniteRepositoriesRegistar extends RepositoryBeanDefinitionRegistrarSupport {
-    /** {@inheritDoc} */
-    @Override protected Class<? extends Annotation> getAnnotation() {
-        return EnableIgniteRepositories.class;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected RepositoryConfigurationExtension getExtension() {
-        return new IgniteRepositoryConfigurationExtension();
-    }
-}
+package org.apache.ignite.springdata20.repository.config;
