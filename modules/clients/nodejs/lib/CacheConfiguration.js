@@ -27,9 +27,9 @@ const Errors = require('./Errors');
 
 
 class CacheKeyConfiguration {
-    constructor() {
-        this._typeName = null;
-        this._affinityKeyFieldName = null;
+    constructor(typeName = null, affinityKeyFieldName = null) {
+        this._typeName = typeName;
+        this._affinityKeyFieldName = affinityKeyFieldName;
     }
 
     setTypeName(typeName) {
@@ -58,8 +58,8 @@ class CacheKeyConfiguration {
     }
 
     _read(buffer) {
-        this._typeName = BinaryReader.readString(buffer);
-        this._affinityKeyFieldName = BinaryReader.readString(buffer);
+        this._typeName = BinaryReader.readObject(buffer);
+        this._affinityKeyFieldName = BinaryReader.readObject(buffer);
     }
 }
 
@@ -81,9 +81,17 @@ class QueryEntity {
         return this;
     }
 
+    getKeyTypeName() {
+        return this._keyTypeName;
+    }
+
     setValueTypeName(valueTypeName) {
         this._valueTypeName = valueTypeName;
         return this;
+    }
+
+    getValueTypeName() {
+        return this._valueTypeName;
     }
 
     setTableName(tableName) {
@@ -91,9 +99,17 @@ class QueryEntity {
         return this;
     }
 
+    getTableName() {
+        return this._tableName;
+    }
+
     setKeyFieldName(keyFieldName) {
         this._keyFieldName = keyFieldName;
         return this;
+    }
+
+    getKeyFieldName() {
+        return this._keyFieldName;
     }
 
     setValueFieldName(valueFieldName) {
@@ -101,10 +117,14 @@ class QueryEntity {
         return this;
     }
 
+    getValueFieldName() {
+        return this._valueFieldName;
+    }
+
     /**
-     * ???
+     * 
      *
-     * @param {Array<QueryField>} fields - ???
+     * @param {Array<QueryField>} fields -
      */
     setFields(fields) {
         this._fields = fields;
@@ -112,18 +132,50 @@ class QueryEntity {
     }
 
     /**
-     * ???
+     * 
      *
-     * @param {Map<String, String>} aliases - ???
+     * @return {Array<QueryField>} -
+     */
+    getFields() {
+        return this._fields;
+    }
+
+    /**
+     * 
+     *
+     * @param {Map<string, string>} aliases -
      */
     setAliases(aliases) {
         this._aliases = aliases;
         return this;
     }
 
+    /**
+     * 
+     *
+     * @return {Map<string, string>} -
+     */
+    getAliases() {
+        return this._aliases;
+    }
+
+    /**
+     * 
+     *
+     * @param {Array<QueryIndex>} indexes -
+     */
     setIndexes(indexes) {
         this._indexes = indexes;
         return this;
+    }
+
+    /**
+     * 
+     *
+     * @return {Array<QueryIndex>} -
+     */
+    getIndexes() {
+        return this._indexes;
     }
 
     /** Private methods */
@@ -161,14 +213,14 @@ class QueryEntity {
     }
 
     _read(buffer) {
-        this._keyTypeName = BinaryReader.readString(buffer);
-        this._valueTypeName = BinaryReader.readString(buffer);
-        this._tableName = BinaryReader.readString(buffer);
-        this._keyFieldName = BinaryReader.readString(buffer);
-        this._valueFieldName = BinaryReader.readString(buffer);
+        this._keyTypeName = BinaryReader.readObject(buffer);
+        this._valueTypeName = BinaryReader.readObject(buffer);
+        this._tableName = BinaryReader.readObject(buffer);
+        this._keyFieldName = BinaryReader.readObject(buffer);
+        this._valueFieldName = BinaryReader.readObject(buffer);
         this._fields = this._readSubEntities(buffer, QueryField);
         this._readAliases(buffer);
-        this._indexes = this._readSubEntities(buffer/*, ???!!!*/);
+        this._indexes = this._readSubEntities(buffer, QueryIndex);
     }
 
     _readSubEntities(buffer, objectConstructor) {
@@ -191,14 +243,14 @@ class QueryEntity {
         if (length > 0) {
             let res;
             for (let i = 0; i < length; i++) {
-                this._aliases.set(BinaryReader.readString(buffer), BinaryReader.readString(buffer));
+                this._aliases.set(BinaryReader.readObject(buffer), BinaryReader.readObject(buffer));
             }
         }
     }
 }
 
 class QueryField {
-    constructor(name, typeName) {
+    constructor(name = null, typeName = null) {
         this._name = name;
         this._typeName = typeName;
         this._isKeyField = false;
@@ -207,9 +259,31 @@ class QueryField {
         this._valueType = null;
     }
 
+    setName(name) {
+        this._name = name;
+        return this;
+    }
+
+    getName() {
+        return this._name;
+    }
+
+    setTypeName(typeName) {
+        this._typeName = typeName;
+        return this;
+    }
+
+    getTypeName() {
+        return this._typeName;
+    }
+
     setIsKeyField(isKeyField) {
         this._isKeyField = isKeyField;
         return this;
+    }
+
+    getIsKeyField() {
+        return this._isKeyField;
     }
 
     setIsNotNull(isNotNull) {
@@ -217,9 +291,17 @@ class QueryField {
         return this;
     }
 
+    getIsNotNull() {
+        return this._isNotNull;
+    }
+
     setDefaultValue(defaultValue, valueType = null) {
         this._defaultValue = defaultValue;
         this._valueType = valueType;
+    }
+
+    getDefaultValue(valueType = null) {
+        return this._defaultValue;
     }
 
     /** Private methods */
@@ -233,11 +315,109 @@ class QueryField {
     }
 
     _read(buffer) {
-        this._name = BinaryReader.readString(buffer);
-        this._typeName = BinaryReader.readString(buffer);
+        this._name = BinaryReader.readObject(buffer);
+        this._typeName = BinaryReader.readObject(buffer);
         this._isKeyField = buffer.readBoolean();
         this._isNotNull = buffer.readBoolean();
         this._defaultValue = BinaryReader.readObject(buffer, this._valueType);
+    }
+}
+
+const INDEX_TYPE = Object.freeze({
+    SORTED : 0,
+    FULLTEXT : 1,
+    GEOSPATIAL : 2
+});
+
+class QueryIndex {
+    constructor(name = null, type = QueryIndex.INDEX_TYPE.SORTED) {
+        this._name = name;
+        this.setType(type);
+        this._inlineSize = -1;
+        this._fields = null;
+    }
+
+    static get INDEX_TYPE() {
+        return INDEX_TYPE;
+    }
+
+    setName(name) {
+        this._name = name;
+        return this;
+    }
+
+    getName() {
+        return this._name;
+    }
+
+    setType(type) {
+        ArgumentChecker.hasValueFrom(type, 'type', false, QueryIndex.INDEX_TYPE);
+        this._type = type;
+        return this;
+    }
+
+    getType() {
+        return this._type;
+    }
+
+    setInlineSize(inlineSize) {
+        this._inlineSize = inlineSize;
+        return this;
+    }
+
+    getInlineSize() {
+        return this._inlineSize;
+    }
+
+    /**
+     * 
+     *
+     * @param {Map<string, boolean>} fields -
+     */
+    setFields(fields) {
+        this._fields = fields;
+        return this;
+    }
+
+    /**
+     * 
+     *
+     * @return {Map<string, boolean>} -
+     */
+    getFields() {
+        return this._fields;
+    }
+
+    /** Private methods */
+
+    _write(buffer) {
+        BinaryWriter.writeString(buffer, this._name);
+        buffer.writeByte(this._type);
+        buffer.writeInteger(this._inlineSize);
+        // write fields
+        const length = this._fields ? this._fields.size : 0;
+        buffer.writeInteger(length);
+        if (length > 0) {
+            this._fields.forEach((value, key) => {
+                BinaryWriter.writeString(buffer, key);
+                buffer.writeBoolean(value);
+            });
+        }
+    }
+
+    _read(buffer) {
+        this._name = BinaryReader.readObject(buffer);
+        this._type = buffer.readByte();
+        this._inlineSize = buffer.readInteger();
+        // read fields
+        const length = buffer.readInteger(buffer);
+        this._fields = new Map();
+        if (length > 0) {
+            let res;
+            for (let i = 0; i < length; i++) {
+                this._fields.set(BinaryReader.readObject(buffer), buffer.readBoolean());
+            }
+        }
     }
 }
 
@@ -617,22 +797,42 @@ class CacheConfiguration {
         return this._properties.get(PROP_WRITE_SYNCHRONIZATION_MODE);
     }
 
+    /**
+     * 
+     *
+     * @param {...CacheKeyConfiguration} keyConfigurations -
+     */
     setKeyConfigurations(...keyConfigurations) {
         ArgumentChecker.hasType(keyConfigurations, 'keyConfigurations', true, CacheKeyConfiguration);
         this._properties.set(PROP_CACHE_KEY_CONFIGURATION, keyConfigurations);
         return this;
     }
 
+    /**
+     * 
+     *
+     * @return {Array<CacheKeyConfiguration>} -
+     */
     getKeyConfigurations() {
         return this._properties.get(PROP_CACHE_KEY_CONFIGURATION);
     }
 
+    /**
+     * 
+     *
+     * @param {...QueryEntity} queryEntities -
+     */
     setQueryEntities(...queryEntities) {
         ArgumentChecker.hasType(queryEntities, 'queryEntities', true, QueryEntity);
         this._properties.set(PROP_QUERY_ENTITY, queryEntities);
         return this;
     }
 
+    /**
+     * 
+     *
+     * @return {Array<QueryEntity>} -
+     */
     getQueryEntities() {
         return this._properties.get(PROP_QUERY_ENTITY);
     }
@@ -761,3 +961,5 @@ class CacheConfiguration {
 module.exports = CacheConfiguration;
 module.exports.QueryEntity = QueryEntity;
 module.exports.QueryField = QueryField;
+module.exports.QueryIndex = QueryIndex;
+module.exports.CacheKeyConfiguration = CacheKeyConfiguration;

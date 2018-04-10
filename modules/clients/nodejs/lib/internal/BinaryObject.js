@@ -34,12 +34,12 @@ const FLAG_USER_TYPE = 1;
 const FLAG_HAS_SCHEMA = 2;
 
 /**
- * ???
+ * 
  */
 class BinaryObject {
 
     /**
-     * ???
+     * 
      *
      * @param {ComplexObjectType} complexObjectType - 
      *
@@ -55,7 +55,7 @@ class BinaryObject {
     }
 
     /**
-     * ???
+     * 
      *
      * @param {string} fieldName - 
      *
@@ -66,7 +66,7 @@ class BinaryObject {
     }
 
     /**
-     * ???
+     * 
      *
      * @param {string} fieldName - 
      *
@@ -78,7 +78,7 @@ class BinaryObject {
     }
 
     /**
-     * ???
+     * 
      *
      * @param {string} fieldName - 
      */
@@ -88,7 +88,7 @@ class BinaryObject {
     }
 
     /**
-     * ???
+     * 
      *
      * @param {string} fieldName - 
      * @param {*} fieldValue - 
@@ -105,7 +105,7 @@ class BinaryObject {
     }
 
     /**
-     * ???
+     * 
      *
      * @param {*} object - 
      * @param {ComplexObjectType} [complexObjectType] - 
@@ -146,7 +146,7 @@ class BinaryObject {
             const binaryField = this._type.getField(field.id);
             if (!binaryField) {
                 throw new Errors.IgniteClientError(
-                    Util.format('??? Complex object field with id "%d" can not be deserialized', field.id));
+                    Util.format('Complex object field with id "%d" can not be deserialized', field.id));
             }
             result[binaryField.name] = field.value;
         }

@@ -29,10 +29,6 @@ class BinaryReader {
         return BinaryReader._readTypedObject(buffer, typeCode, expectedType);
     }
 
-    static readString(buffer) {
-        return BinaryReader._readTypedObject(buffer, BinaryUtils.TYPE_CODE.STRING);
-    }
-
     static readStringArray(buffer) {
         return BinaryReader._readTypedObject(buffer, BinaryUtils.TYPE_CODE.STRING_ARRAY);
     }

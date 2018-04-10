@@ -23,9 +23,14 @@ const config = require('../config');
 const TestingHelper = require('../TestingHelper');
 const IgniteClient = require('apache-ignite-client');
 const Errors = IgniteClient.Errors;
+const CacheConfiguration = IgniteClient.CacheConfiguration;
+const QueryEntity = IgniteClient.QueryEntity;
+const QueryField = IgniteClient.QueryField;
+const QueryIndex = IgniteClient.QueryIndex;
 
 const CACHE_NAME = '__test_cache';
 const CACHE_NAME2 = '__test_cache2';
+const CACHE_NAME3 = '__test_cache3';
 
 describe('cache configuration operations test suite >', () => {
     let igniteClient = null;
@@ -135,6 +140,39 @@ describe('cache configuration operations test suite >', () => {
             catch(error => done.fail(error));
     });
 
+    it('create cache with configuration', (done) => {
+        Promise.resolve().
+            then(async () => {
+                const cacheCfg = new CacheConfiguration().
+                    setQueryEntities(
+                        new QueryEntity().
+                            setKeyTypeName('INT').
+                            setValueTypeName('Person').
+                            setFields([
+                                new QueryField('id', 'INT'),
+                                new QueryField('firstName', 'VARCHAR'),
+                                new QueryField('lastName', 'VARCHAR'),
+                                new QueryField('salary', 'DOUBLE')
+                            ]).
+                            setAliases(new Map([['id', 'id'], ['firstName', 'firstName']])).
+                            setIndexes([
+                                new QueryIndex('id_idx', QueryIndex.INDEX_TYPE.SORTED).
+                                    setFields(new Map([['id', true], ['firstName', false]]))
+                            ]));
+                let cache = await igniteClient.createCache(CACHE_NAME3, cacheCfg);
+                let cfg = await igniteClient.getCacheConfiguration(CACHE_NAME3);
+                // TODO: compare cache configs
+                await igniteClient.destroyCache(CACHE_NAME3);
+
+                cache = await igniteClient.getOrCreateCache(CACHE_NAME3, cfg);
+                let cfg2 = await igniteClient.getCacheConfiguration(CACHE_NAME3);
+                // TODO: compare cache configs
+                await igniteClient.destroyCache(CACHE_NAME3);
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
     it('create cache with wrong args', (done) => {
         Promise.resolve().
             then(async () => {
@@ -170,6 +208,7 @@ describe('cache configuration operations test suite >', () => {
     async function testSuiteCleanup(done) {
         await TestingHelper.destroyCache(CACHE_NAME, done);
         await TestingHelper.destroyCache(CACHE_NAME2, done);
+        await TestingHelper.destroyCache(CACHE_NAME3, done);
     }
 
     async function obtainCacheWithWrongName(method, done) {
