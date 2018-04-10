@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.tree;
+
+import java.io.Serializable;
+import java.util.Objects;
+import java.util.function.Predicate;
 
 /**
- * Interface for Trainers. Trainer is just a function which produces model from the data.
- *
- * @param <M> Type of produced model.
- * @param <T> Type of data needed for model producing.
+ * Predicate used to define objects that placed in decision tree node.
  */
-// TODO: IGNITE-7659: Reduce multiple Trainer interfaces to one
-@Deprecated
-public interface Trainer<M extends Model, T> {
+public interface TreeFilter extends Predicate<double[]>, Serializable {
     /**
-     * Returns model based on data
+     * Returns a composed predicate.
      *
-     * @param data data to build model
-     * @return model
+     * @param other Predicate that will be logically-ANDed with this predicate.
+     * @return Returns a composed predicate
      */
-    M train(T data);
+    default TreeFilter and(TreeFilter other) {
+        Objects.requireNonNull(other);
+        return (t) -> test(t) && other.test(t);
+    }
 }
