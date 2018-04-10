@@ -427,7 +427,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (evt.type() != EVT_DISCOVERY_CUSTOM_EVT) {
             assert evt.type() != EVT_NODE_JOINED || n.isLocal() || n.order() > loc.order() :
                 "Node joined with smaller-than-local " +
-                    "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
+                    "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ", evt=" + evt + ']';
 
             exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
@@ -569,12 +569,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public void onKernalStart(boolean active, boolean reconnect) throws IgniteCheckedException {
         for (ClusterNode n : cctx.discovery().remoteNodes())
             cctx.versions().onReceived(n.id(), n.metrics().getLastDataVersion());
-
-        ClusterNode loc = cctx.localNode();
-
-        long startTime = loc.metrics().getStartTime();
-
-        assert startTime > 0;
 
         DiscoveryLocalJoinData locJoin = cctx.discovery().localJoin();
 
@@ -754,6 +748,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public Object interruptLock() {
         return interruptLock;
+    }
+
+    /**
+     * @param grpId Cache group ID.
+     * @return Topology.
+     */
+    @Nullable public GridDhtPartitionTopology clientTopologyIfExists(int grpId) {
+        return clientTops.get(grpId);
     }
 
     /**
