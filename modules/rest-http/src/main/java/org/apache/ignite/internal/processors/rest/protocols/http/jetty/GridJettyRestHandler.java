@@ -86,6 +86,12 @@ public class GridJettyRestHandler extends AbstractHandler {
     private static final String CHARSET = StandardCharsets.UTF_8.name();
 
     /** */
+    private static final String  USER_PARAM = "user";
+
+    /** */
+    private static final String  PWD_PARAM = "password";
+
+    /** */
     private static final String  CACHE_NAME_PARAM = "cacheName";
 
     /** */
@@ -100,11 +106,11 @@ public class GridJettyRestHandler extends AbstractHandler {
     /** */
     private static final String WRITE_SYNCHRONIZATION_MODE_PARAM = "writeSynchronizationMode";
 
-    /** */
-    private static final String IGNITE_LOGIN = "ignite.login";
+    /** @deprecated Use USER_PARAM instead. */
+    private static final String IGNITE_LOGIN_PARAM = "ignite.login";
 
-    /** */
-    private static final String IGNITE_PASSWORD = "ignite.password";
+    /** @deprecated Use PWD_PARAM instead. */
+    private static final String IGNITE_PASSWORD_PARAM = "ignite.password";
 
     /** */
     private static final String  TEMPLATE_NAME_PARAM = "templateName";
@@ -840,12 +846,8 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         restReq.command(cmd);
 
-        if (params.containsKey(IGNITE_LOGIN) || params.containsKey(IGNITE_PASSWORD)) {
-            SecurityCredentials cred = new SecurityCredentials(
-                (String)params.get(IGNITE_LOGIN), (String)params.get(IGNITE_PASSWORD));
-
-            restReq.credentials(cred);
-        }
+        if (!credentials(params, USER_PARAM, PWD_PARAM, restReq))
+            credentials(params, IGNITE_LOGIN_PARAM, IGNITE_PASSWORD_PARAM, restReq);
 
         String clientId = (String)params.get("clientId");
 
@@ -878,6 +880,27 @@ public class GridJettyRestHandler extends AbstractHandler {
         }
 
         return restReq;
+    }
+
+    /**
+     *
+     * @param params Parameters.
+     * @param userParam Parameter name to take user name.
+     * @param pwdParam Parameter name to take password.
+     * @param restReq Request to add credentials if any.
+     * @return {@code true} If params contains credentials.
+     */
+    private boolean credentials(Map<String, Object> params, String userParam, String pwdParam, GridRestRequest restReq) {
+        boolean hasCreds = params.containsKey(userParam) || params.containsKey(pwdParam);
+
+        if (hasCreds) {
+            SecurityCredentials cred = new SecurityCredentials((String)params.get(userParam),
+                (String)params.get(pwdParam));
+
+            restReq.credentials(cred);
+        }
+
+        return hasCreds;
     }
 
     /**
