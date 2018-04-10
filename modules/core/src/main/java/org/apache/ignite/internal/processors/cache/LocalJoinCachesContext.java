@@ -104,10 +104,20 @@ public class LocalJoinCachesContext {
     }
 
     /**
+     * @param cacheGrps Survived caches groups to clean.
+     */
+    public void removeSurvivedCacheGroups(Set<Integer> cacheGrps) {
+        if (cacheGrpDescs != null) {
+            for (Integer grpId : cacheGrps)
+                cacheGrpDescs.remove(grpId);
+        }
+    }
+
+    /**
      * @return {@code True} if the context is empty.
      */
     public boolean isEmpty() {
-        return F.isEmpty(locJoinStartCaches) && F.isEmpty(cacheDescs);
+        return F.isEmpty(locJoinStartCaches) && F.isEmpty(cacheGrpDescs) && F.isEmpty(cacheDescs);
     }
 
     /** {@inheritDoc} */
