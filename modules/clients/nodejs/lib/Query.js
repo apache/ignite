@@ -313,7 +313,6 @@ class SqlFieldsQuery extends SqlQuery {
         this._collocated = false;
         this._lazy = false;
         this._includeFieldNames = false;
-        this._fieldTypes = null;
     }
 
     static get STATEMENT_TYPE() {
@@ -404,28 +403,6 @@ class SqlFieldsQuery extends SqlQuery {
         return this;
     }
 
-    /**
-     * Specifies types of the fields returned by the SQL Fields query.
-     *
-     * The fields itself are returned by {@link Cursor}.
-     * By default, a type of every field is not specified that means during operations the Ignite client
-     * will try to make automatic mapping between JavaScript types and Ignite object types -
-     * according to the mapping table defined in the description of the {@link ObjectType} class.
-     *
-     * @param {...ObjectType.PRIMITIVE_TYPE | CompositeType} fieldTypes - types of the returned fields.
-     *   The order of types must follow the order of the returned fields.
-     *   A type of every field can be:
-     *   - either a type code of primitive (simple) type
-     *   - or an instance of class representing non-primitive (composite) type
-     *   - or null (means the type is not specified)
-     *
-     * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
-     */
-    setFieldTypes(...fieldTypes) {
-        this._fieldTypes = fieldTypes;
-        return this;
-    }
-
     /** Private methods */
 
     /**
@@ -452,7 +429,7 @@ class SqlFieldsQuery extends SqlQuery {
      * @ignore
      */
     _getCursor(socket, payload, keyType = null, valueType = null) {
-        const cursor = new SqlFieldsCursor(socket, this._fieldTypes);
+        const cursor = new SqlFieldsCursor(socket);
         cursor._read(payload, true, this._includeFieldNames);
         return cursor;
     }

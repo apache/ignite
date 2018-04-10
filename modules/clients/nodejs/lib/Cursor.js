@@ -33,23 +33,11 @@ class Cursor {
     /**
      * ???
      *
-     * @return {boolean} - ???
-     */
-    hasNext() {
-        if (this._value) {
-            return true;
-        }
-        return this._hasNext;
-    }
-
-    /**
-     * ???
-     *
      * @async
      *
-     * @raturn {Promise<Array<*>>} -
+     * @raturn {Promise<Array<CacheEntry>>} -
      */
-    async getNext() {
+    async getValues() {
         let value = null;
         if (!this._value && this._hasNext) {
             await this._getNext();
@@ -62,9 +50,21 @@ class Cursor {
     /**
      * ???
      *
+     * @return {boolean} - ???
+     */
+    hasMore() {
+        if (this._value) {
+            return true;
+        }
+        return this._hasNext;
+    }
+
+    /**
+     * ???
+     *
      * @async
      *
-     * @raturn {Promise<Array<*>>} -
+     * @raturn {Promise<Array<CacheEntry>>} -
      */
     async getAll() {
         let result = new Array();
@@ -163,10 +163,54 @@ class SqlFieldsCursor extends Cursor {
     /**
      * ???
      *
+     * @async
+     *
+     * @raturn {Promise<Array<Array<*>>>} -
+     */
+    async getValues() {
+        return await super.getValues();
+    }
+
+    /**
+     * ???
+     *
+     * @async
+     *
+     * @raturn {Promise<Array<Array<*>>>} -
+     */
+    async getAll() {
+        return await super.getAll();
+    }
+
+    /**
+     * ???
+     *
      * @return {Array<string>} - ???
      */
     getFieldNames() {
         return this._fieldNames;
+    }
+
+    /**
+     * Specifies types of the fields returned by the SQL Fields query.
+     *
+     * The fields itself are returned by {@link Cursor}.
+     * By default, a type of every field is not specified that means during operations the Ignite client
+     * will try to make automatic mapping between JavaScript types and Ignite object types -
+     * according to the mapping table defined in the description of the {@link ObjectType} class.
+     *
+     * @param {...ObjectType.PRIMITIVE_TYPE | CompositeType} fieldTypes - types of the returned fields.
+     *   The order of types must follow the order of the returned fields.
+     *   A type of every field can be:
+     *   - either a type code of primitive (simple) type
+     *   - or an instance of class representing non-primitive (composite) type
+     *   - or null (means the type is not specified)
+     *
+     * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
+     */
+    setFieldTypes(...fieldTypes) {
+        this._fieldTypes = fieldTypes;
+        return this;
     }
 
     /** Private methods */
