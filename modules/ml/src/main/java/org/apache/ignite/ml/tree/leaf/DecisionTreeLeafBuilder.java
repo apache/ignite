@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.tree.leaf;
+
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.tree.DecisionTreeLeafNode;
+import org.apache.ignite.ml.tree.TreeFilter;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
 
 /**
- * Interface for Trainers. Trainer is just a function which produces model from the data.
- *
- * @param <M> Type of produced model.
- * @param <T> Type of data needed for model producing.
+ * Base interface for decision tree leaf builders.
  */
-// TODO: IGNITE-7659: Reduce multiple Trainer interfaces to one
-@Deprecated
-public interface Trainer<M extends Model, T> {
+public interface DecisionTreeLeafBuilder {
     /**
-     * Returns model based on data
+     * Creates new leaf node for given dataset and node predicate.
      *
-     * @param data data to build model
-     * @return model
+     * @param dataset Dataset.
+     * @param pred Node predicate.
+     * @return Leaf node.
      */
-    M train(T data);
+    public DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset, TreeFilter pred);
 }

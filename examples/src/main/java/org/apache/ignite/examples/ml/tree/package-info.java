@@ -15,22 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
-
 /**
- * Interface for Trainers. Trainer is just a function which produces model from the data.
- *
- * @param <M> Type of produced model.
- * @param <T> Type of data needed for model producing.
+ * <!-- Package description. -->
+ * Decision trees examples.
  */
-// TODO: IGNITE-7659: Reduce multiple Trainer interfaces to one
-@Deprecated
-public interface Trainer<M extends Model, T> {
-    /**
-     * Returns model based on data
-     *
-     * @param data data to build model
-     * @return model
-     */
-    M train(T data);
-}
+package org.apache.ignite.examples.ml.tree;
