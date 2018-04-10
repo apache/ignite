@@ -432,16 +432,24 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                                             if (rmvd != null) {
                                                 if (writeMode == WriteMode.KEY_VALUE) {
-                                                    cache.cache.remove(rmvd);
-
-                                                    cache.cache.put(rmvd.equals(id1) ? id2 : id1,
-                                                        new MvccTestAccount(a1.val + a2.val, 1));
+                                                    if (rmvd.equals(id1)) {
+                                                        cache.cache.remove(id1);
+                                                        cache.cache.put(id2, new MvccTestAccount(a1.val + a2.val, 1));
+                                                    }
+                                                    else {
+                                                        cache.cache.put(id1, new MvccTestAccount(a1.val + a2.val, 1));
+                                                        cache.cache.remove(id2);
+                                                    }
                                                 }
                                                 else if (writeMode == WriteMode.DML)  {
-                                                    removeSql(cache, rmvd);
-
-                                                    updateSql(cache, rmvd.equals(id1) ? id2 : id1,
-                                                        a1.val + a2.val, 1);
+                                                    if (rmvd.equals(id1)) {
+                                                        removeSql(cache, id1);
+                                                        updateSql(cache, id2,a1.val + a2.val, 1);
+                                                    }
+                                                    else {
+                                                        updateSql(cache, id1,a1.val + a2.val, 1);
+                                                        removeSql(cache, id2);
+                                                    }
                                                 }
                                                 else
                                                     assert false : "Unknown write mode";
