@@ -107,7 +107,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override protected void initDataStructures() throws IgniteCheckedException {
-        assert  ctx.database().checkpointLockIsHeldByThread();
+        assert ctx.database().checkpointLockIsHeldByThread();
 
         Metas metas = getOrAllocateCacheMetas();
 
@@ -145,7 +145,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /** {@inheritDoc} */
     @Override protected CacheDataStore createCacheDataStore0(final int p)
         throws IgniteCheckedException {
-        assert  ctx.database().checkpointLockIsHeldByThread();
+        assert ctx.database().checkpointLockIsHeldByThread();
 
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
 
@@ -330,7 +330,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
             }
             else if (needSnapshot)
-                tryAddEmptyPartitionToSnapshot(store, ctx);;
+                tryAddEmptyPartitionToSnapshot(store, ctx);
         }
         else if (needSnapshot)
             tryAddEmptyPartitionToSnapshot(store, ctx);
@@ -1670,21 +1670,21 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             GridCursor<PendingRow> cur;
 
+            if (grp.sharedGroup())
+                cur = pendingTree.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
+            else
+                cur = pendingTree.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
+
+            if (!cur.next())
+                return 0;
+
+            GridCacheVersion obsoleteVer = null;
+
+            int cleared = 0;
+
             cctx.shared().database().checkpointReadLock();
 
             try {
-                if (grp.sharedGroup())
-                    cur = pendingTree.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
-                else
-                    cur = pendingTree.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
-
-                if (!cur.next())
-                    return 0;
-
-                GridCacheVersion obsoleteVer = null;
-
-                int cleared = 0;
-
                 do {
                     PendingRow row = cur.get();
 
@@ -1693,11 +1693,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
 
-                    //TODO: IGNITE-5874: why don't we get this.partId here?
-                    if (row.key.partition() == -1)
-                        row.key.partition(cctx.affinity().partition(row.key));
-
-                    assert row.key.partition() == partId;
+                    row.key.partition(partId);
 
                     if (pendingTree.removex(row)) {
                         if (obsoleteVer == null)
