@@ -1298,7 +1298,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ackStart(rtBean);
 
         if (!isDaemon())
-            ctx.discovery().ackTopology(localNode().order());
+            ctx.discovery().ackTopology(ctx.discovery().localJoin().joinTopologyVersion().topologyVersion());
     }
 
     /**
@@ -2622,6 +2622,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         objs.add(cfg.getMarshaller());
         objs.add(cfg.getGridLogger());
         objs.add(cfg.getMBeanServer());
+
+        if (cfg.getCommunicationFailureResolver() != null)
+            objs.add(cfg.getCommunicationFailureResolver());
 
         return objs;
     }
