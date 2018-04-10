@@ -57,6 +57,9 @@ public class DataRow extends CacheDataRowAdapter {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+
+        if (key != null)
+            key.partition(part);
     }
 
     /**
