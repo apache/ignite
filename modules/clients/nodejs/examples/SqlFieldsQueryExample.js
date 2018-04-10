@@ -26,6 +26,12 @@ const ENDPOINT = '127.0.0.1:10800';
 
 const PERSON_CACHE_NAME = 'SqlFieldsQueryExample_person';
 
+// This example demonstrates basic SQL Fields query operations.
+// - connects to ENDPOINT node
+// - creates a table (CREATE TABLE)
+// - writes data into the table (INSERT INTO table)
+// - reads data from the table (SELECT ...)
+// - deletes the table (DROP TABLE)
 class SqlFieldsQueryExample {
     constructor() {
         this._cache = null;
