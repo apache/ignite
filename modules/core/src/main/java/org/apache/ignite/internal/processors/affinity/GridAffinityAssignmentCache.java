@@ -68,7 +68,7 @@ public class GridAffinityAssignmentCache {
     private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 500);
 
     /** Partition distribution. */
-    private final float partDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 10f);
+    private final float partDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 50f);
 
     /** Group name if specified or cache name. */
     private final String cacheOrGrpName;
@@ -458,10 +458,10 @@ public class GridAffinityAssignmentCache {
 
         if (deltaPrimary > partDistribution || deltaBackup > partDistribution) {
             log.info(String.format("Local node affinity assignment distribution is not ideal " +
-                    "[cache=%s, expectedPrimary=%.2f, expectedBackups=%.2f, " +
-                    "primary=%d(%.2f%%), backups=%d(%.2f%%)]",
-                cacheOrGrpName, expCnt, expCnt * backups,
-                locPrimaryCnt, (float)locPrimaryCnt / partsCnt * 100, locBackupCnt, (float)locBackupCnt / partsCnt * 100));
+                    "[cache=%s, expectedPrimary=%.2f, actualPrimary=%d, " +
+                    "expectedBackups=%.2f, actualBackups=%d, warningThreshold=%.2f%%]",
+                cacheOrGrpName, expCnt, locPrimaryCnt,
+                expCnt * backups, locBackupCnt, partDistribution));
         }
     }
 
