@@ -53,6 +53,9 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Whether to use platform logger (when custom logger is defined on .NET side). */
+    private final boolean useLogger;
+
     /** Configuration. */
     private IgniteConfiguration cfg;
 
@@ -64,14 +67,16 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      *
      * @param envPtr Environment pointer.
      */
-    public PlatformDotNetConfigurationClosure(long envPtr) {
+    public PlatformDotNetConfigurationClosure(long envPtr, boolean useLogger) {
         super(envPtr);
+
+        this.useLogger = useLogger;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override protected void apply0(IgniteConfiguration igniteCfg) {
-        // 3. Validate and copy Interop configuration setting environment pointer along the way.
+        // Validate and copy Interop configuration setting environment pointer along the way.
         PlatformConfiguration interopCfg = igniteCfg.getPlatformConfiguration();
 
         if (interopCfg != null && !(interopCfg instanceof PlatformDotNetConfiguration))
@@ -85,15 +90,16 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         memMgr = new PlatformMemoryManagerImpl(gate, 1024);
 
-        PlatformLogger userLogger = null;
+        PlatformLogger logger = null;
 
-        if (igniteCfg.getGridLogger() instanceof PlatformLogger) {
-            userLogger = (PlatformLogger)igniteCfg.getGridLogger();
-            userLogger.setGateway(gate);
+        if (useLogger) {
+            logger = new PlatformLogger();
+            logger.setGateway(gate);
+            igniteCfg.setGridLogger(logger);
         }
 
         PlatformDotNetConfigurationEx dotNetCfg0 = new PlatformDotNetConfigurationEx(dotNetCfg, gate, memMgr,
-            userLogger);
+            logger);
 
         igniteCfg.setPlatformConfiguration(dotNetCfg0);
 
@@ -103,7 +109,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         if (ggHome != null)
             U.setIgniteHome(ggHome);
 
-        // 4. Callback to .Net.
+        // Callback to .Net.
         prepare(igniteCfg, dotNetCfg0);
 
         // Make sure binary config is right.

@@ -23,6 +23,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -36,8 +38,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * IGFS client logger writing data to the file.
@@ -100,8 +100,8 @@ public final class IgfsLogger {
     private static final AtomicLong CNTR = new AtomicLong();
 
     /** Loggers. */
-    private static final ConcurrentHashMap8<String, IgfsLogger> loggers =
-        new ConcurrentHashMap8<>();
+    private static final ConcurrentHashMap<String, IgfsLogger> loggers =
+        new ConcurrentHashMap<>();
 
     /** Lock for atomic logger adds/removals. */
     private static final ReadWriteLock logLock = new ReentrantReadWriteLock();
@@ -234,7 +234,7 @@ public final class IgfsLogger {
 
         file = new File(dirFile, "igfs-log-" + igfsName + "-" + pid + ".csv");
 
-        entries = new ConcurrentLinkedDeque8<>();
+        entries = new ConcurrentLinkedDeque<>();
 
         cnt = new AtomicInteger();
         useCnt = new AtomicInteger();
@@ -727,7 +727,7 @@ public final class IgfsLogger {
             try {
                 entries0 = entries;
 
-                entries = new ConcurrentLinkedDeque8<>();
+                entries = new ConcurrentLinkedDeque<>();
             }
             finally {
                 rwLock.writeLock().unlock();

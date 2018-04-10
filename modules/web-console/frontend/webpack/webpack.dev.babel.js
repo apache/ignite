@@ -77,10 +77,7 @@ export default merge(commonCfg, {
                 ws: true
             },
             '/api/v1/*': {
-                target: `http://localhost:${backendPort}`,
-                pathRewrite: {
-                    '^/api/v1': ''
-                }
+                target: `http://localhost:${backendPort}`
             }
         },
         watchOptions: {

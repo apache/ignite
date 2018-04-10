@@ -99,7 +99,8 @@ public class BlasTest {
         DenseLocalOnHeapVector u = new DenseLocalOnHeapVector(new double[] {3.0, 13.0, 20.0, 0.0});
 
         // m is alpha * v * v^t
-        DenseLocalOnHeapMatrix m = (DenseLocalOnHeapMatrix)new DenseLocalOnHeapMatrix(new double[][] {{1.0, 0.0},
+        DenseLocalOnHeapMatrix m = (DenseLocalOnHeapMatrix)new DenseLocalOnHeapMatrix(new double[][] {
+            {1.0, 0.0},
             {2.0, 4.0}}, StorageConstants.COLUMN_STORAGE_MODE).times(alpha);
         DenseLocalOnHeapMatrix a = new DenseLocalOnHeapMatrix(new double[][] {{3.0, 0.0}, {13.0, 20.0}},
             StorageConstants.COLUMN_STORAGE_MODE);
@@ -121,7 +122,8 @@ public class BlasTest {
 
         DenseLocalOnHeapMatrix a = new DenseLocalOnHeapMatrix(new double[][] {{3.0, 0.0}, {13.0, 20.0}},
             StorageConstants.COLUMN_STORAGE_MODE);
-        DenseLocalOnHeapMatrix exp = (DenseLocalOnHeapMatrix)new DenseLocalOnHeapMatrix(new double[][] {{1.0, 0.0},
+        DenseLocalOnHeapMatrix exp = (DenseLocalOnHeapMatrix)new DenseLocalOnHeapMatrix(new double[][] {
+            {1.0, 0.0},
             {2.0, 4.0}}, StorageConstants.COLUMN_STORAGE_MODE).times(alpha).plus(a);
 
         //m := alpha * v * v.t + A
@@ -141,7 +143,8 @@ public class BlasTest {
         DenseLocalOnHeapVector u = new DenseLocalOnHeapVector(new double[] {3.0, 13.0, 20.0, 0.0});
 
         // m is alpha * v * v^t
-        DenseLocalOnHeapMatrix m = (DenseLocalOnHeapMatrix)new DenseLocalOnHeapMatrix(new double[][] {{1.0, 0.0},
+        DenseLocalOnHeapMatrix m = (DenseLocalOnHeapMatrix)new DenseLocalOnHeapMatrix(new double[][] {
+            {1.0, 0.0},
             {0.0, 0.0}}, StorageConstants.COLUMN_STORAGE_MODE).times(alpha);
         DenseLocalOnHeapMatrix a = new DenseLocalOnHeapMatrix(new double[][] {{3.0, 0.0}, {13.0, 20.0}},
             StorageConstants.COLUMN_STORAGE_MODE);

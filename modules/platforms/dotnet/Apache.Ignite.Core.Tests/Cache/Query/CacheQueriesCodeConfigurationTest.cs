@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     Assert.AreEqual(2, cursor.GetAll().Single().Key);
                 }
 
-                using (var cursor = cache.QueryFields(new SqlFieldsQuery(
+                using (var cursor = cache.Query(new SqlFieldsQuery(
                     "select _key from CustomTableName where age > ? and birthday < ?", 10, DateTime.UtcNow)))
                 {
                     Assert.AreEqual(2, cursor.GetAll().Single()[0]);
@@ -161,7 +161,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             using (var ignite = Ignition.Start(cfg))
             {
                 var cache = ignite.GetOrCreateCache<int, AttributeQueryPerson>(new CacheConfiguration(CacheName,
-                        typeof (AttributeQueryPerson)));
+                        new QueryEntity(typeof(int), typeof(AttributeQueryPerson))));
 
                 Assert.IsNotNull(cache);
 

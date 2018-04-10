@@ -27,6 +27,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -109,7 +110,7 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
 
     /** {@inheritDoc} */
     @Override public List<JdbcStatementResultInfo> call() throws Exception {
-        SqlFieldsQuery qry = (isQry != null ? new JdbcSqlFieldsQuery(sql, isQry) : new SqlFieldsQuery(sql))
+        SqlFieldsQuery qry = (isQry != null ? new SqlFieldsQueryEx(sql, isQry) : new SqlFieldsQuery(sql))
             .setArgs(args);
 
         qry.setPageSize(fetchSize);
@@ -122,7 +123,7 @@ class JdbcQueryMultipleStatementsTask implements IgniteCallable<List<JdbcStateme
 
         GridKernalContext ctx = ((IgniteKernal)ignite).context();
 
-        List<FieldsQueryCursor<List<?>>> curs = ctx.query().querySqlFieldsNoCache(qry, true, false);
+        List<FieldsQueryCursor<List<?>>> curs = ctx.query().querySqlFields(qry, true, false);
 
         List<JdbcStatementResultInfo> resultsInfo = new ArrayList<>(curs.size());
 

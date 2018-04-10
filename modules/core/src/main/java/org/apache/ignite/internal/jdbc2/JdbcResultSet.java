@@ -205,7 +205,7 @@ public class JdbcResultSet implements ResultSet {
         // Connections from new clients send queries with new tasks, so we have to continue in the same manner
         JdbcQueryTask qryTask = JdbcQueryTaskV3.createTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(),
             null,true, loc, null, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
-            conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(), updateMetadata);
+            conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(), updateMetadata, false);
 
         try {
             JdbcQueryTaskResult res =
@@ -1556,7 +1556,7 @@ public class JdbcResultSet implements ResultSet {
             throw new SQLException("Invalid column index: " + colIdx);
         }
         catch (ClassCastException ignored) {
-            throw new SQLException("Value is an not instance of " + cls.getName(), SqlStateCode.CONVERSION_FAILED);
+            throw new SQLException("Cannot convert to " + cls.getSimpleName().toLowerCase(), SqlStateCode.CONVERSION_FAILED);
         }
     }
 

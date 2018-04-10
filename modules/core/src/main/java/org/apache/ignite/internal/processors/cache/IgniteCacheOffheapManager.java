@@ -21,12 +21,14 @@ import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -60,7 +62,7 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * @param cacheId Cache ID.
-     * @param destroy Destroy data flag.
+     * @param destroy Destroy data flag. Setting to <code>true</code> will remove all cache data.
      */
     public void stopCache(int cacheId, boolean destroy);
 
@@ -186,18 +188,6 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cctx Cache context.
      * @param key Key.
-     * @param part Partition.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void updateIndexes(
-        GridCacheContext cctx,
-        KeyCacheObject key,
-        GridDhtLocalPartition part
-    ) throws IgniteCheckedException;
-
-    /**
-     * @param cctx Cache context.
-     * @param key Key.
      * @param partId Partition number.
      * @param part Partition.
      * @throws IgniteCheckedException If failed.
@@ -245,13 +235,20 @@ public interface IgniteCacheOffheapManager {
     public GridIterator<CacheDataRow> partitionIterator(final int part) throws IgniteCheckedException;
 
     /**
-     * @param part Partition.
+     * @param part Partition number.
      * @param topVer Topology version.
-     * @param partCntr Partition counter to get historical data if available.
+     * @return Iterator for given partition that will reserve partition state until it is closed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridCloseableIterator<CacheDataRow> reservedIterator(final int part, final AffinityTopologyVersion topVer)
+        throws IgniteCheckedException;
+
+    /**
+     * @param parts Partitions.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteRebalanceIterator rebalanceIterator(int part, AffinityTopologyVersion topVer, Long partCntr)
+    public IgniteRebalanceIterator rebalanceIterator(IgniteDhtDemandedPartitionsMap parts, AffinityTopologyVersion topVer)
         throws IgniteCheckedException;
 
     /**
@@ -454,13 +451,6 @@ public interface IgniteCacheOffheapManager {
         /**
          * @param cctx Cache context.
          * @param key Key.
-         * @throws IgniteCheckedException If failed.
-         */
-        void updateIndexes(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param key Key.
          * @param c Closure.
          * @throws IgniteCheckedException If failed.
          */
@@ -540,5 +530,12 @@ public interface IgniteCacheOffheapManager {
          * @param cntr Counter.
          */
         void updateInitialCounter(long cntr);
+
+        /**
+         * Inject rows cache cleaner.
+         *
+         * @param rowCacheCleaner Rows cache cleaner.
+         */
+        public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner);
     }
 }

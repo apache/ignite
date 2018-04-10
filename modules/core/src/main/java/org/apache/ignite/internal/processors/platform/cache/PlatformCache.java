@@ -930,7 +930,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Arguments.
      */
-    @Nullable private Object[] readQueryArgs(BinaryRawReaderEx reader) {
+    @Nullable public static Object[] readQueryArgs(BinaryRawReaderEx reader) {
         int cnt = reader.readInt();
 
         if (cnt > 0) {
@@ -1472,6 +1472,17 @@ public class PlatformCache extends PlatformAbstractTarget {
         writer.writeBoolean(metrics.isManagementEnabled());
         writer.writeBoolean(metrics.isReadThrough());
         writer.writeBoolean(metrics.isWriteThrough());
+        writer.writeBoolean(metrics.isValidForReading());
+        writer.writeBoolean(metrics.isValidForWriting());
+        writer.writeInt(metrics.getTotalPartitionsCount());
+        writer.writeInt(metrics.getRebalancingPartitionsCount());
+        writer.writeLong(metrics.getKeysToRebalanceLeft());
+        writer.writeLong(metrics.getRebalancingKeysRate());
+        writer.writeLong(metrics.getRebalancingBytesRate());
+        writer.writeLong(metrics.getHeapEntriesCount());
+        writer.writeLong(metrics.getEstimatedRebalancingFinishTime());
+        writer.writeLong(metrics.getRebalancingStartTime());
+        writer.writeLong(metrics.getRebalanceClearingPartitionsLeft());
     }
 
     /**

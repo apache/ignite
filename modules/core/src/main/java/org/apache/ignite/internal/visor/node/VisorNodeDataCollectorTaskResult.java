@@ -67,7 +67,7 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     /** Exceptions caught during collecting events from nodes. */
     private Map<UUID, VisorExceptionWrapper> evtsEx = new HashMap<>();
 
-    /** All memory metrics collected from nodes. */
+    /** All data region metrics collected from nodes. */
     private Map<UUID, Collection<VisorMemoryMetrics>> memoryMetrics = new HashMap<>();
 
     /** Exceptions caught during collecting memory metrics from nodes. */
@@ -99,6 +99,9 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
 
     /** Exceptions caught during collecting persistence metrics from nodes. */
     private Map<UUID, VisorExceptionWrapper> persistenceMetricsEx = new HashMap<>();
+
+    /** Rebalance state on nodes. */
+    private Map<UUID, Double> rebalance = new HashMap<>();
 
     /**
      * Default constructor.
@@ -188,7 +191,7 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     }
 
     /**
-     * @return All memory metrics collected from nodes.
+     * @return All data region metrics collected from nodes.
      */
     public Map<UUID, Collection<VisorMemoryMetrics>> getMemoryMetrics() {
         return memoryMetrics;
@@ -272,6 +275,18 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
     }
 
     /**
+     * @return Rebalance on nodes.
+     */
+    public Map<UUID, Double> getRebalance() {
+        return rebalance;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
+    /**
      * Add specified results.
      *
      * @param res Results to add.
@@ -298,6 +313,7 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         pendingExchanges.putAll(res.getPendingExchanges());
         persistenceMetrics.putAll(res.getPersistenceMetrics());
         persistenceMetricsEx.putAll(res.getPersistenceMetricsEx());
+        rebalance.putAll(res.getRebalance());
     }
 
     /** {@inheritDoc} */
@@ -321,6 +337,7 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         U.writeMap(out, pendingExchanges);
         U.writeMap(out, persistenceMetrics);
         U.writeMap(out, persistenceMetricsEx);
+        U.writeMap(out, rebalance);
     }
 
     /** {@inheritDoc} */
@@ -344,6 +361,9 @@ public class VisorNodeDataCollectorTaskResult extends VisorDataTransferObject {
         pendingExchanges = U.readMap(in);
         persistenceMetrics = U.readMap(in);
         persistenceMetricsEx = U.readMap(in);
+
+        if (protoVer > V1)
+            rebalance = U.readMap(in);
     }
 
     /** {@inheritDoc} */

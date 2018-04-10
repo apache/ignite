@@ -23,17 +23,13 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -58,20 +54,20 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
         TcpDiscoverySpi discoverySpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         discoverySpi.setIpFinder(IP_FINDER);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
         if (set2kPageSize)
             memCfg.setPageSize(2048);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
         memPlcCfg.setMaxSize(100 * 1000 * 1000);
+        memPlcCfg.setName("dfltDataRegion");
+        memPlcCfg.setPersistenceEnabled(true);
 
-        memPlcCfg.setName("dfltMemPlc");
+        memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
+        memCfg.setCheckpointFrequency(3_000);
 
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         CacheConfiguration ccfg1 = new CacheConfiguration();
 
@@ -82,8 +78,6 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
 
         cfg.setCacheConfiguration(ccfg1);
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration().setCheckpointingFrequency(3_000));
-
         cfg.setConsistentId(gridName);
 
         return cfg;
@@ -93,14 +87,14 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /**
@@ -138,12 +132,5 @@ public class DefaultPageSizeBackwardsCompatibilityTest extends GridCommonAbstrac
 
         for (int i = 0; i < ENTRIES_COUNT; i++)
             assertEquals((Integer)i, cache.get(i));
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 }

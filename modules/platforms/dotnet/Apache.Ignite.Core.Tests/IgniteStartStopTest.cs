@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests 
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Threading;
@@ -67,7 +66,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = "config\\start-test-grid1.xml",
+                SpringConfigUrl = "config\\spring-test.xml",
                 JvmClasspath = TestUtils.CreateTestClasspath()
             };
 
@@ -84,31 +83,18 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStartGetStop()
         {
-            var cfgs = new List<string> { "config\\start-test-grid1.xml", "config\\start-test-grid2.xml", "config\\start-test-grid3.xml" };
-
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = cfgs[0],
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath()
-            };
-
-            var grid1 = Ignition.Start(cfg);
+            var grid1 = Ignition.Start(TestUtils.GetTestConfiguration(name: "grid1"));
 
             Assert.AreEqual("grid1", grid1.Name);
             Assert.AreSame(grid1, Ignition.GetIgnite());
             Assert.AreSame(grid1, Ignition.GetAll().Single());
 
-            cfg.SpringConfigUrl = cfgs[1];
-
-            var grid2 = Ignition.Start(cfg);
+            var grid2 = Ignition.Start(TestUtils.GetTestConfiguration(name: "grid2"));
 
             Assert.AreEqual("grid2", grid2.Name);
             Assert.Throws<IgniteException>(() => Ignition.GetIgnite());
 
-            cfg.SpringConfigUrl = cfgs[2];
-
-            var grid3 = Ignition.Start(cfg);
+            var grid3 = Ignition.Start(TestUtils.GetTestConfiguration());
 
             Assert.IsNull(grid3.Name);
 
@@ -138,20 +124,17 @@ namespace Apache.Ignite.Core.Tests
             grid3.Dispose();
             Assert.Throws<IgniteException>(() => Ignition.GetIgnite("grid3"));
 
-            foreach (var cfgName in cfgs)
-            {
-                cfg.SpringConfigUrl = cfgName;
-                cfg.JvmOptions = TestUtils.TestJavaOptions();
+            // Restart.
+            Ignition.Start(TestUtils.GetTestConfiguration(name: "grid1"));
+            Ignition.Start(TestUtils.GetTestConfiguration(name: "grid2"));
+            Ignition.Start(TestUtils.GetTestConfiguration());
 
-                Ignition.Start(cfg);
-            }
-
-            foreach (var gridName in new List<string> { "grid1", "grid2", null })
+            foreach (var gridName in new [] { "grid1", "grid2", null })
                 Assert.IsNotNull(Ignition.GetIgnite(gridName));
 
             Ignition.StopAll(true);
 
-            foreach (var gridName in new List<string> {"grid1", "grid2", null})
+            foreach (var gridName in new [] {"grid1", "grid2", null})
                 Assert.Throws<IgniteException>(() => Ignition.GetIgnite(gridName));
         }
 
@@ -161,13 +144,8 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStartTheSameName()
         {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                SpringConfigUrl = "config\\start-test-grid1.xml",
-            };
-
+            var cfg = TestUtils.GetTestConfiguration(name: "grid1");
             var grid1 = Ignition.Start(cfg);
-
             Assert.AreEqual("grid1", grid1.Name);
             
             var ex = Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
@@ -199,21 +177,16 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestUsageAfterStop()
         {
-            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                SpringConfigUrl = "config\\start-test-grid1.xml",
-            };
+            var grid = Ignition.Start(TestUtils.GetTestConfiguration());
 
-            var grid = Ignition.Start(cfg);
-
-            Assert.IsNotNull(grid.GetCache<int, int>("cache1"));
+            Assert.IsNotNull(grid.GetOrCreateCache<int, int>("cache1"));
 
             grid.Dispose();
 
             var ex = Assert.Throws<InvalidOperationException>(() => grid.GetCache<int, int>("cache1"));
             Assert.AreEqual("Grid is in invalid state to perform this operation. " +
                             "It either not started yet or has already being or have stopped " +
-                            "[igniteInstanceName=grid1, state=STOPPED]", ex.Message);
+                            "[igniteInstanceName=null, state=STOPPED]", ex.Message);
         }
 
         /// <summary>
@@ -222,14 +195,9 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStartStopLeak()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = "config\\start-test-grid1.xml",
-                JvmOptions = new List<string> {"-Xcheck:jni", "-Xms256m", "-Xmx256m", "-XX:+HeapDumpOnOutOfMemoryError"},
-                JvmClasspath = TestUtils.CreateTestClasspath()
-            };
+            var cfg = TestUtils.GetTestConfiguration();
 
-            for (var i = 0; i < 20; i++)
+            for (var i = 0; i < 50; i++)
             {
                 Console.WriteLine("Iteration: " + i);
 
@@ -239,16 +207,12 @@ namespace Apache.Ignite.Core.Tests
 
                 if (i % 2 == 0) // Try to stop ignite from another thread.
                 {
-                    var t = new Thread(() => {
-                        grid.Dispose();
-                    });
-
-                    t.Start();
-
-                    t.Join();
+                    Task.Factory.StartNew(() => grid.Dispose()).Wait();
                 }
                 else
+                {
                     grid.Dispose();
+                }
 
                 GC.Collect(); // At the time of writing java references are cleaned from finalizer, so GC is needed.
             }
@@ -260,15 +224,8 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestClientMode()
         {
-            var servCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                SpringConfigUrl = "config\\start-test-grid1.xml",
-            };
-
-            var clientCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                SpringConfigUrl = "config\\start-test-grid2.xml",
-            };
+            var servCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(name: "serv"));
+            var clientCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(name: "client"));
 
             try
             {
@@ -310,7 +267,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(prj.GetCompute());
 
-            var cache = ignite.GetCache<int, int>("cache1");
+            var cache = ignite.GetOrCreateCache<int, int>("cache1");
 
             Assert.IsNotNull(cache);
 
@@ -327,7 +284,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration
             {
-                SpringConfigUrl = "config\\start-test-grid1.xml",
+                SpringConfigUrl = "Config\\spring-test.xml",
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath()
             };
@@ -341,6 +298,8 @@ namespace Apache.Ignite.Core.Tests
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + Path.GetFullPath(cfg.SpringConfigUrl),
                 "-J-Xms512m", "-J-Xmx512m");
+            
+            Assert.IsTrue(proc.Alive);
 
             var cts = new CancellationTokenSource();
             var token = cts.Token;

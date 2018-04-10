@@ -48,7 +48,7 @@ import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Resource container contains caches for classes used for injection.
@@ -56,7 +56,7 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class GridResourceIoc {
     /** Task class resource mapping. Used to efficiently cleanup resources related to class loader. */
-    private final ConcurrentMap<ClassLoader, Set<Class<?>>> taskMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<ClassLoader, Set<Class<?>>> taskMap = new ConcurrentHashMap<>();
 
     /** Class descriptors cache. */
     private AtomicReference<Map<Class<?>, ClassDescriptor>> clsDescs = new AtomicReference<>();

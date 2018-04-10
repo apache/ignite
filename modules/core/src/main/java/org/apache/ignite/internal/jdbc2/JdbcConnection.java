@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -82,12 +83,13 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_LAZY;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_LOCAL;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_MULTIPLE_STMTS;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
-import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_BUF_SIZE;
 import static org.apache.ignite.IgniteJdbcDriver.PROP_STREAMING_PER_NODE_PAR_OPS;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_TX_ALLOWED;
+import static org.apache.ignite.IgniteJdbcDriver.PROP_SKIP_REDUCER_ON_UPDATE;
 import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 
@@ -168,6 +170,9 @@ public class JdbcConnection implements Connection {
     /** Allow queries with multiple statements. */
     private final boolean multipleStmts;
 
+    /** Skip reducer on update flag. */
+    private final boolean skipReducerOnUpdate;
+
     /** Statements. */
     final Set<JdbcStatement> statements = new HashSet<>();
 
@@ -209,6 +214,7 @@ public class JdbcConnection implements Connection {
         streamNodeParOps = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_PAR_OPS, "0"));
 
         multipleStmts = Boolean.parseBoolean(props.getProperty(PROP_MULTIPLE_STMTS));
+        skipReducerOnUpdate = Boolean.parseBoolean(props.getProperty(PROP_SKIP_REDUCER_ON_UPDATE));
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
@@ -243,7 +249,7 @@ public class JdbcConnection implements Connection {
         catch (Exception e) {
             close();
 
-            throw convertToSqlException(e, "Failed to start Ignite node.", SqlStateCode.CLIENT_CONNECTION_FAILED);
+            throw convertToSqlException(e, "Failed to start Ignite node. " + e.getMessage(), SqlStateCode.CLIENT_CONNECTION_FAILED);
         }
     }
 
@@ -607,10 +613,11 @@ public class JdbcConnection implements Connection {
 
             PreparedStatement nativeStmt = prepareNativeStatement(sql);
 
-            if (!idx.isInsertStatement(nativeStmt)) {
-                throw new SQLException("Only INSERT operations are supported in streaming mode",
-                    SqlStateCode.INTERNAL_ERROR,
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            try {
+                idx.checkStatementStreamable(nativeStmt);
+            }
+            catch (IgniteSQLException e) {
+                throw e.toJdbcException();
             }
 
             IgniteDataStreamer streamer = ignite().dataStreamer(cacheName);
@@ -851,6 +858,13 @@ public class JdbcConnection implements Connection {
      */
     boolean isMultipleStatementsAllowed() {
         return multipleStmts;
+    }
+
+    /**
+     * @return {@code true} if update on server is enabled, {@code false} otherwise.
+     */
+    boolean skipReducerOnUpdate() {
+        return skipReducerOnUpdate;
     }
 
     /**

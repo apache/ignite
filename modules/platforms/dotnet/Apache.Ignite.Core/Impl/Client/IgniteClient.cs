@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Client
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
@@ -25,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Client.Cache;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
@@ -32,7 +34,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using Apache.Ignite.Core.Impl.Plugin;
 
     /// <summary>
-    /// Thin client implementation
+    /// Thin client implementation.
     /// </summary>
     internal class IgniteClient : IIgniteInternal, IIgniteClient
     {
@@ -45,6 +47,12 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Binary processor. */
         private readonly IBinaryProcessor _binProc;
 
+        /** Binary. */
+        private readonly IBinary _binary;
+
+        /** Configuration. */
+        private readonly IgniteClientConfiguration _configuration;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteClient"/> class.
         /// </summary>
@@ -53,14 +61,18 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             Debug.Assert(clientConfiguration != null);
 
-            _socket = new ClientSocket(clientConfiguration);
+            _configuration = new IgniteClientConfiguration(clientConfiguration);
 
-            _marsh = new Marshaller(clientConfiguration.BinaryConfiguration)
+            _socket = new ClientSocket(_configuration);
+
+            _marsh = new Marshaller(_configuration.BinaryConfiguration)
             {
                 Ignite = this
             };
 
-            _binProc = clientConfiguration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
+            _binProc = _configuration.BinaryProcessor ?? new BinaryProcessorClient(_socket);
+
+            _binary = new Binary(_marsh);
         }
 
         /// <summary>
@@ -88,6 +100,62 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
+        public ICacheClient<TK, TV> GetOrCreateCache<TK, TV>(string name)
+        {
+            IgniteArgumentCheck.NotNull(name, "name");
+
+            DoOutOp(ClientOp.CacheGetOrCreateWithName, w => w.WriteString(name));
+
+            return GetCache<TK, TV>(name);
+        }
+
+        /** <inheritDoc /> */
+        public ICacheClient<TK, TV> GetOrCreateCache<TK, TV>(CacheClientConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            DoOutOp(ClientOp.CacheGetOrCreateWithConfiguration,
+                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration));
+
+            return GetCache<TK, TV>(configuration.Name);
+        }
+
+        /** <inheritDoc /> */
+        public ICacheClient<TK, TV> CreateCache<TK, TV>(string name)
+        {
+            IgniteArgumentCheck.NotNull(name, "name");
+
+            DoOutOp(ClientOp.CacheCreateWithName, w => w.WriteString(name));
+
+            return GetCache<TK, TV>(name);
+        }
+
+        /** <inheritDoc /> */
+        public ICacheClient<TK, TV> CreateCache<TK, TV>(CacheClientConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            DoOutOp(ClientOp.CacheCreateWithConfiguration,
+                w => ClientCacheConfigurationSerializer.Write(w.Stream, configuration));
+
+            return GetCache<TK, TV>(configuration.Name);
+        }
+
+        /** <inheritDoc /> */
+        public ICollection<string> GetCacheNames()
+        {
+            return DoOutInOp(ClientOp.CacheGetNames, null, s => Marshaller.StartUnmarshal(s).ReadStringCollection());
+        }
+
+        /** <inheritDoc /> */
+        public void DestroyCache(string name)
+        {
+            IgniteArgumentCheck.NotNull(name, "name");
+
+            DoOutOp(ClientOp.CacheDestroy, w => w.WriteInt(BinaryUtils.GetCacheId(name)));
+        }
+
+        /** <inheritDoc /> */
         public IIgnite GetIgnite()
         {
             throw GetClientNotSupportedException();
@@ -96,7 +164,14 @@ namespace Apache.Ignite.Core.Impl.Client
         /** <inheritDoc /> */
         public IBinary GetBinary()
         {
-            throw GetClientNotSupportedException();
+            return _binary;
+        }
+
+        /** <inheritDoc /> */
+        public IgniteClientConfiguration GetConfiguration()
+        {
+            // Return a copy to allow modifications by the user.
+            return new IgniteClientConfiguration(_configuration);
         }
 
         /** <inheritDoc /> */
@@ -154,6 +229,33 @@ namespace Apache.Ignite.Core.Impl.Client
             }
 
             return new NotSupportedException(msg);
+        }
+
+        /// <summary>
+        /// Does the out in op.
+        /// </summary>
+        private T DoOutInOp<T>(ClientOp opId, Action<BinaryWriter> writeAction,
+            Func<IBinaryStream, T> readFunc)
+        {
+            return _socket.DoOutInOp(opId, stream =>
+            {
+                if (writeAction != null)
+                {
+                    var writer = _marsh.StartMarshal(stream);
+
+                    writeAction(writer);
+
+                    _marsh.FinishMarshal(writer);
+                }
+            }, readFunc);
+        }
+
+        /// <summary>
+        /// Does the out op.
+        /// </summary>
+        private void DoOutOp(ClientOp opId, Action<BinaryWriter> writeAction = null)
+        {
+            DoOutInOp<object>(opId, writeAction, null);
         }
     }
 }

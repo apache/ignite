@@ -427,7 +427,7 @@ public class GridIntList implements Message, Externalizable {
 
         b.a(']');
 
-        return S.toString(GridIntList.class, this, "arr", b);
+        return b.toString();
     }
 
     /**

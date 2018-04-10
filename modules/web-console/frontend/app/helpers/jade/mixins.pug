@@ -22,6 +22,7 @@ include ../../primitives/dropdown/index
 include ../../primitives/tooltip/index
 include ../../primitives/radio/index
 include ../../primitives/switcher/index
+include ../../primitives/form-field/index
 
 //- Mixin for advanced options toggle.
 mixin advanced-options-toggle(click, cond, showMessage, hideMessage)
@@ -40,7 +41,7 @@ mixin main-table(title, rows, focusId, click, rowTemplate, searchField)
             thead
                 tr
                     th
-                        lable.labelHeader.labelFormField #{title}:
+                        label.labelHeader.labelFormField #{title}:
                         .col-sm-3.pull-right(style='padding: 0')
                             input.form-control(type='text' st-search=`${searchField}` placeholder=`Filter ${title}...`)
             tbody

@@ -47,7 +47,6 @@ import org.apache.ignite.marshaller.MarshallerContext;
 
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.HANDLE;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.JDK;
-import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.JDK_MARSH;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.NULL;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.classDescriptor;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.getBoolean;
@@ -185,7 +184,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 writeByte(JDK);
 
                 try {
-                    JDK_MARSH.marshal(obj, this);
+                    ctx.jdkMarshaller().marshal(obj, this);
                 }
                 catch (IgniteCheckedException e) {
                     IOException ioEx = e.getCause(IOException.class);
@@ -231,12 +230,19 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                         mapper);
                 }
 
-                if (handle >= 0) {
-                    writeByte(HANDLE);
-                    writeInt(handle);
+                try {
+                    if (handle >= 0) {
+                        writeByte(HANDLE);
+
+                        writeInt(handle);
+                    }
+                    else
+                        desc.write(this, obj);
                 }
-                else
-                    desc.write(this, obj);
+                catch (IOException e){
+                    throw new IOException("Failed to serialize object [typeName=" +
+                        desc.describedClass().getName() + ']', e);
+                }
             }
         }
     }
@@ -477,58 +483,63 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
         for (int i = 0; i < fields.size(); i++) {
             OptimizedClassDescriptor.FieldInfo t = fields.get(i);
 
-            switch (t.type()) {
-                case BYTE:
-                    if (t.field() != null)
-                        writeByte(getByte(obj, t.offset()));
+            try {
+                switch (t.type()) {
+                    case BYTE:
+                        if (t.field() != null)
+                            writeByte(getByte(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case SHORT:
-                    if (t.field() != null)
-                        writeShort(getShort(obj, t.offset()));
+                    case SHORT:
+                        if (t.field() != null)
+                            writeShort(getShort(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case INT:
-                    if (t.field() != null)
-                        writeInt(getInt(obj, t.offset()));
+                    case INT:
+                        if (t.field() != null)
+                            writeInt(getInt(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case LONG:
-                    if (t.field() != null)
-                        writeLong(getLong(obj, t.offset()));
+                    case LONG:
+                        if (t.field() != null)
+                            writeLong(getLong(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case FLOAT:
-                    if (t.field() != null)
-                        writeFloat(getFloat(obj, t.offset()));
+                    case FLOAT:
+                        if (t.field() != null)
+                            writeFloat(getFloat(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case DOUBLE:
-                    if (t.field() != null)
-                        writeDouble(getDouble(obj, t.offset()));
+                    case DOUBLE:
+                        if (t.field() != null)
+                            writeDouble(getDouble(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case CHAR:
-                    if (t.field() != null)
-                        writeChar(getChar(obj, t.offset()));
+                    case CHAR:
+                        if (t.field() != null)
+                            writeChar(getChar(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case BOOLEAN:
-                    if (t.field() != null)
-                        writeBoolean(getBoolean(obj, t.offset()));
+                    case BOOLEAN:
+                        if (t.field() != null)
+                            writeBoolean(getBoolean(obj, t.offset()));
 
-                    break;
+                        break;
 
-                case OTHER:
-                    if (t.field() != null)
-                        writeObject0(getObject(obj, t.offset()));
+                    case OTHER:
+                        if (t.field() != null)
+                            writeObject0(getObject(obj, t.offset()));
+                }
+            }
+            catch (IOException e) {
+                throw new IOException("Failed to serialize field [name=" + t.name() + ']', e);
             }
         }
     }

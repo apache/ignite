@@ -73,7 +73,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
-        Collection<MemoryPolicy> allMemPlcs = ignite.context().cache().context().database().memoryPolicies();
+        Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
         assertTrue(allMemPlcs.size() == 2);
 
@@ -89,7 +89,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = startGrid(0);
 
-        Collection<MemoryPolicy> allMemPlcs = ignite.context().cache().context().database().memoryPolicies();
+        Collection<DataRegion> allMemPlcs = ignite.context().cache().context().database().dataRegions();
 
         assertTrue(allMemPlcs.size() == 3);
 
@@ -110,13 +110,13 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         IgniteCacheDatabaseSharedManager dbMgr = ignite.context().cache().context().database();
 
-        Collection<MemoryPolicy> allMemPlcs = dbMgr.memoryPolicies();
+        Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
         assertTrue(allMemPlcs.size() == 2);
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
-        MemoryPolicy dfltMemPlc = U.field(dbMgr, "dfltMemPlc");
+        DataRegion dfltMemPlc = U.field(dbMgr, "dfltDataRegion");
 
         assertTrue(dfltMemPlc.config().getMaxSize() == USER_DEFAULT_MEM_PLC_SIZE);
     }
@@ -134,13 +134,13 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
 
         IgniteCacheDatabaseSharedManager dbMgr = ignite.context().cache().context().database();
 
-        Collection<MemoryPolicy> allMemPlcs = dbMgr.memoryPolicies();
+        Collection<DataRegion> allMemPlcs = dbMgr.dataRegions();
 
         assertTrue(allMemPlcs.size() == 3);
 
         verifyDefaultAndSystemMemoryPolicies(allMemPlcs);
 
-        MemoryPolicy dfltMemPlc = U.field(dbMgr, "dfltMemPlc");
+        DataRegion dfltMemPlc = U.field(dbMgr, "dfltDataRegion");
 
         assertTrue(dfltMemPlc.config().getMaxSize() == USER_CUSTOM_MEM_PLC_SIZE);
     }
@@ -220,7 +220,7 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
     private void verifyCacheMemoryPolicy(IgniteCache cache, String plcName) {
         GridCacheContext ctx = ((IgniteCacheProxy) cache).context();
 
-        assertEquals(plcName, ctx.memoryPolicy().config().getName());
+        assertEquals(plcName, ctx.dataRegion().config().getName());
     }
 
     /**
@@ -278,12 +278,12 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
     /**
      * @param allMemPlcs Collection of all memory policies.
      */
-    private void verifyDefaultAndSystemMemoryPolicies(Collection<MemoryPolicy> allMemPlcs) {
+    private void verifyDefaultAndSystemMemoryPolicies(Collection<DataRegion> allMemPlcs) {
         assertTrue("Default memory policy is not presented",
                 isMemoryPolicyPresented(allMemPlcs, DFLT_MEM_PLC_DEFAULT_NAME));
 
         assertTrue("System memory policy is not presented",
-                isMemoryPolicyPresented(allMemPlcs, IgniteCacheDatabaseSharedManager.SYSTEM_MEMORY_POLICY_NAME));
+                isMemoryPolicyPresented(allMemPlcs, IgniteCacheDatabaseSharedManager.SYSTEM_DATA_REGION_NAME));
     }
 
     /**
@@ -303,8 +303,8 @@ public class MemoryPolicyInitializationTest extends GridCommonAbstractTest {
      * @param memPlcs Collection of memory policies.
      * @param nameToVerify Excepted name of memory policy.
      */
-    private boolean isMemoryPolicyPresented(Collection<MemoryPolicy> memPlcs, String nameToVerify) {
-        for (MemoryPolicy memPlc : memPlcs) {
+    private boolean isMemoryPolicyPresented(Collection<DataRegion> memPlcs, String nameToVerify) {
+        for (DataRegion memPlc : memPlcs) {
             if (nameToVerify.equals(memPlc.config().getName()))
                 return true;
         }

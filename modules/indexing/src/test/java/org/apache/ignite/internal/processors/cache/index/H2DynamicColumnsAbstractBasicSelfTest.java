@@ -17,20 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.index;
 
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.h2.jdbc.JdbcSQLException;
 
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 
@@ -95,31 +95,41 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**
+     * Check table state on default node.
+     *
+     * @param schemaName Schema name.
+     * @param tblName Table name.
+     * @param cols Columns to look for.
+     * @return Number of other columns.
+     * @throws SQLException if failed.
+     */
+    private int checkTableState(String schemaName, String tblName, QueryField... cols) throws SQLException {
+        return checkTableState(grid(nodeIndex()), schemaName, tblName, cols);
+    }
+
+    /**
      * Test column addition to the end of the columns list.
      */
-    public void testAddColumnSimple() {
+    public void testAddColumnSimple() throws SQLException {
         run("ALTER TABLE Person ADD COLUMN age int");
 
         doSleep(500);
 
         QueryField c = c("AGE", Integer.class.getName());
 
-        for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, QueryUtils.DFLT_SCHEMA, "PERSON", c);
+        checkTableState(QueryUtils.DFLT_SCHEMA, "PERSON", c);
     }
 
     /**
      * Test column addition to the end of the columns list.
      */
-    public void testAddFewColumnsSimple() {
+    public void testAddFewColumnsSimple() throws SQLException {
         run("ALTER TABLE Person ADD COLUMN (age int, \"city\" varchar)");
 
         doSleep(500);
 
-        for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, QueryUtils.DFLT_SCHEMA, "PERSON",
-                c("AGE", Integer.class.getName()),
-                c("city", String.class.getName()));
+        checkTableState(QueryUtils.DFLT_SCHEMA, "PERSON", c("AGE", Integer.class.getName()),
+            c("city", String.class.getName()));
     }
 
     /**
@@ -177,8 +187,15 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         run(cache, "CREATE INDEX cidx2 ON City(name)");
 
-        run(cache, "INSERT INTO City(id, name, population, state) values (5, 'New York', 15000000, 'New York')," +
+        run(cache, "INSERT INTO City(id, name, population, state_name) values (5, 'New York', 15000000, 'New York')," +
             "(7, 'Denver', 3000000, 'Colorado')");
+
+        run(cache, "ALTER TABLE City DROP COLUMN state_name");
+
+        List<List<?>> res1 = run(cache, "SELECT * from City c " +
+            "WHERE c.population > 5000000");
+
+        assertEquals(res1.get(0).size(), 3);
 
         List<List<?>> res = run(cache, "SELECT p.name from Person p join City c on p.city = c.name where " +
             "c.population > 5000000 order by p.name");
@@ -217,22 +234,21 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test that we can add columns dynamically to tables associated with non dynamic caches as well.
      */
-    public void testAddColumnToNonDynamicCache() {
+    public void testAddColumnToNonDynamicCache() throws SQLException {
         run("ALTER TABLE \"idx\".PERSON ADD COLUMN CITY varchar");
 
         doSleep(500);
 
         QueryField c = c("CITY", String.class.getName());
 
-        for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, "idx", "PERSON", c);
+        checkTableState("idx", "PERSON", c);
     }
 
     /**
      * Test that we can add columns dynamically to tables associated with non dynamic caches storing user types as well.
      */
     @SuppressWarnings("unchecked")
-    public void testAddColumnToNonDynamicCacheWithRealValueType() {
+    public void testAddColumnToNonDynamicCacheWithRealValueType() throws SQLException {
         CacheConfiguration<Integer, City> ccfg = defaultCacheConfiguration().setName("City")
             .setIndexedTypes(Integer.class, City.class);
 
@@ -244,13 +260,12 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         QueryField c = c("POPULATION", Integer.class.getName());
 
-        for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, "City", "CITY", c);
+        checkTableState("City", "CITY", c);
 
-        run(cache, "INSERT INTO \"City\".City (_key, id, name, state, population) values " +
+        run(cache, "INSERT INTO \"City\".City (_key, id, name, state_name, population) values " +
             "(1, 1, 'Washington', 'DC', 2500000)");
 
-        List<List<?>> res = run(cache, "select _key, id, name, state, population from \"City\".City");
+        List<List<?>> res = run(cache, "select _key, id, name, state_name, population from \"City\".City");
 
         assertEquals(Collections.singletonList(Arrays.asList(1, 1, "Washington", "DC", 2500000)), res);
 
@@ -276,29 +291,27 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     /**
      * Test addition of column with not null constraint.
      */
-    public void testAddNotNullColumn() {
+    public void testAddNotNullColumn() throws SQLException {
         run("ALTER TABLE Person ADD COLUMN age int NOT NULL");
 
         doSleep(500);
 
         QueryField c = new QueryField("AGE", Integer.class.getName(), false);
 
-        for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, QueryUtils.DFLT_SCHEMA, "PERSON", c);
+        checkTableState(QueryUtils.DFLT_SCHEMA, "PERSON", c);
     }
 
     /**
      * Test addition of column explicitly defined as nullable.
      */
-    public void testAddNullColumn() {
+    public void testAddNullColumn() throws SQLException {
         run("ALTER TABLE Person ADD COLUMN age int NULL");
 
         doSleep(500);
 
         QueryField c = new QueryField("AGE", Integer.class.getName(), true);
 
-        for (Ignite node : Ignition.allGrids())
-            checkNodeState((IgniteEx)node, QueryUtils.DFLT_SCHEMA, "PERSON", c);
+        checkTableState(QueryUtils.DFLT_SCHEMA, "PERSON", c);
     }
 
     /**
@@ -336,6 +349,334 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumn() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b CHAR)");
+
+            assertEquals(0, checkTableState(QueryUtils.DFLT_SCHEMA, "TEST",
+                new QueryField("ID", Integer.class.getName(), true),
+                new QueryField("A", Integer.class.getName(), true),
+                new QueryField("B", String.class.getName(), true)));
+
+            run("ALTER TABLE test DROP COLUMN a");
+
+            assertEquals(0, checkTableState(QueryUtils.DFLT_SCHEMA, "TEST",
+                new QueryField("ID", Integer.class.getName(), true),
+                new QueryField("B", String.class.getName(), true)));
+
+            run("ALTER TABLE test DROP COLUMN IF EXISTS a");
+
+            assertThrowsAnyCause("ALTER TABLE test DROP COLUMN a", JdbcSQLException.class, "Column \"A\" not found");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDroppedColumnMeta() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b CHAR)");
+
+            QueryField fld = getColumnMeta(grid(nodeIndex()), QueryUtils.DFLT_SCHEMA, "TEST", "A");
+
+            assertEquals("A", fld.name());
+            assertEquals(Integer.class.getName(), fld.typeName());
+
+            run("ALTER TABLE test DROP COLUMN a");
+
+            assertNull(getColumnMeta(grid(nodeIndex()), QueryUtils.DFLT_SCHEMA, "TEST", "A"));
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropMultipleColumns() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b CHAR, c INT)");
+
+            assertEquals(0, checkTableState(QueryUtils.DFLT_SCHEMA, "TEST",
+                new QueryField("ID", Integer.class.getName(), true),
+                new QueryField("A", Integer.class.getName(), true),
+                new QueryField("B", String.class.getName(), true),
+                new QueryField("C", Integer.class.getName(), true)));
+
+            run("ALTER TABLE test DROP COLUMN a, c");
+
+            assertEquals(0, checkTableState(QueryUtils.DFLT_SCHEMA, "TEST",
+                new QueryField("ID", Integer.class.getName(), true),
+                new QueryField("B", String.class.getName(), true)));
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropNonExistingColumn() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, a INT)");
+
+            assertThrowsAnyCause("ALTER TABLE test DROP COLUMN b", JdbcSQLException.class, "Column \"B\" not found");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnNonExistingTable() throws Exception {
+        assertThrowsAnyCause("ALTER TABLE nosuchtable DROP COLUMN a", JdbcSQLException.class,
+            "Table \"NOSUCHTABLE\" not found");
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnIfTableExists() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b CHAR)");
+
+            run("ALTER TABLE IF EXISTS test DROP COLUMN a");
+
+            assertEquals(0, checkTableState(QueryUtils.DFLT_SCHEMA, "TEST",
+                new QueryField("ID", Integer.class.getName(), true),
+                new QueryField("B", String.class.getName(), true)));
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnIfExists() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, a INT)");
+
+            run("ALTER TABLE IF EXISTS test DROP COLUMN IF EXISTS a");
+
+            run("ALTER TABLE IF EXISTS test DROP COLUMN IF EXISTS b");
+
+            assertEquals(0, checkTableState(QueryUtils.DFLT_SCHEMA, "TEST",
+                new QueryField("ID", Integer.class.getName(), true)));
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnIndexPresent() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, a INT, b INT)");
+
+            run("CREATE INDEX b_index ON test(b)");
+
+            assertThrows("ALTER TABLE test DROP COLUMN b",
+                "Cannot drop column \"B\" because an index exists (\"B_INDEX\") that uses the column.");
+
+            run("DROP INDEX b_index");
+
+            run("ALTER TABLE test DROP COLUMN b");
+
+            assertEquals(0, checkTableState(QueryUtils.DFLT_SCHEMA, "TEST",
+                new QueryField("ID", Integer.class.getName(), true),
+                new QueryField("A", Integer.class.getName(), true)));
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnOnRealClassValuedTable() throws Exception {
+        try {
+            run("CREATE TABLE test (id INT PRIMARY KEY, x VARCHAR) with \"wrap_value=false\"");
+
+            assertThrows("ALTER TABLE test DROP COLUMN x",
+                "Cannot drop column(s) because table was created with WRAP_VALUE=false option.");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnThatIsPartOfKey() throws Exception {
+        try {
+            run("CREATE TABLE test(id INT, a INT, b CHAR, PRIMARY KEY(id, a))");
+
+            assertThrows("ALTER TABLE test DROP COLUMN a",
+                "Cannot drop column \"A\" because it is a part of a cache key");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnThatIsKey() throws Exception {
+        try {
+            run("CREATE TABLE test(id INT PRIMARY KEY, a INT, b CHAR)");
+
+            assertThrows("ALTER TABLE test DROP COLUMN id",
+                "Cannot drop column \"ID\" because it represents an entire cache key");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnThatIsValue() throws Exception {
+        try {
+            run("CREATE TABLE test(id INT PRIMARY KEY, a INT, b CHAR)");
+
+            assertThrows("ALTER TABLE test DROP COLUMN _val",
+                "Cannot drop column \"_VAL\" because it represents an entire cache value");
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
+     * Test that we can drop columns dynamically from tables associated
+     * with non dynamic caches storing user types as well.
+     *
+     * @throws SQLException if failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testDropColumnFromNonDynamicCacheWithRealValueType() throws SQLException {
+        CacheConfiguration<Integer, City> ccfg = defaultCacheConfiguration().setName("City")
+            .setIndexedTypes(Integer.class, City.class);
+
+        IgniteCache<Integer, ?> cache = ignite(nodeIndex()).getOrCreateCache(ccfg);
+
+        run(cache, "INSERT INTO \"City\".City (_key, id, name, state_name) VALUES " +
+            "(1, 1, 'Washington', 'DC')");
+
+        run(cache, "ALTER TABLE \"City\".City DROP COLUMN state_name");
+
+        doSleep(500);
+
+        QueryField c = c("NAME", String.class.getName());
+
+        checkTableState("City", "CITY", c);
+
+        run(cache, "INSERT INTO \"City\".City (_key, id, name) VALUES " +
+            "(2, 2, 'New York')");
+
+        assertThrowsAnyCause("SELECT state_name FROM \"City\".City",
+            JdbcSQLException.class, "Column \"STATE_NAME\" not found");
+
+        List<List<?>> res = run(cache, "SELECT _key, id, name FROM \"City\".City WHERE id = 1");
+
+        assertEquals(Collections.singletonList(Arrays.asList(1, 1, "Washington")), res);
+
+        res = run(cache, "SELECT * FROM \"City\".City WHERE id = 2");
+
+        assertEquals(Collections.singletonList(Arrays.asList(2, "New York")), res);
+
+        if (!Boolean.valueOf(GridTestProperties.getProperty(BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER))) {
+            City city = (City)cache.get(1);
+
+            assertEquals(1, city.id());
+            assertEquals("Washington", city.name());
+            assertEquals("DC", city.state());
+
+            city = (City)cache.get(2);
+
+            assertEquals(2, city.id());
+            assertEquals("New York", city.name());
+            assertEquals(null, city.state());
+        }
+        else {
+            BinaryObject city = (BinaryObject)cache.withKeepBinary().get(1);
+
+            assertEquals(1, (int)city.field("id"));
+            assertEquals("Washington", (String)city.field("name"));
+            assertEquals("DC", (String)city.field("state"));
+
+            city = (BinaryObject)cache.withKeepBinary().get(2);
+
+            assertEquals(2, (int)city.field("id"));
+            assertEquals("New York", (String)city.field("name"));
+            assertEquals(null, (String)city.field("state"));
+        }
+
+        cache.destroy();
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnPriorToIndexedColumn() throws Exception {
+        try {
+            run("CREATE TABLE test(id INT PRIMARY KEY, a CHAR, b INT)");
+
+            run("CREATE INDEX idxB ON test(b)");
+
+            run("INSERT INTO test VALUES(1, 'one', 11), (2, 'two', 22), (3, 'three', 33)");
+
+            List<List<?>> res = run("SELECT * FROM test WHERE b > 0 ORDER BY b");
+
+            assertEquals(3, res.size());
+            assertEquals(3, res.get(0).size());
+
+            run("ALTER TABLE test DROP COLUMN a");
+
+            res = run("SELECT * FROM test WHERE b > 0 ORDER BY b");
+
+            assertEquals(3, res.size());
+            assertEquals(2, res.get(0).size());
+
+            assertEquals(1, res.get(0).get(0));
+            assertEquals(11, res.get(0).get(1));
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
      * Test that {@code ADD COLUMN} fails for tables that have flat value.
      * @param tblName table name.
      */
@@ -360,6 +701,18 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**
+     * Run specified statement expected to throw an exception of specified class and message.
+     *
+     * @param sql Statement.
+     * @param cls Expected exception class.
+     * @param msg Expected message.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    protected void assertThrowsAnyCause(final String sql, Class<? extends Throwable> cls, String msg) {
+        assertThrowsAnyCause(grid(nodeIndex()), sql, cls, msg);
+    }
+
+    /**
      * Execute SQL command and return resulting dataset.
      * @param sql Statement.
      * @return result.
@@ -379,7 +732,7 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
         private String name;
 
         /** City state. */
-        @QuerySqlField
+        @QuerySqlField(name = "state_name")
         private String state;
 
         /**

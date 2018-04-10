@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Process;
@@ -31,6 +32,9 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class DeploymentTest
     {
+        /** */
+        private string _tempFolder;
+
         /// <summary>
         /// Tests the custom deployment where IGNITE_HOME can't be resolved, and there is a user-defined classpath.
         /// </summary>
@@ -38,34 +42,11 @@ namespace Apache.Ignite.Core.Tests
         public void TestCustomDeployment()
         {
             // Create temp folder
-            var folder = GetTempFolder();
-
-            // Copy jars
-            var home = IgniteHome.Resolve(null);
-
-            var jarNames = new[] {@"\ignite-core-", @"\cache-api-1.0.0.jar", @"\modules\spring\" };
-
-            var jars = Directory.GetFiles(home, "*.jar", SearchOption.AllDirectories)
-                .Where(jarPath => jarNames.Any(jarPath.Contains)).ToArray();
-
-            Assert.Greater(jars.Length, 3);
-
-            foreach (var jar in jars)
-            {
-                var fileName = Path.GetFileName(jar);
-                Assert.IsNotNull(fileName);
-                File.Copy(jar, Path.Combine(folder, fileName), true);
-            }
+            var folder = _tempFolder;
+            DeployTo(folder);
 
             // Build classpath
             var classpath = string.Join(";", Directory.GetFiles(folder).Select(Path.GetFileName));
-
-            // Copy .NET binaries
-            foreach (var asm in new[] {typeof(IgniteRunner).Assembly, typeof(Ignition).Assembly, GetType().Assembly})
-            {
-                Assert.IsNotNull(asm.Location);
-                File.Copy(asm.Location, Path.Combine(folder, Path.GetFileName(asm.Location)));
-            }
 
             // Copy config
             var springPath = Path.GetFullPath("config\\compute\\compute-grid2.xml");
@@ -87,38 +68,97 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsNotNull(proc);
 
-            try
-            {
-                VerifyNodeStarted(exePath);
-            }
-            finally
-            {
-                proc.Kill();
-
-                Assert.IsTrue(
-                    TestUtils.WaitForCondition(() =>
-                    {
-                        try
-                        {
-                            Directory.Delete(folder, true);
-                            return true;
-                        }
-                        catch (Exception)
-                        {
-                            return false;
-                        }
-                    }, 1000), "Failed to remove temp directory: " + folder);
-            }
+            VerifyNodeStarted(exePath);
         }
 
         /// <summary>
-        /// Fixture tear down.
+        /// Tests missing JARs.
         /// </summary>
-        [TestFixtureTearDown]
-        public void TestFixtureTearDown()
+        [Test]
+        public void TestMissingJarsCauseProperException()
+        {
+            // Create temp folder
+            var folder = _tempFolder;
+            DeployTo(folder);
+
+            // Build classpath
+            var classpath = string.Join(";",
+                Directory.GetFiles(folder).Where(x => !x.Contains("ignite-core-")).Select(Path.GetFileName));
+
+            // Start a node and check the exception.
+            var exePath = Path.Combine(folder, "Apache.Ignite.exe");
+            var reader = new ListDataReader();
+
+            var proc = IgniteProcess.Start(exePath, string.Empty, args: new[]
+            {
+                "-jvmClasspath=" + classpath,
+                "-J-ea",
+                "-J-Xms512m",
+                "-J-Xmx512m"
+            }, outReader: reader);
+
+            // Wait for process to fail.
+            Assert.IsNotNull(proc);
+            Assert.IsTrue(proc.WaitForExit(10000));
+            Assert.IsTrue(proc.HasExited);
+            Assert.AreEqual(-1, proc.ExitCode);
+
+            // Check error message.
+            Assert.AreEqual("ERROR: Apache.Ignite.Core.Common.IgniteException: Java class is not found " +
+                            "(did you set IGNITE_HOME environment variable?): " +
+                            "org/apache/ignite/internal/processors/platform/PlatformIgnition",
+                reader.GetOutput().First());
+        }
+
+        /// <summary>
+        /// Sets up the test.
+        /// </summary>
+        [SetUp]
+        public void SetUp()
+        {
+            _tempFolder = IgniteUtils.GetTempDirectoryName();
+        }
+
+        /// <summary>
+        /// Tears down the test.
+        /// </summary>
+        [TearDown]
+        public void TearDown()
         {
             Ignition.StopAll(true);
             IgniteProcess.KillAll();
+
+            Directory.Delete(_tempFolder, true);
+        }
+
+        /// <summary>
+        /// Deploys binaries to specified folder
+        /// </summary>
+        private void DeployTo(string folder)
+        {
+            // Copy jars.
+            var home = IgniteHome.Resolve(null);
+
+            var jarNames = new[] {@"\ignite-core-", @"\cache-api-1.0.0.jar", @"\modules\spring\"};
+
+            var jars = Directory.GetFiles(home, "*.jar", SearchOption.AllDirectories)
+                .Where(jarPath => jarNames.Any(jarPath.Contains)).ToArray();
+
+            Assert.Greater(jars.Length, 3);
+
+            foreach (var jar in jars)
+            {
+                var fileName = Path.GetFileName(jar);
+                Assert.IsNotNull(fileName);
+                File.Copy(jar, Path.Combine(folder, fileName), true);
+            }
+
+            // Copy .NET binaries
+            foreach (var asm in new[] {typeof(IgniteRunner).Assembly, typeof(Ignition).Assembly, GetType().Assembly})
+            {
+                Assert.IsNotNull(asm.Location);
+                File.Copy(asm.Location, Path.Combine(folder, Path.GetFileName(asm.Location)));
+            }
         }
 
         /// <summary>
@@ -137,36 +177,6 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.AreEqual(exePath, remoteProcPath);
             }
-        }
-
-        /// <summary>
-        /// Gets the temporary folder.
-        /// </summary>
-        private static string GetTempFolder()
-        {
-            const string prefix = "ig-test-";
-            var temp = Path.GetTempPath();
-
-            for (int i = 0; i < int.MaxValue; i++)
-            {
-                {
-                    try
-                    {
-                        var path = Path.Combine(temp, prefix + i);
-
-                        if (Directory.Exists(path))
-                            Directory.Delete(path, true);
-
-                        return Directory.CreateDirectory(path).FullName;
-                    }
-                    catch (Exception)
-                    {
-                        // Ignore
-                    }
-                }
-            }
-
-            throw new InvalidOperationException();
         }
 
         #pragma warning disable 649

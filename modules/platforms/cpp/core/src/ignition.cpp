@@ -226,16 +226,10 @@ namespace ignite
         }
 
         // 2. Resolve IGNITE_HOME.
-        std::string home;
-        bool homeFound = ResolveIgniteHome(cfg.igniteHome, home);
+        std::string home = ResolveIgniteHome(cfg.igniteHome);
 
         // 3. Create classpath.
-        std::string cp;
-
-        if (homeFound)
-            cp = CreateIgniteClasspath(cfg.jvmClassPath, home);
-        else
-            cp = CreateIgniteClasspath(cfg.jvmClassPath);
+        std::string cp = CreateIgniteClasspath(cfg.jvmClassPath, home);
 
         if (cp.empty())
         {
