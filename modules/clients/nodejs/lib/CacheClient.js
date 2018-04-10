@@ -525,7 +525,9 @@ class CacheClient {
      *
      * @param {SqlQuery | SqlFieldsQuery} query - query to be executed.
      *
-     * @return {Promise<Cursor>} - cursor to obtain the results of the query operation.
+     * @return {Promise<Cursor>} - cursor to obtain the results of the query operation:
+     *   - {@link SqlFieldsCursor} in case of {@link SqlFieldsQuery} query
+     *   - {@link Cursor} in case of other types of query
      *
      * @throws {IgniteClientError} if error.
      */
