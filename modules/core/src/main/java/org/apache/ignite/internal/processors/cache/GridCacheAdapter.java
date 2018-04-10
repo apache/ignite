@@ -1487,7 +1487,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public final Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
         A.notNull(keys, "keys");
 
-        if (ctx.operationContextPerCall().isAutoSorting())
+        if (ctx.operationContextPerCall() != null && ctx.operationContextPerCall().isAutoSorting())
             keys = CacheObjectUtils.sort(keys, ctx.cacheObjectContext());
 
         boolean statsEnabled = ctx.statisticsEnabled();
@@ -1510,7 +1510,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         throws IgniteCheckedException {
         A.notNull(keys, "keys");
 
-        if (ctx.operationContextPerCall().isAutoSorting())
+        if (ctx.operationContextPerCall() != null && ctx.operationContextPerCall().isAutoSorting())
             keys = CacheObjectUtils.sort(keys, ctx.cacheObjectContext());
 
         boolean statsEnabled = ctx.statisticsEnabled();
@@ -1537,7 +1537,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
-        Collection<? extends K> keys0 = ctx.operationContextPerCall().isAutoSorting() ?
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        Collection<? extends K> keys0 = opCtx != null && opCtx.isAutoSorting() ?
             CacheObjectUtils.sort(keys, ctx.cacheObjectContext()) : keys;
 
         final boolean statsEnabled = ctx.statisticsEnabled();
@@ -1545,8 +1547,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
         String taskName = ctx.kernalContext().job().currentTaskName();
-
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         IgniteInternalFuture<Map<K, V>> fut = getAllAsync(
             keys0,
@@ -1577,14 +1577,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @Nullable final Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
-        Collection<? extends K> keys0 = ctx.operationContextPerCall().isAutoSorting() ?
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        Collection<? extends K> keys0 = opCtx != null && opCtx.isAutoSorting() ?
             CacheObjectUtils.sort(keys, ctx.cacheObjectContext()) : keys;
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
-
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         String taskName = ctx.kernalContext().job().currentTaskName();
 
