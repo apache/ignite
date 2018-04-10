@@ -70,6 +70,7 @@ public class PdsWithTtlCompatibilityTest extends IgnitePersistenceCompatibilityA
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
+                        .setMaxSize(32L * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 ).setWalMode(WALMode.DEFAULT));
 
@@ -128,7 +129,8 @@ public class PdsWithTtlCompatibilityTest extends IgnitePersistenceCompatibilityA
      *
      * @param cache cache should be filled using {@link #saveCacheData(Cache)}.
      */
-    public static void validateResultingCacheData(Ignite ignite, IgniteCache<Object, Object> cache) throws IgniteInterruptedCheckedException {
+    public static void validateResultingCacheData(Ignite ignite,
+        IgniteCache<Object, Object> cache) throws IgniteInterruptedCheckedException {
         //This shouldn't be expired.
         cache.withExpiryPolicy(AccessedExpiryPolicy.factoryOf(Duration.ONE_HOUR).create()).put(0, "updated");
 
