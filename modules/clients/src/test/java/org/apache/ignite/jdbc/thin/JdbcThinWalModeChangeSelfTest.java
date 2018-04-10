@@ -18,6 +18,7 @@
 package org.apache.ignite.jdbc.thin;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
@@ -41,7 +42,7 @@ public class JdbcThinWalModeChangeSelfTest extends WalModeChangeAbstractSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected void createCache(Ignite node, CacheConfiguration ccfg) {
+    @Override protected void createCache(Ignite node, CacheConfiguration ccfg) throws IgniteCheckedException {
         String template = ccfg.getCacheMode() == CacheMode.PARTITIONED ?
             QueryUtils.TEMPLATE_PARTITIONED : QueryUtils.TEMPLATE_REPLICATED;
 
@@ -54,13 +55,17 @@ public class JdbcThinWalModeChangeSelfTest extends WalModeChangeAbstractSelfTest
             "\"";
 
         execute(node, cmd);
+
+        alignCacheTopologyVersion(node);
     }
 
     /** {@inheritDoc} */
-    @Override protected void destroyCache(Ignite node, String cacheName) {
+    @Override protected void destroyCache(Ignite node, String cacheName) throws IgniteCheckedException {
         String cmd = "DROP TABLE IF EXISTS " + cacheName;
 
         execute(node, cmd);
+
+        alignCacheTopologyVersion(node);
     }
 
     /** {@inheritDoc} */

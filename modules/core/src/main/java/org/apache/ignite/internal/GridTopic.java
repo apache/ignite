@@ -121,6 +121,9 @@ public enum GridTopic {
     TOPIC_WAL,
 
     /** */
+    TOPIC_METRICS,
+
+    /** */
     TOPIC_AUTH;
 
     /** Enum values. */

@@ -75,6 +75,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsThreadFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -410,7 +411,7 @@ public class IgnitionEx {
                             " milliseconds. Killing node...");
 
                     // We are not able to kill only one grid so whole JVM will be stopped.
-                    System.exit(Ignition.KILL_EXIT_CODE);
+                    Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
                 }
             }
         }, timeoutMs, TimeUnit.MILLISECONDS);
@@ -2242,6 +2243,8 @@ public class IgnitionEx {
             }
 
             initializeDefaultSpi(myCfg);
+
+            GridDiscoveryManager.initCommunicationErrorResolveConfiguration(myCfg);
 
             initializeDefaultCacheConfiguration(myCfg);
 
