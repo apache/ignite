@@ -555,12 +555,12 @@ public class ExchangeLatchManager {
          * @param coordinator New coordinator.
          */
         private void newCoordinator(ClusterNode coordinator) {
-            this.coordinator = coordinator;
-
             if (log.isDebugEnabled())
                 log.debug("Coordinator is changed [latch=" + latchId() + ", crd=" + coordinator.id() + "]");
 
             synchronized (this) {
+                this.coordinator = coordinator;
+
                 // Resend ack to new coordinator.
                 if (ackSent)
                     sendAck();
