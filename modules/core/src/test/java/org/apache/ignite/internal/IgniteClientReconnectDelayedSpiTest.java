@@ -62,6 +62,8 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
         final Ignite client = startGrid();
         final Ignite srv = clientRouter(client);
 
+        clientMode = false;
+
         client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         reconnectClientNode(client, srv, new Runnable() {
@@ -114,12 +116,7 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
                     }
                 });
             else
-                try {
-                    super.sendMessage(node, msg, ackClosure);
-                }
-                catch (Exception e) {
-                    U.log(null, e);
-                }
+                super.sendMessage(node, msg, ackClosure);
         }
     }
 }
