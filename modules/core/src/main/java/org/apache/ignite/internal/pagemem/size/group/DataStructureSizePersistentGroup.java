@@ -83,7 +83,7 @@ public class DataStructureSizePersistentGroup implements DataStructureSizeContex
     }
 
     @Override public DataStructureSizeContext parent() {
-        return null;
+        return parent;
     }
 
     @Override public Collection<DataStructureSizeContext> childes() {
