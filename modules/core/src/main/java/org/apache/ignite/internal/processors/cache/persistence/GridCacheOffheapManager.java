@@ -781,7 +781,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         WALHistoricalIterator iterator = new WALHistoricalIterator(grp, partCntrs, it);
 
-        // Add partitions unabled to reserve to missing set.
+        // Add historical partitions which are unabled to reserve to missing set.
         missing.addAll(iterator.missingParts);
 
         return iterator;
@@ -838,7 +838,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private Iterator<DataEntry> entryIt;
 
         /** */
-        private CacheDataRow next;
+        private DataEntry next;
+
+        /** Flag indicates that partition belongs to current {@link #next} is finished and no longer needs to rebalance. */
+        private boolean reachedPartitionEnd;
 
         /**
          * @param grp Cache context.
@@ -907,7 +910,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (next == null)
                 throw new NoSuchElementException();
 
-            CacheDataRow val = next;
+            CacheDataRow val = new DataEntryRow(next);
+
+            if (reachedPartitionEnd) {
+                doneParts.add(next.partitionId());
+
+                reachedPartitionEnd = false;
+            }
 
             advance();
 
@@ -981,9 +990,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             if (entry.partitionCounter() >= from && entry.partitionCounter() <= to) {
                                 if (entry.partitionCounter() == to)
-                                    doneParts.add(entry.partitionId());
+                                    reachedPartitionEnd = true;
 
-                                next = new DataEntryRow(entry);
+                                next = entry;
 
                                 return;
                             }

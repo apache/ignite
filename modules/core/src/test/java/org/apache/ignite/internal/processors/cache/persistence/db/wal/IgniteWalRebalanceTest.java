@@ -36,7 +36,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
 /**
- * Historic WAL rebalance test
+ * Historic WAL rebalance base test.
  */
 public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     /** Cache name. */
