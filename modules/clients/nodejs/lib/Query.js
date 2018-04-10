@@ -26,16 +26,18 @@ const BinaryUtils = require('./internal/BinaryUtils');
 const PAGE_SIZE_DEFAULT = 1024;
 
 /**
- * ???
+ * Base class representing an Ignite SQL or Scan query.
+ *
+ * The class has no public constructor. Only subclasses may be instantiated.
  *
  * @hideconstructor
  */
 class Query {
 
     /**
-     * ???
+     * Set local query flag.
      *
-     * @param {boolean} local - ???
+     * @param {boolean} local - local query flag: true or false.
      *
      * @return {Query} - the same instance of the Query.
      */
@@ -45,9 +47,9 @@ class Query {
     }
 
     /**
-     * ???
+     * Set {@link Cursor} page size.
      *
-     * @param {integer} pageSize - ???
+     * @param {integer} pageSize - cursor page size.
      *
      * @return {Query} - the same instance of the Query.
      */
@@ -69,15 +71,28 @@ class Query {
 }
 
 /**
- * ???
+ * Class representing an SQL query which returns the whole cache entries (key-value pairs).
  */
 class SqlQuery extends Query {
 
     /**
      * Public constructor.
      *
-     * @param {string} type - ???
-     * @param {string} sql - ???
+     * Requires name of a type (or SQL table) and SQL query string to be specified.
+     * Other SQL query settings have the following defaults:
+     * <pre>
+     *     SQL Query setting         :    Default value
+     *     Local query flag          :    false
+     *     Cursor page size          :    1024
+     *     Query arguments           :    not specified
+     *     Distributed joins flag    :    false
+     *     Replicated only flag      :    false
+     *     Timeout                   :    0 (disabled)
+     * </pre>
+     * Every setting may be changed using set methods.
+     *
+     * @param {string} type - name of a type or SQL table.
+     * @param {string} sql - SQL query string.
      *
      * @return {SqlQuery} - new SqlQuery instance.
      */
@@ -92,6 +107,13 @@ class SqlQuery extends Query {
         this._timeout = 0;
     }
 
+    /**
+     * Set name of a type or SQL table.
+     *
+     * @param {string} type - name of a type or SQL table.
+     *
+     * @return {SqlQuery} - the same instance of the SqlQuery.
+     */
     setType(type) {
         if (this instanceof SqlFieldsQuery) {
             ArgumentChecker.invalidArgument(type, 'type', SqlFieldsQuery);
@@ -104,11 +126,11 @@ class SqlQuery extends Query {
     }
 
     /**
-     * ???
+     * Set SQL query string.
      *
-     * @param {string} sql - ???
+     * @param {string} sql - SQL query string.
      *
-     * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
+     * @return {SqlQuery} - the same instance of the SqlQuery.
      */
     setSql(sql) {
         ArgumentChecker.notNull(sql, 'sql');
@@ -117,11 +139,16 @@ class SqlQuery extends Query {
     }
 
     /**
-     * ???
+     * Set query arguments.
      *
-     * @param {...*} args - ???
+     * Type of any argument may be specified using setArgTypes() method.
+     * If type of an argument is not specified then during operations the Ignite client
+     * will try to make automatic mapping between JavaScript types and Ignite object types -
+     * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
-     * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
+     * @param {...*} args - Query arguments.
+     *
+     * @return {SqlQuery} - the same instance of the SqlQuery.
      */
     setArgs(...args) {
         this._args = args;
@@ -129,11 +156,21 @@ class SqlQuery extends Query {
     }
 
     /**
-     * ???
+     * Specifies types of query arguments.
      *
-     * @param {...ObjectType.PRIMITIVE_TYPE | CompositeType} argTypes - ???
+     * Query arguments itself are set using setArgs() method.
+     * By default, a type of every argument is not specified that means during operations the Ignite client
+     * will try to make automatic mapping between JavaScript types and Ignite object types -
+     * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
-     * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
+     * @param {...ObjectType.PRIMITIVE_TYPE | CompositeType} argTypes - types of Query arguments.
+     *   The order of types must follow the order of arguments in the setArgs() method.
+     *   A type of every argument can be:
+     *   - either a type code of primitive (simple) type
+     *   - or an instance of class representing non-primitive (composite) type
+     *   - or null (means the type is not specified)
+     *
+     * @return {SqlQuery} - the same instance of the SqlQuery.
      */
     setArgTypes(...argTypes) {
         this._argTypes = argTypes;
@@ -141,11 +178,11 @@ class SqlQuery extends Query {
     }
 
     /**
-     * ???
+     * Set distributed joins flag.
      *
-     * @param {boolean} distributedJoins - ???
+     * @param {boolean} distributedJoins - distributed joins flag: true or false.
      *
-     * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
+     * @return {SqlQuery} - the same instance of the SqlQuery.
      */
     setDistributedJoins(distributedJoins) {
         this._distributedJoins = distributedJoins;
@@ -153,11 +190,11 @@ class SqlQuery extends Query {
     }
 
     /**
-     * ???
+     * Set replicated only flag.
      *
-     * @param {boolean} replicatedOnly - ???
+     * @param {boolean} replicatedOnly - replicated only flag: true or false.
      *
-     * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
+     * @return {SqlQuery} - the same instance of the SqlQuery.
      */
     setReplicatedOnly(replicatedOnly) {
         this._replicatedOnly = replicatedOnly;
@@ -165,11 +202,12 @@ class SqlQuery extends Query {
     }
 
     /**
-     * ???
+     * Set timeout.
      *
-     * @param {number} timeout - ???
+     * @param {number} timeout - timeout value in miliseconds.
+     *   Must be non-negative. Zero value disables timeout.
      *
-     * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
+     * @return {SqlQuery} - the same instance of the SqlQuery.
      */
     setTimeout(timeout) {
         this._timeout = timeout;
@@ -218,7 +256,7 @@ class SqlQuery extends Query {
 }
 
 /**
- * ???
+ * Statement type of SQL Fields query.
  * @typedef SqlFieldsQuery.STATEMENT_TYPE
  * @enum
  * @readonly
@@ -234,14 +272,34 @@ const STATEMENT_TYPE = Object.freeze({
 
 
 /**
- * ???
+ * Class representing an SQL Fields query.
  */
 class SqlFieldsQuery extends SqlQuery {
 
     /**
      * Public constructor.
      *
-     * @param {string} sql - ???
+     * Requires SQL query string to be specified.
+     * Other SQL Fields query settings have the following defaults:
+     * <pre>
+     *     SQL Fields Query setting  :    Default value
+     *     Local query flag          :    false
+     *     Cursor page size          :    1024
+     *     Query arguments           :    not specified
+     *     Distributed joins flag    :    false
+     *     Replicated only flag      :    false
+     *     Timeout                   :    0 (disabled)
+     *     Schema for the query      :    not specified
+     *     Max rows                  :    -1
+     *     Statement type            :    STATEMENT_TYPE.ANY
+     *     Enforce join order flag   :    false
+     *     Collocated flag           :    false
+     *     Lazy query execution flag :    false
+     *     Include field names flag  :    false
+     * </pre>
+     * Every setting may be changed using set methods.
+     *
+     * @param {string} sql - SQL query string.
      *
      * @return {SqlFieldsQuery} - new SqlFieldsQuery instance.
      */
@@ -263,9 +321,9 @@ class SqlFieldsQuery extends SqlQuery {
     }
 
     /**
-     * ???
+     * Set schema for the query.
      *
-     * @param {string} schema - ???
+     * @param {string} schema - schema for the query.
      *
      * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
      */
@@ -275,9 +333,9 @@ class SqlFieldsQuery extends SqlQuery {
     }
 
     /**
-     * ???
+     * Set max rows.
      *
-     * @param {integer} maxRows - ???
+     * @param {integer} maxRows - max rows.
      *
      * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
      */
@@ -287,9 +345,9 @@ class SqlFieldsQuery extends SqlQuery {
     }
 
     /**
-     * ???
+     * Set statement type.
      *
-     * @param {SqlFieldsQuery.STATEMENT_TYPE} type - ???
+     * @param {SqlFieldsQuery.STATEMENT_TYPE} type - statement type.
      *
      * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
      */
@@ -299,9 +357,9 @@ class SqlFieldsQuery extends SqlQuery {
     }
 
     /**
-     * ???
+     * Set enforce join order flag.
      *
-     * @param {boolean} enforceJoinOrder - ???
+     * @param {boolean} enforceJoinOrder - enforce join order flag: true or false.
      *
      * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
      */
@@ -311,9 +369,9 @@ class SqlFieldsQuery extends SqlQuery {
     }
 
     /**
-     * ???
+     * Set collocated flag.
      *
-     * @param {boolean} collocated - ???
+     * @param {boolean} collocated - collocated flag: true or false.
      *
      * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
      */
@@ -323,9 +381,9 @@ class SqlFieldsQuery extends SqlQuery {
     }
 
     /**
-     * ???
+     * Set lazy query execution flag.
      *
-     * @param {boolean} lazy - ???
+     * @param {boolean} lazy - lazy query execution flag: true or false.
      *
      * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
      */
@@ -335,9 +393,9 @@ class SqlFieldsQuery extends SqlQuery {
     }
 
     /**
-     * ???
+     * Set include field names flag.
      *
-     * @param {boolean} includeFieldNames - ???
+     * @param {boolean} includeFieldNames - include field names flag: true or false.
      *
      * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
      */
@@ -347,9 +405,19 @@ class SqlFieldsQuery extends SqlQuery {
     }
 
     /**
-     * ???
+     * Specifies types of the fields returned by the SQL Fields query.
      *
-     * @param {...ObjectType.PRIMITIVE_TYPE | CompositeType} fieldTypes - ???
+     * The fields itself are returned by {@link Cursor}.
+     * By default, a type of every field is not specified that means during operations the Ignite client
+     * will try to make automatic mapping between JavaScript types and Ignite object types -
+     * according to the mapping table defined in the description of the {@link ObjectType} class.
+     *
+     * @param {...ObjectType.PRIMITIVE_TYPE | CompositeType} fieldTypes - types of the returned fields.
+     *   The order of types must follow the order of the returned fields.
+     *   A type of every field can be:
+     *   - either a type code of primitive (simple) type
+     *   - or an instance of class representing non-primitive (composite) type
+     *   - or null (means the type is not specified)
      *
      * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
      */
