@@ -17,22 +17,29 @@
 
 package org.apache.ignite.ml.partitionedClustering.kmeans;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.math.util.MapUtil;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
 import org.apache.ignite.ml.svm.SVMPartitionContext;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
-import org.jetbrains.annotations.NotNull;
+
 
 /**
  */
@@ -81,7 +88,47 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
 
             while (iteration < maxIterations && !converged) {
 
+                Vector[] newCentroids = new DenseLocalOnHeapVector[k];
+
+                final Vector[] finalCenters = centers;
+                TotalCostAndCounts totalResult = dataset.compute(data -> {
+                    TotalCostAndCounts result = new TotalCostAndCounts();
+
+                    for (int i = 0; i < data.rowSize(); i++) {
+                        // For each element in the dataset, chose the closest centroid.
+                        // Make that centroid the element's label.
+                        final IgniteBiTuple<Integer, Double> closestCentroid = findClosestCentroid(finalCenters, data.getRow(i));
+                        int centroidIdx = closestCentroid.get1();
+                        data.setLabel(i, centroidIdx);
+
+                        result.totalCost += closestCentroid.get2();
+                        result.sums.putIfAbsent(centroidIdx, VectorUtils.zeroes(cols));
+
+                        int finalI = i;
+                        result.sums.compute(centroidIdx,
+                            (IgniteBiFunction<Integer, Vector, Vector>)(ind, v) -> v.plus(data.getRow(finalI).features()));
+
+                        result.counts.merge(centroidIdx, 1,
+                            (IgniteBiFunction<Integer, Integer, Integer>)(i1, i2) -> i1 + i2);
+
+                    }
+                    return result;
+                }, (a, b) -> a == null ? b : a.merge(b));
+
+
+                converged = true;
+
+                for (Integer ind : totalResult.sums.keySet()) {
+                    Vector massCenter = totalResult.sums.get(ind).times(1.0 / totalResult.counts.get(ind));
+
+                    if (converged && distance.compute(massCenter, centers[ind]) > epsilon * epsilon)
+                        converged = false;
+
+                    centers[ind] = massCenter;
+                }
+
                 iteration++;
+                centers = newCentroids;
             }
 
 
@@ -91,16 +138,118 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
         return new KMeansModel2(centers, distance);
     }
 
+/*
+    // TODO: need to use ctx for centroids like shared data
+    // Each centroid is the geometric mean of the points that have that centroid's label.
+    private Vector[] calculateNewCentroids(Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset, Vector[] centers, int cols) {
+        Vector[] newCentroids = new DenseLocalOnHeapVector[k];
+
+        TotalCostAndCounts totalResult = dataset.compute(data -> {
+            TotalCostAndCounts result = new TotalCostAndCounts();
+
+            for (int i = 0; i < data.rowSize(); i++) {
+                // For each element in the dataset, chose the closest centroid.
+                // Make that centroid the element's label.
+                final IgniteBiTuple<Integer, Double> closestCentroid = findClosestCentroid(centers, data.getRow(i));
+                int centroidIdx = closestCentroid.get1();
+                data.setLabel(i, centroidIdx);
+
+                result.totalCost += closestCentroid.get2();
+                result.sums.putIfAbsent(centroidIdx, VectorUtils.zeroes(cols));
+
+                result.sums.compute(centroidIdx,
+                    (IgniteBiFunction<Integer, Vector, Vector>)(ind, v) -> v.plus(VectorUtils.fromMap(data.getRow(i), false)));
+
+                result.counts.merge(centroidIdx, 1,
+                    (IgniteBiFunction<Integer, Integer, Integer>)(i1, i2) -> i1 + i2);
+
+            }
+            return result;
+        }, (a, b) -> a == null ? b : a.merge(b));
+
+
+        boolean converged = true;
+
+        for (Integer ind : totalResult.sums.keySet()) {
+            Vector massCenter = totalResult.sums.get(ind).times(1.0 / totalResult.counts.get(ind));
+
+            if (converged && distance.compute(massCenter, centers[ind]) > epsilon * epsilon)
+                converged = false;
+
+            centers[ind] = massCenter;
+        }
+        return  newCentroids;
+    }*/
+
+
+    /**
+     * Find the closest cluster center index and distance to it from a given point.
+     *
+     * @param centers Centers to look in.
+     * @param pnt Point.
+     */
+    private IgniteBiTuple<Integer, Double>  findClosestCentroid(Vector[] centers, LabeledVector pnt) {
+        double bestDistance = Double.POSITIVE_INFINITY;
+        int bestInd = 0;
+
+        for (int i = 0; i < centers.length; i++) {
+            double dist = distance.compute(centers[i], pnt.features());
+            if (dist < bestDistance) {
+                bestDistance = dist;
+                bestInd = i;
+
+
+            }
+        }
+
+        return new IgniteBiTuple<>(bestInd, bestDistance);
+    }
+
+
+    // RANDOM
     private Vector[] initClusterCenters(Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset, int k) {
 
         Vector[] initCenters = new DenseLocalOnHeapVector[k];
+
+        List<LabeledVector> rndPnts = dataset.compute(data -> {
+            List<LabeledVector> rndPnt = new ArrayList<>();
+            rndPnt.add(data.getRow( ThreadLocalRandom.current().nextInt(data.rowSize())));
+            return rndPnt;
+        }, (a, b) -> a == null ? b : Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()));
+
+
         for (int i = 0; i < k; i++) {
-            
+            final LabeledVector rndPnt = rndPnts.get(ThreadLocalRandom.current().nextInt(rndPnts.size()));
+            rndPnts.remove(rndPnt);
+            initCenters[i] = rndPnt.features();
         }
 
-        return new Vector[0];
+        return initCenters;
+    }
+
+
+
+    /** Service class used for statistics. */
+    private static class TotalCostAndCounts {
+        /** */
+        public double totalCost;
+
+        /** */
+        public ConcurrentHashMap<Integer, Vector> sums = new ConcurrentHashMap<>();
+
+        /** Count of points closest to the center with a given index. */
+        public ConcurrentHashMap<Integer, Integer> counts = new ConcurrentHashMap<>();
+
+        /** Merge current */
+        public TotalCostAndCounts merge(TotalCostAndCounts other) {
+            this.totalCost += totalCost;
+            MapUtil.mergeMaps(sums, other.sums, Vector::plus, ConcurrentHashMap::new);
+            MapUtil.mergeMaps(counts, other.counts, (i1, i2) -> i1 + i2, ConcurrentHashMap::new);
+            return this;
+        }
     }
 
 }
+
 
 
