@@ -419,7 +419,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             assert cpFut != null;
 
             cpFut.finishFuture().listen(new IgniteInClosureX<IgniteInternalFuture>() {
-                @Override public void applyx(IgniteInternalFuture future) throws IgniteCheckedException {
+                @Override public void applyx(IgniteInternalFuture future) {
                     for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                         if (grp.localWalEnabled())
                             continue;
