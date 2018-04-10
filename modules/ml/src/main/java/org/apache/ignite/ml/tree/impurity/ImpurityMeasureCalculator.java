@@ -15,22 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.tree.impurity;
+
+import java.io.Serializable;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
+import org.apache.ignite.ml.tree.impurity.util.StepFunction;
 
 /**
- * Interface for Trainers. Trainer is just a function which produces model from the data.
+ * Base interface for impurity measure calculators that calculates all impurity measures required to find a best split.
  *
- * @param <M> Type of produced model.
- * @param <T> Type of data needed for model producing.
+ * @param <T> Type of impurity measure.
  */
-// TODO: IGNITE-7659: Reduce multiple Trainer interfaces to one
-@Deprecated
-public interface Trainer<M extends Model, T> {
+public interface ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> extends Serializable {
     /**
-     * Returns model based on data
+     * Calculates all impurity measures required required to find a best split and returns them as an array of
+     * {@link StepFunction} (for every column).
      *
-     * @param data data to build model
-     * @return model
+     * @param data Features and labels.
+     * @return Impurity measures as an array of {@link StepFunction} (for every column).
      */
-    M train(T data);
+    public StepFunction<T>[] calculate(DecisionTreeData data);
 }
