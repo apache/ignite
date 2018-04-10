@@ -96,7 +96,7 @@ public class ExchangeLatchManager {
         this.io = ctx.io();
 
         if (!ctx.clientNode()) {
-            ctx.io().addMessageListener(GridTopic.TOPIC_CACHE, (nodeId, msg, plc) -> {
+            ctx.io().addMessageListener(GridTopic.TOPIC_EXCHANGE, (nodeId, msg, plc) -> {
                 if (msg instanceof LatchAckMessage) {
                     processAck(nodeId, (LatchAckMessage) msg);
                 }
@@ -442,7 +442,7 @@ public class ExchangeLatchManager {
                 for (ClusterNode node : participants) {
                     try {
                         if (discovery.alive(node)) {
-                            io.sendToGridTopic(node, GridTopic.TOPIC_CACHE, new LatchAckMessage(id, topVer, true), GridIoPolicy.SYSTEM_POOL);
+                            io.sendToGridTopic(node, GridTopic.TOPIC_EXCHANGE, new LatchAckMessage(id, topVer, true), GridIoPolicy.SYSTEM_POOL);
 
                             if (log.isDebugEnabled())
                                 log.debug("Final ack is ackSent [latch=" + latchId() + ", to=" + node.id() + "]");
@@ -575,7 +575,7 @@ public class ExchangeLatchManager {
             try {
                 ackSent = true;
 
-                io.sendToGridTopic(coordinator, GridTopic.TOPIC_CACHE, new LatchAckMessage(id, topVer, false), GridIoPolicy.SYSTEM_POOL);
+                io.sendToGridTopic(coordinator, GridTopic.TOPIC_EXCHANGE, new LatchAckMessage(id, topVer, false), GridIoPolicy.SYSTEM_POOL);
 
                 if (log.isDebugEnabled())
                     log.debug("Ack is ackSent + [latch=" + latchId() + ", to=" + coordinator.id() + "]");
