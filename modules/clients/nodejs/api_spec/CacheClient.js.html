@@ -49,6 +49,25 @@ const BinaryUtils = require('./internal/BinaryUtils');
 const BinaryReader = require('./internal/BinaryReader');
 const BinaryWriter = require('./internal/BinaryWriter');
 const ArgumentChecker = require('./internal/ArgumentChecker');
+const SqlQuery = require('./Query').SqlQuery;
+const SqlFieldsQuery = require('./Query').SqlFieldsQuery;
+
+/**
+ * ???
+ * @typedef CacheClient.PEEK_MODE
+ * @enum
+ * @readonly
+ * @property ALL 0
+ * @property NEAR 1
+ * @property PRIMARY 2
+ * @property BACKUP 3
+ */
+const PEEK_MODE = Object.freeze({
+    ALL : 0,
+    NEAR : 1,
+    PRIMARY : 2,
+    BACKUP : 3
+});
 
 /**
  * Class representing and providing access to Ignite cache.
@@ -58,17 +77,20 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
  * One instance of this class provides access to one Ignite cache which is specified
  * during the instance obtaining and cannot be changed after that.
  *
- * There are two groups of methods in the cache client:
- *
- *   - methods to configure a cache client
- *   - methods to operate with the cache itself
- *
- * The cache client can operate in two modes - "non-binary" (default) and "binary" - TBD.
+ * There are three groups of methods in the cache client:
+ *   - methods to configure the cache client
+ *   - methods to operate with the cache using Key-Value Queries
+ *   - methods to operate with the cache using SQL and Scan Queries
  *
  * @hideconstructor
  */
 class CacheClient {
-    /* Methods to configure a cache client */
+
+    static get PEEK_MODE() {
+        return PEEK_MODE;
+    }
+
+    /* Methods to configure the cache client */
 
     /**
      * Specifies a type of the cache key.
@@ -94,8 +116,8 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     setKeyType(type) {
-        this._keyType = BinaryUtils.getObjectType(type, 'type');
-        this._binaryModeKeyType = new BinaryUtils.BinaryObjectType(this._keyType);
+        BinaryUtils.checkObjectType(type, 'type');
+        this._keyType = type;
         return this;
     }
 
@@ -123,84 +145,363 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     setValueType(type) {
-        this._valueType = BinaryUtils.getObjectType(type, 'type');
-        this._binaryModeValueType = new BinaryUtils.BinaryObjectType(this._valueType);
+        BinaryUtils.checkObjectType(type, 'type');
+        this._valueType = type;
         return this;
     }
 
-    /**
-     * Switches between "non-binary" and "binary" modes of the cache client.
-     *
-     * Does nothing if already in the requested mode.
-     *
-     * TBD
-     *
-     * @param {boolean} [on=true] - If true or not specified: switch on "binary" mode.
-     *   If false: switch off "binary" mode.
-     *
-     * @return {CacheClient} - the same instance of the cache client.
-     *
-     * @throws {IgniteClientError} if other error. TBD
-     */
-    setBinaryMode(on = true) {
-        this._binaryMode = on;
-        return this;
-    }
-
-    /* Methods to operate with the cache */
+    /* Methods to operate with the cache using Key-Value Queries */
 
     /**
-     * Retrieves a value mapped to the specified key from the cache.
+     * Retrieves a value associated with the specified key from the cache.
      *
      * @async
      *
-     * @param {*} key - the cache key.
+     * @param {*} key - key.
      *
-     * @return {Promise&lt;*>} - the value associated with the specified key, or null, if it does not exist.
+     * @return {Promise&lt;*>} - value associated with the specified key, or null if it does not exist.
      *
      * @throws {IgniteClientError} if error.
      */
     async get(key) {
-        ArgumentChecker.notNull(key, "key");
-        let value = null;
+        return await this._writeKeyReadValueOp(BinaryUtils.OPERATION.CACHE_GET, key);
+    }
+
+    /**
+     * Retrieves entries associated with the specified keys from the cache.
+     *
+     * @async
+     *
+     * @param {Array&lt;*>} keys - keys.
+     *
+     * @return {Promise&lt;Array&lt;CacheEntry>>} - the retrieved entries (key-value pairs).
+     *   Entries with the keys which do not exist in the cache are not included into the array.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async getAll(keys) {
+        ArgumentChecker.notEmpty(keys, 'keys');
+        ArgumentChecker.hasType(keys, 'keys', false, Array);
+        let result = null;
         await this._socket.send(
-            BinaryUtils.OPERATION.CACHE_GET,
+            BinaryUtils.OPERATION.CACHE_GET_ALL,
             (payload) => {
                 this._writeCacheInfo(payload);
-                BinaryWriter.writeObject(payload, key, this._getKeyType());
+                this._writeKeys(payload, keys);
             },
             (payload) => {
-                value = BinaryReader.readObject(payload, this._getValueType());
+                const resultCount = payload.readInteger();
+                result = new Array(resultCount);
+                for (let i = 0; i &lt; resultCount; i++) {
+                    result[i] = new CacheEntry(
+                        BinaryReader.readObject(payload, this._getKeyType()),
+                        BinaryReader.readObject(payload, this._getValueType()));
+                }
             });
-        return value;
+        return result;
     }
 
     /**
      * Associates the specified value with the specified key in the cache.
      *
-     * Overwrites the existing value, if any.
+     * Overwrites the previous value if the key exists in the cache,
+     * otherwise creates new entry (key-value pair).
      *
      * @async
      *
-     * @param {*} key - the cache key.
+     * @param {*} key - key.
      * @param {*} value - value to be associated with the specified key.
      *
      * @throws {IgniteClientError} if error.
      */
     async put(key, value) {
-        ArgumentChecker.notNull(key, "key");
-        ArgumentChecker.notNull(value, "value");
+        await this._writeKeyValueOp(BinaryUtils.OPERATION.CACHE_PUT, key, value);
+    }
+
+    /**
+     * Associates the specified values with the specified keys in the cache.
+     *
+     * Overwrites the previous value if a key exists in the cache,
+     * otherwise creates new entry (key-value pair).
+     *
+     * @async
+     *
+     * @param {Array&lt;CacheEntry>} entries - entries (key-value pairs) to be put into the cache.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async putAll(entries) {
+        ArgumentChecker.notEmpty(entries, 'entries');
+        ArgumentChecker.hasType(entries, 'entries', true, CacheEntry);
         await this._socket.send(
-            BinaryUtils.OPERATION.CACHE_PUT,
+            BinaryUtils.OPERATION.CACHE_PUT_ALL,
             (payload) => {
                 this._writeCacheInfo(payload);
-                BinaryWriter.writeObject(payload, key, this._getKeyType());
-                BinaryWriter.writeObject(payload, value, this._getValueType());
+                payload.writeInteger(entries.length);
+                for (let entry of entries) {
+                    this._writeKeyValue(payload, entry.getKey(), entry.getValue());
+                }
             });
     }
 
     /**
-     * Removes all the entities (keys and values) from the cache.
+     * Checks if the specified key exists in the cache.
+     *
+     * @async
+     *
+     * @param {*} key - key to check.
+     *
+     * @return {Promise&lt;boolean>} - true if the key exists, false otherwise.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async containsKey(key) {
+        return await this._writeKeyReadBooleanOp(BinaryUtils.OPERATION.CACHE_CONTAINS_KEY, key);
+    }
+
+    /**
+     * Checks if all the specified keys exist in the cache.
+     *
+     * @async
+     *
+     * @param {Array&lt;*>} keys - keys to check.
+     *
+     * @return {Promise&lt;boolean>} - true if all the keys exist,
+     *   false if at least one of the keys does not exist in the cache.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async containsKeys(keys) {
+        return await this._writeKeysReadBooleanOp(BinaryUtils.OPERATION.CACHE_CONTAINS_KEYS, keys);
+    }
+
+    /**
+     * Associates the specified value with the specified key in the cache
+     * and returns the previous associated value, if any.
+     *
+     * Overwrites the previous value if the key exists in the cache,
+     * otherwise creates new entry (key-value pair).
+     *
+     * @async
+     *
+     * @param {*} key - key.
+     * @param {*} value - value to be associated with the specified key.
+     *
+     * @return {Promise&lt;*>} - the previous value associated with the specified key, or null if it did not exist.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async getAndPut(key, value) {
+        return await this._writeKeyValueReadValueOp(BinaryUtils.OPERATION.CACHE_GET_AND_PUT, key, value);
+    }
+
+    /**
+     * Associates the specified value with the specified key in the cache
+     * and returns the previous associated value, if the key exists in the cache.
+     * Otherwise does nothing and returns null.
+     *
+     * @async
+     *
+     * @param {*} key - key.
+     * @param {*} value - value to be associated with the specified key.
+     *
+     * @return {Promise&lt;*>} - the previous value associated with the specified key, or null if it did not exist.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async getAndReplace(key, value) {
+        return await this._writeKeyValueReadValueOp(BinaryUtils.OPERATION.CACHE_GET_AND_REPLACE, key, value);
+    }
+
+    /**
+     * Removes the cache entry with the specified key
+     * and returns the last associated value, if any.
+     *
+     * @async
+     *
+     * @param {*} key - key of the entry to be removed.
+     *
+     * @return {Promise&lt;*>} - the last value associated with the specified key, or null if it did not exist.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async getAndRemove(key) {
+        return await this._writeKeyReadValueOp(BinaryUtils.OPERATION.CACHE_GET_AND_REMOVE, key);
+    }
+
+    /**
+     * Creates new entry (key-value pair) if the specified key does not exist in the cache.
+     * Otherwise does nothing.
+     *
+     * @async
+     *
+     * @param {*} key - key.
+     * @param {*} value - value to be associated with the specified key.
+     *
+     * @return {Promise&lt;boolean>} - true if the operation has been done, false otherwise.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async putIfAbsent(key, value) {
+        return await this._writeKeyValueReadBooleanOp(BinaryUtils.OPERATION.CACHE_PUT_IF_ABSENT, key, value);
+    }
+
+    /**
+     * Creates new entry (key-value pair) if the specified key does not exist in the cache.
+     * Otherwise returns the current value associated with the existing key.
+     *
+     * @async
+     *
+     * @param {*} key - key.
+     * @param {*} value - value to be associated with the specified key.
+     *
+     * @return {Promise&lt;*>} - the current value associated with the key if it already exists in the cache,
+     *   null if the new entry is created.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async getAndPutIfAbsent(key, value) {
+        return await this._writeKeyValueReadValueOp(BinaryUtils.OPERATION.CACHE_GET_AND_PUT_IF_ABSENT, key, value);
+    }
+
+    /**
+     * Associates the specified value with the specified key, if the key exists in the cache.
+     * Otherwise does nothing.
+     *
+     * @async
+     *
+     * @param {*} key - key.
+     * @param {*} value - value to be associated with the specified key.
+     *
+     * @return {Promise&lt;boolean>} - true if the operation has been done, false otherwise.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async replace(key, value) {
+        return await this._writeKeyValueReadBooleanOp(BinaryUtils.OPERATION.CACHE_REPLACE, key, value);
+    }
+
+    /**
+     * Associates the new value with the specified key, if the key exists in the cache
+     * and the current value equals to the provided one.
+     * Otherwise does nothing.
+     *
+     * @async
+     *
+     * @param {*} key - key.
+     * @param {*} value - value to be compared with the current value associated with the specified key.
+     * @param {*} newValue - new value to be associated with the specified key.
+     *
+     * @return {Promise&lt;boolean>} - true if the operation has been done, false otherwise.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async replaceIfEquals(key, value, newValue) {
+        ArgumentChecker.notNull(key, 'key');
+        ArgumentChecker.notNull(value, 'value');
+        ArgumentChecker.notNull(newValue, 'newValue');
+        let result;
+        await this._socket.send(
+            BinaryUtils.OPERATION.CACHE_REPLACE_IF_EQUALS,
+            (payload) => {
+                this._writeCacheInfo(payload);
+                this._writeKeyValue(payload, key, value);
+                BinaryWriter.writeObject(payload, newValue, this._getValueType());
+            },
+            (payload) => {
+                result = payload.readBoolean();
+            });
+        return result;
+    }
+
+    /**
+     * Removes all entries from the cache, without notifying listeners and cache writers.
+     *
+     * @async
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async clear() {
+        await this._socket.send(
+            BinaryUtils.OPERATION.CACHE_CLEAR,
+            (payload) => {
+                this._writeCacheInfo(payload);
+            });
+    }
+
+    /**
+     * Removes entry with the specified key from the cache, without notifying listeners and cache writers.
+     *
+     * @async
+     *
+     * @param {*} key - key to be removed.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async clearKey(key) {
+        await this._writeKeyOp(BinaryUtils.OPERATION.CACHE_CLEAR_KEY, key);
+    }
+
+    /**
+     * Removes entries with the specified keys from the cache, without notifying listeners and cache writers.
+     *
+     * @async
+     *
+     * @param {Array&lt;*>} keys - keys to be removed.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async clearKeys(keys) {
+        await this._writeKeysOp(BinaryUtils.OPERATION.CACHE_CLEAR_KEYS, keys);
+    }
+
+    /**
+     * Removes entry with the specified key from the cache, notifying listeners and cache writers.
+     *
+     * @async
+     *
+     * @param {*} key - key to be removed.
+     *
+     * @return {Promise&lt;boolean>} - true if the operation has been done, false otherwise.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async removeKey(key) {
+        return await this._writeKeyReadBooleanOp(BinaryUtils.OPERATION.CACHE_REMOVE_KEY, key);
+    }
+
+    /**
+     * Removes entry with the specified key from the cache, if the current value equals to the provided one.
+     * Notifies listeners and cache writers.
+     *
+     * @async
+     *
+     * @param {*} key - key to be removed.
+     * @param {*} value - value to be compared with the current value associated with the specified key.
+     *
+     * @return {Promise&lt;boolean>} - true if the operation has been done, false otherwise.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async removeIfEquals(key, value) {
+        return await this._writeKeyValueReadBooleanOp(BinaryUtils.OPERATION.CACHE_REMOVE_IF_EQUALS, key, value);
+    }
+
+    /**
+     * Removes entries with the specified keys from the cache, notifying listeners and cache writers.
+     *
+     * @async
+     *
+     * @param {Array&lt;*>} keys - keys to be removed.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async removeKeys(keys) {
+        await this._writeKeysOp(BinaryUtils.OPERATION.CACHE_REMOVE_KEYS, keys);
+    }
+
+    /**
+     * Removes all entries from the cache, notifying listeners and cache writers.
      *
      * @async
      *
@@ -214,6 +515,67 @@ class CacheClient {
             });
     }
 
+    /**
+     * Returns the number of the entries in the cache.
+     *
+     * @async
+     *
+     * @param {...CacheClient.PEEK_MODE} [peekModes] - ???
+     *
+     * @return {Promise&lt;number>} - the number of the entries in the cache.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async getSize(...peekModes) {
+        ArgumentChecker.hasValueFrom(peekModes, 'peekModes', true, CacheClient.PEEK_MODE);
+        let result;
+        await this._socket.send(
+            BinaryUtils.OPERATION.CACHE_GET_SIZE,
+            (payload) => {
+                this._writeCacheInfo(payload);
+                payload.writeInteger(peekModes.length);
+                for (let mode of peekModes) {
+                    payload.writeByte(mode);
+                }
+            },
+            (payload) => {
+                result = payload.readLong().toNumber();
+            });
+        return result;
+    }
+
+    /* Methods to operate with the cache using SQL and Scan Queries */
+
+    /**
+     * Starts an SQL query operation.
+     *
+     * @async
+     *
+     * @param {SqlQuery | SqlFieldsQuery} query - query to be executed.
+     *
+     * @return {Promise&lt;Cursor>} - cursor to obtain the results of the query operation:
+     *   - {@link SqlFieldsCursor} in case of {@link SqlFieldsQuery} query
+     *   - {@link Cursor} in case of other types of query
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async query(query) {
+        ArgumentChecker.notNull(query, 'query');
+        ArgumentChecker.hasType(query, 'query', false, SqlQuery, SqlFieldsQuery);
+
+        let value = null;
+        await this._socket.send(
+            query._operation,
+            (payload) => {
+                this._writeCacheInfo(payload);
+                query._write(payload);
+            },
+            (payload) => {
+                value = query._getCursor(this._socket, payload, this._keyType, this._valueType);
+            });
+        return value;
+    }
+
     /** Private methods */
 
     /**
@@ -225,9 +587,6 @@ class CacheClient {
         this._config = config;
         this._keyType = null;
         this._valueType = null;
-        this._binaryModeKeyType = new BinaryUtils.BinaryObjectType();
-        this._binaryModeValueType = new BinaryUtils.BinaryObjectType();
-        this._binaryMode = false;
         this._socket = socket;
     }
 
@@ -243,25 +602,190 @@ class CacheClient {
      */
     _writeCacheInfo(payload) {
         payload.writeInteger(this._cacheId);
-        payload.writeByte(this._binaryMode ? 1 : 0);
+        payload.writeByte(0);
+    }
+
+    /**
+     * @ignore
+     */
+    _writeKeyValue(payload, key, value) {
+        BinaryWriter.writeObject(payload, key, this._getKeyType());
+        BinaryWriter.writeObject(payload, value, this._getValueType());
+    }
+
+    /**
+     * @ignore
+     */
+    _writeKeys(payload, keys) {
+        payload.writeInteger(keys.length);
+        for (let key of keys) {
+            BinaryWriter.writeObject(payload, key, this._getKeyType());
+        }
     }
 
     /**
      * @ignore
      */
     _getKeyType() {
-        return this._binaryMode ? this._binaryModeKeyType : this._keyType;
+        return this._keyType;
     }
 
     /**
      * @ignore
      */
     _getValueType() {
-        return this._binaryMode ? this._binaryModeValueType : this._valueType;
+        return this._valueType;
+    }
+
+    /**
+     * @ignore
+     */
+    async _writeKeyValueOp(operation, key, value, payloadReader = null) {
+        ArgumentChecker.notNull(key, 'key');
+        ArgumentChecker.notNull(value, 'value');
+        await this._socket.send(
+            operation,
+            (payload) => {
+                this._writeCacheInfo(payload);
+                this._writeKeyValue(payload, key, value);
+            },
+            payloadReader);
+    }
+
+    /**
+     * @ignore
+     */
+    async _writeKeyValueReadValueOp(operation, key, value) {
+        let result = null;
+        await this._writeKeyValueOp(
+            operation, key, value,
+            (payload) => {
+                result = BinaryReader.readObject(payload, this._getValueType());
+            });
+        return result;
+    }
+
+    /**
+     * @ignore
+     */
+    async _writeKeyValueReadBooleanOp(operation, key, value) {
+        let result = false;
+        await this._writeKeyValueOp(
+            operation, key, value,
+            (payload) => {
+                result = payload.readBoolean();
+            });
+        return result;
+    }
+
+    /**
+     * @ignore
+     */
+    async _writeKeyOp(operation, key, payloadReader = null) {
+        ArgumentChecker.notNull(key, 'key');
+        await this._socket.send(
+            operation,
+            (payload) => {
+                this._writeCacheInfo(payload);
+                BinaryWriter.writeObject(payload, key, this._getKeyType());
+            },
+            payloadReader);
+    }
+
+    /**
+     * @ignore
+     */
+    async _writeKeyReadValueOp(operation, key) {
+        let value = null;
+        await this._writeKeyOp(
+            operation, key,
+            (payload) => {
+                value = BinaryReader.readObject(payload, this._getValueType());
+            });
+        return value;
+    }
+
+    /**
+     * @ignore
+     */
+    async _writeKeyReadBooleanOp(operation, key) {
+        let result = false;
+        await this._writeKeyOp(
+            operation, key,
+            (payload) => {
+                result = payload.readBoolean();
+            });
+        return result;
+    }
+
+    /**
+     * @ignore
+     */
+    async _writeKeysOp(operation, keys, payloadReader = null) {
+        ArgumentChecker.notEmpty(keys, 'keys');
+        ArgumentChecker.hasType(keys, 'keys', false, Array);
+        await this._socket.send(
+            operation,
+            (payload) => {
+                this._writeCacheInfo(payload);
+                this._writeKeys(payload, keys);
+            },
+            payloadReader);
+    }
+
+    /**
+     * @ignore
+     */
+    async _writeKeysReadBooleanOp(operation, keys) {
+        let result = false;
+        await this._writeKeysOp(
+            operation, keys,
+            (payload) => {
+                result = payload.readBoolean();
+            });
+        return result;
+    }
+}
+
+/**
+ * A cache entry (key-value pair).
+ */
+class CacheEntry {
+
+    /**
+     * Public constructor.
+     *
+     * @param {*} key - key corresponding to this entry.
+     * @param {*} value - value associated with the key.
+     *
+     * @return {CacheEntry} - new CacheEntry instance     
+     */
+    constructor(key, value) {
+        this._key = key;
+        this._value = value;
+    }
+
+    /**
+     * Returns the key corresponding to this entry.
+     *
+     * @return {*} - the key corresponding to this entry.
+     */
+    getKey() {
+        return this._key;
+    }
+
+    /**
+     * Returns the value corresponding to this entry.
+     *
+     * @return {*} - the value corresponding to this entry.
+     */
+    getValue() {
+        return this._value;
     }
 }
 
 module.exports = CacheClient;
+module.exports.CacheEntry = CacheEntry;
 </code></pre>
         </article>
     </section>
@@ -272,13 +796,13 @@ module.exports = CacheClient;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="CacheEntry.html">CacheEntry</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="Cursor.html">Cursor</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectArrayType.html">ObjectArrayType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="Query.html">Query</a></li><li><a href="SqlFieldsCursor.html">SqlFieldsCursor</a></li><li><a href="SqlFieldsQuery.html">SqlFieldsQuery</a></li><li><a href="SqlQuery.html">SqlQuery</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Apr 03 2018 16:45:35 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Apr 11 2018 00:07:25 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

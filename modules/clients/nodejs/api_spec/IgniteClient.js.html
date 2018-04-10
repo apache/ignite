@@ -60,16 +60,16 @@ const Logger = require('./internal/Logger');
  * @typedef IgniteClient.STATE
  * @enum
  * @readonly
- * @property DISCONNECTED the client is not connected to any Ignite node,
+ * @property DISCONNECTED The client is not connected to any Ignite node,
  *     operations with the Ignite server are not allowed.
  *     This is initial state after a client instance creation.
  *     If connect() method is called, the client moves to CONNECTING state.
- * @property CONNECTING the client tries to connect to an Ignite node,
+ * @property CONNECTING The client tries to connect to an Ignite node,
  *     operations with the Ignite server are not allowed.
  *     If disconnect() method is called, the client moves to DISCONNECTED state.
  *     If not possible to connect to any Ignite node, the client moves to DISCONNECTED state.
  *     If connection to an Ignite node is successful, the client moves to CONNECTED state.
- * @property CONNECTED the client is connected to an Ignite node,
+ * @property CONNECTED The client is connected to an Ignite node,
  *     all operations with the Ignite server are allowed.
  *     If connection with the Ignite node is lost, the client moves to CONNECTING state.
  *     If disconnect() method is called, the client moves to DISCONNECTED state.
@@ -125,7 +125,7 @@ class IgniteClient {
      */
     async connect(config) {
         ArgumentChecker.notEmpty(config, 'config');
-        ArgumentChecker.hasType(config, 'config', IgniteClientConfiguration);
+        ArgumentChecker.hasType(config, 'config', false, IgniteClientConfiguration);
         await this._socket.connect(config);
     }
 
@@ -147,7 +147,7 @@ class IgniteClient {
      * @async
      *
      * @param {string} name - cache name.
-     * @param {CacheConfiguration} [cacheConfig] - optional cache configuration.
+     * @param {CacheConfiguration} [cacheConfig] - cache configuration.
      *
      * @return {Promise&lt;CacheClient>} - new cache client instance for the created cache.
      *
@@ -157,12 +157,14 @@ class IgniteClient {
      */
     async createCache(name, cacheConfig = null) {
         ArgumentChecker.notEmpty(name, 'name');
-        ArgumentChecker.hasType(cacheConfig, 'cacheConfig', CacheConfiguration);
+        ArgumentChecker.hasType(cacheConfig, 'cacheConfig', false, CacheConfiguration);
 
         await this._socket.send(
-            BinaryUtils.OPERATION.CACHE_CREATE_WITH_NAME,
+            cacheConfig ?
+                BinaryUtils.OPERATION.CACHE_CREATE_WITH_CONFIGURATION :
+                BinaryUtils.OPERATION.CACHE_CREATE_WITH_NAME,
             (payload) => {
-                BinaryWriter.writeString(payload, name);
+                this._writeCacheNameOrConfig(payload, name, cacheConfig);
             });
         return this._getCache(name, cacheConfig);
     }
@@ -174,7 +176,7 @@ class IgniteClient {
      * @async
      *
      * @param {string} name - cache name.
-     * @param {CacheConfiguration} [cacheConfig] - optional cache configuration (ignored if cache
+     * @param {CacheConfiguration} [cacheConfig] - cache configuration (ignored if cache
      *   with the provided name already exists).
      *
      * @return {Promise&lt;CacheClient>} - new cache client instance for the existing or created cache.
@@ -184,12 +186,13 @@ class IgniteClient {
      */
     async getOrCreateCache(name, cacheConfig = null) {
         ArgumentChecker.notEmpty(name, 'name');
-        ArgumentChecker.hasType(cacheConfig, 'cacheConfig', CacheConfiguration);
-
+        ArgumentChecker.hasType(cacheConfig, 'cacheConfig', false, CacheConfiguration);
         await this._socket.send(
-            BinaryUtils.OPERATION.CACHE_GET_OR_CREATE_WITH_NAME,
+            cacheConfig ?
+                BinaryUtils.OPERATION.CACHE_GET_OR_CREATE_WITH_CONFIGURATION :
+                BinaryUtils.OPERATION.CACHE_GET_OR_CREATE_WITH_NAME,
             (payload) => {
-                BinaryWriter.writeString(payload, name);
+                this._writeCacheNameOrConfig(payload, name, cacheConfig);
             });
         return this._getCache(name, cacheConfig);
     }
@@ -230,11 +233,40 @@ class IgniteClient {
     }
 
     /**
+     * Returns configuration of cache with the provided name.
+     *
+     * @async
+     *
+     * @param {string} name - cache name.
+     *
+     * @return {CacheConfiguration} - cache configuration
+     *
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
+     * @throws {OperationError} if cache with the provided name does not exist.
+     * @throws {IgniteClientError} if other error.
+     */
+    async getCacheConfiguration(name) {
+        ArgumentChecker.notEmpty(name, 'name');
+        let config;
+        await this._socket.send(
+            BinaryUtils.OPERATION.CACHE_GET_CONFIGURATION,
+            (payload) => {
+                payload.writeInteger(CacheClient._calculateId(name));
+                payload.writeByte(0);
+            },
+            (payload) => {
+                config = new CacheConfiguration();
+                config._read(payload);
+            });
+        return config;
+    }
+
+    /**
      * Gets existing cache names.
      *
      * @async
      *
-     * @return {Array&lt;string>} - array with the existing cache names.
+     * @return {Promise&lt;Array&lt;string>>} - array with the existing cache names.
      *     The array is empty if no caches exist.
      *
      * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
@@ -269,6 +301,18 @@ class IgniteClient {
     _getCache(name, cacheConfig = null) {
         return new CacheClient(name, cacheConfig, this._socket);
     }
+
+    /**
+     * @ignore
+     */
+    _writeCacheNameOrConfig(buffer, name, cacheConfig) {
+        if (cacheConfig) {
+            cacheConfig._write(buffer, name);
+        }
+        else {
+            BinaryWriter.writeString(buffer, name);
+        }
+    }
 }
 
 module.exports = IgniteClient;
@@ -282,13 +326,13 @@ module.exports = IgniteClient;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="CacheEntry.html">CacheEntry</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="Cursor.html">Cursor</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectArrayType.html">ObjectArrayType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="Query.html">Query</a></li><li><a href="SqlFieldsCursor.html">SqlFieldsCursor</a></li><li><a href="SqlFieldsQuery.html">SqlFieldsQuery</a></li><li><a href="SqlQuery.html">SqlQuery</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Apr 03 2018 16:45:35 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Apr 11 2018 00:07:25 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

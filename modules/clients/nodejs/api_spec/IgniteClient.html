@@ -266,7 +266,7 @@
 
             
 
-            <td class="description last"><p>the client is not connected to any Ignite node,
+            <td class="description last"><p>The client is not connected to any Ignite node,
     operations with the Ignite server are not allowed.
     This is initial state after a client instance creation.
     If connect() method is called, the client moves to CONNECTING state.</p></td>
@@ -287,7 +287,7 @@
 
             
 
-            <td class="description last"><p>the client tries to connect to an Ignite node,
+            <td class="description last"><p>The client tries to connect to an Ignite node,
     operations with the Ignite server are not allowed.
     If disconnect() method is called, the client moves to DISCONNECTED state.
     If not possible to connect to any Ignite node, the client moves to DISCONNECTED state.
@@ -309,7 +309,7 @@
 
             
 
-            <td class="description last"><p>the client is connected to an Ignite node,
+            <td class="description last"><p>The client is connected to an Ignite node,
     all operations with the Ignite server are allowed.
     If connection with the Ignite node is lost, the client moves to CONNECTING state.
     If disconnect() method is called, the client moves to DISCONNECTED state.</p></td>
@@ -379,7 +379,7 @@
     
 
     
-    <h4 class="name" id="cacheNames"><span class="type-signature">(async) </span>cacheNames<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;string>}</span></h4>
+    <h4 class="name" id="cacheNames"><span class="type-signature">(async) </span>cacheNames<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;Array.&lt;string>>}</span></h4>
     
 
     
@@ -431,7 +431,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="IgniteClient.js.html">IgniteClient.js</a>, <a href="IgniteClient.js.html#line215">line 215</a>
+        <a href="IgniteClient.js.html">IgniteClient.js</a>, <a href="IgniteClient.js.html#line247">line 247</a>
     </li></ul></dd>
     
 
@@ -528,7 +528,7 @@
     </dt>
     <dd>
         
-<span class="param-type">Array.&lt;string></span>
+<span class="param-type">Promise.&lt;Array.&lt;string>></span>
 
 
     </dd>
@@ -854,7 +854,7 @@ Moves the client to CONNECTING state.</p>
                 </td>
             
 
-            <td class="description last"><p>optional cache configuration.</p></td>
+            <td class="description last"><p>cache configuration.</p></td>
         </tr>
 
     
@@ -1137,7 +1137,7 @@ Moves the client to CONNECTING state.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="IgniteClient.js.html">IgniteClient.js</a>, <a href="IgniteClient.js.html#line195">line 195</a>
+        <a href="IgniteClient.js.html">IgniteClient.js</a>, <a href="IgniteClient.js.html#line198">line 198</a>
     </li></ul></dd>
     
 
@@ -1444,7 +1444,7 @@ The method does not check if the cache with the provided name exists.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="IgniteClient.js.html">IgniteClient.js</a>, <a href="IgniteClient.js.html#line179">line 179</a>
+        <a href="IgniteClient.js.html">IgniteClient.js</a>, <a href="IgniteClient.js.html#line182">line 182</a>
     </li></ul></dd>
     
 
@@ -1514,6 +1514,248 @@ The method does not check if the cache with the provided name exists.</p>
     <dd>
         
 <span class="param-type"><a href="CacheClient.html">CacheClient</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getCacheConfiguration"><span class="type-signature">(async) </span>getCacheConfiguration<span class="signature">(name)</span><span class="type-signature"> &rarr; {<a href="CacheConfiguration.html">CacheConfiguration</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Returns configuration of cache with the provided name.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>name</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>cache name.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="IgniteClient.js.html">IgniteClient.js</a>, <a href="IgniteClient.js.html#line220">line 220</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+<ul>
+        <li>
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>if the client is not in CONNECTED <a href="IgniteClient.html#.STATE">IgniteClient.STATE</a>.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type"><a href="IllegalStateError.html">IllegalStateError</a></span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+</li>
+    
+        <li>
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>if cache with the provided name does not exist.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type"><a href="OperationError.html">OperationError</a></span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+</li>
+    
+        <li>
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>if other error.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type"><a href="IgniteClientError.html">IgniteClientError</a></span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+</li>
+    </ul>
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>cache configuration</li>
+</ul>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="CacheConfiguration.html">CacheConfiguration</a></span>
 
 
     </dd>
@@ -1647,7 +1889,7 @@ or creates new one with the provided name and optional configuration.</p>
                 </td>
             
 
-            <td class="description last"><p>optional cache configuration (ignored if cache
+            <td class="description last"><p>cache configuration (ignored if cache
   with the provided name already exists).</p></td>
         </tr>
 
@@ -1689,7 +1931,7 @@ or creates new one with the provided name and optional configuration.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="IgniteClient.js.html">IgniteClient.js</a>, <a href="IgniteClient.js.html#line157">line 157</a>
+        <a href="IgniteClient.js.html">IgniteClient.js</a>, <a href="IgniteClient.js.html#line159">line 159</a>
     </li></ul></dd>
     
 
@@ -1905,7 +2147,7 @@ Disabled by default.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="IgniteClient.js.html">IgniteClient.js</a>, <a href="IgniteClient.js.html#line232">line 232</a>
+        <a href="IgniteClient.js.html">IgniteClient.js</a>, <a href="IgniteClient.js.html#line264">line 264</a>
     </li></ul></dd>
     
 
@@ -2111,13 +2353,13 @@ Disabled by default.</p>
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="CacheEntry.html">CacheEntry</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="Cursor.html">Cursor</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectArrayType.html">ObjectArrayType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="Query.html">Query</a></li><li><a href="SqlFieldsCursor.html">SqlFieldsCursor</a></li><li><a href="SqlFieldsQuery.html">SqlFieldsQuery</a></li><li><a href="SqlQuery.html">SqlQuery</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Apr 03 2018 16:45:35 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Apr 11 2018 00:07:25 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

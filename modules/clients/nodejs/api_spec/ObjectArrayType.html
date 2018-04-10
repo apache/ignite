@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: LostConnectionError</title>
+    <title>JSDoc: Class: ObjectArrayType</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: LostConnectionError</h1>
+    <h1 class="page-title">Class: ObjectArrayType</h1>
 
     
 
@@ -28,9 +28,11 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>LostConnectionError<span class="signature">()</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>ObjectArrayType<span class="signature">(elementType)</span><span class="type-signature"></span></h2>
         
-            <div class="class-description"><p>The requested operation is not completed due to the connection lost.</p></div>
+            <div class="class-description"><p>Class representing an array of Ignite complex type objects.</p>
+<p>It is described by COMPOSITE_TYPE.OBJECT_ARRAY <a href="ObjectType.html#.COMPOSITE_TYPE">ObjectType.COMPOSITE_TYPE</a>
+and by a concrete <a href="ComplexObjectType.html">ComplexObjectType</a> instance which defines an element of the array.</p></div>
         
     
 </header>
@@ -45,19 +47,72 @@
     
 
     
-    <h4 class="name" id="LostConnectionError"><span class="type-signature"></span>new LostConnectionError<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="ObjectArrayType"><span class="type-signature"></span>new ObjectArrayType<span class="signature">(elementType)</span><span class="type-signature"></span></h4>
     
 
     
 
 
 
+<div class="description">
+    <p>Public constructor.</p>
+</div>
 
 
 
 
 
 
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>elementType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="ComplexObjectType.html">ComplexObjectType</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>type of the array element</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -93,7 +148,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Errors.js.html">Errors.js</a>, <a href="Errors.js.html#line90">line 90</a>
+        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line318">line 318</a>
     </li></ul></dd>
     
 
@@ -131,7 +186,7 @@
 
 
     <ul>
-        <li><a href="IgniteClientError.html">IgniteClientError</a></li>
+        <li><a href="CompositeType.html">CompositeType</a></li>
     </ul>
 
 

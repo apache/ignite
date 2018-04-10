@@ -48,18 +48,19 @@ and types used by Ignite.</p>
 In this case the Ignite client tries to make automatic mapping between JavaScript types
 and Ignite object types according to the following mapping table:</p>
 <p><pre>
-     JavaScript type         : type code (<a href="ObjectType.html#.PRIMITIVE_TYPE">ObjectType.PRIMITIVE_TYPE</a> and <a href="ObjectType.html#.COMPOSITE_TYPE">ObjectType.COMPOSITE_TYPE</a>)
-     null                    : NULL
-     number                  : DOUBLE
-     Array of number         : DOUBLE_ARRAY
-     string                  : STRING
-     Array of string         : STRING_ARRAY
-     boolean                 : BOOLEAN
-     Array of boolean        : BOOLEAN_ARRAY
-     Date                    : DATE
-     Array of Date           : DATE_ARRAY
-     Map                     : MAP (HASH_MAP)
-     any other Object        : COMPLEX_OBJECT
+     JavaScript type              to / from        type code (<a href="ObjectType.html#.PRIMITIVE_TYPE">ObjectType.PRIMITIVE_TYPE</a> and <a href="ObjectType.html#.COMPOSITE_TYPE">ObjectType.COMPOSITE_TYPE</a>)
+     null                         to / from        NULL
+     number                       to / from        DOUBLE
+     Array of number              to / from        DOUBLE_ARRAY
+     string                       to / from        STRING
+     Array of string              to / from        STRING_ARRAY
+     boolean                      to / from        BOOLEAN
+     Array of boolean             to / from        BOOLEAN_ARRAY
+     Date                         to / from        DATE
+     Array of Date                to / from        DATE_ARRAY
+     Map                          to / from        MAP (HASH_MAP)
+     any other Object             to /  -          COMPLEX_OBJECT
+     Array of any other Object    to /  -          OBJECT_ARRAY
 </pre>
 Note: type of an array content is determined by the type of the first element of the array
 (empty array has no automatic mapping).</p>
@@ -116,7 +117,7 @@ Note: type of an array content is determined by the type of the first element of
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line128">line 128</a>
+        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line131">line 131</a>
     </li></ul></dd>
     
 
@@ -201,6 +202,24 @@ Note: type of an array content is determined by the type of the first element of
     </thead>
 
     <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>OBJECT_ARRAY</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>23</p></td>
+        </tr>
+
     
 
         <tr>
@@ -776,13 +795,13 @@ Note: type of an array content is determined by the type of the first element of
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="CacheEntry.html">CacheEntry</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="Cursor.html">Cursor</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectArrayType.html">ObjectArrayType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="Query.html">Query</a></li><li><a href="SqlFieldsCursor.html">SqlFieldsCursor</a></li><li><a href="SqlFieldsQuery.html">SqlFieldsQuery</a></li><li><a href="SqlQuery.html">SqlQuery</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Apr 03 2018 16:45:35 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Apr 11 2018 00:07:25 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

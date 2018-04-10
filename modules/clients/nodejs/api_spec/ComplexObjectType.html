@@ -28,11 +28,11 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>ComplexObjectType<span class="signature">(template<span class="signature-attributes">opt</span>, name<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>ComplexObjectType<span class="signature">(jsObject, typeName<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
         
             <div class="class-description"><p>Class representing a complex type of Ignite object.</p>
 <p>It is described by COMPOSITE_TYPE.COMPLEX_OBJECT <a href="ObjectType.html#.COMPOSITE_TYPE">ObjectType.COMPOSITE_TYPE</a>,
-a name of the complex type and a set of fields.</p></div>
+a name of the complex type and a JavaScript Object which is mapped to/from the Ignite complex type.</p></div>
         
     
 </header>
@@ -47,7 +47,7 @@ a name of the complex type and a set of fields.</p></div>
     
 
     
-    <h4 class="name" id="ComplexObjectType"><span class="type-signature"></span>new ComplexObjectType<span class="signature">(template<span class="signature-attributes">opt</span>, name<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="ComplexObjectType"><span class="type-signature"></span>new ComplexObjectType<span class="signature">(jsObject, typeName<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
     
 
     
@@ -56,21 +56,17 @@ a name of the complex type and a set of fields.</p></div>
 
 <div class="description">
     <p>Public constructor.</p>
-<p>Optionally specifies the name and the fields of the complex type
-by providing a template - an instance of object with the required fields.</p>
-<p>If the template is not specified, the created complex type has no fields.
-If the template is specified, all it's fields are added into the created complex type.</p>
-<p>The added fields have no specified types. It means during operations the Ignite client
+<p>Specifies a JavaScript Object type which will be mapped to/from the complex type.
+This specification is done using an instance of the JavaScript Object.</p>
+<p>If an object of the complex type is going to be received (deserialized),
+the JavaScript Object must have a constructor without parameters or with optional parameters only.</p>
+<p>The JavaScript Object defines a set of fields of the complex type.</p>
+<p>By default, the fields have no types specified. It means during operations the Ignite client
 will try to make automatic mapping between JavaScript types and Ignite object types -
 according to the mapping table defined in the description of the <a href="ObjectType.html">ObjectType</a> class.</p>
-<p>Fields may be added or updated later by setField() method.</p>
-<p>If the name of the complex type is not explicitely specified, it is generated
-according to the following rules:</p>
-<ul>
-<li>if the template is specified and has a class name, that class name is used as
-the name of the complex type.</li>
-<li>otherwise, &quot;Object&quot; is used as the name of the complex type.</li>
-</ul>
+<p>A type of any field may be specified later by setFieldType() method.</p>
+<p>By default, the name of the complex type is the name of the JavaScript Object.
+The name may be explicitely specified using an optional parameter in the constructor.</p>
 </div>
 
 
@@ -110,7 +106,7 @@ the name of the complex type.</li>
 
         <tr>
             
-                <td class="name"><code>template</code></td>
+                <td class="name"><code>jsObject</code></td>
             
 
             <td class="type">
@@ -125,8 +121,6 @@ the name of the complex type.</li>
             
                 <td class="attributes">
                 
-                    &lt;optional><br>
-                
 
                 
 
@@ -137,20 +131,17 @@ the name of the complex type.</li>
             
                 <td class="default">
                 
-                    null
-                
                 </td>
             
 
-            <td class="description last"><p>instance of object with the fields
-which will be added to the complex type.</p></td>
+            <td class="description last"><p>instance of JavaScript Object which will be mapped to/from this complex type.</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>name</code></td>
+                <td class="name"><code>typeName</code></td>
             
 
             <td class="type">
@@ -223,7 +214,7 @@ which will be added to the complex type.</p></td>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line224">line 224</a>
+        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line229">line 229</a>
     </li></ul></dd>
     
 
@@ -288,7 +279,7 @@ which will be added to the complex type.</p></td>
     
 
     
-    <h4 class="name" id="setField"><span class="type-signature"></span>setField<span class="signature">(fieldName, fieldType<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {<a href="ComplexObjectType.html">ComplexObjectType</a>}</span></h4>
+    <h4 class="name" id="setFieldType"><span class="type-signature"></span>setFieldType<span class="signature">(fieldName, fieldType)</span><span class="type-signature"> &rarr; {<a href="ComplexObjectType.html">ComplexObjectType</a>}</span></h4>
     
 
     
@@ -296,10 +287,7 @@ which will be added to the complex type.</p></td>
 
 
 <div class="description">
-    <p>Adds new field to the complex type.
-Optionally specifies a type of the field.</p>
-<p>If the field with the specified name already exists, the new one is not created
-but the type of the existing field is updated.</p>
+    <p>Specifies a type of the field in the complex type.</p>
 <p>If the type is not specified then during operations the Ignite client
 will try to make automatic mapping between JavaScript types and Ignite object types -
 according to the mapping table defined in the description of the <a href="ObjectType.html">ObjectType</a> class.</p>
@@ -326,11 +314,7 @@ according to the mapping table defined in the description of the <a href="Object
         <th>Type</th>
 
         
-        <th>Attributes</th>
-        
 
-        
-        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -355,19 +339,7 @@ according to the mapping table defined in the description of the <a href="Object
             </td>
 
             
-                <td class="attributes">
-                
 
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                </td>
             
 
             <td class="description last"><p>name of the field.</p></td>
@@ -393,30 +365,13 @@ according to the mapping table defined in the description of the <a href="Object
             </td>
 
             
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
 
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                    null
-                
-                </td>
             
 
             <td class="description last"><p>type of the field:</p>
 <ul>
 <li>either a type code of primitive (simple) type</li>
 <li>or an instance of class representing non-primitive (composite) type</li>
-<li>or null (or not specified) that means the type is not specified</li>
 </ul></td>
         </tr>
 
@@ -458,7 +413,7 @@ according to the mapping table defined in the description of the <a href="Object
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line288">line 288</a>
+        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line286">line 286</a>
     </li></ul></dd>
     
 
@@ -555,13 +510,13 @@ according to the mapping table defined in the description of the <a href="Object
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="CacheEntry.html">CacheEntry</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="Cursor.html">Cursor</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectArrayType.html">ObjectArrayType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="Query.html">Query</a></li><li><a href="SqlFieldsCursor.html">SqlFieldsCursor</a></li><li><a href="SqlFieldsQuery.html">SqlFieldsQuery</a></li><li><a href="SqlQuery.html">SqlQuery</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Apr 03 2018 16:45:35 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Apr 11 2018 00:07:25 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

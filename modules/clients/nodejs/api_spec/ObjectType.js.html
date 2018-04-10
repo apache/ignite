@@ -101,11 +101,13 @@ const PRIMITIVE_TYPE = Object.freeze({
  * @typedef ObjectType.COMPOSITE_TYPE
  * @enum
  * @readonly
+ * @property OBJECT_ARRAY 23
  * @property MAP 25
  * @property NULL 101
  * @property COMPLEX_OBJECT 103
  */
 const COMPOSITE_TYPE = Object.freeze({
+    OBJECT_ARRAY : 23,
     MAP : 25,
     NULL : 101,
     COMPLEX_OBJECT : 103
@@ -132,18 +134,19 @@ const COMPOSITE_TYPE = Object.freeze({
  * In this case the Ignite client tries to make automatic mapping between JavaScript types
  * and Ignite object types according to the following mapping table:
  * &lt;pre>
- *      JavaScript type         : type code ({@link ObjectType.PRIMITIVE_TYPE} and {@link ObjectType.COMPOSITE_TYPE})
- *      null                    : NULL
- *      number                  : DOUBLE
- *      Array of number         : DOUBLE_ARRAY
- *      string                  : STRING
- *      Array of string         : STRING_ARRAY
- *      boolean                 : BOOLEAN
- *      Array of boolean        : BOOLEAN_ARRAY
- *      Date                    : DATE
- *      Array of Date           : DATE_ARRAY
- *      Map                     : MAP (HASH_MAP)
- *      any other Object        : COMPLEX_OBJECT
+ *      JavaScript type              to / from        type code ({@link ObjectType.PRIMITIVE_TYPE} and {@link ObjectType.COMPOSITE_TYPE})
+ *      null                         to / from        NULL
+ *      number                       to / from        DOUBLE
+ *      Array of number              to / from        DOUBLE_ARRAY
+ *      string                       to / from        STRING
+ *      Array of string              to / from        STRING_ARRAY
+ *      boolean                      to / from        BOOLEAN
+ *      Array of boolean             to / from        BOOLEAN_ARRAY
+ *      Date                         to / from        DATE
+ *      Array of Date                to / from        DATE_ARRAY
+ *      Map                          to / from        MAP (HASH_MAP)
+ *      any other Object             to /  -          COMPLEX_OBJECT
+ *      Array of any other Object    to /  -          OBJECT_ARRAY
  * &lt;/pre>
  * Note: type of an array content is determined by the type of the first element of the array
  * (empty array has no automatic mapping).
@@ -234,10 +237,12 @@ class MapObjectType extends CompositeType {
     constructor(mapSubType = MapObjectType.MAP_SUBTYPE.HASH_MAP, keyType = null, valueType = null) {
         super(COMPOSITE_TYPE.MAP);
         const BinaryUtils = require('./internal/BinaryUtils');
-        ArgumentChecker.hasValueFrom(mapSubType, 'mapSubType', MapObjectType.MAP_SUBTYPE);
+        ArgumentChecker.hasValueFrom(mapSubType, 'mapSubType', false, MapObjectType.MAP_SUBTYPE);
         this._mapSubType = mapSubType;
-        this._keyType = BinaryUtils.getObjectType(keyType, 'keyType');
-        this._valueType = BinaryUtils.getObjectType(valueType, 'valueType');
+        BinaryUtils.checkObjectType(keyType, 'keyType');
+        BinaryUtils.checkObjectType(valueType, 'valueType');
+        this._keyType = keyType;
+        this._valueType = valueType;
     }
 }
 
@@ -245,7 +250,7 @@ class MapObjectType extends CompositeType {
  * Class representing a complex type of Ignite object.
  *
  * It is described by COMPOSITE_TYPE.COMPLEX_OBJECT {@link ObjectType.COMPOSITE_TYPE},
- * a name of the complex type and a set of fields.
+ * a name of the complex type and a JavaScript Object which is mapped to/from the Ignite complex type.
  *
  * @extends CompositeType
  */
@@ -254,68 +259,62 @@ class ComplexObjectType extends CompositeType {
     /**
      * Public constructor.
      *
-     * Optionally specifies the name and the fields of the complex type
-     * by providing a template - an instance of object with the required fields.
+     * Specifies a JavaScript Object type which will be mapped to/from the complex type.
+     * This specification is done using an instance of the JavaScript Object.
      *
-     * If the template is not specified, the created complex type has no fields.
-     * If the template is specified, all it's fields are added into the created complex type.
+     * If an object of the complex type is going to be received (deserialized),
+     * the JavaScript Object must have a constructor without parameters or with optional parameters only.
      *
-     * The added fields have no specified types. It means during operations the Ignite client
+     * The JavaScript Object defines a set of fields of the complex type.
+     *
+     * By default, the fields have no types specified. It means during operations the Ignite client
      * will try to make automatic mapping between JavaScript types and Ignite object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
-     * Fields may be added or updated later by setField() method.
+     * A type of any field may be specified later by setFieldType() method.
      *
-     * If the name of the complex type is not explicitely specified, it is generated
-     * according to the following rules:
-     *   - if the template is specified and has a class name, that class name is used as
-     * the name of the complex type.
-     *   - otherwise, "Object" is used as the name of the complex type.
+     * By default, the name of the complex type is the name of the JavaScript Object.
+     * The name may be explicitely specified using an optional parameter in the constructor.
      * 
-     * @param {object} [template=null] - instance of object with the fields
-     * which will be added to the complex type.
-     * @param {string} [name=null] - name of the complex type.
+     * @param {object} jsObject - instance of JavaScript Object which will be mapped to/from this complex type.
+     * @param {string} [typeName=null] - name of the complex type.
      *
      * @return {ComplexObjectType} - new ComplexObjectType instance
      *
      * @throws {IgniteClientError} if error.
      */
-    constructor(template = null, name = null) {
+    constructor(jsObject, typeName = null) {
         super(COMPOSITE_TYPE.COMPLEX_OBJECT);
-        this._template = template;
-        this._objectConstructor = template &amp;&amp; template.constructor ?
-            template.constructor : Object;
-        if (!name) {
-            name = this._objectConstructor.name;
+        this._template = jsObject;
+        this._objectConstructor = jsObject &amp;&amp; jsObject.constructor ?
+            jsObject.constructor : Object;
+        if (!typeName) {
+            typeName = this._objectConstructor.name;
         }
-        this._typeName = name;
+        this._typeName = typeName;
         this._fields = new Map();
     }
 
     /**
-     * Adds new field to the complex type.
-     * Optionally specifies a type of the field.
-     *
-     * If the field with the specified name already exists, the new one is not created
-     * but the type of the existing field is updated.
+     * Specifies a type of the field in the complex type.
      *
      * If the type is not specified then during operations the Ignite client
      * will try to make automatic mapping between JavaScript types and Ignite object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      * 
      * @param {string} fieldName - name of the field.
-     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [fieldType=null] - type of the field:
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} fieldType - type of the field:
      *   - either a type code of primitive (simple) type
      *   - or an instance of class representing non-primitive (composite) type
-     *   - or null (or not specified) that means the type is not specified
      *
      * @return {ComplexObjectType} - the same instance of the ComplexObjectType.
      *
      * @throws {IgniteClientError} if error.
      */
-    setField(fieldName, fieldType = null) {
+    setFieldType(fieldName, fieldType) {
         const BinaryUtils = require('./internal/BinaryUtils');
-        this._fields.set(fieldName, BinaryUtils.getObjectType(fieldType, 'fieldType'));
+        BinaryUtils.checkObjectType(fieldType, 'fieldType');
+        this._fields.set(fieldName, fieldType);
         return this;
     }
 
@@ -336,10 +335,37 @@ class ComplexObjectType extends CompositeType {
     }
 }
 
+/**
+ * Class representing an array of Ignite complex type objects.
+ *
+ * It is described by COMPOSITE_TYPE.OBJECT_ARRAY {@link ObjectType.COMPOSITE_TYPE}
+ * and by a concrete {@link ComplexObjectType} instance which defines an element of the array.
+ *
+ * @extends CompositeType
+ */
+class ObjectArrayType extends CompositeType {
+
+    /**
+     * Public constructor.
+     *
+     * @param {ComplexObjectType} elementType - type of the array element
+     *
+     * @return {ObjectArrayType} - new ObjectArrayType instance
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    constructor(elementType) {
+        super(COMPOSITE_TYPE.OBJECT_ARRAY);
+        ArgumentChecker.hasType(elementType, 'elementType', false, ComplexObjectType);
+        this._elementType = elementType;
+    }
+}
+
 module.exports.ObjectType = ObjectType;
 module.exports.CompositeType = CompositeType;
 module.exports.MapObjectType = MapObjectType;
 module.exports.ComplexObjectType = ComplexObjectType;
+module.exports.ObjectArrayType = ObjectArrayType;
 </code></pre>
         </article>
     </section>
@@ -350,13 +376,13 @@ module.exports.ComplexObjectType = ComplexObjectType;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="CacheEntry.html">CacheEntry</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="Cursor.html">Cursor</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectArrayType.html">ObjectArrayType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="Query.html">Query</a></li><li><a href="SqlFieldsCursor.html">SqlFieldsCursor</a></li><li><a href="SqlFieldsQuery.html">SqlFieldsQuery</a></li><li><a href="SqlQuery.html">SqlQuery</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Apr 03 2018 16:45:35 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Apr 11 2018 00:07:25 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
