@@ -24,27 +24,22 @@ public class LinSysPartitionDataOnHeap implements AutoCloseable {
     /** Part of X matrix. */
     private final double[] x;
 
-    /** Number of rows. */
-    private final int rows;
-
-    /** Number of columns. */
-    private final int cols;
-
     /** Part of Y vector. */
     private final double[] y;
+
+    /** Number of rows. */
+    private final int rows;
 
     /**
      * Constructs a new instance of linear system partition data.
      *
      * @param x Part of X matrix.
-     * @param rows Number of rows.
-     * @param cols Number of columns.
      * @param y Part of Y vector.
+     * @param rows Number of rows.
      */
-    public LinSysPartitionDataOnHeap(double[] x, int rows, int cols, double[] y) {
+    public LinSysPartitionDataOnHeap(double[] x, double[] y, int rows) {
         this.x = x;
         this.rows = rows;
-        this.cols = cols;
         this.y = y;
     }
 
@@ -56,11 +51,6 @@ public class LinSysPartitionDataOnHeap implements AutoCloseable {
     /** */
     public int getRows() {
         return rows;
-    }
-
-    /** */
-    public int getCols() {
-        return cols;
     }
 
     /** */

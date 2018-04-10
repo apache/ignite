@@ -55,10 +55,12 @@ namespace ignite
                  *
                  * @param hostname Host name or address.
                  * @param port TCP port.
+                 * @param timeout Timeout.
                  * @param diag Diagnostics collector to use for error-reporting.
                  * @return @c true on success and @c false on fail.
                  */
-                virtual bool Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag);
+                virtual bool Connect(const char* hostname, uint16_t port, int32_t timeout,
+                    diagnostic::Diagnosable& diag);
 
                 /**
                  * Close the connection.

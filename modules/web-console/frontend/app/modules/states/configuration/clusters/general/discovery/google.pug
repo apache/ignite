@@ -16,23 +16,23 @@
 
 include /app/helpers/jade/mixins
 
-mixin discovery-google(modelAt = 'backupItem')
+mixin discovery-google(modelAt = '$ctrl.clonedCluster')
     -const discoveryKind = 'GoogleStorage'
     -const required = `${modelAt}.discovery.kind == '${discoveryKind}'`
     -const model = `${modelAt}.discovery.GoogleStorage`
 
-    div
-        .details-row
+    .pc-form-grid-row&attributes(attributes=attributes)
+        .pc-form-grid-col-30
             +text('Project name:', `${model}.projectName`, `'${discoveryKind}ProjectName'`, required, 'Input project name', '' +
                 'Google Cloud Platforms project name<br/>\
                 Usually this is an auto generated project number(ex. 208709979073) that can be found in "Overview" section of Google Developer Console')
-        .details-row
+        .pc-form-grid-col-30
             +text('Bucket name:', `${model}.bucketName`, `'${discoveryKind}BucketName'`, required, 'Input bucket name',
                 'Google Cloud Storage bucket name<br/>\
                 If the bucket does not exist Ignite will automatically create it<br/>\
                 However the name must be unique across whole Google Cloud Storage and Service Account Id must be authorized to perform this operation')
-        .details-row
+        .pc-form-grid-col-30
             +text('Private key path:', `${model}.serviceAccountP12FilePath`, `'${discoveryKind}ServiceAccountP12FilePath'`, required, 'Input private key path',
                 'Full path to the private key in PKCS12 format of the Service Account')
-        .details-row
+        .pc-form-grid-col-30
             +text('Account id:', `${model}.serviceAccountId`, `'${discoveryKind}ServiceAccountId'`, required, 'Input account id', 'Service account ID (typically an e-mail address)')

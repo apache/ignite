@@ -59,7 +59,13 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
             executeUpdate(QueryFactory.TURN_OFF_WAL);
 
         try (Connection warmupConn = uploadConnection()) {
+            if (args.upload.useStreaming())
+                executeUpdateOn(warmupConn, queries.turnOnStreaming(args.upload));
+
             warmup(warmupConn);
+
+            if (args.upload.useStreaming())
+                executeUpdateOn(warmupConn, QueryFactory.TURN_OFF_STREAMING);
         }
 
         if (args.upload.disableWal())
@@ -102,9 +108,17 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         if (args.upload.disableWal())
             executeUpdate(QueryFactory.TURN_OFF_WAL);
 
+
         try (Connection uploadConn = uploadConnection()) {
+            if (args.upload.useStreaming())
+                executeUpdateOn(uploadConn, queries.turnOnStreaming(args.upload));
+
             upload(uploadConn);
+
+            if (args.upload.useStreaming())
+                executeUpdateOn(uploadConn, QueryFactory.TURN_OFF_STREAMING);
         }
+
 
         if (args.upload.disableWal())
             executeUpdate(QueryFactory.TURN_ON_WAL);
@@ -115,7 +129,7 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     /**
      * Drops and re-creates test table.
      */
-    private final void dropAndCreate() throws SQLException {
+    private void dropAndCreate() throws SQLException {
         executeUpdate(QueryFactory.DROP_TABLE_IF_EXISTS);
         executeUpdate(queries.createTable());
     }
@@ -158,10 +172,17 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     }
 
     /**
-     * Facility method for executing update queries.
+     * Facility method for executing update queries using cached connection.
      */
     private int executeUpdate(String updQry) throws SQLException {
-        try(PreparedStatement update = conn.get().prepareStatement(updQry)){
+        return executeUpdateOn(conn.get(), updQry);
+    }
+
+    /**
+     * Facility method to perform updates on any connection.
+     */
+    private static int executeUpdateOn(Connection c, String updQry) throws SQLException {
+        try(PreparedStatement update = c.prepareStatement(updQry)){
             return update.executeUpdate();
         }
     }

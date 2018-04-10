@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -336,6 +337,8 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
 
         final AtomicBoolean countedDown = new AtomicBoolean();
 
+        CountDownLatch allLatchesObtained = new CountDownLatch(gridCount());
+
         for (int i = 0; i < gridCount(); i++) {
             final Ignite ignite = grid(i);
 
@@ -344,6 +347,8 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
                     IgniteCountDownLatch latch = ignite.countDownLatch("l1", 10,
                         true,
                         false);
+
+                    allLatchesObtained.countDown();
 
                     assertNotNull(latch);
 
@@ -361,8 +366,11 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
         }
 
         for (int i = 0; i < 10; i++) {
-            if (i == 9)
+            if (i == 9) {
                 countedDown.set(true);
+
+                allLatchesObtained.await();
+            }
 
             latch.countDown();
         }

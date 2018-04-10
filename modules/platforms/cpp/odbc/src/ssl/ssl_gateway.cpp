@@ -25,6 +25,10 @@
 #include "ignite/odbc/ssl/ssl_gateway.h"
 #include "ignite/odbc/log.h"
 
+#ifndef ADDITIONAL_OPENSSL_HOME_ENV
+#   define ADDITIONAL_OPENSSL_HOME_ENV "OPEN_SSL_HOME"
+#endif // ADDITIONAL_OPENSSL_HOME_ENV
+
 namespace ignite
 {
     namespace odbc
@@ -55,7 +59,9 @@ namespace ignite
                 if (libModule.IsLoaded())
                     return libModule;
 
-                std::string home = GetEnv("OPEN_SSL_HOME");
+                std::string home = GetEnv(ADDITIONAL_OPENSSL_HOME_ENV);
+
+                std::cout << ADDITIONAL_OPENSSL_HOME_ENV << std::endl;
 
                 if (home.empty())
                     home = GetEnv("OPENSSL_HOME");

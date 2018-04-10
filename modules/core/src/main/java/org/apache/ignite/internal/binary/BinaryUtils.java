@@ -667,7 +667,7 @@ public class BinaryUtils {
         else if (!wrapTrees() && cls == TreeMap.class)
             return new TreeMap<>(((TreeMap<Object, Object>)map).comparator());
         else if (cls == ConcurrentHashMap.class)
-            return new ConcurrentHashMap<>(U.capacity(((Map)map).size()));
+            return new ConcurrentHashMap<>(((Map)map).size());
 
         return null;
     }
@@ -685,7 +685,7 @@ public class BinaryUtils {
         else if (map instanceof TreeMap)
             return new TreeMap<>(((TreeMap<Object, Object>)map).comparator());
         else if (map instanceof ConcurrentHashMap)
-            return new ConcurrentHashMap<>(U.capacity(map.size()));
+            return new ConcurrentHashMap<>(map.size());
 
         return U.newHashMap(map.size());
     }

@@ -26,7 +26,8 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     SVMModelTest.class,
-    SVMBinaryTrainerTest.class
+    SVMBinaryTrainerTest.class,
+    SVMMultiClassTrainerTest.class
 })
 public class SVMTestSuite {
     // No-op.
