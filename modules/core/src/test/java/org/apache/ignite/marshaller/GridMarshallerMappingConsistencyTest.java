@@ -157,6 +157,8 @@ public class GridMarshallerMappingConsistencyTest extends GridCommonAbstractTest
         Ignite g2 = startGrid(2);
         startGrid(1);
 
+        g2.cluster().active(true);
+
         IgniteCache<Integer, DummyObject> c2 = g2.cache(CACHE_NAME);
 
         assertEquals(k, c2.get(k).val);
