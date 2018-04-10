@@ -88,7 +88,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private static volatile boolean interrupted;
 
     /** */
-    private static final int IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT = 1000;
+    private static final int IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT = Integer.MAX_VALUE;
 
     /** */
     private static final int LOCK_RETRIES = IgniteSystemProperties.getInteger(
