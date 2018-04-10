@@ -17,8 +17,13 @@
 
 package org.apache.ignite.ml.trainers;
 
+import java.util.Map;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
+import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
@@ -40,4 +45,44 @@ public interface DatasetTrainer<M extends Model, L> {
      */
     public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor);
+
+    /**
+     * Trains model based on the specified data.
+     *
+     * @param ignite Ignite instance.
+     * @param cache Ignite cache.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return Model.
+     */
+    public default <K, V> M fit(Ignite ignite, IgniteCache<K, V> cache, IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, L> lbExtractor) {
+        return fit(
+            new CacheBasedDatasetBuilder<>(ignite, cache),
+            featureExtractor,
+            lbExtractor
+        );
+    }
+
+    /**
+     * Trains model based on the specified data.
+     *
+     * @param data Data.
+     * @param parts Number of partitions.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return Model.
+     */
+    public default <K, V> M fit(Map<K, V> data, int parts, IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, L> lbExtractor) {
+        return fit(
+            new LocalDatasetBuilder<>(data, parts),
+            featureExtractor,
+            lbExtractor
+        );
+    }
 }

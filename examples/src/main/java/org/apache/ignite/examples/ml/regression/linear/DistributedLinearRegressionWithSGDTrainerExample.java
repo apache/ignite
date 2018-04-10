@@ -27,7 +27,6 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
@@ -123,7 +122,8 @@ public class DistributedLinearRegressionWithSGDTrainerExample {
 
                 System.out.println(">>> Perform the training to get the model.");
                 LinearRegressionModel mdl = trainer.fit(
-                    new CacheBasedDatasetBuilder<>(ignite, dataCache),
+                    ignite,
+                    dataCache,
                     (k, v) -> Arrays.copyOfRange(v, 1, v.length),
                     (k, v) -> v[0]
                 );

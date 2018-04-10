@@ -113,15 +113,15 @@ public class DistributedLinearRegressionWithQRTrainerExample {
                 Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionQRTrainer();
 
                 System.out.println(">>> Perform the training to get the model.");
-                LinearRegressionModel model = trainer.train(distributedMatrix);
-                System.out.println(">>> Linear regression model: " + model);
+                LinearRegressionModel mdl = trainer.train(distributedMatrix);
+                System.out.println(">>> Linear regression model: " + mdl);
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> | Prediction\t| Ground Truth\t|");
                 System.out.println(">>> ---------------------------------");
                 for (double[] observation : data) {
                     Vector inputs = new SparseDistributedVector(Arrays.copyOfRange(observation, 1, observation.length));
-                    double prediction = model.apply(inputs);
+                    double prediction = mdl.apply(inputs);
                     double groundTruth = observation[0];
                     System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
                 }
