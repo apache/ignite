@@ -65,7 +65,7 @@ createTestCafe('localhost', 1337, 1338)
                 .src(resolveFixturesPaths())
                 .browsers(BROWSERS)
                 .reporter(reporter)
-                .run({ skipJsErrors: true, quarantineMode: true });
+                .run({ skipJsErrors: true, quarantineMode: process.env.QUARANTINE_MODE || false });
         } catch (err) {
             console.log(err);
 

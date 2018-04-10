@@ -17,7 +17,11 @@
 
 package org.apache.ignite.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -60,6 +64,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override public String getTestIgniteInstanceName() {
+        return "bltTest";
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -74,6 +83,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         dsCfg.setWalMode(WALMode.LOG_ONLY);
         dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
+        cfg.setConsistentId(igniteInstanceName);
+
         return cfg;
     }
 
@@ -85,22 +96,30 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     public void testActivate() throws Exception {
         Ignite ignite = startGrids(1);
 
-        assertFalse(ignite.active());
+        assertFalse(ignite.cluster().active());
 
-        CommandHandler cmd = new CommandHandler();
+        assertEquals(EXIT_CODE_OK, execute("--activate"));
 
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--activate"));
-
-        assertTrue(ignite.active());
+        assertTrue(ignite.cluster().active());
     }
 
     /**
-     * @param cmd CommandHandler
-     * @param args arguments
-     * @return result of execution
+     * @param args Arguments.
+     * @return Result of execution.
      */
-    protected int execute(CommandHandler cmd, String... args) {
-        return cmd.execute(args);
+    protected int execute(String... args) {
+        return execute(new ArrayList<>(Arrays.asList(args)));
+    }
+
+    /**
+     * @param args Arguments.
+     * @return Result of execution
+     */
+    protected int execute(ArrayList<String> args) {
+        // Add force to avoid interactive confirmation
+        args.add("--force");
+
+        return new CommandHandler().execute(args);
     }
 
     /**
@@ -111,17 +130,15 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     public void testDeactivate() throws Exception {
         Ignite ignite = startGrids(1);
 
-        assertFalse(ignite.active());
+        assertFalse(ignite.cluster().active());
 
-        ignite.active(true);
+        ignite.cluster().active(true);
 
-        assertTrue(ignite.active());
+        assertTrue(ignite.cluster().active());
 
-        CommandHandler cmd = new CommandHandler();
+        assertEquals(EXIT_CODE_OK, execute("--deactivate"));
 
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--deactivate"));
-
-        assertFalse(ignite.active());
+        assertFalse(ignite.cluster().active());
     }
 
     /**
@@ -132,15 +149,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     public void testState() throws Exception {
         Ignite ignite = startGrids(1);
 
-        assertFalse(ignite.active());
+        assertFalse(ignite.cluster().active());
 
-        CommandHandler cmd = new CommandHandler();
+        assertEquals(EXIT_CODE_OK, execute("--state"));
 
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--state"));
+        ignite.cluster().active(true);
 
-        ignite.active(true);
-
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--state"));
+        assertEquals(EXIT_CODE_OK, execute("--state"));
     }
 
     /**
@@ -151,13 +166,11 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     public void testBaselineCollect() throws Exception {
         Ignite ignite = startGrids(1);
 
-        assertFalse(ignite.active());
+        assertFalse(ignite.cluster().active());
 
-        ignite.active(true);
+        ignite.cluster().active(true);
 
-        CommandHandler cmd = new CommandHandler();
-
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--baseline"));
+        assertEquals(EXIT_CODE_OK, execute("--baseline"));
 
         assertEquals(1, ignite.cluster().currentBaselineTopology().size());
     }
@@ -189,18 +202,50 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     public void testBaselineAdd() throws Exception {
         Ignite ignite = startGrids(1);
 
-        assertFalse(ignite.active());
+        assertFalse(ignite.cluster().active());
 
-        ignite.active(true);
-
-        CommandHandler cmd = new CommandHandler();
+        ignite.cluster().active(true);
 
         Ignite other = startGrid(2);
 
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--baseline", "add", consistentIds(other)));
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--baseline", "add", consistentIds(other)));
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "add", consistentIds(other)));
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "add", consistentIds(other)));
 
         assertEquals(2, ignite.cluster().currentBaselineTopology().size());
+    }
+
+    /**
+     * Test baseline add items works via control.sh
+     *
+     * @throws Exception If failed.
+     */
+    public void testBaselineAddOnNotActiveCluster() throws Exception {
+        try {
+            Ignite ignite = startGrid(1);
+
+            assertFalse(ignite.cluster().active());
+
+            String consistentIDs = getTestIgniteInstanceName(1);
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream(4096);
+            System.setOut(new PrintStream(out));
+
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
+
+            assertTrue(out.toString().contains("Changing BaselineTopology on inactive cluster is not allowed."));
+
+            consistentIDs =
+                getTestIgniteInstanceName(1) + ", " +
+                    getTestIgniteInstanceName(2) + "," +
+                    getTestIgniteInstanceName(3);
+
+            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
+
+            assertTrue(out.toString().contains("Node not found for consistent ID: bltTest2"));
+        }
+        finally {
+            System.setOut(System.out);
+        }
     }
 
     /**
@@ -212,18 +257,16 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         Ignite ignite = startGrids(1);
         Ignite other = startGrid("nodeToStop");
 
-        assertFalse(ignite.active());
+        assertFalse(ignite.cluster().active());
 
-        ignite.active(true);
+        ignite.cluster().active(true);
 
         String offlineNodeConsId = consistentIds(other);
 
         stopGrid("nodeToStop");
 
-        CommandHandler cmd = new CommandHandler();
-
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--baseline"));
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--baseline", "remove", offlineNodeConsId));
+        assertEquals(EXIT_CODE_OK, execute("--baseline"));
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "remove", offlineNodeConsId));
 
         assertEquals(1, ignite.cluster().currentBaselineTopology().size());
     }
@@ -236,19 +279,17 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     public void testBaselineSet() throws Exception {
         Ignite ignite = startGrids(1);
 
-        assertFalse(ignite.active());
+        assertFalse(ignite.cluster().active());
 
-        ignite.active(true);
+        ignite.cluster().active(true);
 
         Ignite other = startGrid(2);
 
-        CommandHandler cmd = new CommandHandler();
-
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--baseline", "set", consistentIds(ignite, other)));
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "set", consistentIds(ignite, other)));
 
         assertEquals(2, ignite.cluster().currentBaselineTopology().size());
 
-        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute(cmd, "--baseline", "set", "invalidConsistentId"));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "set", "invalidConsistentId"));
     }
 
     /**
@@ -259,17 +300,15 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     public void testBaselineVersion() throws Exception {
         Ignite ignite = startGrids(1);
 
-        assertFalse(ignite.active());
+        assertFalse(ignite.cluster().active());
 
-        ignite.active(true);
-
-        CommandHandler cmd = new CommandHandler();
+        ignite.cluster().active(true);
 
         startGrid(2);
 
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--baseline"));
+        assertEquals(EXIT_CODE_OK, execute("--baseline"));
 
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--baseline", "version", String.valueOf(ignite.cluster().topologyVersion())));
+        assertEquals(EXIT_CODE_OK, execute("--baseline", "version", String.valueOf(ignite.cluster().topologyVersion())));
 
         assertEquals(2, ignite.cluster().currentBaselineTopology().size());
     }

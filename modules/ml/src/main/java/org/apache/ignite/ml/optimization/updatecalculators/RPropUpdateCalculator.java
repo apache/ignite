@@ -31,6 +31,9 @@ import org.apache.ignite.ml.optimization.SmoothParametrized;
  * See <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">RProp</a>.</p>
  */
 public class RPropUpdateCalculator implements ParameterUpdateCalculator<SmoothParametrized, RPropParameterUpdate> {
+    /** */
+    private static final long serialVersionUID = -5156816330041409864L;
+
     /**
      * Default initial update.
      */

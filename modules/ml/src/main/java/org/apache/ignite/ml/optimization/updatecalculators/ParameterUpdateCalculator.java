@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.optimization.updatecalculators;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
@@ -28,7 +29,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
  * @param <M> Type of model to be updated.
  * @param <P> Type of parameters needed for this update calculator.
  */
-public interface ParameterUpdateCalculator<M, P> {
+public interface ParameterUpdateCalculator<M, P extends Serializable> extends Serializable {
     /**
      * Initializes the update calculator.
      *

@@ -42,13 +42,15 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * mvn exec:java -Dexec.mainClass="org.apache.ignite.examples.ml.genetic.movie.MovieGAExample" -DGENRES=Action,Comedy
  *
  * <p> Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
- * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run ExampleNodeStartup
- * in another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
+ * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run ExampleNodeStartup in
+ * another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
  */
-
 public class MovieGAExample {
+    /** Ignite instance */
     private static Ignite ignite = null;
+    /** GAGrid */
     private static GAGrid gaGrid = null;
+    /** GAConfiguration */
     private static GAConfiguration gaConfig = null;
 
     /**
@@ -63,16 +65,21 @@ public class MovieGAExample {
         System.setProperty("IGNITE_QUIET", "false");
 
         List genres = new ArrayList();
-        String sGenres = System.getProperty("GENRES");
+        String sGenres = "Action,Comedy,Romance";
 
         StringBuffer sbErrorMessage = new StringBuffer();
         sbErrorMessage.append("GENRES System property not set. Please provide GENRES information.");
         sbErrorMessage.append(" ");
         sbErrorMessage.append("IE: -DGENRES=Action,Comedy,Romance");
+        sbErrorMessage.append("\n");
+        sbErrorMessage.append("Using default value: Action,Comedy,Romance");
 
-        if (sGenres == null) {
+        if (System.getProperty("GENRES") == null) {
             System.out.println(sbErrorMessage);
-            System.exit(1);
+
+        }
+        else {
+            sGenres = System.getProperty("GENRES");
         }
 
         StringTokenizer st = new StringTokenizer(sGenres, ",");
