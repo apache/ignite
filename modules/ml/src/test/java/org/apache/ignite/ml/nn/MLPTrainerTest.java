@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
@@ -140,7 +139,8 @@ public class MLPTrainerTest {
             );
 
             MultilayerPerceptron mlp = trainer.fit(
-                new LocalDatasetBuilder<>(xorData, parts),
+                xorData,
+                parts,
                 (k, v) -> v[0],
                 (k, v) -> v[1]
             );

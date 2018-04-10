@@ -20,7 +20,6 @@ package org.apache.ignite.ml.regressions.linear;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
@@ -77,7 +76,8 @@ public class LinearRegressionSGDTrainerTest {
         ), 100000,  10, 100, 123L);
 
         LinearRegressionModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, parts),
+            data,
+            parts,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[4]
         );

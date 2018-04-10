@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -77,7 +76,8 @@ public class DecisionTreeClassificationTrainerIntegrationTest extends GridCommon
         DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
 
         DecisionTreeNode tree = trainer.fit(
-            new CacheBasedDatasetBuilder<>(ignite, data),
+            ignite,
+            data,
             (k, v) -> Arrays.copyOf(v, v.length - 1),
             (k, v) -> v[v.length - 1]
         );

@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.junit.Test;
 
@@ -65,7 +64,8 @@ public class SVMMultiClassTrainerTest {
             .withAmountOfIterations(20);
 
         SVMLinearMultiClassClassificationModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 10),
+            data,
+            10,
             (k, v) -> Arrays.copyOfRange(v, 1, v.length),
             (k, v) -> v[0]
         );

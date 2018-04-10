@@ -20,7 +20,6 @@ package org.apache.ignite.ml.nn.performance;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
@@ -74,7 +73,8 @@ public class MLPTrainerMnistTest {
         System.out.println("Start training...");
         long start = System.currentTimeMillis();
         MultilayerPerceptron mdl = trainer.fit(
-            new LocalDatasetBuilder<>(trainingSet, 1),
+            trainingSet,
+            1,
             (k, v) -> v.getPixels(),
             (k, v) -> VectorUtils.num2Vec(v.getLabel(), 10).getStorage().data()
         );
