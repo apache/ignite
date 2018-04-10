@@ -107,21 +107,22 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
     }
 
     /**
-     * Checks that write behind cache flush frequency was correctly adjusted to nanos
-     * Expecting putAllCnt to be less or equal than elapsed time divided by flush frequency
+     * Checks that write behind cache flush frequency was correctly adjusted to nanos expecting putAllCnt to be
+     * less or equal than elapsed time divided by flush frequency.
      *
      * @throws Exception If failed.
      */
     public void testSimpleStoreFlushFrequencyWithoutCoalescing() throws Exception {
         initStore(1, false);
 
-        long writeBehindFlushFrequencyNanos = FLUSH_FREQUENCY * 1000 * 1000;
+        long writeBehindFlushFreqNanos = FLUSH_FREQUENCY * 1000 * 1000;
+
         int threshold = store.getWriteBehindStoreBatchSize() / 10;
 
         try {
             long start = System.nanoTime();
 
-            for (int i =0; i < threshold / 2; i++)
+            for (int i = 0; i < threshold / 2; i++)
                 store.write(new CacheEntryImpl<>(i, "v" + i));
 
             U.sleep(FLUSH_FREQUENCY + 300);
@@ -133,9 +134,9 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
 
             U.sleep(FLUSH_FREQUENCY + 300);
 
-            int expectedFlushOps = (int)(1 + elapsed / writeBehindFlushFrequencyNanos);
+            int expFlushOps = (int)(1 + elapsed / writeBehindFlushFreqNanos);
 
-            assertTrue(delegate.getPutAllCount() <= expectedFlushOps);
+            assertTrue(delegate.getPutAllCount() <= expFlushOps);
         }
         finally {
             shutdownStore();
@@ -290,7 +291,6 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
 
             int delegatePutCnt = delegate.getPutAllCount();
 
-
             fut.get();
 
             log().info(">>> [putCnt = " + actualPutCnt.get() + ", delegatePutCnt=" + delegatePutCnt + "]");
@@ -298,7 +298,8 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
             assertTrue("No puts were made to the underlying store", delegatePutCnt > 0);
             if (store.getWriteCoalescing()) {
                 assertTrue("Too many puts were made to the underlying store", delegatePutCnt < actualPutCnt.get() / 10);
-            } else {
+            }
+            else {
                 assertTrue("Too few puts cnt=" + actualPutCnt.get() + " << storePutCnt=" + delegatePutCnt, delegatePutCnt > actualPutCnt.get() / 2);
             }
         }
