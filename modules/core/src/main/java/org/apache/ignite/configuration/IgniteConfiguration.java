@@ -499,9 +499,6 @@ public class IgniteConfiguration {
     /** Communication failure resolver */
     private CommunicationFailureResolver commFailureRslvr;
 
-    /** Disable WAL during rebalancing. */
-    private boolean disableWalDuringRebalancing = DFLT_DISABLE_WAL_DURING_REBALANCING;
-
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -615,7 +612,6 @@ public class IgniteConfiguration {
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
         authEnabled = cfg.isAuthenticationEnabled();
-        disableWalDuringRebalancing = cfg.isDisableWalDuringRebalancing();
     }
 
     /**
@@ -3004,25 +3000,6 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setAuthenticationEnabled(boolean authEnabled) {
         this.authEnabled = authEnabled;
-
-        return this;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public boolean isDisableWalDuringRebalancing() {
-        return disableWalDuringRebalancing;
-    }
-
-    /**
-     *
-     * @param value
-     * @return
-     */
-    public IgniteConfiguration setDisableWalDuringRebalancing(boolean value) {
-        disableWalDuringRebalancing = value;
 
         return this;
     }

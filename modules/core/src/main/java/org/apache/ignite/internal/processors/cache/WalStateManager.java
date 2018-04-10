@@ -20,13 +20,13 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -111,6 +110,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
     /** Disconnected flag. */
     private boolean disconnected;
+
+    /** Holder for groups with temporary disabled WAL. */
+    private final AtomicReference<TemporaryDisabledWal> tmpDisabledWal = new AtomicReference<>();
 
     /**
      * Constructor.
@@ -337,24 +339,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         }
     }
 
-    private static class TemporaryDisabledWal {
-        private final Set<Integer> remainingGrps;
-
-        private final AffinityTopologyVersion topVer;
-
-        private final GridFutureAdapter<Void> doneFut = new GridFutureAdapter<>();
-
-        public TemporaryDisabledWal(Set<Integer> remainingGrps,
-            AffinityTopologyVersion topVer) {
-            this.remainingGrps = remainingGrps;
-            this.topVer = topVer;
-        }
-    }
-
-    private final AtomicReference<TemporaryDisabledWal> session = new AtomicReference<>();
-
     public void changeLocalStatesOnExchangeDone(AffinityTopologyVersion topVer) {
-        if (!cctx.gridConfig().isDisableWalDuringRebalancing())
+        if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, false))
             return;
 
         Set<Integer> grpsToEnableWal = new HashSet<>();
@@ -387,7 +373,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 grpsWithWalDisabled.add(grp.groupId());
         }
 
-        session.set(new TemporaryDisabledWal(grpsWithWalDisabled, topVer));
+        tmpDisabledWal.set(new TemporaryDisabledWal(grpsWithWalDisabled, topVer));
 
         if (grpsToEnableWal.isEmpty() && grpsToDisableWal.isEmpty())
             return;
@@ -407,22 +393,21 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             cctx.cache().cacheGroup(grpId).localWalEnabled(false);
     }
 
-    public IgniteInternalFuture<Void> onGroupRebalanceFinished(int grpId, AffinityTopologyVersion topVer) {
-        TemporaryDisabledWal session0 = this.session.get();
+    public void onGroupRebalanceFinished(int grpId, AffinityTopologyVersion topVer) {
+        TemporaryDisabledWal session0 = this.tmpDisabledWal.get();
 
         if (session0 == null || !session0.topVer.equals(topVer))
-            return null;
+            return;
 
         session0.remainingGrps.remove(grpId);
 
-        if (session0.remainingGrps.isEmpty() && this.session.compareAndSet(session0, null)) {
+        if (session0.remainingGrps.isEmpty() && this.tmpDisabledWal.compareAndSet(session0, null)) {
             CheckpointFuture cpFut = triggerCheckpoint(0);
 
             assert cpFut != null;
 
             cpFut.finishFuture().listen(new IgniteInClosureX<IgniteInternalFuture>() {
                 @Override public void applyx(IgniteInternalFuture future) throws IgniteCheckedException {
-                    // TODO : add sync/reserve mechanics.
                     for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                         if (grp.localWalEnabled())
                             continue;
@@ -449,13 +434,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                     }
 
                     cctx.exchange().refreshPartitions();
-
-                    session0.doneFut.onDone();
                 }
             });
         }
-
-        return session0.doneFut;
     }
 
     /**
@@ -1046,6 +1027,24 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             addResult(res);
 
             onCompletedLocally(res);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TemporaryDisabledWal {
+        /** Remaining groups. */
+        private final Set<Integer> remainingGrps;
+
+        /** Topology version*/
+        private final AffinityTopologyVersion topVer;
+
+        /** */
+        public TemporaryDisabledWal(Set<Integer> remainingGrps,
+            AffinityTopologyVersion topVer) {
+            this.remainingGrps = remainingGrps;
+            this.topVer = topVer;
         }
     }
 }
