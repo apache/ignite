@@ -1028,16 +1028,22 @@ public class CacheGroupContext {
         return localWalEnabled && globalWalEnabled;
     }
 
+    /**
+     * Local WAL enabled flag.
+     */
     public boolean localWalEnabled() {
         return localWalEnabled;
     }
 
+    /**
+     * @Global WAL enabled flag.
+     */
     public boolean globalWalEnabled() {
         return globalWalEnabled;
     }
 
     /**
-     * @param enabled WAL enabled flag.
+     * @param enabled Global WAL enabled flag.
      */
     public void globalWalEnabled(boolean enabled) {
         persistWalState(enabled);
@@ -1045,6 +1051,9 @@ public class CacheGroupContext {
         this.globalWalEnabled = enabled;
     }
 
+    /**
+     * @param enabled Local WAL enabled flag.
+     */
     public void localWalEnabled(boolean enabled) {
         this.localWalEnabled = enabled;
     }

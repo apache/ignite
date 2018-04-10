@@ -339,6 +339,12 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         }
     }
 
+    /**
+     * Change local WAL state before exchange is done. This method will disable WAL for groups without partitions
+     * in OWNING state if such feature is enabled.
+     *
+     * @param topVer Topology version.
+     */
     public void changeLocalStatesOnExchangeDone(AffinityTopologyVersion topVer) {
         if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, false))
             return;

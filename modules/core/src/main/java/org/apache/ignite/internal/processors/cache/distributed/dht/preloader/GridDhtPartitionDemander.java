@@ -916,8 +916,6 @@ public class GridDhtPartitionDemander {
         /** Unique (per demander) rebalance id. */
         private final long rebalanceId;
 
-        private final boolean needCheckpoint;
-
         /**
          * @param grp Cache group.
          * @param assignments Assignments.
@@ -939,7 +937,6 @@ public class GridDhtPartitionDemander {
             this.rebalanceId = rebalanceId;
 
             ctx = grp.shared();
-            needCheckpoint = !grp.localWalEnabled();
         }
 
         /**
@@ -952,7 +949,6 @@ public class GridDhtPartitionDemander {
             this.grp = null;
             this.log = null;
             this.rebalanceId = -1;
-            this.needCheckpoint = false;
         }
 
         /**
@@ -1077,7 +1073,7 @@ public class GridDhtPartitionDemander {
          */
         private void partitionDone(UUID nodeId, int p, boolean updateState) {
             synchronized (this) {
-                if (updateState && !needCheckpoint)
+                if (updateState && grp.localWalEnabled())
                     grp.topology().own(grp.topology().localPartition(p));
 
                 if (isDone())

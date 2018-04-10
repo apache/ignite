@@ -214,9 +214,6 @@ public class IgniteConfiguration {
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
-    /** Default value for disable WAL during rebalancing flag. */
-    public static final boolean DFLT_DISABLE_WAL_DURING_REBALANCING = true;
-
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
