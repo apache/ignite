@@ -251,6 +251,15 @@ public class SqlKeyword {
     /** Keyword: PARALLEL. */
     public static final String PARALLEL = "PARALLEL";
 
+    /** Keyword: USER. */
+    public static final String USER = "USER";
+
+    /** Keyword: WITH. */
+    public static final String WITH = "WITH";
+
+    /** Keyword: PASSWORD. */
+    public static final String PASSWORD = "PASSWORD";
+
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;
 

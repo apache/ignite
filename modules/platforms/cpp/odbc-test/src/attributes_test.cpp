@@ -38,6 +38,7 @@
 #include "test_type.h"
 #include "test_utils.h"
 #include "odbc_test_suite.h"
+#include "ignite/odbc/socket_client.h"
 
 using namespace ignite;
 using namespace ignite::cache;
@@ -76,8 +77,6 @@ struct AttributesTestSuiteFixture : odbc::OdbcTestSuite
      */
     ~AttributesTestSuiteFixture()
     {
-        Disconnect();
-
         Ignition::StopAll(true);
     }
 
@@ -227,6 +226,28 @@ BOOST_AUTO_TEST_CASE(ConnectionAttributeConnectionTimeout)
     timeout = -1;
 
     ret = SQLGetConnectAttr(dbc, SQL_ATTR_CONNECTION_TIMEOUT, &timeout, 0, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+    BOOST_REQUIRE_EQUAL(timeout, 42);
+}
+
+BOOST_AUTO_TEST_CASE(ConnectionAttributeLoginTimeout)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    SQLUINTEGER timeout = -1;
+    SQLRETURN ret = SQLGetConnectAttr(dbc, SQL_ATTR_LOGIN_TIMEOUT, &timeout, 0, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+    BOOST_REQUIRE_EQUAL(timeout, odbc::SocketClient::DEFALT_CONNECT_TIMEOUT);
+
+    ret = SQLSetConnectAttr(dbc, SQL_ATTR_LOGIN_TIMEOUT, reinterpret_cast<SQLPOINTER>(42), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    timeout = -1;
+
+    ret = SQLGetConnectAttr(dbc, SQL_ATTR_LOGIN_TIMEOUT, &timeout, 0, 0);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
     BOOST_REQUIRE_EQUAL(timeout, 42);

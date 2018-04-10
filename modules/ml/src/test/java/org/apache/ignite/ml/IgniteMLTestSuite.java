@@ -28,7 +28,7 @@ import org.apache.ignite.ml.preprocessing.PreprocessingTestSuite;
 import org.apache.ignite.ml.regressions.RegressionsTestSuite;
 import org.apache.ignite.ml.svm.SVMTestSuite;
 import org.apache.ignite.ml.trainers.group.TrainersGroupTestSuite;
-import org.apache.ignite.ml.trees.DecisionTreesTestSuite;
+import org.apache.ignite.ml.tree.DecisionTreeTestSuite;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -41,7 +41,7 @@ import org.junit.runners.Suite;
     RegressionsTestSuite.class,
     SVMTestSuite.class,
     ClusteringTestSuite.class,
-    DecisionTreesTestSuite.class,
+    DecisionTreeTestSuite.class,
     KNNTestSuite.class,
     LocalModelsTest.class,
     MLPTestSuite.class,
