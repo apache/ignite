@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,7 +40,6 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
-import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -53,8 +51,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
@@ -372,15 +368,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     assert exchId.isJoined() || added;
 
                     for (int p = 0; p < num; p++) {
-                        if (localNode(p, aff) || initLocalPartition(p, discoCache)) {
-                            GridDhtLocalPartition locPart = createPartition(p);
+                        if (localNode(p, aff)) {
+                            GridDhtLocalPartition locPart = getOrCreatePartition(p);
 
-                            if (grp.persistenceEnabled()) {
-                                GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
-
-                                locPart.restoreState(db.readPartitionState(grp, locPart.id()));
-                            }
-                            else {
+                            if (!grp.persistenceEnabled()) {
                                 boolean owned = locPart.own();
 
                                 assert owned : "Failed to own partition for oldest node [grp=" + grp.cacheOrGroupName() +
@@ -404,7 +395,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 // If preloader is disabled, then we simply clear out
                 // the partitions this node is not responsible for.
                 for (int p = 0; p < num; p++) {
-                    GridDhtLocalPartition locPart = localPartition0(p, affVer, false, true, false);
+                    GridDhtLocalPartition locPart = localPartition0(p, affVer, false, true);
 
                     boolean belongs = localNode(p, aff);
 
@@ -427,7 +418,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             locPart.own();
                     }
                     else if (belongs) {
-                        locPart = createPartition(p);
+                        locPart = getOrCreatePartition(p);
 
                         locPart.own();
 
@@ -440,21 +431,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         updateRebalanceVersion(aff);
 
         return needRefresh;
-    }
-
-    /**
-     * @param p Partition ID to restore.
-     * @param discoCache Disco cache to use.
-     * @return {@code True} if should restore local partition.
-     */
-    private boolean initLocalPartition(int p, DiscoCache discoCache) {
-        IgnitePageStoreManager storeMgr = ctx.pageStore();
-
-        return
-            grp.persistenceEnabled() &&
-            storeMgr instanceof FilePageStoreManager &&
-            discoCache.baselineNode(ctx.localNodeId()) &&
-            Files.exists(((FilePageStoreManager)storeMgr).getPath(grp.sharedGroup(), grp.cacheOrGroupName(), p));
     }
 
     /**
@@ -473,15 +449,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (localNode(p, aff)) {
                     // This will make sure that all non-existing partitions
                     // will be created in MOVING state.
-                    GridDhtLocalPartition locPart = createPartition(p);
+                    GridDhtLocalPartition locPart = getOrCreatePartition(p);
 
                     updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
                 }
             }
             // If this node's map is empty, we pre-create local partitions,
             // so local map will be sent correctly during exchange.
-            else if (localNode(p, aff))
-                createPartition(p);
+            else if (localNode(p, aff)) {
+                getOrCreatePartition(p);
+            }
         }
     }
 
@@ -693,7 +670,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 long updateSeq = this.updateSeq.incrementAndGet();
 
                 for (int p = 0; p < num; p++) {
-                    GridDhtLocalPartition locPart = localPartition0(p, topVer, false, false, false);
+                    GridDhtLocalPartition locPart = localPartition0(p, topVer, false, false);
 
                     if (partitionLocalNode(p, topVer)) {
                         // This partition will be created during next topology event,
@@ -791,20 +768,23 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer,
         boolean create)
         throws GridDhtInvalidPartitionException {
-        return localPartition0(p, topVer, create, false, true);
+        return localPartition0(p, topVer, create, false);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer,
         boolean create, boolean showRenting) throws GridDhtInvalidPartitionException {
-        return localPartition0(p, topVer, create, showRenting, true);
+        return localPartition0(p, topVer, create, showRenting);
     }
 
     /**
+     * Creates partition with id {@code p} if it doesn't exist or evicted.
+     * In other case returns existing partition.
+     *
      * @param p Partition number.
      * @return Partition.
      */
-    private GridDhtLocalPartition createPartition(int p) {
+    private GridDhtLocalPartition getOrCreatePartition(int p) {
         assert lock.isWriteLockedByCurrentThread();
 
         assert ctx.database().checkpointLockIsHeldByThread();
@@ -863,16 +843,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /**
      * @param p Partition number.
      * @param topVer Topology version.
-     * @param create Create flag.
-     * @param updateSeq Update sequence.
+     * @param create If {@code true} create partition if it doesn't exists or evicted.
+     * @param showRenting If {@code true} return partition in RENTING state if exists.
      * @return Local partition.
      */
     @SuppressWarnings("TooBroadScope")
     private GridDhtLocalPartition localPartition0(int p,
         AffinityTopologyVersion topVer,
         boolean create,
-        boolean showRenting,
-        boolean updateSeq) {
+        boolean showRenting) {
         GridDhtLocalPartition loc;
 
         loc = locParts.get(p);
@@ -1476,7 +1455,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             if (!partsToReload.contains(p)) {
                                 if (locPart == null || locPart.state() == EVICTED)
-                                    locPart = createPartition(p);
+                                    locPart = getOrCreatePartition(p);
 
                                 if (locPart.state() == OWNING) {
                                     locPart.moving();
@@ -1486,7 +1465,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             }
                             else {
                                 if (locPart == null || locPart.state() == EVICTED) {
-                                    createPartition(p);
+                                    getOrCreatePartition(p);
 
                                     changed = true;
                                 }
@@ -1511,7 +1490,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                     else {
                                         assert locPart.state() == EVICTED;
 
-                                        createPartition(p);
+                                        getOrCreatePartition(p);
                                     }
 
                                     changed = true;
