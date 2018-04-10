@@ -737,6 +737,12 @@ public class GridJettyRestHandler extends AbstractHandler {
                 break;
             }
 
+            case AUTHENTICATE: {
+                restReq = new GridRestRequest();
+
+                break;
+            }
+
             case ADD_USER:
             case REMOVE_USER:
             case UPDATE_USER: {

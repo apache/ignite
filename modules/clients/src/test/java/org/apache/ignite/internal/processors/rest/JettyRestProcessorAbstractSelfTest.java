@@ -779,7 +779,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertTrue(res.isObject());
 
-        assertTrue(entries.equals(JSON_MAPPER.treeToValue(res, Map.class)));
+        assertEquals(entries, JSON_MAPPER.treeToValue(res, Map.class));
     }
 
     /**
@@ -1100,7 +1100,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertNull(jcache().localPeek("rmvKey2"));
         assertNull(jcache().localPeek("rmvKey3"));
         assertNull(jcache().localPeek("rmvKey4"));
-        assertTrue(jcache().localSize() == 0);
+        assertEquals(0, jcache().localSize());
 
         assertCacheBulkOperation(ret, true);
     }
@@ -1353,20 +1353,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             assertNotNull(keyClasses);
             assertFalse(keyClasses.isNull());
 
-            assertTrue(meta.keyClasses().equals(JSON_MAPPER.treeToValue(keyClasses, Map.class)));
+            assertEquals(meta.keyClasses(), JSON_MAPPER.treeToValue(keyClasses, Map.class));
 
             JsonNode valClasses = item.get("valClasses");
 
             assertNotNull(valClasses);
             assertFalse(valClasses.isNull());
 
-            assertTrue(meta.valClasses().equals(JSON_MAPPER.treeToValue(valClasses, Map.class)));
+            assertEquals(meta.valClasses(), JSON_MAPPER.treeToValue(valClasses, Map.class));
 
             JsonNode fields = item.get("fields");
 
             assertNotNull(fields);
             assertFalse(fields.isNull());
-            assertTrue(meta.fields().equals(JSON_MAPPER.treeToValue(fields, Map.class)));
+            assertEquals(meta.fields(), JSON_MAPPER.treeToValue(fields, Map.class));
 
             JsonNode indexesByType = item.get("indexes");
 
