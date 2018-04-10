@@ -189,10 +189,12 @@ class GridDhtPartitionSupplier {
 
                 if (sctx != null && sctx.rebalanceId == -d.rebalanceId()) {
                     clearContext(scMap.remove(contextId), log);
+                    if (log.isDebugEnabled())
+                        log.debug("Context cleaned " + sctx + " " + d + " " + grp.cacheOrGroupName());
                 }
                 else {
                     if (log.isDebugEnabled())
-                        log.debug("Stale context cleanup message " + d + ", supplyContext=" + sctx);
+                        log.debug("Stale context cleanup message " + d + ", supplyContext=" + " " + grp.cacheOrGroupName() + " " + sctx);
                 }
 
                 return;
@@ -201,12 +203,15 @@ class GridDhtPartitionSupplier {
 
         if (log.isDebugEnabled())
             log.debug("Demand request accepted [current=" + curTop + ", demanded=" + demTop +
-                ", from=" + nodeId + ", topicId=" + topicId + "]");
+                ", from=" + nodeId + ", topicId=" + topicId + " " + grp.cacheOrGroupName() + "]");
 
         ClusterNode node = grp.shared().discovery().node(nodeId);
 
-        if (node == null)
-            return; // Context will be cleaned at topology change.
+        if (node == null) {
+            if (log.isDebugEnabled())
+                log.debug("Hernya-1 " + d + " " + grp.cacheOrGroupName());
+            return;
+        }
 
         try {
             SupplyContext sctx;
@@ -217,13 +222,19 @@ class GridDhtPartitionSupplier {
                 if (sctx != null && d.rebalanceId() < sctx.rebalanceId) {
                     // Stale message, return context back and return.
                     scMap.put(contextId, sctx);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Stale " + d + " " + grp.cacheOrGroupName());
+
                     return;
                 }
             }
 
             // Demand request should not contain empty partitions if no supply context is associated with it.
-            if (sctx == null && (d.partitions() == null || d.partitions().isEmpty()))
+            if (sctx == null && (d.partitions() == null || d.partitions().isEmpty())) {
+                log.debug("Empty " + d + " " + grp.cacheOrGroupName());
                 return;
+            }
 
             assert !(sctx != null && !d.partitions().isEmpty());
 

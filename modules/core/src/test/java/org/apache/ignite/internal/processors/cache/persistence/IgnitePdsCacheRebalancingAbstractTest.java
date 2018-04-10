@@ -78,12 +78,15 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         cfg.setConsistentId(gridName);
 
+        cfg.setRebalanceThreadPoolSize(1);
+
         CacheConfiguration ccfg1 = cacheConfiguration(cacheName)
             .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
             .setBackups(2)
             .setRebalanceMode(CacheRebalanceMode.ASYNC)
             .setIndexedTypes(Integer.class, Integer.class)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setRebalanceBatchesPrefetchCount(1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         CacheConfiguration ccfg2 = cacheConfiguration("indexed");
@@ -233,7 +236,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If fails.
      */
     public void testRebalancingOnRestartAfterCheckpoint() throws Exception {
-        fail("IGNITE-5302");
+        //fail("IGNITE-5302");
+        System.setProperty(IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
 
         IgniteEx ignite0 = startGrid(0);
 

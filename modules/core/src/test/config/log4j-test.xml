@@ -78,11 +78,13 @@
     <!--
         Uncomment to enable Ignite query execution debugging.
     -->
-    <!--
-    <category name="org.apache.ignite.cache.query">
+    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemander">
         <level value="DEBUG"/>
     </category>
-    -->
+
+    <category name="org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplier">
+        <level value="DEBUG"/>
+    </category>
 
     <!--
     <category name="org.apache.ignite.internal.processors.query">
