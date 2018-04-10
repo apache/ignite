@@ -519,13 +519,13 @@ class CacheClient {
     /* Methods to operate with the cache using SQL and Scan Queries */
 
     /**
-     * ???
+     * Starts an SQL query operation.
      *
      * @async
      *
-     * @param {SqlQuery | SqlFieldsQuery} query - ???
+     * @param {SqlQuery | SqlFieldsQuery} query - query to be executed.
      *
-     * @return {Promise<Cursor>} - ???
+     * @return {Promise<Cursor>} - cursor to obtain the results of the query operation.
      *
      * @throws {IgniteClientError} if error.
      */
