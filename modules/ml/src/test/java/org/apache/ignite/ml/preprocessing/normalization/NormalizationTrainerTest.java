@@ -66,8 +66,7 @@ public class NormalizationTrainerTest {
 
         NormalizationPreprocessor<Integer, double[]> preprocessor = standardizationTrainer.fit(
             datasetBuilder,
-            (k, v) -> v,
-            3
+            (k, v) -> v
         );
 
         assertArrayEquals(new double[] {0, 4, 1}, preprocessor.getMin(), 1e-8);

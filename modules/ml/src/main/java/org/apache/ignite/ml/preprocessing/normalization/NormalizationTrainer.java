@@ -69,11 +69,12 @@ public class NormalizationTrainer<K, V> implements PreprocessingTrainer<K, V, do
                             max[i] = row[i];
                     }
                 }
+
                 return new NormalizationPartitionData(min, max);
             }
         )) {
             double[][] minMax = dataset.compute(
-                data -> new double[][]{ data.getMin(), data.getMax() },
+                data -> data.getMin() != null ? new double[][]{ data.getMin(), data.getMax() } : null,
                 (a, b) -> {
                     if (a == null)
                         return b;
