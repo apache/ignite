@@ -123,6 +123,7 @@ import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
@@ -427,7 +428,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (evt.type() != EVT_DISCOVERY_CUSTOM_EVT) {
             assert evt.type() != EVT_NODE_JOINED || n.isLocal() || n.order() > loc.order() :
                 "Node joined with smaller-than-local " +
-                    "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
+                    "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ", evt=" + evt + ']';
 
             exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
@@ -569,12 +570,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public void onKernalStart(boolean active, boolean reconnect) throws IgniteCheckedException {
         for (ClusterNode n : cctx.discovery().remoteNodes())
             cctx.versions().onReceived(n.id(), n.metrics().getLastDataVersion());
-
-        ClusterNode loc = cctx.localNode();
-
-        long startTime = loc.metrics().getStartTime();
-
-        assert startTime > 0;
 
         DiscoveryLocalJoinData locJoin = cctx.discovery().localJoin();
 
@@ -754,6 +749,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public Object interruptLock() {
         return interruptLock;
+    }
+
+    /**
+     * @param grpId Cache group ID.
+     * @return Topology.
+     */
+    @Nullable public GridDhtPartitionTopology clientTopologyIfExists(int grpId) {
+        return clientTops.get(grpId);
     }
 
     /**
@@ -2272,11 +2275,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             try {
                 body0();
             }
+            catch (InterruptedException | IgniteInterruptedCheckedException e) {
+                if (!stop)
+                    err = e;
+            }
             catch (Throwable e) {
                 err = e;
             }
             finally {
-                if (!stop)
+                if (err == null && !stop)
+                    err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
+
+                if (err instanceof OutOfMemoryError)
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
