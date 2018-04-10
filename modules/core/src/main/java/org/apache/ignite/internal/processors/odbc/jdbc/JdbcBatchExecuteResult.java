@@ -38,7 +38,7 @@ public class JdbcBatchExecuteResult extends JdbcResult {
     /**
      * Constructor.
      */
-    public JdbcBatchExecuteResult() {
+    JdbcBatchExecuteResult() {
         super(BATCH_EXEC);
     }
 
@@ -46,7 +46,7 @@ public class JdbcBatchExecuteResult extends JdbcResult {
      * Constructor for child results.
      * @param type Result type.
      */
-    protected JdbcBatchExecuteResult(byte type) {
+    JdbcBatchExecuteResult(byte type) {
         super(type);
     }
 
@@ -55,7 +55,7 @@ public class JdbcBatchExecuteResult extends JdbcResult {
      * @param errCode Error code.
      * @param errMsg Error message.
      */
-    public JdbcBatchExecuteResult(int [] updateCnts, int errCode, String errMsg) {
+    JdbcBatchExecuteResult(int [] updateCnts, int errCode, String errMsg) {
         super(BATCH_EXEC);
 
         this.updateCnts = updateCnts;
@@ -67,7 +67,7 @@ public class JdbcBatchExecuteResult extends JdbcResult {
      * @param type Result type.
      * @param res Result.
      */
-    protected JdbcBatchExecuteResult(byte type, JdbcBatchExecuteResult res) {
+    JdbcBatchExecuteResult(byte type, JdbcBatchExecuteResult res) {
         super(type);
 
         this.updateCnts = res.updateCnts;

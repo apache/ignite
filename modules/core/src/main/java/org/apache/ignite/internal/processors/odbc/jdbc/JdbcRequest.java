@@ -63,7 +63,7 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Send a batch of a data from client to server. */
     static final byte BULK_LOAD_BATCH = 13;
 
-    /** Batch queries. */
+    /** Ordered batch request. */
     static final byte BATCH_EXEC_ORDERED = 14;
 
     /** Request type. */

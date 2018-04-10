@@ -114,7 +114,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Current bulk load processors. */
     private final ConcurrentHashMap<Long, JdbcBulkLoadProcessor> bulkLoadRequests = new ConcurrentHashMap<>();
 
-    /** Ordered batches. */
+    /** Ordered batches queue. */
     private final PriorityBlockingQueue<JdbcOrderedBatchExecuteRequest> orderedBatches = new PriorityBlockingQueue<>();
 
     /** Response sender. */
@@ -1008,11 +1008,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     }
 
     /**
-     * Ordered batch worker
+     * Ordered batch worker.
      */
     private class OrderedBatchWorker extends GridWorker {
         /**
-         * Constructor
+         * Constructor.
          */
         OrderedBatchWorker() {
             super(ctx.igniteInstanceName(), "ordered-batch", JdbcRequestHandler.this.log);

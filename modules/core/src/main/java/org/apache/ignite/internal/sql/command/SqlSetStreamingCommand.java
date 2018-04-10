@@ -192,7 +192,7 @@ public class SqlSetStreamingCommand implements SqlCommand {
     }
 
     /**
-     * @return {@code true} if the streamer keep the order of the statement. Otherwise returns {@code false}.
+     * @return {@code true} if the streamer keep the order of the statements. Otherwise returns {@code false}.
      */
     public boolean isOrdered() {
         return ordered;

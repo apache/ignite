@@ -68,7 +68,7 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** A request to send file from client to server. */
     static final byte BULK_LOAD_ACK = 16;
 
-    /** Ordered batch queries. */
+    /** A result of the processing ordered batch request. */
     static final byte BATCH_EXEC_ORDERED = 17;
 
     /** Success status. */

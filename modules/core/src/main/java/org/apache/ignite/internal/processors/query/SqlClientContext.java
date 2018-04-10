@@ -86,7 +86,7 @@ public class SqlClientContext implements AutoCloseable {
     private Factory<GridWorker> orderedBatchWorkerFactory;
 
     /** Last processed order. */
-    private AtomicLong totalProcesseOrderedQueris;
+    private AtomicLong totalProcessedOrderedQrys;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -138,7 +138,7 @@ public class SqlClientContext implements AutoCloseable {
             this.streamNodeBufSize = perNodeBufSize;
             this.streamNodeParOps = perNodeParOps;
             this.streamOrdered = ordered;
-            totalProcesseOrderedQueris = new AtomicLong();
+            totalProcessedOrderedQrys = new AtomicLong();
 
             if (ordered) {
                 orderedBatchThread = new IgniteThread(orderedBatchWorkerFactory.create());
@@ -267,7 +267,7 @@ public class SqlClientContext implements AutoCloseable {
      * @param total Expected total processed request.
      */
     public void waitTotalProcessedOrderedRequests(long total) {
-        while (totalProcesseOrderedQueris.get() < total)
+        while (totalProcessedOrderedQrys.get() < total)
             LockSupport.parkNanos(1000);
     }
 
@@ -275,9 +275,8 @@ public class SqlClientContext implements AutoCloseable {
      *
      */
     public void orderedRequestProcessed() {
-        totalProcesseOrderedQueris.incrementAndGet();
+        totalProcessedOrderedQrys.incrementAndGet();
     }
-
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {

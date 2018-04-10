@@ -23,7 +23,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * JDBC batch execute result.
+ * JDBC batch execute ordered result.
  */
 public class JdbcOrderedBatchExecuteResult extends JdbcBatchExecuteResult {
     /** Order. */
@@ -35,7 +35,6 @@ public class JdbcOrderedBatchExecuteResult extends JdbcBatchExecuteResult {
     public JdbcOrderedBatchExecuteResult() {
         super(BATCH_EXEC_ORDERED);
     }
-
 
     /**
      * @param res Result.

@@ -754,7 +754,8 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
-     * Send request for execution via {@link #cliIo}.
+     * Send request for execution via {@link #cliIo}. Response is waited at the separate thread
+     *     (see {@link StreamState#asyncRespReaderThread}).
      * @param req Request.
      * @throws SQLException On any error.
      */
@@ -926,6 +927,7 @@ public class JdbcThinConnection implements Connection {
         }
 
         /**
+         * Throws at the user thread exception that was thrown at the {@link #asyncRespReaderThread} thread.
          * @throws SQLException Saved exception.
          */
         void checkError() throws SQLException {

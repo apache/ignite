@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
 /**
- * JDBC response result.
+ * JDBC response result sender.
  */
 public interface JdbcResponseSender {
     /**
