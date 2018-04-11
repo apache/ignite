@@ -89,7 +89,7 @@ public class AffinityHistoryCleanupTest extends GridCommonAbstractTest {
 
             Ignite ignite = startGrid(0);
 
-            checkHistory(ignite, F.asList(topVer(1, 0)), 1); //fs = 1
+            checkHistory(ignite, F.asList(topVer(1, 0)), 1); //fullHistSize = 1
 
             startGrid(1);
 
