@@ -222,28 +222,29 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @param topVerRmv Collection with affinity topology versions for removing.
      * @return <tt>true</tt> if this set changed as a result of the call.
      */
-    public boolean removeCachedAffinity(Collection<AffinityTopologyVersion> topVerRmv) {
+    public void removeCachedAffinity(Collection<AffinityTopologyVersion> topVerRmv) {
         assert topVerRmv != null;
 
         Collection<String> caches = ctx.cache().cacheNames();
-        Collection<AffinityAssignmentKey> rmv = new HashSet<>();
 
         int oldSize = affMap.size();
 
-        for (Map.Entry<AffinityAssignmentKey, IgniteInternalFuture<AffinityInfo>> entry : affMap.entrySet()) {
+        Iterator<Map.Entry<AffinityAssignmentKey, IgniteInternalFuture<AffinityInfo>>> it = affMap.entrySet().iterator();
+
+        while (it.hasNext()) {
+            Map.Entry<AffinityAssignmentKey, IgniteInternalFuture<AffinityInfo>> entry = it.next();
+
             assert entry.getValue() != null;
 
             if (!entry.getValue().isDone())
                 continue;
 
             if (topVerRmv.contains(entry.getKey().topVer) || !caches.contains(entry.getKey().cacheName))
-                rmv.add(entry.getKey());
+                it.remove();
         }
 
         if (log.isDebugEnabled())
             log.debug("Affinity cached values were cleared: " + (oldSize - affMap.size()));
-
-        return affMap.keySet().removeAll(rmv);
     }
 
 
