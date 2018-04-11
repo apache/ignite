@@ -543,6 +543,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.loadedPages.put(grpId, PageIdUtils.effectivePageId(pageId), relPtr, seg.partGeneration(grpId, partId));
         }
         catch (IgniteOutOfMemoryException oom) {
+            ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, oom));
+
             DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
 
             IgniteOutOfMemoryException e = new IgniteOutOfMemoryException("Out of memory in data region [" +
