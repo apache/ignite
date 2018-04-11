@@ -592,7 +592,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         for (int k = 0; k < txSize; k++)
             grid(0).cache(CACHE_NAME).put(k, (long)0);
 
-        final long seed = 1522775538453L;
+        final long seed = System.currentTimeMillis();
 
         final Random r = new Random(seed);
 
@@ -848,37 +848,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         catch (IgniteCheckedException e) {
             // No-op.
         }
-    }
-
-    public void testChainedUnlock() throws Exception {
-        final Ignite client = startClient();
-
-        testChainedUnlock0(grid(0), grid(0), grid(0));
-    }
-
-    public void testChainedUnlock0(IgniteEx g0, IgniteEx g1, IgniteEx g2) throws Exception {
-        g0.cache(CACHE_NAME).put(1, 1);
-        g0.cache(CACHE_NAME).put(2, 2);
-
-        IgniteInternalFuture<?> fut1 = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try(Transaction tx = g0.transactions().txStart()) {
-                    Integer val = (Integer)g0.cache(CACHE_NAME).get(0);
-                }
-            }
-        }, 1, "tx-lock-1");
-
-        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-
-            }
-        }, 1, "tx-lock-2");
-
-        IgniteInternalFuture<?> fut3 = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-
-            }
-        }, 1, "tx-lock-2");
     }
 
     /**
