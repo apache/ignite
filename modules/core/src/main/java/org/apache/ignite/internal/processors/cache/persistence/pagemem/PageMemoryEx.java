@@ -23,8 +23,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
-import org.apache.ignite.internal.util.lang.GridPredicate3;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -81,6 +81,7 @@ public interface PageMemoryEx extends PageMemory {
      * @param pageId Page id.
      * @param restore Get page for restore
      * @throws IgniteCheckedException If failed.
+     * @throws StorageException If page reading failed from storage.
      * @return Page.
      */
     public long acquirePage(int grpId, long pageId, boolean restore) throws IgniteCheckedException;

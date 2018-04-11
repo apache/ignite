@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import Worker from 'worker!./summary.worker';
+import Worker from './summary.worker';
 
 export default ['$q', function($q) {
     return function(message) {

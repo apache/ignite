@@ -20,9 +20,11 @@ import merge from 'webpack-merge';
 import commonCfg from './webpack.common';
 
 export default merge(commonCfg, {
+    mode: 'development',
     cache: true,
     node: {
-        fs: 'empty'
+        fs: 'empty',
+        child_process: 'empty'
     },
 
     // Entry points.
@@ -30,11 +32,15 @@ export default merge(commonCfg, {
 
     // Output system.
     output: null,
+    optimization: {
+        splitChunks: {
+            chunks: 'async'
+        }
+    },
     module: {
+        exprContextCritical: false,
         rules: [
-            {test: /\.scss$/, use: ['ignore-loader']},
-            {test: /\.css$/, use: ['ignore-loader']},
-            {test: /\.pug$/, use: ['ignore-loader']}
+            {test: /\.s?css$/, use: ['ignore-loader']}
         ]
     }
 });

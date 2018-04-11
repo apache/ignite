@@ -109,7 +109,7 @@ onmessage = function(e) {
     }
 
     // Generate loader for caches with configured store.
-    const cachesToLoad = filter(cluster.caches, (cache) => nonNil(cache.cacheStoreFactory));
+    const cachesToLoad = filter(cluster.caches, (cache) => nonNil(_.get(cache, 'cacheStoreFactory.kind')));
 
     if (nonEmpty(cachesToLoad))
         zip.file(`${srcPath}/load/LoadCaches.java`, java.loadCaches(cachesToLoad, 'load', 'LoadCaches', `"${clientXml}"`));
