@@ -115,16 +115,46 @@ private[optimization] object ConditionExpressions extends SupportedExpressions {
         case Not(child) ⇒
             Some(s"NOT ${childToString(child)}")
 
-        case StartsWith(attr, value) ⇒
-            Some(s"${childToString(attr)} LIKE ${childToString(value)}%")
+        case StartsWith(attr, value) ⇒ {
+            //Expecting string literal here.
+            //To add % sign it's required to remove quotes.
+            val valStr = removeQuotes(childToString(value))
 
-        case EndsWith(attr, value) ⇒
-            Some(s"${childToString(attr)} LIKE %${childToString(value)}")
+            Some(s"${childToString(attr)} LIKE '$valStr%'")
+        }
 
-        case Contains(attr, value) ⇒
-            Some(s"${childToString(attr)} LIKE %${childToString(value)}%")
+        case EndsWith(attr, value) ⇒ {
+            //Expecting string literal here.
+            //To add % sign it's required to remove quotes.
+            val valStr = removeQuotes(childToString(value))
+
+            Some(s"${childToString(attr)} LIKE '%$valStr'")
+        }
+
+        case Contains(attr, value) ⇒ {
+            //Expecting string literal here.
+            //To add % signs it's required to remove quotes.
+            val valStr = removeQuotes(childToString(value))
+
+            Some(s"${childToString(attr)} LIKE '%$valStr%'")
+        }
 
         case _ ⇒
             None
     }
+
+    /**
+      * @param str String to process.
+      * @return Str without surrounding quotes.
+      */
+    private def removeQuotes(str: String): String =
+        if (str.length < 2)
+            str
+        else
+            str match {
+                case quoted if quoted.startsWith("'") && quoted.endsWith("'") ⇒
+                    quoted.substring(1, quoted.length-1)
+
+                case _ ⇒ str
+            }
 }

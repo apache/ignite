@@ -19,7 +19,7 @@ package org.apache.ignite.spark.impl.optimization
 
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.types.{DataType, LongType}
+import org.apache.spark.sql.types._
 
 /**
   * Object to support aggregate expressions like `sum` or `avg`.
@@ -72,7 +72,18 @@ private[optimization] object AggregateExpressions extends SupportedExpressions {
             }
 
         case Average(child) ⇒
-            Some(s"AVG(${childToString(child)})")
+            child.dataType match {
+                case DecimalType() | DoubleType ⇒
+                    Some(s"AVG(${childToString(child)})")
+
+                case _ ⇒
+                    //Spark `AVG` return type is always a double or a decimal.
+                    //See [[org.apache.spark.sql.catalyst.expressions.aggregate.Average]]
+                    //But Ignite `AVG` return type for a integral types is integral.
+                    //To preserve query correct results has to cast column to double.
+                    Some(s"AVG(CAST(${childToString(child)} AS DOUBLE))")
+            }
+
 
         case Count(children) ⇒
             Some(s"COUNT(${children.map(childToString(_)).mkString(" ")})")

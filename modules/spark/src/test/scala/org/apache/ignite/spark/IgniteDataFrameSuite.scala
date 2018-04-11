@@ -34,5 +34,6 @@ class IgniteDataFrameSuite extends Suites (
     new IgniteOptimizationMathFuncSpec,
     new IgniteOptimizationAggregationFuncSpec,
     new IgniteOptimizationSystemFuncSpec,
-    new IgniteOptimizationJoinSpec
+    new IgniteOptimizationJoinSpec,
+    new IgniteOptimizationDisableEnableSpec
 )
