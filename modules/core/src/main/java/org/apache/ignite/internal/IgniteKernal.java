@@ -200,6 +200,7 @@ import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.WorkersControlMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
+import org.apache.ignite.mxbean.TxMXBean;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -4191,6 +4192,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             registerMBean("Kernal", locMetricsBean.getClass().getSimpleName(), locMetricsBean, ClusterMetricsMXBean.class);
             ClusterMetricsMXBean metricsBean = new ClusterMetricsMXBeanImpl(cluster());
             registerMBean("Kernal", metricsBean.getClass().getSimpleName(), metricsBean, ClusterMetricsMXBean.class);
+
+            // Transactions
+            TxMXBean txMXBean = new TxMXBeanImpl(ctx);
+            registerMBean("Transactions", txMXBean.getClass().getSimpleName(), txMXBean, TxMXBean.class);
 
             // Executors
             registerExecutorMBean("GridUtilityCacheExecutor", utilityCachePool);
