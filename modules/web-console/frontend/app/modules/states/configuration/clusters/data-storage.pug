@@ -135,170 +135,167 @@ mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
         +checkbox('Persistence enabled', `${modelAt}.persistenceEnabled`, '"RegionPersistenceEnabled" + $index',
         'Enable Ignite Native Persistence')
 
-.pca-panel.pca-panel-default(ng-show='$ctrl.available("2.3.0")' ng-form=form novalidate)
-    .pca-panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
-        ignite-form-panel-chevron
-        .pca-panel-heading-title Data storage configuration
-        .pca-panel-heading-description
-            | Page memory is a manageable off-heap based memory architecture that is split into pages of fixed size. 
-            | #[a.link-success(href="https://apacheignite.readme.io/docs/distributed-persistent-store" target="_blank") More info]
-    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .pca-panel-body(ng-if=`$ctrl.available("2.3.0") && ui.isPanelLoaded('${form}')`).pca-form-row
-            .pca-form-column-6.pc-form-grid-row
+panel-collapsible(ng-show='$ctrl.available("2.3.0")' ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Data storage configuration
+    panel-description
+        | Page memory is a manageable off-heap based memory architecture that is split into pages of fixed size. 
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/distributed-persistent-store" target="_blank") More info]
+    panel-content.pca-form-row(ng-if=`$ctrl.available("2.3.0") && ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-30
+                +sane-ignite-form-field-dropdown({
+                    label: 'Page size:',
+                    model: `${model}.pageSize`,
+                    name: '"DataStorageConfigurationPageSize"',
+                    options: `$ctrl.Clusters.dataStorageConfiguration.pageSize.values`,
+                    tip: 'Every memory region is split on pages of fixed size'
+                })
+            .pc-form-grid-col-30
+                +number('Concurrency level:', model + '.concurrencyLevel', '"DataStorageConfigurationConcurrencyLevel"',
+                'true', 'availableProcessors', '2', 'The number of concurrent segments in Ignite internal page mapping tables')
+            .pc-form-grid-col-60.pc-form-group__text-title
+                span System region
+            .pc-form-group.pc-form-grid-row
                 .pc-form-grid-col-30
-                    +sane-ignite-form-field-dropdown({
-                        label: 'Page size:',
-                        model: `${model}.pageSize`,
-                        name: '"DataStorageConfigurationPageSize"',
-                        options: `$ctrl.Clusters.dataStorageConfiguration.pageSize.values`,
-                        tip: 'Every memory region is split on pages of fixed size'
-                    })
+                    pc-form-field-size(
+                        label='Initial size:'
+                        ng-model=`${model}.systemRegionInitialSize`
+                        name='DataStorageSystemRegionInitialSize'
+                        placeholder='{{ $ctrl.Clusters.dataStorageConfiguration.systemRegionInitialSize.default / systemRegionInitialSizeScale.value }}'
+                        min='{{ ::$ctrl.Clusters.dataStorageConfiguration.systemRegionInitialSize.min }}'
+                        tip='Initial size of a data region reserved for system cache'
+                        on-scale-change='systemRegionInitialSizeScale = $event'
+                    )
                 .pc-form-grid-col-30
-                    +number('Concurrency level:', model + '.concurrencyLevel', '"DataStorageConfigurationConcurrencyLevel"',
-                    'true', 'availableProcessors', '2', 'The number of concurrent segments in Ignite internal page mapping tables')
-                .pc-form-grid-col-60.pc-form-group__text-title
-                    span System region
-                .pc-form-group.pc-form-grid-row
-                    .pc-form-grid-col-30
-                        pc-form-field-size(
-                            label='Initial size:'
-                            ng-model=`${model}.systemRegionInitialSize`
-                            name='DataStorageSystemRegionInitialSize'
-                            placeholder='{{ $ctrl.Clusters.dataStorageConfiguration.systemRegionInitialSize.default / systemRegionInitialSizeScale.value }}'
-                            min='{{ ::$ctrl.Clusters.dataStorageConfiguration.systemRegionInitialSize.min }}'
-                            tip='Initial size of a data region reserved for system cache'
-                            on-scale-change='systemRegionInitialSizeScale = $event'
-                        )
-                    .pc-form-grid-col-30
-                        pc-form-field-size(
-                            label='Max size:'
-                            ng-model=`${model}.systemRegionMaxSize`
-                            name='DataStorageSystemRegionMaxSize'
-                            placeholder='{{ $ctrl.Clusters.dataStorageConfiguration.systemRegionMaxSize.default / systemRegionMaxSizeScale.value }}'
-                            min='{{ $ctrl.Clusters.dataStorageConfiguration.systemRegionMaxSize.min($ctrl.clonedCluster) }}'
-                            tip='Maximum data region size reserved for system cache'
-                            on-scale-change='systemRegionMaxSizeScale = $event'
-                        )
-                .pc-form-grid-col-60.pc-form-group__text-title
-                    span Default data region
-                .pc-form-group.pc-form-grid-row
-                    +data-region-form({
-                        modelAt: dfltRegionModel,
-                        namePlaceholder: '{{ ::$ctrl.Clusters.dataRegion.name.default }}',
-                        dataRegionsAt: dataRegionConfigurations
-                    })
-                .pc-form-grid-col-60
-                    .ignite-form-field
-                        .ignite-form-field__label Data region configurations
-                        .ignite-form-field__control
-                            list-editable(name='dataRegionConfigurations' ng-model=dataRegionConfigurations)
-                                list-editable-item-edit.pc-form-grid-row
-                                    - form = '$parent.form'
-                                    +data-region-form({
-                                        modelAt: '$item',
-                                        namePlaceholder: 'Data region name',
-                                        dataRegionsAt: dataRegionConfigurations
-                                    })
-                                    - form = 'dataStorageConfiguration'
-                                list-editable-no-items
-                                    list-editable-add-item-button(
-                                        add-item=`$ctrl.Clusters.addDataRegionConfiguration($ctrl.clonedCluster)`
-                                        label-single='data region configuration'
-                                        label-multiple='data region configurations'
-                                    )
+                    pc-form-field-size(
+                        label='Max size:'
+                        ng-model=`${model}.systemRegionMaxSize`
+                        name='DataStorageSystemRegionMaxSize'
+                        placeholder='{{ $ctrl.Clusters.dataStorageConfiguration.systemRegionMaxSize.default / systemRegionMaxSizeScale.value }}'
+                        min='{{ $ctrl.Clusters.dataStorageConfiguration.systemRegionMaxSize.min($ctrl.clonedCluster) }}'
+                        tip='Maximum data region size reserved for system cache'
+                        on-scale-change='systemRegionMaxSizeScale = $event'
+                    )
+            .pc-form-grid-col-60.pc-form-group__text-title
+                span Default data region
+            .pc-form-group.pc-form-grid-row
+                +data-region-form({
+                    modelAt: dfltRegionModel,
+                    namePlaceholder: '{{ ::$ctrl.Clusters.dataRegion.name.default }}',
+                    dataRegionsAt: dataRegionConfigurations
+                })
+            .pc-form-grid-col-60
+                .ignite-form-field
+                    .ignite-form-field__label Data region configurations
+                    .ignite-form-field__control
+                        list-editable(name='dataRegionConfigurations' ng-model=dataRegionConfigurations)
+                            list-editable-item-edit.pc-form-grid-row
+                                - form = '$parent.form'
+                                +data-region-form({
+                                    modelAt: '$item',
+                                    namePlaceholder: 'Data region name',
+                                    dataRegionsAt: dataRegionConfigurations
+                                })
+                                - form = 'dataStorageConfiguration'
+                            list-editable-no-items
+                                list-editable-add-item-button(
+                                    add-item=`$ctrl.Clusters.addDataRegionConfiguration($ctrl.clonedCluster)`
+                                    label-single='data region configuration'
+                                    label-multiple='data region configurations'
+                                )
 
-                .pc-form-grid-col-60
-                    +text-enabled('Storage path:', `${model}.storagePath`, '"DataStoragePath"', 'true', 'false', 'db',
-                    'Directory where index and partition files are stored')
-                .pc-form-grid-col-60
-                    +number('Checkpoint frequency:', `${model}.checkpointFrequency`, '"DataStorageCheckpointFrequency"', 'true', '180000', '1',
-                    'Frequency which is a minimal interval when the dirty pages will be written to the Persistent Store')
-                .pc-form-grid-col-20
-                    +number('Checkpoint threads:', `${model}.checkpointThreads`, '"DataStorageCheckpointThreads"', 'true', '4', '1', 'A number of threads to use for the checkpoint purposes')
-                .pc-form-grid-col-20
-                    +dropdown('Checkpoint write order:', `${model}.checkpointWriteOrder`, '"DataStorageCheckpointWriteOrder"', 'true', 'SEQUENTIAL',
-                    '[\
-                        {value: "RANDOM", label: "RANDOM"},\
-                        {value: "SEQUENTIAL", label: "SEQUENTIAL"}\
-                    ]',
-                    'Order of writing pages to disk storage during checkpoint.\
-                    <ul>\
-                        <li>RANDOM - Pages are written in order provided by checkpoint pages collection iterator</li>\
-                        <li>SEQUENTIAL - All checkpoint pages are collected into single list and sorted by page index</li>\
-                    </ul>')
-                .pc-form-grid-col-20
-                    +dropdown('WAL mode:', `${model}.walMode`, '"DataStorageWalMode"', 'true', 'DEFAULT',
-                    '[\
-                        {value: "DEFAULT", label: "DEFAULT"},\
-                        {value: "LOG_ONLY", label: "LOG_ONLY"},\
-                        {value: "BACKGROUND", label: "BACKGROUND"},\
-                        {value: "NONE", label: "NONE"}\
-                    ]',
-                    'Type define behavior wal fsync.\
-                    <ul>\
-                        <li>DEFAULT - full-sync disk writes</li>\
-                        <li>LOG_ONLY - flushes application buffers</li>\
-                        <li>BACKGROUND - does not force application&#39;s buffer flush</li>\
-                        <li>NONE - WAL is disabled</li>\
-                    </ul>')
-                .pc-form-grid-col-60
-                    +text-enabled('WAL path:', `${model}.walPath`, '"DataStorageWalPath"', 'true', 'false', 'db/wal', 'A path to the directory where WAL is stored')
-                .pc-form-grid-col-60
-                    +text-enabled('WAL archive path:', `${model}.walArchivePath`, '"DataStorageWalArchivePath"', 'true', 'false', 'db/wal/archive', 'A path to the WAL archive directory')
-                .pc-form-grid-col-20
-                    +number('WAL segments:', `${model}.walSegments`, '"DataStorageWalSegments"', 'true', '10', '1', 'A number of WAL segments to work with')
-                .pc-form-grid-col-20
-                    +number('WAL segment size:', `${model}.walSegmentSize`, '"DataStorageWalSegmentSize"', 'true', '67108864', '0', 'Size of a WAL segment')
-                .pc-form-grid-col-20
-                    +number('WAL history size:', `${model}.walHistorySize`, '"DataStorageWalHistorySize"', 'true', '20', '1', 'A total number of checkpoints to keep in the WAL history')
-                .pc-form-grid-col-60(ng-if='$ctrl.available("2.4.0")')
-                    +number('WAL buffer size:', `${model}.walBufferSize`, '"DataStorageWalBufferSize"', 'true', 'WAL segment size / 4', '1',
-                    'Size of WAL buffer')
-                .pc-form-grid-col-30
-                    +number('WAL flush frequency:', `${model}.walFlushFrequency`, '"DataStorageWalFlushFrequency"', 'true', '2000', '1',
-                    'How often will be fsync, in milliseconds. In background mode, exist thread which do fsync by timeout')
-                .pc-form-grid-col-30
-                    +number('WAL fsync delay:', `${model}.walFsyncDelayNanos`, '"DataStorageWalFsyncDelay"', 'true', '1000', '1', 'WAL fsync delay, in nanoseconds')
-                .pc-form-grid-col-60
-                    +number('WAL record iterator buffer size:', `${model}.walRecordIteratorBufferSize`, '"DataStorageWalRecordIteratorBufferSize"', 'true', '67108864', '1',
-                    'How many bytes iterator read from disk(for one reading), during go ahead WAL')
-                .pc-form-grid-col-30
-                    +number('Lock wait time:', `${model}.lockWaitTime`, '"DataStorageLockWaitTime"', 'true', '10000', '1',
-                    'Time out in milliseconds, while wait and try get file lock for start persist manager')
-                .pc-form-grid-col-30
-                    +number('WAL thread local buffer size:', `${model}.walThreadLocalBufferSize`, '"DataStorageWalThreadLocalBufferSize"', 'true', '131072', '1',
-                    'Define size thread local buffer. Each thread which write to WAL have thread local buffer for serialize recode before write in WAL')
-                .pc-form-grid-col-30
-                    +number('Metrics sub interval count:', `${model}.metricsSubIntervalCount`, '"DataStorageMetricsSubIntervalCount"', 'true', '5', '1',
-                    'Number of sub - intervals the whole rate time interval will be split into to calculate rate - based metrics')
-                .pc-form-grid-col-30
-                    +number('Metrics rate time interval:', `${model}.metricsRateTimeInterval`, '"DataStorageMetricsRateTimeInterval"', 'true', '60000', '1000',
-                    'The length of the time interval for rate - based metrics. This interval defines a window over which hits will be tracked')
-                .pc-form-grid-col-30
-                    +dropdown('File IO factory:', `${model}.fileIOFactory`, '"DataStorageFileIOFactory"', 'true', 'Default',
-                    '[\
-                        {value: "RANDOM", label: "RANDOM"},\
-                        {value: "ASYNC", label: "ASYNC"},\
-                        {value: null, label: "Default"},\
-                    ]',
-                    'Order of writing pages to disk storage during checkpoint.\
-                    <ul>\
-                        <li>RANDOM - Pages are written in order provided by checkpoint pages collection iterator</li>\
-                        <li>SEQUENTIAL - All checkpoint pages are collected into single list and sorted by page index</li>\
-                    </ul>')
-                .pc-form-grid-col-30
-                    +number('WAL auto archive after inactivity:', `${model}.walAutoArchiveAfterInactivity`, '"DataStorageWalAutoArchiveAfterInactivity"', 'true', '-1', '-1',
-                    'Time in millis to run auto archiving segment after last record logging')
-                .pc-form-grid-col-60
-                    +checkbox-enabled('Metrics enabled', `${model}.metricsEnabled`, '"DataStorageMetricsEnabled"', 'true', 'Flag indicating whether persistence metrics collection is enabled')
-                .pc-form-grid-col-60
-                    +checkbox-enabled('Always write full pages', `${model}.alwaysWriteFullPages`, '"DataStorageAlwaysWriteFullPages"', 'true', 'Flag indicating whether always write full pages')
-                .pc-form-grid-col-60
-                    +checkbox('Write throttling enabled', `${model}.writeThrottlingEnabled`, '"DataStorageWriteThrottlingEnabled"',
-                    'Throttle threads that generate dirty pages too fast during ongoing checkpoint')
-                .pc-form-grid-col-60(ng-if='$ctrl.available("2.4.0")')
-                    +checkbox('Enable WAL compaction', `${model}.walCompactionEnabled`, '"DataStorageWalCompactionEnabled"',
-                    'If true, system filters and compresses WAL archive in background')
+            .pc-form-grid-col-60
+                +text-enabled('Storage path:', `${model}.storagePath`, '"DataStoragePath"', 'true', 'false', 'db',
+                'Directory where index and partition files are stored')
+            .pc-form-grid-col-60
+                +number('Checkpoint frequency:', `${model}.checkpointFrequency`, '"DataStorageCheckpointFrequency"', 'true', '180000', '1',
+                'Frequency which is a minimal interval when the dirty pages will be written to the Persistent Store')
+            .pc-form-grid-col-20
+                +number('Checkpoint threads:', `${model}.checkpointThreads`, '"DataStorageCheckpointThreads"', 'true', '4', '1', 'A number of threads to use for the checkpoint purposes')
+            .pc-form-grid-col-20
+                +dropdown('Checkpoint write order:', `${model}.checkpointWriteOrder`, '"DataStorageCheckpointWriteOrder"', 'true', 'SEQUENTIAL',
+                '[\
+                    {value: "RANDOM", label: "RANDOM"},\
+                    {value: "SEQUENTIAL", label: "SEQUENTIAL"}\
+                ]',
+                'Order of writing pages to disk storage during checkpoint.\
+                <ul>\
+                    <li>RANDOM - Pages are written in order provided by checkpoint pages collection iterator</li>\
+                    <li>SEQUENTIAL - All checkpoint pages are collected into single list and sorted by page index</li>\
+                </ul>')
+            .pc-form-grid-col-20
+                +dropdown('WAL mode:', `${model}.walMode`, '"DataStorageWalMode"', 'true', 'DEFAULT',
+                '[\
+                    {value: "DEFAULT", label: "DEFAULT"},\
+                    {value: "LOG_ONLY", label: "LOG_ONLY"},\
+                    {value: "BACKGROUND", label: "BACKGROUND"},\
+                    {value: "NONE", label: "NONE"}\
+                ]',
+                'Type define behavior wal fsync.\
+                <ul>\
+                    <li>DEFAULT - full-sync disk writes</li>\
+                    <li>LOG_ONLY - flushes application buffers</li>\
+                    <li>BACKGROUND - does not force application&#39;s buffer flush</li>\
+                    <li>NONE - WAL is disabled</li>\
+                </ul>')
+            .pc-form-grid-col-60
+                +text-enabled('WAL path:', `${model}.walPath`, '"DataStorageWalPath"', 'true', 'false', 'db/wal', 'A path to the directory where WAL is stored')
+            .pc-form-grid-col-60
+                +text-enabled('WAL archive path:', `${model}.walArchivePath`, '"DataStorageWalArchivePath"', 'true', 'false', 'db/wal/archive', 'A path to the WAL archive directory')
+            .pc-form-grid-col-20
+                +number('WAL segments:', `${model}.walSegments`, '"DataStorageWalSegments"', 'true', '10', '1', 'A number of WAL segments to work with')
+            .pc-form-grid-col-20
+                +number('WAL segment size:', `${model}.walSegmentSize`, '"DataStorageWalSegmentSize"', 'true', '67108864', '0', 'Size of a WAL segment')
+            .pc-form-grid-col-20
+                +number('WAL history size:', `${model}.walHistorySize`, '"DataStorageWalHistorySize"', 'true', '20', '1', 'A total number of checkpoints to keep in the WAL history')
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.4.0")')
+                +number('WAL buffer size:', `${model}.walBufferSize`, '"DataStorageWalBufferSize"', 'true', 'WAL segment size / 4', '1',
+                'Size of WAL buffer')
+            .pc-form-grid-col-30
+                +number('WAL flush frequency:', `${model}.walFlushFrequency`, '"DataStorageWalFlushFrequency"', 'true', '2000', '1',
+                'How often will be fsync, in milliseconds. In background mode, exist thread which do fsync by timeout')
+            .pc-form-grid-col-30
+                +number('WAL fsync delay:', `${model}.walFsyncDelayNanos`, '"DataStorageWalFsyncDelay"', 'true', '1000', '1', 'WAL fsync delay, in nanoseconds')
+            .pc-form-grid-col-60
+                +number('WAL record iterator buffer size:', `${model}.walRecordIteratorBufferSize`, '"DataStorageWalRecordIteratorBufferSize"', 'true', '67108864', '1',
+                'How many bytes iterator read from disk(for one reading), during go ahead WAL')
+            .pc-form-grid-col-30
+                +number('Lock wait time:', `${model}.lockWaitTime`, '"DataStorageLockWaitTime"', 'true', '10000', '1',
+                'Time out in milliseconds, while wait and try get file lock for start persist manager')
+            .pc-form-grid-col-30
+                +number('WAL thread local buffer size:', `${model}.walThreadLocalBufferSize`, '"DataStorageWalThreadLocalBufferSize"', 'true', '131072', '1',
+                'Define size thread local buffer. Each thread which write to WAL have thread local buffer for serialize recode before write in WAL')
+            .pc-form-grid-col-30
+                +number('Metrics sub interval count:', `${model}.metricsSubIntervalCount`, '"DataStorageMetricsSubIntervalCount"', 'true', '5', '1',
+                'Number of sub - intervals the whole rate time interval will be split into to calculate rate - based metrics')
+            .pc-form-grid-col-30
+                +number('Metrics rate time interval:', `${model}.metricsRateTimeInterval`, '"DataStorageMetricsRateTimeInterval"', 'true', '60000', '1000',
+                'The length of the time interval for rate - based metrics. This interval defines a window over which hits will be tracked')
+            .pc-form-grid-col-30
+                +dropdown('File IO factory:', `${model}.fileIOFactory`, '"DataStorageFileIOFactory"', 'true', 'Default',
+                '[\
+                    {value: "RANDOM", label: "RANDOM"},\
+                    {value: "ASYNC", label: "ASYNC"},\
+                    {value: null, label: "Default"},\
+                ]',
+                'Order of writing pages to disk storage during checkpoint.\
+                <ul>\
+                    <li>RANDOM - Pages are written in order provided by checkpoint pages collection iterator</li>\
+                    <li>SEQUENTIAL - All checkpoint pages are collected into single list and sorted by page index</li>\
+                </ul>')
+            .pc-form-grid-col-30
+                +number('WAL auto archive after inactivity:', `${model}.walAutoArchiveAfterInactivity`, '"DataStorageWalAutoArchiveAfterInactivity"', 'true', '-1', '-1',
+                'Time in millis to run auto archiving segment after last record logging')
+            .pc-form-grid-col-60
+                +checkbox-enabled('Metrics enabled', `${model}.metricsEnabled`, '"DataStorageMetricsEnabled"', 'true', 'Flag indicating whether persistence metrics collection is enabled')
+            .pc-form-grid-col-60
+                +checkbox-enabled('Always write full pages', `${model}.alwaysWriteFullPages`, '"DataStorageAlwaysWriteFullPages"', 'true', 'Flag indicating whether always write full pages')
+            .pc-form-grid-col-60
+                +checkbox('Write throttling enabled', `${model}.writeThrottlingEnabled`, '"DataStorageWriteThrottlingEnabled"',
+                'Throttle threads that generate dirty pages too fast during ongoing checkpoint')
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.4.0")')
+                +checkbox('Enable WAL compaction', `${model}.walCompactionEnabled`, '"DataStorageWalCompactionEnabled"',
+                'If true, system filters and compresses WAL archive in background')
 
-            .pca-form-column-6
-                +preview-xml-java(model, 'clusterDataStorageConfiguration')
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterDataStorageConfiguration')

@@ -17,24 +17,55 @@
 
 import {of} from 'rxjs/observable/of';
 import {Confirm} from 'app/services/Confirm.service';
-import {diff} from 'jsondiffpatch';
+import {DiffPatcher} from 'jsondiffpatch';
 import {html} from 'jsondiffpatch/public/build/jsondiffpatch-formatters.js';
 import 'jsondiffpatch/public/formatters-styles/html.css';
+
+export class IgniteObjectDiffer {
+    constructor() {
+        this.diffPatcher = new DiffPatcher({
+            cloneDiffValues: true
+        });
+
+        const shouldSkip = (val) => val === null || val === void 0 || val === '';
+
+        function igniteConfigFalsyFilter(context) {
+            // Special logic for checkboxes.
+            if (shouldSkip(context.left) && context.right === false)
+                delete context.right;
+
+            if (shouldSkip(context.left))
+                delete context.left;
+
+            if (shouldSkip(context.right))
+                delete context.right;
+        }
+
+        igniteConfigFalsyFilter.filterName = 'igniteConfigFalsy';
+
+        this.diffPatcher.processor.pipes.diff.before('trivial', igniteConfigFalsyFilter);
+    }
+
+    diff(a, b) {
+        return this.diffPatcher.diff(a, b);
+    }
+}
 
 export default class ConfigChangesGuard {
     static $inject = [Confirm.name, '$sce'];
 
     /**
-     * @param {Confirm} Confirm
-     * @param {ng.ISCEService} $sce
+     * @param {Confirm} Confirm.
+     * @param {ng.ISCEService} $sce.
      */
     constructor(Confirm, $sce) {
         this.Confirm = Confirm;
         this.$sce = $sce;
+        this.differ = new IgniteObjectDiffer();
     }
 
     _hasChanges(a, b) {
-        return diff(a, b);
+        return this.differ.diff(a, b);
     }
 
     _confirm(changes) {
@@ -52,15 +83,18 @@ export default class ConfigChangesGuard {
 
     /**
      * Compares values and asks user if he wants to continue.
+     *
      * @template T
-     * @param {T} a - Left comparison value
-     * @param {T} b - Right comparison value
+     * @param {T} a Left comparison value.
+     * @param {T} b Right comparison value.
      */
     guard(a, b) {
-        if (!a && !b) return Promise.resolve(true);
+        if (!a && !b)
+            return Promise.resolve(true);
+
         return of(this._hasChanges(a, b))
-        .switchMap((changes) => changes ? this._confirm(changes).then(() => true) : of(true))
-        .catch(() => of(false))
-        .toPromise();
+            .switchMap((changes) => changes ? this._confirm(changes).then(() => true) : of(true))
+            .catch(() => of(false))
+            .toPromise();
     }
 }

@@ -517,7 +517,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)shared.database();
 
         // Disable integrated checkpoint thread.
-        dbMgr.enableCheckpoints(false);
+        dbMgr.enableCheckpoints(false).get();
 
         PageMemoryEx mem = (PageMemoryEx) dbMgr.dataRegion(null).pageMemory();
 
