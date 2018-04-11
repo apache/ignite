@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.platform.client;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -31,6 +33,11 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.plugin.security.AuthenticationContext;
+import org.apache.ignite.plugin.security.SecurityCredentials;
+
+import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIENT;
 
 /**
  * Thin Client connection context.
@@ -62,6 +69,9 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
 
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
+
+    /** Security context or {@code null} if security is disabled. */
+    private SecurityContext secCtx = null;
 
     /**
      * Ctor.
@@ -130,7 +140,9 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
             }
         }
 
-        if (kernalCtx.authentication().enabled()) {
+        if (kernalCtx.security().enabled())
+            authCtx = thirdPartyAuthentication(user, pwd).authorizationContext();
+        else if (kernalCtx.authentication().enabled()) {
             if (user == null || user.length() == 0)
                 throw new IgniteAccessControlException("Unauthenticated sessions are prohibited.");
 
@@ -179,5 +191,35 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
      */
     public void decrementCursors() {
         curCnt.decrementAndGet();
+    }
+
+    /**
+     * @return Security context or {@code null} if security is disabled.
+     */
+    public SecurityContext securityContext() {
+        return secCtx;
+    }
+
+    /**
+     * Do 3-rd party authentication.
+     */
+    private AuthenticationContext thirdPartyAuthentication(String user, String pwd) throws IgniteCheckedException {
+        SecurityCredentials cred = new SecurityCredentials(user, pwd);
+
+        AuthenticationContext authCtx = new AuthenticationContext();
+
+        authCtx.subjectType(REMOTE_CLIENT);
+        authCtx.subjectId(UUID.randomUUID());
+        authCtx.nodeAttributes(Collections.emptyMap());
+        authCtx.credentials(cred);
+
+        secCtx = kernalCtx.security().authenticate(authCtx);
+
+        if (secCtx == null)
+            throw new IgniteAccessControlException(
+                String.format("The user name or password is incorrect [userName=%s]", user)
+            );
+
+        return authCtx;
     }
 }

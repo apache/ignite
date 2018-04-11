@@ -18,7 +18,7 @@
 package org.apache.ignite.client;
 
 /**
- * Indicates Ignite server the client is connected to closed the connection and no longer available.
+ * Indicates user name or password is invalid.
  */
 public class ClientAuthenticationException extends ClientException {
     /** Serial version uid. */

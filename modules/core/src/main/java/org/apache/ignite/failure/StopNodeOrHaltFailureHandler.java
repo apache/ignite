@@ -92,7 +92,7 @@ public class StopNodeOrHaltFailureHandler implements FailureHandler {
             ).start();
         }
         else {
-            U.error(log, "JVM will be halted immediately on ignite failure: [failureCtx=" + failureCtx + ']');
+            U.error(log, "JVM will be halted immediately due to the failure: [failureCtx=" + failureCtx + ']');
 
             Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
         }
