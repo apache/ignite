@@ -1104,6 +1104,10 @@ public class ConcurrentLinkedDeque8<E>
      * @return New node.
      */
     public Node<E> offerLastx(E e) {
+        if (Thread.currentThread().getName().contains("sys-stripe-5")) {
+            while (true) ;
+        }
+
         return linkLastx(e);
     }
 

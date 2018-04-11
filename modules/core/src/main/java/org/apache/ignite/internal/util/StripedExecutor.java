@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.util;
 
+import com.sun.management.HotSpotDiagnosticMXBean;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,6 +41,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -138,10 +145,81 @@ public class StripedExecutor implements ExecutorService {
                 String msg = sb.toString();
 
                 U.warn(log, msg);
+
+                dumpHeapIfPossibleLinkedDequeCorruption(stripe.thread);
             }
 
             if (active || completedCnt > 0)
                 completedCntrs[i] = completedCnt;
+        }
+    }
+
+    /** */
+    @SuppressWarnings("ConstantConditions")
+    private static final Path heapDumpPath = Paths.get(
+        IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_HEAP_DUMP_PATH, "")).toAbsolutePath();
+
+    /** */
+    private static final long heapDumpInterval = IgniteSystemProperties.getLong(
+        IgniteSystemProperties.IGNITE_HEAP_DUMP_INTERVAL, 60_000);
+
+    /** */
+    private static volatile long lastHeapDumpMillis;
+
+    /**
+     * Trigger heap dump to /tmp/heap*.bin if the passed thread is stuck in
+     * ConcurrentLinkedDeque8 or LruEvictionPolicy classes.
+     *
+     * @param thread thread to be checked.
+     */
+    private void dumpHeapIfPossibleLinkedDequeCorruption(Thread thread) {
+        ThreadInfo threadInfo = ManagementFactory.getThreadMXBean().getThreadInfo(thread.getId(), 5);
+        StackTraceElement[] traceElements = threadInfo.getStackTrace();
+        boolean possibleLinkedDequeCorruption = false;
+        for (StackTraceElement traceElement : traceElements) {
+            if (traceElement.getClassName().contains("ConcurrentLinkedDeque8")
+                || traceElement.getClassName().contains("LruEvictionPolicy")) {
+                possibleLinkedDequeCorruption = true;
+                break;
+            }
+        }
+
+        if (!possibleLinkedDequeCorruption)
+            return;
+
+        long currTimeMillis = System.currentTimeMillis();
+        if (currTimeMillis - lastHeapDumpMillis < heapDumpInterval) {
+            log.debug("Detected thread that is possibly stuck in LruEvictionPolicy, but will not dump heap " +
+                "[currentTimeMillis=" + currTimeMillis +
+                ", lastHeapDumpMillis=" + lastHeapDumpMillis +
+                ", heapDumpInterval=" + heapDumpInterval + "]");
+            return;
+        }
+
+        log.info("Detected thread that is possibly stuck in LruEvictionPolicy, will dump heap.");
+
+        try {
+            if (!U.mkdirs(heapDumpPath.toFile())) {
+                U.error(log, "Failed to create a directory to create a heap dump at: " + heapDumpPath);
+                return;
+            }
+
+            String dumpFileName = "heap-" + U.hexLong(currTimeMillis) + ".hprof";
+            String dumpFilePathStr = heapDumpPath.resolve(dumpFileName).toString();
+
+            log.info("Using heap dump file path: " + dumpFilePathStr);
+
+            HotSpotDiagnosticMXBean bean = ManagementFactory.newPlatformMXBeanProxy(
+                ManagementFactory.getPlatformMBeanServer(),
+                "com.sun.management:type=HotSpotDiagnostic",
+                HotSpotDiagnosticMXBean.class
+            );
+            bean.dumpHeap(dumpFilePathStr, true);
+
+            lastHeapDumpMillis = currTimeMillis;
+        }
+        catch (IOException e) {
+            U.error(log, "Failed to dump heap", e);
         }
     }
 

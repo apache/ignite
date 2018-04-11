@@ -605,6 +605,16 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION = "IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION";
 
     /**
+     * Path to a directory to generate heap dumps in.
+     */
+    public static final String IGNITE_HEAP_DUMP_PATH = "IGNITE_HEAP_DUMP_INTERVAL";
+
+    /**
+     * Minimal interval in milliseconds between generating a heap dump.
+     */
+    public static final String IGNITE_HEAP_DUMP_INTERVAL = "IGNITE_HEAP_DUMP_INTERVAL";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
