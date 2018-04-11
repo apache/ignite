@@ -1623,6 +1623,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public void clear(int cacheId) throws IgniteCheckedException {
             CacheDataStore delegate0 = init0(true);
 
+            if (delegate0 == null)
+                return;
+
             assert ctx.database().checkpointLockIsHeldByThread();
 
             // Clear pendingTree
@@ -1638,8 +1641,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
             }
 
-            if (delegate0 != null)
-                delegate0.clear(cacheId);
+            delegate0.clear(cacheId);
         }
 
         /**
@@ -1649,9 +1651,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
          * @throws IgniteCheckedException If failed to get number of pending entries.
          */
         public long expiredSize() throws IgniteCheckedException {
-            init0(true);
+            CacheDataStore delegate0 = init0(true);
 
-            return pendingTree == null ? 0 : pendingTree.size();
+            return delegate0 == null ? 0 : pendingTree.size();
         }
 
         /**
@@ -1664,9 +1666,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         public int purgeExpired(GridCacheContext cctx,
             IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
             int amount) throws IgniteCheckedException {
-            init0(true);
+            CacheDataStore delegate0 = init0(true);
 
-            if (pendingTree == null)
+            if (delegate0 == null || pendingTree == null)
                 return 0;
 
             long now = U.currentTimeMillis();
@@ -1718,9 +1720,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public PendingEntriesTree pendingTree() {
             try {
-                init0(true);
+                CacheDataStore delegate0 = init0(true);
 
-                return pendingTree;
+                return delegate0 == null ? null : pendingTree;
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
