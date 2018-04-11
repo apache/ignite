@@ -18,27 +18,27 @@
 package org.apache.ignite.internal.util;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
+
+import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 
 /**
- * Striped thread pool disabling test
+ * Striped Thread Pool disabling test
  */
 public class StripedExecutorProxyTest extends GridCommonAbstractTest {
-    /** */
-    private static final String STRIPED_THREAD_NAME_PREFIX = "sys-stripe-";
-
-    /** */
-    private static final String SYSTEM_THREAD_NAME_PREFIX = "sys-";
-
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -53,62 +53,159 @@ public class StripedExecutorProxyTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopAllGrids();
+        System.getProperties().remove(IgniteSystemProperties.IGNITE_STRIPED_POOL_DISABLED);
     }
 
     /**
+     * Check the implementations of StripedExecutor
+     *
      * @throws Exception If failed.
      */
     public void testStripedExecutorService() throws Exception {
-        checkStripedExecutorService(-1);
+        // Striped Pool should be enabled by default.
+        checkStripedExecutorImplementation(false);
 
-        checkStripedExecutorService(0);
+        System.setProperty(IgniteSystemProperties.IGNITE_STRIPED_POOL_DISABLED, "true");
+        checkStripedExecutorImplementation(true);
 
-        checkStripedExecutorService(1);
+        System.setProperty(IgniteSystemProperties.IGNITE_STRIPED_POOL_DISABLED, "false");
+        checkStripedExecutorImplementation(false);
     }
 
     /**
-     * Check that compute job will be executed in the system thread pool if striped one is disabled.
+     * Check that StripedExecutor is instance of StripedExecutorProxy if striped pool is disabled.
      *
-     * @param stripedPoolSize Striped pool size.
+     * @param stripedPoolDisabled Striped pool is disabled.
      * @throws Exception If failed.
      */
-    private void checkStripedExecutorService(int stripedPoolSize) throws Exception {
+    private void checkStripedExecutorImplementation(boolean stripedPoolDisabled) throws Exception {
+        try (Ignite ignite = Ignition.start(getConfiguration())) {
+            StripedExecutor executor = ((IgniteKernal)ignite).context().getStripedExecutorService();
+
+            if (stripedPoolDisabled)
+                Assert.assertThat(executor, CoreMatchers.instanceOf(StripedExecutorProxy.class));
+            else
+                Assert.assertThat(executor, CoreMatchers.instanceOf(StripedExecutorImpl.class));
+        }
+    }
+
+    /**
+     * Check that tasks work in parallel if the striped pool is disabled.
+     *
+     * @throws Exception If failed.
+     */
+    public void testParallelExecution() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_STRIPED_POOL_DISABLED, "true");
+
         IgniteConfiguration cfg = getConfiguration();
 
-        cfg.setStripedPoolSize(stripedPoolSize);
+        cfg.setStripedPoolSize(2);
 
-        Ignite ignite = startGrid("grid" + stripedPoolSize, cfg);
+        try (Ignite ignite = Ignition.start(cfg)) {
+            StripedExecutor executor = ((IgniteKernal)ignite).context().getStripedExecutorService();
 
-        GridKernalContext ctx = ((IgniteKernal)ignite).context();
+            int tasks = 2;
 
-        assertNotNull("StripedExecutorService should not be null.", ctx.getStripedExecutorService());
+            CountDownLatch started = new CountDownLatch(tasks);
 
-        final CountDownLatch taskExecuted = new CountDownLatch(1);
+            for (int i = 0; i < tasks; i++)
+                executor.execute(1, new SimpleTask(started, started));
 
-        final AtomicReference<String> threadName = new AtomicReference<>("");
-
-        ctx.getStripedExecutorService().execute(new Runnable() {
-            @Override public void run() {
-                threadName.set(Thread.currentThread().getName());
-
-                taskExecuted.countDown();
-            }
-        });
-
-        if (!taskExecuted.await(10000, TimeUnit.MILLISECONDS))
-            fail("Compute job was not completed.");
-
-        if (stripedPoolSize <= 0) {
-            assertFalse("Compute job should not be executed in striped pool",
-                threadName.get().startsWith(STRIPED_THREAD_NAME_PREFIX));
-
-            assertTrue("Compute job should be executed in system pool",
-                threadName.get().startsWith(SYSTEM_THREAD_NAME_PREFIX));
+            if (!started.await(5000, TimeUnit.MILLISECONDS))
+                fail("Unable to start jobs in parallel.");
         }
-        else {
-            assertTrue("Compute job should be executed in striped pool",
-                threadName.get().startsWith(STRIPED_THREAD_NAME_PREFIX));
+    }
+
+    /**
+     * Check that StripedExecutorProxy's methods are implemented correctly.
+     *
+     * @throws Exception If failed.
+     */
+    public void testExecutorProperties() throws Exception {
+        final int poolSize = 4;
+        final int completed = 10;
+        final int queueSize = 7;
+
+        StripedExecutor executor = new StripedExecutorProxy(
+            "sys2",
+            "instance-name",
+            poolSize,
+            poolSize,
+            DFLT_THREAD_KEEP_ALIVE_TIME,
+            new LinkedBlockingQueue<>(),
+            GridIoPolicy.SYSTEM_POOL);
+
+        // Simulate completed tasks.
+        for (int i = 0; i < completed; i++)
+            executor.execute(1, new SimpleTask(null, null));
+
+        final CountDownLatch started = new CountDownLatch(poolSize);
+        final CountDownLatch canStop = new CountDownLatch(1);
+
+        // Simulate active tasks.
+        for (int i = 0; i < poolSize; i++)
+            executor.execute(1, new SimpleTask(started, canStop));
+
+        // Simulate tasks which will be in the queue.
+        for (int i = 0; i < queueSize; i++)
+            executor.execute(1, new SimpleTask(null, null));
+
+        if (!started.await(10000, TimeUnit.MILLISECONDS))
+            fail("Failed to start all active jobs.");
+
+        assertEquals("Check completed tasks", completed, executor.completedTasks());
+
+        assertEquals("Check active stripes count", 1, executor.activeStripesCount());
+
+        assertEquals("Check queue size", queueSize, executor.queueSize());
+
+        assertEquals("Check stripes count", 1, executor.stripes());
+
+        assertEquals("Check stripes active statuses count", 1, executor.stripesActiveStatuses().length);
+
+        assertEquals("Check stripes active statuses", true, executor.stripesActiveStatuses()[0]);
+
+        Assert.assertArrayEquals("Check stripes completed tasks", new long[] { completed }, executor.stripesCompletedTasks());
+
+        Assert.assertArrayEquals("Check stripes queue sizes", new int[] { queueSize }, executor.stripesQueueSizes());
+
+        canStop.countDown();
+
+        executor.shutdown();
+
+        executor.awaitTermination(5000, TimeUnit.MILLISECONDS);
+    }
+
+    /** Task */
+    private static class SimpleTask implements Runnable {
+        /** */
+        final CountDownLatch started;
+
+        /** */
+        final CountDownLatch canStop;
+
+        /**
+         * @param started Latch to synchronize started tasks.
+         * @param canStop Latch to simulate task hangs.
+         */
+        SimpleTask(CountDownLatch started, CountDownLatch canStop) {
+            this.started = started;
+            this.canStop = canStop;
+        }
+
+        /** */
+        @Override public void run() {
+            if (started != null)
+                started.countDown();
+
+            if (canStop != null) {
+                try {
+                    canStop.await();
+                }
+                catch (InterruptedException e) {
+                    // No-op.
+                }
+            }
         }
     }
 }
