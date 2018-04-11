@@ -835,6 +835,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER = "IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER";
 
     /**
+     * When set to {@code true}, on-heap cache cannot be enabled - see
+     * {@link CacheConfiguration#setOnheapCacheEnabled(boolean)}.
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_DISABLE_ONHEAP_CACHE = "IGNITE_DISABLE_ONHEAP_CACHE";
+    /**
      * When set to {@code false}, loaded pages implementation is switched to previous version of implementation,
      * FullPageIdTable. {@code True} value enables 'Robin Hood hashing: backward shift deletion'.
      * Default is {@code true}.
