@@ -1,6 +1,14 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 2.5
+---------------------------------------
+Ignite:
+* Introduced ZooKeeper discovery SPI
+* Added ability to disable WAL during rebalancing
+* Added ability to rollback long-running transactions that block partition map exchange
+* Introduced additional storage metrics
+
 Apache Ignite In-Memory Data Fabric 2.4
 ---------------------------------------
 Ignite:
