@@ -75,7 +75,7 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
      *
      * @throws Exception If failed.
      */
-    public void testReconnectCacheDestroyedWithDelayedSpiMessages() throws Exception {
+    public void testReconnectCacheDestroyedDelayedAffinityChange() throws Exception {
         clientMode = true;
 
         final Ignite client = startGrid();
