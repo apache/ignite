@@ -198,6 +198,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
             db.checkpointReadLock();
             try {
                 GridCursor<PendingRow> cursor = oldPendingEntries.find(row, null, WITHOUT_KEY);
+
                 while (cnt++ < BATCH_SIZE && cursor.next()) {
                     row = cursor.get();
 
@@ -263,6 +264,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
     private GridCacheEntryEx getEntry(CacheGroupContext grp, PendingRow row) {
         try {
             CacheDataRowAdapter rowData = new CacheDataRowAdapter(row.link);
+
             rowData.initFromLink(grp, CacheDataRowAdapter.RowData.KEY_ONLY);
 
             GridCacheContext cctx = grp.shared().cacheContext(row.cacheId);
@@ -272,8 +274,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
             return cctx.cache().entryEx(rowData.key());
         }
         catch (Throwable ex) {
-            if (Thread.currentThread().isInterrupted() ||
-                X.hasCause(ex, InterruptedException.class))
+            if (Thread.currentThread().isInterrupted() || X.hasCause(ex, InterruptedException.class))
                 throw new IgniteException(new InterruptedException());
 
             log.warning("Failed to move old-version pending entry " +
