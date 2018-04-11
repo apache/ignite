@@ -245,11 +245,12 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 ctx.cache().context().deploy().ignoreOwnership(true);
 
             if (!ctx.clientNode() && serviceCache.context().affinityNode()) {
+                // Register query listener and run it for local entries. It is also invoked on rebalancing.
                 serviceCache.context().continuousQueries().executeInternalQuery(
                     new ServiceEntriesListener(), null, true, true, false
                 );
             }
-            else {
+            else { // Listener for client nodes is registered in onContinuousProcessorStarted method.
                 assert !ctx.isDaemon();
 
                 ctx.closure().runLocalSafe(new Runnable() {
@@ -1629,6 +1630,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             ClusterNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
+            // Process deployment on coordinator only.
             if (oldest.isLocal())
                 onDeployment(dep, topVer);
         }
