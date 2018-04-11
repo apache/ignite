@@ -49,7 +49,7 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
     private static final String PRECONFIGURED_CACHE = "preconfigured-cache";
 
     /** */
-    private static final Map<UUID, Runnable> recordedMsg = new ConcurrentHashMap<>();
+    private static final Map<UUID, Runnable> recordedMsgs = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -100,7 +100,7 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
         IgniteCache<Object, Object> clientCache = client.cache(DEFAULT_CACHE_NAME);
 
         // Resend delayed GridDhtPartitionsSingleMessage
-        for (Runnable r : recordedMsg.values())
+        for (Runnable r : recordedMsgs.values())
             r.run();
 
         final GridDiscoveryManager srvDisco = ((IgniteKernal)srv).context().discovery();
@@ -129,7 +129,7 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
 
             if (msg0 instanceof GridDhtPartitionsSingleMessage &&
                 ((GridDhtPartitionsAbstractMessage)msg0).exchangeId() == null)
-                recordedMsg.putIfAbsent(node.id(), new Runnable() {
+                recordedMsgs.putIfAbsent(node.id(), new Runnable() {
                     @Override public void run() {
                         TestCommunicationDelayedSpi.super.sendMessage(node, msg, ackC);
                     }
