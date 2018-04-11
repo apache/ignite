@@ -145,8 +145,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /** {@inheritDoc} */
     @Override protected CacheDataStore createCacheDataStore0(final int p)
         throws IgniteCheckedException {
-        assert ctx.database().checkpointLockIsHeldByThread();
-
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
 
         return new GridCacheDataStore(p, exists);
@@ -1189,7 +1187,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     RootPage pendingTreeRoot = metas.pendingTreeRoot;
 
-                    pendingTree = new PendingEntriesTree(
+                    final PendingEntriesTree pendingTree0 = new PendingEntriesTree(
                         grp,
                         "PendingEntries-" + partId,
                         grp.dataRegion().pageMemory(),
@@ -1203,16 +1201,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         }
                     };
 
-                    if (!hasPendingEntries && pendingTree.size() > 0)
-                        hasPendingEntries = true;
-
                     PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
                     delegate0 = new CacheDataStoreImpl(partId, name, rowStore, dataTree) {
                         @Override public PendingEntriesTree pendingTree() {
-                            return pendingTree;
+                            return pendingTree0;
                         }
                     };
+
+                    pendingTree = pendingTree0;
+
+                    if (!hasPendingEntries && pendingTree0.size() > 0)
+                        hasPendingEntries = true;
 
                     int grpId = grp.groupId();
                     long partMetaId = pageMem.partitionMetaPageId(grpId, partId);
