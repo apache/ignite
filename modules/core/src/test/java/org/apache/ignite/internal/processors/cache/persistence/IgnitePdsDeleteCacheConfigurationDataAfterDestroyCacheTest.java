@@ -19,19 +19,22 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
 
 /**
  * Test correct clean up cache configuration data after destroying cache.
@@ -46,6 +49,9 @@ public class IgnitePdsDeleteCacheConfigurationDataAfterDestroyCacheTest extends 
     /** */
     private static final int NODES = 3;
 
+    /** */
+    private volatile boolean fork = false;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -53,7 +59,7 @@ public class IgnitePdsDeleteCacheConfigurationDataAfterDestroyCacheTest extends 
         return cfg.setDiscoverySpi(new TcpDiscoverySpi()
                         .setIpFinder(ipFinder))
                         .setDataStorageConfiguration(new DataStorageConfiguration()
-                            .setCheckpointFrequency(1_000)
+                                .setCheckpointFrequency(10000)
                             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                                 .setMaxSize(200 * 1024 * 1024)
                                 .setPersistenceEnabled(true)));
@@ -75,6 +81,11 @@ public class IgnitePdsDeleteCacheConfigurationDataAfterDestroyCacheTest extends 
         super.afterTest();
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean isMultiJvm() {
+        return fork;
+    }
+
     /**
      *  Test destroy non grouped caches
      */
@@ -84,8 +95,6 @@ public class IgnitePdsDeleteCacheConfigurationDataAfterDestroyCacheTest extends 
         ignite.cluster().active(true);
 
         startCachesDynamically(ignite);
-
-        loadCaches(ignite);
 
         checkDestroyCaches(ignite);
 
@@ -99,32 +108,176 @@ public class IgnitePdsDeleteCacheConfigurationDataAfterDestroyCacheTest extends 
 
         ignite.cluster().active(true);
 
-        statGroupCachesDynamically(ignite);
+        startGroupCachesDynamically(ignite);
 
         checkDestroyCaches(ignite);
     }
 
+    /**
+     *
+     */
+    public void testDestroyCachesAbruptlyWithoutCheckpoints() throws Exception {
+        fork = true;
+
+        try {
+            IgniteEx ignite = (IgniteEx) startGrids(NODES);
+
+            ignite.cluster().active(true);
+
+            startCachesDynamically(ignite);
+
+            enableCheckpoints(false);
+
+            checkDestroyCachesAbruptly(ignite, true);
+        }
+        finally {
+            fork = false;
+        }
+    }
+
+    /**
+     *
+     */
+    public void testDestroyCachesAbruptly() throws Exception {
+        IgniteEx ignite = (IgniteEx) startGrids(NODES);
+
+        ignite.cluster().active(true);
+
+        startCachesDynamically(ignite);
+
+        checkDestroyCachesAbruptly(ignite, false);
+    }
+
+    /**
+     *
+     */
+    public void testDestroyGroupCachesAbruptlyWithoutCheckpoints() throws Exception {
+        fork = true;
+
+        try {
+            IgniteEx ignite = (IgniteEx) startGrids(NODES);
+
+            ignite.cluster().active(true);
+
+            startGroupCachesDynamically(ignite);
+
+            enableCheckpoints(false);
+
+            checkDestroyCachesAbruptly(ignite, true);
+        }
+        finally {
+            fork = false;
+        }
+    }
+
+    /**
+     *
+     */
+    public void testDestroyGroupCachesAbruptly() throws Exception {
+        Ignite ignite = startGrids(NODES);
+
+        ignite.cluster().active(true);
+
+        startGroupCachesDynamically(ignite);
+
+        checkDestroyCachesAbruptly(ignite, false);
+    }
 
     /**
      * @param ignite Ignite.
      */
-    private void checkDestroyCaches(IgniteEx ignite) throws Exception {
+    private void loadCaches(Ignite ignite) throws IgniteCheckedException {
+
+        for (int i = 0; i < CACHES; i++) {
+            IgniteCache cache = ignite.cache("cache" + i);
+
+            for (int j = 0; j < 100; j++)
+                cache.put(j, "cache: " + i + " data: " + j);
+        }
+    }
+
+    /**
+     * @param ignite Ignite.
+     */
+    private void checkDestroyCaches(Ignite ignite) throws Exception {
         loadCaches(ignite);
+
+        log.warning("destroying caches....");
 
         ignite.cache("cache0").destroy();
         ignite.cache("cache1").destroy();
 
-        assertEquals(ignite.cacheNames().size(), CACHES - 2);
+        assertEquals(CACHES - 2, ignite.cacheNames().size());
+
+        log.warning("Stopping grid");
 
         stopAllGrids();
 
-        info("grid stopped");
+        log.warning("Grid stopped");
 
-        ignite = (IgniteEx)startGrids(NODES);
+        log.warning("Starting grid");
 
-        assertEquals("Check that caches don't be restored", ignite.cacheNames().size(), CACHES - 2);
+        ignite = startGrids(NODES);
+
+        log.warning("Grid started");
+
+        assertEquals("Check that caches don't survived", CACHES - 2, ignite.cacheNames().size());
     }
 
+
+    /**
+     * @param woCheckpoints If woCheckpoints equals {@code true} it means that test Grid runs in MultiJVM.
+     */
+    private void checkDestroyCachesAbruptly(Ignite ignite, boolean woCheckpoints) throws Exception {
+        loadCaches(ignite);
+
+        log.warning("Destroying caches");
+
+        ((GatewayProtectedCacheProxy)ignite.cache("cache0")).destroyAsync();
+        ((GatewayProtectedCacheProxy)ignite.cache("cache1")).destroyAsync();
+
+        log.warning("Stopping grid");
+
+        if (woCheckpoints) {
+           IgniteProcessProxy.killAll();
+
+           stopGrid(0);
+        }
+        else
+            stopAllGrids();
+
+        log.warning("Grid stopped");
+
+        log.warning("Starting grid");
+
+        startGrids(NODES);
+
+        log.warning("Grid started");
+
+        for(Ignite ig: G.allGrids()) {
+            if (woCheckpoints) {
+                assertEquals("Check that all caches survives when checkpoint is disabled", 3, ig.cacheNames().size());
+
+                //check that data is not corrupted.
+                for (String name : ig.cacheNames()) {
+                    IgniteCache cache = ig.cache(name);
+
+                    for (int j = 0; j < 100; j++) {
+                        assertNotNull("Check that survived cache " + name + " contains key: " + j + " node: " + ig.name(),
+                                cache.get(j));
+                    }
+                }
+            }
+            else {
+                assertTrue(ig.cacheNames().contains("cache2"));
+
+                IgniteCache cache = ig.cache("cache2");
+
+                for (int j = 0; j < 100; j++)
+                    assertNotNull("Check that cache2 contains key: " + j + " node: " + ig.name(), cache.get(j));
+            }
+        }
+    }
 
     /**
      * @param ignite Ignite.
@@ -135,9 +288,7 @@ public class IgnitePdsDeleteCacheConfigurationDataAfterDestroyCacheTest extends 
         for (int i = 0; i < CACHES; i++)
             ccfg.add(new CacheConfiguration<>("cache" + i)
                     .setBackups(1)
-                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                    .setAffinity(new RendezvousAffinityFunction(false, 32))
-                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC));
+                    .setAffinity(new RendezvousAffinityFunction(false, 32)));
 
         ignite.createCaches(ccfg);
     }
@@ -145,32 +296,30 @@ public class IgnitePdsDeleteCacheConfigurationDataAfterDestroyCacheTest extends 
     /**
      * @param ignite Ignite.
      */
-    private void statGroupCachesDynamically(IgniteEx ignite) {
+    private void startGroupCachesDynamically(Ignite ignite) {
         List<CacheConfiguration> ccfg = new ArrayList<>(CACHES);
 
         for (int i = 0; i < CACHES; i++)
             ccfg.add(new CacheConfiguration<>("cache" + i)
                     .setGroupName(i % 2 == 0 ? "grp-even" : "grp-odd")
                     .setBackups(1)
-                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
-                    .setAffinity(new RendezvousAffinityFunction(false, 32))
-                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC));
+                    .setAffinity(new RendezvousAffinityFunction(false, 32)));
 
         ignite.createCaches(ccfg);
     }
 
-    /**
-     * @param ignite Ignite.
-     */
-    private void loadCaches(IgniteEx ignite) {
-        for (int i = 0; i < CACHES; i++) {
-            IgniteCache cache = ignite.cache("cache" + i);
-
-            if (i % 2 == 1)
+    private void enableCheckpoints(boolean enabled) throws IgniteCheckedException {
+        for (Ignite ignite : G.allGrids()) {
+            if (ignite.cluster().localNode().isClient())
                 continue;
 
-            for (int j = 0; j < 100; j++)
-                cache.put(j, (i % 2 == 0 ? "1 str " : "2 str ") + j);
+            if(getTestIgniteInstanceIndex(ignite.name()) == 0)
+                continue;
+
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
+                    .cache().context().database();
+
+            dbMgr.enableCheckpoints(enabled).get();
         }
     }
 }

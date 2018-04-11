@@ -1951,7 +1951,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (storeOnly && grpId != METASTORAGE_CACHE_ID)
                                 continue;
 
-                            if (!ignoreGrps.contains(grpId)) {
+                            if (!ignoreGrps.contains(grpId) && (cctx.cache().cacheGroup(grpId) != null || grpId == METASTORAGE_CACHE_ID)) {
                                 long pageId = pageRec.fullPageId().pageId();
 
                                 PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
@@ -1986,7 +1986,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (storeOnly && gId != METASTORAGE_CACHE_ID)
                             continue;
 
-                        if (!ignoreGrps.contains(gId)) {
+                        if (!ignoreGrps.contains(gId) && (cctx.cache().cacheGroup(gId) != null || gId == METASTORAGE_CACHE_ID)) {
                             final int pId = destroyRec.partitionId();
 
                             PageMemoryEx pageMem = gId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(gId);
@@ -2007,7 +2007,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (storeOnly && grpId != METASTORAGE_CACHE_ID)
                                 continue;
 
-                            if (!ignoreGrps.contains(grpId)) {
+                            if (!ignoreGrps.contains(grpId) && (cctx.cache().cacheGroup(grpId) != null || grpId == METASTORAGE_CACHE_ID)) {
                                 long pageId = r.pageId();
 
                                 PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
@@ -2187,7 +2187,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         for (DataEntry dataEntry : dataRec.writeEntries()) {
                             int cacheId = dataEntry.cacheId();
 
-                            int grpId = cctx.cache().cacheDescriptor(cacheId).groupId();
+                            DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheId);
+
+                            if (cacheDesc == null)
+                                continue;
+
+                            int grpId = cacheDesc.groupId();
 
                             if (!ignoreGrps.contains(grpId)) {
                                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
