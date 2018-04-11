@@ -62,10 +62,14 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
+import org.apache.ignite.internal.processors.cache.tree.CacheDataTree;
+import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -193,7 +197,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     else {
                         // localPartition will not acquire writeLock here because create=false.
                         GridDhtLocalPartition part = grp.topology().localPartition(store.partId(),
-                            AffinityTopologyVersion.NONE, false);
+                            AffinityTopologyVersion.NONE, false, true);
 
                         if (part != null && part.state() != GridDhtPartitionState.EVICTED)
                             state = part.state();
@@ -363,7 +367,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 rmvId,
                                 size,
                                 cntrsPageId,
-                                (byte)state.ordinal(),
+                                state == null ? -1 : (byte)state.ordinal(),
                                 pageCnt
                             ));
                     }
@@ -594,6 +598,28 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             return super.rebalanceIterator(part, topVer, partCntrSince);
         }
+    }
+
+    /**
+     * Calculates free space of all partition data stores - number of bytes available for use in allocated pages.
+     *
+     * @return Tuple (numenator, denominator).
+     */
+    long freeSpace() {
+        long freeSpace = 0;
+
+        for (CacheDataStore store : partDataStores.values()) {
+            assert store instanceof GridCacheDataStore;
+
+            FreeListImpl freeList = ((GridCacheDataStore)store).freeList;
+
+            if (freeList == null)
+                continue;
+
+            freeSpace += freeList.freeSpace();
+        }
+
+        return freeSpace;
     }
 
     /**
@@ -892,6 +918,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         reuseRoot.pageId().pageId(),
                         reuseRoot.isAllocated()) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                            assert grp.shared().database().checkpointLockIsHeldByThread();
+
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
                     };
@@ -908,6 +936,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         treeRoot.pageId().pageId(),
                         treeRoot.isAllocated()) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                            assert grp.shared().database().checkpointLockIsHeldByThread();
+
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
                     };
@@ -1167,7 +1197,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public Long initialUpdateCounter() {
+        @Override public long initialUpdateCounter() {
             try {
                 CacheDataStore delegate0 = init0(true);
 

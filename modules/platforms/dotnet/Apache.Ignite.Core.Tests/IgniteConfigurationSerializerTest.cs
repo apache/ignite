@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,6 +38,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Cluster.Ssl;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
@@ -143,7 +144,9 @@ namespace Apache.Ignite.Core.Tests
                                 </memoryPolicies>
                             </memoryConfiguration>
                             <sqlConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
+                            <clientConnectorConfiguration host='bar' port='10' portRange='11' socketSendBufferSize='12' socketReceiveBufferSize='13' tcpNoDelay='true' maxOpenCursorsPerConnection='14' threadPoolSize='15' />
                             <persistentStoreConfiguration alwaysWriteFullPages='true' checkpointingFrequency='00:00:1' checkpointingPageBufferSize='2' checkpointingThreads='3' lockWaitTime='00:00:04' persistentStorePath='foo' tlbSize='5' walArchivePath='bar' walFlushFrequency='00:00:06' walFsyncDelayNanos='7' walHistorySize='8' walMode='None' walRecordIteratorBufferSize='9' walSegments='10' walSegmentSize='11' walStorePath='baz' metricsEnabled='true' rateTimeInterval='0:0:6' subIntervals='3' />
+                            <sslContextFactory type='SslContextFactory' protocol='SSL' keyStoreFilePath='KeyStore/server.jks' keyStorePassword='123456' trustStoreFilePath='KeyStore/trust.jks' trustStorePassword='123456'/>
                         </igniteConfig>";
 
             var cfg = IgniteConfiguration.FromXml(xml);
@@ -285,6 +288,7 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.AreEqual(PeerAssemblyLoadingMode.CurrentAppDomain, cfg.PeerAssemblyLoadingMode);
 
+#pragma warning disable 618  // Obsolete
             var sql = cfg.SqlConnectorConfiguration;
             Assert.IsNotNull(sql);
             Assert.AreEqual("bar", sql.Host);
@@ -295,6 +299,18 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(sql.TcpNoDelay);
             Assert.AreEqual(14, sql.MaxOpenCursorsPerConnection);
             Assert.AreEqual(15, sql.ThreadPoolSize);
+#pragma warning restore 618
+
+            var client = cfg.ClientConnectorConfiguration;
+            Assert.IsNotNull(client);
+            Assert.AreEqual("bar", client.Host);
+            Assert.AreEqual(10, client.Port);
+            Assert.AreEqual(11, client.PortRange);
+            Assert.AreEqual(12, client.SocketSendBufferSize);
+            Assert.AreEqual(13, client.SocketReceiveBufferSize);
+            Assert.IsTrue(client.TcpNoDelay);
+            Assert.AreEqual(14, client.MaxOpenCursorsPerConnection);
+            Assert.AreEqual(15, client.ThreadPoolSize);
 
             var pers = cfg.PersistentStoreConfiguration;
 
@@ -317,6 +333,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(pers.MetricsEnabled);
             Assert.AreEqual(3, pers.SubIntervals);
             Assert.AreEqual(TimeSpan.FromSeconds(6), pers.RateTimeInterval);
+
+            Assert.IsInstanceOf<SslContextFactory>(cfg.SslContextFactory);
         }
 
         /// <summary>
@@ -355,6 +373,7 @@ namespace Apache.Ignite.Core.Tests
         /// Checks the property is present in schema.
         /// </summary>
         // ReSharper disable once UnusedParameter.Local
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Local
         private static void CheckPropertyIsPresentInSchema(Type type, XElement schema)
         {
             Func<string, string> toLowerCamel = x => char.ToLowerInvariant(x[0]) + x.Substring(1);
@@ -879,7 +898,7 @@ namespace Apache.Ignite.Core.Tests
                     }
                 },
                 PeerAssemblyLoadingMode = PeerAssemblyLoadingMode.CurrentAppDomain,
-                SqlConnectorConfiguration = new SqlConnectorConfiguration
+                ClientConnectorConfiguration = new ClientConnectorConfiguration
                 {
                     Host = "foo",
                     Port = 2,
@@ -912,7 +931,8 @@ namespace Apache.Ignite.Core.Tests
                     MetricsEnabled = true,
                     RateTimeInterval = TimeSpan.FromDays(1)
                 },
-                IsActiveOnStart = false
+                IsActiveOnStart = false,
+                SslContextFactory = new SslContextFactory()
             };
         }
 

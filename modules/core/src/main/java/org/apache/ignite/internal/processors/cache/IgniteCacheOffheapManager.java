@@ -414,7 +414,7 @@ public interface IgniteCacheOffheapManager {
         /**
          * @return Initial update counter.
          */
-        public Long initialUpdateCounter();
+        public long initialUpdateCounter();
 
         /**
          * @param cctx Cache context.

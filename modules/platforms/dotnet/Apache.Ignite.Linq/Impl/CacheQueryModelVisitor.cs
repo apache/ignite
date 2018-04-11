@@ -374,6 +374,10 @@ namespace Apache.Ignite.Linq.Impl
             foreach (var join in subQuery.QueryModel.BodyClauses.OfType<JoinClause>())
                 VisitJoinClause(join, queryModel, i++);
 
+            i = 0;
+            foreach (var where in subQuery.QueryModel.BodyClauses.OfType<WhereClause>())
+                VisitWhereClause(where, i++, false);
+
             // Append grouping
             _builder.Append("group by (");
 

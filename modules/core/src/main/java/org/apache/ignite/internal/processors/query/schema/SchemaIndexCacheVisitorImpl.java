@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
@@ -42,6 +43,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  * Traversor operating all primary and backup partitions of given cache.
  */
 public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
+    /** Count of rows, being processed within a single checkpoint lock. */
+    private static final int BATCH_SIZE = 1000;
+
     /** Query procssor. */
     private final GridQueryProcessor qryProc;
 
@@ -97,7 +101,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * @param clo Index closure.
      * @throws IgniteCheckedException If failed.
      */
-    private void processPartition(GridDhtLocalPartition part, FilteringVisitorClosure clo)
+    private void processPartition(GridDhtLocalPartition part, SchemaIndexCacheVisitorClosure clo)
         throws IgniteCheckedException {
         checkCancelled();
 
@@ -112,12 +116,37 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
         try {
             GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor();
 
-            while (cursor.next()) {
-                CacheDataRow row = cursor.get();
+            boolean locked = false;
 
-                KeyCacheObject key = row.key();
+            try {
+                int cntr = 0;
 
-                processKey(key, row.link(), clo);
+                while (cursor.next()) {
+                    CacheDataRow row = cursor.get();
+
+                    KeyCacheObject key = row.key();
+
+                    if (!locked) {
+                        cctx.shared().database().checkpointReadLock();
+
+                        locked = true;
+                    }
+
+                    processKey(key, row.link(), clo);
+
+                    if (++cntr % BATCH_SIZE == 0) {
+                        cctx.shared().database().checkpointReadUnlock();
+
+                        locked = false;
+                    }
+
+                    if (part.state() == RENTING)
+                        break;
+                }
+            }
+            finally {
+                if (locked)
+                    cctx.shared().database().checkpointReadUnlock();
             }
         }
         finally {
@@ -133,7 +162,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    private void processKey(KeyCacheObject key, long link, FilteringVisitorClosure clo) throws IgniteCheckedException {
+    private void processKey(KeyCacheObject key, long link, SchemaIndexCacheVisitorClosure clo) throws IgniteCheckedException {
         while (true) {
             try {
                 checkCancelled();
@@ -147,6 +176,9 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                     cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
                 }
 
+                break;
+            }
+            catch (GridDhtInvalidPartitionException ignore) {
                 break;
             }
             catch (GridCacheEntryRemovedException ignored) {

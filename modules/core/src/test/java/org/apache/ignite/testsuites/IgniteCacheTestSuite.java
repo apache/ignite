@@ -20,6 +20,8 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.IgniteWarmupClosureSelfTest;
+import org.apache.ignite.cache.store.CacheStoreReadFromBackupTest;
+import org.apache.ignite.cache.store.CacheTransactionalStoreReadFromBackupTest;
 import org.apache.ignite.cache.store.GridCacheBalancingStoreSelfTest;
 import org.apache.ignite.cache.store.GridCacheLoadOnlyStoreAdapterSelfTest;
 import org.apache.ignite.cache.store.StoreResourceInjectionSelfTest;
@@ -37,6 +39,7 @@ import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalanceMultipleConnectionsTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalancePairedConnectionsTest;
 import org.apache.ignite.internal.managers.communication.IgniteCommunicationBalanceTest;
+import org.apache.ignite.internal.managers.communication.IgniteCommunicationSslBalanceTest;
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessagesTest;
 import org.apache.ignite.internal.managers.communication.IgniteVariousConnectionNumberTest;
 import org.apache.ignite.internal.processors.cache.CacheAffinityCallSelfTest;
@@ -77,12 +80,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheStoreValueBytesSelfT
 import org.apache.ignite.internal.processors.cache.GridCacheSwapPreloadSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTtlManagerSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheTxPartitionedLocalStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.GridMemoryConfigurationConsistencySelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalWithStoreInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicNearEnabledInvokeTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicWithStoreInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicStopBusySelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicWithStoreInvokeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomicLocalTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomicReplicatedTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomicTest;
@@ -223,6 +227,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         // suite.addTestSuite(GridCacheP2PUndeploySelfTest.class);
         suite.addTestSuite(GridCacheConfigurationValidationSelfTest.class);
         suite.addTestSuite(GridCacheConfigurationConsistencySelfTest.class);
+        suite.addTestSuite(GridMemoryConfigurationConsistencySelfTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreSelfTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreMultithreadedSelfTest.class);
         suite.addTestSuite(JdbcTypesDefaultTransformerTest.class);
@@ -306,11 +311,15 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCommunicationBalanceTest.class);
         suite.addTestSuite(IgniteCommunicationBalancePairedConnectionsTest.class);
         suite.addTestSuite(IgniteCommunicationBalanceMultipleConnectionsTest.class);
+        suite.addTestSuite(IgniteCommunicationSslBalanceTest.class);
         suite.addTestSuite(IgniteIoTestMessagesTest.class);
         suite.addTestSuite(IgniteDiagnosticMessagesTest.class);
         suite.addTestSuite(IgniteDiagnosticMessagesMultipleConnectionsTest.class);
 
         suite.addTestSuite(IgniteIncompleteCacheObjectSelfTest.class);
+
+        suite.addTestSuite(CacheStoreReadFromBackupTest.class);
+        suite.addTestSuite(CacheTransactionalStoreReadFromBackupTest.class);
 
         return suite;
     }

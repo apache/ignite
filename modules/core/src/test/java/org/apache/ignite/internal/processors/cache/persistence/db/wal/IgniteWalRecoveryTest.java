@@ -22,9 +22,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -33,8 +36,11 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -53,14 +59,18 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.MemoryRecoveryRecord;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
+import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
@@ -75,6 +85,9 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.junit.Assert;
 import sun.nio.ch.DirectBuffer;
 
@@ -137,6 +150,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
 
         pCfg.setWalRecordIteratorBufferSize(1024 * 1024);
+
+        pCfg.setWalHistorySize(2);
 
         if (logOnly)
             pCfg.setWalMode(WALMode.LOG_ONLY);
@@ -1008,6 +1023,249 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         }
         finally {
             stopAllGrids();
+        }
+    }
+
+    /**
+     * Test recovery from WAL on 3 nodes in case of transactional cache.
+     *
+     * @throws Exception If fail.
+     */
+    public void testRecoveryOnTransactionalAndPartitionedCache() throws Exception {
+        IgniteEx ignite = (IgniteEx) startGrids(3);
+        ignite.active(true);
+
+        try {
+            final String cacheName = "transactional";
+
+            CacheConfiguration<Object, Object> cacheConfiguration = new CacheConfiguration<>(cacheName)
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                    .setAffinity(new RendezvousAffinityFunction(false, 32))
+                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setRebalanceMode(CacheRebalanceMode.SYNC)
+                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                    .setBackups(2);
+
+            ignite.createCache(cacheConfiguration);
+
+            IgniteCache<Object, Object> cache = ignite.cache(cacheName);
+            Map<Object, Object> map = new HashMap<>();
+
+            final int transactions = 100;
+            final int operationsPerTransaction = 40;
+
+            Random random = new Random();
+
+            for (int t = 1; t <= transactions; t++) {
+                Transaction tx = ignite.transactions().txStart(
+                        TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
+
+                Map<Object, Object> changesInTransaction = new HashMap<>();
+
+                for (int op = 0; op < operationsPerTransaction; op++) {
+                    int key = random.nextInt(1000) + 1;
+
+                    Object value;
+                    if (random.nextBoolean())
+                        value = randomString(random) + key;
+                    else
+                        value = new BigObject(key);
+
+                    changesInTransaction.put(key, value);
+
+                    cache.put(key, value);
+                }
+
+                if (random.nextBoolean()) {
+                    tx.commit();
+                    map.putAll(changesInTransaction);
+                }
+                else {
+                    tx.rollback();
+                }
+
+                if (t % 50 == 0)
+                    log.info("Finished transaction " + t);
+            }
+
+            stopAllGrids();
+
+            ignite = (IgniteEx) startGrids(3);
+            ignite.active(true);
+
+            cache = ignite.cache(cacheName);
+
+            for (Object key : map.keySet()) {
+                Object expectedValue = map.get(key);
+                Object actualValue = cache.get(key);
+                Assert.assertEquals("Unexpected value for key " + key, expectedValue, actualValue);
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Test that all DataRecord WAL records are within transaction boundaries - PREPARED and COMMITTED markers.
+     *
+     * @throws Exception If any fail.
+     */
+    public void testTxRecordsConsistency() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS, "true");
+
+        IgniteEx ignite = (IgniteEx) startGrids(3);
+        ignite.active(true);
+
+        try {
+            final String cacheName = "transactional";
+
+            CacheConfiguration<Object, Object> cacheConfiguration = new CacheConfiguration<>(cacheName)
+                    .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+                    .setAffinity(new RendezvousAffinityFunction(false, 32))
+                    .setCacheMode(CacheMode.PARTITIONED)
+                    .setRebalanceMode(CacheRebalanceMode.SYNC)
+                    .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                    .setBackups(0);
+
+            ignite.createCache(cacheConfiguration);
+
+            IgniteCache<Object, Object> cache = ignite.cache(cacheName);
+
+            GridCacheSharedContext<Object, Object> sharedCtx = ignite.context().cache().context();
+
+            GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)sharedCtx.database();
+
+            db.waitForCheckpoint("test");
+            db.enableCheckpoints(false).get();
+
+            // Log something to know where to start.
+            WALPointer startPtr = sharedCtx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
+
+            final int transactions = 100;
+            final int operationsPerTransaction = 40;
+
+            Random random = new Random();
+
+            for (int t = 1; t <= transactions; t++) {
+                Transaction tx = ignite.transactions().txStart(
+                        TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED);
+
+                for (int op = 0; op < operationsPerTransaction; op++) {
+                    int key = random.nextInt(1000) + 1;
+
+                    Object value;
+                    if (random.nextBoolean())
+                        value = randomString(random) + key;
+                    else
+                        value = new BigObject(key);
+
+                    cache.put(key, value);
+                }
+
+                if (random.nextBoolean()) {
+                    tx.commit();
+                }
+                else {
+                    tx.rollback();
+                }
+
+                if (t % 50 == 0)
+                    log.info("Finished transaction " + t);
+            }
+
+            Set<GridCacheVersion> activeTransactions = new HashSet<>();
+
+            // Check that all DataRecords are within PREPARED and COMMITTED tx records.
+            try (WALIterator it = sharedCtx.wal().replay(startPtr)) {
+                while (it.hasNext()) {
+                    IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
+
+                    WALRecord rec = tup.get2();
+
+                    if (rec instanceof TxRecord) {
+                        TxRecord txRecord = (TxRecord) rec;
+                        GridCacheVersion txId = txRecord.nearXidVersion();
+
+                        switch (txRecord.state()) {
+                            case PREPARED:
+                                assert !activeTransactions.contains(txId) : "Transaction is already present " + txRecord;
+
+                                activeTransactions.add(txId);
+
+                                break;
+                            case COMMITTED:
+                                assert activeTransactions.contains(txId) : "No PREPARE marker for transaction " + txRecord;
+
+                                activeTransactions.remove(txId);
+
+                                break;
+                            case ROLLED_BACK:
+                                activeTransactions.remove(txId);
+                                break;
+
+                            default:
+                                throw new IllegalStateException("Unknown Tx state of record " + txRecord);
+                        }
+                    } else if (rec instanceof DataRecord) {
+                        DataRecord dataRecord = (DataRecord) rec;
+
+                        for (DataEntry entry : dataRecord.writeEntries()) {
+                            GridCacheVersion txId = entry.nearXidVersion();
+
+                            assert activeTransactions.contains(txId) : "No transaction for entry " + entry;
+                        }
+                    }
+                }
+            }
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS);
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Generate random lowercase string for test purposes.
+     */
+    private String randomString(Random random) {
+        int len = random.nextInt(50) + 1;
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < len; i++)
+            sb.append(random.nextInt(26) + 'a');
+
+        return sb.toString();
+    }
+
+    /**
+     * BigObject for test purposes that don't fit in page size.
+     */
+    private static class BigObject {
+        private final int index;
+
+        private final byte[] payload = new byte[4096];
+
+        BigObject(int index) {
+            this.index = index;
+            // Create pseudo-random array.
+            for (int i = 0; i < payload.length; i++)
+                if (i % index == 0)
+                    payload[i] = (byte) index;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            BigObject bigObject = (BigObject) o;
+            return index == bigObject.index &&
+                    Arrays.equals(payload, bigObject.payload);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(index, payload);
         }
     }
 

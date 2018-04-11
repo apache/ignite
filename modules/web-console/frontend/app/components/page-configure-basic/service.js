@@ -50,7 +50,7 @@ export default class PageConfigureBasic {
         const noFakeIDCaches = caches.map(stripFakeID);
         cluster = cloneDeep(stripFakeID(cluster));
         return this.$q.all(noFakeIDCaches.map((cache) => (
-                this.caches.saveCache(cache)
+            this.caches.saveCache(cache)
                 .then(
                     ({data}) => data,
                     (e) => {
@@ -58,7 +58,7 @@ export default class PageConfigureBasic {
                         return this.$q.resolve(null);
                     }
                 )
-            )))
+        )))
         .then((cacheIDs) => {
             // Make sure we don't loose new IDs even if some requests fail
             this.pageConfigure.upsertCaches(
@@ -115,8 +115,8 @@ export default class PageConfigureBasic {
     setCluster(_id) {
         this.ConfigureState.dispatchAction(
             isNewItem({_id})
-            ? {type: SET_CLUSTER, _id, cluster: this.clusters.getBlankCluster()}
-            : {type: SET_CLUSTER, _id}
+                ? {type: SET_CLUSTER, _id, cluster: this.clusters.getBlankCluster()}
+                : {type: SET_CLUSTER, _id}
         );
     }
 

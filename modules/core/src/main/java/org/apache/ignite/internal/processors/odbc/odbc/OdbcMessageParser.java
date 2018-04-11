@@ -29,16 +29,17 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.processors.odbc.SqlListenerMessageParser;
-import org.apache.ignite.internal.processors.odbc.SqlListenerRequest;
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlListenerUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * JDBC message parser.
  */
-public class OdbcMessageParser implements SqlListenerMessageParser {
+public class OdbcMessageParser implements ClientListenerMessageParser {
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
@@ -51,11 +52,16 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
     /** Logger. */
     private final IgniteLogger log;
 
+    /** Protocol version */
+    private final ClientListenerProtocolVersion ver;
+
     /**
      * @param ctx Context.
+     * @param ver Protocol version.
      */
-    public OdbcMessageParser(GridKernalContext ctx) {
+    public OdbcMessageParser(GridKernalContext ctx, ClientListenerProtocolVersion ver) {
         this.ctx = ctx;
+        this.ver = ver;
 
         log = ctx.log(getClass());
 
@@ -71,7 +77,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
     }
 
     /** {@inheritDoc} */
-    @Override public SqlListenerRequest decode(byte[] msg) {
+    @Override public ClientListenerRequest decode(byte[] msg) {
         assert msg != null;
 
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
@@ -80,7 +86,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
 
         byte cmd = reader.readByte();
 
-        SqlListenerRequest res;
+        ClientListenerRequest res;
 
         switch (cmd) {
             case OdbcRequest.QRY_EXEC: {
@@ -90,7 +96,12 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
 
                 Object[] params = readParameterRow(reader, paramNum);
 
-                res = new OdbcQueryExecuteRequest(schema, sql, params);
+                int timeout = 0;
+
+                if (ver.compareTo(OdbcConnectionContext.VER_2_1_8) >= 0)
+                    timeout = reader.readInt();
+
+                res = new OdbcQueryExecuteRequest(schema, sql, params, timeout);
 
                 break;
             }
@@ -107,7 +118,12 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
                 for (int i = 0; i < rowNum; ++i)
                     params[i] = readParameterRow(reader, paramRowLen);
 
-                res = new OdbcQueryExecuteBatchRequest(schema, sql, last, params);
+                int timeout = 0;
+
+                if (ver.compareTo(OdbcConnectionContext.VER_2_1_8) >= 0)
+                    timeout = reader.readInt();
+
+                res = new OdbcQueryExecuteBatchRequest(schema, sql, last, params, timeout);
 
                 break;
             }
@@ -182,7 +198,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
     }
 
     /** {@inheritDoc} */
-    @Override public byte[] encode(SqlListenerResponse msg0) {
+    @Override public byte[] encode(ClientListenerResponse msg0) {
         assert msg0 != null;
 
         assert msg0 instanceof OdbcResponse;
@@ -194,9 +210,13 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
             BinaryThreadLocalContext.get().schemaHolder(), null);
 
         // Writing status.
-        writer.writeByte((byte) msg.status());
+        if (ver.compareTo(OdbcConnectionContext.VER_2_1_5) < 0) {
+            writer.writeByte((byte) (msg.status() == ClientListenerResponse.STATUS_SUCCESS ?
+                ClientListenerResponse.STATUS_SUCCESS : ClientListenerResponse.STATUS_FAILED));
+        } else
+            writer.writeInt(msg.status());
 
-        if (msg.status() != SqlListenerResponse.STATUS_SUCCESS) {
+        if (msg.status() != ClientListenerResponse.STATUS_SUCCESS) {
             writer.writeString(msg.error());
 
             return writer.array();
@@ -214,7 +234,7 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
 
             writer.writeLong(res.queryId());
 
-            Collection<OdbcColumnMeta> metas = res.getColumnsMetadata();
+            Collection<OdbcColumnMeta> metas = res.columnsMetadata();
 
             assert metas != null;
 
@@ -222,6 +242,8 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
 
             for (OdbcColumnMeta meta : metas)
                 meta.write(writer);
+
+            writer.writeLong(res.affectedRows());
         }
         else if (res0 instanceof OdbcQueryExecuteBatchResult) {
             OdbcQueryExecuteBatchResult res = (OdbcQueryExecuteBatchResult) res0;
@@ -232,6 +254,9 @@ public class OdbcMessageParser implements SqlListenerMessageParser {
             if (res.errorMessage() != null) {
                 writer.writeLong(res.errorSetIdx());
                 writer.writeString(res.errorMessage());
+
+                if (ver.compareTo(OdbcConnectionContext.VER_2_1_5) >= 0)
+                    writer.writeInt(res.errorCode());
             }
         }
         else if (res0 instanceof OdbcQueryFetchResult) {

@@ -21,5 +21,8 @@ package org.apache.ignite.internal.processors.cache;
  * Cache partition exchange worker task marker interface.
  */
 public interface CachePartitionExchangeWorkerTask {
-    // No-op.
+    /**
+     * @return {@code False} if exchange merge should stop if this task is found in exchange worker queue.
+     */
+    boolean skipForExchangeMerge();
 }

@@ -95,6 +95,8 @@ public class RowStore {
      * @return {@code True} if was able to update row.
      */
     public boolean updateRow(long link, CacheDataRow row) throws IgniteCheckedException {
+        assert !ctx.database().persistenceEnabled() || ctx.database().checkpointLockIsHeldByThread();
+
         return freeList.updateDataRow(link, row);
     }
 

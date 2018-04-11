@@ -205,7 +205,7 @@ public class GridDhtPartitionsReservation implements GridReservable {
             if (reservations.compareAndSet(r, r - 1)) {
                 // If it was the last reservation and topology version changed -> attempt to evict partitions.
                 if (r == 1 && !cctx.kernalContext().isStopping() &&
-                    !topVer.equals(cctx.topology().topologyVersion()))
+                    !topVer.equals(cctx.topology().lastTopologyChangeVersion()))
                     tryEvict(parts.get());
 
                 return;

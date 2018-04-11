@@ -44,6 +44,8 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 
+import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
+
 /**
  * Cache transaction proxy.
  */
@@ -98,6 +100,18 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
      * Enters a call.
      */
     private void enter() {
+        enter(false);
+    }
+
+    /**
+     * Enters a call.
+     *
+     * @param resume Flag to indicate that resume operation in progress.
+     */
+    private void enter(boolean resume) {
+        if (!resume && state() == SUSPENDED)
+            throw new IgniteException("Tx in SUSPENDED state. All operations except resume are prohibited.");
+
         if (cctx.deploymentEnabled())
             cctx.deploy().onEnter();
 
@@ -201,6 +215,21 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
             save(tx.state());
 
         return tx.state();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void suspend() throws IgniteException {
+        enter();
+
+        try {
+            cctx.suspendTx(tx);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            leave();
+        }
     }
 
     /** {@inheritDoc} */
@@ -324,6 +353,21 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
         try {
             return (IgniteFuture<Void>)(new IgniteFutureImpl(cctx.rollbackTxAsync(tx)));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resume() throws IgniteException {
+        enter(true);
+
+        try {
+            cctx.resumeTx(tx);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

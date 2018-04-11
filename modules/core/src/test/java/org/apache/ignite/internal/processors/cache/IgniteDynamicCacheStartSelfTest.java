@@ -324,9 +324,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         for (int g = 0; g < nodeCount(); g++) {
             IgniteEx kernal0 = grid(g);
 
-            for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
-                f.get();
-
             info("Getting cache for node: " + g);
 
             assertNotNull(grid(g).cache(DYNAMIC_CACHE_NAME));
@@ -345,13 +342,12 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         kernal.destroyCache(DYNAMIC_CACHE_NAME);
 
+        awaitPartitionMapExchange();
+
         for (int g = 0; g < nodeCount(); g++) {
             final IgniteKernal kernal0 = (IgniteKernal)grid(g);
 
             final int idx = g;
-
-            for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
-                f.get();
 
             assertNull(kernal0.cache(DYNAMIC_CACHE_NAME));
 
@@ -387,9 +383,6 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         for (int g = 0; g < nodeCount(); g++) {
             IgniteEx kernal0 = grid(g);
 
-            for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
-                f.get();
-
             info("Getting cache for node: " + g);
 
             for (int i = 0; i < cacheCnt; i++)
@@ -423,15 +416,14 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
         kernal.destroyCaches(namesToDestroy);
 
+        awaitPartitionMapExchange();
+
         for (int g = 0; g < nodeCount(); g++) {
             final IgniteKernal kernal0 = (IgniteKernal)grid(g);
 
             for (int i = 0; i < cacheCnt; i++) {
                 final int idx = g * nodeCount() + i;
                 final int expVal = i;
-
-                for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
-                    f.get();
 
                 assertNull(kernal0.cache(DYNAMIC_CACHE_NAME));
 
@@ -481,12 +473,11 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
 
             startGrid(nodeCount() + 1);
 
+            awaitPartitionMapExchange();
+
             // Check that cache is not deployed on new node after undeploy.
             for (int g = 0; g < nodeCount() + 2; g++) {
                 final IgniteKernal kernal0 = (IgniteKernal)grid(g);
-
-                for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
-                    f.get();
 
                 assertNull(kernal0.cache(DYNAMIC_CACHE_NAME));
             }
@@ -537,12 +528,11 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
                 }
             }
 
+            awaitPartitionMapExchange();
+
             // Check that cache is not deployed on new node after undeploy.
             for (int g = 0; g < nodeCount() + 2; g++) {
                 final IgniteKernal kernal0 = (IgniteKernal)grid(g);
-
-                for (IgniteInternalFuture f : kernal0.context().cache().context().exchange().exchangeFutures())
-                    f.get();
 
                 if (g < nodeCount())
                     assertNotNull(grid(g).cache(DYNAMIC_CACHE_NAME));

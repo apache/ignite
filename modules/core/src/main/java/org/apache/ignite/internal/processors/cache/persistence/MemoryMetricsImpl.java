@@ -19,9 +19,10 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteOutClosure;
+import org.jetbrains.annotations.Nullable;
 import org.jsr166.LongAdder8;
 
 /**
@@ -29,7 +30,7 @@ import org.jsr166.LongAdder8;
  */
 public class MemoryMetricsImpl implements MemoryMetrics {
     /** */
-    private FreeListImpl freeList;
+    private final IgniteOutClosure<Long> freeSpaceProvider;
 
     /** */
     private final LongAdder8 totalAllocatedPages = new LongAdder8();
@@ -38,6 +39,9 @@ public class MemoryMetricsImpl implements MemoryMetrics {
      * Counter for number of pages occupied by large entries (one entry is larger than one page).
      */
     private final LongAdder8 largeEntriesPages = new LongAdder8();
+
+    /** Memory page size */
+    private final int pageSize;
 
     /** Counter for number of dirty pages. */
     private LongAdder8 dirtyPages = new LongAdder8();
@@ -68,9 +72,21 @@ public class MemoryMetricsImpl implements MemoryMetrics {
 
     /**
      * @param memPlcCfg MemoryPolicyConfiguration.
-     */
+    */
     public MemoryMetricsImpl(MemoryPolicyConfiguration memPlcCfg) {
+        this(memPlcCfg, null, 0);
+    }
+
+    /**
+     * @param memPlcCfg MemoryPolicyConfiguration.
+     * @param pageSize Page size used for free space calculation.
+     */
+    public MemoryMetricsImpl(MemoryPolicyConfiguration memPlcCfg, @Nullable IgniteOutClosure<Long> freeSpaceProvider,
+        int pageSize) {
         this.memPlcCfg = memPlcCfg;
+        this.freeSpaceProvider = freeSpaceProvider;
+
+        this.pageSize = pageSize;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
@@ -114,10 +130,14 @@ public class MemoryMetricsImpl implements MemoryMetrics {
 
     /** {@inheritDoc} */
     @Override public float getPagesFillFactor() {
-        if (!metricsEnabled || freeList == null)
+        if (!metricsEnabled || freeSpaceProvider == null || pageSize == 0)
             return 0;
 
-        return freeList.fillFactor();
+        long freeSpace = freeSpaceProvider.apply();
+
+        long totalAllocated = pageSize * totalAllocatedPages.longValue();
+
+        return (float) (totalAllocated - freeSpace) / totalAllocated;
     }
 
     /** {@inheritDoc} */
@@ -273,12 +293,5 @@ public class MemoryMetricsImpl implements MemoryMetrics {
 
         allocRate = new HitRateMetrics((int) rateTimeInterval, subInts);
         pageReplaceRate = new HitRateMetrics((int) rateTimeInterval, subInts);
-    }
-
-    /**
-     * @param freeList Free list.
-     */
-    void freeList(FreeListImpl freeList) {
-        this.freeList = freeList;
     }
 }

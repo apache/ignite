@@ -105,7 +105,35 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteException.class, "Schema already registered: ");
+        }, IgniteException.class, "Duplicate index name");
+    }
+
+    /**
+     * Test collision of table names in different caches, sharing a single SQL schema.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testCustomSchemaMultipleCachesTablesCollision() throws Exception {
+        //TODO: Rewrite with dynamic cache creation, and GRID start in #beforeTest after resolve of
+        //TODO: https://issues.apache.org/jira/browse/IGNITE-1094
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                final CacheConfiguration cfg = cacheConfig("cache1", true, Integer.class, Fact.class)
+                    .setSqlSchema("TEST_SCHEMA");
+
+                final CacheConfiguration collisionCfg = cacheConfig("cache2", true, Integer.class, Fact.class)
+                    .setSqlSchema("TEST_SCHEMA");
+
+                IgniteConfiguration icfg = new IgniteConfiguration()
+                    .setLocalHost("127.0.0.1")
+                    .setCacheConfiguration(cfg, collisionCfg);
+
+                Ignition.start(icfg);
+
+                return null;
+            }
+        }, IgniteException.class, "Failed to register query type");
     }
 
     /**

@@ -1309,6 +1309,53 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="clientConnectorConfiguration" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Client connector configuration (JDBC, ODBC, thin clients).</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="port" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Connector port.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="host" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Connector host.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="portRange" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Connector port range.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="socketSendBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the socket send buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="socketReceiveBufferSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Size of the socket receive buffer.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="tcpNoDelay" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>TCP_NODELAY socket option.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="maxOpenCursorsPerConnection" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>Maximum open cursors per connection.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="threadPoolSize" type="xs:int">
+                            <xs:annotation>
+                                <xs:documentation>SQL connector thread pool size.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
                 <xs:element name="persistentStoreConfiguration" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>Persistent store configuration.</xs:documentation>
@@ -1407,6 +1454,58 @@
                         <xs:attribute name="rateTimeInterval" type="xs:string">
                             <xs:annotation>
                                 <xs:documentation>Rate time interval.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="sslContextFactory" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Factory for SSL Context.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="keyAlgorithm" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Key manager algorithm that will be used to create a key manager.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="keyStoreType" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Key store type used for context creation.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="keyStoreFilePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path to key store file.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="keyStorePassword" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Key store password.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="protocol" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Protocol for secure transport.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="trustStoreType" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Trust store type used for context creation.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="trustStoreFilePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path to trust store file.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="trustStorePassword" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Trust store password.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="type" type="xs:string" use="required">
+                            <xs:annotation>
+                              <xs:documentation>Assembly-qualified type name.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
@@ -1651,6 +1750,11 @@
             <xs:attribute name="isActiveOnStart" type="xs:boolean">
                 <xs:annotation>
                     <xs:documentation>Whether grid should be active on start.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Whether client connector should be enabled (allow thin clients, ODBC and JDBC drivers to work with Ignite).</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
         </xs:complexType>

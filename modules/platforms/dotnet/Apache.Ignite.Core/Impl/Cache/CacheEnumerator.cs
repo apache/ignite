@@ -21,14 +21,12 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Collections;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Real cache enumerator communicating with Java.
     /// </summary>
-    internal class CacheEnumerator<TK, TV> : PlatformDisposableTarget, IEnumerator<ICacheEntry<TK, TV>>
+    internal class CacheEnumerator<TK, TV> : PlatformDisposableTargetAdapter, IEnumerator<ICacheEntry<TK, TV>>
     {
         /** Operation: next value. */
         private const int OpNext = 1;
@@ -43,10 +41,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// Constructor.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
-        public CacheEnumerator(IUnmanagedTarget target, Marshaller marsh, bool keepBinary) : 
-            base(target, marsh)
+        public CacheEnumerator(IPlatformTargetInternal target, bool keepBinary) : base(target)
         {
             _keepBinary = keepBinary;
         }

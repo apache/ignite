@@ -62,6 +62,6 @@ public class DataPageRemoveRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DataPageRemoveRecord.class, this, super.toString());
+        return S.toString(DataPageRemoveRecord.class, this, "super", super.toString());
     }
 }

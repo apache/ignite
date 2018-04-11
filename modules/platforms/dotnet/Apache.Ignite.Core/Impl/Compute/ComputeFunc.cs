@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             var writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteWithPeerDeployment(_func));
+            writer0.WriteWithPeerDeployment(_func);
         }
 
         /// <summary>

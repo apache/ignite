@@ -30,7 +30,11 @@ namespace ignite
             {
                 enum Type
                 {
-                    FOR_SERVERS = 23
+                    FOR_SERVERS = 23,
+
+                    SET_ACTIVE = 28,
+
+                    IS_ACTIVE = 29
                 };
             };
 
@@ -59,6 +63,26 @@ namespace ignite
             ClusterGroupImpl::SP_ComputeImpl ClusterGroupImpl::GetCompute()
             {
                 return computeImpl;
+            }
+
+            bool ClusterGroupImpl::IsActive()
+            {
+                IgniteError err;
+
+                int64_t res = OutInOpLong(Command::IS_ACTIVE, 0, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res == 1;
+            }
+
+            void ClusterGroupImpl::SetActive(bool active)
+            {
+                IgniteError err;
+
+                int64_t res = OutInOpLong(Command::SET_ACTIVE, active ? 1 : 0, err);
+
+                IgniteError::ThrowIfNeeded(err);
             }
 
             SP_ClusterGroupImpl ClusterGroupImpl::FromTarget(jobject javaRef)

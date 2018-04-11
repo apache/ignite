@@ -74,6 +74,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
@@ -645,12 +646,76 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             return;
         }
 
-        IgniteInternalFuture<?> f = lockAllAsync(ctx, nearNode, req, null);
+        processNearLockRequest0(nearNode, req);
+    }
+
+    /**
+     * @param nearNode
+     * @param req
+     */
+    private void processNearLockRequest0(ClusterNode nearNode, GridNearLockRequest req) {
+        IgniteInternalFuture<?> f;
+
+        if (req.firstClientRequest()) {
+            for (;;) {
+                if (waitForExchangeFuture(nearNode, req))
+                    return;
+
+                f = lockAllAsync(ctx, nearNode, req, null);
+
+                if (f != null)
+                    break;
+            }
+        }
+        else
+            f = lockAllAsync(ctx, nearNode, req, null);
 
         // Register listener just so we print out errors.
         // Exclude lock timeout exception since it's not a fatal exception.
         f.listen(CU.errorLogger(log, GridCacheLockTimeoutException.class,
             GridDistributedLockCancelledException.class));
+    }
+
+    private boolean waitForExchangeFuture(final ClusterNode node, final GridNearLockRequest req) {
+        assert req.firstClientRequest() : req;
+
+        GridDhtTopologyFuture topFut = ctx.shared().exchange().lastTopologyFuture();
+
+        if (!topFut.isDone()) {
+            Thread curThread = Thread.currentThread();
+
+            if (curThread instanceof IgniteThread) {
+                final IgniteThread thread = (IgniteThread)curThread;
+
+                if (thread.cachePoolThread()) {
+                    topFut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
+                        @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
+                            ctx.kernalContext().closure().runLocalWithThreadPolicy(thread, new Runnable() {
+                                @Override public void run() {
+                                    try {
+                                        processNearLockRequest0(node, req);
+                                    }
+                                    finally {
+                                        ctx.io().onMessageProcessed(req);
+                                    }
+                                }
+                            });
+                        }
+                    });
+
+                    return true;
+                }
+            }
+
+            try {
+                topFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Topology future failed: " + e, e);
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -846,21 +911,27 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                     top = topology();
 
-                    topology().readLock();
+                    top.readLock();
+
+                    if (!top.topologyVersionFuture().isDone()) {
+                        top.readUnlock();
+
+                        return null;
+                    }
                 }
 
                 try {
-                    if (top != null && needRemap(req.topologyVersion(), top.topologyVersion())) {
+                    if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion())) {
                         if (log.isDebugEnabled()) {
                             log.debug("Client topology version mismatch, need remap lock request [" +
                                 "reqTopVer=" + req.topologyVersion() +
-                                ", locTopVer=" + top.topologyVersion() +
+                                ", locTopVer=" + top.readyTopologyVersion() +
                                 ", req=" + req + ']');
                         }
 
                         GridNearLockResponse res = sendClientLockRemapResponse(nearNode,
                             req,
-                            top.topologyVersion());
+                            top.lastTopologyChangeVersion());
 
                         return new GridFinishedFuture<>(res);
                     }
@@ -945,21 +1016,27 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                         top = topology();
 
-                        topology().readLock();
+                        top.readLock();
+
+                        if (!top.topologyVersionFuture().isDone()) {
+                            top.readUnlock();
+
+                            return null;
+                        }
                     }
 
                     try {
-                        if (top != null && needRemap(req.topologyVersion(), top.topologyVersion())) {
+                        if (top != null && needRemap(req.topologyVersion(), top.readyTopologyVersion())) {
                             if (log.isDebugEnabled()) {
                                 log.debug("Client topology version mismatch, need remap lock request [" +
                                     "reqTopVer=" + req.topologyVersion() +
-                                    ", locTopVer=" + top.topologyVersion() +
+                                    ", locTopVer=" + top.readyTopologyVersion() +
                                     ", req=" + req + ']');
                             }
 
                             GridNearLockResponse res = sendClientLockRemapResponse(nearNode,
                                 req,
-                                top.topologyVersion());
+                                top.lastTopologyChangeVersion());
 
                             return new GridFinishedFuture<>(res);
                         }
@@ -1338,7 +1415,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 ", res=" + res + ']', e);
 
             if (tx != null)
-                tx.rollbackDhtLocalAsync();
+                try {
+                    tx.rollbackDhtLocalAsync();
+                }
+                catch (Throwable e1) {
+                    e.addSuppressed(e1);
+                }
 
             // Convert to closure exception as this method is only called form closures.
             throw new GridClosureException(e);

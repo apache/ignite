@@ -1003,6 +1003,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public Collection<GridCacheSqlMetadata> execute() {
+            if (!ignite.active())
+                return Collections.emptyList();
+
             IgniteCacheProxy<?, ?> cache = F.first(ignite.context().cache().publicCaches());
 
             if (cache == null)

@@ -33,6 +33,7 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryRawReader;
@@ -53,6 +54,7 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
@@ -87,6 +89,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
 import org.apache.ignite.spi.eventstorage.NoopEventStorageSpi;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
+import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
@@ -532,6 +535,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @param cfg Configuration.
      */
+    @SuppressWarnings("deprecation")
     public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
@@ -681,7 +685,16 @@ public class PlatformConfigurationUtils {
             cfg.setSqlConnectorConfiguration(readSqlConnectorConfiguration(in));
 
         if (in.readBoolean())
+            cfg.setClientConnectorConfiguration(readClientConnectorConfiguration(in));
+
+        if (!in.readBoolean())  // ClientConnectorConfigurationEnabled override
+            cfg.setClientConnectorConfiguration(null);
+
+        if (in.readBoolean())
             cfg.setPersistentStoreConfiguration(readPersistentStoreConfiguration(in));
+
+        if (in.readBoolean())
+            cfg.setSslContextFactory(readSslContextFactory(in));
 
         readPluginConfiguration(cfg, in);
     }
@@ -983,6 +996,7 @@ public class PlatformConfigurationUtils {
      * @param w Writer.
      * @param cfg Configuration.
      */
+    @SuppressWarnings("deprecation")
     public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg) {
         assert w != null;
         assert cfg != null;
@@ -1145,7 +1159,13 @@ public class PlatformConfigurationUtils {
 
         writeSqlConnectorConfiguration(w, cfg.getSqlConnectorConfiguration());
 
+        writeClientConnectorConfiguration(w, cfg.getClientConnectorConfiguration());
+
+        w.writeBoolean(cfg.getClientConnectorConfiguration() != null);
+
         writePersistentStoreConfiguration(w, cfg.getPersistentStoreConfiguration());
+
+        writeSslContextFactory(w, cfg.getSslContextFactory());
 
         w.writeString(cfg.getIgniteHome());
 
@@ -1442,6 +1462,7 @@ public class PlatformConfigurationUtils {
      * @param in Reader.
      * @return Config.
      */
+    @SuppressWarnings("deprecation")
     private static SqlConnectorConfiguration readSqlConnectorConfiguration(BinaryRawReader in) {
         return new SqlConnectorConfiguration()
                 .setHost(in.readString())
@@ -1459,7 +1480,50 @@ public class PlatformConfigurationUtils {
      *
      * @param w Writer.
      */
+    @SuppressWarnings("deprecation")
     private static void writeSqlConnectorConfiguration(BinaryRawWriter w, SqlConnectorConfiguration cfg) {
+        assert w != null;
+
+        if (cfg != null) {
+            w.writeBoolean(true);
+
+            w.writeString(cfg.getHost());
+            w.writeInt(cfg.getPort());
+            w.writeInt(cfg.getPortRange());
+            w.writeInt(cfg.getSocketSendBufferSize());
+            w.writeInt(cfg.getSocketReceiveBufferSize());
+            w.writeBoolean(cfg.isTcpNoDelay());
+            w.writeInt(cfg.getMaxOpenCursorsPerConnection());
+            w.writeInt(cfg.getThreadPoolSize());
+        } else {
+            w.writeBoolean(false);
+        }
+    }
+
+    /**
+     * Reads the client connector configuration.
+     *
+     * @param in Reader.
+     * @return Config.
+     */
+    private static ClientConnectorConfiguration readClientConnectorConfiguration(BinaryRawReader in) {
+        return new ClientConnectorConfiguration()
+                .setHost(in.readString())
+                .setPort(in.readInt())
+                .setPortRange(in.readInt())
+                .setSocketSendBufferSize(in.readInt())
+                .setSocketReceiveBufferSize(in.readInt())
+                .setTcpNoDelay(in.readBoolean())
+                .setMaxOpenCursorsPerConnection(in.readInt())
+                .setThreadPoolSize(in.readInt());
+    }
+
+    /**
+     * Writes the client connector configuration.
+     *
+     * @param w Writer.
+     */
+    private static void writeClientConnectorConfiguration(BinaryRawWriter w, ClientConnectorConfiguration cfg) {
         assert w != null;
 
         if (cfg != null) {
@@ -1508,6 +1572,38 @@ public class PlatformConfigurationUtils {
     }
 
     /**
+     * Reads the SSL context factory.
+     *
+     * @param in Reader.
+     * @return Config.
+     */
+    private static SslContextFactory readSslContextFactory(BinaryRawReader in) {
+        SslContextFactory f = new SslContextFactory();
+
+        f.setKeyAlgorithm(in.readString());
+
+        f.setKeyStoreType(in.readString());
+        f.setKeyStoreFilePath(in.readString());
+        String pwd = in.readString();
+        if (pwd != null)
+            f.setKeyStorePassword(pwd.toCharArray());
+
+        f.setProtocol(in.readString());
+
+        f.setTrustStoreType(in.readString());
+        String path = in.readString();
+        if (path != null)
+            f.setTrustStoreFilePath(path);
+        else
+            f.setTrustManagers(SslContextFactory.getDisabledTrustManager());
+        pwd = in.readString();
+        if (pwd != null)
+            f.setTrustStorePassword(pwd.toCharArray());
+
+        return f;
+    }
+
+    /**
      * Writes the persistent store configuration.
      *
      * @param w Writer.
@@ -1543,6 +1639,36 @@ public class PlatformConfigurationUtils {
         }
     }
 
+    /**
+     * Writes the SSL context factory.
+     *
+     * @param w Writer.
+     * @param factory SslContextFactory.
+     */
+    private static void writeSslContextFactory(BinaryRawWriter w, Factory<SSLContext> factory) {
+        assert w != null;
+
+        if (!(factory instanceof SslContextFactory)) {
+            w.writeBoolean(false);
+            return;
+        }
+
+        w.writeBoolean(true);
+
+        SslContextFactory sslCtxFactory = (SslContextFactory)factory;
+
+        w.writeString(sslCtxFactory.getKeyAlgorithm());
+
+        w.writeString(sslCtxFactory.getKeyStoreType());
+        w.writeString(sslCtxFactory.getKeyStoreFilePath());
+        w.writeString(new String(sslCtxFactory.getKeyStorePassword()));
+
+        w.writeString(sslCtxFactory.getProtocol());
+
+        w.writeString(sslCtxFactory.getTrustStoreType());
+        w.writeString(sslCtxFactory.getTrustStoreFilePath());
+        w.writeString(new String(sslCtxFactory.getTrustStorePassword()));
+    }
 
     /**
      * Private constructor.

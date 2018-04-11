@@ -474,6 +474,11 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitConstant(ConstantExpression expression)
         {
+            if (MethodVisitor.VisitConstantCall(expression, this))
+            {
+                return expression;
+            }
+
             AppendParameter(expression.Value);
 
             return expression;

@@ -124,7 +124,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                     info("Node is reported as NOT affinity node for key [key=" + key +
                         ", nodeId=" + locNode.id() + ']');
 
-                    if (nearEnabled() && cache == cache0)
+                    if (nearEnabled() && cache.equals(cache0))
                         assertEquals((Integer)i, cache0.localPeek(key));
                     else
                         assertNull(cache0.localPeek(key));
@@ -184,7 +184,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
                     info("Node is reported as NOT affinity node for key [key=" + key +
                         ", nodeId=" + locNode.id() + ']');
 
-                    if (nearEnabled() && cache == cache0)
+                    if (nearEnabled() && cache.equals(cache0))
                         assertEquals((Integer)i, cache0.localPeek(key));
                     else
                         assertNull(cache0.localPeek(key));

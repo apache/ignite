@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import org.apache.ignite.internal.processors.odbc.SqlListenerResponse;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -25,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * SQL listener response.
  */
-public class OdbcResponse extends SqlListenerResponse {
+public class OdbcResponse extends ClientListenerResponse {
     /** Response object. */
     @GridToStringInclude
     private final Object obj;

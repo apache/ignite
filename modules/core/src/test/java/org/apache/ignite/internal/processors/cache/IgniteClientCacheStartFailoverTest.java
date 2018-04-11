@@ -287,7 +287,9 @@ public class IgniteClientCacheStartFailoverTest extends GridCommonAbstractTest {
             for (String cacheName : cacheNames) {
                 GridDhtPartitionTopology top = node.context().cache().internalCache(cacheName).context().topology();
 
-                assertEquals(topVer, top.topologyVersion());
+                waitForReadyTopology(top, topVer);
+
+                assertEquals(topVer, top.readyTopologyVersion());
 
                 assertFalse(top.rebalanceFinished(topVer));
             }

@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Cluster.Ssl;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication;
     using Apache.Ignite.Core.Communication.Tcp;
@@ -42,6 +43,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cluster.Ssl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
@@ -120,6 +122,11 @@ namespace Apache.Ignite.Core
         /// Default timeout after which long query warning will be printed.
         /// </summary>
         public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
+
+        /// <summary>
+        /// Default value for <see cref="ClientConnectorConfigurationEnabled"/>.
+        /// </summary>
+        public const bool DefaultClientConnectorConfigurationEnabled = true;
 
         /** */
         private TimeSpan? _metricsExpireTime;
@@ -209,6 +216,7 @@ namespace Apache.Ignite.Core
         {
             JvmInitialMemoryMb = DefaultJvmInitMem;
             JvmMaxMemoryMb = DefaultJvmMaxMem;
+            ClientConnectorConfigurationEnabled = DefaultClientConnectorConfigurationEnabled;
         }
 
         /// <summary>
@@ -436,16 +444,31 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(false);
             }
 
-            // SQL
+            // SQL connector.
+#pragma warning disable 618  // Obsolete
             if (SqlConnectorConfiguration != null)
             {
                 writer.WriteBoolean(true);
                 SqlConnectorConfiguration.Write(writer);
             }
+#pragma warning restore 618
             else
             {
                 writer.WriteBoolean(false);
             }
+
+            // Client connector.
+            if (ClientConnectorConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                ClientConnectorConfiguration.Write(writer);
+            }
+            else
+            {
+                writer.WriteBoolean(false);
+            }
+
+            writer.WriteBoolean(ClientConnectorConfigurationEnabled);
 
             // Persistence.
             if (PersistentStoreConfiguration != null)
@@ -457,8 +480,11 @@ namespace Apache.Ignite.Core
             {
                 writer.WriteBoolean(false);
             }
+            
+            // SSL Context factory.
+            SslFactorySerializer.Write(writer, SslContextFactory);
 
-            // Plugins (should be last)
+            // Plugins (should be last).
             if (PluginConfigurations != null)
             {
                 var pos = writer.Stream.Position;
@@ -609,17 +635,30 @@ namespace Apache.Ignite.Core
                 MemoryConfiguration = new MemoryConfiguration(r);
             }
 
-            // SQL
+            // SQL.
             if (r.ReadBoolean())
             {
+#pragma warning disable 618  // Obsolete
                 SqlConnectorConfiguration = new SqlConnectorConfiguration(r);
+#pragma warning restore 618
             }
+
+            // Client.
+            if (r.ReadBoolean())
+            {
+                ClientConnectorConfiguration = new ClientConnectorConfiguration(r);
+            }
+
+            ClientConnectorConfigurationEnabled = r.ReadBoolean();
 
             // Persistence.
             if (r.ReadBoolean())
             {
                 PersistentStoreConfiguration = new PersistentStoreConfiguration(r);
             }
+
+            // SSL context factory.
+            SslContextFactory = SslFactorySerializer.Read(r);
         }
 
         /// <summary>
@@ -1098,6 +1137,14 @@ namespace Apache.Ignite.Core
         public MemoryConfiguration MemoryConfiguration { get; set; }
 
         /// <summary>
+        /// Gets or sets the SSL context factory that will be used for creating a secure socket layer b/w nodes.
+        /// <para />
+        /// Default is null (no SSL).
+        /// <para />
+        /// </summary>
+        public ISslContextFactory SslContextFactory { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating how user assemblies should be loaded on remote nodes.
         /// <para />
         /// For example, when executing <see cref="ICompute.Call{TRes}(IComputeFunc{TRes})"/>,
@@ -1196,7 +1243,22 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the SQL connector configuration (for JDBC and ODBC).
         /// </summary>
+        [Obsolete("Use ClientConnectorConfiguration instead.")]
         public SqlConnectorConfiguration SqlConnectorConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the client connector configuration (for JDBC, ODBC, and thin clients).
+        /// </summary>
+        public ClientConnectorConfiguration ClientConnectorConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether client connector is enabled:
+        /// allow thin clients, ODBC and JDBC drivers to work with Ignite
+        /// (see <see cref="ClientConnectorConfiguration"/>).
+        /// Default is <see cref="DefaultClientConnectorConfigurationEnabled"/>.
+        /// </summary>
+        [DefaultValue(DefaultClientConnectorConfigurationEnabled)]
+        public bool ClientConnectorConfigurationEnabled { get; set; }
 
         /// <summary>
         /// Gets or sets the timeout after which long query warning will be printed.

@@ -17,12 +17,20 @@
 
 package org.apache.ignite.console.agent.rest;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.ConnectException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import okhttp3.Dispatcher;
 import okhttp3.FormBody;
@@ -37,9 +45,13 @@ import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.slf4j.LoggerFactory;
 
+import static com.fasterxml.jackson.core.JsonToken.END_ARRAY;
+import static com.fasterxml.jackson.core.JsonToken.END_OBJECT;
+import static com.fasterxml.jackson.core.JsonToken.START_ARRAY;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
@@ -49,10 +61,22 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
  */
 public class RestExecutor {
     /** */
+    private static final IgniteProductVersion IGNITE_2_1 = IgniteProductVersion.fromString("2.1.0");
+
+    /** */
+    private static final IgniteProductVersion IGNITE_2_3 = IgniteProductVersion.fromString("2.3.0");
+
+    /** Unique Visor key to get events last order. */
+    private static final String EVT_LAST_ORDER_KEY = "WEB_AGENT_" + UUID.randomUUID().toString();
+
+    /** Unique Visor key to get events throttle counter. */
+    private static final String EVT_THROTTLE_CNTR_KEY = "WEB_AGENT_" + UUID.randomUUID().toString();
+
+    /** */
     private static final IgniteLogger log = new Slf4jLogger(LoggerFactory.getLogger(RestExecutor.class));
 
     /** JSON object mapper. */
-    private static final ObjectMapper mapper = new GridJettyObjectMapper();
+    private static final ObjectMapper MAPPER = new GridJettyObjectMapper();
 
     /** */
     private final OkHttpClient httpClient;
@@ -90,7 +114,7 @@ public class RestExecutor {
 
     /** */
     private RestResult sendRequest(boolean demo, String path, Map<String, Object> params,
-        String mtd, Map<String, Object> headers, String body) throws IOException {
+        Map<String, Object> headers, String body) throws IOException {
         if (demo && AgentClusterDemo.getDemoUrl() == null) {
             try {
                 AgentClusterDemo.tryStart().await();
@@ -120,67 +144,56 @@ public class RestExecutor {
                     reqBuilder.addHeader(entry.getKey(), entry.getValue().toString());
         }
 
-        if ("GET".equalsIgnoreCase(mtd)) {
+        if (body != null) {
+            MediaType contentType = MediaType.parse("text/plain");
+
+            reqBuilder.post(RequestBody.create(contentType, body));
+        }
+        else {
+            FormBody.Builder formBody = new FormBody.Builder();
+
             if (params != null) {
                 for (Map.Entry<String, Object> entry : params.entrySet()) {
                     if (entry.getValue() != null)
-                        urlBuilder.addQueryParameter(entry.getKey(), entry.getValue().toString());
+                        formBody.add(entry.getKey(), entry.getValue().toString());
                 }
             }
+
+            reqBuilder.post(formBody.build());
         }
-        else if ("POST".equalsIgnoreCase(mtd)) {
-            if (body != null) {
-                MediaType contentType = MediaType.parse("text/plain");
-
-                reqBuilder.post(RequestBody.create(contentType, body));
-            }
-            else {
-                FormBody.Builder formBody = new FormBody.Builder();
-
-                if (params != null) {
-                    for (Map.Entry<String, Object> entry : params.entrySet()) {
-                        if (entry.getValue() != null)
-                            formBody.add(entry.getKey(), entry.getValue().toString());
-                    }
-                }
-
-                reqBuilder.post(formBody.build());
-            }
-        }
-        else
-            throw new IllegalArgumentException("Unknown HTTP-method: " + mtd);
-
+        
         reqBuilder.url(urlBuilder.build());
 
         try (Response resp = httpClient.newCall(reqBuilder.build()).execute()) {
-            String content = resp.body().string();
-
             if (resp.isSuccessful()) {
-                JsonNode node = mapper.readTree(content);
+                RestResponseHolder res = MAPPER.readValue(resp.body().byteStream(), RestResponseHolder.class);
 
-                int status = node.get("successStatus").asInt();
+                int status = res.getSuccessStatus();
 
                 switch (status) {
                     case STATUS_SUCCESS:
-                        return RestResult.success(node.get("response").toString());
+                        return RestResult.success(res.getResponse());
 
                     default:
-                        return RestResult.fail(status, node.get("error").asText());
+                        return RestResult.fail(status, res.getError());
                 }
             }
 
             if (resp.code() == 401)
-                return RestResult.fail(STATUS_AUTH_FAILED, "Failed to authenticate in grid. " +
+                return RestResult.fail(STATUS_AUTH_FAILED, "Failed to authenticate in cluster. " +
                     "Please check agent\'s login and password or node port.");
 
-            return RestResult.fail(STATUS_FAILED, "Failed connect to node and execute REST command.");
+            if (resp.code() == 404)
+                return RestResult.fail(STATUS_FAILED, "Failed connect to cluster.");
+
+            return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + resp.message());
         }
         catch (ConnectException ignored) {
-            LT.warn(log, "Failed connect to node and execute REST command. " +
+            LT.warn(log, "Failed connect to cluster. " +
                 "Please ensure that nodes have [ignite-rest-http] module in classpath " +
                 "(was copied from libs/optional to libs folder).");
 
-            throw new ConnectException("Failed connect to node and execute REST command [url=" + urlBuilder + "]");
+            throw new ConnectException("Failed connect to cluster [url=" + urlBuilder + ", parameters=" + params + "]");
         }
     }
 
@@ -188,21 +201,20 @@ public class RestExecutor {
      * @param demo Is demo node request.
      * @param path Path segment.
      * @param params Params.
-     * @param mtd Method.
      * @param headers Headers.
      * @param body Body.
      */
     public RestResult execute(boolean demo, String path, Map<String, Object> params,
-        String mtd, Map<String, Object> headers, String body) {
+        Map<String, Object> headers, String body) {
         if (log.isDebugEnabled())
-            log.debug("Start execute REST command [method=" + mtd + ", uri=/" + (path == null ? "" : path) +
+            log.debug("Start execute REST command [uri=/" + (path == null ? "" : path) +
                 ", parameters=" + params + "]");
 
         try {
-            return sendRequest(demo, path, params, mtd, headers, body);
+            return sendRequest(demo, path, params, headers, body);
         }
         catch (Exception e) {
-            U.error(log, "Failed to execute REST command [method=" + mtd + ", uri=/" + (path == null ? "" : path) +
+            U.error(log, "Failed to execute REST command [uri=/" + (path == null ? "" : path) +
                 ", parameters=" + params + "]", e);
 
             return RestResult.fail(404, e.getMessage());
@@ -210,7 +222,9 @@ public class RestExecutor {
     }
 
     /**
-     * @param demo Is demo node request.
+     * @param demo {@code true} in case of demo mode.
+     * @param full Flag indicating whether to collect metrics or not.
+     * @throws IOException If failed to collect topology.
      */
     public RestResult topology(boolean demo, boolean full) throws IOException {
         Map<String, Object> params = new HashMap<>(3);
@@ -219,6 +233,217 @@ public class RestExecutor {
         params.put("attr", true);
         params.put("mtr", full);
 
-        return sendRequest(demo, "ignite", params, "GET", null, null);
+        return sendRequest(demo, "ignite", params, null, null);
+    }
+
+    /**
+     * @param ver Cluster version.
+     * @param nid Node ID.
+     * @return Cluster active state.
+     * @throws IOException If failed to collect cluster active state.
+     */
+    public boolean active(IgniteProductVersion ver, UUID nid) throws IOException {
+        Map<String, Object> params = new HashMap<>();
+
+        boolean v23 = ver.compareTo(IGNITE_2_3) >= 0;
+
+        if (v23)
+            params.put("cmd", "currentState");
+        else {
+            params.put("cmd", "exe");
+            params.put("name", "org.apache.ignite.internal.visor.compute.VisorGatewayTask");
+            params.put("p1", nid);
+            params.put("p2", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask");
+            params.put("p3", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg");
+            params.put("p4", false);
+            params.put("p5", EVT_LAST_ORDER_KEY);
+            params.put("p6", EVT_THROTTLE_CNTR_KEY);
+
+            if (ver.compareTo(IGNITE_2_1) >= 0)
+                params.put("p7", false);
+            else {
+                params.put("p7", 10);
+                params.put("p8", false);
+            }
+        }
+
+        RestResult res = sendRequest(false, "ignite", params, null, null);
+
+        switch (res.getStatus()) {
+            case STATUS_SUCCESS:
+                if (v23)
+                    return Boolean.valueOf(res.getData());
+
+                return res.getData().contains("\"active\":true");
+
+            default:
+                throw new IOException(res.getError());
+        }
+    }
+
+    /**
+     * REST response holder Java bean.
+     */
+    private static class RestResponseHolder {
+        /** Success flag */
+        private int successStatus;
+
+        /** Error. */
+        private String err;
+
+        /** Response. */
+        private String res;
+
+        /** Session token string representation. */
+        private String sesTokStr;
+
+        /**
+         * @return {@code True} if this request was successful.
+         */
+        public int getSuccessStatus() {
+            return successStatus;
+        }
+
+        /**
+         * @param successStatus Whether request was successful.
+         */
+        public void setSuccessStatus(int successStatus) {
+            this.successStatus = successStatus;
+        }
+
+        /**
+         * @return Error.
+         */
+        public String getError() {
+            return err;
+        }
+
+        /**
+         * @param err Error.
+         */
+        public void setError(String err) {
+            this.err = err;
+        }
+
+        /**
+         * @return Response object.
+         */
+        public String getResponse() {
+            return res;
+        }
+
+        /**
+         * @param res Response object.
+         */
+        @JsonDeserialize(using = RawContentDeserializer.class)
+        public void setResponse(String res) {
+            this.res = res;
+        }
+
+        /**
+         * @return String representation of session token.
+         */
+        public String getSessionToken() {
+            return sesTokStr;
+        }
+
+        /**
+         * @param sesTokStr String representation of session token.
+         */
+        public void setSessionToken(String sesTokStr) {
+            this.sesTokStr = sesTokStr;
+        }
+    }
+
+    /**
+     * Raw content deserializer that will deserialize any data as string.
+     */
+    private static class RawContentDeserializer extends JsonDeserializer<String> {
+        /** */
+        private final JsonFactory factory = new JsonFactory();
+
+        /**
+         * @param tok Token to process.
+         * @param p Parser.
+         * @param gen Generator.
+         */
+        private void writeToken(JsonToken tok, JsonParser p, JsonGenerator gen) throws IOException {
+            switch (tok) {
+                case FIELD_NAME:
+                    gen.writeFieldName(p.getText());
+                    break;
+
+                case START_ARRAY:
+                    gen.writeStartArray();
+                    break;
+
+                case END_ARRAY:
+                    gen.writeEndArray();
+                    break;
+
+                case START_OBJECT:
+                    gen.writeStartObject();
+                    break;
+
+                case END_OBJECT:
+                    gen.writeEndObject();
+                    break;
+
+                case VALUE_NUMBER_INT:
+                    gen.writeNumber(p.getBigIntegerValue());
+                    break;
+
+                case VALUE_NUMBER_FLOAT:
+                    gen.writeNumber(p.getDecimalValue());
+                    break;
+
+                case VALUE_TRUE:
+                    gen.writeBoolean(true);
+                    break;
+
+                case VALUE_FALSE:
+                    gen.writeBoolean(false);
+                    break;
+
+                case VALUE_NULL:
+                    gen.writeNull();
+                    break;
+
+                default:
+                    gen.writeString(p.getText());
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+            JsonToken startTok = p.getCurrentToken();
+
+            if (startTok.isStructStart()) {
+                StringWriter wrt = new StringWriter(4096);
+
+                JsonGenerator gen = factory.createGenerator(wrt);
+
+                JsonToken tok = startTok, endTok = startTok == START_ARRAY ? END_ARRAY : END_OBJECT;
+
+                int cnt = 1;
+
+                while (cnt > 0) {
+                    writeToken(tok, p, gen);
+
+                    tok = p.nextToken();
+
+                    if (tok == startTok)
+                        cnt++;
+                    else if (tok == endTok)
+                        cnt--;
+                }
+
+                gen.close();
+
+                return wrt.toString();
+            }
+
+            return p.getValueAsString();
+        }
     }
 }

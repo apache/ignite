@@ -61,6 +61,7 @@
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Transactions" />
@@ -77,7 +78,30 @@
     <Compile Include="Binary\BinaryReaderWriterTest.cs" />
     <Compile Include="Binary\BinarySelfTestSimpleName.cs" />
     <Compile Include="Binary\EnumsTestOnline.cs" />
+    <Compile Include="Binary\Serializable\GenericCollectionsTest.cs" />
     <Compile Include="Cache\PersistentStoreTest.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.CompiledQuery.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.DateTime.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Aggregates.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Join.LocalCollection.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Strings.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Functions.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Numerics.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Introspection.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Misc.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Custom.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Contains.cs" />
+    <Compile Include="Cache\Store\CacheStoreSessionTestCodeConfig.cs" />
+    <Compile Include="Cache\Store\CacheStoreSessionTestSharedFactory.cs" />
+    <Compile Include="Client\Cache\CacheTest.cs" />
+    <Compile Include="Client\Cache\CacheTestNoMeta.cs" />
+    <Compile Include="Client\Cache\EmptyObject.cs" />
+    <Compile Include="Client\Cache\ScanQueryTest.cs" />
+    <Compile Include="Client\Cache\Person.cs" />
+    <Compile Include="Client\ClientTestBase.cs" />
+    <Compile Include="Client\RawSocketTest.cs" />
+    <Compile Include="Client\ClientConnectionTest.cs" />
+    <Compile Include="Client\IgniteClientConfigurationTest.cs" />
     <Compile Include="Deployment\CacheGetFunc.cs" />
     <Compile Include="Deployment\GetAddressFunc.cs" />
     <Compile Include="Deployment\PeerAssemblyLoadingAllApisTest.cs" />
@@ -112,8 +136,8 @@
     <Compile Include="Cache\Query\CacheDmlQueriesTest.cs" />
     <Compile Include="Cache\CacheAbstractTransactionalTest.cs" />
     <Compile Include="Cache\Query\CacheDmlQueriesTestSimpleName.cs" />
-    <Compile Include="Cache\Query\CacheLinqTestSqlEscapeAll.cs" />
-    <Compile Include="Cache\Query\CacheLinqTestSimpleName.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTestSqlEscapeAll.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTestSimpleName.cs" />
     <Compile Include="Cache\Query\CacheQueriesTestSimpleName.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQueryTest.cs" />
     <Compile Include="Cache\Store\CacheStoreAdapterTest.cs" />
@@ -135,6 +159,7 @@
     <Compile Include="Plugin\TestIgnitePluginConfiguration.cs" />
     <Compile Include="Plugin\TestIgnitePluginException.cs" />
     <Compile Include="Plugin\TestIgnitePluginProvider.cs" />
+    <Compile Include="Ssl\SslConfigurationTest.cs" />
     <Compile Include="TestAppConfig.cs" />
     <Compile Include="Binary\BinaryBuilderSelfTestFullFooter.cs" />
     <Compile Include="Binary\BinaryCompactFooterInteropTest.cs" />
@@ -160,7 +185,7 @@
     <Compile Include="Cache\CachePartitionedTest.cs" />
     <Compile Include="Cache\CacheReplicatedAtomicTest.cs" />
     <Compile Include="Cache\CacheReplicatedTest.cs" />
-    <Compile Include="Cache\Query\CacheLinqTest.cs" />
+    <Compile Include="Cache\Query\Linq\CacheLinqTest.Base.cs" />
     <Compile Include="Cache\Query\CacheQueriesCodeConfigurationTest.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQueryAbstractTest.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQueryAtomicBackupTest.cs" />
@@ -303,6 +328,9 @@
     <Content Include="Config\Cache\Affinity\affinity-function.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Config\Cache\Store\cache-store-session-shared-factory.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Config\Cache\Store\cache-store-session.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -372,6 +400,9 @@
     <Content Include="Config\reconnect-test.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Config\start-test-grid1-ssl.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Config\start-test-grid1.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -390,6 +421,30 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.nunit" />
     <None Include="Apache.Ignite.Core.Tests.snk" />
+    <None Include="Config\KeyStore\client.jks">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Config\KeyStore\client.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Config\KeyStore\client.pfx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Config\KeyStore\generate.sh">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Config\KeyStore\server.jks">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Config\KeyStore\server.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Config\KeyStore\server.pfx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Config\KeyStore\trust.jks">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Deployment\peer_assembly_app.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -408,6 +463,7 @@
     </None>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition="'$(Platform)' != 'AnyCPU'">
     <PostBuildEvent>copy /Y $(SolutionDir)Apache.Ignite\bin\$(PlatformName)\$(ConfigurationName)\Apache.Ignite.exe $(ProjectDir)$(OutDir)

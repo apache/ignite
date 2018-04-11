@@ -17,22 +17,23 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 // Fire me up!
 
 module.exports = {
     implements: 'services/domains',
-    inject: ['require(lodash)', 'mongo', 'services/spaces', 'services/caches', 'errors']
+    inject: ['mongo', 'services/spaces', 'services/caches', 'errors']
 };
 
 /**
- * @param _
  * @param mongo
  * @param {SpacesService} spacesService
  * @param {CachesService} cachesService
  * @param errors
  * @returns {DomainsService}
  */
-module.exports.factory = (_, mongo, spacesService, cachesService, errors) => {
+module.exports.factory = (mongo, spacesService, cachesService, errors) => {
     /**
      * Convert remove status operation to own presentation.
      *
@@ -64,6 +65,8 @@ module.exports.factory = (_, mongo, spacesService, cachesService, errors) => {
             .catch((err) => {
                 if (err.code === mongo.errCodes.DUPLICATE_KEY_UPDATE_ERROR || err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
                     throw new errors.DuplicateKeyException('Domain model with value type: "' + domain.valueType + '" already exist.');
+                else
+                    throw err;
             });
     };
 
@@ -85,6 +88,8 @@ module.exports.factory = (_, mongo, spacesService, cachesService, errors) => {
             .catch((err) => {
                 if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
                     throw new errors.DuplicateKeyException('Domain model with value type: "' + domain.valueType + '" already exist.');
+                else
+                    throw err;
             });
     };
 

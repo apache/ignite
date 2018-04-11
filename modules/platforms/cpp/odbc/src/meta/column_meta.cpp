@@ -60,6 +60,9 @@ namespace ignite
                     DBG_STR_CASE(SQL_DESC_UNNAMED);
                     DBG_STR_CASE(SQL_DESC_UNSIGNED);
                     DBG_STR_CASE(SQL_DESC_UPDATABLE);
+                    DBG_STR_CASE(SQL_COLUMN_LENGTH);
+                    DBG_STR_CASE(SQL_COLUMN_PRECISION);
+                    DBG_STR_CASE(SQL_COLUMN_SCALE);
                 default:
                     break;
                 }
@@ -179,6 +182,7 @@ namespace ignite
 
                     case SQL_DESC_LENGTH:
                     case SQL_DESC_OCTET_LENGTH:
+                    case SQL_COLUMN_LENGTH:
                     {
                         value = type_traits::BinaryTypeTransferLength(dataType);
 
@@ -200,6 +204,7 @@ namespace ignite
                     }
 
                     case SQL_DESC_PRECISION:
+                    case SQL_COLUMN_PRECISION:
                     {
                         value = type_traits::BinaryTypeColumnSize(dataType);
 
@@ -207,6 +212,7 @@ namespace ignite
                     }
 
                     case SQL_DESC_SCALE:
+                    case SQL_COLUMN_SCALE:
                     {
                         value = type_traits::BinaryTypeDecimalDigits(dataType);
 

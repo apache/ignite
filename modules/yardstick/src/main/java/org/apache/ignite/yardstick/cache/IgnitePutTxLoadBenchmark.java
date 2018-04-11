@@ -84,13 +84,12 @@ public class IgnitePutTxLoadBenchmark extends IgniteCacheAbstractBenchmark<Integ
             tx.commit();
 
             endTime = System.currentTimeMillis();
-
         }
 
         TransactionMetrics tm = transactions.metrics();
 
         if (endTime - startTime > args.getWarningTime())
-            BenchmarkUtils.println("Transaction commit time = " + (tm.commitTime() - startTime));
+            BenchmarkUtils.println("Transaction commit time = " + (endTime - startTime));
 
         if (tm.txRollbacks() > 0 && args.printRollBacks())
             BenchmarkUtils.println("Transaction rollbacks = " + tm.txRollbacks());

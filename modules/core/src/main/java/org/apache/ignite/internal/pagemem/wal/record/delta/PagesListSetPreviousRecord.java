@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -56,5 +57,10 @@ public class PagesListSetPreviousRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.PAGES_LIST_SET_PREVIOUS;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PagesListSetPreviousRecord.class, this, "super", super.toString());
     }
 }
