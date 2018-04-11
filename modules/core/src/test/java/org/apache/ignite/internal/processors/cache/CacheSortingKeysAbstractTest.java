@@ -100,7 +100,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         IgniteCache<String, Integer> cache = grid(0).createCache("deadlock").withAutoSorting();
 
         Map<String, Integer> m1 = new TreeMap<>();
-        Map<String, Integer> m2 = new HashMap<>(10_000);
+        Map<String, Integer> m2 = new HashMap<>(U.capacity(10_000));
 
         for (int i = 0; i < 10_000; i++) {
             m1.put(i + "", i);
