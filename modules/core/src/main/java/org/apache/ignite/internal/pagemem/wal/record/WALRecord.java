@@ -64,9 +64,6 @@ public abstract class WALRecord {
         DATA_PAGE_SET_FREE_LIST_PAGE,
 
         /** */
-        MVCC_DATA_PAGE_MARK_UPDATED_RECORD,
-
-        /** */
         BTREE_META_PAGE_INIT_ROOT,
 
         /** */
@@ -178,7 +175,10 @@ public abstract class WALRecord {
         EXCHANGE,
 
         /** Baseline topology record. */
-        BASELINE_TOP_RECORD;
+        BASELINE_TOP_RECORD,
+
+        /** */
+        MVCC_DATA_PAGE_MARK_UPDATED_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
