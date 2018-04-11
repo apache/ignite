@@ -220,7 +220,6 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
     /**
      * @param topVerRmv Collection with affinity topology versions for removing.
-     * @return <tt>true</tt> if this set changed as a result of the call.
      */
     public void removeCachedAffinity(Collection<AffinityTopologyVersion> topVerRmv) {
         assert topVerRmv != null;
