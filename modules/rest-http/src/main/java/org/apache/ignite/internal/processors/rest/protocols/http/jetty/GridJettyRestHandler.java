@@ -69,6 +69,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES_MASK;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.AUTHENTICATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_ALL;
@@ -852,8 +853,11 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         restReq.command(cmd);
 
-        if (!credentials(params, USER_PARAM, PWD_PARAM, restReq))
-            credentials(params, IGNITE_LOGIN_PARAM, IGNITE_PASSWORD_PARAM, restReq);
+        // Check credentials only for AUTHENTICATE command.
+        if (cmd == AUTHENTICATE) {
+            if (!credentials(params, USER_PARAM, PWD_PARAM, restReq))
+                credentials(params, IGNITE_LOGIN_PARAM, IGNITE_PASSWORD_PARAM, restReq);
+        }
 
         String clientId = (String)params.get("clientId");
 

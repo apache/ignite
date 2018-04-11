@@ -41,12 +41,6 @@ public class JettyRestProcessorAuthenticationSelfTest extends JettyRestProcessor
     private static final String DFLT_PWD = "ignite";
 
     /** */
-    private String user = DFLT_USER;
-
-    /** */
-    private String pwd = DFLT_PWD;
-
-    /** */
     private String tok = "";
 
     /** {@inheritDoc} */
@@ -60,8 +54,22 @@ public class JettyRestProcessorAuthenticationSelfTest extends JettyRestProcessor
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        user = DFLT_USER;
-        pwd = DFLT_PWD;
+        // Authenticate and extract token.
+        if (F.isEmpty(tok)) {
+            String ret = content(null, GridRestCommand.AUTHENTICATE,
+                "user", DFLT_USER,
+                "password", DFLT_PWD);
+
+            int p1 = ret.indexOf("sessionToken");
+            int p2 = ret.indexOf('"', p1 + 16);
+
+            tok = ret.substring(p1 + 15, p2);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean securityEnabled() {
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -104,14 +112,8 @@ public class JettyRestProcessorAuthenticationSelfTest extends JettyRestProcessor
     @Override protected String restUrl() {
         String url = super.restUrl();
 
-        if (!F.isEmpty(user)) {
-            url += "user=" + user;
-
-            if (!F.isEmpty(pwd))
-                url += "&password=" + pwd;
-
-            url += '&';
-        }
+        if (!F.isEmpty(tok))
+            url += "sessionToken=" + tok + "&";
 
         return url;
     }
@@ -122,19 +124,18 @@ public class JettyRestProcessorAuthenticationSelfTest extends JettyRestProcessor
     public void testAuthenticationCommand() throws Exception {
         String ret = content(null, GridRestCommand.AUTHENTICATE);
 
-        assertResponseContainsError(ret, "The user name or password is incorrect");
+        assertResponseSucceeded(ret, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testMissingCredentials() throws Exception {
-        user = null;
-        pwd = null;
+    public void testMissingSessionToken() throws Exception {
+        tok = null;
 
         String ret = content(null, GridRestCommand.VERSION);
 
-        assertResponseSucceeded(ret, false);
+        assertResponseContainsError(ret, "The user name or password is incorrect");
     }
 
     /**
