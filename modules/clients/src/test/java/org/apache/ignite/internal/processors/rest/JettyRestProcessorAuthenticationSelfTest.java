@@ -134,7 +134,7 @@ public class JettyRestProcessorAuthenticationSelfTest extends JettyRestProcessor
 
         String ret = content(null, GridRestCommand.VERSION);
 
-        assertResponseContainsError(ret, "The user name or password is incorrect");
+        assertResponseSucceeded(ret, false);
     }
 
     /**

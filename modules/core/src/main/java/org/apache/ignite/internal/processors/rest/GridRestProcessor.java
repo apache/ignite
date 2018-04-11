@@ -342,7 +342,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 assert res != null;
 
-                if (ctx.security().enabled() && !failed)
+                if ((ctx.authentication().enabled() || ctx.security().enabled()) && !failed)
                     res.sessionTokenBytes(req.sessionToken());
 
                 interceptResponse(res, req);

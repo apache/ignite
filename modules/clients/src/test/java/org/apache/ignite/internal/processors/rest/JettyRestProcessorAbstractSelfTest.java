@@ -294,8 +294,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
     /**
      * @param content Content to check.
+     * @return JSON node with actual response.
      */
-    private JsonNode jsonCacheOperationResponse(String content, boolean bulk) throws IOException {
+    protected JsonNode assertResponseSucceeded(String content, boolean bulk) throws IOException {
         assertNotNull(content);
         assertFalse(content.isEmpty());
 
@@ -315,7 +316,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param res Response.
      */
     private void assertCacheOperation(String content, Object res) throws IOException {
-        JsonNode ret = jsonCacheOperationResponse(content, false);
+        JsonNode ret = assertResponseSucceeded(content, false);
 
         assertEquals(String.valueOf(res), ret.isObject() ? ret.toString() : ret.asText());
     }
@@ -325,7 +326,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param res Response.
      */
     private void assertCacheBulkOperation(String content, Object res) throws IOException {
-        JsonNode ret = jsonCacheOperationResponse(content, true);
+        JsonNode ret = assertResponseSucceeded(content, true);
 
         assertEquals(String.valueOf(res), ret.asText());
     }
@@ -334,7 +335,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param content Content to check.
      */
     private void assertCacheMetrics(String content) throws IOException {
-        JsonNode ret = jsonCacheOperationResponse(content, true);
+        JsonNode ret = assertResponseSucceeded(content, true);
 
         assertTrue(ret.isObject());
     }
@@ -403,7 +404,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws IOException If failed.
      */
     private void checkJson(String json, Person p) throws IOException {
-        JsonNode res = jsonCacheOperationResponse(json, false);
+        JsonNode res = assertResponseSucceeded(json, false);
 
         assertEquals(p.id.intValue(), res.get("id").asInt());
         assertEquals(p.getOrganizationId().intValue(), res.get("orgId").asInt());
@@ -455,7 +456,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, false);
+        JsonNode res = assertResponseSucceeded(ret, false);
 
         assertEquals("Alex", res.get("NAME").asText());
         assertEquals(300, res.get("SALARY").asInt());
@@ -476,7 +477,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get command result: " + ret);
 
-        JsonNode json = jsonCacheOperationResponse(ret, false);
+        JsonNode json = assertResponseSucceeded(ret, false);
         assertEquals(ref1.name, json.get("name").asText());
 
         ref2.ref(ref1);
@@ -552,7 +553,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, false);
+        JsonNode res = assertResponseSucceeded(ret, false);
 
         assertEquals(p.id, res.get("id").asInt());
         assertEquals(p.name, res.get("name").asText());
@@ -637,7 +638,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, false);
+        JsonNode res = assertResponseSucceeded(ret, false);
 
         assertEquals(t.getKey(), res.get("key").asText());
         assertEquals(t.getValue(), res.get("value").asText());
@@ -775,7 +776,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get all command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, true);
+        JsonNode res = assertResponseSucceeded(ret, true);
 
         assertTrue(res.isObject());
 
