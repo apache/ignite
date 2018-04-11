@@ -436,6 +436,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /**
+     * Creates non-existing partitions belong to given affinity {@code aff}.
+     *
      * @param affVer Affinity version.
      * @param aff Affinity assignments.
      * @param updateSeq Update sequence.
@@ -450,7 +452,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (node2part != null && node2part.valid()) {
                 if (localNode(p, aff)) {
                     // This will make sure that all non-existing partitions
-                    // will be created in MOVING state.
+                    // will be created in OWNING or MOVING state.
                     GridDhtLocalPartition locPart = getOrCreatePartition(p);
 
                     updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
@@ -458,9 +460,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
             // If this node's map is empty, we pre-create local partitions,
             // so local map will be sent correctly during exchange.
-            else if (localNode(p, aff)) {
+            else if (localNode(p, aff))
                 getOrCreatePartition(p);
-            }
         }
     }
 
