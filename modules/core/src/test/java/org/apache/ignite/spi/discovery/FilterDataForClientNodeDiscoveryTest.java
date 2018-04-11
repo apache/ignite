@@ -206,6 +206,11 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
+        @Override public boolean stopProcess() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
             DiscoCache discoCache) {
             return null;

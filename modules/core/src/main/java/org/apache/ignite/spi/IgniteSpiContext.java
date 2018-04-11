@@ -365,4 +365,15 @@ public interface IgniteSpiContext {
      * @return Current node attributes.
      */
     public Map<String, Object> nodeAttributes();
+
+    /**
+     * @return {@code True} if cluster supports communication error resolving.
+     */
+    public boolean communicationFailureResolveSupported();
+
+    /**
+     * @param node Problem node.
+     * @param err Error.
+     */
+    public void resolveCommunicationFailure(ClusterNode node, Exception err);
 }
