@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.classification;
+package org.apache.ignite.ml.knn.regression;
 
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.knn.KNNUtils;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
- * kNN algorithm trainer to solve multi-class classification task.
+ * kNN algorithm trainer to solve regression task.
  */
-public class KNNClassificationTrainer implements SingleLabelDatasetTrainer<KNNClassificationModel> {
+public class KNNRegressionTrainer{
     /**
      * Trains model based on the specified data.
      *
@@ -34,8 +33,8 @@ public class KNNClassificationTrainer implements SingleLabelDatasetTrainer<KNNCl
      * @param lbExtractor Label extractor.
      * @return Model.
      */
-    @Override public <K, V> KNNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+    public <K, V> KNNRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-        return new KNNClassificationModel<>(KNNUtils.buildDataset(datasetBuilder, featureExtractor, lbExtractor));
+        return new KNNRegressionModel<>(KNNUtils.buildDataset(datasetBuilder, featureExtractor, lbExtractor));
     }
 }
