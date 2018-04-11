@@ -173,6 +173,8 @@ public class PagePartitionMetaIO extends PageMetaIO {
     }
 
     /**
+     * Returns partition pending tree root. Pending tree is used to tracking expiring entries.
+     *
      * @param pageAddr Page address.
      * @return Pending Tree root page.
      */
@@ -182,6 +184,8 @@ public class PagePartitionMetaIO extends PageMetaIO {
     }
 
     /**
+     * Sets new partition pending tree root.
+     *
      * @param pageAddr Page address.
      * @param treeRoot Pending Tree root
      */

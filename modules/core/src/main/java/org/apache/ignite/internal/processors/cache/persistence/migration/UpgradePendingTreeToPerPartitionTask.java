@@ -296,11 +296,10 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
      * @param row Pending row.
      * @return {@code True} if pending row successfully moved, {@code False} otherwise.
      */
-    private boolean processRow(PageMemory pageMemory, CacheGroupContext grp,
-        PendingRow row) {
+    private boolean processRow(PageMemory pageMemory, CacheGroupContext grp, PendingRow row) {
         final long pageId = PageIdUtils.pageId(row.link);
 
-        final int partition = PageIdUtils.partId(pageId);// row.key.partition();
+        final int partition = PageIdUtils.partId(pageId);
 
         assert partition >= 0;
 

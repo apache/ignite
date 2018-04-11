@@ -1160,6 +1160,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         ctx.wal(),
                         reuseRoot.pageId().pageId(),
                         reuseRoot.isAllocated()) {
+                        /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
 
@@ -1178,6 +1179,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         rowStore,
                         treeRoot.pageId().pageId(),
                         treeRoot.isAllocated()) {
+                        /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
 
@@ -1194,6 +1196,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         pendingTreeRoot.pageId().pageId(),
                         reuseList,
                         pendingTreeRoot.isAllocated()) {
+                        /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
 
@@ -1204,6 +1207,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
                     delegate0 = new CacheDataStoreImpl(partId, name, rowStore, dataTree) {
+                        /** {@inheritDoc} */
                         @Override public PendingEntriesTree pendingTree() {
                             return pendingTree0;
                         }
@@ -1321,6 +1325,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         reuseListRoot = io.getReuseListRoot(pageAddr);
 
                         int pageVersion = PagePartitionMetaIO.getVersion(pageAddr);
+
                         if (pageVersion < 2) {
                             assert pageVersion == 1;
 
