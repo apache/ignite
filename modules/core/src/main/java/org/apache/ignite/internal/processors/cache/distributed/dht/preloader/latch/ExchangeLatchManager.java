@@ -104,7 +104,8 @@ public class ExchangeLatchManager {
 
             // First coordinator initialization.
             ctx.discovery().localJoinFuture().listen(f -> {
-                this.coordinator = getLatchCoordinator(AffinityTopologyVersion.NONE);
+                if (f.error() == null)
+                    this.coordinator = getLatchCoordinator(AffinityTopologyVersion.NONE);
             });
 
             ctx.event().addDiscoveryEventListener((e, cache) -> {
