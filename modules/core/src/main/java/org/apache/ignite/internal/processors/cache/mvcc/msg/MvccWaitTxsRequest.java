@@ -139,7 +139,7 @@ public class MvccWaitTxsRequest implements MvccMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 139;
+        return 142;
     }
 
     /** {@inheritDoc} */

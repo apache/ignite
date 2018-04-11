@@ -108,7 +108,7 @@ public class MvccAckRequestTxAndQuery extends MvccAckRequestTx {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 143;
+        return 146;
     }
 
     /** {@inheritDoc} */

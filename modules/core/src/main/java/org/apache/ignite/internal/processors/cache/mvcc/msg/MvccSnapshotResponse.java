@@ -287,7 +287,7 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 138;
+        return 141;
     }
 
     /** {@inheritDoc} */

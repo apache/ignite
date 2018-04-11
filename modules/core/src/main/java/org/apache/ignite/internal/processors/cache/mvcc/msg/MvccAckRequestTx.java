@@ -188,7 +188,7 @@ public class MvccAckRequestTx implements MvccMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 134;
+        return 137;
     }
 
     /** {@inheritDoc} */

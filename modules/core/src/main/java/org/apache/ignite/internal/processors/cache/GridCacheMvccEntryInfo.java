@@ -220,7 +220,7 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 140;
+        return 143;
     }
 
     /** {@inheritDoc} */

@@ -946,97 +946,97 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 133:
+            case 136:
                 msg = new MvccTxSnapshotRequest();
 
                 break;
 
-            case 134:
+            case 137:
                 msg = new MvccAckRequestTx();
 
                 break;
 
-            case 135:
+            case 138:
                 msg = new MvccFutureResponse();
 
                 break;
 
-            case 136:
+            case 139:
                 msg = new MvccQuerySnapshotRequest();
 
                 break;
 
-            case 137:
+            case 140:
                 msg = new MvccAckRequestQuery();
 
                 break;
 
-            case 138:
+            case 141:
                 msg = new MvccSnapshotResponse();
 
                 break;
 
-            case 139:
+            case 142:
                 msg = new MvccWaitTxsRequest();
 
                 break;
 
-            case 140:
+            case 143:
                 msg = new GridCacheMvccEntryInfo();
 
                 break;
 
-            case 141:
+            case 144:
                 msg = new MvccTxInfo();
 
                 break;
 
-            case 142:
+            case 145:
                 msg = new MvccNewQueryAckRequest();
 
                 break;
 
-            case 143:
+            case 146:
                 msg = new MvccAckRequestTxAndQuery();
 
                 break;
 
-            case 144:
+            case 147:
                 msg = new MvccAckRequestTxAndQueryEx();
 
                 break;
 
-            case 145:
+            case 148:
                 msg = new MvccVersionImpl();
 
                 break;
 
-            case 146:
+            case 149:
                 msg = new MvccActiveQueriesMessage();
 
                 break;
 
-            case 147:
+            case 150:
                 msg = new MvccSnapshotWithoutTxs();
 
                 break;
 
-            case 148:
+            case 151:
                 msg = new GridNearTxQueryEnlistRequest();
 
                 break;
 
-            case 149:
+            case 152:
                 msg = new GridNearTxQueryEnlistResponse();
 
                 break;
 
-            case 150:
+            case 153:
                 msg = new GridNearTxQueryResultsEnlistRequest();
 
                 break;
 
-            case 151:
+            case 154:
                 msg = new GridNearTxQueryResultsEnlistResponse();
 
                 break;

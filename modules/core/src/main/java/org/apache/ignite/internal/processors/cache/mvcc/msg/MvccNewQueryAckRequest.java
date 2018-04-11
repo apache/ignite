@@ -136,7 +136,7 @@ public class MvccNewQueryAckRequest implements MvccMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 142;
+        return 145;
     }
 
     /** {@inheritDoc} */

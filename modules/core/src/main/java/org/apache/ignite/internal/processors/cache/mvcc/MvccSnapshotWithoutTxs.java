@@ -184,7 +184,7 @@ public class MvccSnapshotWithoutTxs implements MvccSnapshot {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 147;
+        return 150;
     }
 
     /** {@inheritDoc} */

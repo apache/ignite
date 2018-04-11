@@ -117,7 +117,7 @@ public class MvccActiveQueriesMessage implements MvccMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 146;
+        return 149;
     }
 
     /** {@inheritDoc} */

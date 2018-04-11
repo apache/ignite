@@ -579,7 +579,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 148;
+        return 151;
     }
 
     /** {@inheritDoc} */
