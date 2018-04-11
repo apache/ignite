@@ -88,6 +88,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -1726,6 +1727,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         }
                     }
                 });
+
+                checker.setUncaughtExceptionHandler(new OomExceptionHandler(ctx));
 
                 bufCheckThreads.put(routineId, checker);
 

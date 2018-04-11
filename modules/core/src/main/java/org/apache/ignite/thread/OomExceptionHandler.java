@@ -15,31 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+package org.apache.ignite.thread;
+
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
- * Indicates user name or password is invalid.
+ * OOM exception handler for system threads.
  */
-public class ClientAuthenticationException extends ClientException {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
-    /** Message. */
-    private static final String MSG = "Invalid user name or password";
+public class OomExceptionHandler implements Thread.UncaughtExceptionHandler {
+    /** Context. */
+    private final GridKernalContext ctx;
 
     /**
-     * Default constructor.
+     * @param ctx Context.
      */
-    public ClientAuthenticationException() {
-        super(MSG);
+    public OomExceptionHandler(GridKernalContext ctx) {
+        this.ctx = ctx;
     }
 
-    /**
-     * Constructs a new exception with the specified cause.
-     *
-     * @param cause the cause.
-     */
-    public ClientAuthenticationException(Throwable cause) {
-        super(MSG, cause);
+    /** {@inheritDoc} */
+    @Override public void uncaughtException(Thread t, Throwable e) {
+        if (X.hasCause(e, OutOfMemoryError.class))
+            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
     }
 }
