@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.io.Externalizable;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -963,7 +962,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 if (commit)
                     cctx.tm().commitTx(this);
                 else
-                    cctx.tm().rollbackTx(this, clearThreadMap);
+                    cctx.tm().rollbackTx(this, clearThreadMap, false);
             }
 
             state(commit ? COMMITTED : ROLLED_BACK);
@@ -1028,7 +1027,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         }
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            cctx.tm().rollbackTx(this, clearThreadMap);
+            cctx.tm().rollbackTx(this, clearThreadMap, false);
 
             if (!internal()) {
                 Collection<CacheStoreManager> stores = txState.stores(cctx);
@@ -1307,7 +1306,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         if (isRollbackOnly()) {
             if (remainingTime() == -1)
-                throw new IgniteTxTimeoutCheckedException("Cache transaction timed out: " + this);
+                throw new IgniteTxTimeoutCheckedException("Cache transaction timed out: " + CU.txString(this));
 
             TransactionState state = state();
 
@@ -1319,7 +1318,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 throw new IgniteTxHeuristicCheckedException("Cache transaction is in unknown state " +
                     "(remote transactions will be invalidated): " + this);
 
-            throw new IgniteCheckedException("Cache transaction marked as rollback-only: " + this);
+            throw rollbackException();
         }
     }
 
@@ -1363,12 +1362,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         IgniteTxKey key = entry.txKey();
 
         checkInternal(key);
-
-        TransactionState state = state();
-
-        assert state == TransactionState.ACTIVE || remainingTime() == -1 :
-            "Invalid tx state for adding entry [op=" + op + ", val=" + val + ", entry=" + entry + ", filter=" +
-                Arrays.toString(filter) + ", txCtx=" + cctx.tm().txContextVersion() + ", tx=" + this + ']';
 
         IgniteTxEntry old = entry(key);
 
@@ -1689,7 +1682,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 final GridClosureException ex = new GridClosureException(
                     new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
-                        "for transaction [timeout=" + timeout() + ", tx=" + this + ']', deadlockErr)
+                        "for transaction [timeout=" + timeout() + ", tx=" + CU.txString(IgniteTxLocalAdapter.this) +
+                        ']', deadlockErr)
                 );
 
                 if (commit && commitAfterLock())
@@ -1770,7 +1764,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 if (!locked)
                     throw new GridClosureException(new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
                         "within provided timeout for transaction [timeout=" + timeout() +
-                        ", tx=" + IgniteTxLocalAdapter.this + ']'));
+                        ", tx=" + CU.txString(IgniteTxLocalAdapter.this) + ']'));
 
                 IgniteInternalFuture<T> fut = postLock();
 

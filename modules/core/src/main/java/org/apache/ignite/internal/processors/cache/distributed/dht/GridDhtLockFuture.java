@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -67,6 +68,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
@@ -258,6 +260,38 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         if (log == null) {
             msgLog = cctx.shared().txLockMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtLockFuture.class);
+        }
+
+        if (tx != null) {
+            while(true) {
+                IgniteInternalFuture<Boolean> fut = tx.lockFut;
+
+                if (fut != null) {
+                    if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT)
+                        onError(tx.timedOut() ? tx.timeoutException() : tx.rollbackException());
+                    else {
+                        // Wait for collocated lock future.
+                        assert fut instanceof GridDhtColocatedLockFuture : fut;
+
+                        // Terminate this future if parent(collocated) future is terminated by rollback.
+                        fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                            @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                                try {
+                                    fut.get();
+                                }
+                                catch (IgniteCheckedException e) {
+                                    onError(e);
+                                }
+                            }
+                        });
+                    }
+
+                    return;
+                }
+
+                if (tx.updateLockFuture(null, this))
+                    return;
+            }
         }
     }
 
@@ -735,6 +769,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             cctx.tm().txContext(tx);
 
             set = cctx.tm().setTxTopologyHint(tx.topologyVersionSnapshot());
+
+            if (success)
+                tx.clearLockFuture(this);
         }
 
         try {
@@ -774,7 +811,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         readyLocks();
 
-        if (timeout > 0) {
+        if (timeout > 0 && !isDone()) { // Prevent memory leak if future is completed by call to readyLocks.
             timeoutObj = new LockTimeoutObject();
 
             cctx.time().addTimeoutObject(timeoutObj);

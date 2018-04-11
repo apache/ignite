@@ -17,17 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import org.apache.ignite.transactions.TransactionTimeoutException;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
 
 /**
- * Tests an ability to eagerly rollback timed out transactions.
+ * Tests an ability to rollback near transactions.
  */
-public class TxRollbackOnTimeoutNoDeadlockDetectionTest extends TxRollbackOnTimeoutTest {
+public class TxRollbackAsyncWithPersistenceTest extends TxRollbackAsyncTest {
+    /** {@inheritDoc} */
+    @Override protected boolean persistenceEnabled() {
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, "0");
+        System.setProperty(IGNITE_WAL_LOG_TX_RECORDS, "true");
 
         super.beforeTestsStarted();
     }
@@ -36,16 +39,25 @@ public class TxRollbackOnTimeoutNoDeadlockDetectionTest extends TxRollbackOnTime
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS);
+        System.clearProperty(IGNITE_WAL_LOG_TX_RECORDS);
     }
 
-    /** */
-    @Override protected void validateDeadlockException(Exception e) {
-        assertEquals("TimeoutException is expected",
-            TransactionTimeoutException.class, e.getCause().getClass());
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        cleanPersistenceDir();
+
+        super.beforeTest();
     }
 
-    @Override public void testRandomMixedTxConfigurations() throws Exception {
-        super.testRandomMixedTxConfigurations();
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        cleanPersistenceDir();
+    }
+
+    @Override public void testMixedAsyncRollbackTypes() throws Exception {
+        super.testMixedAsyncRollbackTypes();
     }
 }
+

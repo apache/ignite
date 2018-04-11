@@ -2353,7 +2353,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                                     if (stateId == GridDhtPartitionState.OWNING.ordinal()
                                         || (stateId == GridDhtPartitionState.MOVING.ordinal()
-
                                         && part.initialUpdateCounter() < restore.get2())) {
                                         part.initialUpdateCounter(restore.get2());
 
