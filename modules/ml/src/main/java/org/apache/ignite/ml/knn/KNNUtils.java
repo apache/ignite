@@ -15,34 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.classification;
+package org.apache.ignite.ml.knn;
 
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.knn.KNNUtils;
 import org.apache.ignite.ml.knn.partitions.KNNPartitionContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.structures.LabeledDataset;
-import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.structures.LabeledVector;
-import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
+import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * kNN algorithm trainer to solve multi-class classification task.
+ * Helper class for KNNRegression.
  */
-public class KNNClassificationTrainer implements SingleLabelDatasetTrainer<KNNClassificationModel> {
+public class KNNUtils {
     /**
-     * Trains model based on the specified data.
+     * Builds dataset.
      *
      * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
      * @param lbExtractor Label extractor.
-     * @return Model.
+     * @return Dataset.
      */
-    @Override public <K, V> KNNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-        return new KNNClassificationModel<>(KNNUtils.buildDataset(datasetBuilder, featureExtractor, lbExtractor));
+    @Nullable public static <K, V> Dataset<KNNPartitionContext, LabeledDataset<Double, LabeledVector>> buildDataset(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        PartitionDataBuilder<K, V, KNNPartitionContext, LabeledDataset<Double, LabeledVector>> partDataBuilder
+            = new LabeledDatasetPartitionDataBuilderOnHeap<>(
+            featureExtractor,
+            lbExtractor
+        );
+
+        Dataset<KNNPartitionContext, LabeledDataset<Double, LabeledVector>> dataset = null;
+
+        if (datasetBuilder != null) {
+            dataset = datasetBuilder.build(
+                (upstream, upstreamSize) -> new KNNPartitionContext(),
+                partDataBuilder
+            );
+        }
+        return dataset;
     }
 }
