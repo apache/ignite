@@ -1689,9 +1689,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @return True if new partition map is more stale than current partition map, false in other case
      */
     private boolean isStaleUpdate(GridDhtPartitionMap currentMap, GridDhtPartitionMap newMap) {
-        return currentMap != null &&
-            (newMap.topologyVersion().compareTo(currentMap.topologyVersion()) < 0 ||
-            newMap.topologyVersion().compareTo(currentMap.topologyVersion()) == 0 && newMap.updateSequence() <= currentMap.updateSequence());
+        return currentMap != null && newMap.compareTo(currentMap) <= 0;
     }
 
     /** {@inheritDoc} */
@@ -1747,11 +1745,21 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         parts.updateSequence(cur.updateSequence(), cur.topologyVersion());
                 }
                 else if (isStaleUpdate(cur, parts)) {
-                    U.warn(log, "Stale update for single partition map update (will ignore) [" +
+                    assert cur != null;
+
+                    String msg = "Stale update for single partition map update (will ignore) [" +
                         "grp=" + grp.cacheOrGroupName() +
                         ", exchId=" + exchId +
                         ", curMap=" + cur +
-                        ", newMap=" + parts + ']');
+                        ", newMap=" + parts + ']';
+
+                    // This is usual situation when partition maps are equal, just print debug message.
+                    if (cur.compareTo(parts) == 0) {
+                        if (log.isDebugEnabled())
+                            log.debug(msg);
+                    }
+                    else
+                        U.warn(log, msg);
 
                     return false;
                 }
@@ -2133,9 +2141,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             result.add(ctx.localNodeId());
                         }
 
-                        U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                            "[nodeId=" + ctx.localNodeId() + ", grp=" + grp.cacheOrGroupName() +
-                            ", partId=" + locPart.id() + ", haveHistory=" + haveHistory + "]");
+                        if (log.isDebugEnabled())
+                            log.debug("Partition has been scheduled for rebalancing due to outdated update counter " +
+                                "[nodeId=" + ctx.localNodeId() + ", grp=" + grp.cacheOrGroupName() +
+                                ", partId=" + locPart.id() + ", haveHistory=" + haveHistory + "]");
                     }
                 }
 
@@ -2157,9 +2166,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (partMap.nodeId().equals(ctx.localNodeId()))
                             this.updateSeq.setIfGreater(partMap.updateSequence());
 
-                        U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                            "[nodeId=" + remoteNodeId + ", grp=" + grp.cacheOrGroupName() +
-                            ", partId=" + p + ", haveHistory=" + haveHistory + "]");
+                        if (log.isDebugEnabled())
+                            log.debug("Partition has been scheduled for rebalancing due to outdated update counter " +
+                                "[nodeId=" + remoteNodeId + ", grp=" + grp.cacheOrGroupName() +
+                                ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                     }
                 }
 

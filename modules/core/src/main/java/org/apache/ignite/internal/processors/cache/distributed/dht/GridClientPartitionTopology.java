@@ -1160,9 +1160,10 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
                     partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
 
-                    U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                        "[nodeId=" + remoteNodeId + ", groupId=" + grpId +
-                        ", partId=" + p + ", haveHistory=" + haveHistory + "]");
+                    if (log.isDebugEnabled())
+                        log.debug("Partition has been scheduled for rebalancing due to outdated update counter " +
+                            "[nodeId=" + remoteNodeId + ", groupId=" + grpId +
+                            ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                 }
             }
 
