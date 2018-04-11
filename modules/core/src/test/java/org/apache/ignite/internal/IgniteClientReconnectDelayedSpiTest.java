@@ -11,11 +11,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -54,6 +54,9 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
     }
 
     /**
+     * Test checks correctness of stale {@link CacheAffinityChangeMessage} processing while delayed
+     * {@link GridDhtPartitionsSingleMessage} with exchId = null sends after client node reconnect happened.
+     *
      * @throws Exception If failed.
      */
     public void testReconnectCacheDestroyedWithDelayedSpiMessages() throws Exception {
@@ -99,7 +102,8 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
     }
 
     /**
-     *
+     * Capturing {@link GridDhtPartitionsSingleMessage} at moment when they occurs for resending them at the moment
+     * when we need it by test cases.
      */
     private static class TestCommunicationDelayedSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
