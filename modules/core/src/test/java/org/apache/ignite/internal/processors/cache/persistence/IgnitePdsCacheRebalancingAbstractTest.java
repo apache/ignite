@@ -175,8 +175,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         stopAllGrids();
 
         cleanPersistenceDir();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE);
     }
 
     /**
@@ -577,8 +575,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If failed
      */
     public void testPartitionCounterConsistencyOnUnstableTopology() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "1");
-
         final Ignite ig = startGrids(4);
 
         ig.cluster().active(true);
@@ -592,15 +588,14 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 ds.addData(k, k);
         }
 
-        for (int t = 0; t < 7; t++) {
+        for (int t = 0; t < 5; t++) {
             int t0 = t;
             IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
                 try {
                     stopGrid(3);
 
-                    // Clear checkpoint history to avoid rebalance from WAL.
                     forceCheckpoint();
-                    forceCheckpoint();
+
                     U.sleep(500); // Wait for data load.
 
                     IgniteEx ig0 = startGrid(3);
@@ -612,8 +607,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
                         awaitPartitionMapExchange();
 
-                        // Clear checkpoint history to avoid rebalance from WAL.
-                        forceCheckpoint();
                         forceCheckpoint();
 
                         startGrid(2);
