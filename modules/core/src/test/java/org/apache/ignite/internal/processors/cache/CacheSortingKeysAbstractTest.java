@@ -410,7 +410,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         private CopyOnWriteArrayList<Object> list = new CopyOnWriteArrayList<>();
 
         /** We should check only the same type of events. */
-        private int evtType = -1;
+        private volatile int evtType = -1;
 
         /** {@inheritDoc} */
         @Override public boolean apply(CacheEvent event) {
