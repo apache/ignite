@@ -59,6 +59,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.management.ObjectName;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -1151,9 +1152,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         boolean clusterInTransitionStateToActive = fut.activateCluster();
 
-        // Before local node join event.
-        if (clusterInTransitionStateToActive || (joinEvt && locNode && isSrvNode))
+        // In case of cluster activation or local join restore, restore whole manager state.
+        if (clusterInTransitionStateToActive || (joinEvt && locNode && isSrvNode)) {
             restoreState();
+        }
+        // In case of starting groups, restore partition states only for these groups.
+        else if (fut.exchangeActions() != null && !F.isEmpty(fut.exchangeActions().cacheGroupsToStart())) {
+            Set<Integer> restoreGroups = fut.exchangeActions().cacheGroupsToStart().stream()
+                .map(actionData -> actionData.descriptor().groupId())
+                .collect(Collectors.toSet());
+
+            restorePartitionStates(Collections.emptyMap(), restoreGroups);
+        }
 
         if (cctx.kernalContext().query().moduleEnabled()) {
             ExchangeActions acts = fut.exchangeActions();
@@ -1393,6 +1403,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * Restores from last checkpoint and applies WAL changes since this checkpoint.
+     *
      * @throws IgniteCheckedException If failed to restore database status from WAL.
      */
     private void restoreState() throws IgniteCheckedException {
@@ -2154,7 +2166,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            restorePartitionState(partStates, Collections.emptySet());
+            restorePartitionStates(partStates, null);
         }
         finally {
             checkpointReadUnlock();
@@ -2264,7 +2276,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             if (!metastoreOnly)
-                restorePartitionState(partStates, ignoreGrps);
+                restorePartitionStates(partStates, null);
         }
         finally {
             if (!metastoreOnly)
@@ -2277,20 +2289,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * @param partStates Partition states.
-     * @throws IgniteCheckedException If failed to restore.
+     * Initializes not empty partitions and restores their state from page memory or WAL.
+     * Partition states presented in page memory may be overriden by states restored from WAL {@code partStates}.
+     *
+     * @param partStates Partition states restored from WAL.
+     * @param onlyForGroups If not {@code null} restore states only for specified cache groups.
+     * @throws IgniteCheckedException If failed to restore partition states.
      */
-    private void restorePartitionState(
-        Map<T2<Integer, Integer>, T2<Integer, Long>> partStates,
-        Collection<Integer> ignoreGrps
-    ) throws IgniteCheckedException {
+    private void restorePartitionStates(Map<T2<Integer, Integer>, T2<Integer, Long>> partStates,
+                                       @Nullable Set<Integer> onlyForGroups) throws IgniteCheckedException {
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (grp.isLocal() || !grp.affinityNode() || ignoreGrps.contains(grp.groupId())) {
+            if (grp.isLocal() || !grp.affinityNode()) {
                 // Local cache has no partitions and its states.
                 continue;
             }
 
             if (!grp.dataRegion().config().isPersistenceEnabled())
+                continue;
+
+            if (onlyForGroups != null && !onlyForGroups.contains(grp.groupId()))
                 continue;
 
             int grpId = grp.groupId();
@@ -2373,56 +2390,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             // After partition states are restored, it is necessary to update internal data structures in topology.
             grp.topology().afterStateRestored(grp.topology().lastTopologyChangeVersion());
         }
-    }
-
-    /**
-     * @param grpCtx Group context.
-     * @param partId Partition ID.
-     * @return Partition state.
-     */
-    public GridDhtPartitionState readPartitionState(CacheGroupContext grpCtx, int partId) {
-        int grpId = grpCtx.groupId();
-        PageMemoryEx pageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
-
-        try {
-            if (storeMgr.exists(grpId, partId)) {
-                storeMgr.ensure(grpId, partId);
-
-                if (storeMgr.pages(grpId, partId) > 1) {
-                    long partMetaId = pageMem.partitionMetaPageId(grpId, partId);
-                    long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
-
-                    try {
-                        long pageAddr = pageMem.readLock(grpId, partMetaId, partMetaPage);
-
-                        try {
-                            if (PageIO.getType(pageAddr) == PageIO.T_PART_META) {
-                                PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
-
-                                GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal((int)io.getPartitionState(pageAddr));
-
-                                if (state == null)
-                                    state = GridDhtPartitionState.MOVING;
-
-                                return state;
-                            }
-                        }
-                        finally {
-                            pageMem.readUnlock(grpId, partMetaId, partMetaPage);
-                        }
-                    }
-                    finally {
-                        pageMem.releasePage(grpId, partMetaId, partMetaPage);
-                    }
-                }
-            }
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to read partition state (will default to MOVING) [grp=" + grpCtx +
-                ", partId=" + partId + "]", e);
-        }
-
-        return GridDhtPartitionState.MOVING;
     }
 
     /**

@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -281,6 +282,13 @@ public class GridDhtPartitionDemander {
             final RebalanceFuture oldFut = rebalanceFut;
 
             final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId);
+
+            if (!grp.localWalEnabled())
+                fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
+                    @Override public void applyx(IgniteInternalFuture<Boolean> future) throws IgniteCheckedException {
+                        ctx.walState().onGroupRebalanceFinished(grp.groupId(), assignments.topologyVersion());
+                    }
+                });
 
             if (!oldFut.isInitial())
                 oldFut.cancel();
@@ -722,9 +730,7 @@ public class GridDhtPartitionDemander {
                                 // If message was last for this partition,
                                 // then we take ownership.
                                 if (last) {
-                                    top.own(part);
-
-                                    fut.partitionDone(nodeId, p);
+                                    fut.partitionDone(nodeId, p, true);
 
                                     if (log.isDebugEnabled())
                                         log.debug("Finished rebalancing partition: " + part);
@@ -737,14 +743,14 @@ public class GridDhtPartitionDemander {
                         }
                         else {
                             if (last)
-                                fut.partitionDone(nodeId, p);
+                                fut.partitionDone(nodeId, p, false);
 
                             if (log.isDebugEnabled())
                                 log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
                         }
                     }
                     else {
-                        fut.partitionDone(nodeId, p);
+                        fut.partitionDone(nodeId, p, false);
 
                         if (log.isDebugEnabled())
                             log.debug("Skipping rebalancing partition (it does not belong on current node): " + p);
@@ -762,7 +768,7 @@ public class GridDhtPartitionDemander {
             }
 
             for (Integer miss : supply.missed())
-                fut.partitionDone(nodeId, miss);
+                fut.partitionDone(nodeId, miss, false);
 
             GridDhtPartitionDemandMessage d = new GridDhtPartitionDemandMessage(
                 supply.rebalanceId(),
@@ -1064,8 +1070,11 @@ public class GridDhtPartitionDemander {
          * @param nodeId Node id.
          * @param p Partition number.
          */
-        private void partitionDone(UUID nodeId, int p) {
+        private void partitionDone(UUID nodeId, int p, boolean updateState) {
             synchronized (this) {
+                if (updateState && grp.localWalEnabled())
+                    grp.topology().own(grp.topology().localPartition(p));
+
                 if (isDone())
                     return;
 
