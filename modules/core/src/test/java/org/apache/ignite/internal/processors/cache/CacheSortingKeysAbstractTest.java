@@ -18,15 +18,15 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.TreeMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryField;
@@ -407,17 +407,16 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
     /** */
     private final class SortingPredicate implements IgnitePredicate<CacheEvent> {
         /** */
-        private CopyOnWriteArrayList<Object> list = new CopyOnWriteArrayList<>();
+        private ConcurrentLinkedQueue<Object> list = new ConcurrentLinkedQueue<>();
 
         /** We should check only the same type of events. */
-        private volatile int evtType = -1;
+        private AtomicInteger evtType = new AtomicInteger(-1);
 
         /** {@inheritDoc} */
         @Override public boolean apply(CacheEvent event) {
-            if (evtType == -1)
-                evtType = event.type();
+            evtType.compareAndSet(-1, event.type());
 
-            if (event.type() == evtType)
+            if (event.type() == evtType.get())
                 list.add(event.key());
 
             return true;
@@ -468,24 +467,26 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         protected BinaryField field;
 
         /**
-         * @param list List of keys.
+         * @param queue List of keys.
          * @return {@code True} if keys were sorted. Otherwise - {@code false}.
          */
-        protected boolean checkOrder(List list) {
-            int sortingCntr = 0;
+        protected boolean checkOrder(Queue queue) {
+            int cntr = 0;
 
-            for (int i = 0; i < list.size() && sortingCntr < objects.length; i++) {
-                boolean equalP2PObjects = list.get(i).equals(objects[sortingCntr]);
-                boolean isBinary = list.get(i) instanceof BinaryObject;
-                boolean equalP2PBinaries = isBinary && binaryObjects[0] != null &&
-                    field.value((BinaryObject)list.get(i)).equals(
-                        field.value((BinaryObjectEx)binaryObjects[sortingCntr]));
+            for (Object obj : queue) {
+                boolean equalP2PObjects = obj.equals(objects[cntr]);
+                boolean isBinary = obj instanceof BinaryObject;
+                boolean equalP2PBinaries = isBinary && binaryObjects[cntr] != null &&
+                    field.value((BinaryObject)obj).equals(
+                        field.value((BinaryObjectEx)binaryObjects[cntr]));
 
-                if (equalP2PObjects || equalP2PBinaries)
-                    sortingCntr++;
+                if (equalP2PObjects || equalP2PBinaries) {
+                    if (++cntr == objects.length)
+                        break;
+                }
             }
 
-            return sortingCntr >= objects.length - 1;
+            return cntr >= objects.length - 1;
         }
 
         /**
@@ -545,15 +546,13 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean checkOrder(List list) {
-            int sortingCntr = 0;
-
-            for (int i = 0; i < list.size() && sortingCntr < objects.length; i++) {
-                if (list.get(i).equals(objects[sortingCntr]))
-                    sortingCntr++;
+        @Override protected boolean checkOrder(Queue queue) {
+            for (Object obj : objects) {
+                if (!obj.equals(queue.poll()))
+                    return false;
             }
 
-            return sortingCntr >= objects.length - 1;
+            return true;
         }
     }
 
@@ -572,10 +571,9 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
          * @param cache IgniteCache to get IgniteBinary.
          */
         private void initializeObjects(IgniteCacheProxy cache) {
-            for (int i = 0; i < objects.length; i++)
+            for (int i = 0; i < objects.length; i++) {
                 objects[i] = new NotComparable(i);
 
-            for (int i = 0; i < objects.length; i++) {
                 objectsSortedAsBinary[i] = objects[i];
 
                 binaryObjects[i] = cache.context().kernalContext().cacheObjects().binary()
@@ -621,11 +619,12 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
                 Class personCls = ldr.loadClass(P2P_PERSON);
                 Field f = U.findField(personCls, "id");
 
-                for (int i = 0; i < objectsSortedAsBinary.length; i++) {
-                    objectsSortedAsBinary[i] = personCls.newInstance();
-                    f.set(objectsSortedAsBinary[i], i);
+                for (int i = 0; i < objects.length; i++) {
+                    objects[i] = personCls.newInstance();
 
-                    objects[i] = objectsSortedAsBinary[i];
+                    f.set(objects[i], i);
+
+                    objectsSortedAsBinary[i] = objects[i];
 
                     binaryObjects[i] = cache.context().kernalContext().cacheObjects().binary()
                         .toBinary(objectsSortedAsBinary[i]);
