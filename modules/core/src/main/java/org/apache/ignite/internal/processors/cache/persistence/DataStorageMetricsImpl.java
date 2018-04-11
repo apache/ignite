@@ -16,9 +16,13 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeNode;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
+
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.DATA;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.TOTAL;
 
 /**
  *
@@ -75,19 +79,25 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     /** */
     private IgniteWriteAheadLogManager wal;
 
+    /** */
+    private final DataStructureSizeNode nodeSize;
+
     /**
      * @param metricsEnabled Metrics enabled flag.
      * @param rateTimeInterval Rate time interval.
      * @param subInts Number of sub-intervals.
+     * @param nodeSize Node size trucker.
      */
     public DataStorageMetricsImpl(
         boolean metricsEnabled,
         long rateTimeInterval,
-        int subInts
+        int subInts,
+        DataStructureSizeNode nodeSize
     ) {
         this.metricsEnabled = metricsEnabled;
         this.rateTimeInterval = rateTimeInterval;
         this.subInts = subInts;
+        this.nodeSize = nodeSize ;
 
         resetRates();
     }
@@ -224,6 +234,16 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         this.subInts = subInts;
 
         resetRates();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalSize() {
+        return nodeSize.sizeOf(TOTAL).size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getDataSize() {
+        return nodeSize.sizeOf(DATA).size();
     }
 
     /**

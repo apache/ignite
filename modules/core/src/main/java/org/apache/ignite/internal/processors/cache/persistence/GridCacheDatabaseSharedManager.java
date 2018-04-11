@@ -404,7 +404,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         persStoreMetrics = new DataStorageMetricsImpl(
             persistenceCfg.isMetricsEnabled(),
             persistenceCfg.getMetricsRateTimeInterval(),
-            persistenceCfg.getMetricsSubIntervalCount()
+            persistenceCfg.getMetricsSubIntervalCount(),
+            nodeSize
         );
 
         metastorageLifecycleLsnrs = ctx.internalSubscriptionProcessor().getMetastorageSubscribers();
