@@ -49,7 +49,7 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
     private static final String PRECONFIGURED_CACHE = "preconfigured-cache";
 
     /** */
-    private static final Map<UUID, Runnable> recordedMessages = new ConcurrentHashMap<>();
+    private static final Map<UUID, Runnable> recordedMsg = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -97,10 +97,10 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
             }
         });
 
-        IgniteCache<Object, Object> clientCache0 = client.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, Object> clientCache = client.cache(DEFAULT_CACHE_NAME);
 
         // Resend delayed GridDhtPartitionsSingleMessage
-        for (Runnable r : recordedMessages.values())
+        for (Runnable r : recordedMsg.values())
             r.run();
 
         final GridDiscoveryManager srvDisco = ((IgniteKernal)srv).context().discovery();
@@ -112,9 +112,9 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
             }
         }, 5000));
 
-        clientCache0.put(1, 1);
+        clientCache.put(1, 1);
 
-        assertEquals(1, clientCache0.get(1));
+        assertEquals(1, clientCache.get(1));
     }
 
     /**
@@ -123,20 +123,19 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
      */
     private static class TestCommunicationDelayedSpi extends TcpCommunicationSpi {
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
             final Object msg0 = ((GridIoMessage)msg).message();
 
             if (msg0 instanceof GridDhtPartitionsSingleMessage &&
                 ((GridDhtPartitionsAbstractMessage)msg0).exchangeId() == null)
-                recordedMessages.putIfAbsent(node.id(), new Runnable() {
-                    @Override
-                    public void run() {
-                        TestCommunicationDelayedSpi.super.sendMessage(node, msg, ackClosure);
+                recordedMsg.putIfAbsent(node.id(), new Runnable() {
+                    @Override public void run() {
+                        TestCommunicationDelayedSpi.super.sendMessage(node, msg, ackC);
                     }
                 });
             else
-                super.sendMessage(node, msg, ackClosure);
+                super.sendMessage(node, msg, ackC);
         }
     }
 }
