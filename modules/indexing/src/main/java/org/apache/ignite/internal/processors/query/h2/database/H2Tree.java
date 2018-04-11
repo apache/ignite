@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -96,9 +97,10 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         IndexColumn[] cols,
         List<InlineIndexHelper> inlineIdxs,
         int inlineSize,
-        @Nullable H2RowCache rowCache
+        @Nullable H2RowCache rowCache,
+        DataStructureSize structureSize
     ) throws IgniteCheckedException {
-        super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList);
+        super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, structureSize);
 
         if (!initNew) {
             // Page is ready - read inline size from it.

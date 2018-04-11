@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeNode;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -43,7 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -55,7 +56,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
+public class CacheFreeListSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int CPUS = Runtime.getRuntime().availableProcessors();
 
@@ -345,9 +346,23 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
 
         DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg);
 
-        DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
+        DataRegion dataRegion = new DataRegion(
+            pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker(), new DataStructureSizeNode());
 
-        return new CacheFreeListImpl(1, "freelist", regionMetrics, dataRegion, null, null, metaPageId, true);
+        return new CacheFreeList(
+            1,
+            "freelist",
+            regionMetrics,
+            dataRegion,
+            null,
+            null,
+            metaPageId,
+            true,
+            null,
+            null,
+            null,
+            null
+        );
     }
 
     /**

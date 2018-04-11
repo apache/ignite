@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -733,8 +734,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos
     ) throws IgniteCheckedException {
-        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList);
-        setIos(innerIos, leafIos);
+        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, null);
     }
 
     /**
@@ -745,6 +745,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param globalRmvId Remove ID.
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
+     * @param innerIos Inner IO versions.
+     * @param leafIos Leaf IO versions.
+     * @param selfPages Self structure size tracker.
      * @throws IgniteCheckedException If failed.
      */
     protected BPlusTree(
@@ -754,9 +757,37 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
         long metaPageId,
-        ReuseList reuseList
+        ReuseList reuseList,
+        IOVersions<? extends BPlusInnerIO<L>> innerIos,
+        IOVersions<? extends BPlusLeafIO<L>> leafIos,
+        DataStructureSize selfPages
     ) throws IgniteCheckedException {
-        super(cacheId, pageMem, wal);
+        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, selfPages);
+
+        setIos(innerIos, leafIos);
+    }
+
+    /**
+     * @param name Tree name.
+     * @param grpId Cache ID.
+     * @param pageMem Page memory.
+     * @param wal Write ahead log manager.
+     * @param globalRmvId Remove ID.
+     * @param metaPageId Meta page ID.
+     * @param reuseList Reuse list.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected BPlusTree(
+        String name,
+        int grpId,
+        PageMemory pageMem,
+        IgniteWriteAheadLogManager wal,
+        AtomicLong globalRmvId,
+        long metaPageId,
+        ReuseList reuseList,
+        DataStructureSize selfPages
+    ) throws IgniteCheckedException {
+        super(grpId, pageMem, wal, selfPages);
 
         assert !F.isEmpty(name);
 
@@ -1644,6 +1675,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
         finally {
             x.releaseAll();
+
             checkDestroyed();
         }
     }
@@ -1827,6 +1859,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long page = acquirePage(pageId);
 
         try {
+            Result res = RETRY;
+
             for (;;) {
                 r.checkLockRetry();
 
@@ -2200,7 +2234,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         }
 
                         if (bag.size() == 128) {
-                            reuseList.addForRecycle(bag);
+                            addForRecycle(bag);
 
                             assert bag.isEmpty() : bag.size();
                         }
@@ -2219,7 +2253,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             releasePage(metaPageId, metaPage);
         }
 
-        reuseList.addForRecycle(bag);
+        addForRecycle(bag);
 
         assert bag.size() == 0 : bag.size();
 
@@ -3965,7 +3999,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private void reuseFreePages() throws IgniteCheckedException {
             // If we have a bag, then it will be processed at the upper level.
             if (reuseList != null && freePages != null)
-                reuseList.addForRecycle(this);
+                addForRecycle(this);
         }
 
         /**
@@ -4224,6 +4258,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         private void releaseAll() throws IgniteCheckedException {
             releaseTail();
+
             reuseFreePages();
         }
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -56,21 +57,27 @@ public abstract class DataStructure implements PageLockListener {
     /** */
     protected ReuseList reuseList;
 
+    /** */
+    protected final DataStructureSize selfPages;
+
     /**
-     * @param cacheId Cache group ID.
+     * @param grpId Cache group ID.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
+     * @param selfPages .
      */
-    public DataStructure(
-        int cacheId,
+    protected DataStructure(
+        int grpId,
         PageMemory pageMem,
-        IgniteWriteAheadLogManager wal
+        IgniteWriteAheadLogManager wal,
+        DataStructureSize selfPages
     ) {
         assert pageMem != null;
 
-        this.grpId = cacheId;
+        this.grpId = grpId;
         this.pageMem = pageMem;
         this.wal = wal;
+        this.selfPages = selfPages;
     }
 
     /**
@@ -116,9 +123,51 @@ public abstract class DataStructure implements PageLockListener {
         if (pageId == 0)
             pageId = allocatePageNoReuse();
 
+        if (selfPages != null)
+            selfPages.inc();
+
         assert pageId != 0;
 
         return pageId;
+    }
+
+    /**
+     *
+     * @param bag Reuse bag.
+     * @return Reuse bag.
+     */
+    protected final ReuseBag wrapMetrics(ReuseBag bag) {
+        if (selfPages == null)
+            return bag;
+
+        return new ReuseBag() {
+            @Override public void addFreePage(long pageId) {
+                //TODO INC ???
+                bag.addFreePage(pageId);
+            }
+
+            @Override public long pollFreePage() {
+                long res = bag.pollFreePage();
+
+                if (res != 0)
+                    selfPages.dec();
+
+                return res;
+            }
+
+            @Override public boolean isEmpty() {
+                return bag.isEmpty();
+            }
+        };
+    }
+
+    /**
+     *
+     * @param bag Reuse bag.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void addForRecycle(final ReuseBag bag) throws IgniteCheckedException {
+        reuseList.addForRecycle(wrapMetrics(bag));
     }
 
     /**

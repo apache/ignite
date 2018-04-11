@@ -278,8 +278,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void writeRowData(
+    @Override protected void writeRowData(
         long pageAddr,
         int dataOff,
         byte[] payload
