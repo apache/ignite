@@ -863,6 +863,14 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_BPLUS_TREE_LOCK_RETRIES = "IGNITE_BPLUS_TREE_LOCK_RETRIES";
 
     /**
+     * Amount of memory reserved in the heap at node start, which can be dropped to increase the chances of success when
+     * handling OutOfMemoryError.
+     *
+     * Default is {@code 64kb}.
+     */
+    public static final String IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE = "IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE";
+
+    /**
      * The threshold of uneven distribution above which partition distribution will be logged.
      *
      * The default is '50', that means: warn about nodes with 50+% difference.
