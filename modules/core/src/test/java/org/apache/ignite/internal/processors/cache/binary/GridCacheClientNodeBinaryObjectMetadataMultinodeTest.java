@@ -242,7 +242,7 @@ public class GridCacheClientNodeBinaryObjectMetadataMultinodeTest extends GridCo
                 @Override public boolean apply() {
                     Collection<BinaryType> metaCol = p0.types();
 
-                    return metaCol.size() == 1000;
+                    return metaCol.size() >= 1000;
                 }
             }, getTestTimeout());
 
