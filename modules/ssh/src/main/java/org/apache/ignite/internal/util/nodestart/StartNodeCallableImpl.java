@@ -79,10 +79,10 @@ public class StartNodeCallableImpl implements StartNodeCallable {
     private static final long EXECUTE_WAIT_TIME = 1000;
 
     /**  */
-    private static final long NODE_START_CHECK_PERIOD = 2000;
+    private static final long NODE_START_CHECK_PERIOD = 3000;
 
     /**  */
-    private static final long NODE_START_CHECK_LIMIT = 5;
+    private static final long NODE_START_CHECK_LIMIT = 10;
 
     /** Specification. */
     private final IgniteRemoteStartSpecification spec;
