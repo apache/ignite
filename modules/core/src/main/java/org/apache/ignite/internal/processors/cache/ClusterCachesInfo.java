@@ -1750,8 +1750,12 @@ class ClusterCachesInfo {
                     survivedCaches.add(cacheName);
             }
 
-            if (locJoinCachesCtx != null)
+            if (locJoinCachesCtx != null) {
                 locJoinCachesCtx.removeSurvivedCaches(survivedCaches);
+
+                if (locJoinCachesCtx.isEmpty())
+                    locJoinCachesCtx = null;
+            }
 
             if (!cachesOnDisconnect.clusterActive())
                 initStartCachesForLocalJoin(false, true);
