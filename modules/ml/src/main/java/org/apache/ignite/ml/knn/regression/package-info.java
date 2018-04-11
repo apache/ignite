@@ -15,19 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 /**
- * Test suite for all tests located in org.apache.ignite.ml.trees package.
+ * <!-- Package description. -->
+ * Contains helper classes for kNN regression algorithms.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    KNNClassificationTest.class,
-    KNNRegressionTest.class,
-    LabeledDatasetTest.class
-})
-public class KNNTestSuite {
-}
+package org.apache.ignite.ml.knn.regression;
