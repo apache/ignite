@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Sql query request.
