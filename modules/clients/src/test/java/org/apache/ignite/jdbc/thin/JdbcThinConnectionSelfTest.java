@@ -61,6 +61,7 @@ import static java.sql.Statement.RETURN_GENERATED_KEYS;
  * Connection test.
  */
 @SuppressWarnings("ThrowableNotThrown")
+// TODO: Write tests.
 public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
