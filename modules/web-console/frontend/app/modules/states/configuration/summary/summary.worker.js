@@ -26,6 +26,11 @@ import IgniteConfigurationGenerator from 'app/modules/configuration/generator/Co
 import IgniteJavaTransformer from 'app/modules/configuration/generator/JavaTransformer.service';
 import IgniteSpringTransformer from 'app/modules/configuration/generator/SpringTransformer.service';
 
+import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
+import get from 'lodash/get';
+import filter from 'lodash/filter';
+import isEmpty from 'lodash/isEmpty';
+
 const maven = new IgniteMavenGenerator();
 const docker = new IgniteDockerGenerator();
 const readme = new IgniteReadmeGenerator();
@@ -71,8 +76,8 @@ onmessage = function(e) {
 
     const cfg = generator.igniteConfiguration(cluster, targetVer, false);
     const clientCfg = generator.igniteConfiguration(cluster, targetVer, true);
-    const clientNearCaches = _.filter(cluster.caches, (cache) =>
-        cache.cacheMode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled'));
+    const clientNearCaches = filter(cluster.caches, (cache) =>
+        cache.cacheMode === 'PARTITIONED' && get(cache, 'clientNearConfiguration.enabled'));
 
     const secProps = properties.generate(cfg);
 
@@ -104,9 +109,9 @@ onmessage = function(e) {
     }
 
     // Generate loader for caches with configured store.
-    const cachesToLoad = _.filter(cluster.caches, (cache) => _.nonNil(cache.cacheStoreFactory));
+    const cachesToLoad = filter(cluster.caches, (cache) => nonNil(_.get(cache, 'cacheStoreFactory.kind')));
 
-    if (_.nonEmpty(cachesToLoad))
+    if (nonEmpty(cachesToLoad))
         zip.file(`${srcPath}/load/LoadCaches.java`, java.loadCaches(cachesToLoad, 'load', 'LoadCaches', `"${clientXml}"`));
 
     const startupPath = `${srcPath}/startup`;
@@ -124,8 +129,8 @@ onmessage = function(e) {
     zip.file('README.txt', readme.generate());
     zip.file('jdbc-drivers/README.txt', readme.generateJDBC());
 
-    if (_.isEmpty(data.pojos))
-        data.pojos = java.pojos(cluster.caches);
+    if (isEmpty(data.pojos))
+        data.pojos = java.pojos(cluster.caches, true);
 
     for (const pojo of data.pojos) {
         if (pojo.keyClass)

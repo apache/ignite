@@ -20,6 +20,10 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.failure.FailureHandlerTriggeredTest;
+import org.apache.ignite.failure.IoomFailureHandlerTest;
+import org.apache.ignite.failure.StopNodeFailureHandlerTest;
+import org.apache.ignite.failure.StopNodeOrHaltFailureHandlerTest;
 import org.apache.ignite.internal.ClassSetTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
@@ -56,8 +60,8 @@ import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.processors.database.CacheFreeListImplSelfTest;
-import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
+import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
@@ -65,7 +69,6 @@ import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesT
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
 import org.apache.ignite.marshaller.MarshallerContextSelfTest;
 import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
@@ -190,6 +193,12 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridCleanerTest.class);
 
         suite.addTestSuite(ClassSetTest.class);
+
+        // Basic failure handlers.
+        suite.addTestSuite(FailureHandlerTriggeredTest.class);
+        suite.addTestSuite(StopNodeFailureHandlerTest.class);
+        suite.addTestSuite(StopNodeOrHaltFailureHandlerTest.class);
+        suite.addTestSuite(IoomFailureHandlerTest.class);
 
         return suite;
     }

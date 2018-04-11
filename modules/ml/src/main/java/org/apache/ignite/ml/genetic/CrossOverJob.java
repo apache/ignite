@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.genetic;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 import org.apache.ignite.Ignite;
@@ -49,10 +48,11 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * </p>
  */
 public class CrossOverJob extends ComputeJobAdapter {
-
+    /** Ignite resource */
     @IgniteInstanceResource
     private Ignite ignite = null;
 
+    /** Ignite logger */
     @LoggerResource
     private IgniteLogger log = null;
 
@@ -84,7 +84,6 @@ public class CrossOverJob extends ComputeJobAdapter {
      * @param genekeys Original gene Keys for a chromosome
      * @return New Gene keys
      */
-
     private long[] crossOver(long[] newKeySwapArrayForChrome, int updateIdx, long[] genekeys) {
         long[] newGeneKeys = genekeys.clone();
 

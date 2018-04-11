@@ -114,19 +114,20 @@ public class MapQueryLazyWorker extends GridWorker {
 
     /**
      * Stop the worker.
+     * @param nodeStop Node is stopping.
      */
-    public void stop() {
+    public void stop(final boolean nodeStop) {
         if (MapQueryLazyWorker.currentWorker() == null)
             submit(new Runnable() {
                 @Override public void run() {
-                    stop();
+                    stop(nodeStop);
                 }
             });
         else {
             GridH2QueryContext qctx = GridH2QueryContext.get();
 
             if (qctx != null) {
-                qctx.clearContext(false);
+                qctx.clearContext(nodeStop);
 
                 GridH2QueryContext.clearThreadLocal();
             }
