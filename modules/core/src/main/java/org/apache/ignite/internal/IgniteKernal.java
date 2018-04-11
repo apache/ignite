@@ -2666,12 +2666,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         Collection<ClusterNode> nodes = ctx.discovery().nodes(topVer);
 
-        Iterator<ClusterNode> it = nodes.iterator();
-
-        if (!it.hasNext())
+        if (F.isEmpty(nodes))
             return "N/A";
 
-        ClusterNode firstNode = it.next();
+        ClusterNode firstNode = nodes.iterator().next();
 
         if (firstNode.isClient() || firstNode.isDaemon())
             return "N/A";
