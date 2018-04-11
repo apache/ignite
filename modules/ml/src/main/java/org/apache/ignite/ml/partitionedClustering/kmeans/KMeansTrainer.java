@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.partitionedClustering.kmeans;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
@@ -27,6 +28,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
@@ -34,6 +36,7 @@ import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.util.MapUtil;
+import org.apache.ignite.ml.math.util.MatrixUtil;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.partition.LabeledDatasetPartitionDataBuilderOnHeap;
@@ -73,7 +76,6 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
             lbExtractor
         );
 
-
         Vector[] centers;
 
         try(Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset = datasetBuilder.build(
@@ -83,14 +85,21 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
             final int cols = dataset.compute(data -> data.colSize(), (a, b) -> a == null ? b : a);
             centers = initClusterCenters(dataset, k);
 
+            System.out.println("Initialized Center vectors"); // DEBUG
+            for (Vector v : centers)
+                Tracer.showAscii(v);
+
             boolean converged = false;
             int iteration = 0;
 
             while (iteration < maxIterations && !converged) {
+                System.out.println("ITERATION " + iteration); // DEBUG
 
                 Vector[] newCentroids = new DenseLocalOnHeapVector[k];
 
                 final Vector[] finalCenters = centers;
+
+
                 TotalCostAndCounts totalResult = dataset.compute(data -> {
                     TotalCostAndCounts result = new TotalCostAndCounts();
 
@@ -100,6 +109,10 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
                         final IgniteBiTuple<Integer, Double> closestCentroid = findClosestCentroid(finalCenters, data.getRow(i));
                         int centroidIdx = closestCentroid.get1();
                         data.setLabel(i, centroidIdx);
+
+                        System.out.println("Row idx " + i + " centroid " + centroidIdx + " "
+                            + Arrays.toString(data.getRow(i).features().getStorage().data()));
+
 
                         result.totalCost += closestCentroid.get2();
                         result.sums.putIfAbsent(centroidIdx, VectorUtils.zeroes(cols));
@@ -111,6 +124,11 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
                         result.counts.merge(centroidIdx, 1,
                             (IgniteBiFunction<Integer, Integer, Integer>)(i1, i2) -> i1 + i2);
 
+                        System.out.println("Counts " + result.counts.toString());
+                        result.sums.entrySet().forEach(e -> {
+                            System.out.println("Sums " + e.getKey() + " " + Arrays.toString(e.getValue().getStorage().data()));
+                        });
+
                     }
                     return result;
                 }, (a, b) -> a == null ? b : a.merge(b));
@@ -118,20 +136,27 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
 
                 converged = true;
 
+                System.out.println(totalResult.counts.toString());
+                totalResult.sums.entrySet().forEach(e -> {
+                    System.out.println(e.getKey() + " " + Arrays.toString(e.getValue().getStorage().data()));
+                });
+
                 for (Integer ind : totalResult.sums.keySet()) {
                     Vector massCenter = totalResult.sums.get(ind).times(1.0 / totalResult.counts.get(ind));
 
                     if (converged && distance.compute(massCenter, centers[ind]) > epsilon * epsilon)
                         converged = false;
 
-                    centers[ind] = massCenter;
+                    newCentroids[ind] = massCenter;
                 }
 
                 iteration++;
                 centers = newCentroids;
+
+                System.out.println("Center vectors"); // DEBUG
+                for (Vector v : centers)
+                    Tracer.showAscii(v);
             }
-
-
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -197,8 +222,6 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
             if (dist < bestDistance) {
                 bestDistance = dist;
                 bestInd = i;
-
-
             }
         }
 
@@ -243,8 +266,8 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
         /** Merge current */
         public TotalCostAndCounts merge(TotalCostAndCounts other) {
             this.totalCost += totalCost;
-            MapUtil.mergeMaps(sums, other.sums, Vector::plus, ConcurrentHashMap::new);
-            MapUtil.mergeMaps(counts, other.counts, (i1, i2) -> i1 + i2, ConcurrentHashMap::new);
+            this.sums = MapUtil.mergeMaps(sums, other.sums, Vector::plus, ConcurrentHashMap::new);
+            this.counts = MapUtil.mergeMaps(counts, other.counts, (i1, i2) -> i1 + i2, ConcurrentHashMap::new);
             return this;
         }
     }
