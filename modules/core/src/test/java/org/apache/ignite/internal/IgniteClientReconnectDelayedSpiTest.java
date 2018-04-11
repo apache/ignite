@@ -103,8 +103,8 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
         for (Runnable r : recordedMsgs.values())
             r.run();
 
-        final GridDiscoveryManager srvDisco = ((IgniteKernal)srv).context().discovery();
-        final ClusterNode clientNode = ((IgniteKernal)client).localNode();
+        final GridDiscoveryManager srvDisco = ((IgniteEx)srv).context().discovery();
+        final ClusterNode clientNode = ((IgniteEx)client).localNode();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
