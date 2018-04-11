@@ -959,8 +959,8 @@ public class CommandHandler {
                 usage("  Remove nodes from baseline topology:", BASELINE, " remove consistentId1[,consistentId2,....,consistentIdN] [--force]");
                 usage("  Set baseline topology:", BASELINE, " set consistentId1[,consistentId2,....,consistentIdN] [--force]");
                 usage("  Set baseline topology based on version:", BASELINE, " version topologyVersion [--force]");
-                usage("  Print absolute paths of unused archived wal segments on each node:", WAL, "print consistentId1[,consistentId2,....,consistentIdN]");
-                usage("  Delete unused archived wal segments on each node:", WAL, "delete consistentId1[,consistentId2,....,consistentIdN] [--force]");
+                usage("  Print absolute paths of unused archived wal segments on each node:", WAL, " print consistentId1[,consistentId2,....,consistentIdN]");
+                usage("  Delete unused archived wal segments on each node:", WAL, " delete consistentId1[,consistentId2,....,consistentIdN] [--force]");
 
                 log("By default cluster deactivation and changes in baseline topology commands request interactive confirmation. ");
                 log("  --force option can be used to execute commands without prompting for confirmation.");
