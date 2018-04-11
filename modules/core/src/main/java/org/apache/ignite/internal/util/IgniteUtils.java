@@ -522,7 +522,12 @@ public abstract class IgniteUtils {
     };
 
     /** Ignite MBeans disabled flag. */
-    public static boolean IGNITE_MBEANS_DISABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MBEANS_DISABLED);
+    public static boolean IGNITE_MBEANS_DISABLED =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MBEANS_DISABLED);
+
+    /** Ignite test features enabled flag. */
+    public static boolean IGNITE_TEST_FEATURES_ENABLED =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_TEST_FEATURES_ENABLED);
 
     /** */
     private static final boolean assertionsEnabled;

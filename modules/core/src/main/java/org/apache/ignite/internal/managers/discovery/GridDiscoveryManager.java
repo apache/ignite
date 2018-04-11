@@ -147,6 +147,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_REGIONS_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
@@ -2589,7 +2591,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          *
          */
         private DiscoveryWorker() {
-            super(ctx.igniteInstanceName(), "disco-event-worker", GridDiscoveryManager.this.log);
+            super(ctx.igniteInstanceName(), "disco-event-worker", GridDiscoveryManager.this.log, ctx.workersRegistry());
         }
 
         /**
@@ -2669,13 +2671,21 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     body0();
                 }
                 catch (InterruptedException e) {
+                    if (!isCancelled)
+                        ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, e));
+
                     throw e;
                 }
                 catch (Throwable t) {
-                    U.error(log, "Unexpected exception in discovery worker thread (ignored).", t);
+                    U.error(log, "Exception in discovery worker thread.", t);
 
-                    if (t instanceof Error)
-                        throw (Error)t;
+                    if (t instanceof Error) {
+                        FailureType type = t instanceof OutOfMemoryError ? CRITICAL_ERROR : SYSTEM_WORKER_TERMINATION;
+
+                        ctx.failure().process(new FailureContext(type, t));
+
+                        throw t;
+                    }
                 }
             }
         }
