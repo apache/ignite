@@ -63,6 +63,7 @@ public class OsConfigurationSuggestions {
         if (U.isRedHat()) {
             String value;
             String expected = "500";
+            double expectedNumericCompare = 10.0;
 
             boolean dwcParamFlag = (value = readVmParam(DIRTY_WRITEBACK_CENTISECS)) != null && !value.equals(expected);
             boolean decParamFlag = (value = readVmParam(DIRTY_EXPIRE_CENTISECS)) != null && !value.equals(expected);
@@ -76,8 +77,17 @@ public class OsConfigurationSuggestions {
                     (dwcParamFlag && decParamFlag ? "s" : ""),
                     expected));
 
-            if ((value = readVmParam(SWAPPINESS)) != null && !value.equals(expected = "10"))
-                suggestions.add(String.format("Reduce pages swapping ratio (set vm.%s=%s)", SWAPPINESS, expected));
+            if ((value = readVmParam(SWAPPINESS)) != null) {
+                try {
+                    expectedNumericCompare = 10.0;
+                    if (Float.parseFloat(value) > expectedNumericCompare)
+                        suggestions.add(String.format("Reduce pages swapping ratio (set vm.%s=%i or less)", SWAPPINESS,
+                                                      expectedNumericCompare));
+                }
+                catch (NumberFormatException ignored) {
+                    // OS param not parseable as a number?
+                }
+            }
 
             if ((value = readVmParam(ZONE_RECLAIM_MODE)) != null && !value.equals(expected = "0"))
                 suggestions.add(String.format("Disable NUMA memory reclaim (set vm.%s=%s)", ZONE_RECLAIM_MODE,
