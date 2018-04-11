@@ -82,6 +82,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.AUTHENTICATE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SECURITY_CHECK_FAILED;
@@ -231,10 +232,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
             try {
                 ses = session(req);
             }
+            catch (IgniteAuthenticationException e) {
+                return new GridFinishedFuture<>(new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
+            }
             catch (IgniteCheckedException e) {
-                GridRestResponse res = new GridRestResponse(STATUS_FAILED, e.getMessage());
-
-                return new GridFinishedFuture<>(res);
+                return new GridFinishedFuture<>(new GridRestResponse(STATUS_FAILED, e.getMessage()));
             }
 
             assert ses != null;
@@ -285,9 +287,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
                             throw new IgniteAuthenticationException("The user name or password is incorrect");
 
                         ses.authCtx = ctx.authentication().authenticate(login, pwd);
-
-                        req.authorizationContext(ses.authCtx);
                     }
+
+                    req.authorizationContext(ses.authCtx);
                 }
                 catch (IgniteCheckedException e) {
                     return new GridFinishedFuture<>(new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
@@ -363,6 +365,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         while (true) {
             if (F.isEmpty(sesTok) && clientId == null) {
+                if (ctx.authentication().enabled() && req.command() != AUTHENTICATE)
+                    throw new IgniteAuthenticationException("Failed to handle request - session token not found or invalid");
+
                 Session ses = Session.random();
 
                 UUID oldSesId = clientId2SesId.put(ses.clientId, ses.sesId);

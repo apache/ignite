@@ -302,7 +302,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertEquals(bulk, node.get("affinityNodeId").isNull());
+        JsonNode affNode = node.get("affinityNodeId");
+
+        if (affNode != null)
+            assertEquals(bulk, affNode.isNull());
+
         assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
         assertTrue(node.get("error").isNull());
 
@@ -350,7 +354,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertEquals(0, node.get("successStatus").asInt());
+        assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
         assertTrue(node.get("error").isNull());
 
         assertNotSame(securityEnabled(), node.get("sessionToken").isNull());
@@ -368,7 +372,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertEquals(0, node.get("successStatus").asInt());
+        assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
         assertTrue(node.get("error").isNull());
         assertFalse(node.get("response").isNull());
 
@@ -974,10 +978,25 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertCacheOperation(ret, true);
     }
 
+    /** */
+    private void failIgnite_5874() {
+        DataStorageConfiguration dsCfg = ignite(0).configuration().getDataStorageConfiguration();
+
+        if (dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled())
+            fail("IGNITE-5874");
+
+        for (DataRegionConfiguration dataRegCfg : dsCfg.getDataRegionConfigurations()) {
+            if (dataRegCfg.isPersistenceEnabled())
+                fail("IGNITE-5874");
+        }
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testPutWithExpiration() throws Exception {
+        failIgnite_5874();
+
         String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT,
             "key", "putKey",
             "val", "putVal",
@@ -1014,6 +1033,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testAddWithExpiration() throws Exception {
+        failIgnite_5874();
+
         String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_ADD,
             "key", "addKey",
             "val", "addVal",
@@ -1153,6 +1174,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testReplaceWithExpiration() throws Exception {
+        failIgnite_5874();
+
         jcache().put("replaceKey", "replaceVal");
 
         assertEquals("replaceVal", jcache().get("replaceKey"));
