@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryField;
@@ -149,7 +150,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
 
         removeEventListener(pred);
 
-        assertTrue("Sorting failed.", obj.checkSorting(pred.list));
+        assertTrue("Sorting failed.", obj.checkOrder(pred.list));
     }
 
     /**
@@ -186,7 +187,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
 
         removeEventListener(pred);
 
-        assertTrue("Sorting failed.", obj.checkSorting(pred.list));
+        assertTrue("Sorting failed.", obj.checkOrder(pred.list));
     }
 
     /**
@@ -223,7 +224,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
 
         removeEventListener(pred);
 
-        assertTrue("Sorting failed.", obj.checkSorting(pred.list));
+        assertTrue("Sorting failed.", obj.checkOrder(pred.list));
     }
 
     /**
@@ -260,7 +261,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
 
         removeEventListener(pred);
 
-        assertTrue("Sorting failed.", obj.checkSorting(pred.list));
+        assertTrue("Sorting failed.", obj.checkOrder(pred.list));
     }
 
     /**
@@ -297,7 +298,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
 
         removeEventListener(pred);
 
-        assertTrue("Sorting failed.", obj.checkSorting(pred.list));
+        assertTrue("Sorting failed.", obj.checkOrder(pred.list));
     }
 
     /**
@@ -338,7 +339,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
 
         removeEventListener(pred);
 
-        assertTrue("Sorting failed.", obj.checkSorting(pred.list));
+        assertTrue("Sorting failed.", obj.checkOrder(pred.list));
     }
 
     /**
@@ -379,7 +380,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
 
         removeEventListener(pred);
 
-        assertTrue("Sorting failed.", obj.checkSorting(pred.list));
+        assertTrue("Sorting failed.", obj.checkOrder(pred.list));
     }
 
     /**
@@ -406,7 +407,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
     /** */
     private final class SortingPredicate implements IgnitePredicate<CacheEvent> {
         /** */
-        private ArrayList<Object> list = new ArrayList<>();
+        private CopyOnWriteArrayList<Object> list = new CopyOnWriteArrayList<>();
 
         /** We should check only the same type of events. */
         private int evtType = -1;
@@ -470,7 +471,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
          * @param list List of keys.
          * @return {@code True} if keys were sorted. Otherwise - {@code false}.
          */
-        protected boolean checkSorting(List list) {
+        protected boolean checkOrder(List list) {
             int sortingCntr = 0;
 
             for (int i = 0; i < list.size() && sortingCntr < objects.length; i++) {
@@ -544,7 +545,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean checkSorting(List list) {
+        @Override protected boolean checkOrder(List list) {
             int sortingCntr = 0;
 
             for (int i = 0; i < list.size() && sortingCntr < objects.length; i++) {
