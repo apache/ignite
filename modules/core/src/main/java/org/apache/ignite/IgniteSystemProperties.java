@@ -423,6 +423,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MBEANS_DISABLED = "IGNITE_MBEANS_DISABLED";
 
     /**
+     * If property is set to {@code true}, then test features will be enabled.
+     *
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_TEST_FEATURES_ENABLED = "IGNITE_TEST_FEATURES_ENABLED";
+
+    /**
      * Property controlling size of buffer holding last exception. Default value of {@code 1000}.
      */
     public static final String IGNITE_EXCEPTION_REGISTRY_MAX_SIZE = "IGNITE_EXCEPTION_REGISTRY_MAX_SIZE";
@@ -843,6 +850,11 @@ public final class IgniteSystemProperties {
      * @see CacheConfiguration#readFromBackup
      */
     public static final String IGNITE_READ_LOAD_BALANCING = "IGNITE_READ_LOAD_BALANCING";
+
+    /**
+     * Number of repetitions to capture a lock in the B+Tree.
+     */
+    public static final String IGNITE_BPLUS_TREE_LOCK_RETRIES = "IGNITE_BPLUS_TREE_LOCK_RETRIES";
 
     /**
      * Enforces singleton.

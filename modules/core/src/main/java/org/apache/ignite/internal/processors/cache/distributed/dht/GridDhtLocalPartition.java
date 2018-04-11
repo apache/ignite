@@ -933,7 +933,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * @return Initial update counter.
      */
-    public Long initialUpdateCounter() {
+    public long initialUpdateCounter() {
         return store.initialUpdateCounter();
     }
 
@@ -949,6 +949,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     public void initialUpdateCounter(long val) {
         store.updateInitialCounter(val);
+    }
+
+    /**
+     * @return Total size of all caches.
+     */
+    public long fullSize() {
+        return store.fullSize();
     }
 
     /**
