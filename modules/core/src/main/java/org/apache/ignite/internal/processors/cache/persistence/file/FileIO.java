@@ -124,7 +124,16 @@ public interface FileIO extends AutoCloseable {
      */
     public void write(byte[] buf, int off, int len) throws IOException;
 
-    public MappedByteBuffer map(int maxWalSegmentSize) throws IOException;
+    /**
+     * Allocates memory mapped buffer for this file with given size.
+     *
+     * @param sizeBytes Size of buffer.
+     *
+     * @return Instance of mapped byte buffer.
+     *
+     * @throws IOException If some I/O error occurs.
+     */
+    public MappedByteBuffer map(int sizeBytes) throws IOException;
 
     /**
      * Forces any updates of this file to be written to the storage
@@ -133,6 +142,15 @@ public interface FileIO extends AutoCloseable {
      * @throws IOException If some I/O error occurs.
      */
     public void force() throws IOException;
+
+    /**
+     * Forces any updates of this file to be written to the storage
+     * device that contains it.
+     *
+     * @param withMetadata If {@code true} force also file metadata.
+     * @throws IOException If some I/O error occurs.
+     */
+    public void force(boolean withMetadata) throws IOException;
 
     /**
      * Returns current file size in bytes.

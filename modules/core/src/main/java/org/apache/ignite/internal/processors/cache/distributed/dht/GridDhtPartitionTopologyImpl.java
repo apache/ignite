@@ -31,6 +31,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -1214,6 +1216,45 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public List<ClusterNode> owners(int p) {
         return owners(p, AffinityTopologyVersion.NONE);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<List<ClusterNode>> allOwners() {
+        lock.readLock().lock();
+
+        try {
+            int parts = partitions();
+
+            List<List<ClusterNode>> res = new ArrayList<>(parts);
+
+            for (int i = 0; i < parts; i++)
+                res.add(new ArrayList<>());
+
+            List<ClusterNode> allNodes = discoCache.cacheGroupAffinityNodes(grp.groupId());
+
+            for (int i = 0; i < allNodes.size(); i++) {
+                ClusterNode node = allNodes.get(i);
+
+                GridDhtPartitionMap nodeParts = node2part.get(node.id());
+
+                if (nodeParts != null) {
+                    for (Map.Entry<Integer, GridDhtPartitionState> e : nodeParts.map().entrySet()) {
+                        if (e.getValue() == OWNING) {
+                            int part = e.getKey();
+
+                            List<ClusterNode> owners = res.get(part);
+
+                            owners.add(node);
+                        }
+                    }
+                }
+            }
+
+            return res;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -2487,6 +2528,28 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public Map<Integer, Long> partitionSizes() {
+        lock.readLock().lock();
+
+        try {
+            Map<Integer, Long> partitionSizes = new HashMap<>();
+
+            for (int p = 0; p < locParts.length(); p++) {
+                GridDhtLocalPartition part = locParts.get(p);
+                if (part == null || part.fullSize() == 0)
+                    continue;
+
+                partitionSizes.put(part.id(), part.fullSize());
+            }
+
+            return partitionSizes;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean rebalanceFinished(AffinityTopologyVersion topVer) {
         AffinityTopologyVersion curTopVer = this.readyTopVer;
 
@@ -2548,7 +2611,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (part == null)
                     continue;
 
-                int size = part.dataStore().fullSize();
+                long size = part.dataStore().fullSize();
 
                 if (size >= threshold)
                     X.println(">>>   Local partition [part=" + part.id() + ", size=" + size + ']');

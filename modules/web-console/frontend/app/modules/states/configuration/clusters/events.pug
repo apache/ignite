@@ -23,47 +23,44 @@ include /app/helpers/jade/mixins
 -var eventStorageMemory = modelEventStorageKind + ' === "Memory"'
 -var eventStorageCustom = modelEventStorageKind + ' === "Custom"'
 
-.pca-panel.pca-panel-default(ng-form=form novalidate)
-    .pca-panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
-        ignite-form-panel-chevron
-        .pca-panel-heading-title Events
-        .pca-panel-heading-description
-            | Grid events are used for notification about what happens within the grid. 
-            | #[a.link-success(href="https://apacheignite.readme.io/docs/events" target="_blank") More info]
-    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .pca-panel-body(ng-if=`ui.isPanelLoaded('${form}')`).pca-form-row
-            .pca-form-column-6.pc-form-grid-row
-                .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
-                    +dropdown('Event storage:', modelEventStorageKind, '"eventStorageKind"', 'true', 'Disabled', '$ctrl.eventStorage',
-                    'Regulate how grid store events locally on node\
-                    <ul>\
-                        <li>Memory - All events are kept in the FIFO queue in-memory</li>\
-                        <li>Custom - Custom implementation of event storage SPI</li>\
-                    </ul>')
-                .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
-                    +dropdown('Event storage:', modelEventStorageKind, '"eventStorageKind"', 'true', 'Disabled', '$ctrl.eventStorage',
-                    'Regulate how grid store events locally on node\
-                    <ul>\
-                        <li>Memory - All events are kept in the FIFO queue in-memory</li>\
-                        <li>Custom - Custom implementation of event storage SPI</li>\
-                        <li>Disabled - Events are not collected</li>\
-                    </ul>')
-                .pc-form-group.pc-form-grid-row(ng-if=modelEventStorageKind)
-                    .pc-form-grid-col-30(ng-if-start=eventStorageMemory)
-                        +number('Events expiration time:', `${modelEventStorage}.Memory.expireAgeMs`, '"EventStorageExpireAgeMs"', 'true', 'Long.MAX_VALUE', '1', 'All events that exceed this value will be removed from the queue when next event comes')
-                    .pc-form-grid-col-30
-                        +number('Events queue size:', `${modelEventStorage}.Memory.expireCount`, '"EventStorageExpireCount"', 'true', '10000', '1', 'Events will be filtered out when new request comes')
-                    .pc-form-grid-col-60(ng-if-end)
-                        +java-class('Filter:', `${modelEventStorage}.Memory.filter`, '"EventStorageFilter"', 'true', 'false',
-                        'Filter for events to be recorded<br/>\
-                        Should be implementation of o.a.i.lang.IgnitePredicate&lt;o.a.i.events.Event&gt;', eventStorageMemory)
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Events
+    panel-description
+        | Grid events are used for notification about what happens within the grid. 
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/events" target="_blank") More info]
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+                +dropdown('Event storage:', modelEventStorageKind, '"eventStorageKind"', 'true', 'Disabled', '$ctrl.eventStorage',
+                'Regulate how grid store events locally on node\
+                <ul>\
+                    <li>Memory - All events are kept in the FIFO queue in-memory</li>\
+                    <li>Custom - Custom implementation of event storage SPI</li>\
+                </ul>')
+            .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
+                +dropdown('Event storage:', modelEventStorageKind, '"eventStorageKind"', 'true', 'Disabled', '$ctrl.eventStorage',
+                'Regulate how grid store events locally on node\
+                <ul>\
+                    <li>Memory - All events are kept in the FIFO queue in-memory</li>\
+                    <li>Custom - Custom implementation of event storage SPI</li>\
+                    <li>Disabled - Events are not collected</li>\
+                </ul>')
+            .pc-form-group.pc-form-grid-row(ng-if=modelEventStorageKind)
+                .pc-form-grid-col-30(ng-if-start=eventStorageMemory)
+                    +number('Events expiration time:', `${modelEventStorage}.Memory.expireAgeMs`, '"EventStorageExpireAgeMs"', 'true', 'Long.MAX_VALUE', '1', 'All events that exceed this value will be removed from the queue when next event comes')
+                .pc-form-grid-col-30
+                    +number('Events queue size:', `${modelEventStorage}.Memory.expireCount`, '"EventStorageExpireCount"', 'true', '10000', '1', 'Events will be filtered out when new request comes')
+                .pc-form-grid-col-60(ng-if-end)
+                    +java-class('Filter:', `${modelEventStorage}.Memory.filter`, '"EventStorageFilter"', 'true', 'false',
+                    'Filter for events to be recorded<br/>\
+                    Should be implementation of o.a.i.lang.IgnitePredicate&lt;o.a.i.events.Event&gt;', eventStorageMemory)
 
-                    .pc-form-grid-col-60(ng-if=eventStorageCustom)
-                        +java-class('Class:', `${modelEventStorage}.Custom.className`, '"EventStorageCustom"', 'true', eventStorageCustom, 'Event storage implementation class name', eventStorageCustom)
+                .pc-form-grid-col-60(ng-if=eventStorageCustom)
+                    +java-class('Class:', `${modelEventStorage}.Custom.className`, '"EventStorageCustom"', 'true', eventStorageCustom, 'Event storage implementation class name', eventStorageCustom)
 
-                    .pc-form-grid-col-60
-                        +dropdown-multiple('Include type:', `${model}.includeEventTypes`, '"includeEventTypes"', true, 'Choose recorded event types', '', '$ctrl.eventGroups',
-                        'Array of event types, which will be recorded by GridEventStorageManager#record(Event)<br/>\
-                        Note, that either the include event types or the exclude event types can be established')
-            .pca-form-column-6
-                +preview-xml-java(model, 'clusterEvents')
+                .pc-form-grid-col-60
+                    +dropdown-multiple('Include type:', `${model}.includeEventTypes`, '"includeEventTypes"', true, 'Choose recorded event types', '', '$ctrl.eventGroups',
+                    'Array of event types, which will be recorded by GridEventStorageManager#record(Event)<br/>\
+                    Note, that either the include event types or the exclude event types can be established')
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterEvents')

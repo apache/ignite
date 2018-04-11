@@ -19,26 +19,22 @@ include /app/helpers/jade/mixins
 -var form = 'attributes'
 -var model = '$ctrl.clonedCluster'
 
-.pca-panel.pca-panel-default(ng-form=form novalidate)
-    .pca-panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
-        ignite-form-panel-chevron
-        .pca-panel-heading-title User attributes
-        .pca-panel-heading-description
-            | Configuration for Ignite user attributes.
-    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .pca-panel-body(ng-if=`ui.isPanelLoaded('${form}')`).pca-form-row
-            .pca-form-column-6
-                .ignite-form-field
-                    +ignite-form-field__label('User attributes:', '"userAttributes"')
-                        +tooltip(`User-defined attributes to add to node`)
-                    .ignite-form-field__control
-                        +list-pair-edit({
-                            items: `${model}.attributes`,
-                            keyLbl: 'Attribute name', 
-                            valLbl: 'Attribute value',
-                            itemName: 'attribute',
-                            itemsName: 'attributes'
-                        })
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title User attributes
+    panel-description Configuration for Ignite user attributes.
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6
+            .ignite-form-field
+                +ignite-form-field__label('User attributes:', '"userAttributes"')
+                    +tooltip(`User-defined attributes to add to node`)
+                .ignite-form-field__control
+                    +list-pair-edit({
+                        items: `${model}.attributes`,
+                        keyLbl: 'Attribute name', 
+                        valLbl: 'Attribute value',
+                        itemName: 'attribute',
+                        itemsName: 'attributes'
+                    })
 
-            .pca-form-column-6
-                +preview-xml-java(model, 'clusterUserAttributes')
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterUserAttributes')

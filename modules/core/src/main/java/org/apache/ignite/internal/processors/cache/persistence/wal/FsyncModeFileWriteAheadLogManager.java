@@ -110,6 +110,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 
 /**
  * File WAL manager.
@@ -1338,6 +1339,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 }
             }
 
+            Throwable err = null;
+
             try {
                 synchronized (this) {
                     while (curAbsWalIdx == -1 && !stopped)
@@ -1398,6 +1401,18 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             }
             catch (InterruptedException ignore) {
                 Thread.currentThread().interrupt();
+            }
+            catch (Throwable t) {
+                err = t;
+            }
+            finally {
+                if (err == null && !stopped)
+                    err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
+
+                if (err instanceof OutOfMemoryError)
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
 
@@ -1721,8 +1736,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 }
                 catch (IgniteCheckedException | IOException e) {
                     U.error(log, "Unexpected error during WAL compression", e);
-
-                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -1814,6 +1827,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /** {@inheritDoc} */
         @Override public void run() {
+            Throwable err = null;
+
             while (!Thread.currentThread().isInterrupted() && !stopped) {
                 try {
                     long segmentToDecompress = segmentsQueue.take();
@@ -1840,13 +1855,20 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         decompressionFutures.remove(segmentToDecompress).onDone();
                     }
                 }
-                catch (InterruptedException e){
+                catch (InterruptedException ignore) {
                     Thread.currentThread().interrupt();
                 }
-                catch (IOException e) {
-                    U.error(log, "Unexpected error during WAL decompression", e);
+                catch (Throwable t) {
+                    err = t;
+                }
+                finally {
+                    if (err == null && !stopped)
+                        err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
 
-                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
+                    if (err instanceof OutOfMemoryError)
+                        cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                    else if (err != null)
+                        cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
                 }
             }
         }

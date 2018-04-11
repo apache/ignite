@@ -598,6 +598,45 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public List<List<ClusterNode>> allOwners() {
+        lock.readLock().lock();
+
+        try {
+            int parts = partitions();
+
+            List<List<ClusterNode>> res = new ArrayList<>(parts);
+
+            for (int i = 0; i < parts; i++)
+                res.add(new ArrayList<>());
+
+            List<ClusterNode> allNodes = discoCache.cacheGroupAffinityNodes(grpId);
+
+            for (int i = 0; i < allNodes.size(); i++) {
+                ClusterNode node = allNodes.get(i);
+
+                GridDhtPartitionMap nodeParts = node2part.get(node.id());
+
+                if (nodeParts != null) {
+                    for (Map.Entry<Integer, GridDhtPartitionState> e : nodeParts.map().entrySet()) {
+                        if (e.getValue() == OWNING) {
+                            int part = e.getKey();
+
+                            List<ClusterNode> owners = res.get(part);
+
+                            owners.add(node);
+                        }
+                    }
+                }
+            }
+
+            return res;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public List<ClusterNode> moving(int p) {
         return nodes(p, AffinityTopologyVersion.NONE, MOVING, null);
     }
@@ -1154,6 +1193,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros) {
         return CachePartitionPartialCountersMap.EMPTY;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, Long> partitionSizes() {
+        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */
