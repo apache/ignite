@@ -46,6 +46,7 @@ import junit.framework.TestCase;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -84,6 +85,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
@@ -92,6 +94,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
@@ -124,6 +127,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
+import static org.apache.ignite.testframework.config.GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS;
 
 /**
  * Common abstract test for Ignite tests.
@@ -203,13 +207,15 @@ public abstract class GridAbstractTest extends TestCase {
         if (BINARY_MARSHALLER)
             GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-        Thread timer = new Thread(new GridTestClockTimer(), "ignite-clock-for-tests");
+        if (GridTestClockTimer.startTestTimer()) {
+            Thread timer = new Thread(new GridTestClockTimer(), "ignite-clock-for-tests");
 
-        timer.setDaemon(true);
+            timer.setDaemon(true);
 
-        timer.setPriority(10);
+            timer.setPriority(10);
 
-        timer.start();
+            timer.start();
+        }
     }
 
     /** */
@@ -838,6 +844,7 @@ public abstract class GridAbstractTest extends TestCase {
     protected Ignite startGrid(String igniteInstanceName, GridSpringResourceContext ctx) throws Exception {
         return startGrid(igniteInstanceName, optimize(getConfiguration(igniteInstanceName)), ctx);
     }
+
     /**
      * Starts new grid with given name.
      *
@@ -852,12 +859,33 @@ public abstract class GridAbstractTest extends TestCase {
             startingIgniteInstanceName.set(igniteInstanceName);
 
             try {
+                String cfgProcClsName = System.getProperty(IGNITE_CFG_PREPROCESSOR_CLS);
+
+                if (cfgProcClsName != null) {
+                    try {
+                        Class<?> cfgProc = Class.forName(cfgProcClsName);
+
+                        Method method = cfgProc.getMethod("preprocessConfiguration", IgniteConfiguration.class);
+
+                        if (!Modifier.isStatic(method.getModifiers()))
+                            throw new Exception("Non-static pre-processor method in pre-processor class: " + cfgProcClsName);
+
+                        method.invoke(null, cfg);
+                    }
+                    catch (Exception e) {
+                        log.error("Failed to pre-process IgniteConfiguration using pre-processor class: " + cfgProcClsName);
+
+                        throw new IgniteException(e);
+                    }
+                }
+
                 Ignite node = IgnitionEx.start(cfg, ctx);
 
                 IgniteConfiguration nodeCfg = node.configuration();
 
                 log.info("Node started with the following configuration [id=" + node.cluster().localNode().id()
                     + ", marshaller=" + nodeCfg.getMarshaller()
+                    + ", discovery=" + nodeCfg.getDiscoverySpi()
                     + ", binaryCfg=" + nodeCfg.getBinaryConfiguration()
                     + ", lateAff=" + nodeCfg.isLateAffinityAssignment() + "]");
 
@@ -967,6 +995,26 @@ public abstract class GridAbstractTest extends TestCase {
         if (cfg == null)
             cfg = optimize(getConfiguration(igniteInstanceName));
 
+        if (locNode != null) {
+            DiscoverySpi discoverySpi = locNode.configuration().getDiscoverySpi();
+
+            if (discoverySpi != null && !(discoverySpi instanceof TcpDiscoverySpi)) {
+                try {
+                    // Clone added to support ZookeeperDiscoverySpi.
+                    Method m = discoverySpi.getClass().getDeclaredMethod("cloneSpiConfiguration");
+
+                    m.setAccessible(true);
+
+                    cfg.setDiscoverySpi((DiscoverySpi) m.invoke(discoverySpi));
+
+                    resetDiscovery = false;
+                }
+                catch (NoSuchMethodException e) {
+                    // Ignore.
+                }
+            }
+        }
+
         return new IgniteProcessProxy(cfg, log, locNode, resetDiscovery);
     }
 
@@ -1075,7 +1123,9 @@ public abstract class GridAbstractTest extends TestCase {
             for (Ignite g : srvs)
                 stopGrid(g.name(), cancel, false);
 
-            assert G.allGrids().isEmpty();
+            List<Ignite> nodes = G.allGrids();
+
+            assert nodes.isEmpty() : nodes;
         }
         finally {
             IgniteProcessProxy.killAll(); // In multi-JVM case.
@@ -1177,6 +1227,14 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param nodeIdx Node index.
+     * @return Node ID.
+     */
+    protected final UUID nodeId(int nodeIdx) {
+        return ignite(nodeIdx).cluster().localNode().id();
+    }
+
+    /**
      * Gets grid for given test.
      *
      * @return Grid for given test.
@@ -1217,7 +1275,11 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Ignite startGrid(String igniteInstanceName, String springCfgPath) throws Exception {
-        return startGrid(igniteInstanceName, loadConfiguration(springCfgPath));
+        IgniteConfiguration cfg = loadConfiguration(springCfgPath);
+
+        cfg.setGridLogger(getTestResources().getLogger());
+
+        return startGrid(igniteInstanceName, cfg);
     }
 
     /**
@@ -2150,6 +2212,50 @@ public abstract class GridAbstractTest extends TestCase {
             }
         }
     }
+    /**
+     * @param expSize Expected nodes number.
+     * @throws Exception If failed.
+     */
+    protected void waitForTopology(final int expSize) throws Exception {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                List<Ignite> nodes = G.allGrids();
+
+                if (nodes.size() != expSize) {
+                    info("Wait all nodes [size=" + nodes.size() + ", exp=" + expSize + ']');
+
+                    return false;
+                }
+
+                for (Ignite node: nodes) {
+                    try {
+                        IgniteFuture<?> reconnectFut = node.cluster().clientReconnectFuture();
+
+                        if (reconnectFut != null && !reconnectFut.isDone()) {
+                            info("Wait for size on node, reconnect is in progress [node=" + node.name() + ']');
+
+                            return false;
+                        }
+
+                        int sizeOnNode = node.cluster().nodes().size();
+
+                        if (sizeOnNode != expSize) {
+                            info("Wait for size on node [node=" + node.name() + ", size=" + sizeOnNode + ", exp=" + expSize + ']');
+
+                            return false;
+                        }
+                    }
+                    catch (IgniteClientDisconnectedException e) {
+                        info("Wait for size on node, node disconnected [node=" + node.name() + ']');
+
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }, 30_000));
+    }
 
     /**
      * @param millis Time to sleep.
@@ -2177,6 +2283,17 @@ public abstract class GridAbstractTest extends TestCase {
         fail("Failed to find group for cache: " + cacheName);
 
         return 0;
+    }
+
+    /**
+     * @return {@code True} if nodes use {@link TcpDiscoverySpi}.
+     */
+    protected static boolean tcpDiscovery() {
+        List<Ignite> nodes = G.allGrids();
+
+        assertFalse("There are no nodes", nodes.isEmpty());
+
+        return nodes.get(0).configuration().getDiscoverySpi() instanceof TcpDiscoverySpi;
     }
 
     /**

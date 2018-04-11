@@ -278,7 +278,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public int totalPartitionEntriesCount(int p) {
+    @Override public long totalPartitionEntriesCount(int p) {
         if (grp.isLocal())
             return locCacheDataStore.fullSize();
         else {
@@ -1331,14 +1331,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public int cacheSize(int cacheId) {
+        @Override public long cacheSize(int cacheId) {
             if (grp.sharedGroup()) {
                 AtomicLong size = cacheSizes.get(cacheId);
 
                 return size != null ? (int)size.get() : 0;
             }
 
-            return (int)storageSize.get();
+            return storageSize.get();
         }
 
         /** {@inheritDoc} */
@@ -1355,8 +1355,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public int fullSize() {
-            return (int)storageSize.get();
+        @Override public long fullSize() {
+            return storageSize.get();
         }
 
         /** {@inheritDoc} */

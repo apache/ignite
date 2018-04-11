@@ -75,6 +75,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsThreadFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -136,6 +137,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
 
@@ -1805,7 +1807,13 @@ public class IgnitionEx {
                 cfg.getStripedPoolSize(),
                 cfg.getIgniteInstanceName(),
                 "sys",
-                log);
+                log,
+                new Thread.UncaughtExceptionHandler() {
+                    @Override public void uncaughtException(Thread thread, Throwable t) {
+                        if (grid != null)
+                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                    }
+                });
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1845,6 +1853,12 @@ public class IgnitionEx {
                 cfg.getIgniteInstanceName(),
                 "data-streamer",
                 log,
+                new Thread.UncaughtExceptionHandler() {
+                    @Override public void uncaughtException(Thread thread, Throwable t) {
+                        if (grid != null)
+                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                    }
+                },
                 true);
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
@@ -2242,6 +2256,8 @@ public class IgnitionEx {
             }
 
             initializeDefaultSpi(myCfg);
+
+            GridDiscoveryManager.initCommunicationErrorResolveConfiguration(myCfg);
 
             initializeDefaultCacheConfiguration(myCfg);
 

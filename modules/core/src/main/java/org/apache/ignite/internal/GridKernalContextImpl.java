@@ -46,6 +46,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
@@ -364,6 +365,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private Map<String, Object> attrs = new HashMap<>();
+
+    /** */
+    @GridToStringExclude
+    private final WorkersRegistry workersRegistry = new WorkersRegistry();
 
     /** */
     private IgniteEx grid;
@@ -784,6 +789,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridIndexingManager indexing() {
         return indexingMgr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public WorkersRegistry workersRegistry() {
+        return workersRegistry;
     }
 
     /** {@inheritDoc} */

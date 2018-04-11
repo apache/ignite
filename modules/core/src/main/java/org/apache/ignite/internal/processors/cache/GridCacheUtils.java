@@ -66,6 +66,7 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
@@ -101,7 +102,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.CachePluginConfiguration;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -1342,8 +1342,9 @@ public class GridCacheUtils {
         else if (e instanceof SchemaOperationException)
             return new CacheException(e.getMessage(), e);
 
-        if (e.getCause() instanceof CacheException)
-            return (CacheException)e.getCause();
+        CacheException ce = X.cause(e, CacheException.class);
+        if (ce != null)
+            return ce;
 
         if (e.getCause() instanceof NullPointerException)
             return (NullPointerException)e.getCause();
@@ -1406,8 +1407,8 @@ public class GridCacheUtils {
      * @return {@code True} if given node is client node (has flag {@link IgniteConfiguration#isClientMode()} set).
      */
     public static boolean clientNode(ClusterNode node) {
-        if (node instanceof TcpDiscoveryNode)
-            return ((TcpDiscoveryNode)node).isCacheClient();
+        if (node instanceof IgniteClusterNode)
+            return ((IgniteClusterNode)node).isCacheClient();
         else
             return clientNodeDirect(node);
     }
@@ -1816,7 +1817,7 @@ public class GridCacheUtils {
                             null,
                             expiryPlc == null ? 0 : expiryPlc.forCreate(),
                             expiryPlc == null ? 0 : toExpireTime(expiryPlc.forCreate()),
-                            false,
+                            true,
                             topVer,
                             GridDrType.DR_BACKUP,
                             true);

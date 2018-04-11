@@ -1326,20 +1326,17 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param fut Current exchange future.
      * @param msg Message finish message.
      * @param resTopVer Result topology version.
-     * @throws IgniteCheckedException If failed.
      */
     public void onLocalJoin(final GridDhtPartitionsExchangeFuture fut,
         GridDhtPartitionsFullMessage msg,
-        final AffinityTopologyVersion resTopVer)
-        throws IgniteCheckedException {
+        final AffinityTopologyVersion resTopVer) {
         final Set<Integer> affReq = fut.context().groupsAffinityRequestOnJoin();
 
         final Map<Long, ClusterNode> nodesByOrder = new HashMap<>();
 
         final Map<Integer, CacheGroupAffinityMessage> joinedNodeAff = msg.joinedNodeAffinity();
 
-        assert !F.isEmpty(joinedNodeAff) : msg;
-        assert joinedNodeAff.size() >= affReq.size();
+        assert F.isEmpty(affReq) || (!F.isEmpty(joinedNodeAff) && joinedNodeAff.size() >= affReq.size()) : msg;
 
         forAllCacheGroups(false, new IgniteInClosureX<GridAffinityAssignmentCache>() {
             @Override public void applyx(GridAffinityAssignmentCache aff) throws IgniteCheckedException {
@@ -1349,7 +1346,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                 assert grp != null;
 
-                if (affReq.contains(aff.groupId())) {
+                if (affReq != null && affReq.contains(aff.groupId())) {
                     assert AffinityTopologyVersion.NONE.equals(aff.lastVersion());
 
                     CacheGroupAffinityMessage affMsg = joinedNodeAff.get(aff.groupId());
@@ -2300,6 +2297,23 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     public Map<Integer, CacheGroupDescriptor> cacheGroups() {
         return caches.registeredGrps;
+    }
+
+    /**
+     * @return All registered cache groups.
+     */
+    public Map<Integer, DynamicCacheDescriptor> caches() {
+        return caches.registeredCaches;
+    }
+
+    /**
+     * @param grpId Cache group ID
+     * @return Cache affinity cache.
+     */
+    @Nullable public GridAffinityAssignmentCache groupAffinity(int grpId) {
+        CacheGroupHolder grpHolder = grpHolders.get(grpId);
+
+        return grpHolder != null ? grpHolder.affinity() : null;
     }
 
     /**
