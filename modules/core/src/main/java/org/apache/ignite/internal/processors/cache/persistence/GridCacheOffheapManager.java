@@ -1669,46 +1669,63 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (delegate0 == null || pendingTree == null)
                 return 0;
 
-            long now = U.currentTimeMillis();
+            GridDhtLocalPartition part = cctx.topology().localPartition(partId, cctx.topology().readyTopologyVersion(), false, false);
 
-            GridCursor<PendingRow> cur;
-
-            if (grp.sharedGroup())
-                cur = pendingTree.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
-            else
-                cur = pendingTree.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
-
-            if (!cur.next())
+            // Skip non-owned partitions.
+            if (part == null || part.state() != OWNING)
                 return 0;
-
-            GridCacheVersion obsoleteVer = null;
-
-            int cleared = 0;
 
             cctx.shared().database().checkpointReadLock();
             try {
-                do {
-                    PendingRow row = cur.get();
+                if (!part.reserve())
+                    return 0;
 
-                    if (amount != -1 && cleared > amount)
-                        return cleared;
+                try {
+                    if (part.state() != OWNING)
+                        return 0;
 
-                    assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+                    long now = U.currentTimeMillis();
 
-                    row.key.partition(partId);
+                    GridCursor<PendingRow> cur;
 
-                    if (pendingTree.removex(row)) {
-                        if (obsoleteVer == null)
-                            obsoleteVer = ctx.versions().next();
+                    if (grp.sharedGroup())
+                        cur = pendingTree.find(new PendingRow(cctx.cacheId()), new PendingRow(cctx.cacheId(), now, 0));
+                    else
+                        cur = pendingTree.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
 
-                        c.apply(cctx.cache().entryEx(row.key), obsoleteVer);
+                    if (!cur.next())
+                        return 0;
+
+                    GridCacheVersion obsoleteVer = null;
+
+                    int cleared = 0;
+
+                    do {
+                        PendingRow row = cur.get();
+
+                        if (amount != -1 && cleared > amount)
+                            return cleared;
+
+                        assert row.key != null && row.link != 0 && row.expireTime != 0 : row;
+
+                        row.key.partition(partId);
+
+                        if (pendingTree.removex(row)) {
+                            if (obsoleteVer == null)
+                                obsoleteVer = ctx.versions().next();
+
+                            c.apply(cctx.cache().entryEx(row.key), obsoleteVer);
+                        }
+
+                        cleared++;
                     }
+                    while (cur.next());
 
-                    cleared++;
+                    return cleared;
                 }
-                while (cur.next());
-
-                return cleared;
+                finally {
+                    part.release();
+                }
             }
             finally {
                 cctx.shared().database().checkpointReadUnlock();
