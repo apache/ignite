@@ -57,8 +57,6 @@ public class AuthenticationCommandHandler extends GridRestCommandHandlerAdapter 
             log.debug("Handling topology REST request: " + req);
 
         try {
-            GridRestCommand cmd = req.command();
-
             if (log.isDebugEnabled())
                 log.debug("Handled topology REST request [req=" + req + ']');
 

@@ -344,7 +344,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 assert res != null;
 
-                if ((ctx.authentication().enabled() || ctx.security().enabled()) && !failed)
+                if ((authenticationEnabled || securityEnabled) && !failed)
                     res.sessionTokenBytes(req.sessionToken());
 
                 interceptResponse(res, req);
@@ -457,10 +457,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         try {
             sesExpTime = System.getProperty(IgniteSystemProperties.IGNITE_REST_SESSION_TIMEOUT);
 
-            if (sesExpTime != null)
-                sesExpTime0 = Long.valueOf(sesExpTime) * 1000;
-            else
-                sesExpTime0 = DEFAULT_SES_TIMEOUT;
+            sesExpTime0 = sesExpTime != null ? Long.valueOf(sesExpTime) * 1000 : DEFAULT_SES_TIMEOUT;
         }
         catch (NumberFormatException ignore) {
             U.warn(log, "Failed parsing IGNITE_REST_SESSION_TIMEOUT system variable [IGNITE_REST_SESSION_TIMEOUT="
@@ -510,8 +507,8 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new QueryCommandHandler(ctx));
             addHandler(new GridLogCommandHandler(ctx));
             addHandler(new GridChangeStateCommandHandler(ctx));
-            addHandler(new UserActionCommandHandler(ctx));
             addHandler(new AuthenticationCommandHandler(ctx));
+            addHandler(new UserActionCommandHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();

@@ -69,7 +69,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES_MASK;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.AUTHENTICATE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_ALL;
@@ -107,11 +106,11 @@ public class GridJettyRestHandler extends AbstractHandler {
     /** */
     private static final String WRITE_SYNCHRONIZATION_MODE_PARAM = "writeSynchronizationMode";
 
-    /** @deprecated Use USER_PARAM instead. */
-    private static final String IGNITE_LOGIN_PARAM = "ignite.login";
+    /**@deprecated Should be replaced with AUTHENTICATION + token in IGNITE 3.0 */
+    private static final String IGNITE_LOGIN = "ignite.login";
 
-    /** @deprecated Use PWD_PARAM instead. */
-    private static final String IGNITE_PASSWORD_PARAM = "ignite.password";
+    /**@deprecated Should be replaced with AUTHENTICATION + token in IGNITE 3.0 */
+    private static final String IGNITE_PASSWORD = "ignite.password";
 
     /** */
     private static final String  TEMPLATE_NAME_PARAM = "templateName";
@@ -853,11 +852,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         restReq.command(cmd);
 
-        // Check credentials only for AUTHENTICATE command.
-        if (cmd == AUTHENTICATE) {
-            if (!credentials(params, USER_PARAM, PWD_PARAM, restReq))
-                credentials(params, IGNITE_LOGIN_PARAM, IGNITE_PASSWORD_PARAM, restReq);
-        }
+        // TODO: In IGNITE 3.0 we should check credentials only for AUTHENTICATE command.
+        if (!credentials(params, IGNITE_LOGIN, IGNITE_PASSWORD, restReq))
+            credentials(params, USER_PARAM, PWD_PARAM, restReq);
 
         String clientId = (String)params.get("clientId");
 
