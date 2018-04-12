@@ -401,9 +401,9 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             Set<String> actualCols = new HashSet<>(expectedCols.size());
 
             while(rs.next()) {
-                int precision = rs.getInt("DECIMAL_DIGITS");
+                int precision = rs.getInt("COLUMN_SIZE");
 
-                int scale = rs.getInt("COLUMN_SIZE");
+                int scale = rs.getInt("DECIMAL_DIGITS");
 
                 actualCols.add(rs.getString("TABLE_SCHEM") + '.'
                     + rs.getString("TABLE_NAME") + "."
