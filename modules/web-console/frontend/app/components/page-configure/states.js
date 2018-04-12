@@ -15,15 +15,12 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-
 import base2 from 'views/base2.pug';
 import pageConfigureAdvancedClusterComponent from '../page-configure-advanced/components/page-configure-advanced-cluster/component';
 import pageConfigureAdvancedModelsComponent from '../page-configure-advanced/components/page-configure-advanced-models/component';
 import pageConfigureAdvancedCachesComponent from '../page-configure-advanced/components/page-configure-advanced-caches/component';
 import pageConfigureAdvancedIGFSComponent from '../page-configure-advanced/components/page-configure-advanced-igfs/component';
 
-import get from 'lodash/get';
 import {Observable} from 'rxjs/Observable';
 
 const idRegex = `new|[a-z0-9]+`;
