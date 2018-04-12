@@ -48,7 +48,8 @@ public class KNNClassificationTest {
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            data,
+            2,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2]
         ).withK(3)
@@ -75,7 +76,8 @@ public class KNNClassificationTest {
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            data,
+            2,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2]
         ).withK(1)
@@ -102,7 +104,8 @@ public class KNNClassificationTest {
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            data,
+            2,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2]
         ).withK(3)
@@ -127,7 +130,8 @@ public class KNNClassificationTest {
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            data,
+            2,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2]
         ).withK(3)

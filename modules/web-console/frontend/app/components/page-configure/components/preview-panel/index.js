@@ -15,21 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions.linear;
+import angular from 'angular';
+import directive from './directive';
 
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
-
-/**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link SparseDistributedMatrix}.
- */
-public class DistributedLinearRegressionSGDTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
-    /** */
-    public DistributedLinearRegressionSGDTrainerTest() {
-        super(
-            new LinearRegressionSGDTrainer(100_000, 1e-12),
-            SparseDistributedMatrix::new,
-            SparseDistributedVector::new,
-            1e-2);
-    }
-}
+export default angular
+    .module('ignite-console.page-configure.preview-panel', [])
+    .directive('previewPanel', directive);
