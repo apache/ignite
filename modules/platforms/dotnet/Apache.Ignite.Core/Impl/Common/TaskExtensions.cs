@@ -23,9 +23,13 @@ namespace Apache.Ignite.Core.Impl.Common
 
     /// <summary>
     /// Extensions for <see cref="Task"/> classes.
+    /// Fixes the issue with <see cref="TaskScheduler.Current"/> being used by defaut by system APIs.
     /// </summary>
     internal static class TaskExtensions
     {
+        /// <summary>
+        /// ContinueWith using default scheduler.
+        /// </summary>
         public static Task<TNewResult> ContWith<TResult, TNewResult>(this Task<TResult> task,
             Func<Task<TResult>, TNewResult> continuationFunction)
         {
@@ -34,6 +38,9 @@ namespace Apache.Ignite.Core.Impl.Common
             return task.ContinueWith(continuationFunction, TaskScheduler.Default);
         }
         
+        /// <summary>
+        /// ContinueWith using default scheduler.
+        /// </summary>
         public static Task ContWith(this Task task,
             Action<Task> continuationFunction)
         {
@@ -42,6 +49,9 @@ namespace Apache.Ignite.Core.Impl.Common
             return task.ContinueWith(continuationFunction, TaskScheduler.Default);
         }
 
+        /// <summary>
+        /// Run new task using default scheduler.
+        /// </summary>
         public static Task Run(Action action)
         {
             return Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.None, 
