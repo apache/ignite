@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
 
     /// <summary>
@@ -39,6 +40,12 @@ namespace Apache.Ignite.Core.Impl.Common
             IgniteArgumentCheck.NotNull(task, "task");
             
             return task.ContinueWith(continuationFunction, TaskScheduler.Default);
+        }
+
+        public static Task Run(Action action)
+        {
+            return Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.None, 
+                TaskScheduler.Default);
         }
     }
 }
