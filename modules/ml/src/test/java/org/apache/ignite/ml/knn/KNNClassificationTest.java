@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Assert;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
@@ -39,12 +38,12 @@ public class KNNClassificationTest {
     public void testBinaryClassificationTest() {
 
         Map<Integer, double[]> data = new HashMap<>();
-        data.put(0, new double[] {1.0, 1.0, 1.0});
-        data.put(1, new double[] {1.0, 2.0, 1.0});
-        data.put(2, new double[] {2.0, 1.0, 1.0});
-        data.put(3, new double[] {-1.0, -1.0, 2.0});
-        data.put(4, new double[] {-1.0, -2.0, 2.0});
-        data.put(5, new double[] {-2.0, -1.0, 2.0});
+        data.put(0, new double[]{1.0, 1.0, 1.0});
+        data.put(1, new double[]{1.0, 2.0, 1.0});
+        data.put(2, new double[]{2.0, 1.0, 1.0});
+        data.put(3, new double[]{-1.0, -1.0, 2.0});
+        data.put(4, new double[]{-1.0, -2.0, 2.0});
+        data.put(5, new double[]{-2.0, -1.0, 2.0});
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
@@ -56,9 +55,9 @@ public class KNNClassificationTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.SIMPLE);
 
-        Vector firstVector = new DenseLocalOnHeapVector(new double[] {2.0, 2.0});
+        Vector firstVector = new DenseLocalOnHeapVector(new double[]{2.0, 2.0});
         Assert.assertEquals(knnMdl.apply(firstVector), 1.0, PRECISION);
-        Vector secondVector = new DenseLocalOnHeapVector(new double[] {-2.0, -2.0});
+        Vector secondVector = new DenseLocalOnHeapVector(new double[]{-2.0, -2.0});
         Assert.assertEquals(knnMdl.apply(secondVector), 2.0, PRECISION);
     }
 
@@ -66,12 +65,12 @@ public class KNNClassificationTest {
     public void testBinaryClassificationWithSmallestKTest() {
         Map<Integer, double[]> data = new HashMap<>();
 
-        data.put(0, new double[] {1.0, 1.0, 1.0});
-        data.put(1, new double[] {1.0, 2.0, 1.0});
-        data.put(2, new double[] {2.0, 1.0, 1.0});
-        data.put(3, new double[] {-1.0, -1.0, 2.0});
-        data.put(4, new double[] {-1.0, -2.0, 2.0});
-        data.put(5, new double[] {-2.0, -1.0, 2.0});
+        data.put(0, new double[]{1.0, 1.0, 1.0});
+        data.put(1, new double[]{1.0, 2.0, 1.0});
+        data.put(2, new double[]{2.0, 1.0, 1.0});
+        data.put(3, new double[]{-1.0, -1.0, 2.0});
+        data.put(4, new double[]{-1.0, -2.0, 2.0});
+        data.put(5, new double[]{-2.0, -1.0, 2.0});
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
@@ -83,9 +82,9 @@ public class KNNClassificationTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.SIMPLE);
 
-        Vector firstVector = new DenseLocalOnHeapVector(new double[] {2.0, 2.0});
+        Vector firstVector = new DenseLocalOnHeapVector(new double[]{2.0, 2.0});
         Assert.assertEquals(knnMdl.apply(firstVector), 1.0, PRECISION);
-        Vector secondVector = new DenseLocalOnHeapVector(new double[] {-2.0, -2.0});
+        Vector secondVector = new DenseLocalOnHeapVector(new double[]{-2.0, -2.0});
         Assert.assertEquals(knnMdl.apply(secondVector), 2.0, PRECISION);
     }
 
@@ -93,12 +92,12 @@ public class KNNClassificationTest {
     public void testBinaryClassificationFarPointsWithSimpleStrategy() {
         Map<Integer, double[]> data = new HashMap<>();
 
-        data.put(0, new double[] {10.0, 10.0, 1.0});
-        data.put(1, new double[] {10.0, 20.0, 1.0});
-        data.put(2, new double[] {-1, -1, 1.0});
-        data.put(3, new double[] {-2, -2, 2.0});
-        data.put(4, new double[] {-1.0, -2.0, 2.0});
-        data.put(5, new double[] {-2.0, -1.0, 2.0});
+        data.put(0, new double[]{10.0, 10.0, 1.0});
+        data.put(1, new double[]{10.0, 20.0, 1.0});
+        data.put(2, new double[]{-1, -1, 1.0});
+        data.put(3, new double[]{-2, -2, 2.0});
+        data.put(4, new double[]{-1.0, -2.0, 2.0});
+        data.put(5, new double[]{-2.0, -1.0, 2.0});
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
@@ -110,7 +109,7 @@ public class KNNClassificationTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.SIMPLE);
 
-        Vector vector = new DenseLocalOnHeapVector(new double[] {-1.01, -1.01});
+        Vector vector = new DenseLocalOnHeapVector(new double[]{-1.01, -1.01});
         Assert.assertEquals(knnMdl.apply(vector), 2.0, PRECISION);
     }
 
@@ -118,12 +117,12 @@ public class KNNClassificationTest {
     public void testBinaryClassificationFarPointsWithWeightedStrategy() {
         Map<Integer, double[]> data = new HashMap<>();
 
-        data.put(0, new double[] {10.0, 10.0, 1.0});
-        data.put(1, new double[] {10.0, 20.0, 1.0});
-        data.put(2, new double[] {-1, -1, 1.0});
-        data.put(3, new double[] {-2, -2, 2.0});
-        data.put(4, new double[] {-1.0, -2.0, 2.0});
-        data.put(5, new double[] {-2.0, -1.0, 2.0});
+        data.put(0, new double[]{10.0, 10.0, 1.0});
+        data.put(1, new double[]{10.0, 20.0, 1.0});
+        data.put(2, new double[]{-1, -1, 1.0});
+        data.put(3, new double[]{-2, -2, 2.0});
+        data.put(4, new double[]{-1.0, -2.0, 2.0});
+        data.put(5, new double[]{-2.0, -1.0, 2.0});
 
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
@@ -135,7 +134,7 @@ public class KNNClassificationTest {
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.WEIGHTED);
 
-        Vector vector = new DenseLocalOnHeapVector(new double[] {-1.01, -1.01});
+        Vector vector = new DenseLocalOnHeapVector(new double[]{-1.01, -1.01});
         Assert.assertEquals(knnMdl.apply(vector), 1.0, PRECISION);
     }
 }

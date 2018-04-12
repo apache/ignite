@@ -75,12 +75,10 @@ public class LabeledDatasetHelper extends GridCommonAbstractTest {
             Path path = Paths.get(this.getClass().getClassLoader().getResource(rsrcPath).toURI());
             try {
                 return LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, false, isFallOnBadData);
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-        catch (URISyntaxException e) {
+        } catch (URISyntaxException e) {
             e.printStackTrace();
             return null;
         }
