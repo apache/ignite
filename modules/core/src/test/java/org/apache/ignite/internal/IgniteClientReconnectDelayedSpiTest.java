@@ -17,48 +17,39 @@
 
 package org.apache.ignite.internal;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsAbstractMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /**
- * Test cases with {@link TestCommunicationDelayedSpi} for capturing messages and resending at moment we need it.
+ * Test cases for emulation of delayed messages sending with {@link TestRecordingCommunicationSpi} for blocking and
+ * resending messages at the moment we need it.
  */
 public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAbstractTest {
     /** */
     private static final String PRECONFIGURED_CACHE = "preconfigured-cache";
 
-    /** */
-    private static final Map<UUID, Runnable> recordedMsgs = new ConcurrentHashMap<>();
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TestCommunicationDelayedSpi delayedCommSpi = new TestCommunicationDelayedSpi();
-        delayedCommSpi.setSharedMemoryPort(-1);
+        TestRecordingCommunicationSpi recordingSpi = new TestRecordingCommunicationSpi();
+        recordingSpi.setSharedMemoryPort(-1);
 
-        cfg.setCommunicationSpi(delayedCommSpi);
+        cfg.setCommunicationSpi(recordingSpi);
         cfg.setCacheConfiguration(new CacheConfiguration(PRECONFIGURED_CACHE));
 
         return cfg;
@@ -70,20 +61,27 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
     }
 
     /**
-     * Test checks correctness of stale {@link CacheAffinityChangeMessage} processing while delayed
-     * {@link GridDhtPartitionsSingleMessage} with exchId = null sends after client node reconnect happened.
+     * Test checks correctness of stale {@link CacheAffinityChangeMessage} processing by client node as delayed
+     * {@link GridDhtPartitionsSingleMessage} with exchId = null sends after client node reconnect happens.
      *
      * @throws Exception If failed.
      */
     public void testReconnectCacheDestroyedDelayedAffinityChange() throws Exception {
-        clientMode = true;
+        Ignite ignite1 = ignite(1);
 
-        final Ignite client = startGrid();
-        final Ignite srv = clientRouter(client);
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(ignite1);
+        spi.blockMessages(GridDhtPartitionsSingleMessage.class, ignite1.name());
+        spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                return (msg instanceof GridDhtPartitionsSingleMessage) &&
+                    ((GridDhtPartitionsAbstractMessage)msg).exchangeId() == null;
+            }
+        });
 
-        clientMode = false;
-
+        final Ignite client = startGrid(getConfiguration().setClientMode(true));
         client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+
+        final Ignite srv = clientRouter(client);
 
         reconnectClientNode(client, srv, new Runnable() {
             @Override public void run() {
@@ -97,13 +95,17 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
             }
         });
 
-        IgniteCache<Object, Object> clientCache = client.cache(DEFAULT_CACHE_NAME);
+        // Resend delayed GridDhtPartitionsSingleMessage.
+        spi.waitForBlocked();
+        spi.stopBlock();
 
-        // Resend delayed GridDhtPartitionsSingleMessage
-        for (Runnable r : recordedMsgs.values())
-            r.run();
+        IgniteCache<Object, Object> clientCache = client.cache(DEFAULT_CACHE_NAME);
+        clientCache.put(1, 1);
+
+        assertEquals(1, clientCache.get(1));
 
         final GridDiscoveryManager srvDisco = ((IgniteEx)srv).context().discovery();
+
         final ClusterNode clientNode = ((IgniteEx)client).localNode();
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -111,31 +113,5 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
                 return F.eq(true, srvDisco.cacheClientNode(clientNode, DEFAULT_CACHE_NAME));
             }
         }, 5000));
-
-        clientCache.put(1, 1);
-
-        assertEquals(1, clientCache.get(1));
-    }
-
-    /**
-     * Capturing {@link GridDhtPartitionsSingleMessage} at moment when they occurs for resending them at the moment
-     * when we need it by our scenario.
-     */
-    private static class TestCommunicationDelayedSpi extends TcpCommunicationSpi {
-        /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
-            throws IgniteSpiException {
-            final Object msg0 = ((GridIoMessage)msg).message();
-
-            if (msg0 instanceof GridDhtPartitionsSingleMessage &&
-                ((GridDhtPartitionsAbstractMessage)msg0).exchangeId() == null)
-                recordedMsgs.putIfAbsent(node.id(), new Runnable() {
-                    @Override public void run() {
-                        TestCommunicationDelayedSpi.super.sendMessage(node, msg, ackC);
-                    }
-                });
-            else
-                super.sendMessage(node, msg, ackC);
-        }
     }
 }
