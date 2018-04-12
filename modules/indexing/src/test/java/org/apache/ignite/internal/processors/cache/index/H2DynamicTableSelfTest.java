@@ -91,6 +91,9 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Cache with backups. */
     private static final String CACHE_NAME_BACKUPS = CACHE_NAME + "_backups";
 
+    /** Number of backups for backup test. */
+    private static final int DFLT_BACKUPS = 2;
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
@@ -103,7 +106,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME + "_async")
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC));
 
-        client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME_BACKUPS).setBackups(2));
+        client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME_BACKUPS).setBackups(DFLT_BACKUPS));
     }
 
     /** {@inheritDoc} */
@@ -127,6 +130,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute("DROP TABLE IF EXISTS PUBLIC.\"Person\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"City\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"NameTest\"");
+        execute("DROP TABLE IF EXISTS PUBLIC.\"BackupTest\"");
 
         super.afterTest();
     }
@@ -507,8 +511,25 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      *
      * @throws Exception If failed.
      */
+    @SuppressWarnings("unchecked")
     public void testBackups() throws Exception {
-        String sql = "CREATE TABLE backup"
+        String cacheName = "BackupTestCache";
+
+        execute("CREATE TABLE \"BackupTest\" (id BIGINT PRIMARY KEY, name VARCHAR) WITH \"template=" +
+            CACHE_NAME_BACKUPS + ", cache_name=" + cacheName + "\"");
+
+        CacheConfiguration ccfg = grid(0).cache(cacheName).getConfiguration(CacheConfiguration.class);
+
+        assertEquals(DFLT_BACKUPS, ccfg.getBackups());
+
+        execute("DROP TABLE PUBLIC.\"BackupTest\"");
+
+        execute("CREATE TABLE \"BackupTest\" (id BIGINT PRIMARY KEY, name VARCHAR) WITH \"template=" +
+            CACHE_NAME_BACKUPS + ", cache_name=" + cacheName + ", backups=1\"");
+
+        ccfg = grid(0).cache(cacheName).getConfiguration(CacheConfiguration.class);
+
+        assertEquals(1, ccfg.getBackups());
     }
 
     /**
