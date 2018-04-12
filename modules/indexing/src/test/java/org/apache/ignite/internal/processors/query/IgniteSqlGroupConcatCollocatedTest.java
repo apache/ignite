@@ -84,7 +84,7 @@ public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
 
         for (int grp = 1; grp < 7; ++grp) {
             for (int i = 0; i < grp; ++i) {
-                c.put(new Key(k, grp), new Value(k, "" + (char)('A' + k)));
+                c.put(new Key(k, grp), new Value(k, Character.toString((char)('A' + k))));
 
                 k++;
             }
