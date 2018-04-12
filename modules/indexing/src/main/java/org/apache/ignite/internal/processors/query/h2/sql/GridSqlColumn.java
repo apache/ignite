@@ -130,17 +130,17 @@ public class GridSqlColumn extends GridSqlElement {
     }
 
     /**
-     * @return Scale.
-     */
-    public int scale() {
-        return col.getScale();
-    }
-
-    /**
      * @return Precision.
      */
     public int precision() {
         return (int) col.getPrecision();
+    }
+
+    /**
+     * @return Scale.
+     */
+    public int scale() {
+        return col.getScale();
     }
 
     /**

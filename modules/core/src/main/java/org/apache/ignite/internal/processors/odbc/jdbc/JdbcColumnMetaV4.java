@@ -25,11 +25,11 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * JDBC column metadata V4.
  */
 public class JdbcColumnMetaV4 extends JdbcColumnMetaV3 {
-    /** Decimal field scale. */
-    private int scale;
-
     /** Decimal field precision. */
     private int precision;
+
+    /** Decimal field scale. */
+    private int scale;
 
     /**
      * Default constructor is used for serialization.
@@ -49,17 +49,12 @@ public class JdbcColumnMetaV4 extends JdbcColumnMetaV3 {
      * @param scale Decimal column scale.
      */
     public JdbcColumnMetaV4(String schemaName, String tblName, String colName, Class<?> cls, boolean nullable,
-        Object dfltVal, int scale, int precision) {
+        Object dfltVal, int precision, int scale) {
         super(schemaName, tblName, colName, cls, nullable, dfltVal);
 
-        this.scale = scale;
-
         this.precision = precision;
-    }
 
-    /** {@inheritDoc} */
-    @Override public int scale() {
-        return scale;
+        this.scale = scale;
     }
 
     /** {@inheritDoc} */
@@ -68,19 +63,24 @@ public class JdbcColumnMetaV4 extends JdbcColumnMetaV3 {
     }
 
     /** {@inheritDoc} */
+    @Override public int scale() {
+        return scale;
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) {
         super.writeBinary(writer);
 
-        writer.writeInt(scale);
         writer.writeInt(precision);
+        writer.writeInt(scale);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) {
         super.readBinary(reader);
 
-        scale = reader.readInt();
         precision = reader.readInt();
+        scale = reader.readInt();
     }
 
     /** {@inheritDoc} */

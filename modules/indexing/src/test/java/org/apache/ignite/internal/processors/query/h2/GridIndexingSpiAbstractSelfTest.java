@@ -567,12 +567,12 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 }
 
                 /** */
-                @Override public int scale() {
+                @Override public int precision() {
                     return -1;
                 }
 
                 /** */
-                @Override public int precision() {
+                @Override public int scale() {
                     return -1;
                 }
             };

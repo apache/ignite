@@ -148,12 +148,12 @@ public class QueryClassProperty implements GridQueryProperty {
     }
 
     /** {@inheritDoc} */
-    @Override public int scale() {
+    @Override public int precision() {
         return -1;
     }
 
     /** {@inheritDoc} */
-    @Override public int precision() {
+    @Override public int scale() {
         return -1;
     }
 }

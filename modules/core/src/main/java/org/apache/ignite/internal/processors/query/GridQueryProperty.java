@@ -79,16 +79,16 @@ public interface GridQueryProperty {
     public Object defaultValue();
 
     /**
-     * Gets scale for this property.
-     *
-     * @return Scale for a decimal property or -1.
-     */
-    public int scale();
-
-    /**
      * Gets precision for this property.
      *
      * @return Precision for a decimal property or -1.
      */
     public int precision();
+
+    /**
+     * Gets scale for this property.
+     *
+     * @return Scale for a decimal property or -1.
+     */
+    public int scale();
 }

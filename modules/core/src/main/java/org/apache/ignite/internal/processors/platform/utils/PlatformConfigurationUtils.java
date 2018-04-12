@@ -514,12 +514,12 @@ public class PlatformConfigurationUtils {
                 if (defVal != null)
                     defVals.put(fieldName, defVal);
 
-                int scale = in.readInt();
-
                 int precision = in.readInt();
 
-                if (scale != -1 || precision != -1)
-                    decimalInfo.put(fieldName, new IgniteBiTuple<>(scale, precision));
+                int scale = in.readInt();
+
+                if (precision != -1 || scale != -1)
+                    decimalInfo.put(fieldName, new IgniteBiTuple<>(precision, scale));
             }
 
             res.setFields(fields);
@@ -1034,7 +1034,6 @@ public class PlatformConfigurationUtils {
                 writer.writeBoolean(keyFields != null && keyFields.contains(field.getKey()));
                 writer.writeBoolean(notNullFields != null && notNullFields.contains(field.getKey()));
                 writer.writeObject(defVals != null ? defVals.get(field.getKey()) : null);
-
 
                 IgniteBiTuple<Integer, Integer> scaleAndPrecision =
                     decimalInfo == null ? null : decimalInfo.get(field.getKey());

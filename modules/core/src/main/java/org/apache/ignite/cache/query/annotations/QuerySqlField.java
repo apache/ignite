@@ -64,18 +64,18 @@ public @interface QuerySqlField {
     boolean notNull() default false;
 
     /**
-     * Specifies scale for a decimal field.
-     *
-     * @return scale for a decimal field.
-     */
-    int scale() default -1;
-
-    /**
      * Specifies precision for a decimal field.
      *
      * @return precision for a decimal field.
      */
     int precision() default -1;
+
+    /**
+     * Specifies scale for a decimal field.
+     *
+     * @return scale for a decimal field.
+     */
+    int scale() default -1;
 
     /**
      * Array of index groups this field belongs to. Groups are used for compound indexes,

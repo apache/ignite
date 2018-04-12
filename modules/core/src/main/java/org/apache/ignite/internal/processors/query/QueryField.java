@@ -40,11 +40,11 @@ public class QueryField implements Serializable {
     /** Default value. */
     private final Object dfltValue;
 
-    /** Scale. */
-    private final int scale;
-
     /** Precision. */
     private final int precision;
+
+    /** Scale. */
+    private final int scale;
 
     /**
      * @param name Field name.
@@ -61,13 +61,13 @@ public class QueryField implements Serializable {
      * @param nullable Nullable flag.
      * @param dfltValue Default value.
      */
-    public QueryField(String name, String typeName, boolean nullable, Object dfltValue, int scale, int precision) {
+    public QueryField(String name, String typeName, boolean nullable, Object dfltValue, int precision, int scale) {
         this.name = name;
         this.typeName = typeName;
         this.nullable = nullable;
         this.dfltValue = dfltValue;
-        this.scale = scale;
         this.precision = precision;
+        this.scale = scale;
     }
 
     /**
@@ -99,17 +99,17 @@ public class QueryField implements Serializable {
     }
 
     /**
-     * @return Scale.
-     */
-    public int scale() {
-        return scale;
-    }
-
-    /**
      * @return Precision.
      */
     public int precision() {
         return precision;
+    }
+
+    /**
+     * @return Scale.
+     */
+    public int scale() {
+        return scale;
     }
 
     /** {@inheritDoc} */

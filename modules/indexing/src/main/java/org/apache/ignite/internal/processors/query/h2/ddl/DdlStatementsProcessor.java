@@ -414,7 +414,7 @@ public class DdlStatementsProcessor {
                         QueryField field = new QueryField(col.columnName(),
                             DataType.getTypeClassName(col.column().getType()),
                             col.column().isNullable(), col.defaultValue(),
-                            col.scale(), col.precision());
+                            col.precision(), col.scale());
 
                         cols.add(field);
 
@@ -611,7 +611,7 @@ public class DdlStatementsProcessor {
                 dfltValues.put(e.getKey(), dfltVal);
 
             if (col.getType() == Value.DECIMAL)
-                decimalInfo.put(e.getKey(), F.t(col.getScale(), (int)col.getPrecision()));
+                decimalInfo.put(e.getKey(), F.t((int)col.getPrecision(), col.getScale()));
         }
 
         if (!F.isEmpty(dfltValues))

@@ -44,19 +44,16 @@ import static java.util.Arrays.asList;
  */
 public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     /** */
-    private static final int SCALE = 8;
+    private static final int PRECISION = 9;
 
     /** */
-    private static final int PRECISION = 9;
+    private static final int SCALE = 8;
 
     /** */
     private static final String DEC_TAB_NAME = "DECIMAL_TABLE";
 
     /** */
     private static final String VALUE = "VALUE";
-
-    /** */
-    private static final String SALARY_CACHE = "SALARY_CACHE";
 
     /** */
     private static final String SALARY_TAB_NAME = "SALARY";
@@ -90,13 +87,6 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -120,7 +110,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
 
         Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
 
-        decimalInfo.put("amount", F.t(SCALE, PRECISION));
+        decimalInfo.put("amount", F.t(PRECISION, SCALE));
 
         queryEntity.setDecimalInfo(decimalInfo);
 
@@ -133,14 +123,14 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception If failed.
      */
     public void testConfiguredFromDdl() throws Exception {
-        checkDecimalInfo(DEC_TAB_NAME, VALUE, SCALE, PRECISION);
+        checkDecimalInfo(DEC_TAB_NAME, VALUE, PRECISION, SCALE);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testConfiguredFromQueryEntity() throws Exception {
-        checkDecimalInfo(SALARY_TAB_NAME, "amount", SCALE, PRECISION);
+        checkDecimalInfo(SALARY_TAB_NAME, "amount", PRECISION, SCALE);
     }
 
     /**
@@ -151,11 +141,11 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
 
         String tabName = SALARY_TAB_NAME + "2";
 
-        CacheConfiguration<Integer, Salary> ccfg = cacheCfg(tabName, SALARY_CACHE + "2");
+        CacheConfiguration<Integer, Salary> ccfg = cacheCfg(tabName, "SalaryCache-2");
 
         IgniteCache<Integer, Salary> cache = grid.createCache(ccfg);
 
-        checkDecimalInfo(tabName, "amount", SCALE, PRECISION);
+        checkDecimalInfo(tabName, "amount", PRECISION, SCALE);
     }
 
     /**
@@ -164,13 +154,13 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     public void testConfiguredFromAnnotations() throws Exception {
         IgniteEx grid = grid(0);
 
-        CacheConfiguration<Integer, Salary> ccfg = new CacheConfiguration<>(SALARY_CACHE + "3");
+        CacheConfiguration<Integer, Salary> ccfg = new CacheConfiguration<>("SalaryCache-3");
 
         ccfg.setIndexedTypes(Integer.class, SalaryWithAnnotations.class);
 
         grid.createCache(ccfg);
 
-        checkDecimalInfo(SalaryWithAnnotations.class.getSimpleName().toUpperCase(), "amount", SCALE, PRECISION);
+        checkDecimalInfo(SalaryWithAnnotations.class.getSimpleName().toUpperCase(), "amount", PRECISION, SCALE);
     }
 
     /** */
@@ -187,7 +177,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     }
 
     /** */
-    private void checkDecimalInfo(String tabName, String colName, Integer scale, Integer precision) {
+    private void checkDecimalInfo(String tabName, String colName, Integer precision, Integer scale) {
         QueryEntity queryEntity = findTableInfo(tabName);
 
         assertNotNull(queryEntity);
@@ -200,8 +190,8 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
 
         assertNotNull(columnInfo);
 
-        assertEquals(columnInfo.get1(), scale);
-        assertEquals(columnInfo.get2(), precision);
+        assertEquals(columnInfo.get1(), precision);
+        assertEquals(columnInfo.get2(), scale);
     }
 
     /**

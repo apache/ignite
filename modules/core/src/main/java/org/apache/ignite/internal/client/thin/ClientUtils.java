@@ -310,8 +310,8 @@ final class ClientUtils {
                                 w.writeBoolean(qf.isKey());
                                 w.writeBoolean(qf.isNotNull());
                                 w.writeObject(qf.getDefaultValue());
-                                w.writeInt(qf.getScale());
                                 w.writeInt(qf.getPrecision());
+                                w.writeInt(qf.getScale());
                             }
                         );
                         ClientUtils.collection(
@@ -499,11 +499,11 @@ final class ClientUtils {
         /** Default value. */
         private final Object dfltVal;
 
-        /** Scale. */
-        private final int scale;
-
         /** Precision. */
         private final int precision;
+
+        /** Scale. */
+        private final int scale;
 
         /** Serialization constructor. */
         QueryField(QueryEntity e, Map.Entry<String, String> nameAndTypeName) {
@@ -521,20 +521,20 @@ final class ClientUtils {
 
             IgniteBiTuple<Integer, Integer> scaleAndPrecision = decimalInfo == null ? null : decimalInfo.get(name);
 
-            scale = scaleAndPrecision == null? -1 : scaleAndPrecision.get1();
-            precision = scaleAndPrecision == null? -1 : scaleAndPrecision.get2();
+            precision = scaleAndPrecision == null? -1 : scaleAndPrecision.get1();
+            scale = scaleAndPrecision == null? -1 : scaleAndPrecision.get2();
         }
 
         /** Deserialization constructor. */
         public QueryField(String name, String typeName, boolean isKey, boolean isNotNull, Object dfltVal,
-            int scale, int precision) {
+            int precision, int scale) {
             this.name = name;
             this.typeName = typeName;
             this.isKey = isKey;
             this.isNotNull = isNotNull;
             this.dfltVal = dfltVal;
-            this.scale = scale;
             this.precision = precision;
+            this.scale = scale;
         }
 
         /**
@@ -572,12 +572,18 @@ final class ClientUtils {
             return dfltVal;
         }
 
-        public int getScale() {
-            return scale;
-        }
-
+        /**
+         * @return Precision.
+         */
         public int getPrecision() {
             return precision;
+        }
+
+        /**
+         * @return Scale.
+         */
+        public int getScale() {
+            return scale;
         }
     }
 

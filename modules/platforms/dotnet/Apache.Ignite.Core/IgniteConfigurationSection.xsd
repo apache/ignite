@@ -340,12 +340,12 @@
                                                                                             <xs:documentation>Indicates whether null value is allowed for the field.</xs:documentation>
                                                                                         </xs:annotation>
                                                                                     </xs:attribute>
-                                                                                    <xs:attribute name="scale" type="xs:int">
+                                                                                    <xs:attribute name="precision" type="xs:int">
                                                                                         <xs:annotation>
-                                                                                            <xs:documentation>Scale of field</xs:documentation>
+                                                                                            <xs:documentation>Precision of field</xs:documentation>
                                                                                         </xs:annotation>
                                                                                     </xs:attribute>
-                                                                                    <xs:attribute name="precision" type="xs:int">
+                                                                                    <xs:attribute name="scale" type="xs:int">
                                                                                         <xs:annotation>
                                                                                             <xs:documentation>Scale of field</xs:documentation>
                                                                                         </xs:annotation>
@@ -1366,7 +1366,7 @@
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
-                </xs:element>                
+                </xs:element>
                 <xs:element name="sqlConnectorConfiguration" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>SQL connector configuration (JDBC and ODBC).</xs:documentation>
@@ -1737,7 +1737,7 @@
                                                         <xs:documentation>Size of the checkpointing page buffer.</xs:documentation>
                                                     </xs:annotation>
                                                 </xs:attribute>
-                                            </xs:complexType>                                            
+                                            </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
                                 </xs:complexType>

@@ -411,7 +411,7 @@ public class QueryEntity implements Serializable {
     /**
      * Sets decimal fields info.
      *
-     * @param decimalInfo Set of name to scale and precision for decimal fields.
+     * @param decimalInfo Set of name to precision and scale for decimal fields.
      * @return {@code this} for chaining.
      */
     public QueryEntity setDecimalInfo(Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo) {
@@ -662,8 +662,8 @@ public class QueryEntity implements Serializable {
             if (sqlAnn.notNull())
                 desc.addNotNullField(prop.fullName());
 
-            if (BigDecimal.class == fldCls && sqlAnn.scale() != -1 && sqlAnn.precision() != -1)
-                desc.addDecimalInfo(prop.fullName(), new IgniteBiTuple<>(sqlAnn.scale(), sqlAnn.precision()));
+            if (BigDecimal.class == fldCls && sqlAnn.precision() != -1 && sqlAnn.scale() != -1)
+                desc.addDecimalInfo(prop.fullName(), new IgniteBiTuple<>(sqlAnn.precision(), sqlAnn.scale()));
 
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
                 && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {

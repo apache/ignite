@@ -732,7 +732,7 @@ public class QueryUtils {
      */
     public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr, Class<?> resType,
         Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal,
-        int scale, int precision) throws IgniteCheckedException {
+        int precision, int scale) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
@@ -749,7 +749,7 @@ public class QueryUtils {
 
             // The key flag that we've found out is valid for the whole path.
             res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
-                scale, precision);
+                precision, scale);
         }
 
         return res;
@@ -1414,12 +1414,12 @@ public class QueryUtils {
         }
 
         /** {@inheritDoc} */
-        @Override public int scale() {
+        @Override public int precision() {
             return -1;
         }
 
         /** {@inheritDoc} */
-        @Override public int precision() {
+        @Override public int scale() {
             return -1;
         }
     }
