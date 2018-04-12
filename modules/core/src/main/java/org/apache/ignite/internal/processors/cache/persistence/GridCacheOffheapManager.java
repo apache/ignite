@@ -1674,7 +1674,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (delegate0 == null || pendingTree == null)
                 return 0;
 
-            GridDhtLocalPartition part = cctx.topology().localPartition(partId, cctx.topology().readyTopologyVersion(), false, false);
+            GridDhtLocalPartition part = cctx.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
 
             // Skip non-owned partitions.
             if (part == null || part.state() != OWNING)
