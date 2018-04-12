@@ -1049,7 +1049,7 @@ public class CacheGroupContext {
     }
 
     /**
-     * @Global WAL enabled flag.
+     * @return Global WAL enabled flag.
      */
     public boolean globalWalEnabled() {
         return globalWalEnabled;
