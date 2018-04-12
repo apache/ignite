@@ -32,8 +32,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-
 /**
  * Test cases for emulation of delayed messages sending with {@link TestRecordingCommunicationSpi} for blocking and
  * resending messages at the moment we need it.
@@ -87,11 +85,7 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
             @Override public void run() {
                 srv.destroyCache(DEFAULT_CACHE_NAME);
 
-                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-                ccfg.setAtomicityMode(TRANSACTIONAL);
-
-                srv.getOrCreateCache(ccfg);
+                srv.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
             }
         });
 
