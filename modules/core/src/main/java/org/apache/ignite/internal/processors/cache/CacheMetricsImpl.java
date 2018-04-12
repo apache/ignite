@@ -792,7 +792,7 @@ public class CacheMetricsImpl implements CacheMetrics {
                     if (cctx.cache() == null)
                         continue;
 
-                    int cacheSize = part.dataStore().cacheSize(cctx.cacheId());
+                    long cacheSize = part.dataStore().cacheSize(cctx.cacheId());
 
                     offHeapEntriesCnt += cacheSize;
 

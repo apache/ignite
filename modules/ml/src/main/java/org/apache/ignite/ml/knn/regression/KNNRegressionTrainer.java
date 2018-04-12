@@ -15,21 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions.linear;
+package org.apache.ignite.ml.knn.regression;
 
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.knn.KNNUtils;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link SparseDistributedMatrix}.
+ * kNN algorithm trainer to solve regression task.
  */
-public class DistributedLinearRegressionSGDTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
-    /** */
-    public DistributedLinearRegressionSGDTrainerTest() {
-        super(
-            new LinearRegressionSGDTrainer(100_000, 1e-12),
-            SparseDistributedMatrix::new,
-            SparseDistributedVector::new,
-            1e-2);
+public class KNNRegressionTrainer{
+    /**
+     * Trains model based on the specified data.
+     *
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @return Model.
+     */
+    public <K, V> KNNRegressionModel fit(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        return new KNNRegressionModel<>(KNNUtils.buildDataset(datasetBuilder, featureExtractor, lbExtractor));
     }
 }

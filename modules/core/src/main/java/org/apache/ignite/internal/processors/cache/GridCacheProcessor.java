@@ -149,6 +149,8 @@ import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
+import org.apache.ignite.plugin.security.SecurityException;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -1125,6 +1127,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
         CacheConfiguration cfg = cacheCtx.config();
+
+        if (cacheCtx.userCache())
+            authorizeCacheCreate(cacheCtx.name(), cfg);
 
         // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
         if (cfg.isStoreKeepBinary() && cfg.isStoreKeepBinary() != CacheConfiguration.DFLT_STORE_KEEP_BINARY
@@ -3162,6 +3167,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<DynamicCacheChangeRequest> sndReqs = new ArrayList<>(reqs.size());
 
         for (DynamicCacheChangeRequest req : reqs) {
+            authorizeCacheChange(req);
+
             DynamicCacheStartFuture fut = new DynamicCacheStartFuture(req.requestId());
 
             try {
@@ -3224,6 +3231,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return res;
+    }
+
+    /**
+     * Authorize dynamic cache management.
+     */
+    private void authorizeCacheChange(DynamicCacheChangeRequest req) {
+        if (req.cacheType() == null || req.cacheType() == CacheType.USER) {
+            if (req.stop())
+                ctx.security().authorize(req.cacheName(), SecurityPermission.CACHE_DESTROY, null);
+            else
+                authorizeCacheCreate(req.cacheName(), req.startCacheConfiguration());
+        }
+    }
+
+    /**
+     * Authorize start/create cache operation.
+     */
+    private void authorizeCacheCreate(String cacheName, CacheConfiguration cacheCfg) {
+        ctx.security().authorize(cacheName, SecurityPermission.CACHE_CREATE, null);
+
+        if (cacheCfg != null && cacheCfg.isOnheapCacheEnabled() &&
+            System.getProperty(IgniteSystemProperties.IGNITE_DISABLE_ONHEAP_CACHE, "false")
+                .toUpperCase().equals("TRUE")
+            )
+            throw new SecurityException("Authorization failed for enabling on-heap cache.");
     }
 
     /**
