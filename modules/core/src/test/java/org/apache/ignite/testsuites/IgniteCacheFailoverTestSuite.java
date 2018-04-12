@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import java.util.Set;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.IgniteClientReconnectDelayedSpiTest;
 import org.apache.ignite.internal.processors.cache.GridCacheIncrementTransformTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheAtomicNodeJoinTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheSizeFailoverTest;
@@ -60,6 +61,9 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
      */
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Cache Failover Test Suite");
+
+        for(int i = 0; i < 100; i ++)
+            suite.addTestSuite(IgniteClientReconnectDelayedSpiTest.class);
 
         suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
         suite.addTestSuite(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class);
