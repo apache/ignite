@@ -145,7 +145,7 @@ public class DiscoCache {
         Map<Integer, List<ClusterNode>> allCacheNodes,
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes,
         Map<UUID, ClusterNode> nodeMap,
-        Set<UUID> alives,
+        Set<UUID> alives0,
         @Nullable Map<UUID, Short> nodeIdToConsIdx,
         @Nullable  Map<Short, UUID> consIdxToNodeId,
         IgniteProductVersion minNodeVer,
@@ -164,7 +164,7 @@ public class DiscoCache {
         this.allCacheNodes = allCacheNodes;
         this.cacheGrpAffNodes = cacheGrpAffNodes;
         this.nodeMap = nodeMap;
-        this.alives.addAll(alives);
+        this.alives.addAll(alives0);
         this.minNodeVer = minNodeVer;
         this.minSrvNodeVer = minSrvNodeVer;
         this.nodeIdToConsIdx = nodeIdToConsIdx;
