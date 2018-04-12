@@ -88,7 +88,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Bad data region name. */
     public static final String DATA_REGION_NAME_BAD = "my_data_region_bad";
 
+    /** Cache with backups. */
+    private static final String CACHE_NAME_BACKUPS = CACHE_NAME + "_backups";
+
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -98,6 +102,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         client().addCacheConfiguration(cacheConfiguration());
         client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME + "_async")
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC));
+
+        client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME_BACKUPS).setBackups(2));
     }
 
     /** {@inheritDoc} */
@@ -108,6 +114,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -493,6 +500,15 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     private void doTestCreateTable(String tplCacheName, String cacheGrp, CacheMode cacheMode,
         CacheWriteSynchronizationMode writeSyncMode, String... additionalParams) throws SQLException {
         doTestCreateTable(tplCacheName, cacheGrp, cacheMode, writeSyncMode, false, additionalParams);
+    }
+
+    /**
+     * Test backups propagation.
+     *
+     * @throws Exception If failed.
+     */
+    public void testBackups() throws Exception {
+        String sql = "CREATE TABLE backup"
     }
 
     /**
