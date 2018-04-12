@@ -37,9 +37,6 @@ import org.apache.ignite.testframework.GridTestUtils;
  * resending messages at the moment we need it.
  */
 public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAbstractTest {
-    /** */
-    private static final String PRECONFIGURED_CACHE = "preconfigured-cache";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -48,7 +45,7 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
         recordingSpi.setSharedMemoryPort(-1);
 
         cfg.setCommunicationSpi(recordingSpi);
-        cfg.setCacheConfiguration(new CacheConfiguration(PRECONFIGURED_CACHE));
+        cfg.setCacheConfiguration(new CacheConfiguration("preconfigured-cache"));
 
         return cfg;
     }
