@@ -38,17 +38,30 @@ import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
  * Trainer of the linear regression model based on stochastic gradient descent algorithm.
  */
 public class LinearRegressionSGDTrainer<P extends Serializable> implements SingleLabelDatasetTrainer<LinearRegressionModel> {
-
+    /** Update strategy. */
     private final UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 
+    /** Max number of iteration. */
     private final int maxIterations;
 
+    /** Batch size. */
     private final int batchSize;
 
+    /** Number of local iterations. */
     private final int locIterations;
 
+    /** Seed for random generator. */
     private final long seed;
 
+    /**
+     * Constructs a new instance of linear regression SGD trainer.
+     *
+     * @param updatesStgy Update strategy.
+     * @param maxIterations Max number of iteration.
+     * @param batchSize Batch size.
+     * @param locIterations Number of local iterations.
+     * @param seed Seed for random generator.
+     */
     public LinearRegressionSGDTrainer(UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy, int maxIterations,
         int batchSize, int locIterations, long seed) {
         this.updatesStgy = updatesStgy;
