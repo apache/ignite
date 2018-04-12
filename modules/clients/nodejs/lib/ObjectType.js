@@ -135,7 +135,7 @@ class ObjectType {
 
     static get COMPOSITE_TYPE() {
         return COMPOSITE_TYPE;
-    }    
+    }
 
     /** Private methods */
 

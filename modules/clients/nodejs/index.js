@@ -24,6 +24,7 @@ module.exports.ComplexObjectType = require('./lib/ObjectType').ComplexObjectType
 module.exports.ObjectArrayType = require('./lib/ObjectType').ObjectArrayType;
 module.exports.Errors = require('./lib/Errors');
 module.exports.IgniteClientConfiguration = require('./lib/IgniteClientConfiguration');
+module.exports.SslConfiguration = require('./lib/IgniteClientConfiguration').SslConfiguration;
 module.exports.CacheClient = require('./lib/CacheClient');
 module.exports.CacheEntry = require('./lib/CacheClient').CacheEntry;
 module.exports.CacheConfiguration = require('./lib/CacheConfiguration');

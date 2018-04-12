@@ -37,7 +37,7 @@ class ClientFailoverSocket {
             throw new Errors.IllegalStateError();
         }
         this._config = config;
-        this._socket = new ClientSocket(this._config.endpoints[0], this._onSocketDisconnect.bind(this));
+        this._socket = new ClientSocket(this._config._endpoints[0], this._config, this._onSocketDisconnect.bind(this));
         this._changeState(IgniteClient.STATE.CONNECTING);
         await this._socket.connect();
         this._changeState(IgniteClient.STATE.CONNECTED);

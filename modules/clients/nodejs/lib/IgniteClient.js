@@ -211,7 +211,7 @@ class IgniteClient {
      *
      * @param {string} name - cache name.
      *
-     * @return {CacheConfiguration} - cache configuration
+     * @return {Promise<CacheConfiguration>} - cache configuration
      *
      * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
      * @throws {OperationError} if cache with the provided name does not exist.

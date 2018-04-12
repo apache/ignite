@@ -17,6 +17,9 @@
 
 'use strict';
 
+const FS = require('fs');
+const Util = require('util');
+const Errors = require('./Errors');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 
 /**
@@ -46,6 +49,7 @@ class IgniteClientConfiguration {
         this._password = null;
         this._tcpNoDelay = true;
         this._timeout = 0;
+        this._sslConfiguration = null;
     }
 
     /* Optional configuration settings - TBD */
@@ -67,27 +71,158 @@ class IgniteClientConfiguration {
 
     setTimeout(timeout) {
         this._timeout = timeout;
+        return this;
     }
 
-    get endpoints() {
-        return this._endpoints;
+    setSslConfiguration(sslConfiguration) {
+        ArgumentChecker.hasType(sslConfiguration, 'sslConfiguration', false, SslConfiguration);
+        this._sslConfiguration = sslConfiguration;
+        return this;
+    }
+}
+
+/**
+ * SSL Protocol versions.
+ * @typedef SslConfiguration.PROTOCOL
+ * @enum
+ * @readonly
+ * @property TLS       Supports multiple versions of TLS.
+ * @property TLS_V1    Supports RFC 2246: TLS version 1.0.
+ * @property TLS_V1_1  Supports RFC 4346: TLS version 1.1.
+ * @property TLS_V1_2  Supports RFC 5246: TLS version 1.2.
+ */
+const PROTOCOL = Object.freeze({
+    TLS : 'SSLv23',
+    TLS_V1 : 'TLSv1',
+    TLS_V1_1 : 'TLSv1_1',
+    TLS_V1_2 : 'TLSv1_2'
+});
+
+/**
+ * ???
+ */
+class SslConfiguration {
+
+    /**
+     * Creates an instance of Ignite client SslConfiguration. ???
+     *
+     * @return {SslConfiguration} - new SSL configuration instance.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    constructor() {
+        this._protocol = SslConfiguration.PROTOCOL.TLS;
+        this._key = null;
+        this._cert = null;
+        this._ca = null;
+        this._keyPassword = null;
+        this._trustAll = false;
     }
 
-    get userName() {
-        return this._userName;
+    static get PROTOCOL() {
+        return PROTOCOL;
     }
 
-    get password() {
-        return this._password;
+    /**
+     * Sets SSL protocol version.
+     *
+     * @param {SslConfiguration.PROTOCOL} protocol - SSL protocol version, one of the {@link SslConfiguration.PROTOCOL} values.
+     *
+     * @return {SslConfiguration} - the same instance of the SslConfiguration.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    setProtocol(protocol) {
+        ArgumentChecker.hasValueFrom(protocol, 'protocol', false, SslConfiguration.PROTOCOL);
+        this._protocol = protocol;
+        return this;
     }
 
-    get tcpNoDelay() {
-        return this._tcpNoDelay;
+    /**
+     * Sets SSL key file path.
+     *
+     * @param {string} keyFile - path to SSL key file in PEM format.
+     *
+     * @return {SslConfiguration} - the same instance of the SslConfiguration.
+     *
+     * @throws {IgniteClientError} if the file doesn't exist.
+     */
+    setKeyFile(keyFile) {
+        ArgumentChecker.notEmpty(keyFile, 'keyFile');
+        this._key = this._readFile(keyFile);
+        return this;
     }
 
-    get timeout() {
-        return this._timeout;
+    /**
+     * Sets SSL certificate file path.
+     *
+     * @param {string} certFile - path to SSL certificate file in PEM format.
+     *
+     * @return {SslConfiguration} - the same instance of the SslConfiguration.
+     *
+     * @throws {IgniteClientError} if the file doesn't exist.
+     */
+    setCertFile(certFile) {
+        ArgumentChecker.notEmpty(certFile, 'certFile');
+        this._cert = this._readFile(certFile);
+        return this;
+    }
+
+    /**
+     * Sets SSL certificate authority file path.
+     *
+     * @param {string} caFile - SSL certificate authority file path.
+     *
+     * @return {SslConfiguration} - the same instance of the SslConfiguration.
+     *
+     * @throws {IgniteClientError} if the file doesn't exist.
+     */
+    setCaFile(caFile) {
+        ArgumentChecker.notEmpty(caFile, 'caFile');
+        this._ca = this._readFile(caFile);
+        return this;
+    }
+
+    /**
+     * Sets SSL key file password.
+     *
+     * @param {string} keyPassword - SSL key file password.
+     *
+     * @return {SslConfiguration} - the same instance of the SslConfiguration.
+     */
+    setKeyPassword(keyPassword) {
+        this._keyPassword = keyPassword;
+        return this;
+    }
+
+    /**
+     * Sets to true to trust any server certificate (revoked, expired or self-signed SSL certificates).
+     * This may be useful for testing with self-signed certificates.
+     * Default is false.
+     *
+     * @param {boolean} trustAll - trust all certificates flag.
+     *
+     * @return {SslConfiguration} - the same instance of the SslConfiguration.
+     */
+    setTrustAll(trustAll) {
+        this._trustAll = trustAll;
+        return this;
+    }
+
+    /** Private methods */
+
+    /**
+     * @ignore
+     */
+    _readFile(fileName) {
+        try {
+            return FS.readFileSync(fileName);
+        } catch (error) {
+            throw Errors.IgniteClientError.illegalArgumentError(Util.format('File error: %s', error.message));
+        }
+        return null;
     }
 }
 
 module.exports = IgniteClientConfiguration;
+module.exports.SslConfiguration = SslConfiguration;

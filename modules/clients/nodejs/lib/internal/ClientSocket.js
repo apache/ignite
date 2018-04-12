@@ -18,19 +18,71 @@
 'use strict';
 
 const net = require('net');
+const tls = require('tls');
 const URL = require('url');
 const Long = require('long');
+const Util = require('util');
 const Errors = require('../Errors');
+const IgniteClientConfiguration = require('../IgniteClientConfiguration');
 const MessageBuffer = require('./MessageBuffer');
 const BinaryUtils = require('./BinaryUtils');
 const BinaryReader = require('./BinaryReader');
+const BinaryWriter = require('./BinaryWriter');
 const ArgumentChecker = require('./ArgumentChecker');
 const Logger = require('./Logger');
 
 const HANDSHAKE_SUCCESS_STATUS_CODE = 1;
 const REQUEST_SUCCESS_STATUS_CODE = 0;
-const HANDSHAKE_REQUEST_ID = Long.ZERO;
 const PORT_DEFAULT = 10800;
+
+class ProtocolVersion {
+
+    constructor(major = null, minor = null, patch = null) {
+        this._major = major;
+        this._minor = minor;
+        this._patch = patch;
+    }
+
+    compareTo(other) {
+        let diff = this._major - other._major;
+        if (diff !== 0) {
+            return diff;
+        }
+        diff = this._minor - other._minor;
+        if (diff !== 0) {
+            return diff;
+        }
+        return this._patch - other._patch;
+    }
+
+    equals(other) {
+        return this.compareTo(other) === 0;
+    }
+
+    toString() {
+        return Util.format('%d.%d.%d', this._major, this._minor, this._patch);
+    }
+
+    read(buffer) {
+        this._major = buffer.readShort();
+        this._minor = buffer.readShort();
+        this._patch = buffer.readShort();
+    }
+
+    write(buffer) {
+        buffer.writeShort(this._major);
+        buffer.writeShort(this._minor);
+        buffer.writeShort(this._patch);
+    }
+}
+
+const PROTOCOL_VERSION_1_0_0 = new ProtocolVersion(1, 0, 0);
+const PROTOCOL_VERSION_1_1_0 = new ProtocolVersion(1, 1, 0);
+
+const SUPPORTED_VERSIONS = [
+    PROTOCOL_VERSION_1_0_0,
+    PROTOCOL_VERSION_1_1_0
+];
 
 const STATE = Object.freeze({
     INITIAL : 0,
@@ -41,39 +93,26 @@ const STATE = Object.freeze({
 
 class ClientSocket {
 
-    constructor(endpoint, onSocketDisconnect) {
+    constructor(endpoint, config, onSocketDisconnect) {
         ArgumentChecker.notEmpty(endpoint, 'endpoints');
         this._endpoint = endpoint;
         this._parseEndpoint(endpoint);
-        this._socket = new net.Socket();
+        this._config = config;
         this._state = STATE.INITIAL;
-        this._requestId = HANDSHAKE_REQUEST_ID;
+        this._socket = null;
+        this._requestId = Long.ZERO;
+        this._handshakeRequestId = null;
+        this._protocolVersion = null;
         this._requests = new Map();
         this._onSocketDisconnect = onSocketDisconnect;
         this._error = null;
         this._wasConnected = false;
-        this._initSocket();
     }
 
     async connect() {
         return new Promise((resolve, reject) => {
-            const handshakePayloadWriter = (payload) => {
-                // Handshake code
-                payload.writeByte(1);
-                // Protocol version 1.0.0
-                payload.writeShort(1);
-                payload.writeShort(0);
-                payload.writeShort(0);
-                // Client code
-                payload.writeByte(2);
-            };
-            const handshakeRequest = new Request(this.requestId, null, handshakePayloadWriter, null, resolve, reject);
-            this._addRequest(handshakeRequest);
-            this._socket.connect({ host : this._host, port : this._port, version : this._version }, () => {
-                this._state = STATE.HANDSHAKE;
-                // send handshake
-                this._sendRequest(handshakeRequest);
-            });
+            this._connectSocket(
+                this._getHandshake(PROTOCOL_VERSION_1_1_0, resolve, reject));
         });
     }
 
@@ -98,6 +137,42 @@ class ClientSocket {
         else {
             throw new Errors.IllegalStateError();
         }
+    }
+
+    _connectSocket(handshakeRequest) {
+        const onConnected = () => {
+            this._state = STATE.HANDSHAKE;
+            // send handshake
+            this._sendRequest(handshakeRequest);
+        };
+
+        const options = { host : this._host, port : this._port, version : this._version };
+        if (this._config._sslConfiguration) {
+            const sslConfig = this._config._sslConfiguration;
+            options.key = sslConfig._key;
+            options.cert = sslConfig._cert;
+            options.ca = sslConfig._ca;
+            options.passphrase = sslConfig._keyPassword;
+            options.rejectUnauthorized = !sslConfig._trustAll;
+            options.secureProtocol = sslConfig._protocol + '_client_method';
+            this._socket = tls.connect(options, onConnected);
+        }
+        else {
+            this._socket = new net.Socket();
+            this._socket.connect(options, onConnected);
+        }
+        this._socket.setNoDelay(this._config._tcpNoDelay);
+        this._socket.setTimeout(this._config._timeout);
+
+        this._socket.on('data', this._processResponse.bind(this));
+        this._socket.on('close', () => {
+            this._disconnect(false);
+        });
+        this._socket.on('error', (error) => {
+            this._error = this._state === STATE.INITIAL ?
+                'Connection failed: ' + error : error;
+            this._disconnect();
+        });
     }
 
     _addRequest(request) {
@@ -127,7 +202,7 @@ class ClientSocket {
         if (isHandshake) {
             // Handshake status
             isSuccess = (buffer.readByte() === HANDSHAKE_SUCCESS_STATUS_CODE)
-            requestId = HANDSHAKE_REQUEST_ID.toString();
+            requestId = this._handshakeRequestId.toString();
         }
         else {
             // Request id
@@ -141,36 +216,62 @@ class ClientSocket {
         if (this._requests.has(requestId)) {
             const request = this._requests.get(requestId);
             this._requests.delete(requestId);
-            this._finalizeResponse(buffer, request, isSuccess, isHandshake);
+            if (isHandshake) {
+                this._finalizeHandshake(buffer, request, isSuccess);
+            }
+            else {
+                this._finalizeResponse(buffer, request, isSuccess);
+            }
         }
         else {
             throw Errors.IgniteClientError.internalError('Invalid response id: ' + requestId);
         }
     }
 
-    _finalizeResponse(buffer, request, isSuccess, isHandshake) {
+    _finalizeHandshake(buffer, request, isSuccess) {
         if (!isSuccess) {
-            if (isHandshake) {
-                // Protocol version
-                buffer.readShort();
-                buffer.readShort();
-                buffer.readShort();
+            // Server protocol version
+            const serverVersion = new ProtocolVersion();
+            serverVersion.read(buffer);
+            // Error message
+            const errMessage = BinaryReader.readObject(buffer);
+
+            if (!this._protocolVersion.equals(serverVersion)) {
+                if (!this._isSupportedVersion(serverVersion) ||
+                    serverVersion.compareTo(PROTOCOL_VERSION_1_1_0) < 0 && this._config._userName) {
+                    request.reject(new Errors.OperationError(
+                        Util.format('Protocol version mismatch: client %s / server %s. Server details: %s',
+                            this._protocolVersion.toString(), serverVersion.toString(), errMessage)));
+                    this._disconnect();
+                }
+                else {
+                    // retry handshake with server version
+                    const handshakeRequest = this._getHandshake(serverVersion, request.resolve, request.reject);
+                    this._sendRequest(handshakeRequest);
+                }
             }
+            else {
+                request.reject(new Errors.OperationError(errMessage));
+                this._disconnect();
+            }
+        }
+        else {
+            this._state = STATE.CONNECTED;
+            this._wasConnected = true;
+            request.resolve();
+        }
+    }
+
+    _finalizeResponse(buffer, request, isSuccess) {
+        if (!isSuccess) {
             // Error message
             const errMessage = BinaryReader.readObject(buffer);
             request.reject(new Errors.OperationError(errMessage));
-            if (isHandshake) {
-                this._disconnect();
-            }
         }
         else {
             try {
                 if (request.payloadReader) {
                     request.payloadReader(buffer);
-                }
-                if (isHandshake) {
-                    this._state = STATE.CONNECTED;
-                    this._wasConnected = true;
                 }
                 request.resolve();
             }
@@ -178,6 +279,37 @@ class ClientSocket {
                 request.reject(err);
             }
         }
+    }
+
+    _handshakePayloadWriter(payload) {
+        // Handshake code
+        payload.writeByte(1);
+        // Protocol version
+        this._protocolVersion.write(payload);
+        // Client code
+        payload.writeByte(2);
+        if (this._config._userName) {
+            BinaryWriter.writeString(payload, this._config._userName);
+            BinaryWriter.writeString(payload, this._config._password);
+        }
+    }
+
+    _getHandshake(version, resolve, reject) {
+        this._protocolVersion = version;
+        const handshakeRequest = new Request(
+            this.requestId, null, this._handshakePayloadWriter.bind(this), null, resolve, reject);
+        this._addRequest(handshakeRequest);
+        this._handshakeRequestId = handshakeRequest.id;
+        return handshakeRequest;
+    }
+
+    _isSupportedVersion(protocolVersion) {
+        for (let version of SUPPORTED_VERSIONS) {
+            if (version.equals(protocolVersion)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     _disconnect(close = true, callOnDisconnect = true) {
@@ -193,17 +325,6 @@ class ClientSocket {
             this._onSocketDisconnect = null;
             this._socket.end();
         }
-    }
-
-    _initSocket() {
-        this._socket.on('data', this._processResponse.bind(this));
-        this._socket.on('close', () => {
-            this._disconnect(false);
-        });
-        this._socket.on('error', (error) => {
-            this._error = error;
-            this._disconnect();
-        });
     }
 
     _parseEndpoint(endpoint) {

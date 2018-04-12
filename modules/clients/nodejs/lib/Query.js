@@ -204,7 +204,7 @@ class SqlQuery extends Query {
     /**
      * Set timeout.
      *
-     * @param {number} timeout - timeout value in miliseconds.
+     * @param {number} timeout - timeout value in milliseconds.
      *   Must be non-negative. Zero value disables timeout.
      *
      * @return {SqlQuery} - the same instance of the SqlQuery.
