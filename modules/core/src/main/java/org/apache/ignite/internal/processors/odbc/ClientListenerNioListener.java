@@ -26,9 +26,11 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
+import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -228,6 +230,18 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
             connCtx.handler().writeHandshake(writer);
         }
+        catch (IgniteAccessControlException authEx) {
+            writer.writeBoolean(false);
+
+            writer.writeShort((short)0);
+            writer.writeShort((short)0);
+            writer.writeShort((short)0);
+
+            writer.doWriteString(authEx.getMessage());
+
+            if (ver.compareTo(ClientConnectionContext.VER_1_1_0) >= 0)
+                writer.writeInt(ClientStatus.AUTH_FAILED);
+        }
         catch (IgniteCheckedException e) {
             U.warn(log, "Error during handshake [rmtAddr=" + ses.remoteAddress() + ", msg=" + e.getMessage() + ']');
 
@@ -239,10 +253,15 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
                 currVer = connCtx.currentVersion();
 
             writer.writeBoolean(false);
+
             writer.writeShort(currVer.major());
             writer.writeShort(currVer.minor());
             writer.writeShort(currVer.maintenance());
+
             writer.doWriteString(e.getMessage());
+
+            if (ver.compareTo(ClientConnectionContext.VER_1_1_0) >= 0)
+                writer.writeInt(ClientStatus.FAILED);
         }
 
         ses.send(writer.array());

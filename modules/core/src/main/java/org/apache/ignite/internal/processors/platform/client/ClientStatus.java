@@ -48,4 +48,10 @@ public final class ClientStatus {
 
     /** Resource does not exist. */
     public static final int RESOURCE_DOES_NOT_EXIST = 1011;
+
+    /** Authorization failure. */
+    public static final int SECURITY_VIOLATION = 1012;
+
+    /** Authentication failed. */
+    public static final int AUTH_FAILED = 2000;
 }

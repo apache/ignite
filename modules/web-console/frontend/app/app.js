@@ -27,7 +27,6 @@ import './modules/nodes/nodes.module';
 import './modules/demo/Demo.module';
 
 import './modules/states/logout.state';
-import './modules/states/configuration.state';
 import './modules/states/admin.state';
 import './modules/states/errors.state';
 
@@ -192,7 +191,6 @@ angular.module('ignite-console', [
     'ignite-console.demo',
     // States.
     'ignite-console.states.logout',
-    'ignite-console.states.configuration',
     'ignite-console.states.admin',
     'ignite-console.states.errors',
     // Common modules.

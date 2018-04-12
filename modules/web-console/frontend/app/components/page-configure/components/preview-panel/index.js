@@ -15,19 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
+import angular from 'angular';
+import directive from './directive';
 
-/**
- * Indicates user name or password is invalid.
- */
-public class ClientAuthenticationException extends ClientException {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * Default constructor.
-     */
-    public ClientAuthenticationException(String msg) {
-        super(msg);
-    }
-}
+export default angular
+    .module('ignite-console.page-configure.preview-panel', [])
+    .directive('previewPanel', directive);

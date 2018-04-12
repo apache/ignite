@@ -15,21 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions.linear;
-
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
+import Worker from './summary.worker';
 
 /**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link SparseDistributedMatrix}.
+ * @param {ng.IQService} $q
  */
-public class DistributedLinearRegressionSGDTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
-    /** */
-    public DistributedLinearRegressionSGDTrainerTest() {
-        super(
-            new LinearRegressionSGDTrainer(100_000, 1e-12),
-            SparseDistributedMatrix::new,
-            SparseDistributedVector::new,
-            1e-2);
-    }
+export default function SummaryZipperService($q) {
+    return function(message) {
+        const defer = $q.defer();
+        const worker = new Worker();
+
+        worker.postMessage(message);
+
+        worker.onmessage = (e) => {
+            defer.resolve(e.data);
+            worker.terminate();
+        };
+
+        worker.onerror = (err) => {
+            defer.reject(err);
+            worker.terminate();
+        };
+
+        return defer.promise;
+    };
 }
+
+SummaryZipperService.$inject = ['$q'];

@@ -15,21 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions.linear;
+package org.apache.ignite.thread;
 
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
-import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.typedef.X;
 
 /**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link SparseBlockDistributedMatrix}.
+ * OOM exception handler for system threads.
  */
-public class BlockDistributedLinearRegressionSGDTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
-    /** */
-    public BlockDistributedLinearRegressionSGDTrainerTest() {
-        super(
-            new LinearRegressionSGDTrainer(100_000, 1e-12),
-            SparseBlockDistributedMatrix::new,
-            SparseBlockDistributedVector::new,
-            1e-2);
+public class OomExceptionHandler implements Thread.UncaughtExceptionHandler {
+    /** Context. */
+    private final GridKernalContext ctx;
+
+    /**
+     * @param ctx Context.
+     */
+    public OomExceptionHandler(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void uncaughtException(Thread t, Throwable e) {
+        if (X.hasCause(e, OutOfMemoryError.class))
+            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
     }
 }

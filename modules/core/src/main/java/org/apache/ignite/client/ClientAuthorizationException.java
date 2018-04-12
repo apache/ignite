@@ -15,21 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions.linear;
-
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+package org.apache.ignite.client;
 
 /**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
+ * Indicates user has no permission to perform operation.
  */
-public class LocalLinearRegressionSGDTrainerTest extends GenericLinearRegressionTrainerTest {
-    /** */
-    public LocalLinearRegressionSGDTrainerTest() {
-        super(
-            new LinearRegressionSGDTrainer(100_000, 1e-12),
-            DenseLocalOnHeapMatrix::new,
-            DenseLocalOnHeapVector::new,
-            1e-2);
+public class ClientAuthorizationException extends ClientException {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
+    /** Message. */
+    private static final String MSG = "User is not authorized to perform this operation";
+
+    /**
+     * Default constructor.
+     */
+    public ClientAuthorizationException() {
+        super(MSG);
+    }
+
+    /**
+     * Constructs a new exception with the specified cause and a detail
+     * message of <tt>(cause==null ? null : cause.toString())</tt>.
+     *
+     * @param cause the cause.
+     */
+    public ClientAuthorizationException(Throwable cause) {
+        super(MSG, cause);
     }
 }
