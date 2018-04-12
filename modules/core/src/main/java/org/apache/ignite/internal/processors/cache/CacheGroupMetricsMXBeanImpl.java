@@ -316,7 +316,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public long getTotalSize() {
-        return ctx.dataStructureSize().sizeOf(TOTAL).size() * pageSize;
+        return ctx.dataStructureSize().sizeOf(TOTAL).size();
     }
 
     /** {@inheritDoc} */

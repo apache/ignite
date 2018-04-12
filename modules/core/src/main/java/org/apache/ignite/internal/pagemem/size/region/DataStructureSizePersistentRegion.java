@@ -27,6 +27,7 @@ import org.apache.ignite.internal.pagemem.wal.DataStructureSizeAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.jsr166.ConcurrentLinkedHashMap;
 
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.DATA;
 import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.METRICS;
 
 public class DataStructureSizePersistentRegion implements DataStructureSizeContext<CacheGroupContext, DataStructureSizePersistentGroup> {
@@ -92,8 +93,12 @@ public class DataStructureSizePersistentRegion implements DataStructureSizeConte
             @Override public long size() {
                 long size = 0;
 
-                for (DataStructureSizeContext region : childes())
-                    size += region.sizeOf(name).size();
+                for (DataStructureSizeContext group : childes()){
+                    if (name.contains(DATA))
+                        size += group.sizeOf(name).size() * pageSize;
+                    else
+                        size += group.sizeOf(name).size();
+                }
 
                 return size;
             }
