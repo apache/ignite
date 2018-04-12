@@ -146,7 +146,9 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
+
         SVMLinearBinaryClassificationModel mdl = (SVMLinearBinaryClassificationModel)o;
+
         return Double.compare(mdl.intercept, intercept) == 0
             && Double.compare(mdl.threshold, threshold) == 0
             && Boolean.compare(mdl.isKeepingRawLabels, isKeepingRawLabels) == 0
@@ -160,7 +162,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        if (weights.size() < 10) {
+        if (weights.size() < 20) {
             StringBuilder builder = new StringBuilder();
 
             for (int i = 0; i < weights.size(); i++) {
@@ -176,7 +178,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
             return builder.toString();
         }
 
-        return "LinearRegressionModel{" +
+        return "SVMModel{" +
             "weights=" + weights +
             ", intercept=" + intercept +
             '}';

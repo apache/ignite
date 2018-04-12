@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Exception is needed to distinguish WAL manager critical I/O errors.
+ * Exception is needed to distinguish WAL manager & page store critical I/O errors.
  */
 public class StorageException extends IgniteCheckedException {
     /** */

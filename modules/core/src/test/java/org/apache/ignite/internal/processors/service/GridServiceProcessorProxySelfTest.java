@@ -89,7 +89,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
                 return null;
             }
-        }, IgniteException.class, "Test exception");
+        }, ErrorServiceException.class, "Test exception");
 
     }
 
@@ -450,9 +450,15 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         /** {@inheritDoc} */
         @Override public void go() throws Exception {
-            throw new Exception("Test exception");
+            throw new ErrorServiceException("Test exception");
         }
     }
 
-
+    /** */
+    private static class ErrorServiceException extends Exception {
+        /** */
+        ErrorServiceException(String msg) {
+            super(msg);
+        }
+    }
 }
