@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -41,10 +40,11 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TestRecordingCommunicationSpi recordingSpi = new TestRecordingCommunicationSpi();
-        recordingSpi.setSharedMemoryPort(-1);
+        TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
 
-        cfg.setCommunicationSpi(recordingSpi);
+        spi.setSharedMemoryPort(-1);
+
+        cfg.setCommunicationSpi(spi);
         cfg.setCacheConfiguration(new CacheConfiguration("preconfigured-cache"));
 
         return cfg;
@@ -62,10 +62,11 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
      * @throws Exception If failed.
      */
     public void testReconnectCacheDestroyedDelayedAffinityChange() throws Exception {
-        Ignite ignite1 = ignite(1);
+        Ignite ignite = ignite(1);
 
-        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(ignite1);
-        spi.blockMessages(GridDhtPartitionsSingleMessage.class, ignite1.name());
+        TestRecordingCommunicationSpi spi = TestRecordingCommunicationSpi.spi(ignite);
+
+        spi.blockMessages(GridDhtPartitionsSingleMessage.class, ignite.name());
         spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
             @Override public boolean apply(ClusterNode node, Message msg) {
                 return (msg instanceof GridDhtPartitionsSingleMessage) &&
@@ -74,6 +75,7 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
         });
 
         final Ignite client = startGrid(getConfiguration().setClientMode(true));
+
         client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         final Ignite srv = clientRouter(client);
@@ -90,18 +92,13 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
         spi.waitForBlocked();
         spi.stopBlock();
 
-        IgniteCache<Object, Object> clientCache = client.cache(DEFAULT_CACHE_NAME);
-        clientCache.put(1, 1);
-
-        assertEquals(1, clientCache.get(1));
+        assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
         final GridDiscoveryManager srvDisco = ((IgniteEx)srv).context().discovery();
 
-        final ClusterNode clientNode = ((IgniteEx)client).localNode();
-
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return F.eq(true, srvDisco.cacheClientNode(clientNode, DEFAULT_CACHE_NAME));
+                return F.eq(true, srvDisco.cacheClientNode(client.cluster().localNode(), DEFAULT_CACHE_NAME));
             }
         }, 5000));
     }
