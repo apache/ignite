@@ -831,7 +831,7 @@ public class GridCacheUtils {
      * @param ctx Cache context.
      */
     public static void unwindEvicts(GridCacheContext ctx) {
-        assert ctx != null;
+        assert ctx != null && ctx.started();
 
         ctx.ttl().expire(TTL_BATCH_SIZE);
     }
@@ -842,8 +842,10 @@ public class GridCacheUtils {
     public static <K, V> void unwindEvicts(GridCacheSharedContext<K, V> ctx) {
         assert ctx != null;
 
-        for (GridCacheContext<K, V> cacheCtx : ctx.cacheContexts())
-            unwindEvicts(cacheCtx);
+        for (GridCacheContext<K, V> cacheCtx : ctx.cacheContexts()) {
+            if (cacheCtx.started())
+                unwindEvicts(cacheCtx);
+        }
     }
 
     /**
