@@ -74,4 +74,16 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
         sb.a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr));
         sb.a("\n]");
     }
+
+    /**
+     * Upgrade page to PagePartitionMetaIOV2
+     * @param pageAddr Page address.
+     */
+    public void upgradePage(long pageAddr) {
+        assert PageIO.getType(pageAddr) == getType();
+        assert PageIO.getVersion(pageAddr) < 2;
+
+        PageIO.setVersion(pageAddr, getVersion());
+        setPendingTreeRoot(pageAddr,0);
+    }
 }

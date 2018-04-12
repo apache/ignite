@@ -67,6 +67,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIOV2;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
@@ -1286,6 +1287,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             int grpId = grp.groupId();
             long partMetaId = pageMem.partitionMetaPageId(grpId, partId);
+
             long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
             try {
                 boolean allocated = false;
@@ -1314,7 +1316,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         io.setPendingTreeRoot(pageAddr, pendingTreeRoot);
 
                         if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
-                            wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr, pageMem.pageSize()));
+                            wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), partMetaPage, pageMem.pageSize()));
 
                         allocated = true;
                     }
@@ -1329,22 +1331,22 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         if (pageVersion < 2) {
                             assert pageVersion == 1;
 
-                            io = PagePartitionMetaIO.VERSIONS.latest();
-
                             if (log.isDebugEnabled())
                                 log.info("Upgrade partition meta page version: [part=" + partId +
                                     ", grpId=" + grpId + ", oldVer=" + pageVersion +
                                     ", newVer=" + io.getVersion()
                                 );
 
+                            io = PagePartitionMetaIO.VERSIONS.latest();
+
+                            ((PagePartitionMetaIOV2)io).upgradePage(pageAddr);
+
                             pendingTreeRoot = pageMem.allocatePage(grpId, partId, PageMemory.FLAG_DATA);
 
-                            io.setTreeRoot(pageAddr, treeRoot);
-                            io.setReuseListRoot(pageAddr, reuseListRoot);
                             io.setPendingTreeRoot(pageAddr, pendingTreeRoot);
 
                             if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
-                                wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), pageAddr, pageMem.pageSize()));
+                                wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), partMetaPage, pageMem.pageSize()));
 
                             pendingTreeAllocated = true;
                         }
