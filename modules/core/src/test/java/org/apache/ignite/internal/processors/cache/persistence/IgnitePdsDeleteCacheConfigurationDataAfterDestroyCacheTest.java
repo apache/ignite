@@ -222,6 +222,13 @@ public class IgnitePdsDeleteCacheConfigurationDataAfterDestroyCacheTest extends 
         log.warning("Grid started");
 
         assertEquals("Check that caches don't survived", CACHES - 2, ignite.cacheNames().size());
+
+        for(Ignite ig: G.allGrids()) {
+            IgniteCache cache = ig.cache("cache2");
+
+            for (int j = 0; j < 100; j++)
+                assertNotNull("Check that cache2 contains key: " + j + " node: " + ignite.name(), cache.get(j));
+        }
     }
 
 
