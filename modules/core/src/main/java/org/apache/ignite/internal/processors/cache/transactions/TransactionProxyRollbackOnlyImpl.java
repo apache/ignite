@@ -27,6 +27,16 @@ import org.apache.ignite.lang.IgniteFuture;
  */
 @SuppressWarnings("unchecked")
 public class TransactionProxyRollbackOnlyImpl<K, V> extends TransactionProxyImpl<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     *
+     */
+    public TransactionProxyRollbackOnlyImpl() {
+        // Default constructor required for {@code Externalizable}.
+    }
+
     /**
      * @param tx Tx.
      * @param cctx Cctx.
