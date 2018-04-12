@@ -15,13 +15,38 @@
  * limitations under the License.
  */
 
-[ignite-icon] {
-    height: 16px;
-    width: 16px;
-}
+// eslint-disable-next-line
+import StepsNav from '../../controller';
 
-[ignite-icon='expand'],
-[ignite-icon='collapse'] {
-    width: 13px;
-    height: 13px;
+export default class {
+    /** @type {StepsNav} */
+    stepsNav;
+    /** @type {string} */
+    value;
+    /** @type {number} Step index among other steps */
+    index;
+
+    $onInit() {
+        this.index = this.stepsNav.connectStep(this.value);
+    }
+
+    $onDestroy() {
+        this.stepsNav.disconnectStep(this.value);
+    }
+
+    get visited() {
+        return this.index <= this.stepsNav.steps.findIndex((value) => value === this.stepsNav.currentStep);
+    }
+
+    get first() {
+        return this.index === 0;
+    }
+
+    get last() {
+        return this.index + 1 === this.stepsNav.steps.length;
+    }
+
+    get active() {
+        return this.stepsNav.currentStep === this.value;
+    }
 }

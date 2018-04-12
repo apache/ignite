@@ -15,13 +15,25 @@
  * limitations under the License.
  */
 
-[ignite-icon] {
-    height: 16px;
-    width: 16px;
-}
+import template from './template.pug';
+import controller from './controller';
+import './style.scss';
 
-[ignite-icon='expand'],
-[ignite-icon='collapse'] {
-    width: 13px;
-    height: 13px;
-}
+export default {
+    template,
+    controller,
+    bindings: {
+        opened: '<?',
+        onOpen: '&?',
+        onClose: '&?',
+        title: '@?',
+        description: '@?',
+        disabled: '@?'
+    },
+    transclude: {
+        title: '?panelTitle',
+        description: '?panelDescription',
+        actions: '?panelActions',
+        content: 'panelContent'
+    }
+};

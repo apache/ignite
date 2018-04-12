@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-[ignite-icon] {
-    height: 16px;
-    width: 16px;
-}
+import angular from 'angular';
+import component from './component';
+import transclude from './transcludeDirective';
 
-[ignite-icon='expand'],
-[ignite-icon='collapse'] {
-    width: 13px;
-    height: 13px;
-}
+export default angular
+    .module('ignite-console.panel-collapsible', [])
+    .directive('panelCollapsibleTransclude', transclude)
+    .component('panelCollapsible', component);

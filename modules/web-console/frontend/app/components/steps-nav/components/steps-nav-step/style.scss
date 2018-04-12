@@ -1,0 +1,88 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+steps-nav-step {
+    @import "public/stylesheets/variables.scss";
+
+    $text-color-default: #393939;
+    $text-color-active: $ignite-brand-success;
+    $indicator-color-default: #757575;
+    $indicator-color-active: $ignite-brand-success;
+    $indicator-size: 12px;
+    $indicator-border-radius: 2px;
+    $spline-height: 1px;
+    $textToIndicatorGap: 23px;
+
+    color: $text-color-default;
+    display: flex;
+    flex: 1;
+    text-align: center;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    padding-bottom: $textToIndicatorGap + $indicator-size;
+
+    .#{&} {
+        max-width: 100%;        
+    }
+
+    // Spline
+    .#{&}:before {
+        content: '';
+        display: block;
+        background: $indicator-color-default;
+        left: calc(50% - #{$indicator-size / 2});
+        width: 100%;
+        height: $spline-height;
+        bottom: $indicator-size / 2;
+        position: absolute;
+    }
+
+    // Square dot
+    .#{&}:after {
+        content: '';
+        display: block;
+        background: $indicator-color-default;
+        width: $indicator-size;
+        height: $indicator-size;
+        border-radius: $indicator-border-radius;
+        z-index: 1;
+        position: absolute;
+        bottom: 0;
+        left: calc(50% - 6px);
+    }
+
+    .#{&}__last:before {
+        display: none;
+    }
+
+    .#{&}__active {
+        color: $text-color-active;
+
+        &:before {
+            background: $indicator-color-default !important;            
+        }
+        &:after {
+            background: $indicator-color-active;
+        }
+    }
+
+    .#{&}__visited:before,
+    .#{&}__visited:after {
+        background: $indicator-color-active;
+    }
+}

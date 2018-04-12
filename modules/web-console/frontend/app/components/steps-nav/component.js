@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-[ignite-icon] {
-    height: 16px;
-    width: 16px;
-}
+import template from './template.pug';
+import './style.scss';
+import controller from './controller';
 
-[ignite-icon='expand'],
-[ignite-icon='collapse'] {
-    width: 13px;
-    height: 13px;
-}
+export default {
+    template,
+    controller,
+    bindings: {
+        currentStep: '<'
+    },
+    transclude: true
+};

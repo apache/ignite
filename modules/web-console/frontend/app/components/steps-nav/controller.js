@@ -15,13 +15,28 @@
  * limitations under the License.
  */
 
-[ignite-icon] {
-    height: 16px;
-    width: 16px;
-}
+export default class StepsNav {
+    /** @type {string} */
+    currentStep;
 
-[ignite-icon='expand'],
-[ignite-icon='collapse'] {
-    width: 13px;
-    height: 13px;
+    constructor() {
+        /**
+         * @type {Array<string>}
+         */
+        this.steps = [];
+    }
+
+    /**
+     * @param {string} value
+     */
+    connectStep(value) {
+        return (this.steps = [...this.steps, value]).length - 1;
+    }
+
+    /**
+     * @param {string} value
+     */
+    disconnectStep(value) {
+        this.steps = this.steps.filter((v) => value !== v);
+    }
 }

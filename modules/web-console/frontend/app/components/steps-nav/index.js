@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-[ignite-icon] {
-    height: 16px;
-    width: 16px;
-}
+import angular from 'angular';
+import component from './component';
+import step from './components/steps-nav-step/component';
 
-[ignite-icon='expand'],
-[ignite-icon='collapse'] {
-    width: 13px;
-    height: 13px;
-}
+export default angular
+.module('ignite-console.steps-nav', [])
+.component('stepsNav', component)
+.component('stepsNavStep', step);

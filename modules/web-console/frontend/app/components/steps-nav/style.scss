@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-[ignite-icon] {
-    height: 16px;
-    width: 16px;
-}
+steps-nav {
+    display: block;
 
-[ignite-icon='expand'],
-[ignite-icon='collapse'] {
-    width: 13px;
-    height: 13px;
+    .#{&}__steps {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        margin: 0;
+        padding: 0;
+    }
 }
