@@ -25,6 +25,7 @@ import com.google.common.collect.Lists;
 import junit.framework.TestCase;
 
 import static java.util.Arrays.asList;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
@@ -35,6 +36,47 @@ import static org.apache.ignite.internal.commandline.CommandHandler.WAL_PRINT;
  * Tests Command Handler parsing arguments.
  */
 public class CommandHandlerParsingTest extends TestCase {
+    /** {@inheritDoc} */
+    @Override protected void setUp() throws Exception {
+        System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
+
+        super.setUp();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void tearDown() throws Exception {
+        System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+
+        super.tearDown();
+    }
+
+    /**
+     * Test that experimental command (i.e. WAL command) is disabled by default.
+     */
+    public void testExperimentalCommandIsDisabled() {
+        System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
+
+        CommandHandler hnd = new CommandHandler();
+
+        try {
+            hnd.parseAndValidate(Arrays.asList(WAL.text(), WAL_PRINT));
+        }
+        catch (Throwable e) {
+            e.printStackTrace();
+
+            assertTrue(e instanceof IllegalArgumentException);
+        }
+
+        try {
+            hnd.parseAndValidate(Arrays.asList(WAL.text(), WAL_DELETE));
+        }
+        catch (Throwable e) {
+            e.printStackTrace();
+
+            assertTrue(e instanceof IllegalArgumentException);
+        }
+    }
+
     /**
      * Tests parsing and validation for user and password arguments.
      */
