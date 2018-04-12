@@ -15,25 +15,39 @@
  * limitations under the License.
  */
 
-import Worker from './summary.worker';
+package org.apache.ignite.internal.processors.security;
 
-export default ['$q', function($q) {
-    return function(message) {
-        const defer = $q.defer();
-        const worker = new Worker();
+import org.jetbrains.annotations.Nullable;
 
-        worker.postMessage(message);
+/**
+ * Thread-local security context.
+ */
+public class SecurityContextHolder {
+    /** Context. */
+    private static final ThreadLocal<SecurityContext> CTX = new ThreadLocal<>();
 
-        worker.onmessage = (e) => {
-            defer.resolve(e.data);
-            worker.terminate();
-        };
+    /**
+     * Get security context.
+     *
+     * @return Security context.
+     */
+    @Nullable public static SecurityContext get() {
+        return CTX.get();
+    }
 
-        worker.onerror = (err) => {
-            defer.reject(err);
-            worker.terminate();
-        };
+    /**
+     * Set security context.
+     *
+     * @param ctx Context.
+     */
+    public static void set(@Nullable SecurityContext ctx) {
+        CTX.set(ctx);
+    }
 
-        return defer.promise;
-    };
-}];
+    /**
+     * Clear security context.
+     */
+    public static void clear() {
+        set(null);
+    }
+}

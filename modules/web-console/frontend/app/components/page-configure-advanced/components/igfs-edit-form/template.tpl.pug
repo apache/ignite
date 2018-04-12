@@ -15,15 +15,15 @@
     limitations under the License.
 
 form(id='igfs' name='ui.inputForm' novalidate ng-submit='$ctrl.save()')
-    include /app/modules/states/configuration/igfs/general
+    include ./templates/general
 
-    include /app/modules/states/configuration/igfs/secondary
-    include /app/modules/states/configuration/igfs/ipc
-    include /app/modules/states/configuration/igfs/fragmentizer
+    include ./templates/secondary
+    include ./templates/ipc
+    include ./templates/fragmentizer
 
     //- Removed in ignite 2.0
-    include /app/modules/states/configuration/igfs/dual
-    include /app/modules/states/configuration/igfs/misc
+    include ./templates/dual
+    include ./templates/misc
 
 .pc-form-actions-panel
     .pc-form-actions-panel__right-after
