@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
@@ -46,7 +45,8 @@ public class KNNClassificationTest extends BaseKNNTest {
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            data,
+            2,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2]
         ).withK(3)
@@ -74,7 +74,8 @@ public class KNNClassificationTest extends BaseKNNTest {
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            data,
+            2,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2]
         ).withK(1)
@@ -102,7 +103,8 @@ public class KNNClassificationTest extends BaseKNNTest {
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            data,
+            2,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2]
         ).withK(3)
@@ -128,7 +130,8 @@ public class KNNClassificationTest extends BaseKNNTest {
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            data,
+            2,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2]
         ).withK(3)

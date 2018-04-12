@@ -26,6 +26,9 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Test;
 
+/**
+ * Grid aware abstract linear regression trainer test.
+ */
 public abstract class GridAwareAbstractLinearRegressionTrainerTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;

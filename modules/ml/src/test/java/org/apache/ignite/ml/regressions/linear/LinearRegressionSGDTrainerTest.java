@@ -20,7 +20,9 @@ package org.apache.ignite.ml.regressions.linear;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
+import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -29,10 +31,10 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Tests for {@link LinearRegressionLSQRTrainer}.
+ * Tests for {@link LinearRegressionSGDTrainer}.
  */
 @RunWith(Parameterized.class)
-public class LinearRegressionLSQRTrainerTest {
+public class LinearRegressionSGDTrainerTest {
     /** Parameters. */
     @Parameterized.Parameters(name = "Data divided on {0} partitions")
     public static Iterable<Integer[]> data() {
@@ -42,8 +44,7 @@ public class LinearRegressionLSQRTrainerTest {
             new Integer[] {3},
             new Integer[] {5},
             new Integer[] {7},
-            new Integer[] {100},
-            new Integer[] {1000}
+            new Integer[] {100}
         );
     }
 
@@ -68,7 +69,11 @@ public class LinearRegressionLSQRTrainerTest {
         data.put(8, new double[] {0.20702671, 0.92864654, 0.32721202, -0.09047503, 31.61484949});
         data.put(9, new double[] {-0.37890345, -0.04846179, -0.84122753, -1.14667474, -124.92598583});
 
-        LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
+        LinearRegressionSGDTrainer<?> trainer = new LinearRegressionSGDTrainer<>(new UpdatesStrategy<>(
+            new RPropUpdateCalculator(),
+            RPropParameterUpdate::sumLocal,
+            RPropParameterUpdate::avg
+        ), 100000,  10, 100, 123L);
 
         LinearRegressionModel mdl = trainer.fit(
             data,
@@ -78,46 +83,11 @@ public class LinearRegressionLSQRTrainerTest {
         );
 
         assertArrayEquals(
-            new double[]{72.26948107,  15.95144674,  24.07403921,  66.73038781},
+            new double[] {72.26948107, 15.95144674, 24.07403921, 66.73038781},
             mdl.getWeights().getStorage().data(),
-            1e-6
+            1e-1
         );
 
-        assertEquals(2.8421709430404007e-14, mdl.getIntercept(), 1e-6);
-    }
-
-    /**
-     * Tests {@code fit()} method on a big (100000 x 100) dataset.
-     */
-    @Test
-    public void testBigDataFit() {
-        Random rnd = new Random(0);
-        Map<Integer, double[]> data = new HashMap<>();
-        double[] coef = new double[100];
-        double intercept = rnd.nextDouble() * 10;
-
-        for (int i = 0; i < 100000; i++) {
-            double[] x = new double[coef.length + 1];
-
-            for (int j = 0; j < coef.length; j++)
-                x[j] = rnd.nextDouble() * 10;
-
-            x[coef.length] = intercept;
-
-            data.put(i, x);
-        }
-
-        LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
-
-        LinearRegressionModel mdl = trainer.fit(
-            data,
-            parts,
-            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
-            (k, v) -> v[coef.length]
-        );
-
-        assertArrayEquals(coef, mdl.getWeights().getStorage().data(), 1e-6);
-
-        assertEquals(intercept, mdl.getIntercept(), 1e-6);
+        assertEquals(2.8421709430404007e-14, mdl.getIntercept(), 1e-1);
     }
 }

@@ -25,7 +25,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
@@ -137,7 +136,8 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
             );
 
             MultilayerPerceptron mlp = trainer.fit(
-                new CacheBasedDatasetBuilder<>(ignite, xorCache),
+                ignite,
+                xorCache,
                 (k, v) -> new double[]{ v.x, v.y },
                 (k, v) -> new double[]{ v.lb}
             );

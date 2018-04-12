@@ -28,7 +28,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.math.matrix.SparseDistributedMatrixExample;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocessor;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
@@ -119,21 +119,17 @@ public class DistributedLinearRegressionWithLSQRTrainerAndNormalizationExample {
                 NormalizationTrainer<Integer, double[]> normalizationTrainer = new NormalizationTrainer<>();
 
                 System.out.println(">>> Perform the training to get the normalization preprocessor.");
-                NormalizationPreprocessor<Integer, double[]> preprocessor = normalizationTrainer.fit(
-                    new CacheBasedDatasetBuilder<>(ignite, dataCache),
-                    (k, v) -> Arrays.copyOfRange(v, 1, v.length),
-                    4
+                IgniteBiFunction<Integer, double[], double[]> preprocessor = normalizationTrainer.fit(
+                    ignite,
+                    dataCache,
+                    (k, v) -> Arrays.copyOfRange(v, 1, v.length)
                 );
 
                 System.out.println(">>> Create new linear regression trainer object.");
                 LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
                 System.out.println(">>> Perform the training to get the model.");
-                LinearRegressionModel mdl = trainer.fit(
-                    new CacheBasedDatasetBuilder<>(ignite, dataCache),
-                    preprocessor,
-                    (k, v) -> v[0]
-                );
+                LinearRegressionModel mdl = trainer.fit(ignite, dataCache, preprocessor, (k, v) -> v[0]);
 
                 System.out.println(">>> Linear regression model: " + mdl);
 

@@ -55,37 +55,4 @@ public class LinearRegressionLSQRTrainer implements SingleLabelDatasetTrainer<Li
 
         return new LinearRegressionModel(weights, x[x.length - 1]);
     }
-
-    /**
-     * Feature extractor wrapper that adds additional column filled by 1.
-     *
-     * @param <K> Type of a key in {@code upstream} data.
-     * @param <V> Type of a value in {@code upstream} data.
-     */
-    private static class FeatureExtractorWrapper<K, V> implements IgniteBiFunction<K, V, double[]> {
-        /** */
-        private static final long serialVersionUID = -2686524650955735635L;
-
-        /** Underlying feature extractor. */
-        private final IgniteBiFunction<K, V, double[]> featureExtractor;
-
-        /**
-         * Constructs a new instance of feature extractor wrapper.
-         *
-         * @param featureExtractor Underlying feature extractor.
-         */
-        FeatureExtractorWrapper(IgniteBiFunction<K, V, double[]> featureExtractor) {
-            this.featureExtractor = featureExtractor;
-        }
-
-        /** {@inheritDoc} */
-        @Override public double[] apply(K k, V v) {
-            double[] featureRow = featureExtractor.apply(k, v);
-            double[] row = Arrays.copyOf(featureRow, featureRow.length + 1);
-
-            row[featureRow.length] = 1.0;
-
-            return row;
-        }
-    }
 }
