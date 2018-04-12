@@ -22,7 +22,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.apache.ignite.thread.IgniteThread;
@@ -61,7 +60,8 @@ public class DecisionTreeRegressionTrainerExample {
 
                 // Train decision tree model.
                 DecisionTreeNode mdl = trainer.fit(
-                    new CacheBasedDatasetBuilder<>(ignite, trainingSet),
+                    ignite,
+                    trainingSet,
                     (k, v) -> new double[] {v.x},
                     (k, v) -> v.y
                 );
