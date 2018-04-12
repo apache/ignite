@@ -86,6 +86,7 @@ public class PageMetaIO extends PageIO {
         setLastSuccessfulSnapshotTag(pageAddr, 0);
         setLastAllocatedPageCount(pageAddr, 0);
         setCandidatePageCount(pageAddr, 0);
+        setMetricsPageId(pageAddr, 0, pageSize);
     }
 
     /**
@@ -229,6 +230,20 @@ public class PageMetaIO extends PageIO {
         return PageUtils.getInt(pageAddr, CANDIDATE_PAGE_COUNT_OFF);
     }
 
+    /**
+     *
+     */
+    public long getMetricsPageId(long pageAddr,int pageSize) {
+        return PageUtils.getLong(pageAddr, pageSize - 8);
+    }
+
+    /**
+     *
+     */
+    public void setMetricsPageId(long pageAddr, long metricsPageId, int pageSize) {
+        PageUtils.putLong(pageAddr, pageSize - 8, metricsPageId);
+    }
+
     /** {@inheritDoc} */
     @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         sb.a("PageMeta[\n\ttreeRoot=").a(getReuseListRoot(addr))
@@ -238,6 +253,7 @@ public class PageMetaIO extends PageIO {
             .a(",\n\tlastSuccessfulSnapshotTag=").a(getLastSuccessfulSnapshotTag(addr))
             .a(",\n\tlastAllocatedPageCount=").a(getLastAllocatedPageCount(addr))
             .a(",\n\tcandidatePageCount=").a(getCandidatePageCount(addr))
+            .a(",\n\tmetricsPageId=").a(getMetricsPageId(addr, pageSize))
             .a("\n]");
     }
 }

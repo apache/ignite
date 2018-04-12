@@ -89,8 +89,7 @@ public class SimpleDataPageIO extends AbstractDataPageIO<MetastorageDataRow> {
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected void writeRowData(
+    @Override protected void writeRowData(
         long pageAddr,
         int dataOff,
         int payloadSize,

@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -65,6 +66,9 @@ public class IndexStorageImpl implements IndexStorage {
     /** */
     private final byte allocSpace;
 
+    /** */
+    private final DataStructureSize selfSize;
+
     /**
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
@@ -78,7 +82,8 @@ public class IndexStorageImpl implements IndexStorage {
         final byte allocSpace,
         final ReuseList reuseList,
         final long rootPageId,
-        final boolean initNew
+        final boolean initNew,
+        final DataStructureSize selfSize
     ) {
         try {
             this.pageMem = pageMem;
@@ -86,9 +91,22 @@ public class IndexStorageImpl implements IndexStorage {
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;
             this.reuseList = reuseList;
+            this.selfSize = selfSize;
 
-            metaTree = new MetaTree(grpId, allocPartId, allocSpace, pageMem, wal, globalRmvId, rootPageId,
-                reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew);
+            metaTree = new MetaTree(
+                grpId,
+                allocPartId,
+                allocSpace,
+                pageMem,
+                wal,
+                globalRmvId,
+                rootPageId,
+                reuseList,
+                MetaStoreInnerIO.VERSIONS,
+                MetaStoreLeafIO.VERSIONS,
+                initNew,
+                selfSize
+            );
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -114,7 +132,12 @@ public class IndexStorageImpl implements IndexStorage {
                 if (reuseList != null)
                     pageId = reuseList.takeRecycledPage();
 
-                pageId = pageId == 0 ? pageMem.allocatePage(grpId, allocPartId, allocSpace) : pageId;
+                boolean needAllocate = pageId == 0;
+
+                pageId = needAllocate ? pageMem.allocatePage(grpId, allocPartId, allocSpace) : pageId;
+
+                if (needAllocate && selfSize != null)
+                    selfSize.inc();
 
                 tree.put(new IndexItem(idxNameBytes, pageId));
 
@@ -177,9 +200,21 @@ public class IndexStorageImpl implements IndexStorage {
             final ReuseList reuseList,
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos,
-            final boolean initNew
+            final boolean initNew,
+            final DataStructureSize selfSize
         ) throws IgniteCheckedException {
-            super(treeName("meta", "Meta"), cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos);
+            super(
+                treeName("meta", "Meta"),
+                cacheId,
+                pageMem,
+                wal,
+                globalRmvId,
+                metaPageId,
+                reuseList,
+                innerIos,
+                leafIos,
+                selfSize
+            );
 
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;

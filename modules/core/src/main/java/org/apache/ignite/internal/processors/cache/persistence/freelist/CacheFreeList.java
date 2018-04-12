@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -30,9 +31,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 /**
  * FreeList implementation for cache.
  */
-public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
+public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
     /**
-     * @param cacheId Cache id.
+     * @param grpId Cache group id.
      * @param name Name.
      * @param regionMetrics Region metrics.
      * @param dataRegion Data region.
@@ -41,10 +42,34 @@ public class CacheFreeListImpl extends AbstractFreeList<CacheDataRow> {
      * @param metaPageId Meta page id.
      * @param initNew Initialize new.
      */
-    public CacheFreeListImpl(int cacheId, String name, DataRegionMetricsImpl regionMetrics, DataRegion dataRegion,
+    public CacheFreeList(
+        int grpId,
+        String name,
+        DataRegionMetricsImpl regionMetrics,
+        DataRegion dataRegion,
         ReuseList reuseList,
-        IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
-        super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
+        IgniteWriteAheadLogManager wal,
+        long metaPageId,
+        boolean initNew,
+        DataStructureSize selfPages,
+        DataStructureSize pureDataSize,
+        DataStructureSize dataPages,
+        DataStructureSize totalPages
+    ) throws IgniteCheckedException {
+        super(
+            grpId,
+            name,
+            regionMetrics,
+            dataRegion,
+            reuseList,
+            wal,
+            metaPageId,
+            initNew,
+            selfPages,
+            pureDataSize,
+            dataPages,
+            totalPages
+        );
     }
 
     /** {@inheritDoc} */

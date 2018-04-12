@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -39,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -86,6 +86,15 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
     /** */
     private final PageEvictionTracker evictionTracker;
+
+    /** */
+    private final DataStructureSize pureDataSize;
+
+    /** */
+    private final DataStructureSize dataSize;
+
+    /** */
+    private final DataStructureSize totalSize;
 
     /**
      *
@@ -145,8 +154,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             PageIO iox,
             Boolean walPlc,
             T row,
-            int written)
-            throws IgniteCheckedException {
+            int written
+        ) throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             int rowSize = io.getRowSize(row);
@@ -169,6 +178,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             if (written == rowSize)
                 evictionTracker.touchPage(pageId);
+
+            if (pureDataSize != null && written == rowSize)
+                pureDataSize.add(rowSize);
 
             // Avoid boxing with garbage generation for usual case.
             return written == rowSize ? COMPLETE : written;
@@ -278,15 +290,19 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             PageIO iox,
             Boolean walPlc,
             Void ignored,
-            int itemId)
-            throws IgniteCheckedException {
+            int itemId
+        ) throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             int oldFreeSpace = io.getFreeSpace(pageAddr);
 
             assert oldFreeSpace >= 0 : oldFreeSpace;
 
-            long nextLink = io.removeRow(pageAddr, itemId, pageSize());
+            int pageSize = pageSize();
+
+            int rowSize = io.payloadSize(pageAddr, itemId, pageSize);
+
+            long nextLink = io.removeRow(pageAddr, itemId, pageSize);
 
             if (needWalDeltaRecord(pageId, page, walPlc))
                 wal.log(new DataPageRemoveRecord(cacheId, pageId, itemId));
@@ -302,6 +318,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     if (oldBucket != newBucket) {
                         // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
                         pageId = maskPartId ? PageIdUtils.maskPartitionId(pageId) : pageId;
+
                         if (removeDataPage(pageId, page, pageAddr, io, oldBucket))
                             put(null, pageId, page, pageAddr, newBucket);
                     }
@@ -311,7 +328,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
                 if (io.isEmpty(pageAddr))
                     evictionTracker.forgetPage(pageId);
+
+                if (dataSize != null && newBucket == emptyDataPagesBucket)
+                    dataSize.dec();
             }
+
+            if (pureDataSize != null)
+                pureDataSize.add(-rowSize);
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;
@@ -319,7 +342,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param name Name (for debug purpose).
      * @param memMetrics Memory metrics.
      * @param memPlc Data region.
@@ -327,23 +350,33 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @param wal Write ahead log manager.
      * @param metaPageId Metadata page ID.
      * @param initNew {@code True} if new metadata should be initialized.
+     * @param pureDataSize
      * @throws IgniteCheckedException If failed.
      */
     public AbstractFreeList(
-        int cacheId,
+        int grpId,
         String name,
         DataRegionMetricsImpl memMetrics,
         DataRegion memPlc,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
-        boolean initNew) throws IgniteCheckedException {
-        super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId);
+        boolean initNew,
+        DataStructureSize selfPages,
+        DataStructureSize pureDataSize,
+        DataStructureSize dataPages,
+        DataStructureSize totalPages
+    ) throws IgniteCheckedException {
+        super(grpId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, selfPages);
 
-        rmvRow = new RemoveRowHandler(cacheId == 0);
+        rmvRow = new RemoveRowHandler(grpId == 0);
 
         this.evictionTracker = memPlc.evictionTracker();
+        this.pureDataSize = pureDataSize;
+        this.dataSize = dataPages;
+        this.totalSize = totalPages;
         this.reuseList = reuseList == null ? this : reuseList;
+
         int pageSize = pageMem.pageSize();
 
         assert U.isPow2(pageSize) : "Page size must be a power of 2: " + pageSize;
@@ -451,6 +484,16 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         return bucket;
     }
 
+    /** {@inheritDoc} */
+    @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+        long page = super.allocatePageNoReuse();
+
+        if (totalSize != null)
+            totalSize.inc();
+
+        return page;
+    }
+
     /**
      * @param part Partition.
      * @return Page ID.
@@ -459,6 +502,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private long allocateDataPage(int part) throws IgniteCheckedException {
         assert part <= PageIdAllocator.MAX_PARTITION_ID;
         assert part != PageIdAllocator.INDEX_PARTITION;
+
+        if (totalSize != null)
+            totalSize.inc();
 
         return pageMem.allocatePage(grpId, part, PageIdAllocator.FLAG_DATA);
     }
@@ -497,8 +543,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             boolean allocated = pageId == 0L;
 
-            if (allocated)
+            if (allocated){
                 pageId = allocateDataPage(row.partition());
+
+                if (dataSize != null)
+                    dataSize.inc();
+            }
             else
                 pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 

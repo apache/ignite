@@ -25,6 +25,7 @@ import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -57,6 +58,8 @@ import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.DATA;
 
 /**
  * H2 Index over {@link BPlusTree}.
@@ -120,6 +123,8 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             IgniteCacheDatabaseSharedManager db = cctx.shared().database();
 
+            DataStructureSize indexSize = cctx.group().dataStructureSize().sizeOf(DATA);
+
             for (int i = 0; i < segments.length; i++) {
                 db.checkpointReadLock();
 
@@ -139,7 +144,9 @@ public class H2TreeIndex extends GridH2IndexBase {
                         cols,
                         inlineIdxs,
                         computeInlineSize(inlineIdxs, inlineSize),
-                        rowCache) {
+                        rowCache,
+                        indexSize
+                    ) {
                         @Override public int compareValues(Value v1, Value v2) {
                             return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                         }

@@ -500,6 +500,12 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
             nextLink);
     }
 
+    public int payloadSize(final long pageAddr, final int itemId, final int pageSize){
+        int dataOff = getDataOffset(pageAddr, itemId, pageSize);
+
+        return getPageEntrySize(pageAddr, dataOff, 0);
+    }
+
     /**
      * @param pageAddr Page address.
      * @param idx Item index.

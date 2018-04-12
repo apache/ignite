@@ -56,9 +56,9 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.IndexReuseList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -842,7 +842,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     private T2<long[], Integer> getReuseListData(Ignite ignite, String cacheName) {
         GridCacheContext ctx = ((IgniteEx)ignite).context().cache().cache(cacheName).context();
 
-        ReuseListImpl reuseList = GridTestUtils.getFieldValue(ctx.offheap(), "reuseList");
+        IndexReuseList reuseList = GridTestUtils.getFieldValue(ctx.offheap(), "reuseList");
         PagesList.Stripe[] bucket = GridTestUtils.getFieldValue(reuseList, "bucket");
 
         long[] ids = null;
@@ -916,7 +916,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         boolean foundTails = false;
 
         for (GridDhtLocalPartition part : parts) {
-            CacheFreeListImpl freeList = GridTestUtils.getFieldValue(part.dataStore(), "freeList");
+            CacheFreeList freeList = GridTestUtils.getFieldValue(part.dataStore(), "freeList");
 
             if (freeList == null)
                 // Lazy store.
