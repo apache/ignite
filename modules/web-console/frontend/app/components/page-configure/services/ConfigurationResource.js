@@ -15,7 +15,12 @@
  * limitations under the License.
  */
 
-export default ['$http', ($http) => {
+import _ from 'lodash';
+
+/**
+ * @param {ng.IHttpService} $http
+ */
+export default function ConfigurationResourceService($http) {
     return {
         read() {
             return $http.get('/api/v1/configuration/list')
@@ -39,4 +44,6 @@ export default ['$http', ($http) => {
             return Promise.resolve({spaces, clusters, caches, igfss, domains});
         }
     };
-}];
+}
+
+ConfigurationResourceService.$inject = ['$http'];
