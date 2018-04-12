@@ -17,9 +17,6 @@
 
 package org.apache.ignite.examples.ml.regression.linear;
 
-import java.util.Arrays;
-import java.util.UUID;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -28,13 +25,17 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.math.matrix.SparseDistributedMatrixExample;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocessor;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.thread.IgniteThread;
+
+import javax.cache.Cache;
+import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * Run linear regression model over distributed matrix.
@@ -119,21 +120,17 @@ public class DistributedLinearRegressionWithLSQRTrainerAndNormalizationExample {
                 NormalizationTrainer<Integer, double[]> normalizationTrainer = new NormalizationTrainer<>();
 
                 System.out.println(">>> Perform the training to get the normalization preprocessor.");
-                NormalizationPreprocessor<Integer, double[]> preprocessor = normalizationTrainer.fit(
-                    new CacheBasedDatasetBuilder<>(ignite, dataCache),
-                    (k, v) -> Arrays.copyOfRange(v, 1, v.length),
-                    4
+                IgniteBiFunction<Integer, double[], double[]> preprocessor = normalizationTrainer.fit(
+                    ignite,
+                    dataCache,
+                    (k, v) -> Arrays.copyOfRange(v, 1, v.length)
                 );
 
                 System.out.println(">>> Create new linear regression trainer object.");
                 LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
                 System.out.println(">>> Perform the training to get the model.");
-                LinearRegressionModel mdl = trainer.fit(
-                    new CacheBasedDatasetBuilder<>(ignite, dataCache),
-                    preprocessor,
-                    (k, v) -> v[0]
-                );
+                LinearRegressionModel mdl = trainer.fit(ignite, dataCache, preprocessor, (k, v) -> v[0]);
 
                 System.out.println(">>> Linear regression model: " + mdl);
 
