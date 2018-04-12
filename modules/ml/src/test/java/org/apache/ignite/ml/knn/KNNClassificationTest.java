@@ -28,6 +28,7 @@ import org.apache.ignite.ml.knn.classification.KNNStrategy;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.junit.Test;
 
 /** Tests behaviour of KNNClassificationTest. */
 public class KNNClassificationTest {
@@ -35,7 +36,8 @@ public class KNNClassificationTest {
     private static final double PRECISION = 1e-2;
 
     /** */
-    public void testBinaryClassificationTest() {
+    @Test
+    public void binaryClassificationTest() {
 
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[]{1.0, 1.0, 1.0});
@@ -62,7 +64,8 @@ public class KNNClassificationTest {
     }
 
     /** */
-    public void testBinaryClassificationWithSmallestKTest() {
+    @Test
+    public void binaryClassificationWithSmallestKTest() {
         Map<Integer, double[]> data = new HashMap<>();
 
         data.put(0, new double[]{1.0, 1.0, 1.0});
@@ -89,7 +92,8 @@ public class KNNClassificationTest {
     }
 
     /** */
-    public void testBinaryClassificationFarPointsWithSimpleStrategy() {
+    @Test
+    public void binaryClassificationFarPointsWithSimpleStrategy() {
         Map<Integer, double[]> data = new HashMap<>();
 
         data.put(0, new double[]{10.0, 10.0, 1.0});
@@ -114,7 +118,8 @@ public class KNNClassificationTest {
     }
 
     /** */
-    public void testBinaryClassificationFarPointsWithWeightedStrategy() {
+    @Test
+    public void binaryClassificationFarPointsWithWeightedStrategy() {
         Map<Integer, double[]> data = new HashMap<>();
 
         data.put(0, new double[]{10.0, 10.0, 1.0});

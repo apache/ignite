@@ -29,13 +29,15 @@ import org.junit.Assert;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.junit.Test;
 
 /**
  * Tests for {@link KNNRegressionTrainer}.
  */
 public class KNNRegressionTest {
     /** */
-    public void testSimpleRegressionWithOneNeighbour() {
+    @Test
+    public void simpleRegressionWithOneNeighbour() {
         Map<Integer, double[]> data = new HashMap<>();
 
         data.put(0, new double[]{11.0, 0, 0, 0, 0, 0});
@@ -61,7 +63,8 @@ public class KNNRegressionTest {
     }
 
     /** */
-    public void testLongly() {
+    @Test
+    public void longly() {
         Map<Integer, double[]> data = new HashMap<>();
 
         data.put(0, new double[]{60323, 83.0, 234289, 2356, 1590, 107608, 1947});
