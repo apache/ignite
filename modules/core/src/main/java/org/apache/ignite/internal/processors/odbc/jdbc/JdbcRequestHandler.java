@@ -28,9 +28,9 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import javax.cache.configuration.Factory;
@@ -115,7 +115,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     private final ConcurrentHashMap<Long, JdbcBulkLoadProcessor> bulkLoadRequests = new ConcurrentHashMap<>();
 
     /** Ordered batches queue. */
-    private final PriorityBlockingQueue<JdbcOrderedBatchExecuteRequest> orderedBatches = new PriorityBlockingQueue<>();
+    private final PriorityQueue<JdbcOrderedBatchExecuteRequest> orderedBatchesQueue = new PriorityQueue<>();
+
+    /** Ordered batches mutex. */
+    private final Object orderedBatchesMux = new Object();
 
     /** Response sender. */
     private final JdbcResponseSender sender;
@@ -251,7 +254,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private ClientListenerResponse dispatchBatchOrdered(JdbcOrderedBatchExecuteRequest req) {
-        orderedBatches.put(req);
+        synchronized (orderedBatchesMux) {
+            orderedBatchesQueue.add(req);
+
+            orderedBatchesMux.notify();
+        }
 
         if (!cliCtx.isStreamOrdered())
             executeBatchOrdered(req);
@@ -282,7 +289,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             sender.send(new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e));
         }
 
-        orderedBatches.poll();
+        synchronized (orderedBatchesMux) {
+            orderedBatchesQueue.poll();
+        }
 
         cliCtx.orderedRequestProcessed();
 
@@ -1026,12 +1035,16 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 if (!cliCtx.isStream())
                     return;
 
-                JdbcOrderedBatchExecuteRequest req = orderedBatches.peek();
+                JdbcOrderedBatchExecuteRequest req;
 
-                if (req == null ||  req.order() != nextBatchOrder) {
-                    LockSupport.parkNanos(1000);
+                synchronized (orderedBatchesMux) {
+                    req = orderedBatchesQueue.peek();
 
-                    continue;
+                    if (req == null || req.order() != nextBatchOrder) {
+                        orderedBatchesMux.wait();
+
+                        continue;
+                    }
                 }
 
                 executeBatchOrdered(req);

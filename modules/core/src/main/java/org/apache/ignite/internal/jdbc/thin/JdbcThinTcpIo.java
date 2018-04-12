@@ -546,7 +546,6 @@ public class JdbcThinTcpIo {
         closed = true;
     }
 
-
     /**
      * @return Connection properties.
      */

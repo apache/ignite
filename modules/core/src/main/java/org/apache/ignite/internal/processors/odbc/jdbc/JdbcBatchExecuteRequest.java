@@ -93,7 +93,6 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         this.lastStreamBatch = lastStreamBatch;
     }
 
-
     /**
      * @return Schema name.
      */
