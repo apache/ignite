@@ -272,8 +272,13 @@ class TcpClientChannel implements ClientChannel {
             try (BinaryReaderExImpl r = new BinaryReaderExImpl(null, res, null, true)) {
                 String err = r.readString();
 
-                if (err != null && err.toUpperCase().matches(".*USER.*INCORRECT.*"))
-                    throw new ClientAuthenticationException();
+                int errCode = ClientStatus.FAILED;
+
+                if (res.remaining() > 0)
+                    errCode = r.readInt();
+
+                if (errCode == ClientStatus.AUTH_FAILED)
+                    throw new ClientAuthenticationException(err);
                 else if (ver.equals(srvVer))
                     throw new ClientProtocolError(err);
                 else if (!supportedVers.contains(srvVer) ||
