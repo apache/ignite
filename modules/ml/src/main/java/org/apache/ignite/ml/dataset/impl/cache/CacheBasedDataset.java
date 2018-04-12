@@ -101,12 +101,16 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 partDataBuilder
             );
 
-            R res = map.apply(ctx, data, part);
+            if (data != null) {
+                R res = map.apply(ctx, data, part);
 
-            // Saves partition context after update.
-            ComputeUtils.saveContext(Ignition.localIgnite(), datasetCacheName, part, ctx);
+                // Saves partition context after update.
+                ComputeUtils.saveContext(Ignition.localIgnite(), datasetCacheName, part, ctx);
 
-            return res;
+                return res;
+            }
+
+            return null;
         }, reduce, identity);
     }
 

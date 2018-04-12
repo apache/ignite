@@ -148,19 +148,29 @@ public class KNNClassificationModel<K, V> implements Model<Vector, Double>, Expo
      */
     @NotNull private LabeledVector[] getKClosestVectors(LabeledDataset<Double, LabeledVector> trainingData,
         TreeMap<Double, Set<Integer>> distanceIdxPairs) {
-        LabeledVector[] res = new LabeledVector[k];
-        int i = 0;
-        final Iterator<Double> iter = distanceIdxPairs.keySet().iterator();
-        while (i < k) {
-            double key = iter.next();
-            Set<Integer> idxs = distanceIdxPairs.get(key);
-            for (Integer idx : idxs) {
-                res[i] = trainingData.getRow(idx);
-                i++;
-                if (i >= k)
-                    break; // go to next while-loop iteration
+        LabeledVector[] res;
+
+        if (trainingData.rowSize() <= k) {
+            res = new LabeledVector[trainingData.rowSize()];
+            for (int i = 0; i < trainingData.rowSize(); i++)
+                res[i] = trainingData.getRow(i);
+        }
+        else {
+            res = new LabeledVector[k];
+            int i = 0;
+            final Iterator<Double> iter = distanceIdxPairs.keySet().iterator();
+            while (i < k) {
+                double key = iter.next();
+                Set<Integer> idxs = distanceIdxPairs.get(key);
+                for (Integer idx : idxs) {
+                    res[i] = trainingData.getRow(idx);
+                    i++;
+                    if (i >= k)
+                        break; // go to next while-loop iteration
+                }
             }
         }
+
         return res;
     }
 
