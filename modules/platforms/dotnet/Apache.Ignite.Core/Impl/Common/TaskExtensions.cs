@@ -32,5 +32,13 @@ namespace Apache.Ignite.Core.Impl.Common
             
             return task.ContinueWith(continuationFunction, TaskScheduler.Default);
         }
+        
+        public static Task ContWith(this Task task,
+            Action<Task> continuationFunction)
+        {
+            IgniteArgumentCheck.NotNull(task, "task");
+            
+            return task.ContinueWith(continuationFunction, TaskScheduler.Default);
+        }
     }
 }
