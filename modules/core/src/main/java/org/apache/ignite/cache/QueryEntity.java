@@ -663,7 +663,7 @@ public class QueryEntity implements Serializable {
                 desc.addNotNullField(prop.fullName());
 
             if (BigDecimal.class == fldCls && sqlAnn.precision() != -1 && sqlAnn.scale() != -1)
-                desc.addDecimalInfo(prop.fullName(), new IgniteBiTuple<>(sqlAnn.precision(), sqlAnn.scale()));
+                desc.addDecimalInfo(prop.fullName(), F.t(sqlAnn.precision(), sqlAnn.scale()));
 
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
                 && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {

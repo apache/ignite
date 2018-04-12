@@ -249,7 +249,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     /** */
     private static class SalaryWithAnnotations {
         /** */
-        @QuerySqlField(index = true, scale = SCALE, precision = PRECISION)
+        @QuerySqlField(index = true, precision = PRECISION, scale = SCALE)
         private BigDecimal amount;
 
         /** */

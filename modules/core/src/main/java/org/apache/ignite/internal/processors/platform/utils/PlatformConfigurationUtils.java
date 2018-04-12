@@ -76,6 +76,7 @@ import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAff
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.processors.platform.events.PlatformLocalEventListener;
 import org.apache.ignite.internal.processors.platform.plugin.cache.PlatformCachePluginConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
@@ -519,7 +520,7 @@ public class PlatformConfigurationUtils {
                 int scale = in.readInt();
 
                 if (precision != -1 || scale != -1)
-                    decimalInfo.put(fieldName, new IgniteBiTuple<>(precision, scale));
+                    decimalInfo.put(fieldName, F.t(precision, scale));
             }
 
             res.setFields(fields);
