@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.svm;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.junit.Test;
@@ -25,10 +27,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 /**
  * Tests for {@link SVMLinearBinaryClassificationTrainer}.
  */
+@RunWith(Parameterized.class)
 public class SVMBinaryTrainerTest {
     /** Fixed size of Dataset. */
     private static final int AMOUNT_OF_OBSERVATIONS = 1000;
@@ -38,6 +43,24 @@ public class SVMBinaryTrainerTest {
 
     /** Precision in test checks. */
     private static final double PRECISION = 1e-2;
+
+    /** Number of parts to be tested. */
+    private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7, 2000};
+
+    /** Number of partitions. */
+    @Parameterized.Parameter
+    public int parts;
+
+    /** Parameters. */
+    @Parameterized.Parameters(name = "Data divided on {0} partitions, training with batch size {1}")
+    public static Iterable<Integer[]> data() {
+        List<Integer[]> res = new ArrayList<>();
+
+        for (int part : partsToBeTested)
+            res.add(new Integer[] {part});
+
+        return res;
+    }
 
     /**
      * Test trainer on classification model y = x.
@@ -63,7 +86,7 @@ public class SVMBinaryTrainerTest {
 
         SVMLinearBinaryClassificationModel mdl = trainer.fit(
             data,
-            10,
+            parts,
             (k, v) -> Arrays.copyOfRange(v, 1, v.length),
             (k, v) -> v[0]
         );
