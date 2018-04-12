@@ -55,8 +55,12 @@ public class LocalDataset<C extends Serializable, D extends AutoCloseable> imple
         R identity) {
         R res = identity;
 
-        for (int part = 0; part < ctx.size(); part++)
-            res = reduce.apply(res, map.apply(ctx.get(part), data.get(part), part));
+        for (int part = 0; part < ctx.size(); part++) {
+            D partData = data.get(part);
+
+            if (partData != null)
+                res = reduce.apply(res, map.apply(ctx.get(part), partData, part));
+        }
 
         return res;
     }

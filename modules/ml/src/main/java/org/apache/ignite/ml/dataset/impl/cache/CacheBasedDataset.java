@@ -129,7 +129,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
                 partDataBuilder
             );
 
-            return map.apply(data, part);
+            return data != null ? map.apply(data, part) : null;
         }, reduce, identity);
     }
 
