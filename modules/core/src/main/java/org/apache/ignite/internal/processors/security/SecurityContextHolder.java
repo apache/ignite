@@ -15,21 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions.linear;
+package org.apache.ignite.internal.processors.security;
 
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
-import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link SparseBlockDistributedMatrix}.
+ * Thread-local security context.
  */
-public class BlockDistributedLinearRegressionSGDTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
-    /** */
-    public BlockDistributedLinearRegressionSGDTrainerTest() {
-        super(
-            new LinearRegressionSGDTrainer(100_000, 1e-12),
-            SparseBlockDistributedMatrix::new,
-            SparseBlockDistributedVector::new,
-            1e-2);
+public class SecurityContextHolder {
+    /** Context. */
+    private static final ThreadLocal<SecurityContext> CTX = new ThreadLocal<>();
+
+    /**
+     * Get security context.
+     *
+     * @return Security context.
+     */
+    @Nullable public static SecurityContext get() {
+        return CTX.get();
+    }
+
+    /**
+     * Set security context.
+     *
+     * @param ctx Context.
+     */
+    public static void set(@Nullable SecurityContext ctx) {
+        CTX.set(ctx);
+    }
+
+    /**
+     * Clear security context.
+     */
+    public static void clear() {
+        set(null);
     }
 }

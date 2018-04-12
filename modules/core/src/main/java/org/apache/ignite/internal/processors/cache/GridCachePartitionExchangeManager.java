@@ -64,6 +64,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -123,6 +124,7 @@ import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
@@ -214,6 +216,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** For tests only. */
     private volatile AffinityTopologyVersion exchMergeTestWaitVer;
+
+    /** Distributed latch manager. */
+    private ExchangeLatchManager latchMgr;
 
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
@@ -307,6 +312,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         super.start0();
 
         exchWorker = new ExchangeWorker();
+
+        latchMgr = new ExchangeLatchManager(cctx.kernalContext());
 
         cctx.gridEvents().addDiscoveryEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED,
             EVT_DISCOVERY_CUSTOM_EVT);
@@ -1254,6 +1261,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     m.addPartitionUpdateCounters(grp.groupId(),
                         newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
+
+                    m.addPartitionSizes(grp.groupId(), grp.topology().partitionSizes());
                 }
             }
         }
@@ -1276,6 +1285,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 m.addPartitionUpdateCounters(top.groupId(),
                     newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
+
+                m.addPartitionSizes(top.groupId(), top.partitionSizes());
             }
         }
 
@@ -1566,6 +1577,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         finally {
             leaveBusy();
         }
+    }
+
+    /**
+     * @return Latch manager instance.
+     */
+    public ExchangeLatchManager latch() {
+        return latchMgr;
     }
 
     /**
@@ -2076,7 +2094,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * Constructor.
          */
         private ExchangeWorker() {
-            super(cctx.igniteInstanceName(), "partition-exchanger", GridCachePartitionExchangeManager.this.log);
+            super(cctx.igniteInstanceName(), "partition-exchanger", GridCachePartitionExchangeManager.this.log,
+                cctx.kernalContext().workersRegistry());
         }
 
         /**
@@ -2274,11 +2293,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             try {
                 body0();
             }
+            catch (InterruptedException | IgniteInterruptedCheckedException e) {
+                if (!stop)
+                    err = e;
+            }
             catch (Throwable e) {
                 err = e;
             }
             finally {
-                if (!stop)
+                if (err == null && !stop)
+                    err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
+
+                if (err instanceof OutOfMemoryError)
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }

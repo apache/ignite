@@ -262,6 +262,7 @@ public interface CacheMetrics {
      *
      * @return Current size of evict queue.
      */
+    @Deprecated
     public int getDhtEvictQueueCurrentSize();
 
     /**
@@ -283,6 +284,7 @@ public interface CacheMetrics {
      *
      * @return Committed transaction queue size.
      */
+    @Deprecated
     public int getTxCommitQueueSize();
 
     /**
@@ -290,6 +292,7 @@ public interface CacheMetrics {
      *
      * @return Prepared transaction queue size.
      */
+    @Deprecated
     public int getTxPrepareQueueSize();
 
     /**
@@ -297,6 +300,7 @@ public interface CacheMetrics {
      *
      * @return Start version counts map size.
      */
+    @Deprecated
     public int getTxStartVersionCountsSize();
 
     /**
@@ -332,6 +336,7 @@ public interface CacheMetrics {
      *
      * @return Committed DHT transaction queue size.
      */
+    @Deprecated
     public int getTxDhtCommitQueueSize();
 
     /**
@@ -339,6 +344,7 @@ public interface CacheMetrics {
      *
      * @return Prepared DHT transaction queue size.
      */
+    @Deprecated
     public int getTxDhtPrepareQueueSize();
 
     /**
@@ -346,6 +352,7 @@ public interface CacheMetrics {
      *
      * @return DHT start version counts map size.
      */
+    @Deprecated
     public int getTxDhtStartVersionCountsSize();
 
     /**

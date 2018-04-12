@@ -404,6 +404,10 @@
                                 <packages>org.apache.ignite.spi.eventstorage*</packages>
                             </group>
                             <group>
+                                <title>Communication Failure Detection</title>
+                                <packages>org.apache.ignite.failure</packages>
+                            </group>
+                            <group>
                                 <title>Segmentation Detection</title>
                                 <packages>org.apache.ignite.plugin.segmentation</packages>
                             </group>
