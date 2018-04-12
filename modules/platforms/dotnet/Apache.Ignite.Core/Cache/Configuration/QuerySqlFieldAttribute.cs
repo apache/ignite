@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// whenever index should be created on more than one field.
         /// All fields within the same group will belong to the same index.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays",
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", 
             Justification = "Attribute initializers do not allow collections")]
         public string[] IndexGroups { get; set; }
 
