@@ -62,7 +62,10 @@ import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -154,6 +157,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_COMPRESSION_ENABLED;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.COMPRESSION_META;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
@@ -807,6 +812,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     notifyListener(connKey.nodeId(), msg, c);
                 }
+            }
+
+            /** {@inheritDoc} */
+            @Override public void onFailure(FailureType failureType, Throwable failure) {
+                ((IgniteEx)ignite).context().failure().process(new FailureContext(failureType, failure));
             }
 
             /**
@@ -3501,7 +3511,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     ctx.failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
                         "rmtNode=" + node +
                         ", errs=" + errs +
-                        ", connectErrs=" + Arrays.toString(errs.getSuppressed()) + ']');
+                        ", connectErrs=" + X.getSuppressedList(errs) + ']');
                 }
             }
 
@@ -4278,13 +4288,32 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (log.isDebugEnabled())
                 log.debug("Tcp communication worker has been started.");
 
-            while (!isInterrupted()) {
-                DisconnectedSessionInfo disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
+            Throwable err = null;
 
-                if (disconnectData != null)
-                    processDisconnect(disconnectData);
-                else
-                    processIdle();
+            try {
+                while (!isInterrupted()) {
+                    DisconnectedSessionInfo disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
+
+                    if (disconnectData != null)
+                        processDisconnect(disconnectData);
+                    else
+                        processIdle();
+                }
+            }
+            catch (Throwable t) {
+                if (!(t instanceof InterruptedException))
+                    err = t;
+
+                throw t;
+            }
+            finally {
+                if (err == null && !stopping)
+                    err = new IllegalStateException("Thread  " + getName() + " is terminated unexpectedly.");
+
+                if (err instanceof OutOfMemoryError)
+                    ((IgniteEx)ignite).context().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    ((IgniteEx)ignite).context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
 

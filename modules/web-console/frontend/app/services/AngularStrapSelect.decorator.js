@@ -16,6 +16,7 @@
  */
 
 import angular from 'angular';
+import _ from 'lodash';
 
 /**
  * Special decorator that fix problem in AngularStrap selectAll / deselectAll methods.
@@ -27,12 +28,12 @@ export default angular.module('mgcrea.ngStrap.select')
             const delegate = $delegate(element, controller, config);
 
             // Common vars.
-            const options = angular.extend({}, $delegate.defaults, config);
+            const options = Object.assign({}, $delegate.defaults, config);
 
             const scope = delegate.$scope;
 
             const valueByIndex = (index) => {
-                if (angular.isUndefined(scope.$matches[index]))
+                if (_.isUndefined(scope.$matches[index]))
                     return null;
 
                 return scope.$matches[index].value;
