@@ -202,7 +202,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
      * @throws Exception if failed.
      */
     public void testRebalncingDuringLoad_10_10_1_1() throws Exception {
@@ -210,7 +209,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
      * @throws Exception if failed.
      */
     public void testRebalncingDuringLoad_10_500_8_16() throws Exception {
@@ -252,11 +250,11 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
                 while (!done.get()) {
                     Map<Integer, Person> map = new TreeMap<>();
 
-                        for (int i = 0; i < batch; i++) {
-                            int key = rnd.nextInt(ENTRIES_COUNT);
+                    for (int i = 0; i < batch; i++) {
+                        int key = rnd.nextInt(ENTRIES_COUNT);
 
-                            map.put(key, new Person("fn"+key,"ln"+key));
-                        }
+                        map.put(key, new Person("fn" + key, "ln" + key));
+                    }
 
                     cache.putAll(map);
                 }
@@ -293,12 +291,12 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         /** */
         @GridToStringInclude
         @QuerySqlField(index = true, groups = "full_name")
-        String fName;
+        private String fName;
 
         /** */
         @GridToStringInclude
         @QuerySqlField(index = true, groups = "full_name")
-        String lName;
+        private String lName;
 
         /**
          * @param fName First name.
@@ -318,11 +316,13 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         @Override public boolean equals(Object o) {
             if (this == o)
                 return true;
+
             if (o == null || getClass() != o.getClass())
                 return false;
+
             IgnitePersistentStoreCacheGroupsTest.Person person = (IgnitePersistentStoreCacheGroupsTest.Person)o;
-            return Objects.equals(fName, person.fName) &&
-                Objects.equals(lName, person.lName);
+
+            return Objects.equals(fName, person.fName) && Objects.equals(lName, person.lName);
         }
 
         /** {@inheritDoc} */

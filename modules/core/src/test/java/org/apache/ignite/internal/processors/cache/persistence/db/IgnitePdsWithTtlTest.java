@@ -21,10 +21,8 @@ import com.google.common.base.Strings;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.AccessedExpiryPolicy;
-import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -38,11 +36,12 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Test TTL worker with persistence enabled
  */
-public class IgnitePdsWithTtlTest extends IgnitePdsAbstractTest {
+public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE = "expirableCache";
 
@@ -54,6 +53,23 @@ public class IgnitePdsWithTtlTest extends IgnitePdsAbstractTest {
 
     /** */
     private static final TcpDiscoveryVmIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        //protection if test failed to finish, e.g. by error
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
