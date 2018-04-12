@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -107,7 +108,6 @@ import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getString;
@@ -324,6 +324,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         synchronized (locSvcs) {
             for (Collection<ServiceContextImpl> ctxs0 : locSvcs.values())
                 ctxs.addAll(ctxs0);
+
+            locSvcs.clear();
         }
 
         for (ServiceContextImpl ctx : ctxs) {
