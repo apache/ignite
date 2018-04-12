@@ -20,7 +20,6 @@ package org.apache.ignite.internal.pagemem.store;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -196,12 +195,12 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException;
 
     /**
-     * Delete cache configuration data file.
+     * Remove cache configuration data file.
      *
      * @param cacheData Cache configuration.
      * @throws IgniteCheckedException If failed.
      */
-    public void deleteCacheConfigurationData(StoredCacheData cacheData) throws IgniteCheckedException;
+    public void removeCacheConfigurationData(StoredCacheData cacheData) throws IgniteCheckedException;
 
     /**
      * @param grpId Cache group ID.

@@ -1998,7 +1998,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (storeOnly && grpId != METASTORAGE_CACHE_ID)
                                 continue;
 
-                            if (!ignoreGrps.contains(grpId) && (cctx.cache().cacheGroup(grpId) != null || grpId == METASTORAGE_CACHE_ID)) {
+                            if (!ignoreGrps.contains(grpId) && isValidGroup(grpId)) {
                                 long pageId = pageRec.fullPageId().pageId();
 
                                 PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
@@ -2033,7 +2033,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (storeOnly && gId != METASTORAGE_CACHE_ID)
                             continue;
 
-                        if (!ignoreGrps.contains(gId) && (cctx.cache().cacheGroup(gId) != null || gId == METASTORAGE_CACHE_ID)) {
+                        if (!ignoreGrps.contains(gId) && isValidGroup(gId)) {
                             final int pId = destroyRec.partitionId();
 
                             PageMemoryEx pageMem = gId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(gId);
@@ -2054,7 +2054,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (storeOnly && grpId != METASTORAGE_CACHE_ID)
                                 continue;
 
-                            if (!ignoreGrps.contains(grpId) && (cctx.cache().cacheGroup(grpId) != null || grpId == METASTORAGE_CACHE_ID)) {
+                            if (!ignoreGrps.contains(grpId) && isValidGroup(grpId)) {
                                 long pageId = r.pageId();
 
                                 PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
@@ -2103,6 +2103,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointHist.loadHistory(cpDir);
 
         return lastRead == null ? null : lastRead.next();
+    }
+
+    /**
+     * Check that grpId is valid. Group with given id must be either metastorage cache
+     * or must be registered in {@link org.apache.ignite.internal.processors.cache.GridCacheProcessor}.
+     *
+     * @param grpId Group id.
+     */
+    private boolean isValidGroup(int grpId) {
+        return cctx.cache().cacheGroup(grpId) != null || grpId == METASTORAGE_CACHE_ID;
     }
 
     /**
