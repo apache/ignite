@@ -3533,6 +3533,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 U.error(log, "Failed to prepare transaction: " + this, e);
             }
+            catch (Throwable t) {
+                fut.onDone(t);
+
+                throw t;
+            }
 
             if (err != null)
                 fut.rollbackOnError(err);
@@ -3551,6 +3556,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         err = e;
 
                         U.error(log, "Failed to prepare transaction: " + this, e);
+                    }
+                    catch (Throwable t) {
+                        fut.onDone(t);
+
+                        throw t;
                     }
 
                     if (err != null)

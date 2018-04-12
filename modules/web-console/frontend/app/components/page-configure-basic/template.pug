@@ -15,15 +15,15 @@
     limitations under the License.
 
 include /app/helpers/jade/mixins
-include /app/modules/states/configuration/clusters/general/discovery/cloud
-include /app/modules/states/configuration/clusters/general/discovery/google
-include /app/modules/states/configuration/clusters/general/discovery/jdbc
-include /app/modules/states/configuration/clusters/general/discovery/multicast
-include /app/modules/states/configuration/clusters/general/discovery/s3
-include /app/modules/states/configuration/clusters/general/discovery/shared
-include /app/modules/states/configuration/clusters/general/discovery/vm
-include /app/modules/states/configuration/clusters/general/discovery/zookeeper
-include /app/modules/states/configuration/clusters/general/discovery/kubernetes
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/cloud
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/google
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/jdbc
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/multicast
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/s3
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/shared
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/vm
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/zookeeper
+include ./../page-configure-advanced/components/cluster-edit-form/templates/general/discovery/kubernetes
 
 - const model = '$ctrl.clonedCluster'
 - const modelDiscoveryKind = `${model}.discovery.kind`

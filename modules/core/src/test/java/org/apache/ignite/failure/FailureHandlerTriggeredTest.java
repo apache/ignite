@@ -120,6 +120,10 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
                 @Override public boolean isMutable() {
                     return false;
                 }
+
+                @Override public boolean stopProcess() {
+                    return false;
+                }
             });
         }
 
