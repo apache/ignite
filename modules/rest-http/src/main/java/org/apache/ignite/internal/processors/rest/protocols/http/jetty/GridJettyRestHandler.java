@@ -879,8 +879,13 @@ public class GridJettyRestHandler extends AbstractHandler {
         String sesTokStr = (String)params.get("sessionToken");
 
         try {
-            if (sesTokStr != null)
-                restReq.sessionToken(U.hexString2ByteArray(sesTokStr));
+            if (sesTokStr != null) {
+                // Token is a UUID encoded as 16 bytes as HEX.
+                byte[] bytes = U.hexString2ByteArray(sesTokStr);
+
+                if (bytes.length == 16)
+                    restReq.sessionToken(bytes);
+            }
         }
         catch (IllegalArgumentException ignored) {
             // Ignore invalid session token.
