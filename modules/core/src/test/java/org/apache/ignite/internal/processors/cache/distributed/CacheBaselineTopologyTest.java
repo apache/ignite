@@ -32,6 +32,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -79,6 +81,12 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
     /** */
     private boolean delayRebalance;
+
+    /** */
+    private Map<String, Object> userAttrs;
+
+    /** */
+    private static final String DATA_NODE = "dataNodeUserAttr";
 
     /** */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -129,6 +137,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             .setWalMode(WALMode.LOG_ONLY)
         );
 
+        if (userAttrs != null)
+            cfg.setUserAttributes(userAttrs);
+
         if (client)
             cfg.setClientMode(true);
 
@@ -136,6 +147,77 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             cfg.setCommunicationSpi(new DelayRebalanceCommunicationSpi());
 
         return cfg;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public void testRebalanceForCacheWithNodeFilter() throws Exception {
+        try {
+            userAttrs = U.newHashMap(1);
+            userAttrs.put(DATA_NODE, true);
+
+            startGrids(2);
+
+            userAttrs.put(DATA_NODE, false);
+
+            IgniteEx ignite = startGrid(2);
+
+            ignite.cluster().active(true);
+
+            awaitPartitionMapExchange();
+
+            IgniteCache<Integer, Integer> cache =
+                ignite.createCache(
+                    new CacheConfiguration<Integer, Integer>()
+                        .setName(CACHE_NAME)
+                        .setCacheMode(PARTITIONED)
+                        .setBackups(1)
+                        .setPartitionLossPolicy(READ_ONLY_SAFE)
+                        .setAffinity(new RendezvousAffinityFunction(32, null))
+                        .setNodeFilter(new DataNodeFilter())
+                );
+
+            for (int k = 0; k < 10_000; k++)
+                cache.put(k, k);
+
+            Thread.sleep(500);
+
+            printSizesDataNodes(NODE_COUNT - 1);
+
+            userAttrs.put(DATA_NODE, true);
+
+            startGrid(3);
+
+            ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion());
+
+            awaitPartitionMapExchange();
+
+            Thread.sleep(500);
+            printSizesDataNodes(NODE_COUNT);
+        }
+        finally {
+            userAttrs = null;
+        }
+    }
+
+    /** */
+    private void printSizesDataNodes(int nodesCount) {
+        for (int i = 0; i < nodesCount; i++) {
+            IgniteEx ig = grid(i);
+
+            System.out.println("Cache size on i-th node: "
+                + i 
+                + "->" + ig.cache(CACHE_NAME).localSize(CachePeekMode.PRIMARY));
+        }
+    }
+
+    /** */
+    private static class DataNodeFilter implements IgnitePredicate<ClusterNode> {
+
+        @Override public boolean apply(ClusterNode clusterNode) {
+            return clusterNode.attribute(DATA_NODE);
+        }
     }
 
     /**
