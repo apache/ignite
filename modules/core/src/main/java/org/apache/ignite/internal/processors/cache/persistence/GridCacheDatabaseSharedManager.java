@@ -27,6 +27,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -116,8 +117,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.PersistentStorageIOException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.CheckpointMetricsTracker;
@@ -129,7 +132,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -212,11 +214,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Checkpoint file name pattern. */
     private static final Pattern CP_FILE_NAME_PATTERN = Pattern.compile("(\\d+)-(.*)-(START|END)\\.bin");
 
+    /** Checkpoint file temporary suffix. This is needed to safe writing checkpoint markers through temporary file and renaming. */
+    public static final String FILE_TMP_SUFFIX = ".tmp";
+
     /** Node started file patter. */
     private static final Pattern NODE_STARTED_FILE_NAME_PATTERN = Pattern.compile("(\\d+)-node-started\\.bin");
 
     /** Node started file suffix. */
-    private static final String NODE_STARTED_FILE_NAME_SUFFIX = "-node-started.bin";
+    public static final String NODE_STARTED_FILE_NAME_SUFFIX = "-node-started.bin";
 
     /** */
     private static final FileFilter CP_FILE_FILTER = new FileFilter() {
@@ -377,7 +382,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private List<MetastorageLifecycleListener> metastorageLifecycleLsnrs;
 
     /** Initially disabled cache groups. */
-    public Collection<Integer> initiallyWalDisabledGrps;
+    private Collection<Integer> initiallyWalDisabledGrps;
+
+    /** File I/O factory for writing checkpoint markers. */
+    private final FileIOFactory ioFactory;
 
     /**
      * @param ctx Kernal context.
@@ -403,6 +411,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         maxCpHistMemSize = Math.min(persistenceCfg.getWalHistorySize(),
             IgniteSystemProperties.getInteger(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, 100));
+
+        ioFactory = persistenceCfg.getFileIOFactory();
     }
 
     /** */
@@ -495,6 +505,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!U.mkdirs(cpDir))
                 throw new IgniteCheckedException("Could not create directory for checkpoint metadata: " + cpDir);
 
+            cleanupCheckpointDirectory();
+
             final FileLockHolder preLocked = kernalCtx.pdsFolderResolver()
                 .resolveFolders()
                 .getLockedFileLockHolder();
@@ -505,6 +517,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // Here we can get data from metastorage
             readMetastore();
+        }
+    }
+
+    /**
+     * Cleanup checkpoint directory from all temporary files {@link #FILE_TMP_SUFFIX}.
+     */
+    private void cleanupCheckpointDirectory() throws IgniteCheckedException {
+        try {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath(), new DirectoryStream.Filter<Path>() {
+                @Override
+                public boolean accept(Path path) throws IOException {
+                    return path.endsWith(FILE_TMP_SUFFIX);
+                }
+            })) {
+                for (Path path : files)
+                    Files.delete(path);
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to cleanup checkpoint directory: " + cpDir, e);
         }
     }
 
@@ -574,6 +606,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             storePageMem.stop();
         }
         catch (StorageException e) {
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
             throw new IgniteCheckedException(e);
         }
     }
@@ -748,7 +782,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             notifyMetastorageReadyForReadWrite();
         }
-        catch (StorageException e) {
+        catch (StorageException | PersistentStorageIOException e) {
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
             throw new IgniteCheckedException(e);
         }
         finally {
@@ -757,41 +793,52 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * Creates file with current timestamp and specific "node-started.bin" suffix
+     * and writes into memory recovery pointer.
+     *
      * @param ptr Memory recovery wal pointer.
      */
     private void nodeStart(WALPointer ptr) throws IgniteCheckedException {
         FileWALPointer p = (FileWALPointer)ptr;
 
-        String fileName = U.currentTimeMillis() + "-node-started.bin";
+        String fileName = U.currentTimeMillis() + NODE_STARTED_FILE_NAME_SUFFIX;
+        String tmpFileName = fileName + FILE_TMP_SUFFIX;
 
         ByteBuffer buf = ByteBuffer.allocate(20);
         buf.order(ByteOrder.nativeOrder());
 
-        try (FileChannel ch = FileChannel.open(
-            Paths.get(cpDir.getAbsolutePath(), fileName),
-            StandardOpenOption.CREATE_NEW, StandardOpenOption.APPEND)
-        ) {
-            buf.putLong(p.index());
+        try {
+            try (FileIO io = ioFactory.create(Paths.get(cpDir.getAbsolutePath(), tmpFileName).toFile(),
+                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+                buf.putLong(p.index());
 
-            buf.putInt(p.fileOffset());
+                buf.putInt(p.fileOffset());
 
-            buf.putInt(p.length());
+                buf.putInt(p.length());
 
-            buf.flip();
+                buf.flip();
 
-            ch.write(buf);
+                io.write(buf);
 
-            buf.clear();
+                buf.clear();
 
-            ch.force(true);
+                io.force(true);
+            }
+
+            Files.move(Paths.get(cpDir.getAbsolutePath(), tmpFileName), Paths.get(cpDir.getAbsolutePath(), fileName));
         }
         catch (IOException e) {
-            throw new IgniteCheckedException(e);
+            throw new PersistentStorageIOException("Failed to write node start marker: " + ptr, e);
         }
     }
 
     /**
+     * Collects memory recovery pointers from node started files. See {@link #nodeStart(WALPointer)}.
+     * Each pointer associated with timestamp extracted from file.
+     * Tuples are sorted by timestamp.
      *
+     * @return Sorted list of tuples (node started timestamp, memory recovery pointer).
+     * @throws IgniteCheckedException
      */
     public List<T2<Long, WALPointer>> nodeStartedPointers() throws IgniteCheckedException {
         List<T2<Long, WALPointer>> res = new ArrayList<>();
@@ -803,15 +850,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 String n1 = o1.getName();
                 String n2 = o2.getName();
 
-                Long ts1 = Long.valueOf(n1.substring(0, n1.length() - NODE_STARTED_FILE_NAME_SUFFIX.length()));
-                Long ts2 = Long.valueOf(n2.substring(0, n2.length() - NODE_STARTED_FILE_NAME_SUFFIX.length()));
+                long ts1 = Long.valueOf(n1.substring(0, n1.length() - NODE_STARTED_FILE_NAME_SUFFIX.length()));
+                long ts2 = Long.valueOf(n2.substring(0, n2.length() - NODE_STARTED_FILE_NAME_SUFFIX.length()));
 
-                if (ts1 == ts2)
-                    return 0;
-                else if (ts1 < ts2)
-                    return -1;
-                else
-                    return 1;
+                return Long.compare(ts1, ts2);
             }
         });
 
@@ -823,8 +865,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             Long ts = Long.valueOf(name.substring(0, name.length() - NODE_STARTED_FILE_NAME_SUFFIX.length()));
 
-            try (FileChannel ch = FileChannel.open(f.toPath(), READ)) {
-                ch.read(buf);
+            try (FileIO io = ioFactory.create(f, READ)) {
+                io.read(buf);
 
                 buf.flip();
 
@@ -1866,8 +1908,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private WALPointer readPointer(File cpMarkerFile, ByteBuffer buf) throws IgniteCheckedException {
         buf.position(0);
 
-        try (FileChannel ch = FileChannel.open(cpMarkerFile.toPath(), READ)) {
-            ch.read(buf);
+        try (FileIO io = ioFactory.create(cpMarkerFile, READ)) {
+            io.read(buf);
 
             buf.flip();
 
@@ -1881,6 +1923,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * @param status Checkpoint status.
+     * @throws IgniteCheckedException If failed.
+     * @throws StorageException In case I/O error occurred during operations with storage.
      */
     private WALPointer restoreMemory(CheckpointStatus status) throws IgniteCheckedException {
         return restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory());
@@ -1889,6 +1933,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param status Checkpoint status.
      * @param storeOnly If {@code True} restores Metastorage only.
+     * @param storePageMem Metastore page memory.
+     * @throws IgniteCheckedException If failed.
+     * @throws StorageException In case I/O error occurred during operations with storage.
      */
     private WALPointer restoreMemory(CheckpointStatus status, boolean storeOnly,
         PageMemoryEx storePageMem) throws IgniteCheckedException {
@@ -2581,6 +2628,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * Writes into specified file checkpoint entry containing WAL pointer to checkpoint record.
+     *
      * @param cpId Checkpoint ID.
      * @param ptr Wal pointer of current checkpoint.
      */
@@ -2597,31 +2646,40 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         FileWALPointer filePtr = (FileWALPointer)ptr;
 
         String fileName = checkpointFileName(cpTs, cpId, type);
+        String tmpFileName = fileName + FILE_TMP_SUFFIX;
 
-        try (FileChannel ch = FileChannel.open(Paths.get(cpDir.getAbsolutePath(), fileName),
-            StandardOpenOption.CREATE_NEW, StandardOpenOption.APPEND)) {
+        try {
+            try (FileIO io = ioFactory.create(Paths.get(cpDir.getAbsolutePath(), skipSync ? fileName : tmpFileName).toFile(),
+                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
 
-            tmpWriteBuf.rewind();
+                tmpWriteBuf.rewind();
 
-            tmpWriteBuf.putLong(filePtr.index());
+                tmpWriteBuf.putLong(filePtr.index());
 
-            tmpWriteBuf.putInt(filePtr.fileOffset());
+                tmpWriteBuf.putInt(filePtr.fileOffset());
 
-            tmpWriteBuf.putInt(filePtr.length());
+                tmpWriteBuf.putInt(filePtr.length());
 
-            tmpWriteBuf.flip();
+                tmpWriteBuf.flip();
 
-            ch.write(tmpWriteBuf);
+                io.write(tmpWriteBuf);
 
-            tmpWriteBuf.clear();
+                tmpWriteBuf.clear();
+
+                if (!skipSync)
+                    io.force(true);
+            }
 
             if (!skipSync)
-                ch.force(true);
+                Files.move(Paths.get(cpDir.getAbsolutePath(), tmpFileName), Paths.get(cpDir.getAbsolutePath(), fileName));
 
             return createCheckPointEntry(cpTs, ptr, cpId, rec, type);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException(e);
+            throw new PersistentStorageIOException("Failed to write checkpoint entry [ptr=" + filePtr
+                    + ", cpTs=" + cpTs
+                    + ", cpId=" + cpId
+                    + ", type=" + type + "]", e);
         }
     }
 
@@ -2688,8 +2746,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (type != CheckpointEntryType.START)
             return null;
 
-        CheckpointEntry entry;
-
         Map<Integer, CacheState> cacheGrpStates = null;
 
         // Create lazy checkpoint entry.
@@ -2700,7 +2756,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     *
+     * Checkpointer object is used for notification on checkpoint begin, predicate is {@link #scheduledCp}<code>.nextCpTs - now
+     * > 0 </code>. Method {@link #wakeupForCheckpoint} uses notify, {@link #waitCheckpointEvent} uses wait
      */
     @SuppressWarnings("NakedNotify")
     public class Checkpointer extends GridWorker {
@@ -2823,7 +2880,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 CheckpointMetricsTracker tracker = new CheckpointMetricsTracker();
 
-                Checkpoint chp = markCheckpointBegin(tracker);
+                Checkpoint chp;
+
+                try {
+                    chp = markCheckpointBegin(tracker);
+                }
+                catch (IgniteCheckedException e) {
+                    if (curCpProgress != null)
+                        curCpProgress.cpFinishFut.onDone(e);
+
+                    // In case of checkpoint initialization error node should be invalidated and stopped.
+                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+                    return;
+                }
 
                 currCheckpointPagesCnt = chp.pagesSize;
 
@@ -2881,7 +2951,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         } catch (IgniteCheckedException e) {
                             chp.progress.cpFinishFut.onDone(e);
 
-                            // In case of writing error node should be invalidated and stopped.
+                            // In case of checkpoint writing error node should be invalidated and stopped.
                             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
                             return;
@@ -3068,14 +3138,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (grp.isLocal() || !grp.walEnabled())
                         continue;
 
-                    int locPartsSize = 0;
+                    ArrayList<GridDhtLocalPartition> parts = new ArrayList<>();
 
-                    for (GridDhtLocalPartition ignored : grp.topology().currentLocalPartitions())
-                        locPartsSize++;
+                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
+                        parts.add(part);
 
-                    CacheState state = new CacheState(locPartsSize);
+                    CacheState state = new CacheState(parts.size());
 
-                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+                    for (GridDhtLocalPartition part : parts) {
                         state.addPartitionState(
                             part.id(),
                             part.dataStore().fullSize(),

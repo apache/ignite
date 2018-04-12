@@ -31,6 +31,9 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
  * See <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">RProp</a>.</p>
  */
 public class RPropParameterUpdate implements Serializable {
+    /** */
+    private static final long serialVersionUID = -165584242642323332L;
+
     /**
      * Previous iteration parameters updates. In original paper they are labeled with "delta w".
      */

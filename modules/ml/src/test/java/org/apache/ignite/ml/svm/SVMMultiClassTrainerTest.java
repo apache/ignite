@@ -59,7 +59,7 @@ public class SVMMultiClassTrainerTest {
             data.put(i, vec);
         }
 
-        SVMLinearMultiClassClassificationTrainer<Integer, double[]> trainer = new SVMLinearMultiClassClassificationTrainer<Integer, double[]>()
+        SVMLinearMultiClassClassificationTrainer trainer = new SVMLinearMultiClassClassificationTrainer()
             .withLambda(0.3)
             .withAmountOfLocIterations(100)
             .withAmountOfIterations(20);
@@ -67,8 +67,8 @@ public class SVMMultiClassTrainerTest {
         SVMLinearMultiClassClassificationModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 10),
             (k, v) -> Arrays.copyOfRange(v, 1, v.length),
-            (k, v) -> v[0],
-            AMOUNT_OF_FEATURES);
+            (k, v) -> v[0]
+        );
 
         TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[]{100, 10})), PRECISION);
         TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[]{10, 100})), PRECISION);

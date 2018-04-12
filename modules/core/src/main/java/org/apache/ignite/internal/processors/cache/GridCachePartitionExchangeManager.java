@@ -427,7 +427,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         if (evt.type() != EVT_DISCOVERY_CUSTOM_EVT) {
             assert evt.type() != EVT_NODE_JOINED || n.isLocal() || n.order() > loc.order() :
                 "Node joined with smaller-than-local " +
-                    "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
+                    "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ", evt=" + evt + ']';
 
             exchId = exchangeId(n.id(), affinityTopologyVersion(evt), evt);
 
@@ -569,12 +569,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public void onKernalStart(boolean active, boolean reconnect) throws IgniteCheckedException {
         for (ClusterNode n : cctx.discovery().remoteNodes())
             cctx.versions().onReceived(n.id(), n.metrics().getLastDataVersion());
-
-        ClusterNode loc = cctx.localNode();
-
-        long startTime = loc.metrics().getStartTime();
-
-        assert startTime > 0;
 
         DiscoveryLocalJoinData locJoin = cctx.discovery().localJoin();
 
@@ -758,6 +752,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /**
      * @param grpId Cache group ID.
+     * @return Topology.
+     */
+    @Nullable public GridDhtPartitionTopology clientTopologyIfExists(int grpId) {
+        return clientTops.get(grpId);
+    }
+
+    /**
+     * @param grpId Cache group ID.
      * @param discoCache Discovery data cache.
      * @return Topology.
      */
@@ -913,7 +915,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     * @return {@code True} if pending future queue is empty.
+     * @return {@code True} if pending future queue contains exchange task.
      */
     public boolean hasPendingExchange() {
         return exchWorker.hasPendingExchange();
@@ -2228,6 +2230,26 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /**
+         * @return Whether pending exchange future triggered by non client node exists.
+         */
+        boolean hasPendingServerExchange() {
+            if (!futQ.isEmpty()) {
+                for (CachePartitionExchangeWorkerTask task : futQ) {
+                    if (task instanceof GridDhtPartitionsExchangeFuture) {
+                        // First event is enough to check,
+                        // because only current exchange future can have multiple discovery events (exchange merge).
+                        ClusterNode triggeredBy = ((GridDhtPartitionsExchangeFuture) task).firstEvent().eventNode();
+
+                        if (!CU.clientNode(triggeredBy))
+                            return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /**
          * Dump debug info.
          */
         void dumpExchangeDebugInfo() {
@@ -2422,7 +2444,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 changed |= grp.topology().afterExchange(exchFut);
                             }
 
-                            if (!cctx.kernalContext().clientNode() && changed && !hasPendingExchange())
+                            if (!cctx.kernalContext().clientNode() && changed && !hasPendingServerExchange())
                                 refreshPartitions();
                         }
 

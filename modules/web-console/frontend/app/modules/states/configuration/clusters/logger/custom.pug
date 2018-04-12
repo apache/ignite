@@ -17,9 +17,8 @@
 include /app/helpers/jade/mixins
 
 -var form = 'logger'
--var model = 'backupItem.logger.Custom'
--var required = 'backupItem.logger.kind === "Custom"'
+-var model = '$ctrl.clonedCluster.logger.Custom'
+-var required = '$ctrl.clonedCluster.logger.kind === "Custom"'
 
-div
-    .details-row
-        +java-class('Class:', `${model}.class`, '"customLogger"', 'true', required, 'Logger implementation class name', required)
+.pc-form-grid-col-60
+    +java-class('Class:', `${model}.class`, '"customLogger"', 'true', required, 'Logger implementation class name', required)

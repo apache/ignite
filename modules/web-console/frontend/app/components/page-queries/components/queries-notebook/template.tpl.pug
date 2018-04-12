@@ -79,7 +79,7 @@ mixin notebook-rename
 mixin notebook-error
     h2 Failed to load notebook
     label.col-sm-12 Notebook not accessible any more. Go back to configuration or open to another notebook.
-    button.h3.btn.btn-primary(ui-sref='base.configuration.tabs.advanced.clusters') Back to configuration
+    button.h3.btn.btn-primary(ui-sref='default-state') Back to configuration
 
 mixin paragraph-rename
     .col-sm-6(ng-hide='paragraph.edit')
@@ -378,6 +378,8 @@ mixin paragraph-query
                 li Execute and explain SQL queries
                 li Execute scan queries
                 li View data in tabular form and as charts
+                li
+                    a(href='https://apacheignite-sql.readme.io/docs/sql-reference-overview' target='_blank') More info
             .example
                 .group
                     .group-legend
