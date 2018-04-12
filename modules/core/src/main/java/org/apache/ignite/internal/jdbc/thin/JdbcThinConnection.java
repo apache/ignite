@@ -39,10 +39,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -173,6 +174,7 @@ public class JdbcThinConnection implements Connection {
     void executeNative(String sql, SqlCommand cmd) throws SQLException {
         if (cmd instanceof SqlSetStreamingCommand) {
             SqlSetStreamingCommand cmd0 = (SqlSetStreamingCommand)cmd;
+
             // If streaming is already on, we have to close it first.
             if (streamState != null) {
                 streamState.close();
@@ -829,8 +831,8 @@ public class JdbcThinConnection implements Connection {
      * Streamer state and
      */
     private class StreamState {
-        /** Will wait when queue size will be less the maximum to send next request. */
-        private static final int MAX_RECV_RESPONSE_QUEUE_SIZE = 10;
+        /** Maximum requests count that may be sent before any responses. */
+        private static final int MAX_REQUESTS_BEFORE_RESPONSE = 10;
 
         /** Wait timeout. */
         private static final long WAIT_TIMEOUT = 1;
@@ -847,20 +849,20 @@ public class JdbcThinConnection implements Connection {
         /** Keep request order on execution. */
         private long order;
 
-        /** Received responses. */
-        private final PriorityBlockingQueue<Long> recvRespOrderQueue = new PriorityBlockingQueue<>();
-
         /** Async response reader thread. */
         private Thread asyncRespReaderThread;
 
         /** Async response error. */
         private volatile Exception err;
 
-        /** Last received response order. */
-        private long lastReceivedRespOrder = -1;
-
         /** The order of the last batch request at the stream. */
-        private long lastRespOrder = -2;
+        private long lastRespOrder = -1;
+
+        /** Last response future. */
+        private final GridFutureAdapter<Void> lastRespFut = new GridFutureAdapter<>();
+
+        /** Response semaphore sem. */
+        private Semaphore respSem = new Semaphore(MAX_REQUESTS_BEFORE_RESPONSE);
 
         /**
          * @param cmd Stream cmd.
@@ -905,25 +907,38 @@ public class JdbcThinConnection implements Connection {
          * @throws SQLException if failed.
          */
         private void executeBatch(boolean lastBatch) throws SQLException {
+            checkError();
+
             if (lastBatch)
                 lastRespOrder = order;
 
-            checkError();
+            try {
+                respSem.acquire();
 
-            while (recvRespOrderQueue.size() > MAX_RECV_RESPONSE_QUEUE_SIZE)
-                LockSupport.parkNanos(WAIT_TIMEOUT);
+                sendRequestNotWaitResponse(
+                    new JdbcOrderedBatchExecuteRequest(schema, streamBatch, lastBatch, order));
 
-            sendRequestNotWaitResponse(
-                new JdbcOrderedBatchExecuteRequest(schema, streamBatch, lastBatch, order));
+                streamBatch = null;
 
-            streamBatch = null;
+                lastStreamQry = null;
 
-            lastStreamQry = null;
+                if (lastBatch) {
+                    try {
+                        lastRespFut.get();
+                    }
+                    catch (IgniteCheckedException e) {
+                        // No-op.
+                        // No exceptions are expected here.
+                    }
 
-            if (lastBatch)
-                waitBatchResponse();
-            else
-                order++;
+                    checkError();
+                }
+                else
+                    order++;
+            }
+            catch (InterruptedException e) {
+                throw new SQLException("Streaming operation was interrupted", SqlStateCode.INTERNAL_ERROR, e);
+            }
         }
 
         /**
@@ -975,47 +990,34 @@ public class JdbcThinConnection implements Connection {
         }
 
         /**
-         * Await response with specified order.
-         * @throws SQLException On error.
-         */
-        void waitBatchResponse() throws SQLException {
-            while (lastRespOrder != lastReceivedRespOrder)
-                LockSupport.parkNanos(WAIT_TIMEOUT);
-
-            checkError();
-        }
-
-        /**
          *
          */
         void readResponses () {
             try {
-                long nextOrder = 0;
-
-                while (lastRespOrder != lastReceivedRespOrder) {
+                while (true) {
                     JdbcResponse resp = cliIo.readResponse();
 
                     if (resp.response() instanceof JdbcOrderedBatchExecuteResult) {
                         JdbcOrderedBatchExecuteResult res = (JdbcOrderedBatchExecuteResult)resp.response();
 
-                        recvRespOrderQueue.put(res.order());
+                        respSem.release();
 
                         if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
                             err = new BatchUpdateException(res.errorMessage(),
                                 IgniteQueryErrorCode.codeToSqlState(res.errorCode()),
                                 res.errorCode(), res.updateCounts());
                         }
+
+                        // Receive the response for the last request.
+                        if (res.order() == lastRespOrder) {
+                            lastRespFut.onDone();
+
+                            break;
+                        }
                     }
 
                     if (resp.status() != ClientListenerResponse.STATUS_SUCCESS)
                         err = new SQLException(resp.error(), IgniteQueryErrorCode.codeToSqlState(resp.status()));
-
-                    for (; recvRespOrderQueue.peek() != null && recvRespOrderQueue.peek() == nextOrder;
-                        nextOrder++) {
-                        recvRespOrderQueue.poll();
-
-                        lastReceivedRespOrder = nextOrder;
-                    }
                 }
             }
             catch (Exception e) {

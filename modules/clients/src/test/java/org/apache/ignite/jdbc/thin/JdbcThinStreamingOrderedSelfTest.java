@@ -20,9 +20,9 @@ package org.apache.ignite.jdbc.thin;
 import java.sql.Connection;
 
 /**
- * Tests for not ordered streaming via thin driver.
+ * Tests for ordered streaming via thin driver.
  */
-public class JdbcThinStreamingNotOrderedSelfTest extends JdbcThinStreamingAbstractSelfTest {
+public class JdbcThinStreamingOrderedSelfTest extends JdbcThinStreamingAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq) throws Exception {
         Connection c = JdbcThinAbstractSelfTest.connect(grid(0), null);
@@ -30,7 +30,8 @@ public class JdbcThinStreamingNotOrderedSelfTest extends JdbcThinStreamingAbstra
         execute(c, "SET STREAMING 1 BATCH_SIZE " + batchSize
             + " ALLOW_OVERWRITE " + (allowOverwrite ? 1 : 0)
             + " PER_NODE_BUFFER_SIZE 1000 "
-            + " FLUSH_FREQUENCY " + flushFreq + ";"
+            + " FLUSH_FREQUENCY " + flushFreq
+            + " ORDERED;"
         );
 
         return c;

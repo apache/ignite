@@ -54,7 +54,7 @@ public class SqlSetStreamingCommand implements SqlCommand {
     private long flushFreq;
 
     /** Ordered streamer. */
-    private boolean ordered = true;
+    private boolean ordered;
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
@@ -124,7 +124,7 @@ public class SqlSetStreamingCommand implements SqlCommand {
 
                     checkOffLast(lex);
 
-                    ordered = parseBoolean(lex);
+                    ordered = true;
 
                     break;
 

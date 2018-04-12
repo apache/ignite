@@ -20,10 +20,9 @@ package org.apache.ignite.internal.processors.query;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -85,8 +84,9 @@ public class SqlClientContext implements AutoCloseable {
     /** Ordered batch worker factory. */
     private Factory<GridWorker> orderedBatchWorkerFactory;
 
-    /** Last processed order. */
-    private AtomicLong totalProcessedOrderedQrys;
+    /** Count of the processed ordered batch requests. Used to wait end of processing all request before starts
+     * the processing the last request. */
+    private long totalProcessedOrderedReqs;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -138,7 +138,6 @@ public class SqlClientContext implements AutoCloseable {
             this.streamNodeBufSize = perNodeBufSize;
             this.streamNodeParOps = perNodeParOps;
             this.streamOrdered = ordered;
-            totalProcessedOrderedQrys = new AtomicLong();
 
             if (ordered) {
                 orderedBatchThread = new IgniteThread(orderedBatchWorkerFactory.create());
@@ -227,7 +226,9 @@ public class SqlClientContext implements AutoCloseable {
      * @return Stream ordered flag.
      */
     public boolean isStreamOrdered() {
-        return streamOrdered;
+        synchronized (mux) {
+            return streamOrdered;
+        }
     }
 
     /**
@@ -267,15 +268,27 @@ public class SqlClientContext implements AutoCloseable {
      * @param total Expected total processed request.
      */
     public void waitTotalProcessedOrderedRequests(long total) {
-        while (totalProcessedOrderedQrys.get() < total)
-            LockSupport.parkNanos(1000);
+        synchronized (mux) {
+            while (totalProcessedOrderedReqs < total) {
+                try {
+                    mux.wait();
+                }
+                catch (InterruptedException e) {
+                    throw new IgniteException("Waiting for end of processing the last batch is interrupted", e);
+                }
+            }
+        }
     }
 
     /**
      *
      */
     public void orderedRequestProcessed() {
-        totalProcessedOrderedQrys.incrementAndGet();
+        synchronized (mux) {
+            totalProcessedOrderedReqs++;
+
+            mux.notify();
+        }
     }
 
     /** {@inheritDoc} */

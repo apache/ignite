@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -44,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Tests for streaming via thin driver.
  */
-public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
+public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSelfTest {
     /** */
     protected int batchSize = 17;
 
@@ -78,17 +77,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         super.afterTest();
     }
 
-    /** {@inheritDoc} */
-    @Override protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq) throws Exception {
-        Connection c = JdbcThinAbstractSelfTest.connect(grid(0), null       );
-
-        execute(c, "SET STREAMING 1 BATCH_SIZE " + batchSize + " ALLOW_OVERWRITE " + (allowOverwrite ? 1 : 0) +
-            " PER_NODE_BUFFER_SIZE 1000 FLUSH_FREQUENCY " + flushFreq + " ORDERED ON" );
-
-        return c;
-    }
-
-    /** {@inheritDoc} */
+        /** {@inheritDoc} */
     @Override protected Connection createOrdinaryConnection() throws SQLException {
         return JdbcThinAbstractSelfTest.connect(grid(0), null);
     }
