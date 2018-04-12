@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.knn;
 
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
 import org.apache.ignite.ml.knn.regression.KNNRegressionModel;
@@ -34,18 +33,11 @@ import java.util.Map;
 /**
  * Tests for {@link KNNRegressionTrainer}.
  */
-public class KNNRegressionTest extends BaseKNNTest {
-    /** */
-    private double[] y;
-
-    /** */
-    private double[][] x;
-
+public class KNNRegressionTest {
     /** */
     public void testSimpleRegressionWithOneNeighbour() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         Map<Integer, double[]> data = new HashMap<>();
+
         data.put(0, new double[] {11.0, 0, 0, 0, 0, 0});
         data.put(1, new double[] {12.0, 2.0, 0, 0, 0, 0});
         data.put(2, new double[] {13.0, 0, 3.0, 0, 0, 0});
@@ -70,10 +62,8 @@ public class KNNRegressionTest extends BaseKNNTest {
 
     /** */
     public void testLongly() {
-
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         Map<Integer, double[]> data = new HashMap<>();
+
         data.put(0, new double[] {60323, 83.0, 234289, 2356, 1590, 107608, 1947});
         data.put(1, new double[] {61122, 88.5, 259426, 2325, 1456, 108632, 1948});
         data.put(2, new double[] {60171, 88.2, 258054, 3682, 1616, 109773, 1949});
@@ -107,9 +97,8 @@ public class KNNRegressionTest extends BaseKNNTest {
 
     /** */
     public void testLonglyWithWeightedStrategy() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         Map<Integer, double[]> data = new HashMap<>();
+
         data.put(0, new double[] {60323, 83.0, 234289, 2356, 1590, 107608, 1947});
         data.put(1, new double[] {61122, 88.5, 259426, 2325, 1456, 108632, 1948});
         data.put(2, new double[] {60171, 88.2, 258054, 3682, 1616, 109773, 1949});

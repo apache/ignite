@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Base class for decision trees test.
  */
-public class BaseKNNTest extends GridCommonAbstractTest {
+public class LabeledDatasetHelper extends GridCommonAbstractTest {
     /** Count of nodes. */
     private static final int NODE_COUNT = 4;
 
@@ -42,7 +42,7 @@ public class BaseKNNTest extends GridCommonAbstractTest {
     /**
      * Default constructor.
      */
-    public BaseKNNTest() {
+    public LabeledDatasetHelper() {
         super(false);
     }
 
