@@ -15,25 +15,30 @@
  * limitations under the License.
  */
 
-import Worker from './summary.worker';
+package org.apache.ignite.thread;
 
-export default ['$q', function($q) {
-    return function(message) {
-        const defer = $q.defer();
-        const worker = new Worker();
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.typedef.X;
 
-        worker.postMessage(message);
+/**
+ * OOM exception handler for system threads.
+ */
+public class OomExceptionHandler implements Thread.UncaughtExceptionHandler {
+    /** Context. */
+    private final GridKernalContext ctx;
 
-        worker.onmessage = (e) => {
-            defer.resolve(e.data);
-            worker.terminate();
-        };
+    /**
+     * @param ctx Context.
+     */
+    public OomExceptionHandler(GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
 
-        worker.onerror = (err) => {
-            defer.reject(err);
-            worker.terminate();
-        };
-
-        return defer.promise;
-    };
-}];
+    /** {@inheritDoc} */
+    @Override public void uncaughtException(Thread t, Throwable e) {
+        if (X.hasCause(e, OutOfMemoryError.class))
+            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+    }
+}

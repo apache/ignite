@@ -22,6 +22,7 @@ import java.util.function.Function;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.ClientAuthorizationException;
 
 /**
  * Processing thin client requests and responses.
@@ -41,5 +42,5 @@ interface ClientChannel extends AutoCloseable {
      * @return Received operation payload or {@code null} if response has no payload.
      */
     public <T> T receive(ClientOperation op, long reqId, Function<BinaryInputStream, T> payloadReader)
-        throws ClientConnectionException;
+        throws ClientConnectionException, ClientAuthorizationException;
 }

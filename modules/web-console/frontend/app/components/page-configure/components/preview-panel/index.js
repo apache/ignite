@@ -15,21 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions.linear;
+import angular from 'angular';
+import directive from './directive';
 
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-
-/**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
- */
-public class LocalLinearRegressionSGDTrainerTest extends GenericLinearRegressionTrainerTest {
-    /** */
-    public LocalLinearRegressionSGDTrainerTest() {
-        super(
-            new LinearRegressionSGDTrainer(100_000, 1e-12),
-            DenseLocalOnHeapMatrix::new,
-            DenseLocalOnHeapVector::new,
-            1e-2);
-    }
-}
+export default angular
+    .module('ignite-console.page-configure.preview-panel', [])
+    .directive('previewPanel', directive);

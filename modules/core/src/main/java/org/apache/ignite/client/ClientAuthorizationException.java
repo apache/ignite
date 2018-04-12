@@ -15,21 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions.linear;
-
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
+package org.apache.ignite.client;
 
 /**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link SparseDistributedMatrix}.
+ * Indicates user has no permission to perform operation.
  */
-public class DistributedLinearRegressionSGDTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
-    /** */
-    public DistributedLinearRegressionSGDTrainerTest() {
-        super(
-            new LinearRegressionSGDTrainer(100_000, 1e-12),
-            SparseDistributedMatrix::new,
-            SparseDistributedVector::new,
-            1e-2);
+public class ClientAuthorizationException extends ClientException {
+    /** Serial version uid. */
+    private static final long serialVersionUID = 0L;
+
+    /** Message. */
+    private static final String MSG = "User is not authorized to perform this operation";
+
+    /**
+     * Default constructor.
+     */
+    public ClientAuthorizationException() {
+        super(MSG);
+    }
+
+    /**
+     * Constructs a new exception with the specified cause and a detail
+     * message of <tt>(cause==null ? null : cause.toString())</tt>.
+     *
+     * @param cause the cause.
+     */
+    public ClientAuthorizationException(Throwable cause) {
+        super(MSG, cause);
     }
 }
