@@ -363,7 +363,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         // Save partition metrics.
                         long metricsPageId = io.getMetricsPageId(partMetaPageAddr, pageMem.pageSize());
 
-                        metricsPageId = writePartitionMetrics(store, pageMem, grpId, store.partId(), metricsPageId);
+                        writePartitionMetrics(store, pageMem, grpId, store.partId(), metricsPageId);
 
                         io.setMetricsPageId(partMetaPageAddr, metricsPageId, pageMem.pageSize());
 
@@ -374,6 +374,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 grpId,
                                 partMetaId,
                                 updCntr,
+                                metricsPageId,
                                 rmvId,
                                 (int)size, // TODO: Partition size may be long
                                 cntrsPageId,
@@ -608,9 +609,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         int pageSize = pageMem.pageSize();
 
-        try {
-            final long metricsAddr = pageMem.writeLock(grpId, metricsPageId, metricsPage);
+        final long metricsAddr = pageMem.readLock(grpId, metricsPageId, metricsPage);
 
+        try {
             assert metricsAddr != 0;
 
             try {
@@ -626,7 +627,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
             finally {
                 // Write full page
-                pageMem.writeUnlock(grpId, metricsPageId, metricsPage, Boolean.TRUE, true);
+                pageMem.readUnlock(grpId, metricsPageId, metricsPage);
             }
         }
         finally {
@@ -637,44 +638,30 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      *
      */
-    private long writePartitionMetrics(
+    private void writePartitionMetrics(
         CacheDataStore store,
         PageMemory pageMem,
         int grpId,
         int partId,
         long metricsPageId
     ) throws IgniteCheckedException {
-        boolean init = metricsPageId == 0;
+        assert metricsPageId != 0;
 
         GridCacheDataStore partitionStore = (GridCacheDataStore)store;
 
         DataStructureSizeContext partitionSize = partitionStore.partitionSize;
 
-        if (init){
-            metricsPageId = pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
-
-            partitionSize.sizeOf(INTERNAL).add(pageMem.pageSize());
-        }
-
         final long metricsPage = pageMem.acquirePage(grpId, metricsPageId);
 
         int pageSize = pageMem.pageSize();
 
-        try {
-            final long metricsAddr = pageMem.writeLock(grpId, metricsPageId, metricsPage);
+        final long metricsAddr = pageMem.writeLock(grpId, metricsPageId, metricsPage);
 
+        try {
             assert metricsAddr != 0;
 
             try {
-                PagePartitionMetricsIO metricsIO;
-
-                if (init) {
-                    metricsIO = PagePartitionMetricsIO.VERSIONS.latest();
-
-                    metricsIO.initNewPage(metricsAddr, metricsPageId, pageSize);
-                }
-                else
-                    metricsIO = PageIO.getPageIO(metricsAddr);
+                PagePartitionMetricsIO  metricsIO = PageIO.getPageIO(metricsAddr);
 
                 metricsIO.setPartitionSize(metricsAddr, partitionSize.sizeOf(PARTITION).size());
                 metricsIO.setPKIndexSize(metricsAddr, partitionSize.sizeOf(PK_INDEX).size());
@@ -693,8 +680,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         finally {
             pageMem.releasePage(grpId, metricsPageId, metricsPage);
         }
-
-        return metricsPageId;
     }
 
     /**
@@ -718,9 +703,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         int pageSize = pageMem.pageSize();
 
-        try {
-            final long metricsAddr = pageMem.readLock(grpId, metricsPageId, metricsPage);
+        final long metricsAddr = pageMem.readLock(grpId, metricsPageId, metricsPage);
 
+        try {
             assert metricsAddr != 0;
 
             try {
@@ -1549,7 +1534,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 long pageAddr = pageMem.writeLock(grpId, partMetaId, partMetaPage);
 
                 try {
-                    long treeRoot, reuseListRoot;
+                    long treeRoot, reuseListRoot, metricsPageId;
 
                     // Initialize new page.
                     if (PageIO.getType(pageAddr) != PageIO.T_PART_META) {
@@ -1559,15 +1544,35 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         treeRoot = pageMem.allocatePage(grpId, partId, PageMemory.FLAG_DATA);
                         reuseListRoot = pageMem.allocatePage(grpId, partId, PageMemory.FLAG_DATA);
+                        metricsPageId = pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
+
+                        PagePartitionMetricsIO metricsIO = PagePartitionMetricsIO.VERSIONS.latest();
+
+                        long metricsPage = pageMem.acquirePage(grpId, metricsPageId);
+
+                        try {
+                            final long metricsAddr = pageMem.writeLock(grpId, metricsPageId, metricsPage);
+
+                            try {
+                                metricsIO.initNewPage(metricsAddr, metricsPageId, pageMem.pageSize());
+                            }
+                            finally {
+                                pageMem.writeUnlock(grpId, metricsPageId, metricsPage, Boolean.TRUE, true);
+                            }
+                        }
+                        finally {
+                            pageMem.releasePage(grpId, metricsPageId, metricsPage);
+                        }
 
                         /* FileStoreHeader,MetaPage,TreeRoot,ReuseListRoot */
-                        partitionSize.sizeOf(INTERNAL).add(pageMem.pageSize() * 4);
+                        partitionSize.sizeOf(INTERNAL).add(pageMem.pageSize() * 5);
 
                         assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA;
                         assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA;
 
                         io.setTreeRoot(pageAddr, treeRoot);
                         io.setReuseListRoot(pageAddr, reuseListRoot);
+                        io.setMetricsPageId(pageAddr, metricsPageId, pageMem.pageSize());
 
                         if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
                             wal.log(new MetaPageInitRecord(
