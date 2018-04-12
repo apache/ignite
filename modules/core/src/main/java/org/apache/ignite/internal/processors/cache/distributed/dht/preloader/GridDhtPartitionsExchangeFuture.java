@@ -2775,7 +2775,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     || grpCtx.config().isReadThrough()
                     || grpCtx.config().isWriteThrough()
                     || grpCtx.config().getCacheStoreFactory() != null
-                    || grpCtx.config().getRebalanceDelay() != -1
+                    || grpCtx.config().getRebalanceDelay() == -1
                     || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE)
                 continue;
 
