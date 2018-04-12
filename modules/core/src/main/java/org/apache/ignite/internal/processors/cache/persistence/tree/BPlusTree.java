@@ -1859,8 +1859,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long page = acquirePage(pageId);
 
         try {
-            Result res = RETRY;
-
             for (;;) {
                 r.checkLockRetry();
 
