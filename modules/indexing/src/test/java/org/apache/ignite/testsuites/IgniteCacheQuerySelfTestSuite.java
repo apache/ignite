@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsLo
 import org.apache.ignite.internal.processors.cache.CacheSqlQueryValueCopySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheCrossCacheQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheFullTextQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheLazyQueryPartitionsReleaseTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryIndexingDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheQueryInternalKeysSelfTest;
@@ -146,6 +147,7 @@ import org.apache.ignite.internal.processors.query.IgniteSqlSegmentedIndexSelfTe
 import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
 import org.apache.ignite.internal.processors.query.LazyQuerySelfTest;
 import org.apache.ignite.internal.processors.query.MultipleStatementsSqlQuerySelfTest;
+import org.apache.ignite.internal.processors.query.SqlPushDownFunctionTest;
 import org.apache.ignite.internal.processors.query.SqlSchemaSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingInMemSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingOffheapSelfTest;
@@ -179,6 +181,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         // TODO: Enable when IGNITE-1094 is fixed.
         // suite.addTest(new TestSuite(QueryEntityValidationSelfTest.class));
         suite.addTest(new TestSuite(DuplicateKeyValueClassesSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheLazyQueryPartitionsReleaseTest.class));
 
         // Dynamic index create/drop tests.
         suite.addTest(new TestSuite(SchemaExchangeSelfTest.class));
@@ -207,6 +210,7 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         // Queries tests.
         suite.addTestSuite(LazyQuerySelfTest.class);
         suite.addTestSuite(IgniteSqlSplitterSelfTest.class);
+        suite.addTestSuite(SqlPushDownFunctionTest.class);
         suite.addTestSuite(IgniteSqlSegmentedIndexSelfTest.class);
         suite.addTestSuite(IgniteSqlSegmentedIndexMultiNodeSelfTest.class);
         suite.addTestSuite(IgniteSqlSchemaIndexingTest.class);

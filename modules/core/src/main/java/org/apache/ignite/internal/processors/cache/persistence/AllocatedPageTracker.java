@@ -15,27 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.datastructures;
-
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+package org.apache.ignite.internal.processors.cache.persistence;
 
 /**
- * Provides callback for marking object as removed.
+ * Tracks allocated pages.
  */
-public interface GridCacheRemovable {
+public interface AllocatedPageTracker {
     /**
-     * Set status of data structure as removed.
-     *
-     * @return Current status.
+     * Increments totalAllocatedPages counter.
      */
-    public boolean onRemoved();
-
-    /**
-     *
-     */
-    public void needCheckNotRemoved();
-
-    public void suspend();
-
-    public void restart(IgniteInternalCache cache);
+    public void updateTotalAllocatedPages(long delta);
 }

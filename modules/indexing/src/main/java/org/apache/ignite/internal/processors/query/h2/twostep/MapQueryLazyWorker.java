@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.jetbrains.annotations.Nullable;
@@ -80,8 +81,17 @@ public class MapQueryLazyWorker extends GridWorker {
             while (!isCancelled()) {
                 Runnable task = tasks.take();
 
-                if (task != null)
-                    task.run();
+                if (task != null) {
+                    if (!exec.busyLock().enterBusy())
+                        return;
+
+                    try {
+                        task.run();
+                    }
+                    finally {
+                        exec.busyLock().leaveBusy();
+                    }
+                }
             }
         }
         finally {
@@ -114,15 +124,24 @@ public class MapQueryLazyWorker extends GridWorker {
 
     /**
      * Stop the worker.
+     * @param nodeStop Node is stopping.
      */
-    public void stop() {
+    public void stop(final boolean nodeStop) {
         if (MapQueryLazyWorker.currentWorker() == null)
             submit(new Runnable() {
                 @Override public void run() {
-                    stop();
+                    stop(nodeStop);
                 }
             });
         else {
+            GridH2QueryContext qctx = GridH2QueryContext.get();
+
+            if (qctx != null) {
+                qctx.clearContext(nodeStop);
+
+                GridH2QueryContext.clearThreadLocal();
+            }
+
             isCancelled = true;
 
             stopLatch.countDown();
