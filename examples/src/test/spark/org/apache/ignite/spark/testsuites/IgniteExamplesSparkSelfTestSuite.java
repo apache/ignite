@@ -38,7 +38,7 @@ public class IgniteExamplesSparkSelfTestSuite extends TestSuite {
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteExamplesSparkSelfTestSuite.class));
 
-        TestSuite suite = new TestSuite("Ignite Examples Test Suite");
+        TestSuite suite = new TestSuite("Ignite Spark Examples Test Suite");
 
         suite.addTest(new TestSuite(SharedRDDExampleSelfTest.class));
         suite.addTest(new TestSuite(IgniteDataFrameSelfTest.class));

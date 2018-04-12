@@ -27,12 +27,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -270,7 +273,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         if (needSnapshot) {
                             pageCnt = this.ctx.pageStore().pages(grpId, store.partId());
-                            io.setCandidatePageCount(partMetaPageAddr, pageCnt);
+
+                            io.setCandidatePageCount(partMetaPageAddr, size == 0 ? 0: pageCnt);
 
                             if (saveMeta) {
                                 saveMeta(ctx);
@@ -530,19 +534,19 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /**
-     * @param part
+     * @param part Local partition.
      * @param map Map to add values to.
      * @param metaPageAddr Meta page address
      * @param io Page Meta IO
-     * @param cacheId Cache ID.
-     * @param currAllocatedPageCnt total number of pages allocated for partition <code>[partition, cacheId]</code>
+     * @param grpId Cache Group ID.
+     * @param currAllocatedPageCnt total number of pages allocated for partition <code>[partition, grpId]</code>
      */
     private static boolean addPartition(
             GridDhtLocalPartition part,
             final PartitionAllocationMap map,
             final long metaPageAddr,
             final PageMetaIO io,
-            final int cacheId,
+            final int grpId,
             final int partId,
             final int currAllocatedPageCnt,
             final int partSize
@@ -560,10 +564,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         int lastAllocatedPageCnt = io.getLastAllocatedPageCount(metaPageAddr);
 
-        int curPageCnt = lastAllocatedPageCnt == 0 && partSize == 0 ? 0 : currAllocatedPageCnt;
+        int curPageCnt = partSize == 0 ? 0 : currAllocatedPageCnt;
 
         map.put(
-            new GroupPartitionId(cacheId, partId),
+            new GroupPartitionId(grpId, partId),
             new PagesAllocationRange(lastAllocatedPageCnt, curPageCnt));
 
         return true;
@@ -1179,6 +1183,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     delegate = delegate0;
                 }
+                catch (Throwable ex) {
+                    U.error(log, "Unhandled exception during page store initialization. All further operations will " +
+                        "be failed and local node will be stopped.", ex);
+
+                    ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
+
+                    throw ex;
+                }
                 finally {
                     latch.countDown();
 
@@ -1249,10 +1261,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         treeRoot = io.getTreeRoot(pageAddr);
                         reuseListRoot = io.getReuseListRoot(pageAddr);
 
-                        assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA :
-                            U.hexLong(treeRoot) + ", part=" + partId + ", grpId=" + grpId;
-                        assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA :
-                            U.hexLong(reuseListRoot) + ", part=" + partId + ", grpId=" + grpId;
+                        if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_DATA)
+                            throw new StorageException("Wrong tree root page id flag: treeRoot="
+                                + U.hexLong(treeRoot) + ", part=" + partId + ", grpId=" + grpId);
+
+                        if (PageIdUtils.flag(reuseListRoot) != PageMemory.FLAG_DATA)
+                            throw new StorageException("Wrong reuse list root page id flag: reuseListRoot="
+                                + U.hexLong(reuseListRoot) + ", part=" + partId + ", grpId=" + grpId);
                     }
 
                     return new Metas(

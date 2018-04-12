@@ -155,17 +155,24 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\odbc\src\app\application_data_buffer.cpp" />
     <ClCompile Include="..\..\..\odbc\src\column.cpp" />
+    <ClCompile Include="..\..\..\odbc\src\common_types.cpp" />
     <ClCompile Include="..\..\..\odbc\src\config\configuration.cpp" />
+    <ClCompile Include="..\..\..\odbc\src\config\config_tools.cpp" />
     <ClCompile Include="..\..\..\odbc\src\config\connection_info.cpp" />
+    <ClCompile Include="..\..\..\odbc\src\config\connection_string_parser.cpp" />
     <ClCompile Include="..\..\..\odbc\src\cursor.cpp" />
+    <ClCompile Include="..\..\..\odbc\src\diagnostic\diagnostic_record.cpp" />
+    <ClCompile Include="..\..\..\odbc\src\diagnostic\diagnostic_record_storage.cpp" />
     <ClCompile Include="..\..\..\odbc\src\log.cpp" />
     <ClCompile Include="..\..\..\odbc\src\protocol_version.cpp" />
     <ClCompile Include="..\..\..\odbc\src\result_page.cpp" />
     <ClCompile Include="..\..\..\odbc\src\row.cpp" />
+    <ClCompile Include="..\..\..\odbc\src\ssl\ssl_mode.cpp" />
     <ClCompile Include="..\..\..\odbc\src\utility.cpp" />
     <ClCompile Include="..\..\src\api_robustness_test.cpp" />
     <ClCompile Include="..\..\src\application_data_buffer_test.cpp" />
     <ClCompile Include="..\..\src\attributes_test.cpp" />
+    <ClCompile Include="..\..\src\authentication_test.cpp" />
     <ClCompile Include="..\..\src\column_test.cpp" />
     <ClCompile Include="..\..\src\configuration_test.cpp" />
     <ClCompile Include="..\..\src\connection_info_test.cpp" />
@@ -218,6 +225,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\config\queries-auth-32.xml" />
+    <None Include="..\..\config\queries-auth.xml" />
     <None Include="..\..\config\queries-default.xml" />
     <None Include="..\..\config\queries-ssl-32.xml" />
     <None Include="..\..\config\queries-ssl.xml" />

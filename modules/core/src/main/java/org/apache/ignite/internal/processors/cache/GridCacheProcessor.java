@@ -699,6 +699,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         ctx.state().cacheProcessorStarted();
+        ctx.authentication().cacheProcessorStarted();
     }
 
     /**
@@ -1189,7 +1190,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             if (!cache.isNear() && ctx.shared().wal() != null) {
                 try {
-                    ctx.shared().wal().fsync(null);
+                    ctx.shared().wal().flush(null, false);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to flush write-ahead log on cache stop " +
@@ -3362,7 +3363,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
-        if (!node.isClient()) {
+        if (!CU.clientNode(node)) {
             for (DynamicCacheDescriptor desc : cacheDescriptors().values()) {
                 CacheConfiguration cfg = desc.cacheConfiguration();
 
@@ -3371,7 +3372,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     Object nodeHashObj = aff.resolveNodeHash(node);
 
-                    for (ClusterNode topNode : ctx.discovery().allNodes()) {
+                    for (ClusterNode topNode : ctx.discovery().aliveServerNodes()) {
                         Object topNodeHashObj = aff.resolveNodeHash(topNode);
 
                         if (nodeHashObj.hashCode() == topNodeHashObj.hashCode()) {
@@ -4193,7 +4194,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 initialize(cfg, cacheObjCtx);
 
                 req.startCacheConfiguration(cfg);
-                req.schema(new QuerySchema(qryEntities != null ? qryEntities : cfg.getQueryEntities()));
+                req.schema(new QuerySchema(qryEntities != null ? QueryUtils.normalizeQueryEntities(qryEntities, cfg)
+                    : cfg.getQueryEntities()));
             }
         }
         else {

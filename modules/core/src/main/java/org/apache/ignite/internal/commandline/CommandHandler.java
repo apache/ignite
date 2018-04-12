@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientClosedException;
@@ -50,6 +51,10 @@ import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.commandline.Command.ACTIVATE;
+import static org.apache.ignite.internal.commandline.Command.BASELINE;
+import static org.apache.ignite.internal.commandline.Command.DEACTIVATE;
+import static org.apache.ignite.internal.commandline.Command.STATE;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
@@ -88,6 +93,9 @@ public class CommandHandler {
     private static final String BASELINE_REMOVE = "remove";
 
     /** */
+    private static final String BASELINE_COLLECT = "collect";
+
+    /** */
     private static final String BASELINE_SET = "set";
 
     /** */
@@ -96,17 +104,8 @@ public class CommandHandler {
     /** */
     private static final String DELIM = "--------------------------------------------------------------------------------";
 
-    /** */
-    static final String CMD_ACTIVATE = "--activate";
-
-    /** */
-    static final String CMD_BASE_LINE = "--baseline";
-
-    /** */
-    static final String CMD_DEACTIVATE = "--deactivate";
-
-    /** */
-    static final String CMD_STATE = "--state";
+    /** Force option is used for auto confirmation. */
+    private static final String CMD_FORCE = "--force";
 
     /** */
     public static final int EXIT_CODE_OK = 0;
@@ -123,6 +122,15 @@ public class CommandHandler {
     /** */
     public static final int EXIT_CODE_UNEXPECTED_ERROR = 4;
 
+    /** */
+    private static final Scanner IN = new Scanner(System.in);
+
+    /** */
+    private Iterator<String> argsIt;
+
+    /** */
+    private String peekedArg;
+
     /**
      * Output specified string to console.
      *
@@ -130,6 +138,18 @@ public class CommandHandler {
      */
     private void log(String s) {
         System.out.println(s);
+    }
+
+    /**
+     * Provides a prompt, then reads a single line of text from the console.
+     *
+     * @param prompt text
+     * @return A string containing the line read from the console
+     */
+    private String readLine(String prompt) {
+        System.out.print(prompt);
+
+        return IN.nextLine();
     }
 
     /**
@@ -167,119 +187,56 @@ public class CommandHandler {
     }
 
     /**
-     * Extract next argument.
+     * Requests interactive user confirmation if forthcoming operation is dangerous.
      *
-     * @param it Arguments iterator.
-     * @param err Error message.
-     * @return Next argument value.
+     * @param args Arguments.
+     * @return {@code true} if operation confirmed (or not needed), {@code false} otherwise.
      */
-    private String nextArg(Iterator<String> it, String err) {
-        if (it.hasNext()) {
-            String arg = it.next();
+    private boolean confirm(Arguments args) {
+        String prompt = confirmationPrompt(args);
 
-            if (arg.startsWith("--"))
-                throw new IllegalArgumentException("Unexpected argument: " + arg);
+        if (prompt == null)
+            return true;
 
-            return arg;
-        }
-
-        throw new IllegalArgumentException(err);
+        return "y".equalsIgnoreCase(readLine(prompt));
     }
 
     /**
-     * Parses and validates arguments.
-     *
-     * @param rawArgs Array of arguments.
-     * @return Arguments bean.
-     * @throws IllegalArgumentException In case arguments aren't valid.
+     * @param args Arguments.
+     * @return Prompt text if confirmation needed, otherwise {@code null}.
      */
-    @NotNull Arguments parseAndValidate(String... rawArgs) {
-        String host = DFLT_HOST;
+    private String confirmationPrompt(Arguments args) {
+        if (args.force())
+            return null;
 
-        String port = DFLT_PORT;
+        String str = null;
 
-        String user = null;
+        switch (args.command()) {
+            case DEACTIVATE:
+                str = "Warning: the command will deactivate a cluster.";
+                break;
 
-        String pwd = null;
-
-        String baselineAct = "";
-
-        String baselineArgs = "";
-
-        List<String> commands = new ArrayList<>();
-
-        Iterator<String> it = Arrays.asList(rawArgs).iterator();
-
-        while (it.hasNext()) {
-            String str = it.next().toLowerCase();
-
-            switch (str) {
-                case CMD_HOST:
-                    host = nextArg(it, "Expected host name");
-                    break;
-
-                case CMD_PORT:
-                    port = nextArg(it, "Expected port number");
-
-                    try {
-                        int p = Integer.parseInt(port);
-
-                        if (p <= 0 || p > 65535)
-                            throw new IllegalArgumentException("Invalid value for port: " + port);
-                    }
-                    catch (NumberFormatException ignored) {
-                        throw new IllegalArgumentException("Invalid value for port: " + port);
-                    }
-                    break;
-
-                case CMD_USER:
-                    user = nextArg(it, "Expected user name");
-                    break;
-
-                case CMD_PASSWORD:
-                    pwd = nextArg(it, "Expected password");
-                    break;
-
-                case CMD_ACTIVATE:
-                case CMD_DEACTIVATE:
-                case CMD_STATE:
-                    commands.add(str);
-                    break;
-
-                case CMD_BASE_LINE:
-                    commands.add(CMD_BASE_LINE);
-
-                    if (it.hasNext()) {
-                        baselineAct = it.next().toLowerCase();
-
-                        if (BASELINE_ADD.equals(baselineAct) || BASELINE_REMOVE.equals(baselineAct) ||
-                            BASELINE_SET.equals(baselineAct) || BASELINE_SET_VERSION.equals(baselineAct))
-                            baselineArgs = nextArg(it, "Expected baseline arguments");
-                        else
-                            throw new IllegalArgumentException("Unexpected argument for " + CMD_BASE_LINE + ": "
-                                + baselineAct);
-                    }
-
-            }
+            case BASELINE:
+                if (!BASELINE_COLLECT.equals(args.baselineAction()))
+                    str = "Warning: the command will perform changes in baseline.";
         }
 
-        int sz = commands.size();
+        return str == null ? null : str + "\nPress 'y' to continue...";
+    }
 
-        if (sz < 1)
-            throw new IllegalArgumentException("No action was specified");
+    /**
+     * @param rawArgs Arguments.
+     */
+    private void initArgIterator(List<String> rawArgs) {
+        argsIt = rawArgs.iterator();
+        peekedArg = null;
+    }
 
-        if (sz > 1)
-            throw new IllegalArgumentException("Only one action can be specified, but found: " + sz);
-
-        String cmd = commands.get(0);
-
-        boolean hasUsr = F.isEmpty(user);
-        boolean hasPwd = F.isEmpty(pwd);
-
-        if (hasUsr != hasPwd)
-            throw new IllegalArgumentException("Both user and password should be specified");
-
-        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs);
+    /**
+     * @return Returns {@code true} if the iteration has more elements.
+     */
+    private boolean hasNextArg() {
+        return peekedArg != null || argsIt.hasNext();
     }
 
     /**
@@ -393,8 +350,9 @@ public class CommandHandler {
                 baselineVersion(client, baselineArgs);
                 break;
 
-            default:
+            case BASELINE_COLLECT:
                 baselinePrint(client);
+                break;
         }
     }
 
@@ -597,12 +555,159 @@ public class CommandHandler {
      * Print command usage.
      *
      * @param desc Command description.
-     * @param cmd Command.
+     * @param args Arguments.
      */
-    private void usage(String desc, String cmd) {
+    private void usage(String desc, Command cmd, String... args) {
         log(desc);
-        log("    control.sh [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] " + cmd);
+        log("    control.sh [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] " + cmd.text() + String.join("", args));
         nl();
+    }
+
+    /**
+     * Extract next argument.
+     *
+     * @param err Error message.
+     * @return Next argument value.
+     */
+    private String nextArg(String err) {
+        if (peekedArg != null) {
+            String res = peekedArg;
+
+            peekedArg = null;
+
+            return res;
+        }
+
+        if (argsIt.hasNext())
+            return argsIt.next();
+
+        throw new IllegalArgumentException(err);
+    }
+
+    /**
+     * Returns the next argument in the iteration, without advancing the iteration.
+     *
+     * @return Next argument value or {@code null} if no next argument.
+     */
+    private String peekNextArg() {
+        if (peekedArg == null && argsIt.hasNext())
+            peekedArg = argsIt.next();
+
+        return peekedArg;
+    }
+
+    /**
+     * Parses and validates arguments.
+     *
+     * @param rawArgs Array of arguments.
+     * @return Arguments bean.
+     * @throws IllegalArgumentException In case arguments aren't valid.
+     */
+    @NotNull Arguments parseAndValidate(List<String> rawArgs) {
+        String host = DFLT_HOST;
+
+        String port = DFLT_PORT;
+
+        String user = null;
+
+        String pwd = null;
+
+        String baselineAct = "";
+
+        String baselineArgs = "";
+
+        boolean force = false;
+
+        List<Command> commands = new ArrayList<>();
+
+        initArgIterator(rawArgs);
+
+        while (hasNextArg()) {
+            String str = nextArg("").toLowerCase();
+
+            Command cmd = Command.of(str);
+
+            if (cmd != null) {
+                switch (cmd) {
+                    case ACTIVATE:
+                    case DEACTIVATE:
+                    case STATE:
+                        commands.add(Command.of(str));
+                        break;
+
+                    case BASELINE:
+                        commands.add(BASELINE);
+
+                        baselineAct = BASELINE_COLLECT; //default baseline action
+
+                        str = peekNextArg();
+
+                        if (str != null) {
+                            str = str.toLowerCase();
+
+                            if (BASELINE_ADD.equals(str) || BASELINE_REMOVE.equals(str) ||
+                                BASELINE_SET.equals(str) || BASELINE_SET_VERSION.equals(str)) {
+                                baselineAct = nextArg("Expected baseline action");
+
+                                baselineArgs = nextArg("Expected baseline arguments");
+                            }
+                        }
+                }
+            }
+            else {
+                switch (str) {
+                    case CMD_HOST:
+                        host = nextArg("Expected host name");
+                        break;
+
+                    case CMD_PORT:
+                        port = nextArg("Expected port number");
+
+                        try {
+                            int p = Integer.parseInt(port);
+
+                            if (p <= 0 || p > 65535)
+                                throw new IllegalArgumentException("Invalid value for port: " + port);
+                        }
+                        catch (NumberFormatException ignored) {
+                            throw new IllegalArgumentException("Invalid value for port: " + port);
+                        }
+                        break;
+
+                    case CMD_USER:
+                        user = nextArg("Expected user name");
+                        break;
+
+                    case CMD_PASSWORD:
+                        pwd = nextArg("Expected password");
+                        break;
+
+                    case CMD_FORCE:
+                        force = true;
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unexpected argument: " + str);
+                }
+            }
+        }
+
+        int sz = commands.size();
+
+        if (sz < 1)
+            throw new IllegalArgumentException("No action was specified");
+
+        if (sz > 1)
+            throw new IllegalArgumentException("Only one action can be specified, but found: " + sz);
+
+        Command cmd = commands.get(0);
+
+        boolean hasUsr = F.isEmpty(user);
+        boolean hasPwd = F.isEmpty(pwd);
+
+        if (hasUsr != hasPwd)
+            throw new IllegalArgumentException("Both user and password should be specified");
+
+        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, force);
     }
 
     /**
@@ -611,24 +716,28 @@ public class CommandHandler {
      * @param rawArgs Arguments to parse and execute.
      * @return Exit code.
      */
-    public int execute(String... rawArgs) {
+    public int execute(List<String> rawArgs) {
         log("Control utility [ver. " + ACK_VER_STR + "]");
         log(COPYRIGHT);
         log("User: " + System.getProperty("user.name"));
         log(DELIM);
 
         try {
-            if (F.isEmpty(rawArgs) || (rawArgs.length == 1 && CMD_HELP.equalsIgnoreCase(rawArgs[0]))) {
+            if (F.isEmpty(rawArgs) || (rawArgs.size() == 1 && CMD_HELP.equalsIgnoreCase(rawArgs.get(0)))) {
                 log("This utility can do the following commands:");
 
-                usage("  Activate cluster:", CMD_ACTIVATE);
-                usage("  Deactivate cluster:", CMD_DEACTIVATE);
-                usage("  Print current cluster state:", CMD_STATE);
-                usage("  Print cluster baseline topology:", CMD_BASE_LINE);
-                usage("  Add nodes into baseline topology:", CMD_BASE_LINE + " add consistentId1[,consistentId2,....,consistentIdN]");
-                usage("  Remove nodes from baseline topology:", CMD_BASE_LINE + " remove consistentId1[,consistentId2,....,consistentIdN]");
-                usage("  Set baseline topology:", CMD_BASE_LINE + " set consistentId1[,consistentId2,....,consistentIdN]");
-                usage("  Set baseline topology based on version:", CMD_BASE_LINE + " version topologyVersion");
+                usage("  Activate cluster:", ACTIVATE);
+                usage("  Deactivate cluster:", DEACTIVATE, " [--force]");
+                usage("  Print current cluster state:", STATE);
+                usage("  Print cluster baseline topology:", BASELINE);
+                usage("  Add nodes into baseline topology:", BASELINE, " add consistentId1[,consistentId2,....,consistentIdN] [--force]");
+                usage("  Remove nodes from baseline topology:", BASELINE, " remove consistentId1[,consistentId2,....,consistentIdN] [--force]");
+                usage("  Set baseline topology:", BASELINE, " set consistentId1[,consistentId2,....,consistentIdN] [--force]");
+                usage("  Set baseline topology based on version:", BASELINE, " version topologyVersion [--force]");
+
+                log("By default cluster deactivation and changes in baseline topology commands request interactive confirmation. ");
+                log("  --force option can be used to execute commands without prompting for confirmation.");
+                nl();
 
                 log("Default values:");
                 log("    HOST_OR_IP=" + DFLT_HOST);
@@ -647,6 +756,12 @@ public class CommandHandler {
 
             Arguments args = parseAndValidate(rawArgs);
 
+            if (!confirm(args)) {
+                log("Operation canceled.");
+
+                return EXIT_CODE_OK;
+            }
+
             GridClientConfiguration cfg = new GridClientConfiguration();
 
             cfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
@@ -659,19 +774,19 @@ public class CommandHandler {
             try (GridClient client = GridClientFactory.start(cfg)) {
 
                 switch (args.command()) {
-                    case CMD_ACTIVATE:
+                    case ACTIVATE:
                         activate(client);
                         break;
 
-                    case CMD_DEACTIVATE:
+                    case DEACTIVATE:
                         deactivate(client);
                         break;
 
-                    case CMD_STATE:
+                    case STATE:
                         state(client);
                         break;
 
-                    case CMD_BASE_LINE:
+                    case BASELINE:
                         baseline(client, args.baselineAction(), args.baselineArguments());
                         break;
                 }
@@ -699,7 +814,7 @@ public class CommandHandler {
     public static void main(String[] args) {
         CommandHandler hnd = new CommandHandler();
 
-        System.exit(hnd.execute(args));
+        System.exit(hnd.execute(Arrays.asList(args)));
     }
 }
 

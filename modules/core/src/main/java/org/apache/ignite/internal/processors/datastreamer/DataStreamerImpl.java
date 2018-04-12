@@ -47,6 +47,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteDataStreamerTimeoutException;
 import org.apache.ignite.IgniteException;
@@ -100,6 +101,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
@@ -571,7 +573,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             activeFuts.add(resFut);
 
             Collection<KeyCacheObjectWrapper> keys =
-                new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
+                new GridConcurrentHashSet<>(entries.size());
 
             Collection<DataStreamerEntry> entries0 = new ArrayList<>(entries.size());
 
@@ -630,7 +632,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             Collection<KeyCacheObjectWrapper> keys = null;
 
             if (entries.size() > 1) {
-                keys = new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
+                keys = new GridConcurrentHashSet<>(entries.size());
 
                 for (DataStreamerEntry entry : entries)
                     keys.add(new KeyCacheObjectWrapper(entry.getKey()));
@@ -1059,6 +1061,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             return;
 
         while (true) {
+            if (disconnectErr != null)
+                throw disconnectErr;
+
             Queue<IgniteInternalFuture<?>> q = null;
 
             for (Buffer buf : bufMappings.values()) {
@@ -1753,7 +1758,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         topicBytes = U.marshal(ctx, topic);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to marshal (request will not be sent).", e);
+                    U.error(log, "Failed to marshal.", e);
+
+                    curFut.onDone(new IgniteException("Failed to marshal.", e));
 
                     return;
                 }
@@ -1771,8 +1778,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             cache.context().deploy().onEnter();
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to deploy class (request will not be sent): " +
-                            jobPda0.deployClass(), e);
+                        U.error(log, "Failed to deploy class: " + jobPda0.deployClass(), e);
+
+                        curFut.onDone(new IgniteException("Failed to deploy class: " + jobPda0.deployClass(), e));
 
                         return;
                     }
@@ -1823,15 +1831,19 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 catch (IgniteCheckedException e) {
                     GridFutureAdapter<Object> fut0 = ((GridFutureAdapter<Object>)fut);
 
-                    try {
-                        if (ctx.discovery().alive(node) && ctx.discovery().pingNode(node.id()))
-                            fut0.onDone(e);
-                        else
-                            fut0.onDone(new ClusterTopologyCheckedException("Failed to send request (node has left): "
-                                + node.id()));
-                    }
-                    catch (IgniteClientDisconnectedCheckedException e0) {
-                        fut0.onDone(e0);
+                    if (X.hasCause(e, IgniteClientDisconnectedCheckedException.class, IgniteClientDisconnectedException.class))
+                        fut0.onDone(e);
+                    else {
+                        try {
+                            if (ctx.discovery().alive(node) && ctx.discovery().pingNode(node.id()))
+                                fut0.onDone(e);
+                            else
+                                fut0.onDone(new ClusterTopologyCheckedException("Failed to send request (node has left): "
+                                    + node.id()));
+                        }
+                        catch (IgniteClientDisconnectedCheckedException e0) {
+                            fut0.onDone(e0);
+                        }
                     }
                 }
             }
@@ -2108,16 +2120,16 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             expiryTime = CU.toExpireTime(ttl);
                         }
 
-                    boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
+                        boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
-                    entry.initialValue(e.getValue(),
-                        ver,
-                        ttl,
-                        expiryTime,
-                        false,
-                        topVer,
-                        primary ? GridDrType.DR_LOAD : GridDrType.DR_PRELOAD,
-                        false);
+                        entry.initialValue(e.getValue(),
+                            ver,
+                            ttl,
+                            expiryTime,
+                            false,
+                            topVer,
+                            primary ? GridDrType.DR_LOAD : GridDrType.DR_PRELOAD,
+                            false);
 
                         cctx.evicts().touch(entry, topVer);
 
@@ -2132,7 +2144,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         // No-op.
                     }
                     catch (IgniteCheckedException ex) {
-                        throw new IgniteException("Failed to set initial value for cache entry", ex);
+                        IgniteLogger log = cache.unwrap(Ignite.class).log();
+
+                        U.error(log, "Failed to set initial value for cache entry: " + e, ex);
+
+                        throw new IgniteException("Failed to set initial value for cache entry.", ex);
                     }
                     finally {
                         cctx.shared().database().checkpointReadUnlock();
@@ -2150,10 +2166,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 try {
                     if (!cctx.isNear() && cctx.shared().wal() != null)
-                        cctx.shared().wal().fsync(null);
+                        cctx.shared().wal().flush(null, false);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to write preloaded entries into write-ahead log: " + e, e);
+                    U.error(log, "Failed to write preloaded entries into write-ahead log.", e);
+
+                    throw new IgniteException("Failed to write preloaded entries into write-ahead log.", e);
                 }
             }
         }

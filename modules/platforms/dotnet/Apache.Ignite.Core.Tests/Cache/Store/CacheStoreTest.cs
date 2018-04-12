@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
@@ -243,6 +244,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             CacheTestStore.ThrowError = false;
 
             cache.Remove(1);
+        }
+
+
+        /// <summary>
+        /// Tests that exceptions from CacheStoreFactory are propagated properly.
+        /// </summary>
+        [Test]
+        public void TestFailedCacheStoreException()
+        {
+            var ccfg = new CacheConfiguration("CacheWithFailedStore")
+            {
+                CacheStoreFactory = new FailedCacheStoreFactory(),
+                ReadThrough = true
+            };
+
+            Assert.Throws<CacheException>(() => Ignition.GetIgnite(GridName).GetOrCreateCache<int, int>(ccfg));
         }
 
         [Test]
@@ -709,6 +726,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         public bool Invoke(ICacheEntry<int, string> entry)
         {
             throw new Exception("Expected exception in ExceptionalEntryFilter");
+        }
+    }
+
+    /// <summary>
+    /// Test factory.
+    /// </summary>
+    [Serializable]
+    public class FailedCacheStoreFactory : IFactory<ICacheStore>
+    {
+        /// <summary>
+        /// Creates an instance of the cache store. Throws an exception during creation.
+        /// </summary>
+        public ICacheStore CreateInstance()
+        {
+            throw new Exception("FailedCacheStoreFactory.CreateInstance exception");
         }
     }
 }
