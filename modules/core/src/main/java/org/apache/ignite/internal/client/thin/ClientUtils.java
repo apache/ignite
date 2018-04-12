@@ -519,10 +519,10 @@ final class ClientUtils {
             isNotNull = notNulls != null && notNulls.contains(name);
             dfltVal = dflts == null ? null : dflts.get(name);
 
-            IgniteBiTuple<Integer, Integer> scaleAndPrecision = decimalInfo == null ? null : decimalInfo.get(name);
+            IgniteBiTuple<Integer, Integer> precisionAndScale = decimalInfo == null ? null : decimalInfo.get(name);
 
-            precision = scaleAndPrecision == null? -1 : scaleAndPrecision.get1();
-            scale = scaleAndPrecision == null? -1 : scaleAndPrecision.get2();
+            precision = precisionAndScale == null? -1 : precisionAndScale.get1();
+            scale = precisionAndScale == null? -1 : precisionAndScale.get2();
         }
 
         /** Deserialization constructor. */

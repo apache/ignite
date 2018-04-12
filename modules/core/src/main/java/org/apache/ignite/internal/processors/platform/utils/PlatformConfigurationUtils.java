@@ -1035,11 +1035,11 @@ public class PlatformConfigurationUtils {
                 writer.writeBoolean(notNullFields != null && notNullFields.contains(field.getKey()));
                 writer.writeObject(defVals != null ? defVals.get(field.getKey()) : null);
 
-                IgniteBiTuple<Integer, Integer> scaleAndPrecision =
+                IgniteBiTuple<Integer, Integer> precisionAndScale =
                     decimalInfo == null ? null : decimalInfo.get(field.getKey());
 
-                writer.writeInt(scaleAndPrecision == null ? -1 : scaleAndPrecision.get1());
-                writer.writeInt(scaleAndPrecision == null ? -1 : scaleAndPrecision.get2());
+                writer.writeInt(precisionAndScale == null ? -1 : precisionAndScale.get1());
+                writer.writeInt(precisionAndScale == null ? -1 : precisionAndScale.get2());
             }
         }
         else

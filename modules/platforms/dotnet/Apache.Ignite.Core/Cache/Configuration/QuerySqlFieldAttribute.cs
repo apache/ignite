@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Gets or sets a value indicating whether corresponding field should be indexed.
-        /// Just like with databases, field indexing may require additional overhead during updates,
+        /// Just like with databases, field indexing may require additional overhead during updates, 
         /// but makes select operations faster.
         /// </summary>
         public bool IsIndexed { get; set; }
@@ -57,8 +57,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public bool IsDescending { get; set; }
 
         /// <summary>
-        /// Gets or sets the collection of index groups this field belongs to.
-        /// Groups are used for compound indexes,
+        /// Gets or sets the collection of index groups this field belongs to. 
+        /// Groups are used for compound indexes, 
         /// whenever index should be created on more than one field.
         /// All fields within the same group will belong to the same index.
         /// </summary>

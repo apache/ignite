@@ -574,14 +574,14 @@ public class QueryUtils {
 
             Object dfltVal = dlftVals != null ? dlftVals.get(entry.getKey()) : null;
 
-            IgniteBiTuple<Integer, Integer> scaleAndPrecision =
+            IgniteBiTuple<Integer, Integer> precisionAndScale =
                 decimalInfo != null ? decimalInfo.get(entry.getKey()) : null;
 
             QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(),
                 U.classForName(entry.getValue(), Object.class, true),
                 d.aliases(), isKeyField, notNull, dfltVal,
-                scaleAndPrecision != null ? scaleAndPrecision.get1() : -1,
-                scaleAndPrecision != null ? scaleAndPrecision.get2() : -1);
+                precisionAndScale != null ? precisionAndScale.get1() : -1,
+                precisionAndScale != null ? precisionAndScale.get2() : -1);
 
             d.addProperty(prop, false);
         }
@@ -725,8 +725,8 @@ public class QueryUtils {
      *      to key, {@code false} if it belongs to value, {@code null} if QueryEntity#keyFields is null.
      * @param notNull {@code true} if {@code null} value is not allowed.
      * @param dlftVal Default value.
-     * @param scale Scale.
      * @param precision Precision.
+     * @param scale Scale.
      * @return Binary property.
      * @throws IgniteCheckedException On error.
      */

@@ -400,7 +400,7 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Gets set of field name to scale and precision.
+     * Gets set of field name to precision and scale.
      *
      * @return Set of names of fields that must have non-null values.
      */
