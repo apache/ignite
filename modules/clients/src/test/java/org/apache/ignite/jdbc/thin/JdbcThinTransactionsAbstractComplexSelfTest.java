@@ -40,6 +40,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -758,9 +759,9 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
                 }
             }, IgniteCheckedException.class, "Mvcc version mismatch.");
 
-            assertTrue(ex.getCause() instanceof SQLException);
+            assertTrue(X.hasCause(ex, SQLException.class));
 
-            assertTrue(ex.getCause().getMessage().contains("Mvcc version mismatch."));
+            assertTrue(X.getCause(ex).getMessage().contains("Mvcc version mismatch."));
         }
         else
             readFut.get();
