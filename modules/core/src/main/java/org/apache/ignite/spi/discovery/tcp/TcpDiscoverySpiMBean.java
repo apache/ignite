@@ -18,26 +18,17 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.util.Map;
-import java.util.UUID;
 import org.apache.ignite.mxbean.MXBeanDescription;
 import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
 import org.apache.ignite.mxbean.MXBeanParametersNames;
 import org.apache.ignite.spi.IgniteSpiManagementMBean;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.spi.discovery.DiscoverySpiMBean;
 
 /**
  * Management bean for {@link TcpDiscoverySpi}.
  */
 @MXBeanDescription("MBean provide access to TCP-based discovery SPI.")
-public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
-    /**
-     * Gets current SPI state.
-     *
-     * @return Current SPI state.
-     */
-    @MXBeanDescription("SPI state.")
-    public String getSpiState();
-
+public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, DiscoverySpiMBean {
     /**
      * Gets {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} (string representation).
      *
@@ -111,28 +102,12 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
     public int getMessageWorkerQueueSize();
 
     /**
-     * Gets joined nodes count.
-     *
-     * @return Nodes joined count.
-     */
-    @MXBeanDescription("Nodes joined count.")
-    public long getNodesJoined();
-
-    /**
      * Gets left nodes count.
      *
      * @return Left nodes count.
      */
     @MXBeanDescription("Nodes left count.")
     public long getNodesLeft();
-
-    /**
-     * Gets failed nodes count.
-     *
-     * @return Failed nodes count.
-     */
-    @MXBeanDescription("Nodes failed count.")
-    public long getNodesFailed();
 
     /**
      * Gets pending messages registered count.
@@ -205,14 +180,6 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      */
     @MXBeanDescription("Local node is coordinator since.")
     public long getCoordinatorSinceTimestamp();
-
-    /**
-     * Gets current coordinator.
-     *
-     * @return Gets current coordinator.
-     */
-    @MXBeanDescription("Coordinator node ID.")
-    @Nullable public UUID getCoordinator();
 
     /**
      * Gets message acknowledgement timeout.
