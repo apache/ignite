@@ -42,8 +42,6 @@ public class IgniteClientReconnectDelayedSpiTest extends IgniteClientReconnectAb
 
         TestRecordingCommunicationSpi spi = new TestRecordingCommunicationSpi();
 
-        spi.setSharedMemoryPort(-1);
-
         cfg.setCommunicationSpi(spi);
         cfg.setCacheConfiguration(new CacheConfiguration("preconfigured-cache"));
 
