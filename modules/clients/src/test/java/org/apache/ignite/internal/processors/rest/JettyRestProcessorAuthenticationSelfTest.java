@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -33,38 +32,18 @@ import static org.apache.ignite.configuration.WALMode.NONE;
 /**
  * Test REST with enabled authentication.
  */
-public class JettyRestProcessorAuthenticationSelfTest extends JettyRestProcessorUnsignedSelfTest {
+public abstract class JettyRestProcessorAuthenticationSelfTest extends JettyRestProcessorUnsignedSelfTest {
     /** */
-    private static final String DFLT_USER = "ignite";
+    protected static final String DFLT_USER = "ignite";
 
     /** */
-    private static final String DFLT_PWD = "ignite";
-
-    /** */
-    private String tok = "";
+    protected static final String DFLT_PWD = "ignite";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
 
         super.beforeTestsStarted();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        // Authenticate and extract token.
-        if (F.isEmpty(tok)) {
-            String ret = content(null, GridRestCommand.AUTHENTICATE,
-                "user", DFLT_USER,
-                "password", DFLT_PWD);
-
-            int p1 = ret.indexOf("sessionToken");
-            int p2 = ret.indexOf('"', p1 + 16);
-
-            tok = ret.substring(p1 + 15, p2);
-        }
     }
 
     /** {@inheritDoc} */
@@ -108,55 +87,11 @@ public class JettyRestProcessorAuthenticationSelfTest extends JettyRestProcessor
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected String restUrl() {
-        String url = super.restUrl();
-
-        if (!F.isEmpty(tok))
-            url += "sessionToken=" + tok + "&";
-
-        return url;
-    }
-
     /**
      * @throws Exception If failed.
      */
     public void testAuthenticationCommand() throws Exception {
         String ret = content(null, GridRestCommand.AUTHENTICATE);
-
-        assertResponseSucceeded(ret, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvalidSessionToken() throws Exception {
-        tok = null;
-
-        String ret = content(null, GridRestCommand.VERSION);
-
-        assertResponseContainsError(ret, "Failed to handle request - session token not found or invalid");
-
-        tok = "InvalidToken";
-
-        ret = content(null, GridRestCommand.VERSION);
-
-        assertResponseContainsError(ret, "Failed to handle request - session token not found or invalid");
-
-        tok = "26BE027D32CC42329DEC92D517B44E9E";
-
-        ret = content(null, GridRestCommand.VERSION);
-
-        assertResponseContainsError(ret, "Failed to handle request - unknown session token (maybe expired session)");
-
-        tok = null; // Cleanup token for next tests.
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testWithToken() throws Exception {
-        String ret = content(null, GridRestCommand.VERSION);
 
         assertResponseSucceeded(ret, false);
     }

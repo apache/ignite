@@ -365,7 +365,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         while (true) {
             if (F.isEmpty(sesTok) && clientId == null) {
-                if (ctx.authentication().enabled() && req.command() != AUTHENTICATE)
+                if (ctx.authentication().enabled() && req.command() != AUTHENTICATE && req.credentials() == null)
                     throw new IgniteAuthenticationException("Failed to handle request - session token not found or invalid");
 
                 Session ses = Session.random();
