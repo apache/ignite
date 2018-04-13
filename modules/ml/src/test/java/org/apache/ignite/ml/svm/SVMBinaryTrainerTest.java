@@ -63,7 +63,7 @@ public class SVMBinaryTrainerTest {
 
         SVMLinearBinaryClassificationModel mdl = trainer.fit(
             data,
-            10000,
+            10,
             (k, v) -> Arrays.copyOfRange(v, 1, v.length),
             (k, v) -> v[0]
         );
