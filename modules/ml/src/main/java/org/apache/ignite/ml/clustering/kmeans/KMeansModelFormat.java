@@ -15,76 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.oldClustering;
+package org.apache.ignite.ml.clustering.kmeans;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.KMeansModelFormat;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 
 /**
- * This class encapsulates result of clusterization.
+ * K-means model representation.
+ *
+ * @see Exportable
+ * @see Exporter
  */
-public class KMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<KMeansModelFormat> {
+public class KMeansModelFormat implements Serializable {
     /** Centers of clusters. */
     private final Vector[] centers;
 
     /** Distance measure. */
     private final DistanceMeasure distance;
 
-    /**
-     * Construct KMeans model with given centers and distance measure.
-     *
-     * @param centers Centers.
-     * @param distance Distance measure.
-     */
-    public KMeansModel(Vector[] centers, DistanceMeasure distance) {
+    /** */
+    public KMeansModelFormat(Vector[] centers, DistanceMeasure distance) {
         this.centers = centers;
         this.distance = distance;
     }
 
-    /** Distance measure used while clusterization */
-    public DistanceMeasure distanceMeasure() {
+    /** */
+    public DistanceMeasure getDistance() {
         return distance;
     }
 
-    /** Count of centers in clusterization. */
-    @Override public int amountOfClusters() {
-        return centers.length;
-    }
-
-    /** Get centers of clusters. */
-    @Override public Vector[] centers() {
-        return Arrays.copyOf(centers, centers.length);
-    }
-
-    /**
-     * Predict closest center index for a given vector.
-     *
-     * @param vec Vector.
-     */
-    public Integer apply(Vector vec) {
-        int res = -1;
-        double minDist = Double.POSITIVE_INFINITY;
-
-        for (int i = 0; i < centers.length; i++) {
-            double curDist = distance.compute(centers[i], vec);
-            if (curDist < minDist) {
-                minDist = curDist;
-                res = i;
-            }
-        }
-
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <P> void saveModel(Exporter<KMeansModelFormat, P> exporter, P path) {
-        KMeansModelFormat mdlData = new KMeansModelFormat(centers, distance);
-
-        exporter.save(mdlData, path);
+    /** */
+    public Vector[] getCenters() {
+        return centers;
     }
 
     /** {@inheritDoc} */
@@ -105,7 +71,7 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        org.apache.ignite.ml.oldClustering.KMeansModel that = (org.apache.ignite.ml.oldClustering.KMeansModel)obj;
+        KMeansModelFormat that = (KMeansModelFormat)obj;
 
         return distance.equals(that.distance) && Arrays.deepEquals(centers, that.centers);
     }

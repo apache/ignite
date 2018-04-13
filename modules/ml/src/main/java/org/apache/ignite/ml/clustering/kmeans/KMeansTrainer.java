@@ -43,7 +43,7 @@ import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 /**
  * The trainer for KMeans algorithm.
  */
-public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
+public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel> {
     /** Amount of clusters. */
     private int k = 2;
 
@@ -56,7 +56,6 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
     /** Distance measure. */
     private DistanceMeasure distance = new EuclideanDistance();
 
-
     /**
      * Trains model based on the specified data.
      *
@@ -65,9 +64,8 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
      * @param lbExtractor      Label extractor.
      * @return Model.
      */
-    @Override public <K, V> KMeansModel2 fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
                                              IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, EmptyContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
@@ -90,33 +88,7 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
             while (iteration < maxIterations && !converged) {
                 Vector[] newCentroids = new DenseLocalOnHeapVector[k];
 
-                final Vector[] finalCenters = centers;
-
-
-                TotalCostAndCounts totalRes = dataset.compute(data -> {
-
-                    TotalCostAndCounts res = new TotalCostAndCounts();
-
-                    for (int i = 0; i < data.rowSize(); i++) {
-                        final IgniteBiTuple<Integer, Double> closestCentroid = findClosestCentroid(finalCenters, data.getRow(i));
-
-                        int centroidIdx = closestCentroid.get1();
-
-                        data.setLabel(i, centroidIdx);
-
-                        res.totalCost += closestCentroid.get2();
-                        res.sums.putIfAbsent(centroidIdx, VectorUtils.zeroes(cols));
-
-                        int finalI = i;
-                        res.sums.compute(centroidIdx,
-                            (IgniteBiFunction<Integer, Vector, Vector>) (ind, v) -> v.plus(data.getRow(finalI).features()));
-
-                        res.counts.merge(centroidIdx, 1,
-                            (IgniteBiFunction<Integer, Integer, Integer>) (i1, i2) -> i1 + i2);
-                    }
-                    return res;
-                }, (a, b) -> a == null ? b : a.merge(b));
-
+                TotalCostAndCounts totalRes = calcDataForNewCentroids(centers, dataset, cols);
 
                 converged = true;
 
@@ -135,7 +107,44 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return new KMeansModel2(centers, distance);
+        return new KMeansModel(centers, distance);
+    }
+
+    /**
+     * Prepares the data to define new centroids on current iteration.
+     *
+     * @param centers Current centers on the current iteration.
+     * @param dataset Dataset.
+     * @param cols Amount of columns.
+     * @return Helper data to calculate the new centroids.
+     */
+    private TotalCostAndCounts calcDataForNewCentroids(Vector[] centers,
+        Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset, int cols) {
+        final Vector[] finalCenters = centers;
+
+        return dataset.compute(data -> {
+
+            TotalCostAndCounts res = new TotalCostAndCounts();
+
+            for (int i = 0; i < data.rowSize(); i++) {
+                final IgniteBiTuple<Integer, Double> closestCentroid = findClosestCentroid(finalCenters, data.getRow(i));
+
+                int centroidIdx = closestCentroid.get1();
+
+                data.setLabel(i, centroidIdx);
+
+                res.totalCost += closestCentroid.get2();
+                res.sums.putIfAbsent(centroidIdx, VectorUtils.zeroes(cols));
+
+                int finalI = i;
+                res.sums.compute(centroidIdx,
+                    (IgniteBiFunction<Integer, Vector, Vector>) (ind, v) -> v.plus(data.getRow(finalI).features()));
+
+                res.counts.merge(centroidIdx, 1,
+                    (IgniteBiFunction<Integer, Integer, Integer>) (i1, i2) -> i1 + i2);
+            }
+            return res;
+        }, (a, b) -> a == null ? b : a.merge(b));
     }
 
     /**
@@ -155,7 +164,6 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
                 bestInd = i;
             }
         }
-
         return new IgniteBiTuple<>(bestInd, bestDistance);
     }
 
@@ -175,7 +183,6 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
             rndPnt.add(data.getRow(ThreadLocalRandom.current().nextInt(data.rowSize())));
             return rndPnt;
         }, (a, b) -> a == null ? b : Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()));
-
 
         for (int i = 0; i < k; i++) {
             final LabeledVector rndPnt = rndPnts.get(ThreadLocalRandom.current().nextInt(rndPnts.size()));
@@ -285,5 +292,4 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel2> {
         this.distance = distance;
         return this;
     }
-
 }

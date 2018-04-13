@@ -18,7 +18,10 @@
 package org.apache.ignite.ml.clustering;
 
 import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
@@ -28,7 +31,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * Tests for {@link LinearRegressionModel}.
+ * Tests for {@link KMeansModel}.
  */
 public class KMeansModelTest {
     /** Precision in test checks. */
@@ -36,29 +39,25 @@ public class KMeansModelTest {
 
     /** */
     @Test
-    public void testPredictWithRawLabels() {
+    public void predictClusters() {
+        DistanceMeasure distanceMeasure = new EuclideanDistance();
 
+        Vector[] centers = new DenseLocalOnHeapVector[4];
 
+        centers[0] = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
+        centers[1] = new DenseLocalOnHeapVector(new double[]{-1.0, 1.0});
+        centers[2] = new DenseLocalOnHeapVector(new double[]{1.0, -1.0});
+        centers[3] = new DenseLocalOnHeapVector(new double[]{-1.0, -1.0});
 
+        KMeansModel mdl = new KMeansModel(centers, distanceMeasure);
 
-        Vector weights = new DenseLocalOnHeapVector(new double[]{2.0, 3.0});
-        SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(weights, 1.0).withRawLabels(true);
+        Assert.assertEquals(mdl.apply(new DenseLocalOnHeapVector(new double[]{1.1, 1.1})), 0.0, PRECISION);
+        Assert.assertEquals(mdl.apply(new DenseLocalOnHeapVector(new double[]{-1.1, 1.1})), 1.0, PRECISION);
+        Assert.assertEquals(mdl.apply(new DenseLocalOnHeapVector(new double[]{1.1, -1.1})), 2.0, PRECISION);
+        Assert.assertEquals(mdl.apply(new DenseLocalOnHeapVector(new double[]{-1.1, -1.1})), 3.0, PRECISION);
 
-        Vector observation = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
-
-        observation = new DenseLocalOnHeapVector(new double[]{2.0, 1.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 2.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
-
-        observation = new DenseLocalOnHeapVector(new double[]{1.0, 2.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 2.0, mdl.apply(observation), PRECISION);
-
-        observation = new DenseLocalOnHeapVector(new double[]{-2.0, 1.0});
-        TestUtils.assertEquals(1.0 - 2.0 * 2.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
-
-        observation = new DenseLocalOnHeapVector(new double[]{1.0, -2.0});
-        TestUtils.assertEquals(1.0 + 2.0 * 1.0 - 3.0 * 2.0, mdl.apply(observation), PRECISION);
-
-        Assert.assertEquals(true, mdl.isKeepingRawLabels());
+        Assert.assertEquals(mdl.distanceMeasure(), distanceMeasure);
+        Assert.assertEquals(mdl.amountOfClusters(), 4);
+        Assert.assertArrayEquals(mdl.centers(), centers);
     }
 }

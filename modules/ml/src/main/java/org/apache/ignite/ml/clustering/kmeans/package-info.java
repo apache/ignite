@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains kMeans algorithm.
+ * Contains kMeans clustering algorithm.
  */
 package org.apache.ignite.ml.clustering.kmeans;

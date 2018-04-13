@@ -15,19 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering;
+package org.apache.ignite.ml.clustering.kmeans;
 
-import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.Model;
 
-import static org.junit.Assert.assertTrue;
+/** Base interface for all clusterization models. */
+public interface ClusterizationModel<P, V> extends Model<P, V> {
+    /** Gets the clusters count. */
+    public int amountOfClusters();
 
-/** Utilities for k-means tests. */
-class KMeansUtil {
-    /** */
-    static void checkIsInEpsilonNeighbourhood(Vector[] v1s, Vector[] v2s, double epsilon) {
-        for (int i = 0; i < v1s.length; i++) {
-            assertTrue("Not in epsilon neighbourhood (index " + i + ") ",
-                v1s[i].minus(v2s[i]).kNorm(2) < epsilon);
-        }
-    }
+    /** Get cluster centers. */
+    public P[] centers();
 }

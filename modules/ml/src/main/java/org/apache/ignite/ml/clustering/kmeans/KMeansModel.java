@@ -20,15 +20,13 @@ package org.apache.ignite.ml.clustering.kmeans;
 import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
-import org.apache.ignite.ml.KMeansModelFormat;
-import org.apache.ignite.ml.oldClustering.ClusterizationModel;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 
 /**
  * This class encapsulates result of clusterization by KMeans algorithm.
  */
-public class KMeansModel2 implements ClusterizationModel<Vector, Integer>, Exportable<KMeansModelFormat> {
+public class KMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<KMeansModelFormat> {
     /** Centers of clusters. */
     private final Vector[] centers;
 
@@ -41,7 +39,7 @@ public class KMeansModel2 implements ClusterizationModel<Vector, Integer>, Expor
      * @param centers Centers.
      * @param distanceMeasure Distance measure.
      */
-    public KMeansModel2(Vector[] centers, DistanceMeasure distanceMeasure) {
+    public KMeansModel(Vector[] centers, DistanceMeasure distanceMeasure) {
         this.centers = centers;
         this.distanceMeasure = distanceMeasure;
     }
@@ -106,7 +104,7 @@ public class KMeansModel2 implements ClusterizationModel<Vector, Integer>, Expor
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        KMeansModel2 that = (KMeansModel2)obj;
+        KMeansModel that = (KMeansModel)obj;
 
         return distanceMeasure.equals(that.distanceMeasure) && Arrays.deepEquals(centers, that.centers);
     }

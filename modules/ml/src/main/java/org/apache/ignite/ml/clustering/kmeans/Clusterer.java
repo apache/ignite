@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.oldClustering;
+package org.apache.ignite.ml.clustering.kmeans;
 
 import org.apache.ignite.ml.Model;
 
