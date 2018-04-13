@@ -349,11 +349,11 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * Make schema patch for this cache. This patch can only add properties to schema and can't remove them.
-     * Other words this patch using only add operations(e.g. add column, create index, add table) and skip remove operations.
+     * Make schema patch for this cache.
      *
-     * @param target query entity list to which current schema should be expanded.
-     * @return patch which contains operations for expanding schema of this cache.
+     * @param target Query entity list which current schema should be expanded to.
+     * @return Patch which contains operations for expanding schema of this cache.
+     * @see QuerySchemaPatch
      */
     public QuerySchemaPatch makeSchemaPatch(Collection<QueryEntity> target) {
         synchronized (schemaMux) {
@@ -365,7 +365,7 @@ public class DynamicCacheDescriptor {
      * Apply query schema patch for changing current schema.
      *
      * @param patch patch to apply.
-     * @return {@code True} if applying was success and {@code False} otherwise
+     * @return {@code true} if applying was success and {@code false} otherwise.
      */
     public boolean applySchemaPatch(QuerySchemaPatch patch) {
         synchronized (schemaMux) {

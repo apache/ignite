@@ -19,20 +19,27 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Collection;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryEntityPatch;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Query schema patch which contains some operations for changing query entities.
+ * Query schema patch which contains {@link SchemaAbstractOperation} operations for changing query entities.
+ * This patch is high level path on {@link org.apache.ignite.cache.QueryEntityPatch} but
+ * it has operations for all {@link QueryEntity} in schema
+ * and also contains {@link QueryEntity} for adding to schema by whole.
+ *
+ * @see org.apache.ignite.cache.QueryEntityPatch
  */
 public class QuerySchemaPatch {
-    /** Conflicts which appears during creating this patch. */
-    private String conflicts;
+    /** Message which described conflicts during creating this patch. */
+    private String conflictsMessage;
 
-    /** Operations for modification query entity */
+    /** Operations for modification query entity. */
     private Collection<SchemaAbstractOperation> patchOperations;
 
-    /** Entities which should be added by whole */
+    /** Entities which should be added by whole. */
     private Collection<QueryEntity> entityToAdd;
 
     /**
@@ -41,21 +48,28 @@ public class QuerySchemaPatch {
     public QuerySchemaPatch(
         @NotNull Collection<SchemaAbstractOperation> patchOperations,
         @NotNull Collection<QueryEntity> entityToAdd,
-        String conflicts) {
+        String conflictsMessage) {
         this.patchOperations = patchOperations;
         this.entityToAdd = entityToAdd;
-        this.conflicts = conflicts;
+        this.conflictsMessage = conflictsMessage;
     }
 
     /**
-     * @return conflicts
+     * @return {@code true} if patch has conflict.
      */
-    public String getConflicts() {
-        return conflicts;
+    public boolean hasConflicts() {
+        return conflictsMessage != null && !conflictsMessage.isEmpty();
     }
 
     /**
-     * @return {@code True} if patch is empty and can't be applying.
+     * @return Conflicts message.
+     */
+    public String getConflictsMessage() {
+        return conflictsMessage;
+    }
+
+    /**
+     * @return {@code true} if patch is empty and can't be applying.
      */
     public boolean isEmpty() {
         return patchOperations.isEmpty() && entityToAdd.isEmpty();
@@ -73,5 +87,10 @@ public class QuerySchemaPatch {
      */
     @NotNull public Collection<QueryEntity> getEntityToAdd() {
         return entityToAdd;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(QuerySchemaPatch.class, this);
     }
 }

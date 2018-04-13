@@ -87,11 +87,11 @@ public class QuerySchema implements Serializable {
     }
 
     /**
-     * Make schema patch. This patch can only add properties to query entity and can't remove them.
-     * Other words this patch using only add operations(e.g. add column, create index, add table)  and skip remove operations.
+     * Make query schema patch.
      *
-     * @param target query entity list to which current schema should be expanded.
-     * @return patch which will can be apply on current schema to achieve target.
+     * @param target Query entity list to which current schema should be expanded.
+     * @return Patch to achieve entity which is a result of merging current one and target.
+     * @see QuerySchemaPatch
      */
     public QuerySchemaPatch makePatch(Collection<QueryEntity> target) {
         synchronized (mux) {
@@ -105,7 +105,7 @@ public class QuerySchema implements Serializable {
             Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
             Collection<QueryEntity> entityToAdd = new ArrayList<>();
 
-            String conflicts = null;
+            StringBuilder conflicts = new StringBuilder();
 
             for (QueryEntity queryEntity : target) {
                 if (localEntities.containsKey(queryEntity.getTableName())) {
@@ -114,9 +114,10 @@ public class QuerySchema implements Serializable {
                     QueryEntityPatch entityPatch = localEntity.makePatch(queryEntity);
 
                     if (entityPatch.hasConflict()) {
-                        conflicts = conflicts == null
-                            ? entityPatch.getConflicts()
-                            : conflicts + "\n" + entityPatch.getConflicts();
+                        if (conflicts.length() > 0)
+                            conflicts.append("\n");
+
+                        conflicts.append(entityPatch.getConflictsMessage());
                     }
 
                     if (!entityPatch.isEmpty())
@@ -126,19 +127,19 @@ public class QuerySchema implements Serializable {
                     entityToAdd.add(QueryUtils.copy(queryEntity));
             }
 
-            return new QuerySchemaPatch(patchOperations, entityToAdd, conflicts);
+            return new QuerySchemaPatch(patchOperations, entityToAdd, conflicts.toString());
         }
     }
 
     /**
      * Apply query schema patch for changing this schema.
      *
-     * @param patch patch to apply.
-     * @return {@code True} if applying was success and {@code False} otherwise
+     * @param patch Patch to apply.
+     * @return {@code true} if applying was success and {@code false} otherwise.
      */
     public boolean applyPatch(QuerySchemaPatch patch) {
         synchronized (mux) {
-            if (patch.getConflicts() != null)
+            if (patch.hasConflicts())
                 return false;
 
             if (patch.isEmpty())
@@ -166,7 +167,7 @@ public class QuerySchema implements Serializable {
     /**
      * Process operation.
      *
-     * @param op operation for handle.
+     * @param op Operation for handle.
      */
     public void finish(SchemaAbstractOperation op) {
         synchronized (mux) {

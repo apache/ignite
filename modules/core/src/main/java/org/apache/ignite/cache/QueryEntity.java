@@ -152,10 +152,10 @@ public class QueryEntity implements Serializable {
 
     /**
      * Make query entity patch. This patch can only add properties to entity and can't remove them.
-     * Other words this patch using only add operations(e.g. add column, create index)  and skip remove operations.
+     * Other words, the patch will contain only add operations(e.g. add column, create index) and not remove ones.
      *
-     * @param target query entity to which this entity should be expanded.
-     * @return patch which contains operations for expanding this entity.
+     * @param target Query entity to which this entity should be expanded.
+     * @return Patch which contains operations for expanding this entity.
      */
     @NotNull public QueryEntityPatch makePatch(QueryEntity target) {
         if (target == null)
@@ -171,7 +171,7 @@ public class QueryEntity implements Serializable {
 
         List<QueryField> queryFieldsToAdd = checkFields(target, conflicts);
 
-        HashSet<QueryIndex> indexesToAdd = checkIndices(target, conflicts);
+        Collection<QueryIndex> indexesToAdd = checkIndices(target, conflicts);
 
         if (conflicts.length() != 0)
             return QueryEntityPatch.conflict(tableName + " conflict: \n" + conflicts.toString());
@@ -209,11 +209,11 @@ public class QueryEntity implements Serializable {
     /**
      * Comparing local fields and target fields.
      *
-     * @param target query entity for check.
-     * @param conflicts storage of conflicts.
-     * @return indexes which exist in target and not exist in local.
+     * @param target Query entity for check.
+     * @param conflicts Storage of conflicts.
+     * @return Indexes which exist in target and not exist in local.
      */
-    @NotNull private HashSet<QueryIndex> checkIndices(QueryEntity target, StringBuilder conflicts) {
+    @NotNull private Collection<QueryIndex> checkIndices(QueryEntity target, StringBuilder conflicts) {
         HashSet<QueryIndex> indexesToAdd = new HashSet<>();
 
         Map<String, QueryIndex> currentIndexes = new HashMap<>();
@@ -228,8 +228,8 @@ public class QueryEntity implements Serializable {
                 checkEquals(
                     conflicts,
                     "index " + queryIndex.getName(),
-                    currentIndexes.get(queryIndex.getName()).getFields(),
-                    queryIndex.getFields()
+                    currentIndexes.get(queryIndex.getName()),
+                    queryIndex
                 );
             }
             else
@@ -239,11 +239,11 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Comparing local fields and target fields.
+     * Comparing local entity fields and target entity fields.
      *
-     * @param target query entity for check.
-     * @param conflicts storage of conflicts.
-     * @return fields which exist in target and not exist in local.
+     * @param target Query entity for check.
+     * @param conflicts Storage of conflicts.
+     * @return Fields which exist in target and not exist in local.
      */
     private List<QueryField> checkFields(QueryEntity target, StringBuilder conflicts) {
         List<QueryField> queryFieldsToAdd = new ArrayList<>();
@@ -253,29 +253,32 @@ public class QueryEntity implements Serializable {
             String targetFieldType = targetField.getValue();
 
             if (getFields().containsKey(targetFieldName)) {
-                checkEquals(conflicts, "fieldType of " + targetFieldName, getFields().get(targetFieldName), targetFieldType);
+                checkEquals(
+                    conflicts,
+                    "fieldType of " + targetFieldName,
+                    getFields().get(targetFieldName),
+                    targetFieldType
+                );
 
-                if (getNotNullFields() != null && target.getNotNullFields() != null)
-                    checkEquals(
-                        conflicts,
-                        "nullable of " + targetFieldName,
-                        getNotNullFields().contains(targetFieldName),
-                        target.getNotNullFields().contains(targetFieldName)
-                    );
+                checkEquals(
+                    conflicts,
+                    "nullable of " + targetFieldName,
+                    contains(getNotNullFields(), targetFieldName),
+                    contains(target.getNotNullFields(), targetFieldName)
+                );
 
-                if (getDefaultFieldValues().containsKey(targetFieldName) && target.getNotNullFields().contains(targetFieldName))
-                    checkEquals(
-                        conflicts,
-                        "default value of " + targetFieldName,
-                        getDefaultFieldValues().get(targetFieldName),
-                        target.getDefaultFieldValues().get(targetFieldName)
-                    );
+                checkEquals(
+                    conflicts,
+                    "default value of " + targetFieldName,
+                    getDefaultFieldValues().get(targetFieldName),
+                    target.getDefaultFieldValues().get(targetFieldName)
+                );
             }
             else {
                 queryFieldsToAdd.add(new QueryField(
                     targetFieldName,
                     targetFieldType,
-                    !(target.getNotNullFields() != null && target.getNotNullFields().contains(targetFieldName)),
+                    !contains(target.getNotNullFields(),targetFieldName),
                     target.getDefaultFieldValues().get(targetFieldName)
                 ));
             }
@@ -285,16 +288,25 @@ public class QueryEntity implements Serializable {
     }
 
     /**
+     * @param collection Collection for checking.
+     * @param elementToCheck Element for checking to containing in collection.
+     * @return {@code true} if collection contain elementToCheck
+     */
+    private static boolean contains(Collection<String> collection, String elementToCheck) {
+        return collection != null && collection.contains(elementToCheck);
+    }
+
+    /**
      * Comparing two objects and add formatted text to conflicts if needed.
      *
-     * @param conflicts storage of conlicts.
-     * @param name name of comparing object
-     * @param source source object
-     * @param received received object
+     * @param conflicts Storage of conflicts resulting error message.
+     * @param name Name of comparing object.
+     * @param local Local object.
+     * @param received Received object.
      */
-    private void checkEquals(StringBuilder conflicts, String name, Object source, Object received) {
-        if (!Objects.equals(source, received))
-            conflicts.append(String.format("%s is different: source=%s, received=%s\n", name, source, received));
+    private void checkEquals(StringBuilder conflicts, String name, Object local, Object received) {
+        if (!Objects.equals(local, received))
+            conflicts.append(String.format("%s is different: local=%s, received=%s\n", name, local, received));
     }
 
     /**

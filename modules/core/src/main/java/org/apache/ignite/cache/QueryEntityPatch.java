@@ -18,50 +18,64 @@
 package org.apache.ignite.cache;
 
 import java.util.Collection;
+import java.util.Objects;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Query entity patch which contain some operations for changing query entity.
+ * Query entity patch which contain {@link SchemaAbstractOperation} operations for changing query entity.
+ * This patch can only add properties to entity and can't remove them.
+ * Other words, the patch will contain only add operations
+ * (e.g.:
+ * {@link org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation},
+ * {@link org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation}
+ * ) and not remove ones.
+ *
+ * It contain only add operation because in current time we don't have history of schema operations
+ * and by current state we can't understand some property was already deleted or it has not been added yet.
  */
 public class QueryEntityPatch {
-    /** Conflicts which appears during creating this patch. */
-    private String conflicts;
+    /** Empty query entity patch. */
+    private static final QueryEntityPatch EMPTY_QUERY_ENTITY_PATCH = new QueryEntityPatch(null, null);
 
-    /** Operations for modification query entity */
+    /** Message which described conflicts during creating this patch. */
+    private String conflictsMessage;
+
+    /** Operations for modification query entity. */
     private Collection<SchemaAbstractOperation> patchOperations;
 
     /**
      * Create patch.
      */
-    private QueryEntityPatch(String conflicts, Collection<SchemaAbstractOperation> patchOperations) {
-        this.conflicts = conflicts;
+    private QueryEntityPatch(String conflictsMessage, Collection<SchemaAbstractOperation> patchOperations) {
+        this.conflictsMessage = conflictsMessage;
         this.patchOperations = patchOperations;
     }
 
     /**
      * Builder method for patch with conflicts.
      *
-     * @param conflict conflicts.
-     * @return query entity patch with conflicts.
+     * @param conflicts Conflicts.
+     * @return Query entity patch with conflicts.
      */
-    public static QueryEntityPatch conflict(String conflict) {
-        return new QueryEntityPatch(conflict, null);
+    public static QueryEntityPatch conflict(String conflicts) {
+        return new QueryEntityPatch(conflicts, null);
     }
 
     /**
      * Builder method for empty patch.
      *
-     * @return query entity patch.
+     * @return Query entity patch.
      */
     public static QueryEntityPatch empty() {
-        return new QueryEntityPatch(null, null);
+        return EMPTY_QUERY_ENTITY_PATCH;
     }
 
     /**
      * Builder method for patch with operations.
      *
-     * @param patchOperations operations for modification.
-     * @return Query entity patch which contain some operations for changing query entity.
+     * @param patchOperations Operations for modification.
+     * @return Query entity patch which contain {@link SchemaAbstractOperation} operations for changing query entity.
      */
     public static QueryEntityPatch patch(Collection<SchemaAbstractOperation> patchOperations) {
         return new QueryEntityPatch(null, patchOperations);
@@ -70,24 +84,24 @@ public class QueryEntityPatch {
     /**
      * Check for conflict in this patch.
      *
-     * @return {@code True} if patch has conflict.
+     * @return {@code true} if patch has conflict.
      */
     public boolean hasConflict() {
-        return conflicts != null;
+        return conflictsMessage != null;
     }
 
     /**
-     * @return {@code True} if patch is empty and can't be applying.
+     * @return {@code true} if patch is empty and can't be applying.
      */
     public boolean isEmpty() {
         return patchOperations == null || patchOperations.isEmpty();
     }
 
     /**
-     * @return conflicts
+     * @return Conflicts.
      */
-    public String getConflicts() {
-        return conflicts;
+    public String getConflictsMessage() {
+        return conflictsMessage;
     }
 
     /**
@@ -95,5 +109,10 @@ public class QueryEntityPatch {
      */
     public Collection<SchemaAbstractOperation> getPatchOperations() {
         return patchOperations;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(QueryEntityPatch.class, this);
     }
 }

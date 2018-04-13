@@ -182,6 +182,13 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
+    /** Template of message of conflicts during configuration merge*/
+    private static final String MERGE_OF_CONFIG_CONFLICTS_MESSAGE =
+        "Conflicts during configuration merge for cache %s : \n%s";
+
+    /** Template of message of node join was fail because it requires to merge of config*/
+    private static final String MERGE_OF_CONFIG_REQUIRED_MESSAGE =
+        "Node join was fail because it requires to merge of config for cache '%s' but that impossible on active grid";
     /** */
     private final boolean startClientCaches =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
@@ -728,8 +735,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheData.sql(sql);
 
-        CacheConfiguration<?, ?> cfg1 = cacheData.config();
-
         boolean template = cacheName.endsWith("*");
 
         if (!template) {
@@ -740,8 +745,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CacheType cacheType = cacheType(cacheName);
 
-            if (cacheType != CacheType.USER && cfg1.getDataRegionName() == null)
-                cfg1.setDataRegionName(sharedCtx.database().systemDateRegionName());
+            if (cacheType != CacheType.USER && cfg.getDataRegionName() == null)
+                cfg.setDataRegionName(sharedCtx.database().systemDateRegionName());
 
             addStoredCache(caches, cacheData, cacheName, cacheType, true);
         }
@@ -752,11 +757,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * Add stored cache data to caches storage.
      *
-     * @param caches cache storage.
-     * @param cacheData cache data to add.
-     * @param cacheName cache name.
-     * @param cacheType cache type.
-     * @param isStaticalyConfigured statically configured flag
+     * @param caches Cache storage.
+     * @param cacheData Cache data to add.
+     * @param cacheName Cache name.
+     * @param cacheType Cache type.
+     * @param isStaticalyConfigured Statically configured flag.
      */
     private void addStoredCache(Map<String, CacheInfo> caches, StoredCacheData cacheData, String cacheName,
         CacheType cacheType, boolean isStaticalyConfigured) {
@@ -2476,6 +2481,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             boolean isGridActive = ctx.state().clusterState().active();
 
+            StringBuilder errorMessage = new StringBuilder();
+
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
                 DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
 
@@ -2484,17 +2491,22 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 QuerySchemaPatch schemaPatch = localDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
 
-                if (schemaPatch.getConflicts() != null) {
-                    String msg = "Conflicts during configuration merge : " + schemaPatch.getConflicts();
+                if (schemaPatch.hasConflicts() || (isGridActive && !schemaPatch.isEmpty())) {
+                    if (errorMessage.length() > 0)
+                        errorMessage.append("\n");
 
-                    return new IgniteNodeValidationResult(node.id(), msg, msg);
+                    if (schemaPatch.hasConflicts())
+                        errorMessage.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE,
+                            localDesc.cacheName(), schemaPatch.getConflictsMessage()));
+                    else
+                        errorMessage.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, localDesc.cacheName()));
                 }
+            }
 
-                if (isGridActive && !schemaPatch.isEmpty()) {
-                    String msg = "Node join was fail because it requires to merge of config but that impossible on active grid";
+            if (errorMessage.length() > 0) {
+                String msg = errorMessage.toString();
 
-                    return new IgniteNodeValidationResult(node.id(), msg, msg);
-                }
+                return new IgniteNodeValidationResult(node.id(), msg, msg);
             }
         }
 
