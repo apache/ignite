@@ -35,7 +35,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Test for {@link IgniteAuthenticationProcessor} on unstable topology.
  */
-public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTest {
+public abstract class AuthenticationProcessorNodeRestartAbstractTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -54,6 +54,11 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     /** Random. */
     private static final Random RND = new Random(System.currentTimeMillis());
 
+    /**
+     * @return {@code true} if persistence is enabled.
+     */
+    protected abstract boolean persistanceEnabled();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -69,9 +74,11 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
 
         cfg.setAuthenticationEnabled(true);
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(true)));
+        if (persistanceEnabled()) {
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setPersistenceEnabled(true)));
+        }
 
         return cfg;
     }
@@ -84,7 +91,8 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
 
         startGrids(NODES_COUNT);
 
-        grid(0).cluster().active(true);
+        if (persistanceEnabled())
+            grid(0).cluster().active(true);
 
         actxDflt = grid(0).context().authentication().authenticate(User.DFAULT_USER_NAME, "ignite");
 

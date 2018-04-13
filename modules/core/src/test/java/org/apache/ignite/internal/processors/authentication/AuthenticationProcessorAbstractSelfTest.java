@@ -37,7 +37,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Test for {@link IgniteAuthenticationProcessor}.
  */
-public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
+public abstract class AuthenticationProcessorAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -68,6 +68,11 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         return Base64.getEncoder().encodeToString(rndBytes);
     }
 
+    /**
+     * @return {@code true} if persistence is enabled.
+     */
+    protected abstract boolean persistanceEnabled();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -83,9 +88,11 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
         cfg.setAuthenticationEnabled(true);
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setPersistenceEnabled(true)));
+        if (persistanceEnabled()) {
+            cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+                .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                    .setPersistenceEnabled(true)));
+        }
 
         return cfg;
     }
@@ -98,7 +105,8 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
         startGrids(NODES_COUNT);
 
-        grid(0).cluster().active(true);
+        if (persistanceEnabled())
+            grid(0).cluster().active(true);
 
         actxDflt = grid(0).context().authentication().authenticate(User.DFAULT_USER_NAME, "ignite");
 

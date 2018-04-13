@@ -186,19 +186,4 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
             }, IgniteException.class,
             "Can not perform the operation because the authentication is not enabled for the cluster");
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testEnableAuthenticationWithoutPersistence() throws Exception {
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    startGrid(configuration(0, true, false).setDataStorageConfiguration(null));
-
-                    return null;
-                }
-            },
-            IgniteCheckedException.class,
-            "Authentication can be enabled only for cluster with enabled persistence");
-    }
 }

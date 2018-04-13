@@ -20,8 +20,10 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.authentication.AuthenticationConfigurationClusterTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationOnNotActiveClusterTest;
-import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartTest;
-import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartPersistenceOffTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartPersistenceOnTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorPersistenceOffSelfTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorPersistenceOnSelfTest;
 import org.apache.ignite.internal.processors.cache.PartitionedAtomicCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.PartitionedTransactionalOptimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.PartitionedTransactionalPessimisticCacheGetsDistributionTest;
@@ -83,9 +85,11 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 //        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
 
         suite.addTestSuite(AuthenticationConfigurationClusterTest.class);
-        suite.addTestSuite(AuthenticationProcessorSelfTest.class);
+        suite.addTestSuite(AuthenticationProcessorPersistenceOnSelfTest.class);
+        suite.addTestSuite(AuthenticationProcessorPersistenceOffSelfTest.class);
         suite.addTestSuite(AuthenticationOnNotActiveClusterTest.class);
-        suite.addTestSuite(AuthenticationProcessorNodeRestartTest.class);
+        suite.addTestSuite(AuthenticationProcessorNodeRestartPersistenceOnTest.class);
+        suite.addTestSuite(AuthenticationProcessorNodeRestartPersistenceOffTest.class);
 
         suite.addTestSuite(ReplicatedAtomicCacheGetsDistributionTest.class);
         suite.addTestSuite(ReplicatedTransactionalOptimisticCacheGetsDistributionTest.class);
