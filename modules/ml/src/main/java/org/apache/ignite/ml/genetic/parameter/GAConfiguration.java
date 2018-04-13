@@ -39,7 +39,7 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
  * </p>
  */
 public class GAConfiguration {
-
+    /** Selection method */
     private GAGridConstants.SELECTION_METHOD selectionMethod = null;
 
     /** Criteria used to describe a chromosome */
@@ -76,7 +76,7 @@ public class GAConfiguration {
     private int populationSize = 500;
 
     /** Gene pool is the sum of ALL genes utilized to create chromsomes */
-    private List<Gene> genePool = new ArrayList();
+    private List<Gene> genePool = new ArrayList<Gene>();
 
     /** Number of genes within a chromosome */
     private int chromosomeLength = 0;
@@ -297,7 +297,7 @@ public class GAConfiguration {
     /**
      * Retreive the termination criteria
      *
-     * @return  Termination Criteria
+     * @return Termination Criteria
      */
     public ITerminateCriteria getTerminateCriteria() {
         return terminateCriteria;
