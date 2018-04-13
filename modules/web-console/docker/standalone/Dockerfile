@@ -44,13 +44,12 @@ RUN mkdir -p /opt/web-console
 WORKDIR /opt/web-console
 COPY build .
 
-# Install node modules.
+# Install node modules for frontend and backend modules.
 RUN cd /opt/web-console/frontend && \
     npm install --no-optional --prod && \
-    npm run build
-
-RUN cd /opt/web-console/backend && \
-    npm install --only=production --no-optional
+    npm run build && \
+    cd /opt/web-console/backend && \
+    npm install --no-optional --prod
 
 # Copy nginx config.
 COPY nginx/* /etc/nginx/
@@ -69,3 +68,4 @@ VOLUME ["/opt/web-console/serve/agent_dists"]
 EXPOSE 80
 
 ENTRYPOINT ["/opt/web-console/entrypoint.sh"]
+
