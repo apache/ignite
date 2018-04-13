@@ -150,10 +150,14 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Verifies that rebalance on cache with Node Filter happens when BaselineTopology changes.
+     *
      * @throws Exception
      */
     public void testRebalanceForCacheWithNodeFilter() throws Exception {
         try {
+            final int EMPTY_NODE_IDX = 2;
+
             userAttrs = U.newHashMap(1);
             userAttrs.put(DATA_NODE, true);
 
@@ -183,7 +187,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
             Thread.sleep(500);
 
-            printSizesDataNodes(NODE_COUNT - 1);
+            printSizesDataNodes(NODE_COUNT - 1, EMPTY_NODE_IDX);
 
             userAttrs.put(DATA_NODE, true);
 
@@ -194,7 +198,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             awaitPartitionMapExchange();
 
             Thread.sleep(500);
-            printSizesDataNodes(NODE_COUNT);
+
+            printSizesDataNodes(NODE_COUNT, EMPTY_NODE_IDX);
         }
         finally {
             userAttrs = null;
@@ -202,13 +207,20 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private void printSizesDataNodes(int nodesCount) {
-        for (int i = 0; i < nodesCount; i++) {
+    private void printSizesDataNodes(int nodesCnt, int emptyNodeIdx) {
+        for (int i = 0; i < nodesCnt; i++) {
             IgniteEx ig = grid(i);
 
-            System.out.println("Cache size on i-th node: "
-                + i 
-                + "->" + ig.cache(CACHE_NAME).localSize(CachePeekMode.PRIMARY));
+            int locSize = ig.cache(CACHE_NAME).localSize(CachePeekMode.PRIMARY);
+
+            if (i == emptyNodeIdx)
+                assertEquals("Cache local size on "
+                    + i
+                    + " node is expected to be zero", 0, locSize);
+            else
+                assertTrue("Cache local size on "
+                    + i
+                    + " node is expected to be non zero", locSize > 0);
         }
     }
 
