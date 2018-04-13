@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.clustering;
+package org.apache.ignite.examples.ml.oldclustering;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,7 +23,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.ml.math.matrix.SparseDistributedMatrixExample;
-import org.apache.ignite.ml.clustering.KMeansDistributedClusterer;
+import org.apache.ignite.ml.oldClustering.KMeansDistributedClusterer;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;

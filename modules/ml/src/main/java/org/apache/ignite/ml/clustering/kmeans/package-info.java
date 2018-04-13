@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * ML clustering examples.
+ * Contains kMeans algorithm.
  */
-package org.apache.ignite.examples.ml.partitionedClustering;
+package org.apache.ignite.ml.clustering.kmeans;

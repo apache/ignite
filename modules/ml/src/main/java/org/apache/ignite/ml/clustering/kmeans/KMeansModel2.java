@@ -15,44 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.partitionedClustering.kmeans;
+package org.apache.ignite.ml.clustering.kmeans;
 
 import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.KMeansModelFormat;
-import org.apache.ignite.ml.clustering.ClusterizationModel;
+import org.apache.ignite.ml.oldClustering.ClusterizationModel;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 
 /**
- * This class encapsulates result of clusterization.
+ * This class encapsulates result of clusterization by KMeans algorithm.
  */
 public class KMeansModel2 implements ClusterizationModel<Vector, Integer>, Exportable<KMeansModelFormat> {
     /** Centers of clusters. */
     private final Vector[] centers;
 
     /** Distance measure. */
-    private final DistanceMeasure distance;
+    private final DistanceMeasure distanceMeasure;
 
     /**
-     * Construct KMeans model with given centers and distance measure.
+     * Construct KMeans model with given centers and distanceMeasure measure.
      *
      * @param centers Centers.
-     * @param distance Distance measure.
+     * @param distanceMeasure Distance measure.
      */
-    public KMeansModel2(Vector[] centers, DistanceMeasure distance) {
+    public KMeansModel2(Vector[] centers, DistanceMeasure distanceMeasure) {
         this.centers = centers;
-        this.distance = distance;
+        this.distanceMeasure = distanceMeasure;
     }
 
-    /** Distance measure used while clusterization */
+    /** Distance measure. */
     public DistanceMeasure distanceMeasure() {
-        return distance;
+        return distanceMeasure;
     }
 
-    /** Count of centers in clusterization. */
-    @Override public int clustersCount() {
+    /** Amount of centers in clusterization. */
+    @Override public int amountOfClusters() {
         return centers.length;
     }
 
@@ -71,7 +71,7 @@ public class KMeansModel2 implements ClusterizationModel<Vector, Integer>, Expor
         double minDist = Double.POSITIVE_INFINITY;
 
         for (int i = 0; i < centers.length; i++) {
-            double curDist = distance.compute(centers[i], vec);
+            double curDist = distanceMeasure.compute(centers[i], vec);
             if (curDist < minDist) {
                 minDist = curDist;
                 res = i;
@@ -83,7 +83,7 @@ public class KMeansModel2 implements ClusterizationModel<Vector, Integer>, Expor
 
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<KMeansModelFormat, P> exporter, P path) {
-        KMeansModelFormat mdlData = new KMeansModelFormat(centers, distance);
+        KMeansModelFormat mdlData = new KMeansModelFormat(centers, distanceMeasure);
 
         exporter.save(mdlData, path);
     }
@@ -92,7 +92,7 @@ public class KMeansModel2 implements ClusterizationModel<Vector, Integer>, Expor
     @Override public int hashCode() {
         int res = 1;
 
-        res = res * 37 + distance.hashCode();
+        res = res * 37 + distanceMeasure.hashCode();
         res = res * 37 + Arrays.hashCode(centers);
 
         return res;
@@ -108,7 +108,7 @@ public class KMeansModel2 implements ClusterizationModel<Vector, Integer>, Expor
 
         KMeansModel2 that = (KMeansModel2)obj;
 
-        return distance.equals(that.distance) && Arrays.deepEquals(centers, that.centers);
+        return distanceMeasure.equals(that.distanceMeasure) && Arrays.deepEquals(centers, that.centers);
     }
 
 }

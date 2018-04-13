@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.clustering;
+package org.apache.ignite.examples.ml.oldclustering;
 
 import java.util.ArrayList;
 import java.util.Arrays;

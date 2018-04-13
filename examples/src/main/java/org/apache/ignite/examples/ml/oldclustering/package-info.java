@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains clustering algorithms.
+ * ML clustering examples.
  */
-package org.apache.ignite.ml.partitionedClustering;
+package org.apache.ignite.examples.ml.oldclustering;

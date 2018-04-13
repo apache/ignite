@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering;
+package org.apache.ignite.ml.oldClustering;
 
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;

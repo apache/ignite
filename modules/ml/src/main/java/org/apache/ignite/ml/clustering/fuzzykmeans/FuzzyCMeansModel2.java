@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering;
+package org.apache.ignite.ml.clustering.fuzzykmeans;
 
 import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
@@ -23,14 +23,15 @@ import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.FuzzyCMeansModelFormat;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
+import org.apache.ignite.ml.oldClustering.ClusterizationModel;
 
-/** This class incapsulates result of clusterization. */
-public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<FuzzyCMeansModelFormat> {
+/** This class encapsulates the result of clusterization by Fuzzy-KMeans algorithm. */
+public class FuzzyCMeansModel2 implements ClusterizationModel<Vector, Integer>, Exportable<FuzzyCMeansModelFormat> {
     /** Centers of clusters. */
     private Vector[] centers;
 
     /** Distance measure. */
-    private DistanceMeasure measure;
+    private DistanceMeasure distanceMeasure;
 
     /**
      * Constructor that creates FCM model by centers and measure.
@@ -38,18 +39,18 @@ public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, E
      * @param centers Array of centers.
      * @param measure Distance measure.
      */
-    public FuzzyCMeansModel(Vector[] centers, DistanceMeasure measure) {
+    public FuzzyCMeansModel2(Vector[] centers, DistanceMeasure measure) {
         this.centers = Arrays.copyOf(centers, centers.length);
-        this.measure = measure;
+        this.distanceMeasure = measure;
     }
 
     /** Distance measure used while clusterization. */
     public DistanceMeasure distanceMeasure() {
-        return measure;
+        return distanceMeasure;
     }
 
     /** @inheritDoc */
-    @Override public int clustersCount() {
+    @Override public int amountOfClusters() {
         return centers.length;
     }
 
@@ -61,15 +62,15 @@ public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, E
     /**
      * Predict closest center index for a given vector.
      *
-     * @param val Vector.
+     * @param vec Vector.
      * @return Index of the closest center or -1 if it can't be found.
      */
-    @Override public Integer apply(Vector val) {
+    @Override public Integer apply(Vector vec) {
         int idx = -1;
         double minDistance = Double.POSITIVE_INFINITY;
 
         for (int i = 0; i < centers.length; i++) {
-            double currDistance = measure.compute(val, centers[i]);
+            double currDistance = distanceMeasure.compute(vec, centers[i]);
             if (currDistance < minDistance) {
                 minDistance = currDistance;
                 idx = i;
@@ -79,9 +80,10 @@ public class FuzzyCMeansModel implements ClusterizationModel<Vector, Integer>, E
         return idx;
     }
 
+
     /** {@inheritDoc} */
     @Override public <P> void saveModel(Exporter<FuzzyCMeansModelFormat, P> exporter, P path) {
-        FuzzyCMeansModelFormat mdlData = new FuzzyCMeansModelFormat(centers, measure);
+        FuzzyCMeansModelFormat mdlData = new FuzzyCMeansModelFormat(centers, distanceMeasure);
 
         exporter.save(mdlData, path);
     }

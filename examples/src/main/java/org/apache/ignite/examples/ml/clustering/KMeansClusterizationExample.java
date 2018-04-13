@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.partitionedClustering;
+package org.apache.ignite.examples.ml.clustering;
 
 import java.util.Arrays;
 import java.util.UUID;
@@ -28,13 +28,10 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
-import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
-import org.apache.ignite.ml.knn.classification.KNNStrategy;
-import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.partitionedClustering.kmeans.KMeansModel2;
-import org.apache.ignite.ml.partitionedClustering.kmeans.KMeansTrainer;
+import org.apache.ignite.ml.clustering.kmeans.KMeansModel2;
+import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
@@ -116,20 +113,7 @@ public class KMeansClusterizationExample {
         return cache;
     }
 
-/*    private static final double[][] data = {
-        {1, 5.1, 3.5, 1.4, 0.2},
-        {1, 4.9, 3, 1.4, 0.2},
-        {1, 4.7, 3.2, 1.3, 0.2},
-        {1, 4.6, 3.1, 1.5, 0.2},
-        {1, 4.9, 3.1, 1.5, 0.1},
-        {2, 7, 3.2, 4.7, 1.4},
-        {2, 6.4, 3.2, 4.5, 1.5},
-        {2, 6.9, 3.1, 4.9, 1.5},
-        {2, 5.5, 2.3, 4, 1.3},
-        {2, 6.3, 2.5, 4.9, 1.5}
-    };*/
-
-   /* *//** The Iris dataset. */
+    /** The Iris dataset. */
     private static final double[][] data = {
         {1, 5.1, 3.5, 1.4, 0.2},
         {1, 4.9, 3, 1.4, 0.2},

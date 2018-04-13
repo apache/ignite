@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.clustering;
+package org.apache.ignite.examples.ml.oldclustering;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.ml.clustering.BaseFuzzyCMeansClusterer;
-import org.apache.ignite.ml.clustering.FuzzyCMeansDistributedClusterer;
-import org.apache.ignite.ml.clustering.FuzzyCMeansModel;
+import org.apache.ignite.ml.oldClustering.BaseFuzzyCMeansClusterer;
+import org.apache.ignite.ml.oldClustering.FuzzyCMeansDistributedClusterer;
+import org.apache.ignite.ml.oldClustering.FuzzyCMeansModel;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;

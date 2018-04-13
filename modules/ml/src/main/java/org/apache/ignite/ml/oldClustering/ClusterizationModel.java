@@ -15,8 +15,15 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains kMeans algorithm.
- */
-package org.apache.ignite.ml.partitionedClustering.kmeans;
+package org.apache.ignite.ml.oldClustering;
+
+import org.apache.ignite.ml.Model;
+
+/** Base interface for all clusterization models. */
+public interface ClusterizationModel<P, V> extends Model<P, V> {
+    /** Gets the clusters count. */
+    public int amountOfClusters();
+
+    /** Get cluster centers. */
+    public P[] centers();
+}

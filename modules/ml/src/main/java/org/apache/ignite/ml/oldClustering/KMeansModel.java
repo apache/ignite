@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering;
+package org.apache.ignite.ml.oldClustering;
 
 import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
@@ -51,7 +51,7 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
     }
 
     /** Count of centers in clusterization. */
-    @Override public int clustersCount() {
+    @Override public int amountOfClusters() {
         return centers.length;
     }
 
@@ -105,7 +105,7 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        org.apache.ignite.ml.clustering.KMeansModel that = (org.apache.ignite.ml.clustering.KMeansModel)obj;
+        org.apache.ignite.ml.oldClustering.KMeansModel that = (org.apache.ignite.ml.oldClustering.KMeansModel)obj;
 
         return distance.equals(that.distance) && Arrays.deepEquals(centers, that.centers);
     }
