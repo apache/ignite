@@ -833,8 +833,7 @@ public class GridCacheUtils {
     public static void unwindEvicts(GridCacheContext ctx) {
         assert ctx != null;
 
-        if (ctx.started())
-            ctx.ttl().expire(TTL_BATCH_SIZE);
+        ctx.ttl().expire(TTL_BATCH_SIZE);
     }
 
     /**
