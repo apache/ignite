@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 cliCfg.UserName = null;
                 ex = Assert.Throws<IgniteClientException>(() => { Ignition.StartClient(cliCfg); });
-                Assert.IsTrue(ex.Message.StartsWith("IgniteClientConfiguration.Username cannot be null"));
+                Assert.IsTrue(ex.Message.StartsWith("IgniteClientConfiguration.UserName cannot be null"));
 
                 cliCfg.UserName = "";
                 ex = Assert.Throws<IgniteClientException>(() => { Ignition.StartClient(cliCfg); });
