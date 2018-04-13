@@ -55,6 +55,11 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
         return commit;
     }
 
+    /** {@inheritDoc} */
+    @Override public void onTimeout() {
+        finish();
+    }
+
     /**
      *
      */

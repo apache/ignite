@@ -101,13 +101,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
-        if (tx.remainingTime() == -1) {
-            if (keyLockFut != null)
-                keyLockFut.onDone(new IgniteTxTimeoutCheckedException(
-                    "Failed to lock keys: TX timeout has been reached"));
-
+        if (tx.remainingTime() == -1)
             return false;
-        }
 
         if ((entry.context().isNear() || entry.context().isLocal()) &&
             owner != null && tx.hasWriteKey(entry.txKey())) {
@@ -287,7 +282,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         if (isDone())
             return false;
 
-        ERR_UPD.compareAndSet(this, null, err);
+        if (err != null) {
+            ERR_UPD.compareAndSet(this, null, err);
+
+            if (keyLockFut != null)
+                keyLockFut.onDone(err);
+        }
 
         return onComplete();
     }

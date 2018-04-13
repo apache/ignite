@@ -47,12 +47,12 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -138,6 +138,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     /** {@inheritDoc} */
     @Override public boolean commit() {
         return commit;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTimeout() {
+        finish(false, false);
     }
 
     /** {@inheritDoc} */
@@ -432,8 +437,12 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                 markInitialized();
             }
-            else
-                onDone(new IgniteCheckedException("Failed to commit transaction: " + CU.txString(tx)));
+            else {
+                if (commit)
+                    onDone(new IgniteCheckedException("Failed to commit transaction: " + System.identityHashCode(tx)));
+                else
+                    onDone(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " + System.identityHashCode(tx)));
+            }
         }
         catch (Error | RuntimeException e) {
             onDone(e);

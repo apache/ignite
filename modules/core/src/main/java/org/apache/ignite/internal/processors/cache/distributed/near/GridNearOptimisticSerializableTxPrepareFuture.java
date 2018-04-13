@@ -99,13 +99,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
-        if (tx.remainingTime() == -1) {
-            if (keyLockFut != null)
-                keyLockFut.onDone(new IgniteTxTimeoutCheckedException(
-                    "Failed to lock keys: TX timeout has been reached"));
-
+        if (tx.remainingTime() == -1)
             return false;
-        }
 
         if ((entry.context().isNear() || entry.context().isLocal()) && owner != null) {
             IgniteTxEntry txEntry = tx.entry(entry.txKey());
