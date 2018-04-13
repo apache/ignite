@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.eviction.EvictableEntry;
-import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -3354,10 +3353,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 else
                     obsolete = true;
             }
-        }
-        catch (NodeStoppingException ignore) {
-            if (log.isDebugEnabled())
-                log.warning("Node is stopping while removing expired value.", ignore);
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to clean up expired cache entry: " + this, e);

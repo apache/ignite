@@ -791,13 +791,21 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (!hasPendingEntries)
             return false;
 
-        int cleared = 0;
+        if (!busyLock.enterBusy())
+            return false;
 
-        for (CacheDataStore store : cacheDataStores()) {
-            cleared += ((GridCacheDataStore)store).purgeExpired(cctx, c, amount - cleared);
+        try {
+            int cleared = 0;
 
-            if (amount != -1 && cleared >= amount)
-                return true;
+            for (CacheDataStore store : cacheDataStores()) {
+                cleared += ((GridCacheDataStore)store).purgeExpired(cctx, c, amount - cleared);
+
+                if (amount != -1 && cleared >= amount)
+                    return true;
+            }
+        }
+        finally {
+            busyLock.leaveBusy();
         }
 
         return false;

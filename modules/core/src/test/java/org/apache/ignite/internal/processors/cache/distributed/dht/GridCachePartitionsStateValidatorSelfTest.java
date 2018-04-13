@@ -122,37 +122,4 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         Assert.assertTrue(result.get(2).get(localNodeId) == 3L);
         Assert.assertTrue(result.get(2).get(remoteNode) == 0L);
     }
-
-    /**
-     * Test partition cache sizes validation.
-     */
-    public void testPartitionCacheSizesValidation() {
-        UUID remoteNode = UUID.randomUUID();
-        UUID ignoreNode = UUID.randomUUID();
-
-        // For partitions 0 and 2 we have inconsistent cache sizes.
-        Map<Integer, Long> cacheSizesMap = new HashMap<>();
-        cacheSizesMap.put(0, 2L);
-        cacheSizesMap.put(1, 2L);
-        cacheSizesMap.put(2, 2L);
-
-        // Form single messages map.
-        Map<UUID, GridDhtPartitionsSingleMessage> messages = new HashMap<>();
-        messages.put(remoteNode, fromCacheSizes(cacheSizesMap));
-        messages.put(ignoreNode, fromCacheSizes(cacheSizesMap));
-
-        GridDhtPartitionsStateValidator validator = new GridDhtPartitionsStateValidator(cctxMock);
-
-        // (partId, (nodeId, cacheSize))
-        Map<Integer, Map<UUID, Long>> result = validator.validatePartitionsSizes(topologyMock, messages, Sets.newHashSet(ignoreNode));
-
-        // Check that validation result contains all necessary information.
-        Assert.assertEquals(2, result.size());
-        Assert.assertTrue(result.containsKey(0));
-        Assert.assertTrue(result.containsKey(2));
-        Assert.assertTrue(result.get(0).get(localNodeId) == 1L);
-        Assert.assertTrue(result.get(0).get(remoteNode) == 2L);
-        Assert.assertTrue(result.get(2).get(localNodeId) == 3L);
-        Assert.assertTrue(result.get(2).get(remoteNode) == 2L);
-    }
 }
