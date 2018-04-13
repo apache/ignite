@@ -45,6 +45,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -114,6 +115,9 @@ public class IgniteConfiguration {
      * means that metrics never expire.
      */
     public static final long DFLT_METRICS_EXPIRE_TIME = Long.MAX_VALUE;
+
+    /** Default network compression flag. */
+    public static final boolean DFLT_COMPRESSION_ENABLED = true;
 
     /** Default maximum timeout to wait for network responses in milliseconds (value is {@code 5,000ms}). */
     public static final long DFLT_NETWORK_TIMEOUT = 5000;
@@ -291,6 +295,12 @@ public class IgniteConfiguration {
 
     /** Events of these types should be recorded. */
     private int[] inclEvtTypes;
+
+    /** Network compression factory. */
+    @Nullable private Factory<CompressionEngine> compressionEngineFactory;
+
+    /** Network compression enabled flag. */
+    private boolean compressionEnabled = DFLT_COMPRESSION_ENABLED;
 
     /** Maximum network requests timeout. */
     private long netTimeout = DFLT_NETWORK_TIMEOUT;
@@ -575,6 +585,8 @@ public class IgniteConfiguration {
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
+        compressionEngineFactory = cfg.getNetworkCompressionFactory();
+        compressionEnabled = cfg.isCompressionEnabled();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
         odbcCfg = cfg.getOdbcConfiguration();
@@ -1418,6 +1430,75 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setMetricsExpireTime(long metricsExpTime) {
         this.metricsExpTime = metricsExpTime;
+
+        return this;
+    }
+
+    /**
+     * Network compression engine factory.
+     * <p>
+     * If {@code null} then Ignite will not compress network.
+     * <p>
+     * If not provided, default is {@code null}.
+     *
+     * @return Network compression engine factory.
+     */
+    @Nullable public Factory<CompressionEngine> getNetworkCompressionFactory() {
+        return compressionEngineFactory;
+    }
+
+    /**
+     * Sets compression engine factory for network compression.
+     * <p>
+     * If {@code null} then Ignite will not compress network.
+     * <p>
+     * If not provided, default is {@code null}.
+     *
+     * @param compressionEngineFactory Network compression engine factory.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setNetworkCompressionFactory(@Nullable Factory<CompressionEngine> compressionEngineFactory) {
+        this.compressionEngineFactory = compressionEngineFactory;
+
+        return this;
+    }
+
+    /**
+     * Network compression flag.
+     * <p>
+     * If {@code true} then {@link TcpCommunicationSpi} will compress network with others nodes.
+     * <p>
+     * Note, that network compression factory should be not null to enable network compression.
+     * {@link IgniteConfiguration#setNetworkCompressionFactory(Factory)}
+     *
+     * If not provided, then default value
+     * {@link #DFLT_COMPRESSION_ENABLED} is used.
+     *
+     * @return True if network compression for this node is enabled.
+     * @see #DFLT_COMPRESSION_ENABLED
+     */
+    public boolean isCompressionEnabled() {
+        return compressionEnabled;
+    }
+
+    /**
+     * Set network compression enabled flag.
+     * <p>
+     * If {@code true} and {@code compressionEngineFactory} not {@code null} then
+     * {@link TcpCommunicationSpi} will compress network with others nodes.
+     * <p>
+     * Note, that network compression factory should be not null to enable network compression.
+     * {@link IgniteConfiguration#setNetworkCompressionFactory(Factory)}
+     *
+     * If not provided, then default value
+     * {@link #DFLT_COMPRESSION_ENABLED} is used.
+     *
+     * @param compressionEnabled Network compression enabled flag.
+     * @see #DFLT_COMPRESSION_ENABLED
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setCompressionEnabled(boolean compressionEnabled) {
+        this.compressionEnabled = compressionEnabled;
 
         return this;
     }

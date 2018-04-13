@@ -58,6 +58,7 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.nio.compression.GridNioCompressionFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -79,6 +80,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.COMPRESSION_META;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
 
@@ -109,8 +111,8 @@ public class GridNioServer<T> {
     /** Buffer metadata key. */
     private static final int BUF_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** SSL system data buffer metadata key. */
-    private static final int BUF_SSL_SYSTEM_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    /** System data buffer metadata key. */
+    private static final int BUF_SYSTEM_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** SSL write buf limit. */
     private static final int WRITE_BUF_LIMIT = GridNioSessionMetaKey.nextUniqueKey();
@@ -221,6 +223,9 @@ public class GridNioServer<T> {
     private GridNioSslFilter sslFilter;
 
     /** */
+    private GridNioCompressionFilter netCompressFilter;
+
+    /** */
     @GridToStringExclude
     private GridNioMessageWriterFactory writerFactory;
 
@@ -327,6 +332,12 @@ public class GridNioServer<T> {
                     sslFilter = (GridNioSslFilter)filter;
 
                     assert sslFilter.directMode();
+                }
+
+                if (filter instanceof GridNioCompressionFilter) {
+                    netCompressFilter = (GridNioCompressionFilter)filter;
+
+                    assert netCompressFilter.directMode();
                 }
             }
         }
@@ -1300,8 +1311,10 @@ public class GridNioServer<T> {
          * @throws IOException If write failed.
          */
         @Override protected void processWrite(SelectionKey key) throws IOException {
-            if (sslFilter != null)
-                processWriteSsl(key);
+            GridNioSession ses = (GridNioSession)key.attachment();
+
+            if (sslFilter != null || ses.isCompressed())
+                processWriteSslCompress(key);
             else
                 processWrite0(key);
         }
@@ -1313,7 +1326,7 @@ public class GridNioServer<T> {
          * @throws IOException If write failed.
          */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        private void processWriteSsl(SelectionKey key) throws IOException {
+        private void processWriteSslCompress(SelectionKey key) throws IOException {
             WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
@@ -1329,12 +1342,20 @@ public class GridNioServer<T> {
                 }
             }
 
-            boolean handshakeFinished = sslFilter.lock(ses);
+            boolean handshakeFinished = false;
+
+            if (sslFilter != null)
+                handshakeFinished = sslFilter.lock(ses);
+
+            boolean isCompressed = ses.isCompressed();
+
+            if (isCompressed)
+                netCompressFilter.lock(ses);
 
             try {
-                writeSslSystem(ses, sockCh);
+                writeSystem(ses, sockCh);
 
-                if (!handshakeFinished)
+                if (sslFilter != null && !handshakeFinished)
                     return;
 
                 ByteBuffer sslNetBuf = ses.removeMeta(BUF_META_KEY);
@@ -1440,7 +1461,11 @@ public class GridNioServer<T> {
 
                     buf.flip();
 
-                    buf = sslFilter.encrypt(ses, buf);
+                    if (isCompressed)
+                        buf = netCompressFilter.compress(ses, buf);
+
+                    if (sslFilter != null)
+                        buf = sslFilter.encrypt(ses, buf);
 
                     ByteBuffer sesBuf = ses.writeBuffer();
 
@@ -1493,7 +1518,11 @@ public class GridNioServer<T> {
                 }
             }
             finally {
-                sslFilter.unlock(ses);
+                if (isCompressed)
+                    netCompressFilter.unlock(ses);
+
+                if (sslFilter != null)
+                    sslFilter.unlock(ses);
             }
         }
 
@@ -1502,9 +1531,9 @@ public class GridNioServer<T> {
          * @param sockCh Socket channel.
          * @throws IOException If failed.
          */
-        private void writeSslSystem(GridSelectorNioSessionImpl ses, WritableByteChannel sockCh)
+        private void writeSystem(GridSelectorNioSessionImpl ses, WritableByteChannel sockCh)
             throws IOException {
-            ConcurrentLinkedQueue<ByteBuffer> queue = ses.meta(BUF_SSL_SYSTEM_META_KEY);
+            ConcurrentLinkedQueue<ByteBuffer> queue = ses.meta(BUF_SYSTEM_META_KEY);
 
             assert queue != null;
 
@@ -3436,8 +3465,11 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
-            if (directMode && sslFilter != null)
-                ses.addMeta(BUF_SSL_SYSTEM_META_KEY, new ConcurrentLinkedQueue<>());
+            if (directMode && (sslFilter != null || netCompressFilter != null))
+                ses.addMeta(BUF_SYSTEM_META_KEY, new ConcurrentLinkedQueue<>());
+
+            if (ses.meta(COMPRESSION_META.ordinal()) != null)
+                ses.setCompressed(true);
 
             proceedSessionOpened(ses);
         }
@@ -3458,10 +3490,10 @@ public class GridNioServer<T> {
             boolean fut,
             IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
             if (directMode) {
-                boolean sslSys = sslFilter != null && msg instanceof ByteBuffer;
+                boolean sys = (sslFilter != null || ses.isCompressed()) && msg instanceof ByteBuffer;
 
-                if (sslSys) {
-                    ConcurrentLinkedQueue<ByteBuffer> queue = ses.meta(BUF_SSL_SYSTEM_META_KEY);
+                if (sys) {
+                    ConcurrentLinkedQueue<ByteBuffer> queue = ses.meta(BUF_SYSTEM_META_KEY);
 
                     assert queue != null;
 

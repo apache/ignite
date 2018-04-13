@@ -27,6 +27,8 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
+import org.apache.ignite.internal.benchmarks.jmh.tcp.GridTestUtils;
+import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -34,6 +36,8 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+
+import javax.cache.configuration.Factory;
 
 /**
  * Base class for cache benchmarks.
@@ -122,6 +126,16 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
         cache = node.cache(DEFAULT_CACHE_NAME);
     }
 
+    /** */
+    protected boolean isSsl() {
+        return false;
+    }
+
+    /** */
+    protected Factory<CompressionEngine> compressionEngineFactory() {
+        return null;
+    }
+
     /**
      * Tear down routine.
      *
@@ -150,6 +164,11 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
         cfg.setDiscoverySpi(discoSpi);
 
         cfg.setCacheConfiguration(cacheConfiguration());
+
+        if (isSsl())
+            cfg.setSslContextFactory(GridTestUtils.sslFactory());
+
+        cfg.setNetworkCompressionFactory(compressionEngineFactory());
 
         return cfg;
     }

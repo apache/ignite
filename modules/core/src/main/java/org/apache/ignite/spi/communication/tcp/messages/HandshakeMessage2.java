@@ -45,9 +45,10 @@ public class HandshakeMessage2 extends HandshakeMessage {
      * @param connectCnt Connect count.
      * @param rcvCnt Number of received messages.
      * @param connIdx Connection index.
+     * @param compressFlag Compress flag.
      */
-    public HandshakeMessage2(UUID nodeId, long connectCnt, long rcvCnt, int connIdx) {
-        super(nodeId, connectCnt, rcvCnt);
+    public HandshakeMessage2(UUID nodeId, long connectCnt, long rcvCnt, int connIdx, boolean compressFlag) {
+        super(nodeId, connectCnt, rcvCnt, compressFlag);
 
         this.connIdx = connIdx;
     }

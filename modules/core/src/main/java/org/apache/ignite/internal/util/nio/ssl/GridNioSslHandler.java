@@ -227,9 +227,11 @@ class GridNioSslHandler extends ReentrantLock {
 
                             if (fut != null)
                                 fut.onDone();
-
-                            parent.proceedSessionOpened(ses);
                         }
+
+                        // Invoking it to initiate compression handler for correct processing input messages.
+                        // Compression filter process incoming msg after ssl filter.
+                        parent.proceedSessionOpened(ses);
 
                         loop = false;
 
