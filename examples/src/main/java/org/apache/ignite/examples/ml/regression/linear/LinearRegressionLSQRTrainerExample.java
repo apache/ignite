@@ -25,12 +25,8 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
-import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionQRTrainer;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
-import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
 import org.apache.ignite.thread.IgniteThread;
 
 import javax.cache.Cache;
@@ -40,9 +36,9 @@ import java.util.UUID;
 /**
  * Run linear regression model over distributed matrix.
  *
- * @see LinearRegressionQRTrainer
+ * @see LinearRegressionLSQRTrainer
  */
-public class DistributedLinearRegressionWithSGDTrainerExample {
+public class LinearRegressionLSQRTrainerExample {
     /** */
     private static final double[][] data = {
         {8, 78, 284, 9.100000381, 109},
@@ -107,19 +103,15 @@ public class DistributedLinearRegressionWithSGDTrainerExample {
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
+
             // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread
             // because we create ignite cache internally.
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                DistributedLinearRegressionWithSGDTrainerExample.class.getSimpleName(), () -> {
-
+                LinearRegressionLSQRTrainerExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
                 System.out.println(">>> Create new linear regression trainer object.");
-                LinearRegressionSGDTrainer<?> trainer = new LinearRegressionSGDTrainer<>(new UpdatesStrategy<>(
-                    new RPropUpdateCalculator(),
-                    RPropParameterUpdate::sumLocal,
-                    RPropParameterUpdate::avg
-                ), 100000,  10, 100, 123L);
+                LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
                 System.out.println(">>> Perform the training to get the model.");
                 LinearRegressionModel mdl = trainer.fit(
