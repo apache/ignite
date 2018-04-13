@@ -71,6 +71,7 @@ import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAlterColumn;
@@ -80,6 +81,7 @@ import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
 import org.h2.table.Column;
 import org.h2.value.DataType;
+import org.h2.value.Value;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
@@ -420,7 +422,8 @@ public class DdlStatementsProcessor {
 
                         QueryField field = new QueryField(col.columnName(),
                             DataType.getTypeClassName(col.column().getType()),
-                            col.column().isNullable(), col.defaultValue());
+                            col.column().isNullable(), col.defaultValue(),
+                            col.precision(), col.scale());
 
                         cols.add(field);
 
@@ -595,6 +598,8 @@ public class DdlStatementsProcessor {
 
         HashMap<String, Object> dfltValues = new HashMap<>();
 
+        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
+
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
             GridSqlColumn gridCol = e.getValue();
 
@@ -613,10 +618,16 @@ public class DdlStatementsProcessor {
 
             if (dfltVal != null)
                 dfltValues.put(e.getKey(), dfltVal);
+
+            if (col.getType() == Value.DECIMAL)
+                decimalInfo.put(e.getKey(), F.t((int)col.getPrecision(), col.getScale()));
         }
 
         if (!F.isEmpty(dfltValues))
             res.setDefaultFieldValues(dfltValues);
+
+        if (!F.isEmpty(decimalInfo))
+            res.setDecimalInfo(decimalInfo);
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
