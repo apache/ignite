@@ -1616,8 +1616,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                             onDisconnected();
 
-                            notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
-
                             UUID newId = UUID.randomUUID();
 
                             U.quietAndWarn(log, "Local node will try to reconnect to cluster with new id due " +
@@ -1716,8 +1714,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                                 }
 
                                 onDisconnected();
-
-                                notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
                             }
 
                             UUID newId = UUID.randomUUID();
@@ -1819,6 +1815,8 @@ class ClientImpl extends TcpDiscoveryImpl {
             nodeAdded = false;
 
             delayDiscoData.clear();
+
+            notifyDiscovery(EVT_CLIENT_NODE_DISCONNECTED, topVer, locNode, allVisibleNodes());
 
             IgniteClientDisconnectedCheckedException err =
                 new IgniteClientDisconnectedCheckedException(null, "Failed to ping node, " +
