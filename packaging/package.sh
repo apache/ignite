@@ -69,7 +69,7 @@ prepEnv () {
 
     # Install missing software if necessary
     installFlag=false
-    if [ ! -z ${installCmd} ]; then
+    if [[ ! -z "${installCmd}" ]]; then
         for executable in ${executables}; do
             command -v ${executable} &>/dev/null || {
                 installFlag=true
@@ -96,11 +96,11 @@ getBin () {
     binPreparedFlag=false
 
     cd rpm/SOURCES
-    if [ ! -f ${binName} ]; then
+    if [ -f "${binName}" ]; then
     binPreparedFlag=true
     fi
     if ! ${binPreparedFlag}; then
-        curl -O https://archive.apache.org/dist/ignite/${igniteVersion}/${binName}
+        curl -O https://archive.apache.org/dist/ignite/${igniteVersion}/${binName} 2>/dev/null
         binPreparedFlag=true
     fi
     if ! ${binPreparedFlag}; then
