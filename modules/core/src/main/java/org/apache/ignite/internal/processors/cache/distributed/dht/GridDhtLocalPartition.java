@@ -224,8 +224,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         }
 
         // Create partitions in OWNING state by default in case of persistence is enabled.
+/*
         if (grp.persistenceEnabled())
             state.set(setPartState(this.state.get(), OWNING));
+*/
     }
 
     /**

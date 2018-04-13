@@ -1142,6 +1142,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         changeWalModeIfNeeded();
 
+/*
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            if (grp.cacheOrGroupName().equals("default")) {
+                for (GridDhtLocalPartition part : grp.topology().localPartitions()) {
+                    log.warning("B " + exchCtx.events().topologyVersion() + " " + part.id() + " " + part.state() + " " + part.updateCounter() + " " + part.fullSize());
+                }
+            }
+        }
+*/
+
         if (crd.isLocal()) {
             if (remaining.isEmpty())
                 onAllReceived(null);
