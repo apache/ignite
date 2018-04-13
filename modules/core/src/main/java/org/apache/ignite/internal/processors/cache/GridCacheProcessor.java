@@ -184,7 +184,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 public class GridCacheProcessor extends GridProcessorAdapter {
     /** Template of message of conflicts during configuration merge*/
     private static final String MERGE_OF_CONFIG_CONFLICTS_MESSAGE =
-        "Conflicts during configuration merge for cache %s : \n%s";
+        "Conflicts during configuration merge for cache '%s' : \n%s";
 
     /** Template of message of node join was fail because it requires to merge of config*/
     private static final String MERGE_OF_CONFIG_REQUIRED_MESSAGE =

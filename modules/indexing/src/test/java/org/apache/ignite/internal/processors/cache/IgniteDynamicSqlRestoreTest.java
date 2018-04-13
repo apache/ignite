@@ -411,6 +411,47 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
     /**
      * @throws Exception if failed.
      */
+    public void testFailJoiningNodeBecauseFieldInlineSizeIsDifferent() throws Exception {
+        {
+            //given: two started nodes with test table
+            Ignite ig = startGrid(0);
+            startGrid(1);
+
+            ig.cluster().active(true);
+
+            IgniteCache cache = ig.getOrCreateCache(getTestTableConfiguration());
+
+            cache.query(new SqlFieldsQuery("create index myindexa on TestIndexObject(a) INLINE_SIZE 1000")).getAll();
+
+            //stop one node and create index on other node
+            stopGrid(1);
+
+            cache.query(new SqlFieldsQuery("drop index myindexa")).getAll();
+            cache.query(new SqlFieldsQuery("create index myindexa on TestIndexObject(a) INLINE_SIZE 2000")).getAll();
+
+            //and: stopped all grid
+            stopAllGrids();
+        }
+
+        {
+            //and: start cluster
+            startGrid(0);
+            try {
+                startGrid(1);
+
+                fail("Node should start with fail");
+            }
+            catch (Exception e) {
+                String cause = cause(e);
+                assertThat(cause, containsString("index MYINDEXA is different"));
+            }
+        }
+
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
     public void testFailJoiningNodeBecauseNeedConfigUpdateOnActiveGrid() throws Exception {
         {
             startGrid(0);
