@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -310,7 +311,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var evt = new ManualResetEventSlim();
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
-            var putGetTask = Task.Factory.StartNew(() =>
+            var putGetTask = TaskRunner.Run(() =>
             {
                 using (var client = StartClient())
                 {
