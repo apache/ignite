@@ -234,6 +234,13 @@ public class GridMapQueryExecutor {
     }
 
     /**
+     * @return Busy lock for lazy workers to guard their operations with.
+     */
+    GridSpinBusyLock busyLock() {
+        return busyLock;
+    }
+
+    /**
      * @param node Node.
      * @param msg Message.
      */

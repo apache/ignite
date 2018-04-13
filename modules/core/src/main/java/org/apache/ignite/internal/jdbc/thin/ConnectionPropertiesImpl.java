@@ -23,8 +23,6 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.StringTokenizer;
-import javax.naming.RefAddr;
-import javax.naming.Reference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -44,6 +42,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Default socket buffer size. */
     private static final int DFLT_SOCK_BUFFER_SIZE = 64 * 1024;
 
+    /** Property: schema. */
+    private static final String PROP_SCHEMA = "schema";
+
     /** Connection URL. */
     private String url;
 
@@ -51,7 +52,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private HostAndPortRange [] addrs;
 
     /** Schema name. Hidden property. Is used to set default schema name part of the URL. */
-    private StringProperty schema = new StringProperty("schema",
+    private StringProperty schema = new StringProperty(PROP_SCHEMA,
         "Schema name of the connection", "PUBLIC", null, false, null);
 
     /** Distributed joins property. */
@@ -487,21 +488,113 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         String nakedUrl = url.substring(JdbcThinUtils.URL_PREFIX.length()).trim();
 
-        int pathPartEndPos = nakedUrl.indexOf('?');
+        parseUrl0(nakedUrl, props);
+    }
+
+    /**
+     * Parse naked URL (i.e. without {@link JdbcThinUtils#URL_PREFIX}).
+     *
+     * @param url Naked URL.
+     * @param props Properties.
+     * @throws SQLException If failed.
+     */
+    private void parseUrl0(String url, Properties props) throws SQLException {
+        // Determine mode - semicolon or ampersand.
+        int semicolonPos = url.indexOf(";");
+        int slashPos = url.indexOf("/");
+        int queryPos = url.indexOf("?");
+
+        boolean semicolonMode;
+
+        if (semicolonPos == -1 && slashPos == -1 && queryPos == -1)
+            // No special char -> any mode could be used, choose semicolon for simplicity.
+            semicolonMode = true;
+        else {
+            if (semicolonPos != -1) {
+                // Use semicolon mode if it appears earlier than slash or query.
+                semicolonMode =
+                    (slashPos == -1 || semicolonPos < slashPos) && (queryPos == -1 || semicolonPos < queryPos);
+            }
+            else
+                // Semicolon is not found.
+                semicolonMode = false;
+        }
+
+        if (semicolonMode)
+            parseUrlWithSemicolon(url, props);
+        else
+            parseUrlWithQuery(url, props);
+    }
+
+    /**
+     * Parse URL in semicolon mode.
+     *
+     * @param url Naked URL
+     * @param props Properties.
+     * @throws SQLException If failed.
+     */
+    private void parseUrlWithSemicolon(String url, Properties props) throws SQLException {
+        int pathPartEndPos = url.indexOf(';');
 
         if (pathPartEndPos == -1)
-            pathPartEndPos = nakedUrl.length();
+            pathPartEndPos = url.length();
 
-        String pathPart = nakedUrl.substring(0, pathPartEndPos);
+        String pathPart = url.substring(0, pathPartEndPos);
 
         String paramPart = null;
 
-        if (pathPartEndPos > 0 && pathPartEndPos < nakedUrl.length())
-            paramPart = nakedUrl.substring(pathPartEndPos + 1, nakedUrl.length());
+        if (pathPartEndPos > 0 && pathPartEndPos < url.length())
+            paramPart = url.substring(pathPartEndPos + 1, url.length());
+
+        parseEndpoints(pathPart);
+
+        if (!F.isEmpty(paramPart))
+            parseParameters(paramPart, props, ";");
+    }
+
+    /**
+     * Parse URL in query mode.
+     *
+     * @param url Naked URL
+     * @param props Properties.
+     * @throws SQLException If failed.
+     */
+    private void parseUrlWithQuery(String url, Properties props) throws SQLException {
+        int pathPartEndPos = url.indexOf('?');
+
+        if (pathPartEndPos == -1)
+            pathPartEndPos = url.length();
+
+        String pathPart = url.substring(0, pathPartEndPos);
+
+        String paramPart = null;
+
+        if (pathPartEndPos > 0 && pathPartEndPos < url.length())
+            paramPart = url.substring(pathPartEndPos + 1, url.length());
 
         String[] pathParts = pathPart.split("/");
 
-        String [] endpoints = pathParts[0].split(",");
+        parseEndpoints(pathParts[0]);
+
+        if (pathParts.length > 2) {
+            throw new SQLException("Invalid URL format (only schema name is allowed in URL path parameter " +
+                "'host:port[/schemaName]'): " + this.url, SqlStateCode.CLIENT_CONNECTION_FAILED);
+        }
+
+        setSchema(pathParts.length == 2 ? pathParts[1] : null);
+
+        if (!F.isEmpty(paramPart))
+            parseParameters(paramPart, props, "&");
+    }
+
+    /**
+     * Parse endpoints.
+     *
+     * @param endpointStr Endpoint string.
+     * @throws SQLException If failed.
+     */
+    private void parseEndpoints(String endpointStr) throws SQLException {
+        String [] endpoints = endpointStr.split(",");
 
         if (endpoints.length > 0)
             addrs = new HostAndPortRange[endpoints.length];
@@ -519,16 +612,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         if (F.isEmpty(addrs) || F.isEmpty(addrs[0].host()))
             throw new SQLException("Host name is empty", SqlStateCode.CLIENT_CONNECTION_FAILED);
-
-        if (pathParts.length > 2) {
-            throw new SQLException("Invalid URL format (only schema name is allowed in URL path parameter " +
-                "'host:port[/schemaName]'): " + url, SqlStateCode.CLIENT_CONNECTION_FAILED);
-        }
-
-        setSchema(pathParts.length == 2 ? pathParts[1] : null);
-
-        if (!F.isEmpty(paramPart))
-            parseParameters(paramPart, props);
     }
 
     /**
@@ -536,10 +619,11 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
      *
      * @param paramStr Parameters string.
      * @param props Properties.
+     * @param delimChar Delimiter character.
      * @throws SQLException If failed.
      */
-    private void parseParameters(String paramStr, Properties props) throws SQLException {
-        StringTokenizer st = new StringTokenizer(paramStr, "&");
+    private void parseParameters(String paramStr, Properties props, String delimChar) throws SQLException {
+        StringTokenizer st = new StringTokenizer(paramStr, delimChar);
 
         boolean insideBrace = false;
 
@@ -553,8 +637,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
                 int eqSymPos = token.indexOf('=');
 
                 if (eqSymPos < 0) {
-                    throw new SQLException("Invalid parameter format " +
-                        "(URL properties format: key0=value0&key1=value1&... etc. pair: " + token);
+                    throw new SQLException("Invalid parameter format (should be \"key1=val1" + delimChar +
+                        "key2=val2" + delimChar + "...\"): " + token);
                 }
 
                 if (eqSymPos == token.length())
@@ -570,7 +654,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
                 }
             }
             else
-                val += "&" + token;
+                val += delimChar + token;
 
             if (val.endsWith("}")) {
                 insideBrace = false;
@@ -587,22 +671,24 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
                 if (key.isEmpty() || val.isEmpty())
                     throw new SQLException("Invalid parameter format (key and value cannot be empty): " + token);
 
-                props.setProperty(PROP_PREFIX + key, val);
+                if (PROP_SCHEMA.equalsIgnoreCase(key))
+                    setSchema(val);
+                else
+                    props.setProperty(PROP_PREFIX + key, val);
             }
         }
     }
-
 
     /**
      * @return Driver's properties info array.
      */
     public DriverPropertyInfo[] getDriverPropertyInfo() {
-        DriverPropertyInfo[] dpis = new DriverPropertyInfo[propsArray.length];
+        DriverPropertyInfo[] infos = new DriverPropertyInfo[propsArray.length];
 
         for (int i = 0; i < propsArray.length; ++i)
-            dpis[i] = propsArray[i].getDriverPropertyInfo();
+            infos[i] = propsArray[i].getDriverPropertyInfo();
 
-        return dpis;
+        return infos;
     }
 
     /**
@@ -737,23 +823,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
                 throw new SQLException("Invalid property value. [name=" + name + ", val=" + strVal
                     + ", choices=" + Arrays.toString(choices) + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
-            }
-        }
-
-        /**
-         * @param ref Reference object.
-         * @throws SQLException On error.
-         */
-        void init(Reference ref) throws SQLException {
-            RefAddr refAddr = ref.get(name);
-
-            if (refAddr != null) {
-                String str = (String) refAddr.getContent();
-
-                if (validator != null)
-                    validator.validate(str);
-
-                init(str);
             }
         }
 

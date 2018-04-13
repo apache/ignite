@@ -32,6 +32,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ *
+ */
 public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
     /** */
     private static final String IGNITE_QUEUE_NAME = "ignite-queue-client-reconnect-test";
@@ -66,6 +69,10 @@ public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * @param cacheAtomicityMode Atomicity mode.
+     * @return Configuration.
+     */
     private static CollectionConfiguration collectionConfiguration(CacheAtomicityMode cacheAtomicityMode) {
         CollectionConfiguration colCfg = new CollectionConfiguration();
 
@@ -74,6 +81,9 @@ public class GridCacheQueueClientDisconnectTest extends GridCommonAbstractTest {
         return colCfg;
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testClientDisconnect() throws Exception {
         try {
             Ignite server = startGrid(0);

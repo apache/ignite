@@ -32,10 +32,10 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  *
  * Class terminates Genetic algorithm when fitnessScore > 32  <br/>
  */
-
 public class MovieTerminateCriteria implements ITerminateCriteria {
-
+    /** Ignite logger */
     private IgniteLogger igniteLogger = null;
+    /** Ignite instance */
     private Ignite ignite = null;
 
     /**

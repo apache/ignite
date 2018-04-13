@@ -33,33 +33,48 @@ import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 public class NormalizationTrainer<K, V> implements PreprocessingTrainer<K, V, double[], double[]> {
     /** {@inheritDoc} */
     @Override public NormalizationPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> basePreprocessor, int cols) {
+        IgniteBiFunction<K, V, double[]> basePreprocessor) {
         try (Dataset<EmptyContext, NormalizationPartitionData> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new EmptyContext(),
             (upstream, upstreamSize, ctx) -> {
-                double[] min = new double[cols];
-                double[] max = new double[cols];
-
-                for (int i = 0; i < cols; i++) {
-                    min[i] = Double.MAX_VALUE;
-                    max[i] = -Double.MAX_VALUE;
-                }
+                double[] min = null;
+                double[] max = null;
 
                 while (upstream.hasNext()) {
                     UpstreamEntry<K, V> entity = upstream.next();
                     double[] row = basePreprocessor.apply(entity.getKey(), entity.getValue());
-                    for (int i = 0; i < cols; i++) {
+
+                    if (min == null) {
+                        min = new double[row.length];
+                        for (int i = 0; i < min.length; i++)
+                            min[i] = Double.MAX_VALUE;
+                    }
+                    else
+                        assert min.length == row.length : "Base preprocessor must return exactly " + min.length
+                            + " features";
+
+                    if (max == null) {
+                        max = new double[row.length];
+                        for (int i = 0; i < max.length; i++)
+                            max[i] = -Double.MAX_VALUE;
+                    }
+                    else
+                        assert max.length == row.length : "Base preprocessor must return exactly " + min.length
+                            + " features";
+
+                    for (int i = 0; i < row.length; i++) {
                         if (row[i] < min[i])
                             min[i] = row[i];
                         if (row[i] > max[i])
                             max[i] = row[i];
                     }
                 }
+
                 return new NormalizationPartitionData(min, max);
             }
         )) {
             double[][] minMax = dataset.compute(
-                data -> new double[][]{ data.getMin(), data.getMax() },
+                data -> data.getMin() != null ? new double[][]{ data.getMin(), data.getMax() } : null,
                 (a, b) -> {
                     if (a == null)
                         return b;
