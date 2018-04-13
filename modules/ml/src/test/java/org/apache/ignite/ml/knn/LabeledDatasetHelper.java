@@ -27,7 +27,7 @@ import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 /**
  * Base class for decision trees test.
  */
-public class BaseKNNTest {
+public class LabeledDatasetHelper {
     /** Separator. */
     private static final String SEPARATOR = "\t";
 
@@ -37,9 +37,9 @@ public class BaseKNNTest {
      * @param rsrcPath path to dataset.
      * @return null if path is incorrect.
      */
-    LabeledDataset loadDatasetFromTxt(String rsrcPath, boolean isFallOnBadData) {
+    public static LabeledDataset loadDatasetFromTxt(String rsrcPath, boolean isFallOnBadData) {
         try {
-            Path path = Paths.get(this.getClass().getClassLoader().getResource(rsrcPath).toURI());
+            Path path = Paths.get(LabeledDatasetHelper.class.getClassLoader().getResource(rsrcPath).toURI());
             try {
                 return LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, false, isFallOnBadData);
             }

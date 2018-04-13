@@ -37,7 +37,7 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.fail;
 
 /** Tests behaviour of KNNClassificationTest. */
-public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTest<LabeledDataset> {
+public class LabeledDatasetTest implements ExternalizableTest<LabeledDataset> {
     /** */
     private static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";
 
@@ -141,7 +141,7 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     /** */
     @Test
     public void testLoadingCorrectTxtFile() {
-        LabeledDataset training = loadDatasetFromTxt(KNN_IRIS_TXT, false);
+        LabeledDataset training = LabeledDatasetHelper.loadDatasetFromTxt(KNN_IRIS_TXT, false);
         assertEquals(training.rowSize(), 150);
     }
 
@@ -149,7 +149,7 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     @Test
     public void testLoadingEmptyFile() {
         try {
-            loadDatasetFromTxt(EMPTY_TXT, false);
+            LabeledDatasetHelper.loadDatasetFromTxt(EMPTY_TXT, false);
             fail("EmptyFileException");
         }
         catch (EmptyFileException e) {
@@ -162,7 +162,7 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     @Test
     public void testLoadingFileWithFirstEmptyRow() {
         try {
-            loadDatasetFromTxt(NO_DATA_TXT, false);
+            LabeledDatasetHelper.loadDatasetFromTxt(NO_DATA_TXT, false);
             fail("NoDataException");
         }
         catch (NoDataException e) {
@@ -174,7 +174,7 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     /** */
     @Test
     public void testLoadingFileWithIncorrectData() {
-        LabeledDataset training = loadDatasetFromTxt(IRIS_INCORRECT_TXT, false);
+        LabeledDataset training = LabeledDatasetHelper.loadDatasetFromTxt(IRIS_INCORRECT_TXT, false);
         assertEquals(149, training.rowSize());
     }
 
@@ -182,7 +182,7 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     @Test
     public void testFailOnLoadingFileWithIncorrectData() {
         try {
-            loadDatasetFromTxt(IRIS_INCORRECT_TXT, true);
+            LabeledDatasetHelper.loadDatasetFromTxt(IRIS_INCORRECT_TXT, true);
             fail("FileParsingException");
         }
         catch (FileParsingException e) {
