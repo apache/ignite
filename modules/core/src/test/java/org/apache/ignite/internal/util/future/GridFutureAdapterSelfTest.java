@@ -280,6 +280,14 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
 
         fut.onDone("result");
 
+        if(exec != null){
+            CountDownLatch futDone = new CountDownLatch(1);
+
+            chain.listen(f -> futDone.countDown());
+
+            futDone.await();
+        }
+
         assertEquals("result", chain.get(1));
 
         // Test exception re-thrown.
