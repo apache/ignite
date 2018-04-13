@@ -158,7 +158,7 @@ public class GridDhtPartitionsStateValidator {
 
         // Populate counters statistics from local node partitions.
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
-            if (top.partitionState(cctx.localNodeId(), part.id()) != GridDhtPartitionState.OWNING)
+            if (part.state() != GridDhtPartitionState.OWNING)
                 continue;
 
             if (part.updateCounter() == 0 && part.fullSize() == 0)
@@ -212,7 +212,7 @@ public class GridDhtPartitionsStateValidator {
 
         // Populate sizes statistics from local node partitions.
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
-            if (top.partitionState(cctx.localNodeId(), part.id()) != GridDhtPartitionState.OWNING)
+            if (part.state() != GridDhtPartitionState.OWNING)
                 continue;
 
             if (part.updateCounter() == 0 && part.fullSize() == 0)

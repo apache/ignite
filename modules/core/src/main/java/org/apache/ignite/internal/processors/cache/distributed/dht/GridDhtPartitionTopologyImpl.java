@@ -1325,6 +1325,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 if (incomeCntrMap != null) {
                     // update local counters in partitions
                     for (int i = 0; i < locParts.length(); i++) {
+                        cntrMap.updateCounter(i, incomeCntrMap.updateCounter(i));
+
                         GridDhtLocalPartition part = locParts.get(i);
 
                         if (part == null)
@@ -1491,9 +1493,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             }
                         }
                         else if (state == MOVING) {
-                            GridDhtLocalPartition locPart = locParts.get(p);
-
                             if (!partsToReload.contains(p)) {
+                                GridDhtLocalPartition locPart = locParts.get(p);
+
                                 if (locPart == null || locPart.state() == EVICTED)
                                     locPart = getOrCreatePartition(p);
 
@@ -1504,37 +1506,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 }
                             }
                             else {
-                                if (locPart == null || locPart.state() == EVICTED) {
-                                    getOrCreatePartition(p);
+                                rebalancePartition(p, false);
 
-                                    changed = true;
-                                }
-                                else if (locPart.state() == OWNING || locPart.state() == MOVING) {
-                                    if (locPart.state() == OWNING)
-                                        locPart.moving();
-                                    locPart.clearAsync();
-
-                                    changed = true;
-                                }
-                                else if (locPart.state() == RENTING) {
-                                    // Try to prevent partition eviction.
-                                    if (locPart.reserve()) {
-                                        try {
-                                            locPart.moving();
-                                            locPart.clearAsync();
-                                        } finally {
-                                            locPart.release();
-                                        }
-                                    }
-                                    // In other case just recreate it.
-                                    else {
-                                        assert locPart.state() == EVICTED;
-
-                                        getOrCreatePartition(p);
-                                    }
-
-                                    changed = true;
-                                }
+                                changed = true;
                             }
                         }
                     }
@@ -2096,27 +2070,25 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq) {
         Set<UUID> result = haveHistory ? Collections.<UUID>emptySet() : new HashSet<UUID>();
 
+        AffinityAssignment aff = grp.affinity().cachedAffinity(lastTopChangeVer);
+
         ctx.database().checkpointReadLock();
 
         try {
             lock.writeLock().lock();
 
             try {
-                GridDhtLocalPartition locPart = locParts.get(p);
+                Set<UUID> affinityOwners = aff.getIds(p);
 
-                if (locPart != null) {
-                    if (locPart.state() == OWNING && !owners.contains(ctx.localNodeId())) {
-                        locPart.moving();
+                if (affinityOwners.contains(ctx.localNodeId()) && !owners.contains(ctx.localNodeId())) {
+                    rebalancePartition(p, haveHistory);
 
-                        if (!haveHistory) {
-                            locPart.clearAsync();
-                            result.add(ctx.localNodeId());
-                        }
+                    if (!haveHistory)
+                        result.add(ctx.localNodeId());
 
-                        U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                            "[nodeId=" + ctx.localNodeId() + ", grp=" + grp.cacheOrGroupName() +
-                            ", partId=" + locPart.id() + ", haveHistory=" + haveHistory + "]");
-                    }
+                    U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
+                        "[nodeId=" + ctx.localNodeId() + ", grp=" + grp.cacheOrGroupName() +
+                        ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                 }
 
                 for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
@@ -2126,7 +2098,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (!partMap.containsKey(p))
                         continue;
 
-                    if (partMap.get(p) == OWNING && !owners.contains(remoteNodeId)) {
+                    if (affinityOwners.contains(remoteNodeId) && !owners.contains(remoteNodeId)) {
                         partMap.put(p, MOVING);
 
                         if (!haveHistory)
@@ -2157,6 +2129,39 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
 
         return result;
+    }
+
+    /**
+     * Prepares given partition {@code p} for rebalance.
+     * Changes partition state to MOVING and starts clearing if needed.
+     * Prevents ongoing renting if required.
+     *
+     * @param p Partition id.
+     * @param haveHistory If {@code true} there is WAL history to rebalance partition.
+     */
+    private void rebalancePartition(int p, boolean haveHistory) {
+        GridDhtLocalPartition part = getOrCreatePartition(p);
+
+        // Prevent renting.
+        if (part.state() == RENTING) {
+            if (part.reserve()) {
+                part.moving();
+                part.release();
+            }
+            else {
+                assert part.state() == EVICTED : part;
+
+                part = getOrCreatePartition(p);
+            }
+        }
+
+        if (part.state() != MOVING)
+            part.moving();
+
+        if (!haveHistory)
+            part.clearAsync();
+
+        assert part.state() == MOVING : part;
     }
 
     /**

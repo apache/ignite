@@ -2553,6 +2553,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
+            if (!exchCtx.mergeExchanges() && forceAffReassignment)
+                idealAffDiff = cctx.affinity().onCustomEventWithEnforcedAffinityReassignment(this);
+
             validatePartitionsState();
 
             if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
@@ -2584,9 +2587,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (exchCtx.events().hasServerLeft())
                     detectLostPartitions(resTopVer);
             }
-
-            if (!exchCtx.mergeExchanges() && forceAffReassignment)
-                idealAffDiff = cctx.affinity().onCustomEventWithEnforcedAffinityReassignment(this);
 
             for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
                 if (!grpCtx.isLocal())
