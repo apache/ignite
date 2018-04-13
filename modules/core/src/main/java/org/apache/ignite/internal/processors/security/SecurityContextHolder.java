@@ -15,14 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.partitions;
+package org.apache.ignite.internal.processors.security;
 
-import java.io.Serializable;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Partition context of the kNN classification algorithm.
+ * Thread-local security context.
  */
-public class KNNPartitionContext implements Serializable {
-    /** */
-    private static final long serialVersionUID = -7212307112344430126L;
+public class SecurityContextHolder {
+    /** Context. */
+    private static final ThreadLocal<SecurityContext> CTX = new ThreadLocal<>();
+
+    /**
+     * Get security context.
+     *
+     * @return Security context.
+     */
+    @Nullable public static SecurityContext get() {
+        return CTX.get();
+    }
+
+    /**
+     * Set security context.
+     *
+     * @param ctx Context.
+     */
+    public static void set(@Nullable SecurityContext ctx) {
+        CTX.set(ctx);
+    }
+
+    /**
+     * Clear security context.
+     */
+    public static void clear() {
+        set(null);
+    }
 }
