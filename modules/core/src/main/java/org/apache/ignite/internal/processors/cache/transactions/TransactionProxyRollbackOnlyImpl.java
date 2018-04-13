@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.io.Externalizable;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -27,6 +28,16 @@ import org.apache.ignite.lang.IgniteFuture;
  */
 @SuppressWarnings("unchecked")
 public class TransactionProxyRollbackOnlyImpl<K, V> extends TransactionProxyImpl<K, V> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * Empty constructor required for {@link Externalizable}.
+     */
+    public TransactionProxyRollbackOnlyImpl() {
+        // No-op.
+    }
+
     /**
      * @param tx Tx.
      * @param cctx Cctx.

@@ -44,6 +44,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -84,7 +85,7 @@ import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
  */
 public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /** */
-    public static final int DURATION = 20_000;
+    public static final int DURATION = 60_000;
 
     /** */
     private static final String CACHE_NAME = "test";
@@ -479,9 +480,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Rollback tx while lock request is delayed.
+     * Rollback tx while near lock request is delayed.
      */
-    public void testRollbackDelayLockRequest() throws Exception {
+    public void testRollbackDelayNearLockRequest() throws Exception {
         final Ignite client = startClient();
 
         final Ignite prim = primaryNode(0, CACHE_NAME);
@@ -824,15 +825,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                 // No-op.
             }
 
-            try {
-                tx.close();
-
-                fail("close");
-            }
-            catch (Exception e) {
-                // No-op.
-            }
-
             tx.rollback();
 
             tx.rollbackAsync().get();
@@ -870,7 +862,12 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 keyLocked.countDown();
 
-                U.awaitQuiet(waitCommit);
+                try {
+                    U.await(waitCommit);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    fail("Lock thread was interrupted while waiting");
+                }
 
                 tx.commit();
             }

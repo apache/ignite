@@ -832,7 +832,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             skipStore,
             keepBinary);
 
-        if (fut.isDone()) // Possible in case of cancellation or time out or rollback.
+        if (fut.isDone()) // Possible in case of cancellation or timeout or rollback.
             return fut;
 
         for (KeyCacheObject key : keys) {
@@ -872,12 +872,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         if (!fut.isDone()) {
             ctx.mvcc().addFuture(fut);
-
-            fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                    ctx.mvcc().removeVersionedFuture((GridCacheVersionedFuture<?>)fut);
-                }
-            });
 
             fut.map();
         }
@@ -981,10 +975,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 }
             }
 
-            boolean timedout = false;
+            boolean timedOut = false;
 
             for (KeyCacheObject key : keys) {
-                if (timedout)
+                if (timedOut)
                     break;
 
                 while (true) {
@@ -999,7 +993,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             fut.addEntry(key == null ? null : entry);
 
                             if (fut.isDone()) {
-                                timedout = true;
+                                timedOut = true;
 
                                 break;
                             }

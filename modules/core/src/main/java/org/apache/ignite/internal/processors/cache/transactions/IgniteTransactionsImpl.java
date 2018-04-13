@@ -44,14 +44,14 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     private GridCacheSharedContext<K, V> cctx;
 
     /** Label. */
-    private String label;
+    private String lb;
 
     /**
      * @param cctx Cache shared context.
      */
-    public IgniteTransactionsImpl(GridCacheSharedContext<K, V> cctx, @Nullable String label) {
+    public IgniteTransactionsImpl(GridCacheSharedContext<K, V> cctx, @Nullable String lb) {
         this.cctx = cctx;
-        this.label = label;
+        this.lb = lb;
     }
 
     /** {@inheritDoc} */
@@ -176,7 +176,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
                 timeout,
                 true,
                 txSize,
-                label
+                lb
             );
 
             assert tx != null;
