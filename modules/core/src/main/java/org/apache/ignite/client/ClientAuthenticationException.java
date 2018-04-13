@@ -24,22 +24,10 @@ public class ClientAuthenticationException extends ClientException {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
-    /** Message. */
-    private static final String MSG = "Invalid user name or password";
-
     /**
      * Default constructor.
      */
-    public ClientAuthenticationException() {
-        super(MSG);
-    }
-
-    /**
-     * Constructs a new exception with the specified cause.
-     *
-     * @param cause the cause.
-     */
-    public ClientAuthenticationException(Throwable cause) {
-        super(MSG, cause);
+    public ClientAuthenticationException(String msg) {
+        super(msg);
     }
 }

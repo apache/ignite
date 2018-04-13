@@ -44,10 +44,10 @@ import static org.apache.ignite.plugin.security.SecuritySubjectType.REMOTE_CLIEN
  */
 public class ClientConnectionContext implements ClientListenerConnectionContext {
     /** Version 1.0.0. */
-    private static final ClientListenerProtocolVersion VER_1_0_0 = ClientListenerProtocolVersion.create(1, 0, 0);
+    public static final ClientListenerProtocolVersion VER_1_0_0 = ClientListenerProtocolVersion.create(1, 0, 0);
 
     /** Version 1.1.0. */
-    private static final ClientListenerProtocolVersion VER_1_1_0 = ClientListenerProtocolVersion.create(1, 1, 0);
+    public static final ClientListenerProtocolVersion VER_1_1_0 = ClientListenerProtocolVersion.create(1, 1, 0);
 
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(VER_1_1_0, VER_1_0_0);
@@ -144,12 +144,12 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
             authCtx = thirdPartyAuthentication(user, pwd).authorizationContext();
         else if (kernalCtx.authentication().enabled()) {
             if (user == null || user.length() == 0)
-                throw new IgniteCheckedException("Unauthenticated sessions are prohibited.");
+                throw new IgniteAccessControlException("Unauthenticated sessions are prohibited.");
 
             authCtx = kernalCtx.authentication().authenticate(user, pwd);
 
             if (authCtx == null)
-                throw new IgniteCheckedException("Unknown authentication error.");
+                throw new IgniteAccessControlException("Unknown authentication error.");
         }
 
         handler = new ClientRequestHandler(this, authCtx);
