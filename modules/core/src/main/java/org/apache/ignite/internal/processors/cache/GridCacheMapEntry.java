@@ -3024,9 +3024,27 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
             else {
                 if (cctx.mvccEnabled()) {
+                    // cannot identify whether the entry is exist on the fly
                     unswap(false);
 
-                    return initialValue(val, ver, mvccVer, newMvccVer, ttl, expireTime, preload, topVer, drType, fromStore);
+                    if (update = p.apply(null)) {
+                        // If entry is already unswapped and we are modifying it, we must run deletion callbacks for old value.
+                        long oldExpTime = expireTimeUnlocked();
+                        long delta = (oldExpTime == 0 ? 0 : oldExpTime - U.currentTimeMillis());
+
+                        if (delta < 0) {
+                            if (onExpired(this.val, null)) {
+                                if (cctx.deferredDelete()) {
+                                    deferred = true;
+                                    oldVer = this.ver;
+                                }
+                                else if (val == null)
+                                    obsolete = true;
+                            }
+                        }
+
+                        cctx.offheap().mvccInitialValue(this, val, ver, expTime, mvccVer, newMvccVer);
+                    }
                 }
                 else
                     // Optimization to access storage only once.
