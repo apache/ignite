@@ -64,10 +64,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -76,6 +78,8 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
+import org.apache.ignite.internal.processors.cache.CacheJoinNodeDiscoveryData;
+import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
@@ -106,6 +110,7 @@ import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
@@ -3575,6 +3580,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             else if (!node.isClient() &&
                                 !subj.systemOperationAllowed(SecurityPermission.JOIN_AS_SERVER))
                                 authFailedMsg = "Node is not authorised to join as a server node";
+                            else
+                                authFailedMsg = authorizeDiscovery(subj, msg.gridDiscoveryData());
 
                             if (authFailedMsg != null) {
                                 // Always output in debug.
@@ -3933,6 +3940,49 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             else if (sendMessageToRemotes(msg))
                 sendMessageAcrossRing(msg);
+        }
+
+        /**
+         * Ensure the joining node has permissions to join.
+         *
+         * @return A non-empty messages describing authorization failure if authorization fails or {@code null} if
+         * authorization is successful.
+         */
+        private String authorizeDiscovery(SecurityContext subj, DiscoveryDataPacket dataPacket) {
+            if (!dataPacket.joiningNodeId().equals(locNode.id())) {
+                DiscoveryDataBag dataBag = dataPacket.unmarshalJoiningNodeData(
+                    spi.marshaller(),
+                    U.resolveClassLoader(spi.ignite().configuration()), locNode.isClient(),
+                    log
+                );
+
+                if (dataBag.joiningNodeData() != null) {
+                    Object data = dataBag.joiningNodeData().get(
+                        GridComponent.DiscoveryDataExchangeType.CACHE_PROC.ordinal()
+                    );
+
+                    if (data instanceof CacheJoinNodeDiscoveryData) {
+                        CacheJoinNodeDiscoveryData discoData = (CacheJoinNodeDiscoveryData)data;
+
+                        if (discoData.caches() != null) {
+                            for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : discoData.caches().values()) {
+                                if (cacheInfo.cacheType() == CacheType.USER) {
+                                    if (!subj.systemOperationAllowed(SecurityPermission.CACHE_CREATE))
+                                        return "Authorization failed for creating cache.";
+
+                                    if (cacheInfo.cacheData().config().isOnheapCacheEnabled() &&
+                                        System.getProperty(IgniteSystemProperties.IGNITE_DISABLE_ONHEAP_CACHE, "false")
+                                            .toUpperCase().equals("TRUE")
+                                        )
+                                        return "Authorization failed for enabling on-heap cache.";
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
 
         /**

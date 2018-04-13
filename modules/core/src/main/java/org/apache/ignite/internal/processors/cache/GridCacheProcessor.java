@@ -1128,9 +1128,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheConfiguration cfg = cacheCtx.config();
 
-        if (cacheCtx.userCache())
-            authorizeCacheCreate(cacheCtx.name(), cfg);
-
         // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
         if (cfg.isStoreKeepBinary() && cfg.isStoreKeepBinary() != CacheConfiguration.DFLT_STORE_KEEP_BINARY
             && !(ctx.config().getMarshaller() instanceof BinaryMarshaller))
@@ -3229,22 +3226,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (req.cacheType() == null || req.cacheType() == CacheType.USER) {
             if (req.stop())
                 ctx.security().authorize(req.cacheName(), SecurityPermission.CACHE_DESTROY, null);
-            else
-                authorizeCacheCreate(req.cacheName(), req.startCacheConfiguration());
+            else {
+                ctx.security().authorize(req.cacheName(), SecurityPermission.CACHE_CREATE, null);
+
+                if (req.startCacheConfiguration() != null && req.startCacheConfiguration().isOnheapCacheEnabled() &&
+                    System.getProperty(IgniteSystemProperties.IGNITE_DISABLE_ONHEAP_CACHE, "false")
+                        .toUpperCase().equals("TRUE")
+                    )
+                    throw new SecurityException("Authorization failed for enabling on-heap cache.");
+            }
         }
-    }
-
-    /**
-     * Authorize start/create cache operation.
-     */
-    private void authorizeCacheCreate(String cacheName, CacheConfiguration cacheCfg) {
-        ctx.security().authorize(cacheName, SecurityPermission.CACHE_CREATE, null);
-
-        if (cacheCfg != null && cacheCfg.isOnheapCacheEnabled() &&
-            System.getProperty(IgniteSystemProperties.IGNITE_DISABLE_ONHEAP_CACHE, "false")
-                .toUpperCase().equals("TRUE")
-            )
-            throw new SecurityException("Authorization failed for enabling on-heap cache.");
     }
 
     /**
