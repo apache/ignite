@@ -776,7 +776,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void removeCacheConfigurationData(StoredCacheData cacheData) throws IgniteCheckedException {
+    @Override public void removeCacheData(StoredCacheData cacheData) throws IgniteCheckedException {
         CacheConfiguration cacheCfg = cacheData.config();
         File cacheWorkDir = cacheWorkDir(cacheCfg);
         File file;

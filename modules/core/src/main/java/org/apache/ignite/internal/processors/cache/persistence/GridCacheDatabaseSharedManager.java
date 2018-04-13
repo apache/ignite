@@ -2114,7 +2114,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param grpId Group id.
      */
     private boolean isValidGroup(int grpId) {
-        return cctx.cache().cacheGroup(grpId) != null || grpId == METASTORAGE_CACHE_ID;
+        return cctx.cache().cacheGroupDescriptors().get(grpId) != null || grpId == METASTORAGE_CACHE_ID;
     }
 
     /**
