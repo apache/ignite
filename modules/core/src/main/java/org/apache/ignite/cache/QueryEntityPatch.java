@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * {@link org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation}
  * ) and not remove ones.
  *
- * It contain only add operation because in current time we don't have history of schema operations
+ * It contain only add operation because at the moment we don't have history of schema operations
  * and by current state we can't understand some property was already deleted or it has not been added yet.
  */
 public class QueryEntityPatch {

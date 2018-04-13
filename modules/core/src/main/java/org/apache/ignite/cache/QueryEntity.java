@@ -171,7 +171,7 @@ public class QueryEntity implements Serializable {
 
         List<QueryField> queryFieldsToAdd = checkFields(target, conflicts);
 
-        Collection<QueryIndex> indexesToAdd = checkIndices(target, conflicts);
+        Collection<QueryIndex> indexesToAdd = checkIndexes(target, conflicts);
 
         if (conflicts.length() != 0)
             return QueryEntityPatch.conflict(tableName + " conflict: \n" + conflicts.toString());
@@ -213,7 +213,7 @@ public class QueryEntity implements Serializable {
      * @param conflicts Storage of conflicts.
      * @return Indexes which exist in target and not exist in local.
      */
-    @NotNull private Collection<QueryIndex> checkIndices(QueryEntity target, StringBuilder conflicts) {
+    @NotNull private Collection<QueryIndex> checkIndexes(QueryEntity target, StringBuilder conflicts) {
         HashSet<QueryIndex> indexesToAdd = new HashSet<>();
 
         Map<String, QueryIndex> currentIndexes = new HashMap<>();
@@ -290,7 +290,7 @@ public class QueryEntity implements Serializable {
     /**
      * @param collection Collection for checking.
      * @param elementToCheck Element for checking to containing in collection.
-     * @return {@code true} if collection contain elementToCheck
+     * @return {@code true} if collection contain elementToCheck.
      */
     private static boolean contains(Collection<String> collection, String elementToCheck) {
         return collection != null && collection.contains(elementToCheck);

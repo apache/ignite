@@ -24,12 +24,12 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -262,12 +262,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
             fail();
         }
         catch (IgniteCheckedException e) {
-            assertTrue(cause(e).contains("Failed to start configured cache."));
+            assertTrue(X.getCause(e).getMessage().contains("Failed to start configured cache."));
         }
-    }
-
-    /** get first cause of throwable */
-    private String cause(Throwable throwable) {
-        return throwable.getCause() == null ? throwable.getMessage() : cause(throwable.getCause());
     }
 }

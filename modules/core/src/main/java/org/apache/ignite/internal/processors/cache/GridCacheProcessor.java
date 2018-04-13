@@ -802,7 +802,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 for (StoredCacheData storedCacheData : storedCaches.values()) {
                     String cacheName = storedCacheData.config().getName();
 
-                    //ignore stored caches if it already added by static config(static config has higher priority)
+                    //Ignore stored caches if it already added by static config(static config has higher priority).
                     if (!caches.containsKey(cacheName))
                         addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName), false);
                 }

@@ -1035,6 +1035,7 @@ class ClusterCachesInfo {
                 }
             }
         }
+
         return conflictErr;
     }
 
@@ -1110,7 +1111,7 @@ class ClusterCachesInfo {
                 cfg.getNearConfiguration() != null);
         }
 
-        updateRegisterCachesIfNeeded(patchesToApply, cachesToSave, hasSchemaPatchConflict);
+        updateRegisteredCachesIfNeeded(patchesToApply, cachesToSave, hasSchemaPatchConflict);
     }
 
     /**
@@ -1120,21 +1121,24 @@ class ClusterCachesInfo {
      * @param cachesToSave Caches which need to resave.
      * @param hasSchemaPatchConflict {@code true} if we have conflict during making patch.
      */
-    private void updateRegisterCachesIfNeeded(Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply,
+    private void updateRegisteredCachesIfNeeded(Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply,
         Collection<DynamicCacheDescriptor> cachesToSave, boolean hasSchemaPatchConflict) {
-        //skip merge of config if least one conflict was found
+        //Skip merge of config if least one conflict was found.
         if (!hasSchemaPatchConflict && isMergeConfigSupports(ctx.discovery().localNode())) {
             boolean isClusterActive = ctx.state().clusterState().active();
 
-            //merge of config for cluster only for inactive grid
+            //Merge of config for cluster only for inactive grid.
             if (!isClusterActive && !patchesToApply.isEmpty()) {
                 for (Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry : patchesToApply.entrySet()) {
                     if (entry.getKey().applySchemaPatch(entry.getValue()))
                         saveCacheConfiguration(entry.getKey());
                 }
-            }
 
-            if (!isClusterActive || patchesToApply.isEmpty()) {
+                for (DynamicCacheDescriptor descriptor : cachesToSave) {
+                    saveCacheConfiguration(descriptor);
+                }
+            }
+            else if (patchesToApply.isEmpty()) {
                 for (DynamicCacheDescriptor descriptor : cachesToSave) {
                     saveCacheConfiguration(descriptor);
                 }
@@ -1573,7 +1577,7 @@ class ClusterCachesInfo {
             ctx.discovery().addClientNode(cfg.getName(), nodeId, cfg.getNearConfiguration() != null);
         }
 
-        //if conflict was detected we don't merge config and we leave existed config
+        //If conflict was detected we don't merge config and we leave existed config.
         if (!hasSchemaPatchConflict && !patchesToApply.isEmpty())
             for(Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry: patchesToApply.entrySet()){
                 if (entry.getKey().applySchemaPatch(entry.getValue()))

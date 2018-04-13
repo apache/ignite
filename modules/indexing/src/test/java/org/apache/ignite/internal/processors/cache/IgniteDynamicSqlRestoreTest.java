@@ -13,10 +13,8 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.Objects;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.QueryEntity;
@@ -27,20 +25,14 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-
-import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Ignore;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 
@@ -400,7 +392,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
                 fail("Node should start with fail");
             }
             catch (Exception e) {
-                String cause = cause(e);
+                String cause = X.cause(e, IgniteSpiException.class).getMessage();
                 assertThat(cause, containsString("fieldType of B is different"));
                 assertThat(cause, containsString("index MYINDEXA is different"));
             }
@@ -442,8 +434,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
                 fail("Node should start with fail");
             }
             catch (Exception e) {
-                String cause = cause(e);
-                assertThat(cause, containsString("index MYINDEXA is different"));
+                assertThat(X.cause(e, IgniteSpiException.class).getMessage(), containsString("index MYINDEXA is different"));
             }
         }
 
@@ -485,16 +476,9 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
                 fail("Node should start with fail");
             }
             catch (Exception e) {
-                assertThat(cause(e), containsString("Node join was fail because"));
+                assertThat(X.cause(e, IgniteSpiException.class).getMessage(), containsString("Node join was fail because"));
             }
         }
-    }
-
-    /**
-     * get first cause of throwable
-     */
-    private String cause(Throwable throwable) {
-        return throwable.getCause() == null ? throwable.getMessage() : cause(throwable.getCause());
     }
 
     /**
