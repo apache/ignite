@@ -34,7 +34,7 @@ import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 
 /** Tests behaviour of KNNClassificationTest. */
-public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTest<LabeledDataset> {
+public class LabeledDatasetTest extends LabeledDatasetHelper implements ExternalizableTest<LabeledDataset> {
     /** */
     private static final String KNN_IRIS_TXT = "datasets/knn/iris.txt";
 
