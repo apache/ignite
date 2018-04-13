@@ -80,7 +80,7 @@ public class KNNClassificationExample {
                         double prediction = knnMdl.apply(new DenseLocalOnHeapVector(inputs));
 
                         totalAmount++;
-                        if(groundTruth != prediction)
+                        if (groundTruth != prediction)
                             amountOfErrors++;
 
                         System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
@@ -89,7 +89,7 @@ public class KNNClassificationExample {
                     System.out.println(">>> ---------------------------------");
 
                     System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double) totalAmount));
                 }
             });
 
