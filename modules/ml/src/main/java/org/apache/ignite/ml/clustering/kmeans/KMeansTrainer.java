@@ -19,8 +19,8 @@ package org.apache.ignite.ml.clustering.kmeans;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -56,16 +56,19 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel> {
     /** Distance measure. */
     private DistanceMeasure distance = new EuclideanDistance();
 
+    /** KMeans initializer. */
+    private long seed;
+
     /**
      * Trains model based on the specified data.
      *
-     * @param datasetBuilder   Dataset builder.
+     * @param datasetBuilder Dataset builder.
      * @param featureExtractor Feature extractor.
-     * @param lbExtractor      Label extractor.
+     * @param lbExtractor Label extractor.
      * @return Model.
      */
     @Override public <K, V> KMeansModel fit(DatasetBuilder<K, V> datasetBuilder,
-                                             IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
+        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, EmptyContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new LabeledDatasetPartitionDataBuilderOnHeap<>(
@@ -104,7 +107,8 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel> {
                 iteration++;
                 centers = newCentroids;
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
         return new KMeansModel(centers, distance);
@@ -138,10 +142,10 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel> {
 
                 int finalI = i;
                 res.sums.compute(centroidIdx,
-                    (IgniteBiFunction<Integer, Vector, Vector>) (ind, v) -> v.plus(data.getRow(finalI).features()));
+                    (IgniteBiFunction<Integer, Vector, Vector>)(ind, v) -> v.plus(data.getRow(finalI).features()));
 
                 res.counts.merge(centroidIdx, 1,
-                    (IgniteBiFunction<Integer, Integer, Integer>) (i1, i2) -> i1 + i2);
+                    (IgniteBiFunction<Integer, Integer, Integer>)(i1, i2) -> i1 + i2);
             }
             return res;
         }, (a, b) -> a == null ? b : a.merge(b));
@@ -151,7 +155,7 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel> {
      * Find the closest cluster center index and distance to it from a given point.
      *
      * @param centers Centers to look in.
-     * @param pnt     Point.
+     * @param pnt Point.
      */
     private IgniteBiTuple<Integer, Double> findClosestCentroid(Vector[] centers, LabeledVector pnt) {
         double bestDistance = Double.POSITIVE_INFINITY;
@@ -171,21 +175,22 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel> {
      * K cluster centers are initialized randomly.
      *
      * @param dataset The dataset to pick up random centers.
-     * @param k       Amount of clusters.
+     * @param k Amount of clusters.
      * @return K cluster centers.
      */
-    private Vector[] initClusterCentersRandomly(Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset, int k) {
+    private Vector[] initClusterCentersRandomly(Dataset<EmptyContext, LabeledDataset<Double, LabeledVector>> dataset,
+        int k) {
 
         Vector[] initCenters = new DenseLocalOnHeapVector[k];
 
         List<LabeledVector> rndPnts = dataset.compute(data -> {
             List<LabeledVector> rndPnt = new ArrayList<>();
-            rndPnt.add(data.getRow(ThreadLocalRandom.current().nextInt(data.rowSize())));
+            rndPnt.add(data.getRow(new Random(seed).nextInt(data.rowSize())));
             return rndPnt;
         }, (a, b) -> a == null ? b : Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()));
 
         for (int i = 0; i < k; i++) {
-            final LabeledVector rndPnt = rndPnts.get(ThreadLocalRandom.current().nextInt(rndPnts.size()));
+            final LabeledVector rndPnt = rndPnts.get(new Random(seed).nextInt(rndPnts.size()));
             rndPnts.remove(rndPnt);
             initCenters[i] = rndPnt.features();
         }
@@ -290,6 +295,26 @@ public class KMeansTrainer implements SingleLabelDatasetTrainer<KMeansModel> {
      */
     public KMeansTrainer withDistance(DistanceMeasure distance) {
         this.distance = distance;
+        return this;
+    }
+
+    /**
+     * Gets the seed number.
+     *
+     * @return The parameter value.
+     */
+    public long getSeed() {
+        return seed;
+    }
+
+    /**
+     * Set up the seed.
+     *
+     * @param seed The parameter value.
+     * @return Model with new seed parameter value.
+     */
+    public KMeansTrainer withSeed(long seed) {
+        this.seed = seed;
         return this;
     }
 }
