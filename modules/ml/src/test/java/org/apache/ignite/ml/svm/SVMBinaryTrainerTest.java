@@ -45,7 +45,7 @@ public class SVMBinaryTrainerTest {
     private static final double PRECISION = 1e-2;
 
     /** Number of parts to be tested. */
-    private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7, 2000};
+    private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7, 100};
 
     /** Number of partitions. */
     @Parameterized.Parameter
