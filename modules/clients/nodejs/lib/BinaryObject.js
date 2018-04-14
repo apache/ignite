@@ -34,16 +34,29 @@ const FLAG_USER_TYPE = 1;
 const FLAG_HAS_SCHEMA = 2;
 
 /**
- * 
+ * Class representing a complex Ignite object in the binary form.
+ *
+ * It corresponds to COMPOSITE_TYPE.COMPLEX_OBJECT {@link ObjectType.COMPOSITE_TYPE},
+ * has mandatory type Id, which corresponds to a name of the complex type,
+ * and includes optional fields.
+ *
+ * An instance of the BinaryObject can be obtained/created by the following ways:
+ *   - returned by the client when a complex object is received from Ignite cache
+ * and is not deserialized to another JavaScript object.
+ *   - created using the public constructor with the specified name of the complex type.
+ * Fields may be added to such an instance using setField() method.
+ *   - created from a JavaScript object using static fromObject() method.
  */
 class BinaryObject {
 
     /**
-     * 
+     * Creates an instance of the BinaryObject without any fields.
      *
-     * @param {string} typeName - 
+     * Fields may be added using setField() method.
      *
-     * @return {BinaryObject} - 
+     * @param {string} typeName - name of the complex type to generate the type Id.
+     *
+     * @return {BinaryObject} - new BinaryObject instance.
      */
     constructor(typeName) {
         this._buffer = null;
@@ -54,24 +67,48 @@ class BinaryObject {
     }
 
     /**
-     * 
+     * Creates an instance of the BinaryObject from the specified instance of JavaScript Object.
      *
-     * @param {object} object - 
-     * @param {ComplexObjectType} [complexObjectType] - 
+     * If complexObjectType parameter is specified, then the type Id is generated
+     * from the name of the complex type defined during creation of the complexObjectType.
+     * Otherwise, the type Id is generated from the name of the JavaScript Object.
      *
-     * @return {BinaryObject} - 
+     * @param {object} jsObject - instance of JavaScript Object
+     *   which adds and initializes the fields of the BinaryObject instance.
+     * @param {ComplexObjectType} [complexObjectType] - instance of complex type definition
+     *   which specifies non-standard mapping of the fields of the BinaryObject instance
+     *   to/from the Ignite types.
+     *
+     * @return {BinaryObject} - new BinaryObject instance.
      */
-    static fromObject(object, complexObjectType = null) {
+    static fromObject(jsObject, complexObjectType = null) {
         ArgumentChecker.hasType(complexObjectType, 'complexObjectType', false, ComplexObjectType);
         const result = new BinaryObject(null);
-        const binaryType = BinaryType._fromObjectType(complexObjectType, object);
+        const binaryType = BinaryType._fromObjectType(complexObjectType, jsObject);
         result._setType(binaryType);
         for (let field of binaryType.fields) {
-            if (object && object[field.name] !== undefined) {
-                result.setField(field.name, object[field.name], field.type);
+            if (jsObject && jsObject[field.name] !== undefined) {
+                result.setField(field.name, jsObject[field.name], field.type);
             }
         }
         return result;
+    }
+
+    /**
+     * 
+     *
+     * @param {string} fieldName - 
+     * @param {*} fieldValue - 
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [fieldType] - 
+     *
+     * @return {BinaryObject} - the same instance of BinaryObject
+     */
+    setField(fieldName, fieldValue, fieldType = null) {
+        this._modified = true;
+        const field = new BinaryObjectField(fieldName, fieldValue);
+        this._fields.set(field.id, field);
+        this._type._addField(this._schema, fieldName, fieldType);
+        return this;
     }
 
     /**
@@ -115,23 +152,6 @@ class BinaryObject {
     removeField(fieldName) {
         this._modified = true;
         this._fields.delete(BinaryField._calculateId(fieldName));
-    }
-
-    /**
-     * 
-     *
-     * @param {string} fieldName - 
-     * @param {*} fieldValue - 
-     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [fieldType] - 
-     *
-     * @return {BinaryObject} - the same instance of BinaryObject
-     */
-    setField(fieldName, fieldValue, fieldType = null) {
-        this._modified = true;
-        const field = new BinaryObjectField(fieldName, fieldValue);
-        this._fields.set(field.id, field);
-        this._type._addField(this._schema, fieldName, fieldType);
-        return this;
     }
 
     /**
