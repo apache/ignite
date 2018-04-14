@@ -27,8 +27,9 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
  *
  * The configuration includes:
  *   - (mandatory) Ignite node endpoint(s)
- *   - (optional or mandatory - TBD) user credentials for authentication
- *   - (optional) networking and connection settings - TBD 
+ *   - (optional) user credentials for authentication
+ *   - (optional) networking and connection settings
+ *   - (optional) TLS settings
  */
 class IgniteClientConfiguration {
 
@@ -36,7 +37,10 @@ class IgniteClientConfiguration {
      * Creates an instance of Ignite client configuration
      * with the provided mandatory settings and default optional settings.
      *
+     * By default, the client does not use authentication and secure connection.
+     *
      * @param {...string} endpoints - Ignite node endpoint(s).
+     *  The client randomly connects/reconnects to one of the specified node.
      *
      * @return {IgniteClientConfiguration} - new client configuration instance.
      *
@@ -52,13 +56,35 @@ class IgniteClientConfiguration {
         this._sslConfiguration = null;
     }
 
-    /* Optional configuration settings - TBD */
 
+    /**
+     * Sets username which will be used for authentication during the client's connection.
+     *
+     * If username is not set, the client does not use authentication during connection.
+     *
+     * @param {string} userName - username. If null, authentication is disabled.
+     *
+     * @return {IgniteClientConfiguration} - the same instance of the IgniteClientConfiguration.
+     *
+     * @throws {IgniteClientError} if error.
+     */
     setUserName(userName) {
         this._userName = userName;
         return this;
     }
 
+    /**
+     * Sets password which will be used for authentication during the client's connection.
+     *
+     * Password is ignored, if username is not set.
+     * If password is not set, it is considered empty.
+     *
+     * @param {string} password - password. If null, password is empty.
+     *
+     * @return {IgniteClientConfiguration} - the same instance of the IgniteClientConfiguration.
+     *
+     * @throws {IgniteClientError} if error.
+     */
     setPassword(password) {
         this._password = password;
         return this;
@@ -74,6 +100,18 @@ class IgniteClientConfiguration {
         return this;
     }
 
+    /**
+     * Sets TLS configuration which will be used to establish a secure connection.
+     *
+     * If TLS configuration is not set, secure connection is not used.
+      *
+     * @param {SslConfiguration} sslConfiguration - TLS configuration.
+     *   If null, secure connection is disabled.
+     *
+     * @return {IgniteClientConfiguration} - the same instance of the IgniteClientConfiguration.
+     *
+     * @throws {IgniteClientError} if error.
+     */
     setSslConfiguration(sslConfiguration) {
         ArgumentChecker.hasType(sslConfiguration, 'sslConfiguration', false, SslConfiguration);
         this._sslConfiguration = sslConfiguration;
@@ -82,7 +120,7 @@ class IgniteClientConfiguration {
 }
 
 /**
- * SSL Protocol versions.
+ * TLS Protocol versions.
  * @typedef SslConfiguration.PROTOCOL
  * @enum
  * @readonly
@@ -99,7 +137,11 @@ const PROTOCOL = Object.freeze({
 });
 
 /**
- * ???
+ * Class representing TLS configuration.
+ *
+ * The configuration includes:
+ *   - (mandatory) TLS protocol version
+ *   - (optional) certificate settings
  */
 class SslConfiguration {
 
