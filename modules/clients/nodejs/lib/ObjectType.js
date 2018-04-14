@@ -117,6 +117,8 @@ const COMPOSITE_TYPE = Object.freeze({
  *      Date                         to / from        DATE
  *      Array of Date                to / from        DATE_ARRAY
  *      Map                          to / from        MAP (HASH_MAP)
+ *      BinaryObject                 to / from        COMPLEX_OBJECT
+ *      Array of BinaryObject        to / from        OBJECT_ARRAY
  *      any other Object             to /  -          COMPLEX_OBJECT
  *      Array of any other Object    to /  -          OBJECT_ARRAY
  * </pre>
