@@ -95,13 +95,9 @@ class BinaryWriter {
     static _writeArray(buffer, array, arrayType, arrayTypeCode) {
         const elementType = BinaryUtils.getArrayElementType(arrayType);
         const keepElementType = BinaryUtils.keepArrayElementType(arrayTypeCode);
-        if (arrayTypeCode === BinaryUtils.TYPE_CODE.OBJECT_ARRAY) {
-            if (elementType instanceof ComplexObjectType) {
-                buffer.writeInteger(BinaryType._calculateId(elementType._typeName));
-            }
-            else {
-                throw Errors.IgniteClientError.unsupportedTypeError(arrayType);
-            }
+        if (arrayTypeCode === BinaryUtils.TYPE_CODE.OBJECT_ARRAY && 
+            elementType instanceof ComplexObjectType) {
+            buffer.writeInteger(BinaryType._calculateId(elementType._typeName));
         }
         buffer.writeInteger(array.length);
         for (let elem of array) {

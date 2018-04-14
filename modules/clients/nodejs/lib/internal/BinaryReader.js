@@ -82,7 +82,7 @@ class BinaryReader {
         }
         const length = buffer.readInteger();
         const elementType = BinaryUtils.getArrayElementType(arrayType ? arrayType : arrayTypeCode);
-        const keepElementType = BinaryUtils.keepArrayElementType(arrayTypeCode);
+        const keepElementType = elementType === null ? true : BinaryUtils.keepArrayElementType(arrayTypeCode);
         const result = new Array(length);
         for (let i = 0; i < length; i++) {
             result[i] = keepElementType ?

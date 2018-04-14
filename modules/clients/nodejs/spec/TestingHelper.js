@@ -76,6 +76,12 @@ class TestingHelper {
             done.fail('unexpected error: ' + error);
         }
     }
+
+    static logDebug(message) {
+        if (config.debug) {
+            console.log(message);
+        }
+    }
 }
 
 module.exports = TestingHelper;

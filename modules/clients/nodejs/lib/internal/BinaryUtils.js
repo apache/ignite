@@ -269,7 +269,7 @@ class BinaryUtils {
             return BinaryUtils.TYPE_CODE.BINARY_OBJECT;
         }
         else if (objectType === 'object') {
-            return new ComplexObjectType();
+            return new ComplexObjectType(object);
         }
         throw Errors.IgniteClientError.unsupportedTypeError(objectType);
     }
@@ -359,7 +359,7 @@ class BinaryUtils {
             return arrayType._elementType;
         }
         else if (arrayType === BinaryUtils.TYPE_CODE.OBJECT_ARRAY) {
-            return new ComplexObjectType();
+            return null;
         }
         const elementTypeCode = TYPE_INFO[arrayType].ELEMENT_TYPE;
         if (!elementTypeCode) {
@@ -369,8 +369,11 @@ class BinaryUtils {
     }
 
     static getArrayType(elementType) {
-        if (elementType instanceof CompositeType) {
+        if (elementType instanceof ComplexObjectType) {
             return new ObjectArrayType(elementType);
+        }
+        else if (elementType instanceof CompositeType) {
+            throw Errors.IgniteClientError.unsupportedTypeError('array of ' + BinaryUtils.getTypeName(elementType));
         }
         switch (BinaryUtils.getTypeCode(elementType)) {
             case BinaryUtils.TYPE_CODE.BYTE:

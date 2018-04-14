@@ -104,7 +104,7 @@ class BinaryObject {
      */
     getField(fieldName, fieldType = null) {
         const field = this._fields.get(BinaryField._calculateId(fieldName));
-        return field ? field.value : field;
+        return field ? field.getValue(fieldType) : field;
     }
 
     /**
