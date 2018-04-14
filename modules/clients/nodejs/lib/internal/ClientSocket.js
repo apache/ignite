@@ -147,14 +147,14 @@ class ClientSocket {
         };
 
         const options = { host : this._host, port : this._port, version : this._version };
-        if (this._config._sslConfiguration) {
-            const sslConfig = this._config._sslConfiguration;
-            options.key = sslConfig._key;
-            options.cert = sslConfig._cert;
-            options.ca = sslConfig._ca;
-            options.passphrase = sslConfig._keyPassword;
-            options.rejectUnauthorized = !sslConfig._trustAll;
-            options.secureProtocol = sslConfig._protocol + '_client_method';
+        if (this._config._tlsConfiguration) {
+            const tlsConfig = this._config._tlsConfiguration;
+            options.key = tlsConfig._key;
+            options.cert = tlsConfig._cert;
+            options.ca = tlsConfig._ca;
+            options.passphrase = tlsConfig._keyPassword;
+            options.rejectUnauthorized = !tlsConfig._trustAll;
+            options.secureProtocol = tlsConfig._protocol + '_client_method';
             this._socket = tls.connect(options, onConnected);
         }
         else {

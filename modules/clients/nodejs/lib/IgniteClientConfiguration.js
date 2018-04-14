@@ -53,7 +53,7 @@ class IgniteClientConfiguration {
         this._password = null;
         this._tcpNoDelay = true;
         this._timeout = 0;
-        this._sslConfiguration = null;
+        this._tlsConfiguration = null;
     }
 
 
@@ -105,23 +105,23 @@ class IgniteClientConfiguration {
      *
      * If TLS configuration is not set, secure connection is not used.
       *
-     * @param {SslConfiguration} sslConfiguration - TLS configuration.
+     * @param {TlsConfiguration} tlsConfiguration - TLS configuration.
      *   If null, secure connection is disabled.
      *
      * @return {IgniteClientConfiguration} - the same instance of the IgniteClientConfiguration.
      *
      * @throws {IgniteClientError} if error.
      */
-    setSslConfiguration(sslConfiguration) {
-        ArgumentChecker.hasType(sslConfiguration, 'sslConfiguration', false, SslConfiguration);
-        this._sslConfiguration = sslConfiguration;
+    setTlsConfiguration(tlsConfiguration) {
+        ArgumentChecker.hasType(tlsConfiguration, 'tlsConfiguration', false, TlsConfiguration);
+        this._tlsConfiguration = tlsConfiguration;
         return this;
     }
 }
 
 /**
  * TLS Protocol versions.
- * @typedef SslConfiguration.PROTOCOL
+ * @typedef TlsConfiguration.PROTOCOL
  * @enum
  * @readonly
  * @property TLS       Supports multiple versions of TLS.
@@ -143,17 +143,20 @@ const PROTOCOL = Object.freeze({
  *   - (mandatory) TLS protocol version
  *   - (optional) certificate settings
  */
-class SslConfiguration {
+class TlsConfiguration {
 
     /**
-     * Creates an instance of Ignite client SslConfiguration. ???
+     * Creates an instance of Ignite client TlsConfiguration. ???
      *
-     * @return {SslConfiguration} - new SSL configuration instance.
+     * @param {TlsConfiguration.PROTOCOL} [protocol] - TLS protocol version,
+     *     one of the {@link TlsConfiguration.PROTOCOL} values. ???
+     *
+     * @return {TlsConfiguration} - new TLS configuration instance.
      *
      * @throws {IgniteClientError} if error.
      */
-    constructor() {
-        this._protocol = SslConfiguration.PROTOCOL.TLS;
+    constructor(protocol = TlsConfiguration.PROTOCOL.TLS) {
+        this._protocol = protocol;
         this._key = null;
         this._cert = null;
         this._ca = null;
@@ -166,26 +169,11 @@ class SslConfiguration {
     }
 
     /**
-     * Sets SSL protocol version.
+     * Sets TLS key file path.
      *
-     * @param {SslConfiguration.PROTOCOL} protocol - SSL protocol version, one of the {@link SslConfiguration.PROTOCOL} values.
+     * @param {string} keyFile - path to TLS key file in PEM format.
      *
-     * @return {SslConfiguration} - the same instance of the SslConfiguration.
-     *
-     * @throws {IgniteClientError} if error.
-     */
-    setProtocol(protocol) {
-        ArgumentChecker.hasValueFrom(protocol, 'protocol', false, SslConfiguration.PROTOCOL);
-        this._protocol = protocol;
-        return this;
-    }
-
-    /**
-     * Sets SSL key file path.
-     *
-     * @param {string} keyFile - path to SSL key file in PEM format.
-     *
-     * @return {SslConfiguration} - the same instance of the SslConfiguration.
+     * @return {TlsConfiguration} - the same instance of the TlsConfiguration.
      *
      * @throws {IgniteClientError} if the file doesn't exist.
      */
@@ -196,11 +184,11 @@ class SslConfiguration {
     }
 
     /**
-     * Sets SSL certificate file path.
+     * Sets TLS certificate file path.
      *
-     * @param {string} certFile - path to SSL certificate file in PEM format.
+     * @param {string} certFile - path to TLS certificate file in PEM format.
      *
-     * @return {SslConfiguration} - the same instance of the SslConfiguration.
+     * @return {TlsConfiguration} - the same instance of the TlsConfiguration.
      *
      * @throws {IgniteClientError} if the file doesn't exist.
      */
@@ -211,11 +199,11 @@ class SslConfiguration {
     }
 
     /**
-     * Sets SSL certificate authority file path.
+     * Sets TLS certificate authority file path.
      *
-     * @param {string} caFile - SSL certificate authority file path.
+     * @param {string} caFile - TLS certificate authority file path.
      *
-     * @return {SslConfiguration} - the same instance of the SslConfiguration.
+     * @return {TlsConfiguration} - the same instance of the TlsConfiguration.
      *
      * @throws {IgniteClientError} if the file doesn't exist.
      */
@@ -226,11 +214,11 @@ class SslConfiguration {
     }
 
     /**
-     * Sets SSL key file password.
+     * Sets TLS key file password.
      *
-     * @param {string} keyPassword - SSL key file password.
+     * @param {string} keyPassword - TLS key file password.
      *
-     * @return {SslConfiguration} - the same instance of the SslConfiguration.
+     * @return {TlsConfiguration} - the same instance of the TlsConfiguration.
      */
     setKeyPassword(keyPassword) {
         this._keyPassword = keyPassword;
@@ -238,13 +226,13 @@ class SslConfiguration {
     }
 
     /**
-     * Sets to true to trust any server certificate (revoked, expired or self-signed SSL certificates).
+     * Sets to true to trust any server certificate (revoked, expired or self-signed TLS certificates).
      * This may be useful for testing with self-signed certificates.
      * Default is false.
      *
      * @param {boolean} trustAll - trust all certificates flag.
      *
-     * @return {SslConfiguration} - the same instance of the SslConfiguration.
+     * @return {TlsConfiguration} - the same instance of the TlsConfiguration.
      */
     setTrustAll(trustAll) {
         this._trustAll = trustAll;
@@ -267,4 +255,4 @@ class SslConfiguration {
 }
 
 module.exports = IgniteClientConfiguration;
-module.exports.SslConfiguration = SslConfiguration;
+module.exports.TlsConfiguration = TlsConfiguration;
