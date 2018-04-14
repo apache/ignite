@@ -20,8 +20,7 @@
 const Errors = require('./Errors');
 const CacheEntry = require('./CacheClient').CacheEntry;
 const BinaryUtils = require('./internal/BinaryUtils');
-const BinaryObjectType = require('./internal/BinaryUtils').BinaryObjectType;
-const BinaryObject = require('./internal/BinaryObject');
+const BinaryObject = require('./BinaryObject');
 const BinaryReader = require('./internal/BinaryReader');
 const BinaryWriter = require('./internal/BinaryWriter');
 
@@ -281,7 +280,7 @@ class SqlFieldsCursor extends Cursor {
         for (let i = 0; i < rowCount; i++) {
             values = new Array(this._fieldCount);
             for (let j = 0; j < this._fieldCount; j++) {
-                values[j] = BinaryReader.readObject(buffer, new BinaryObjectType());
+                values[j] = BinaryReader.readObject(buffer);
             }
             this._values[i] = values;
         }

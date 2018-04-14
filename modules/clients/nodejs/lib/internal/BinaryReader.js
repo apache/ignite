@@ -17,7 +17,7 @@
 
 'use strict';
 
-const BinaryObject = require('./BinaryObject');
+const BinaryObject = require('../BinaryObject');
 const Errors = require('../Errors');
 const BinaryUtils = require('./BinaryUtils');
 
@@ -119,12 +119,9 @@ class BinaryReader {
 
     static _readComplexObject(buffer, expectedType) {
         buffer.position = buffer.position - 1;
-        const isBinaryMode = expectedType && expectedType instanceof BinaryUtils.BinaryObjectType;
-        const binaryObject = BinaryObject._fromBuffer(buffer, isBinaryMode ? expectedType.innerType : expectedType);
-        if (isBinaryMode) {
-            return binaryObject;
-        }
-        return binaryObject._toObject();
+        const binaryObject = BinaryObject._fromBuffer(buffer);
+        return expectedType ?
+            binaryObject.toObject(expectedType) : binaryObject;
     }
 }
 

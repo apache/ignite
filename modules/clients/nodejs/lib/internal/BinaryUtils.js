@@ -240,7 +240,7 @@ class BinaryUtils {
     }
 
     static calcObjectType(object) {
-        const BinaryObject = require('./BinaryObject');
+        const BinaryObject = require('../BinaryObject');
         const objectType = typeof object;
         if (object === null) {
             return BinaryUtils.TYPE_CODE.NULL;
@@ -266,7 +266,7 @@ class BinaryUtils {
             return new MapObjectType();
         }
         else if (object instanceof BinaryObject) {
-            return new BinaryObjectType();
+            return BinaryUtils.TYPE_CODE.BINARY_OBJECT;
         }
         else if (objectType === 'object') {
             return new ComplexObjectType();
@@ -424,16 +424,4 @@ class BinaryUtils {
     }
 }
 
-class BinaryObjectType extends CompositeType {
-    constructor(innerType = null) {
-        super(BinaryUtils.TYPE_CODE.BINARY_OBJECT);
-        this._innerType = innerType;
-    }
-
-    get innerType() {
-        return this._innerType;
-    }
-}
-
 module.exports = BinaryUtils;
-module.exports.BinaryObjectType = BinaryObjectType;

@@ -22,6 +22,7 @@ module.exports.ObjectType = require('./lib/ObjectType').ObjectType;
 module.exports.MapObjectType = require('./lib/ObjectType').MapObjectType;
 module.exports.ComplexObjectType = require('./lib/ObjectType').ComplexObjectType;
 module.exports.ObjectArrayType = require('./lib/ObjectType').ObjectArrayType;
+module.exports.BinaryObject = require('./lib/BinaryObject');
 module.exports.Errors = require('./lib/Errors');
 module.exports.IgniteClientConfiguration = require('./lib/IgniteClientConfiguration');
 module.exports.SslConfiguration = require('./lib/IgniteClientConfiguration').SslConfiguration;

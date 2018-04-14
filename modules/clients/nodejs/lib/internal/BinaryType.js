@@ -27,7 +27,7 @@ class BinaryType {
         this._name = name;
         this._id = BinaryType._calculateId(name);
         this._fields = new Map();
-        this._schemas = new Map();
+        this._schemas = [new BinarySchema()];
         this._objectConstructor = null;
     }
 
@@ -51,44 +51,27 @@ class BinaryType {
         return BinaryUtils.hashCode(name);
     }
 
-    static _fromObject(object, complexObjectType) {
+    static _fromObjectType(complexObjectType, object = null) {
         if (!complexObjectType) {
-            complexObjectType = new ComplexObjectType();
+            complexObjectType = new ComplexObjectType(object);
         }
         const result = new BinaryType(complexObjectType._typeName);
         result._objectConstructor = complexObjectType._objectConstructor;
-        const schema = new BinarySchema();
-        if (object) {
-            result._addFields(schema, object, complexObjectType);
-        }
+        const schema = result._schemas[0];
         if (complexObjectType._template) {
             result._addFields(schema, complexObjectType._template, complexObjectType);
         }
-        for (let [fieldName, fieldType] of complexObjectType._getFields()) {
-            result._addField(schema, fieldName, fieldType);
-        }
-        result._schemas.set(schema.id, schema);
         return result;
     }
 
-    static _fromObjectType(complexObjectType) {
-        return BinaryType._fromObject(null, complexObjectType);
-    }
-
     _getSchemas() {
-        return [...this._schemas.values()];
+        return this._schemas;
     }
 
     _addFields(schema, objectTemplate, complexObjectType) {
-        let fieldValue;
         let fieldType;
         for (let fieldName in objectTemplate) {
-            fieldValue = objectTemplate[fieldName];
             fieldType = complexObjectType._getFieldType(fieldName);
-            if (!fieldType &&
-                BinaryUtils.getTypeCode(BinaryUtils.calcObjectType(fieldValue)) === BinaryUtils.TYPE_CODE.COMPLEX_OBJECT) {
-                fieldType = new ComplexObjectType(fieldValue);
-            }
             this._addField(schema, fieldName, fieldType);
         }
     }

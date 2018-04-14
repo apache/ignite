@@ -18,15 +18,15 @@
 'use strict';
 
 const Util = require('util');
-const ObjectType = require('../ObjectType').ObjectType;
-const ComplexObjectType = require('../ObjectType').ComplexObjectType;
-const Errors = require('../Errors');
-const BinaryUtils = require('./BinaryUtils');
-const BinaryType = require('./BinaryType');
-const BinaryField = require('./BinaryField');
-const BinarySchema = require('./BinarySchema');
-const ArgumentChecker = require('./ArgumentChecker');
-const Logger = require('./Logger');
+const ObjectType = require('./ObjectType').ObjectType;
+const ComplexObjectType = require('./ObjectType').ComplexObjectType;
+const Errors = require('./Errors');
+const BinaryUtils = require('./internal/BinaryUtils');
+const BinaryType = require('./internal/BinaryType');
+const BinaryField = require('./internal/BinaryField');
+const BinarySchema = require('./internal/BinarySchema');
+const ArgumentChecker = require('./internal/ArgumentChecker');
+const Logger = require('./internal/Logger');
 
 const HEADER_LENGTH = 24;
 const VERSION = 1;
@@ -41,17 +41,46 @@ class BinaryObject {
     /**
      * 
      *
-     * @param {ComplexObjectType} complexObjectType - 
+     * @param {string} typeName - 
      *
      * @return {BinaryObject} - 
      */
-    constructor(complexObjectType = null) {
-        ArgumentChecker.hasType(complexObjectType, 'complexObjectType', false, ComplexObjectType);
+    constructor(typeName) {
         this._buffer = null;
         this._fields = new Map();
-        this._setType(BinaryType._fromObjectType(complexObjectType));
+        this._setType(new BinaryType(typeName));
         this._modified = false;
         this._schemaOffset = null;
+    }
+
+    /**
+     * 
+     *
+     * @param {object} object - 
+     * @param {ComplexObjectType} [complexObjectType] - 
+     *
+     * @return {BinaryObject} - 
+     */
+    static fromObject(object, complexObjectType = null) {
+        ArgumentChecker.hasType(complexObjectType, 'complexObjectType', false, ComplexObjectType);
+        const result = new BinaryObject(null);
+        const binaryType = BinaryType._fromObjectType(complexObjectType, object);
+        result._setType(binaryType);
+        for (let field of binaryType.fields) {
+            if (object && object[field.name] !== undefined) {
+                result.setField(field.name, object[field.name], field.type);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 
+     *
+     * @return {BinaryObject} - 
+     */
+    clone() {
+        // TODO
     }
 
     /**
@@ -69,10 +98,11 @@ class BinaryObject {
      * 
      *
      * @param {string} fieldName - 
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [fieldType] - 
      *
      * @return {*} - ??? or undefined if field does not exist
      */
-    getField(fieldName) {
+    getField(fieldName, fieldType = null) {
         const field = this._fields.get(BinaryField._calculateId(fieldName));
         return field ? field.value : field;
     }
@@ -92,13 +122,13 @@ class BinaryObject {
      *
      * @param {string} fieldName - 
      * @param {*} fieldValue - 
-     * @param {ObjectType} [fieldType] - 
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [fieldType] - 
      *
      * @return {BinaryObject} - the same instance of BinaryObject
      */
     setField(fieldName, fieldValue, fieldType = null) {
         this._modified = true;
-        const field = new BinaryObjectField(fieldName, fieldType, fieldValue);
+        const field = new BinaryObjectField(fieldName, fieldValue);
         this._fields.set(field.id, field);
         this._type._addField(this._schema, fieldName, fieldType);
         return this;
@@ -107,43 +137,13 @@ class BinaryObject {
     /**
      * 
      *
-     * @param {*} object - 
-     * @param {ComplexObjectType} [complexObjectType] - 
+     * @param {ComplexObjectType} complexObjectType - 
      *
-     * @return {BinaryObject} - 
+     * @return {object} - 
      */
-    static fromObject(object, complexObjectType = null) {
-        const result = new BinaryObject(complexObjectType);
-        const binaryType = BinaryType._fromObject(object, complexObjectType);
-        result._setType(binaryType);
-        for (let field of binaryType.fields) {
-            if (object && object[field.name] !== undefined) {
-                result.setField(field.name, object[field.name], field.type);
-            }
-        }
-        return result;
-    }
-
-    /** Private methods */
-
-    /**
-     * @ignore
-     */
-    static _fromBuffer(buffer, complexObjectType) {
-        const result = new BinaryObject(complexObjectType);
-        result._buffer = buffer;
-        result._startPos = buffer.position;
-        result._read();
-        return result;
-    }
-
-    /**
-     * @ignore
-     */
-    _toObject(complexObjectType = null) {
-        if (complexObjectType) {
-            this._setType(BinaryType._fromObjectType(complexObjectType));
-        }
+    toObject(complexObjectType) {
+        ArgumentChecker.hasType(complexObjectType, 'complexObjectType', false, ComplexObjectType);
+        this._setType(BinaryType._fromObjectType(complexObjectType));
         const result = new (this._type._objectConstructor);
         for (let field of this._fields.values()) {
             const binaryField = this._type.getField(field.id);
@@ -151,8 +151,30 @@ class BinaryObject {
                 throw new Errors.IgniteClientError(
                     Util.format('Complex object field with id "%d" can not be deserialized', field.id));
             }
-            result[binaryField.name] = field.value;
+            result[binaryField.name] = field.getValue(binaryField.type);
         }
+        return result;
+    }
+
+    /**
+     * 
+     *
+     * @return {integer} - 
+     */
+    getTypeId() {
+        return this._type.id;
+    }
+
+    /** Private methods */
+
+    /**
+     * @ignore
+     */
+    static _fromBuffer(buffer) {
+        const result = new BinaryObject(null);
+        result._buffer = buffer;
+        result._startPos = buffer.position;
+        result._read();
         return result;
     }
 
@@ -175,8 +197,10 @@ class BinaryObject {
             this._startPos = buffer.position;
             buffer.position = this._startPos + HEADER_LENGTH;
             // write fields
+            let binaryField;
             for (let field of this._fields.values()) {
-                field._writeValue(buffer);
+                binaryField = this._type.getField(field.id);
+                field._writeValue(buffer, binaryField.type);
             }
             this._schemaOffset = buffer.position - this._startPos;
             // write schema
@@ -226,7 +250,6 @@ class BinaryObject {
     _read() {
         this._readHeader();
         this._buffer.position = this._startPos + this._schemaOffset;
-        this._schema = new BinarySchema();
         const fieldOffsets = new Array();
         let fieldId;
         while (this._buffer.position < this._startPos + this._length) {
@@ -237,15 +260,13 @@ class BinaryObject {
         fieldOffsets.sort((val1, val2) => val1[1] - val2[1]);
         let offset;
         let nextOffset;
-        let binaryField;
         let field;
         for (let i = 0; i < fieldOffsets.length; i++) {
             fieldId = fieldOffsets[i][0];
             offset = fieldOffsets[i][1];
             nextOffset = i + 1 < fieldOffsets.length ? fieldOffsets[i + 1][1] : this._schemaOffset;
-            binaryField = this._type.getField(fieldId);
             field = BinaryObjectField._fromBuffer(
-                this._buffer, this._startPos + offset, nextOffset - offset, fieldId, binaryField);
+                this._buffer, this._startPos + offset, nextOffset - offset, fieldId);
             this._fields.set(field.id, field);
         }
         this._buffer.position = this._startPos + this._length;
@@ -265,13 +286,13 @@ class BinaryObject {
         // flags
         this._buffer.readShort();
         // type id
-        const typeId = this._buffer.readInteger();
+        this._type._id = this._buffer.readInteger();
         // hash code
         this._buffer.readInteger();
         // length
         this._length = this._buffer.readInteger();
         // schema id
-        const schemaId = this._buffer.readInteger();
+        this._schema._id = this._buffer.readInteger();
         // schema offset
         this._schemaOffset = this._buffer.readInteger();
     }
@@ -281,10 +302,9 @@ class BinaryObject {
  * @ignore
  */
 class BinaryObjectField {
-    constructor(name, type = null, value = undefined) {
+    constructor(name, value = undefined) {
         this._name = name;
         this._id = BinaryField._calculateId(name);
-        this._type = type;
         this._value = value;
     }
 
@@ -292,31 +312,17 @@ class BinaryObjectField {
         return this._id;
     }
 
-    get name() {
-        return this._name;
-    }
-
-    get value() {
+    getValue(type = null) {
         if (this._value === undefined) {
             this._buffer.position = this._offset;
-            const BinaryReader = require('./BinaryReader');
-            this._value = BinaryReader.readObject(this._buffer, this._type);
+            const BinaryReader = require('./internal/BinaryReader');
+            this._value = BinaryReader.readObject(this._buffer, type);
         }
         return this._value;
     }
 
-    get type() {
-        return this._type;
-    }
-
-    static _fromBuffer(buffer, offset, length, id, binaryField) {
-        let name = null;
-        let type = null;
-        if (binaryField) {
-            name = binaryField.name;
-            type = binaryField.type;
-        }
-        const result = new BinaryObjectField(name, type);
+    static _fromBuffer(buffer, offset, length, id) {
+        const result = new BinaryObjectField(null);
         result._id = id;
         result._buffer = buffer;
         result._offset = offset;
@@ -324,14 +330,14 @@ class BinaryObjectField {
         return result;
     }
 
-    _writeValue(buffer) {
+    _writeValue(buffer, type = null) {
         const offset = buffer.position;
         if (this._buffer) {
             buffer._writeBuffer(this._buffer.getSlice(this._offset, this._offset + this._length));
         }
         else {
-            const BinaryWriter = require('./BinaryWriter');
-            BinaryWriter.writeObject(buffer, this._value, this._type ? this._type : null);
+            const BinaryWriter = require('./internal/BinaryWriter');
+            BinaryWriter.writeObject(buffer, this._value, type);
         }
         this._buffer = buffer;
         this._length = buffer.position - offset;

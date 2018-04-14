@@ -17,7 +17,7 @@
 
 'use strict';
 
-const BinaryObject = require('./BinaryObject');
+const BinaryObject = require('../BinaryObject');
 const Errors = require('../Errors');
 const ComplexObjectType = require('../ObjectType').ComplexObjectType;
 const BinaryUtils = require('./BinaryUtils');
@@ -118,14 +118,9 @@ class BinaryWriter {
         });
     }
 
-    static _writeBinaryObject(buffer, binaryObject, binaryObjectType) {
+    static _writeBinaryObject(buffer, binaryObject) {
         buffer.position = buffer.position - 1;
-        if (binaryObject instanceof BinaryObject) {
-            binaryObject._write(buffer);
-        }
-        else {
-            BinaryWriter.writeObject(buffer, binaryObject, binaryObjectType.innerType);
-        }
+        binaryObject._write(buffer);
     }
 
     static _writeComplexObject(buffer, object, objectType) {
