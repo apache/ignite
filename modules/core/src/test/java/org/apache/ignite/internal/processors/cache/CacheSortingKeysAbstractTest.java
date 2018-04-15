@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
@@ -108,9 +108,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
             m2.put(i + "", i + 1);
         }
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-            cache.putAll(m1);
-        });
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> cache.putAll(m1));
 
         cache.putAll(m2);
 
@@ -407,13 +405,13 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
     /** */
     private final class SortingPredicate implements IgnitePredicate<CacheEvent> {
         /** */
-        private ConcurrentLinkedQueue<Object> list = new ConcurrentLinkedQueue<>();
+        private ArrayList<Object> list = new ArrayList<>();
 
         /** We should check only the same type of events. */
         private AtomicInteger evtType = new AtomicInteger(-1);
 
         /** {@inheritDoc} */
-        @Override public boolean apply(CacheEvent event) {
+        @Override public synchronized boolean apply(CacheEvent event) {
             evtType.compareAndSet(-1, event.type());
 
             if (event.type() == evtType.get())
@@ -454,9 +452,6 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
 
     /** */
     private abstract class ComplexObject {
-        /** Array of not comparable objects. It is sorted as {@link #binaryObjects}. */
-        final Object objectsSortedAsBinary[] = new Object[4];
-
         /** Array of not comparable objects wrapped in {@link BinaryObject}. Sorted by BinaryObject's hashcode. */
         final Object binaryObjects[] = new Object[4];
 
@@ -467,18 +462,17 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         protected BinaryField field;
 
         /**
-         * @param queue List of keys.
+         * @param list List of keys.
          * @return {@code True} if keys were sorted. Otherwise - {@code false}.
          */
-        protected boolean checkOrder(Queue queue) {
+        protected boolean checkOrder(List list) {
             int cntr = 0;
 
-            for (Object obj : queue) {
+            for (Object obj : list) {
                 boolean equalP2PObjects = obj.equals(objects[cntr]);
                 boolean isBinary = obj instanceof BinaryObject;
                 boolean equalP2PBinaries = isBinary && binaryObjects[cntr] != null &&
-                    field.value((BinaryObject)obj).equals(
-                        field.value((BinaryObjectEx)binaryObjects[cntr]));
+                    field.value((BinaryObject)obj).equals(field.value((BinaryObjectEx)binaryObjects[cntr]));
 
                 if (equalP2PObjects || equalP2PBinaries) {
                     if (++cntr == objects.length)
@@ -493,7 +487,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
          * @return Unsorted map.
          */
         private Map<Object, Object> unsortedMap() {
-            LinkedHashMap<Object, Object> map = new LinkedHashMap<>(4);
+            LinkedHashMap<Object, Object> map = new LinkedHashMap<>(U.capacity(4));
 
             map.put(objects[3], objects[3]);
             map.put(objects[0], objects[0]);
@@ -516,23 +510,6 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
 
             return map;
         }
-
-        /** */
-        void sortTwoArraysByHashcodeOfFirstArray() {
-            for (int i = 0; i < binaryObjects.length; i++) {
-                for (int j = i + 1; j < binaryObjects.length; j++) {
-                    if (binaryObjects[j].hashCode() < binaryObjects[i].hashCode()) {
-                        Object o = binaryObjects[i];
-                        binaryObjects[i] = binaryObjects[j];
-                        binaryObjects[j] = o;
-
-                        o = objectsSortedAsBinary[i];
-                        objectsSortedAsBinary[i] = objectsSortedAsBinary[j];
-                        objectsSortedAsBinary[j] = o;
-                    }
-                }
-            }
-        }
     }
 
     /** */
@@ -546,13 +523,15 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         }
 
         /** {@inheritDoc} */
-        @Override protected boolean checkOrder(Queue queue) {
-            for (Object obj : objects) {
-                if (!obj.equals(queue.poll()))
-                    return false;
+        @Override protected boolean checkOrder(List list) {
+            int sortingCntr = 0;
+
+            for (int i = 0; i < list.size() && sortingCntr < objects.length; i++) {
+                if (list.get(i).equals(objects[sortingCntr]))
+                    sortingCntr++;
             }
 
-            return true;
+            return sortingCntr >= objects.length - 1;
         }
     }
 
@@ -560,34 +539,16 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
     private final class NotComparableComplexObject extends ComplexObject {
         /** {@inheritDoc} */
         private NotComparableComplexObject(IgniteCache cache) {
-            initializeObjects((IgniteCacheProxy)cache);
-
-            sort();
-
-            field = ((BinaryObjectEx)binaryObjects[0]).rawType().field("val");
-        }
-
-        /**
-         * @param cache IgniteCache to get IgniteBinary.
-         */
-        private void initializeObjects(IgniteCacheProxy cache) {
             for (int i = 0; i < objects.length; i++) {
                 objects[i] = new NotComparable(i);
 
-                objectsSortedAsBinary[i] = objects[i];
-
-                binaryObjects[i] = cache.context().kernalContext().cacheObjects().binary()
-                    .toBinary(objectsSortedAsBinary[i]);
+                binaryObjects[i] = ((IgniteCacheProxy)cache).context().kernalContext().cacheObjects().binary()
+                    .toBinary(objects[i]);
             }
-        }
 
-        /**
-         * Sorts not comparable objects by hashcode.
-         */
-        private void sort() {
-            Arrays.sort(objects, Comparator.comparingInt(Object::hashCode));
+            Arrays.sort(binaryObjects, Comparator.comparingInt(Object::hashCode));
 
-            sortTwoArraysByHashcodeOfFirstArray();
+            field = ((BinaryObjectEx)binaryObjects[0]).rawType().field("val");
         }
     }
 
@@ -602,7 +563,8 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         private P2PComplexObject(IgniteCache cache) {
             initializeObjects((IgniteCacheProxy)cache);
 
-            sort();
+            Arrays.sort(objects, Comparator.comparingInt(Object::hashCode));
+            Arrays.sort(binaryObjects, Comparator.comparingInt(Object::hashCode));
 
             field = ((BinaryObjectEx)binaryObjects[0]).rawType().field("id");
         }
@@ -624,24 +586,13 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
 
                     f.set(objects[i], i);
 
-                    objectsSortedAsBinary[i] = objects[i];
-
                     binaryObjects[i] = cache.context().kernalContext().cacheObjects().binary()
-                        .toBinary(objectsSortedAsBinary[i]);
+                        .toBinary(objects[i]);
                 }
             }
             catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }
-
-        /**
-         * Sorts objects loaded by externall classloader. Sorts by hashcode.
-         */
-        private void sort() {
-            Arrays.sort(objects, Comparator.comparingInt(Object::hashCode));
-
-            sortTwoArraysByHashcodeOfFirstArray();
         }
     }
 }
