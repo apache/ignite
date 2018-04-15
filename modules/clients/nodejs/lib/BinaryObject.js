@@ -43,8 +43,7 @@ const FLAG_HAS_SCHEMA = 2;
  * An instance of the BinaryObject can be obtained/created by the following ways:
  *   - returned by the client when a complex object is received from Ignite cache
  * and is not deserialized to another JavaScript object.
- *   - created using the public constructor with the specified name of the complex type.
- * Fields may be added to such an instance using setField() method.
+ *   - created using the public constructor. Fields may be added to such an instance using setField() method.
  *   - created from a JavaScript object using static fromObject() method.
  */
 class BinaryObject {
@@ -52,9 +51,10 @@ class BinaryObject {
     /**
      * Creates an instance of the BinaryObject without any fields.
      *
-     * Fields may be added using setField() method.
+     * Fields may be added later using setField() method.
      *
-     * @param {string} typeName - name of the complex type to generate the type Id.
+     * @param {string | number} typeNameOrId - name of the complex type to generate the type Id
+     *   or the type Id itself.
      *
      * @return {BinaryObject} - new BinaryObject instance.
      */
@@ -69,8 +69,10 @@ class BinaryObject {
     /**
      * Creates an instance of the BinaryObject from the specified instance of JavaScript Object.
      *
-     * If complexObjectType parameter is specified, then the type Id is generated
-     * from the name of the complex type defined during creation of the complexObjectType.
+     * All fields of the JavaScript Object instance with their values are added to the BinaryObject.
+     * Fields may be added or removed later using setField() and removeField() methods.
+     *
+     * If complexObjectType parameter is specified, then the type Id is taken from it.
      * Otherwise, the type Id is generated from the name of the JavaScript Object.
      *
      * @param {object} jsObject - instance of JavaScript Object
@@ -95,11 +97,20 @@ class BinaryObject {
     }
 
     /**
-     * 
+     * Sets the new value of the specified field.
+     * Adds the specified field, if it did not exist before.
      *
-     * @param {string} fieldName - 
-     * @param {*} fieldValue - 
-     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [fieldType] - 
+     * Optionally, specifies a type of the field.
+     * If the type is not specified then during operations the Ignite client
+     * will try to make automatic mapping between JavaScript types and Ignite object types -
+     * according to the mapping table defined in the description of the {@link ObjectType} class.
+     *
+     * @param {string} fieldName - name of the field.
+     * @param {*} fieldValue - new value of the field.
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [fieldType] - type of the field:
+     *   - either a type code of primitive (simple) type
+     *   - or an instance of class representing non-primitive (composite) type
+     *   - or null (or not specified) that means the type is not specified.
      *
      * @return {BinaryObject} - the same instance of BinaryObject
      */
@@ -112,42 +123,11 @@ class BinaryObject {
     }
 
     /**
-     * 
+     * Removes the specified field.
      *
-     * @return {BinaryObject} - 
-     */
-    clone() {
-        // TODO
-    }
-
-    /**
-     * 
+     * @param {string} fieldName - name of the field.
      *
-     * @param {string} fieldName - 
-     *
-     * @return {boolean} - 
-     */
-    hasField(fieldName) {
-        return this._fields.has(BinaryField._calculateId(fieldName));
-    }
-
-    /**
-     * 
-     *
-     * @param {string} fieldName - 
-     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [fieldType] - 
-     *
-     * @return {*} - ??? or undefined if field does not exist
-     */
-    getField(fieldName, fieldType = null) {
-        const field = this._fields.get(BinaryField._calculateId(fieldName));
-        return field ? field.getValue(fieldType) : field;
-    }
-
-    /**
-     * 
-     *
-     * @param {string} fieldName - 
+     * @return {BinaryObject} - the same instance of BinaryObject
      */
     removeField(fieldName) {
         this._modified = true;
@@ -155,11 +135,53 @@ class BinaryObject {
     }
 
     /**
-     * 
+     * Clones this BinaryObject instance.
      *
-     * @param {ComplexObjectType} complexObjectType - 
+     * @return {BinaryObject} - new BinaryObject instance with the same type Id and the fields as the current one has.
+     */
+    clone() {
+        // TODO
+    }
+
+    /**
+     * Checks if the specified field exists in this BinaryObject instance.
      *
-     * @return {object} - 
+     * @param {string} fieldName - name of the field.
+     *
+     * @return {boolean} - true if exists, false otherwise.
+     */
+    hasField(fieldName) {
+        return this._fields.has(BinaryField._calculateId(fieldName));
+    }
+
+    /**
+     * Returns a value of the specified field.
+     *
+     * Optionally, specifies a type of the field.
+     * If the type is not specified then during operations the Ignite client
+     * will try to make automatic mapping between JavaScript types and Ignite object types -
+     * according to the mapping table defined in the description of the {@link ObjectType} class.
+     *
+     * @param {string} fieldName - name of the field.
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [fieldType] - type of the field:
+     *   - either a type code of primitive (simple) type
+     *   - or an instance of class representing non-primitive (composite) type
+     *   - or null (or not specified) that means the type is not specified.
+     *
+     * @return {*} - value of the field or {@link undefined} if the field does not exist.
+     */
+    getField(fieldName, fieldType = null) {
+        const field = this._fields.get(BinaryField._calculateId(fieldName));
+        return field ? field.getValue(fieldType) : field;
+    }
+
+    /**
+     * Deserializes this BinaryObject instance into an instance of the specified complex object type.
+     *
+     * @param {ComplexObjectType} complexObjectType - instance of class representing complex object type.
+     *
+     * @return {object} - instance of the JavaScript object
+     *   which corresponds to the specified complex object type.
      */
     toObject(complexObjectType) {
         ArgumentChecker.hasType(complexObjectType, 'complexObjectType', false, ComplexObjectType);
@@ -177,9 +199,9 @@ class BinaryObject {
     }
 
     /**
-     * 
+     * Returns type Id of this BinaryObject instance.
      *
-     * @return {integer} - 
+     * @return {integer} - type Id.
      */
     getTypeId() {
         return this._type.id;
