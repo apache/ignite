@@ -25,19 +25,31 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-/**
- * Check, that services are redeployed, when cluster is deactivated and activated back again.
- */
+/** */
 public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /** */
     private static final String SERVICE_NAME = "test-service";
 
     /** */
-    private boolean client = false;
+    private static final IgnitePredicate<ClusterNode> CLIENT_FILTER = new IgnitePredicate<ClusterNode>() {
+        @Override public boolean apply(ClusterNode node) {
+            return node.isClient();
+        }
+    };
+
+    /** */
+    private boolean client;
+
+    /** */
+    private boolean persistence;
+
+    /** */
+    private ServiceConfiguration srvcCfg;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -45,12 +57,17 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        cfg.setDataStorageConfiguration(
-            new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration()
-                    .setPersistenceEnabled(true).setMaxSize(10 * 1024 * 1024)
-            ).setWalMode(WALMode.LOG_ONLY)
-        );
+        if (srvcCfg != null)
+            cfg.setServiceConfiguration(srvcCfg);
+
+        if (persistence) {
+            cfg.setDataStorageConfiguration(
+                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+                    new DataRegionConfiguration()
+                        .setPersistenceEnabled(true).setMaxSize(10 * 1024 * 1024)
+                ).setWalMode(WALMode.LOG_ONLY)
+            );
+        }
 
         return cfg;
     }
@@ -58,6 +75,8 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         client = false;
+        persistence = false;
+        srvcCfg = null;
 
         cleanPersistenceDir();
     }
@@ -70,43 +89,113 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testServiceDeploymentOnActivation() throws Exception {
-        Ignite ignite = startGrid(1);
-        checkDeploy(ignite, null);
+    public void testServersWithPersistence() throws Exception {
+        persistence = true;
+
+        checkRedeployment(2, 0, F.alwaysTrue(), 2, false, true);
     }
 
     /**
      * @throws Exception if failed.
      */
-    public void testServiceDeploymentOnClientOnActivation() throws Exception {
-        Ignite ignite = startGrid(1);
+    public void testClientsWithPersistence() throws Exception {
+        persistence = true;
 
-        client = true;
-        startGrid(2);
-
-        checkDeploy(ignite, ignite.cluster().forClients().predicate());
+        checkRedeployment(2, 2, CLIENT_FILTER, 2, false, true);
     }
 
     /**
-     * @param ignite Ignite.
-     * @param nodeFilter Node filter.
+     * @throws Exception if failed.
      */
-    private void checkDeploy(Ignite ignite, IgnitePredicate<ClusterNode> nodeFilter) throws InterruptedException {
-        ignite.cluster().active(true);
+    public void testServersWithoutPersistence() throws Exception {
+        persistence = false;
 
-        CountDownLatch exeLatch = new CountDownLatch(1);
-        CountDownLatch cancelLatch = new CountDownLatch(1);
+        checkRedeployment(2, 0, F.alwaysTrue(), 2, false, false);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testClientsWithoutPersistence() throws Exception {
+        persistence = false;
+
+        checkRedeployment(2, 2, CLIENT_FILTER, 2, false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServersStaticConfigWithPersistence() throws Exception {
+        persistence = true;
+
+        checkRedeployment(2, 0, F.alwaysTrue(), 2, true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientsStaticConfigWithPersistence() throws Exception {
+        persistence = true;
+
+        checkRedeployment(2, 2, CLIENT_FILTER, 2, true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServersStaticConfigWithoutPersistence() throws Exception {
+        persistence = false;
+
+        checkRedeployment(2, 0, F.alwaysTrue(), 2, true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientsStaticConfigWithoutPersistence() throws Exception {
+        persistence = false;
+
+        checkRedeployment(2, 2, CLIENT_FILTER, 2, true, true);
+    }
+
+    /**
+     * @param srvsNum Number of server nodes to start.
+     * @param clientsNum Number of client nodes to start.
+     * @param nodeFilter Node filter.
+     * @param deps Expected number of deployed services.
+     * @param isStatic Static or dynamic service deployment is used.
+     * @param expRedep {@code true} if services should be redeployed on activation. {@code false} otherwise.
+     * @throws Exception If failed.
+     */
+    private void checkRedeployment(int srvsNum, int clientsNum, IgnitePredicate<ClusterNode> nodeFilter, int deps,
+        boolean isStatic, boolean expRedep) throws Exception {
+
+        if (isStatic)
+            srvcCfg = getServiceConfiguration(nodeFilter);
+
+        CountDownLatch exeLatch = new CountDownLatch(deps);
+        CountDownLatch cancelLatch = new CountDownLatch(deps);
 
         DummyService.exeLatch(SERVICE_NAME, exeLatch);
         DummyService.cancelLatch(SERVICE_NAME, cancelLatch);
 
-        ServiceConfiguration srvcCfg = new ServiceConfiguration();
-        srvcCfg.setName(SERVICE_NAME);
-        srvcCfg.setMaxPerNodeCount(1);
-        srvcCfg.setNodeFilter(nodeFilter);
-        srvcCfg.setService(new DummyService());
+        for (int i = 0; i < srvsNum; i++)
+            startGrid(i);
 
-        ignite.services().deploy(srvcCfg);
+        client = true;
+
+        for (int i = 0; i < clientsNum; i++)
+            startGrid(srvsNum + i);
+
+        Ignite ignite = grid(0);
+
+        ignite.cluster().active(true);
+
+        if (!isStatic) {
+            ServiceConfiguration srvcCfg = getServiceConfiguration(nodeFilter);
+
+            ignite.services().deploy(srvcCfg);
+        }
 
         assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
 
@@ -114,12 +203,28 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
 
         assertTrue(cancelLatch.await(10, TimeUnit.SECONDS));
 
-        exeLatch = new CountDownLatch(1);
+        exeLatch = new CountDownLatch(expRedep ? deps : 1);
 
         DummyService.exeLatch(SERVICE_NAME, exeLatch);
 
         ignite.cluster().active(true);
 
-        assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
+        if (expRedep)
+            assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
+        else
+            assertFalse(exeLatch.await(1, TimeUnit.SECONDS));
+    }
+
+    /**
+     * @param nodeFilter Node filter.
+     * @return Service configuration.
+     */
+    private ServiceConfiguration getServiceConfiguration(IgnitePredicate<ClusterNode> nodeFilter) {
+        ServiceConfiguration srvcCfg = new ServiceConfiguration();
+        srvcCfg.setName(SERVICE_NAME);
+        srvcCfg.setMaxPerNodeCount(1);
+        srvcCfg.setNodeFilter(nodeFilter);
+        srvcCfg.setService(new DummyService());
+        return srvcCfg;
     }
 }
