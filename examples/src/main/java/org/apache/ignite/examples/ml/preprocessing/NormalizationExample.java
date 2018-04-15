@@ -17,20 +17,18 @@
 
 package org.apache.ignite.examples.ml.preprocessing;
 
-import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
-import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.DatasetFactory;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocessor;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
+
+import java.util.Arrays;
 
 /**
  * Example that shows how to use normalization preprocessor to normalize data.
@@ -47,8 +45,6 @@ public class NormalizationExample {
 
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
-            DatasetBuilder<Integer, Person> builder = new CacheBasedDatasetBuilder<>(ignite, persons);
-
             // Defines first preprocessor that extracts features from an upstream data.
             IgniteBiFunction<Integer, Person, double[]> featureExtractor = (k, v) -> new double[] {
                 v.getAge(),
@@ -56,14 +52,11 @@ public class NormalizationExample {
             };
 
             // Defines second preprocessor that normalizes features.
-            NormalizationPreprocessor<Integer, Person> preprocessor = new NormalizationTrainer<Integer, Person>()
-                .fit(builder, featureExtractor, 2);
+            IgniteBiFunction<Integer, Person, double[]> preprocessor = new NormalizationTrainer<Integer, Person>()
+                .fit(ignite, persons, featureExtractor);
 
             // Creates a cache based simple dataset containing features and providing standard dataset API.
-            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(
-                builder,
-                preprocessor
-            )) {
+            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, preprocessor)) {
                 // Calculation of the mean value. This calculation will be performed in map-reduce manner.
                 double[] mean = dataset.mean();
                 System.out.println("Mean \n\t" + Arrays.toString(mean));

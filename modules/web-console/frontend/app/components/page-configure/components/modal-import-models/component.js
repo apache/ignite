@@ -84,7 +84,7 @@ const DFLT_REPLICATED_CACHE = {
 const CACHE_TEMPLATES = [DFLT_PARTITIONED_CACHE, DFLT_REPLICATED_CACHE];
 
 export class ModalImportModels {
-    /** 
+    /**
      * Cluster ID to import models into
      * @type {string}
      */
@@ -771,7 +771,7 @@ export class ModalImportModels {
 
                 // Prepare caches for generation.
                 if (table.action === IMPORT_DM_NEW_CACHE) {
-                    const newCache = angular.copy(this.loadedCaches[table.cacheOrTemplate]);
+                    const newCache = _.cloneDeep(this.loadedCaches[table.cacheOrTemplate]);
 
                     batchAction.newCache = newCache;
 

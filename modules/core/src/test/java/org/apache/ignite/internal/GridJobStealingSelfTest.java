@@ -187,6 +187,8 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
     public void testProjectionPredicateInternalStealing() throws Exception {
         final Ignite ignite3 = startGrid(3);
 
+        waitForTopology(3);
+
         final UUID node1 = ignite1.cluster().localNode().id();
         final UUID node3 = ignite3.cluster().localNode().id();
 

@@ -37,6 +37,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
@@ -83,6 +84,7 @@ import org.h2.jdbc.JdbcResultSet;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_FORCE_LAZY_RESULT_SET;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
@@ -98,6 +100,9 @@ import static org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2V
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridMapQueryExecutor {
+    /** */
+    public static final boolean FORCE_LAZY = IgniteSystemProperties.getBoolean(IGNITE_SQL_FORCE_LAZY_RESULT_SET);
+
     /** */
     private IgniteLogger log;
 
@@ -189,7 +194,7 @@ public class GridMapQueryExecutor {
         lazyWorkerBusyLock.block();
 
         for (MapQueryLazyWorker worker : lazyWorkers.values())
-            worker.stop();
+            worker.stop(false);
 
         lazyWorkers.clear();
     }
@@ -226,6 +231,13 @@ public class GridMapQueryExecutor {
         catch(Throwable th) {
             U.error(log, "Failed to process message: " + msg, th);
         }
+    }
+
+    /**
+     * @return Busy lock for lazy workers to guard their operations with.
+     */
+    GridSpinBusyLock busyLock() {
+        return busyLock;
     }
 
     /**
@@ -451,7 +463,7 @@ public class GridMapQueryExecutor {
         final boolean enforceJoinOrder = req.isFlagSet(GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER);
         final boolean explain = req.isFlagSet(GridH2QueryRequest.FLAG_EXPLAIN);
         final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
-        final boolean lazy = req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
+        final boolean lazy = (FORCE_LAZY && req.queries().size() == 1) || req.isFlagSet(GridH2QueryRequest.FLAG_LAZY);
 
         final List<Integer> cacheIds = req.caches();
 
@@ -562,10 +574,12 @@ public class GridMapQueryExecutor {
         final Object[] params,
         boolean lazy
     ) {
-        if (lazy && MapQueryLazyWorker.currentWorker() == null) {
+        MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
+
+        if (lazy && worker == null) {
             // Lazy queries must be re-submitted to dedicated workers.
             MapQueryLazyWorkerKey key = new MapQueryLazyWorkerKey(node.id(), reqId, segmentId);
-            MapQueryLazyWorker worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
+            worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
 
             worker.submit(new Runnable() {
                 @Override public void run() {
@@ -579,7 +593,7 @@ public class GridMapQueryExecutor {
                     MapQueryLazyWorker oldWorker = lazyWorkers.put(key, worker);
 
                     if (oldWorker != null)
-                        oldWorker.stop();
+                        oldWorker.stop(false);
 
                     IgniteThread thread = new IgniteThread(worker);
 
@@ -635,7 +649,8 @@ public class GridMapQueryExecutor {
                 .distributedJoinMode(distributedJoinMode)
                 .pageSize(pageSize)
                 .topologyVersion(topVer)
-                .reservations(reserved);
+                .reservations(reserved)
+                .lazyWorker(worker);
 
             Connection conn = h2.connectionForSchema(schemaName);
 
@@ -1049,7 +1064,7 @@ public class GridMapQueryExecutor {
         MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
 
         if (worker != null) {
-            worker.stop();
+            worker.stop(false);
 
             // Just stop is not enough as worker may be registered, but not started due to exception.
             unregisterLazyWorker(worker);

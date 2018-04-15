@@ -48,10 +48,11 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * chromosomes reside.<br/>
  */
 public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
-
+    /** Ignite instance */
     @IgniteInstanceResource
     private Ignite ignite = null;
 
+    /** GAConfiguration */
     private GAConfiguration config = null;
 
     /**
@@ -67,14 +68,12 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * @return Gene primary keys
      */
     private List<Long> getMutatedGenes() {
-        List<Long> mutatedGenes = new ArrayList();
+        List<Long> mutatedGenes = new ArrayList<Long>();
         config.getChromosomeLength();
 
-        for (int i = 0; i < config.getChromosomeLength(); i++) {
-            // Gene gene=config.getGenePool().get(selectRandomIndex(config.getGenePool().size()));
+        for (int i = 0; i < config.getChromosomeLength(); i++) 
             mutatedGenes.add(selectGene(i));
-        }
-
+      
         return mutatedGenes;
     }
 
@@ -139,12 +138,10 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * @return Primary key of Gene
      */
     private long selectGene(int k) {
-        if (config.getChromosomeCriteria() == null) {
+        if (config.getChromosomeCriteria() == null) 
             return (selectAnyGene());
-        }
-        else {
+        else 
             return (selectGeneByChromsomeCriteria(k));
-        }
     }
 
     /**
@@ -154,7 +151,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * @return Primary key of Gene
      */
     private long selectGeneByChromsomeCriteria(int k) {
-        List<Gene> genes = new ArrayList();
+        List<Gene> genes = new ArrayList<Gene>();
 
         StringBuffer sbSqlClause = new StringBuffer("_val like '");
         sbSqlClause.append("%");

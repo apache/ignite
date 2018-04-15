@@ -814,7 +814,7 @@ public final class GridTestUtils {
             catch (IgniteFutureCancelledCheckedException e) {
                 resFut.onCancelled();
             }
-            catch (IgniteCheckedException e) {
+            catch (Throwable e) {
                 resFut.onDone(e);
             }
         });

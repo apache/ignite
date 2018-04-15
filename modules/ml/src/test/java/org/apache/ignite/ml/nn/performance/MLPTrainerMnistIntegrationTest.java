@@ -17,13 +17,11 @@
 
 package org.apache.ignite.ml.nn.performance;
 
-import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
@@ -34,9 +32,11 @@ import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
-import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
+import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.io.IOException;
 
 /**
  * Tests {@link MLPTrainer} on the MNIST dataset that require to start the whole Ignite infrastructure.
@@ -104,7 +104,8 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
         System.out.println("Start training...");
         long start = System.currentTimeMillis();
         MultilayerPerceptron mdl = trainer.fit(
-            new CacheBasedDatasetBuilder<>(ignite, trainingSet),
+            ignite,
+            trainingSet,
             (k, v) -> v.getPixels(),
             (k, v) -> VectorUtils.num2Vec(v.getLabel(), 10).getStorage().data()
         );

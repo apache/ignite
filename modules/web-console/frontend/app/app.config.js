@@ -43,7 +43,7 @@ igniteConsoleCfg.config(['$animateProvider', ($animateProvider) => {
 
 // AngularStrap modal popup configuration.
 igniteConsoleCfg.config(['$modalProvider', ($modalProvider) => {
-    angular.extend($modalProvider.defaults, {
+    Object.assign($modalProvider.defaults, {
         animation: 'am-fade-and-scale',
         placement: 'center',
         html: true
@@ -52,7 +52,7 @@ igniteConsoleCfg.config(['$modalProvider', ($modalProvider) => {
 
 // AngularStrap popover configuration.
 igniteConsoleCfg.config(['$popoverProvider', ($popoverProvider) => {
-    angular.extend($popoverProvider.defaults, {
+    Object.assign($popoverProvider.defaults, {
         trigger: 'manual',
         placement: 'right',
         container: 'body',
@@ -62,7 +62,7 @@ igniteConsoleCfg.config(['$popoverProvider', ($popoverProvider) => {
 
 // AngularStrap tooltips configuration.
 igniteConsoleCfg.config(['$tooltipProvider', ($tooltipProvider) => {
-    angular.extend($tooltipProvider.defaults, {
+    Object.assign($tooltipProvider.defaults, {
         container: 'body',
         delay: {show: 150, hide: 150},
         placement: 'right',
@@ -73,7 +73,7 @@ igniteConsoleCfg.config(['$tooltipProvider', ($tooltipProvider) => {
 
 // AngularStrap select (combobox) configuration.
 igniteConsoleCfg.config(['$selectProvider', ($selectProvider) => {
-    angular.extend($selectProvider.defaults, {
+    Object.assign($selectProvider.defaults, {
         container: 'body',
         maxLength: '5',
         allText: 'Select All',
@@ -87,7 +87,7 @@ igniteConsoleCfg.config(['$selectProvider', ($selectProvider) => {
 
 // AngularStrap alerts configuration.
 igniteConsoleCfg.config(['$alertProvider', ($alertProvider) => {
-    angular.extend($alertProvider.defaults, {
+    Object.assign($alertProvider.defaults, {
         container: 'body',
         placement: 'top-right',
         duration: '5',
@@ -99,7 +99,7 @@ igniteConsoleCfg.config(['$alertProvider', ($alertProvider) => {
 
 // AngularStrap dropdowns () configuration.
 igniteConsoleCfg.config(['$dropdownProvider', ($dropdownProvider) => {
-    angular.extend($dropdownProvider.defaults, {
+    Object.assign($dropdownProvider.defaults, {
         templateUrl: dropdownTemplateUrl,
         animation: ''
     });
@@ -107,7 +107,7 @@ igniteConsoleCfg.config(['$dropdownProvider', ($dropdownProvider) => {
 
 // AngularStrap dropdowns () configuration.
 igniteConsoleCfg.config(['$datepickerProvider', ($datepickerProvider) => {
-    angular.extend($datepickerProvider.defaults, {
+    Object.assign($datepickerProvider.defaults, {
         autoclose: true,
         iconLeft: 'icon-datepicker-left',
         iconRight: 'icon-datepicker-right'
