@@ -484,12 +484,6 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                     log.debug("Transaction was not marked rollback-only while locks were not acquired: " + tx);
             }
 
-            synchronized (this) {
-                pendingLocks.clear();
-
-                clear();
-            }
-
             for (GridCacheEntryEx e : entriesCp) {
                 try {
                     e.removeLock(lockVer);
@@ -690,7 +684,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param entry Entry whose lock ownership changed.
      */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-        if (isDone() || (inTx() && tx.remainingTime() == -1))
+        if (isDone() || (inTx() && (tx.remainingTime() == -1 || tx.isRollbackOnly())))
             return false; // Check other futures.
 
         if (log.isDebugEnabled())
@@ -766,7 +760,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
      * @param unlock {@code True} if locks should be released.
      * @return {@code True} if complete by this operation.
      */
-    private boolean onComplete(boolean success, boolean stopping, boolean unlock) {
+    private synchronized boolean onComplete(boolean success, boolean stopping, boolean unlock) {
         if (log.isDebugEnabled())
             log.debug("Received onComplete(..) callback [success=" + success + ", fut=" + this + ']');
 

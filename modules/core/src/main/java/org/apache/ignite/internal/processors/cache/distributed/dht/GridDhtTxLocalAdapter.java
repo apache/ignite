@@ -907,13 +907,11 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             fut = lockFut;
 
             if (fut != null)
-                break;
+                return fut == ROLLBACK_FUT ? null : fut;
 
             if (updateLockFuture(null, ROLLBACK_FUT))
                 return null;
         }
-
-        return fut == ROLLBACK_FUT ? null : fut;
     }
 
     /**

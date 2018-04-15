@@ -612,7 +612,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/> 
+        /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/>
         /// with multiple participating caches.
         /// </summary>
         [Test]
@@ -633,8 +633,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 if (async)
                 {
-                    cache1.PutAsync(1, 10);
-                    cache2.PutAsync(1, 20);
+                    cache1.PutAsync(1, 10).Wait();
+                    cache2.PutAsync(1, 20).Wait();
                 }
                 else
                 {
@@ -653,8 +653,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 if (async)
                 {
-                    cache1.PutAsync(1, 100);
-                    cache2.PutAsync(1, 200);
+                    cache1.PutAsync(1, 100).Wait();
+                    cache2.PutAsync(1, 200).Wait();
                 }
                 else
                 {
@@ -668,7 +668,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/> 
+        /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/>
         /// when Ignite tx is started manually.
         /// </summary>
         [Test]
@@ -680,7 +680,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache[1] = 1;
 
             // When Ignite tx is started manually, it won't be enlisted in TransactionScope.
-            using (var tx = transactions.TxStart())            
+            using (var tx = transactions.TxStart())
             {
                 using (new TransactionScope())
                 {
@@ -747,7 +747,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                     cache[1] = 5;
                 }
-                
+
                 // In case with Required option there is a single tx
                 // that gets aborted, second put executes outside the tx.
                 Assert.AreEqual(option == TransactionScopeOption.Required ? 5 : 3, cache[1], option.ToString());

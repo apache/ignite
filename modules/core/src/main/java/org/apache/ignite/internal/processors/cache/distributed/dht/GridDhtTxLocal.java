@@ -427,6 +427,10 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 if (lockFut instanceof GridDhtLockFuture)
                     ((GridDhtLockFuture)lockFut).onError(rollbackException());
                 else {
+                    /**
+                     * Prevents race with {@link GridDhtTransactionalCacheAdapter#lockAllAsync
+                     * (GridCacheContext, ClusterNode, GridNearLockRequest, CacheEntryPredicate[])}
+                     */
                     final IgniteInternalFuture finalPrepFut = prepFut;
 
                     lockFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {

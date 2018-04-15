@@ -1338,7 +1338,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             try {
                 while (true) {
                     try {
-                        releaseLatch.await(futTimeout, TimeUnit.MILLISECONDS);
+                        releaseLatch.await(waitTimeout, TimeUnit.MILLISECONDS);
 
                         if (log.isInfoEnabled())
                             log.info("Finished waiting for partitions release latch: " + releaseLatch);
