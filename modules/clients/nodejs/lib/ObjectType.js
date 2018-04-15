@@ -252,7 +252,7 @@ class ComplexObjectType extends CompositeType {
      * The name or the type Id may be explicitely specified using optional typeNameOrId parameter in the constructor.
      * 
      * @param {object} jsObject - instance of JavaScript Object which will be mapped to/from this complex type.
-     * @param {string | number} [typeNameOrId=null] - name of the complex type or the type Id.
+     * @param {string | number} [typeNameOrId] - name of the complex type or the type Id.
      *
      * @return {ComplexObjectType} - new ComplexObjectType instance
      *
@@ -281,6 +281,7 @@ class ComplexObjectType extends CompositeType {
      * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} fieldType - type of the field:
      *   - either a type code of primitive (simple) type
      *   - or an instance of class representing non-primitive (composite) type
+     *   - or null (means the type is not specified).
      *
      * @return {ComplexObjectType} - the same instance of the ComplexObjectType.
      *
