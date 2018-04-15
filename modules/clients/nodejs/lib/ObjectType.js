@@ -224,7 +224,8 @@ class MapObjectType extends CompositeType {
  * Class representing a complex type of Ignite object.
  *
  * It is described by COMPOSITE_TYPE.COMPLEX_OBJECT {@link ObjectType.COMPOSITE_TYPE},
- * a name of the complex type and a JavaScript Object which is mapped to/from the Ignite complex type.
+ * by a name of the complex type or by the type Id
+ * and by a JavaScript Object which is mapped to/from the Ignite complex type.
  *
  * @extends CompositeType
  */
@@ -248,10 +249,10 @@ class ComplexObjectType extends CompositeType {
      * A type of any field may be specified later by setFieldType() method.
      *
      * By default, the name of the complex type is the name of the JavaScript Object.
-     * The name may be explicitely specified using an optional parameter in the constructor.
+     * The name or the type Id may be explicitely specified using optional typeNameOrId parameter in the constructor.
      * 
      * @param {object} jsObject - instance of JavaScript Object which will be mapped to/from this complex type.
-     * @param {string} [typeName=null] - name of the complex type.
+     * @param {string | number} [typeNameOrId=null] - name of the complex type or the type Id.
      *
      * @return {ComplexObjectType} - new ComplexObjectType instance
      *
