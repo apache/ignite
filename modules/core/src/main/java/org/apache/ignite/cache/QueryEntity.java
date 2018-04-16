@@ -20,6 +20,7 @@ package org.apache.ignite.cache;
 import javax.cache.CacheException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -48,8 +49,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.Collections.unmodifiableMap;
 
 /**
  * Query entity is a description of {@link org.apache.ignite.IgniteCache cache} entry (composed of key and value)
@@ -96,6 +100,9 @@ public class QueryEntity implements Serializable {
     /** Fields default values. */
     private Map<String, Object> defaultFieldValues = new HashMap<>();
 
+    /** Decimal fields information. */
+    private Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
+
     /**
      * Creates an empty query entity.
      */
@@ -127,6 +134,8 @@ public class QueryEntity implements Serializable {
 
         defaultFieldValues = other.defaultFieldValues != null ? new HashMap<>(other.defaultFieldValues)
             : new HashMap<String, Object>();
+
+        decimalInfo = other.decimalInfo != null ? new HashMap<>(other.decimalInfo) : new HashMap<>();
     }
 
     /**
@@ -564,6 +573,27 @@ public class QueryEntity implements Serializable {
     }
 
     /**
+     * Gets set of field name to precision and scale.
+     *
+     * @return Set of names of fields that must have non-null values.
+     */
+    public Map<String, IgniteBiTuple<Integer, Integer>> getDecimalInfo() {
+        return unmodifiableMap(decimalInfo);
+    }
+
+    /**
+     * Sets decimal fields info.
+     *
+     * @param decimalInfo Set of name to precision and scale for decimal fields.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setDecimalInfo(Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo) {
+        this.decimalInfo = decimalInfo;
+
+        return this;
+    }
+
+    /**
      * Gets fields default values.
      *
      * @return Field's name to default value map.
@@ -676,6 +706,9 @@ public class QueryEntity implements Serializable {
 
         if (!F.isEmpty(desc.notNullFields()))
             entity.setNotNullFields(desc.notNullFields());
+
+        if (!F.isEmpty(desc.decimalInfo()))
+            entity.setDecimalInfo(desc.decimalInfo());
 
         return entity;
     }
@@ -802,6 +835,9 @@ public class QueryEntity implements Serializable {
             if (sqlAnn.notNull())
                 desc.addNotNullField(prop.fullName());
 
+            if (BigDecimal.class == fldCls && sqlAnn.precision() != -1 && sqlAnn.scale() != -1)
+                desc.addDecimalInfo(prop.fullName(), F.t(sqlAnn.precision(), sqlAnn.scale()));
+
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
                 && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {
                 throw new CacheException("Inline size cannot be set on a field with group index [" +
@@ -843,13 +879,14 @@ public class QueryEntity implements Serializable {
             F.eqNotOrdered(idxs, entity.idxs) &&
             F.eq(tableName, entity.tableName) &&
             F.eq(_notNullFields, entity._notNullFields) &&
-            F.eq(defaultFieldValues, entity.defaultFieldValues);
+            F.eq(defaultFieldValues, entity.defaultFieldValues) &&
+            F.eq(decimalInfo, entity.decimalInfo);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
-            tableName, _notNullFields, defaultFieldValues);
+            tableName, _notNullFields, defaultFieldValues, decimalInfo);
     }
 
     /** {@inheritDoc} */

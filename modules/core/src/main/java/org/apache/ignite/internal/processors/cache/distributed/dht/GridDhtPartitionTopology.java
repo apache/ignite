@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -343,6 +344,11 @@ public interface GridDhtPartitionTopology {
      * @return Partition update counters.
      */
     public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros);
+
+    /**
+     * @return Partition cache sizes.
+     */
+    public Map<Integer, Long> partitionSizes();
 
     /**
      * @param part Partition to own.

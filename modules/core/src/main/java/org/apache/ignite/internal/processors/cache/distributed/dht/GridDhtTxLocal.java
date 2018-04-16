@@ -447,6 +447,11 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
             err = e;
         }
+        catch (Throwable t) {
+            fut.onDone(t);
+
+            throw t;
+        }
 
         if (primarySync)
             sendFinishReply(err);
