@@ -391,6 +391,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     @SuppressWarnings("ErrorNotRethrown")
     @Nullable private AffinityInfo affinityCache(final String cacheName, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
+
+        assert cacheName != null;
+
         AffinityAssignmentKey key = new AffinityAssignmentKey(cacheName, topVer);
 
         IgniteInternalFuture<AffinityInfo> fut = affMap.get(key);
@@ -702,7 +705,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
          * @param cacheName Cache name.
          * @param topVer Topology version.
          */
-        private AffinityAssignmentKey(String cacheName, @NotNull AffinityTopologyVersion topVer) {
+        private AffinityAssignmentKey(@NotNull String cacheName, @NotNull AffinityTopologyVersion topVer) {
             this.cacheName = cacheName;
             this.topVer = topVer;
         }
@@ -738,7 +741,12 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         @Override public int compareTo(AffinityAssignmentKey o) {
             assert o != null;
 
-            return this.topVer.compareTo(o.topVer);
+            if (this == o)
+                return 0;
+
+            int res = this.topVer.compareTo(o.topVer);
+
+            return res == 0 ? cacheName.compareTo(o.cacheName) : res;
         }
     }
 
