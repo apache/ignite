@@ -209,6 +209,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(59, metrics.HeapEntriesCount);
                 Assert.AreEqual(62, metrics.EstimatedRebalancingFinishTime);
                 Assert.AreEqual(63, metrics.RebalancingStartTime);
+                Assert.AreEqual(65, metrics.SizeLong);
+                Assert.AreEqual(66, metrics.KeySizeLong);
                 Assert.AreEqual("foo", metrics.KeyType);
                 Assert.AreEqual("bar", metrics.ValueType);
                 Assert.AreEqual(true, metrics.IsStoreByValue);
