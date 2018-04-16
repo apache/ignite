@@ -270,8 +270,8 @@ public class QueryEntity implements Serializable {
                 checkEquals(
                     conflicts,
                     "default value of " + targetFieldName,
-                    getDefaultFieldValues().get(targetFieldName),
-                    target.getDefaultFieldValues().get(targetFieldName)
+                    getFromMap(getDefaultFieldValues(), targetFieldName),
+                    getFromMap(target.getDefaultFieldValues(), targetFieldName)
                 );
             }
             else {
@@ -279,7 +279,7 @@ public class QueryEntity implements Serializable {
                     targetFieldName,
                     targetFieldType,
                     !contains(target.getNotNullFields(),targetFieldName),
-                    target.getDefaultFieldValues().get(targetFieldName)
+                    getFromMap(target.getDefaultFieldValues(), targetFieldName)
                 ));
             }
         }
@@ -294,6 +294,13 @@ public class QueryEntity implements Serializable {
      */
     private static boolean contains(Collection<String> collection, String elementToCheck) {
         return collection != null && collection.contains(elementToCheck);
+    }
+
+    /**
+     * @return Value from sourceMap or null if map is null.
+     */
+    private static Object getFromMap(Map<String, Object> sourceMap, String key) {
+        return sourceMap == null ? null : sourceMap.get(key);
     }
 
     /**
@@ -561,7 +568,7 @@ public class QueryEntity implements Serializable {
      *
      * @return Field's name to default value map.
      */
-    @NotNull public Map<String, Object> getDefaultFieldValues() {
+    public Map<String, Object> getDefaultFieldValues() {
         return defaultFieldValues;
     }
 
