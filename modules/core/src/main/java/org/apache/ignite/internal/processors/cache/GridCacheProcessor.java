@@ -188,9 +188,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private static final String MERGE_OF_CONFIG_CONFLICTS_MESSAGE =
         "Conflicts during configuration merge for cache '%s' : \n%s";
 
-    /** Template of message of node join was fail because it requires to merge of config*/
-    private static final String MERGE_OF_CONFIG_REQUIRED_MESSAGE =
-        "Node join was fail because it requires to merge of config for cache '%s' but that impossible on active grid";
+    /** Template of message of node join was fail because it requires to merge of config */
+    private static final String MERGE_OF_CONFIG_REQUIRED_MESSAGE = "Failed to join node to the active cluster " +
+        "(the config of the cache '%s' has to be merged which is impossible on active grid). " +
+        "Deactivate grid and retry node join or clean the joining node.";
     /** */
     private final boolean startClientCaches =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);

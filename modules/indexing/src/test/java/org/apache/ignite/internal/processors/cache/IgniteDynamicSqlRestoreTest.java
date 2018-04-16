@@ -30,11 +30,8 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.empty;
 
 /**
  *
@@ -143,7 +140,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             IgniteCache<Object, Object> cache = ig1.cache(TEST_CACHE_NAME);
 
             assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where a > 5"), containsString("myindexa"));
-            assertThat(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll(), is(not(empty())));
+            assertFalse(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll().isEmpty());
         }
     }
 
@@ -182,7 +179,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             IgniteCache<Object, Object> cache = ig.cache(TEST_CACHE_NAME);
 
             assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where a > 5"), containsString("myindexa"));
-            assertThat(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll(), is(not(empty())));
+            assertFalse(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll().isEmpty());
         }
     }
 
@@ -229,7 +226,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             IgniteCache<Object, Object> cache = ig.cache(TEST_CACHE_NAME);
 
             assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where a > 5"), containsString("myindexa"));
-            assertThat(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll(), is(not(empty())));
+            assertFalse(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll().isEmpty());
         }
     }
 
@@ -297,9 +294,8 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             //then: index "myindexa" and column "b" restored from node "1"
             assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where a > 5"), containsString("myindexa"));
             assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where b > 5"), containsString("myindexb"));
-            assertThat(cache.query(new SqlFieldsQuery("SELECT a,b FROM TestIndexObject limit 1")).getAll(), is(not(empty())));
+            assertFalse(cache.query(new SqlFieldsQuery("SELECT a,b FROM TestIndexObject limit 1")).getAll().isEmpty());
         }
-
     }
 
     /**
@@ -352,7 +348,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             cache.indexReadyFuture().get();
 
             assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where a > 5"), containsString("myindexa"));
-            assertThat(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll(), is(not(empty())));
+            assertFalse(cache.query(new SqlFieldsQuery("SELECT a,b,c FROM TestIndexObject limit 1")).getAll().isEmpty());
         }
     }
 
@@ -476,7 +472,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
                 fail("Node should start with fail");
             }
             catch (Exception e) {
-                assertThat(X.cause(e, IgniteSpiException.class).getMessage(), containsString("Node join was fail because"));
+                assertThat(X.cause(e, IgniteSpiException.class).getMessage(), containsString("Failed to join node to the active cluster"));
             }
         }
     }
