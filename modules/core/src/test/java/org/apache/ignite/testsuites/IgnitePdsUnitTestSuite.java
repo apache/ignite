@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.testsuites;
 
+import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.SplitAndSortCpPagesTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.FullPageIdTableTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IgnitePageMemReplaceDelayedWriteUnitTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IgniteThrottlingUnitTest;
@@ -32,7 +33,8 @@ import org.junit.runners.Suite;
     IgnitePageMemReplaceDelayedWriteUnitTest.class,
     IgniteThrottlingUnitTest.class,
     FullPageIdTableTest.class,
-    RobinHoodBackwardShiftHashMapTest.class
+    RobinHoodBackwardShiftHashMapTest.class,
+    SplitAndSortCpPagesTest.class
 })
 public class IgnitePdsUnitTestSuite {
 }

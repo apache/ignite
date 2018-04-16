@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public class CountDownFuture extends GridFutureAdapter<Void> {
-    /** */
+    /** Current count of running parties (tasks). */
     private AtomicInteger remaining;
 
     /** */
@@ -77,5 +77,13 @@ public class CountDownFuture extends GridFutureAdapter<Void> {
         assert ex != null;
 
         ex.addSuppressed(err);
+    }
+
+    /**
+     * Provides access to counter for sub-classes.
+     * @return Current count of running parties (tasks).
+     */
+    protected AtomicInteger remaining() {
+        return remaining;
     }
 }

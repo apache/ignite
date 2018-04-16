@@ -1406,6 +1406,26 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
+     * @return currently written (not necessarily sync'ed) WAL position. May return null.
+     */
+    public FileWALPointer currentWritePointer() {
+        FileWriteHandle handle = currentHandle();
+
+        if (handle == null)
+            return null;
+
+        return new FileWALPointer(handle.idx, (int)handle.written, 0);
+    }
+
+    /**
+     *
+     * @return archived index, -1 means no files were archived
+     */
+    public long lastAbsArchivedIdx() {
+        return archivedMonitor.lastArchivedAbsoluteIndex();
+    }
+
+    /**
      * File archiver operates on absolute segment indexes. For any given absolute segment index N we can calculate the
      * work WAL segment: S(N) = N % dsCfg.walSegments. When a work segment is finished, it is given to the archiver. If
      * the absolute index of last archived segment is denoted by A and the absolute index of next segment we want to
