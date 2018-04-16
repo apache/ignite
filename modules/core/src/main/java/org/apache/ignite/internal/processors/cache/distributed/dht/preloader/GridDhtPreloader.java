@@ -211,7 +211,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 if (part.state() == OWNING || part.state() == LOST)
                     continue;
 
-                assert part.state() == MOVING : "Partition has invalid state for rebalance " + part;
+                assert part.state() == MOVING : "Partition has invalid state for rebalance " + aff.topologyVersion() + " " + part;
 
                 ClusterNode histSupplier = null;
 

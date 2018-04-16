@@ -455,7 +455,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (node2part != null && node2part.valid()) {
                 if (localNode(p, aff)) {
                     // This will make sure that all non-existing partitions
-                    // will be created in OWNING or MOVING state.
+                    // will be created in MOVING state.
                     GridDhtLocalPartition locPart = getOrCreatePartition(p);
 
                     updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
@@ -686,19 +686,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 long updateSeq = this.updateSeq.incrementAndGet();
 
                 for (int p = 0; p < num; p++) {
-                    GridDhtLocalPartition locPart = localPartition0(p, topVer, false, false);
+                    GridDhtLocalPartition locPart = localPartition0(p, topVer, false, true);
 
                     if (partitionLocalNode(p, topVer)) {
-                        // This partition will be created during next topology event,
-                        // which obviously has not happened at this point.
-                        if (locPart == null) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Skipping local partition afterExchange (will not create) [" +
-                                    "grp=" + grp.cacheOrGroupName() + ", p=" + p + ']');
-                            }
-
-                            continue;
-                        }
+                        // Prepare partition to rebalance if it's not happened on full map update phase.
+                        if (locPart == null || locPart.state() == RENTING || locPart.state() == EVICTED)
+                            locPart = rebalancePartition(p, false);
 
                         GridDhtPartitionState state = locPart.state();
 
@@ -1508,7 +1501,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         else if (state == MOVING) {
                             boolean haveHistory = !partsToReload.contains(p);
 
-                            GridDhtLocalPartition locPart = rebalancePartition(p, haveHistory);
+                            rebalancePartition(p, haveHistory);
 
                             changed = true;
                         }
@@ -2068,10 +2061,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq) {
+    @Override public Set<UUID> setOwners(AffinityAssignment aff, int p, Set<UUID> ownersByUpdCounters, boolean haveHistory, boolean updateSeq) {
         Set<UUID> result = haveHistory ? Collections.<UUID>emptySet() : new HashSet<UUID>();
-
-        AffinityAssignment aff = grp.affinity().cachedAffinity(lastTopChangeVer);
 
         ctx.database().checkpointReadLock();
 
@@ -2079,14 +2070,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             lock.writeLock().lock();
 
             try {
-                long updateSequence = this.updateSeq.get();
+                Set<UUID> affOwners = aff.getIds(p);
 
-                Set<UUID> affinityOwners = aff.getIds(p);
-
-                if (affinityOwners.contains(ctx.localNodeId()) && !owners.contains(ctx.localNodeId())) {
-                    GridDhtLocalPartition part = rebalancePartition(p, haveHistory);
-
-                    updateLocal(p, part.state(), updateSequence, aff.topologyVersion());
+                if (affOwners.contains(ctx.localNodeId()) && !ownersByUpdCounters.contains(ctx.localNodeId())) {
+                    rebalancePartition(p, haveHistory);
 
                     if (!haveHistory)
                         result.add(ctx.localNodeId());
@@ -2103,7 +2090,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (!partMap.containsKey(p))
                         continue;
 
-                    if (affinityOwners.contains(remoteNodeId) && !owners.contains(remoteNodeId)) {
+                    if (affOwners.contains(remoteNodeId) && !ownersByUpdCounters.contains(remoteNodeId)) {
                         partMap.put(p, MOVING);
 
                         if (!haveHistory)

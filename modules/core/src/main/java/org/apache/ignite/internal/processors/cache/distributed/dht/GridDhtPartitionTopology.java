@@ -383,14 +383,16 @@ public interface GridDhtPartitionTopology {
 
     /**
      * Make nodes from provided set owners for a given partition.
-     * State of all current owners that aren't contained in the set will be reset to MOVING.
+     * State of all affinity owners that aren't contained in the set will be reset to MOVING and prepared for rebalance.
      *
+     * @param aff Affinity assignment.
      * @param p Partition ID.
+     * @param ownersByUpdCounters Set of new owners.
+     * @param haveHistory {@code True} if there is WAL history to rebalance given partition.
      * @param updateSeq If should increment sequence when updated.
-     * @param owners Set of new owners.
      * @return Set of node IDs that should reload partitions.
      */
-    public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq);
+    public Set<UUID> setOwners(AffinityAssignment aff, int p, Set<UUID> ownersByUpdCounters, boolean haveHistory, boolean updateSeq);
 
     /**
      * Callback on exchange done.

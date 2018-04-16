@@ -58,6 +58,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -2254,9 +2255,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Collects and determines new owners of partitions for all nodes for given {@code top}.
+     *
+     * @param aff Final affinity assignment for current exchange.
      * @param top Topology to assign.
      */
-    private void assignPartitionStates(GridDhtPartitionTopology top) {
+    private void assignPartitionStates(AffinityAssignment aff, GridDhtPartitionTopology top) {
         Map<Integer, CounterWithNodes> maxCntrs = new HashMap<>();
         Map<Integer, Long> minCntrs = new HashMap<>();
 
@@ -2334,11 +2338,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         int entryLeft = maxCntrs.size();
 
+        Set<Integer> haveHistory = new HashSet<>();
+
         Map<Integer, Map<Integer, Long>> partHistReserved0 = partHistReserved;
 
         Map<Integer, Long> localReserved = partHistReserved0 != null ? partHistReserved0.get(top.groupId()) : null;
-
-        Set<Integer> haveHistory = new HashSet<>();
 
         for (Map.Entry<Integer, Long> e : minCntrs.entrySet()) {
             int p = e.getKey();
@@ -2386,7 +2390,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (entryLeft != 0 && maxCntr == 0)
                 continue;
 
-            Set<UUID> nodesToReload = top.setOwners(p, e.getValue().nodes, haveHistory.contains(p), entryLeft == 0);
+            Set<UUID> nodesToReload = top.setOwners(aff, p, e.getValue().nodes, haveHistory.contains(p), entryLeft == 0);
 
             for (UUID nodeId : nodesToReload)
                 partsToReload.put(nodeId, top.groupId(), p);
@@ -2572,13 +2576,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 assert firstDiscoEvt instanceof DiscoveryCustomEvent;
 
                 if (activateCluster() || changedBaseline())
-                    assignPartitionsStates();
+                    assignPartitionsStates(resTopVer);
 
                 DiscoveryCustomMessage discoveryCustomMessage = ((DiscoveryCustomEvent) firstDiscoEvt).customMessage();
 
                 if (discoveryCustomMessage instanceof DynamicCacheChangeBatch) {
                     if (exchActions != null) {
-                        assignPartitionsStates();
+                        assignPartitionsStates(resTopVer);
 
                         Set<String> caches = exchActions.cachesToResetLostPartitions();
 
@@ -2588,11 +2592,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
                 else if (discoveryCustomMessage instanceof SnapshotDiscoveryMessage
                         && ((SnapshotDiscoveryMessage)discoveryCustomMessage).needAssignPartitions())
-                    assignPartitionsStates();
+                    assignPartitionsStates(resTopVer);
             }
             else {
                 if (exchCtx.events().hasServerJoin())
-                    assignPartitionsStates();
+                    assignPartitionsStates(resTopVer);
 
                 if (exchCtx.events().hasServerLeft())
                     detectLostPartitions(resTopVer);
@@ -2785,9 +2789,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     *
+     * @param resTopVer Result topology version of current exchange.
      */
-    private void assignPartitionsStates() {
+    private void assignPartitionsStates(AffinityTopologyVersion resTopVer) {
         for (Map.Entry<Integer, CacheGroupDescriptor> e : cctx.affinity().cacheGroups().entrySet()) {
             CacheGroupDescriptor grpDesc = e.getValue();
             if (grpDesc.config().getCacheMode() == CacheMode.LOCAL)
@@ -2796,13 +2800,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (!CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()))
                 continue;
 
-            CacheGroupContext grpCtx = cctx.cache().cacheGroup(e.getKey());
+            int grpId = e.getKey();
+
+            CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
+
+            AffinityAssignment aff = cctx.affinity().affinity(grpId).cachedAffinity(resTopVer);
 
             GridDhtPartitionTopology top = grpCtx != null ?
                 grpCtx.topology() :
-                cctx.exchange().clientTopology(e.getKey(), events().discoveryCache());
+                cctx.exchange().clientTopology(grpId, events().discoveryCache());
 
-            assignPartitionStates(top);
+            assignPartitionStates(aff, top);
         }
     }
 
