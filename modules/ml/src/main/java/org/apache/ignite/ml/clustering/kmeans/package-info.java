@@ -15,19 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering;
-
-import org.apache.ignite.ml.Model;
-
 /**
- * Base interface for clusterers.
+ * <!-- Package description. -->
+ * Contains kMeans clustering algorithm.
  */
-public interface Clusterer<P, M extends Model> {
-    /**
-     * Cluster given points set into k clusters.
-     *
-     * @param points Points set.
-     * @param k Clusters count.
-     */
-    public M cluster(P points, int k);
-}
+package org.apache.ignite.ml.clustering.kmeans;
