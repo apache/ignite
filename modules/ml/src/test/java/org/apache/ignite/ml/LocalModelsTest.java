@@ -20,14 +20,18 @@ package org.apache.ignite.ml;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
-import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
-import org.apache.ignite.ml.clustering.KMeansModel;
+import org.apache.ignite.ml.clustering.kmeans.KMeansModel;
+import org.apache.ignite.ml.clustering.kmeans.KMeansModelFormat;
+import org.apache.ignite.ml.clustering.kmeans.KMeansTrainer;
+import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNModelFormat;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
@@ -140,14 +144,20 @@ public class LocalModelsTest {
 
     /** */
     private KMeansModel getClusterModel() {
-        KMeansLocalClusterer clusterer = new KMeansLocalClusterer(new EuclideanDistance(), 1, 1L);
+        Map<Integer, double[]> data = new HashMap<>();
+        data.put(0, new double[] {1.0, 1959, 325100});
+        data.put(1, new double[] {1.0, 1960, 373200});
 
-        double[] v1 = new double[] {1959, 325100};
-        double[] v2 = new double[] {1960, 373200};
+        KMeansTrainer trainer = new KMeansTrainer()
+            .withK(1);
 
-        DenseLocalOnHeapMatrix points = new DenseLocalOnHeapMatrix(new double[][] {v1, v2});
+        KMeansModel knnMdl = trainer.fit(
+            new LocalDatasetBuilder<>(data, 2),
+            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
+            (k, v) -> v[2]
+        );
 
-        return clusterer.cluster(points, 1);
+        return knnMdl;
     }
 
     /** */
