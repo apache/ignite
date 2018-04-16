@@ -38,9 +38,10 @@ import org.apache.ignite.internal.processors.cache.distributed.CachePartitionSta
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheThreadLocalTxTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeMultiServerTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeTest;
-import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeMultiServerSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticTxSuspendResumeSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeMultiServerSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxMultiCacheAsyncOpsTest;
@@ -69,9 +70,10 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(CachePartitionStateTest.class);
 
         suite.addTestSuite(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
-        suite.addTestSuite(IgniteOptimisticTxSuspendResumeTest.class);
-        suite.addTestSuite(IgniteOptimisticTxSuspendResumeMultiServerTest.class);
-        suite.addTestSuite(IgnitePessimisticTxSuspendResumeTest.class);
+        suite.addTestSuite(IgniteOptimisticTxSuspendResumeSelfTest.class);
+        suite.addTestSuite(IgniteOptimisticTxSuspendResumeMultiServerSelfTest.class);
+        suite.addTestSuite(IgnitePessimisticTxSuspendResumeMultiServerSelfTest.class);
+        suite.addTestSuite(IgnitePessimisticTxSuspendResumeSelfTest.class);
 
         suite.addTestSuite(CacheExchangeMergeTest.class);
 

@@ -21,7 +21,8 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheJndiTmFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheJtaConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheJtaFactoryConfigValidationSelfTest;
-import org.apache.ignite.internal.processors.cache.GridJtaTransactionManagerSelfTest;
+import org.apache.ignite.internal.processors.cache.GridJtaOptimisticTxTransactionManagerSelfTest;
+import org.apache.ignite.internal.processors.cache.GridJtaPessimisticTxTransactionManagerSelfTest;
 import org.apache.ignite.internal.processors.cache.jta.GridPartitionedCacheJtaFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.jta.GridPartitionedCacheJtaFactoryUseSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.jta.GridPartitionedCacheJtaLookupClassNameSelfTest;
@@ -55,7 +56,8 @@ public class IgniteJtaTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheJtaConfigurationValidationSelfTest.class);
         suite.addTestSuite(GridCacheJtaFactoryConfigValidationSelfTest.class);
 
-        suite.addTestSuite(GridJtaTransactionManagerSelfTest.class);
+        suite.addTestSuite(GridJtaOptimisticTxTransactionManagerSelfTest.class);
+        suite.addTestSuite(GridJtaPessimisticTxTransactionManagerSelfTest.class);
 
         // Factory
         suite.addTestSuite(CacheJndiTmFactorySelfTest.class);

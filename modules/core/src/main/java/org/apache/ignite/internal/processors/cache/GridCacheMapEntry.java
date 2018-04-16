@@ -3228,6 +3228,23 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<GridCacheMvccCandidate> localCandidates(boolean reentries, GridCacheVersion... exclude)
+        throws GridCacheEntryRemovedException {
+        lockEntry();
+
+        try {
+            checkObsolete();
+
+            GridCacheMvcc mvcc = mvccExtras();
+
+            return mvcc == null ? Collections.emptyList() : mvcc.localCandidates(reentries, exclude);
+        }
+        finally {
+            unlockEntry();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<GridCacheMvccCandidate> remoteMvccSnapshot(GridCacheVersion... exclude) {
         return Collections.emptyList();
     }

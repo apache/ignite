@@ -731,7 +731,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    Collection<GridCacheMvccCandidate> localCandidates(boolean reentries, GridCacheVersion... exclude) {
+    @Override public Collection<GridCacheMvccCandidate> localCandidates(boolean reentries, GridCacheVersion... exclude) {
         return mvcc.localCandidates(reentries, exclude);
     }
 

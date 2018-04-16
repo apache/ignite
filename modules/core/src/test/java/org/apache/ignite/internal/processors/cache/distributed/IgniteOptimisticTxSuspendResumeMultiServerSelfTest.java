@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 /**
  *
  */
-public class IgniteOptimisticTxSuspendResumeMultiServerTest extends IgniteOptimisticTxSuspendResumeTest {
+public class IgniteOptimisticTxSuspendResumeMultiServerSelfTest extends IgniteOptimisticTxSuspendResumeSelfTest {
     /**
      * @return Number of server nodes.
      */

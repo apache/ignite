@@ -934,6 +934,13 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         return prepFut;
     }
 
+    /**
+     * @param threadId new owner of transaction.
+     */
+    public void threadId(long threadId) {
+        this.threadId = threadId;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return GridToStringBuilder.toString(GridDhtTxLocalAdapter.class, this, "nearNodes", nearMap.keySet(),

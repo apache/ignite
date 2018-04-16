@@ -928,6 +928,7 @@ public class IgniteTxHandler {
             tx.nearFinishFutureId(req.futureId());
             tx.nearFinishMiniId(req.miniId());
             tx.storeEnabled(req.storeEnabled());
+            tx.threadId(req.threadId());
 
             if (req.commit()) {
                 if (!tx.markFinalizing(USER_FINISH)) {

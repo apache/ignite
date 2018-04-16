@@ -819,6 +819,17 @@ public interface GridCacheEntryEx {
         throws GridCacheEntryRemovedException;
 
     /**
+     * Gets all local candidates.
+     *
+     * @param reentries Flag to include reentries.
+     * @param exclude Versions to exclude from check.
+     * @return All local candidates.
+     * @throws GridCacheEntryRemovedException If entry was removed.
+     */
+    public Collection<GridCacheMvccCandidate> localCandidates(boolean reentries, @Nullable GridCacheVersion... exclude)
+        throws GridCacheEntryRemovedException;
+
+    /**
      * Gets all remote versions.
      *
      * @param exclude Exclude version.

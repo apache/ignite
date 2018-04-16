@@ -2961,9 +2961,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Suspend near local tx: " + this);
 
-        if (pessimistic())
-            throw new UnsupportedOperationException("Suspension is not supported for pessimistic transactions.");
-
         if (threadId() != Thread.currentThread().getId())
             throw new IgniteCheckedException("Only thread started transaction can suspend it.");
 
@@ -2993,9 +2990,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private void resume(boolean checkTimeout, long threadId) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Resume near local tx: " + this);
-
-        if (pessimistic())
-            throw new UnsupportedOperationException("Resume is not supported for pessimistic transactions.");
 
         synchronized (this) {
             checkValid(checkTimeout);
@@ -4220,13 +4214,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             ((GridFutureAdapter)fut).ignoreInterrupts();
 
         return fut;
-    }
-
-    /**
-     * @param threadId new owner of transaction.
-     */
-    public void threadId(long threadId) {
-        this.threadId = threadId;
     }
 
     /**

@@ -394,6 +394,13 @@ public class GridCacheMvccCandidate implements Externalizable,
     }
 
     /**
+     * @param threadId New thread id to be set.
+     */
+    public void threadId(long threadId) {
+        this.threadId = threadId;
+    }
+
+    /**
      * @return Lock version.
      */
     public GridCacheVersion version() {

@@ -84,6 +84,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -108,6 +109,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.RECOVERY_FINISH;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
@@ -140,6 +142,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** One phase commit deferred ack request buffer size. */
     private static final int DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_BUFFER_SIZE =
         Integer.getInteger(IGNITE_DEFERRED_ONE_PHASE_COMMIT_ACK_REQUEST_BUFFER_SIZE, 256);
+
+    /**
+     * Ignite version that introduce {@code suspend()} and {@code resume()} methods for pessimistic transactions.
+     */
+    private static final IgniteProductVersion TX_SUSPEND_RESUME_FOR_PESSIMISTIC_SINCE =
+        IgniteProductVersion.fromString("2.5.0");
 
     /** Deadlock detection maximum iterations. */
     static int DEADLOCK_MAX_ITERS =
@@ -208,6 +216,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     /** Flag indicates that {@link TxRecord} records will be logged to WAL. */
     private boolean logTxRecords;
 
+    /**
+     * Indicates whether {@code suspend()}, {@code resume()} operations aren't supported in
+     * pessimistic transactions.
+     */
+    private boolean suspendResumeForPessimisticDisabled = false;
+
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
         cctx.gridIO().removeMessageListener(TOPIC_TX);
@@ -275,6 +289,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             nodeId.equals(((GridCacheReturnCompletableWrapper)obj).nodeId()))
                             removeTxReturn(entry.getKey());
                     }
+
+                    checkSuspendResumeForPessimisticEnabled();
                 }
             },
             EVT_NODE_FAILED, EVT_NODE_LEFT);
@@ -284,6 +300,23 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         cctx.gridIO().addMessageListener(TOPIC_TX, new DeadlockDetectionListener());
 
         this.logTxRecords = IgniteSystemProperties.getBoolean(IGNITE_WAL_LOG_TX_RECORDS, false);
+    }
+
+    /**
+     * Checks whether {@code suspend()}, {@code resume()} operations are supported in pessimistic transactions.
+     */
+    public void checkSuspendResumeForPessimisticEnabled() {
+        Collection<ClusterNode> nodes = cctx.kernalContext().grid().cluster().nodes();
+
+        for (ClusterNode node : nodes) {
+            if (node.version().compareTo(TX_SUSPEND_RESUME_FOR_PESSIMISTIC_SINCE) < 0) {
+                suspendResumeForPessimisticDisabled = true;
+
+                return;
+            }
+        }
+
+        suspendResumeForPessimisticDisabled = false;
     }
 
     /**
@@ -2319,14 +2352,17 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public void suspendTx(final GridNearTxLocal tx) throws IgniteCheckedException {
         assert tx != null && !tx.system() : tx;
 
+        if (tx.concurrency == PESSIMISTIC && suspendResumeForPessimisticDisabled) {
+            throw new IgniteCheckedException("Suspend operation cannot be called " +
+                "because some nodes in cluster don't support this feature.");
+        }
+
         if (!tx.state(SUSPENDED)) {
             throw new IgniteCheckedException("Trying to suspend transaction with incorrect state "
                 + "[expected=" + ACTIVE + ", actual=" + tx.state() + ']');
         }
 
         clearThreadMap(tx);
-
-        transactionMap(tx).remove(tx.xidVersion(), tx);
     }
 
     /**
@@ -2350,16 +2386,34 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
 
         assert !threadMap.containsValue(tx) : tx;
-        assert !transactionMap(tx).containsValue(tx) : tx;
         assert !haveSystemTxForThread(Thread.currentThread().getId());
 
         if (threadMap.putIfAbsent(threadId, tx) != null)
             throw new IgniteCheckedException("Thread already has started a transaction.");
 
-        if (transactionMap(tx).putIfAbsent(tx.xidVersion(), tx) != null)
-            throw new IgniteCheckedException("Thread already has started a transaction.");
-
         tx.threadId(threadId);
+
+        updateCandidatesThreadId(tx, threadId);
+    }
+
+    /**
+     * Updates transaction candidate's thread id.
+     *
+     * @param tx Transaction, which candidates must be updated.
+     * @param threadId New thread id to be set to candidates.
+     */
+    private void updateCandidatesThreadId(GridNearTxLocal tx, long threadId) {
+        try {
+            for (IgniteTxEntry entry : tx.allEntries()) {
+                for (GridCacheMvccCandidate candidate : entry.cached().localCandidates(true)) {
+                    if (candidate.threadId() == tx.threadId())
+                        candidate.threadId(threadId);
+                }
+            }
+        }
+        catch (GridCacheEntryRemovedException e) {
+            //No-op.
+        }
     }
 
     /**

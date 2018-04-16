@@ -1105,7 +1105,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 GridCacheEntryEx cached = txEntry.cached();
 
                 try {
-                    assert cached.detached() || cached.lockedByThread(threadId) || isRollbackOnly() :
+                    assert cached.detached() || cached.lockedLocally(xidVersion()) || isRollbackOnly() :
                         "Transaction lock is not acquired [entry=" + cached + ", tx=" + this +
                             ", nodeId=" + cctx.localNodeId() + ", threadId=" + threadId + ']';
 
