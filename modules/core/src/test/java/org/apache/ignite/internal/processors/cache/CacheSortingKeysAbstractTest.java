@@ -408,13 +408,14 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         private ArrayList<Object> list = new ArrayList<>();
 
         /** We should check only the same type of events. */
-        private AtomicInteger evtType = new AtomicInteger(-1);
+        private int evtType = -1;
 
         /** {@inheritDoc} */
         @Override public synchronized boolean apply(CacheEvent event) {
-            evtType.compareAndSet(-1, event.type());
+            if (evtType == -1)
+                evtType = event.type();
 
-            if (event.type() == evtType.get())
+            if (event.type() == evtType)
                 list.add(event.key());
 
             return true;
