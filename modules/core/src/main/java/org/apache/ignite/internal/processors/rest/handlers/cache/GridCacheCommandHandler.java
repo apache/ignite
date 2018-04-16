@@ -35,6 +35,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.client.GridClientCacheFlag;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
@@ -82,6 +84,8 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
+import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES;
+import static org.apache.ignite.internal.client.GridClientCacheFlag.SKIP_STORE;
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_PARTITIONED;
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_REPLICATED;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_DECREMENT;
@@ -178,22 +182,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      */
     public GridCacheCommandHandler(GridKernalContext ctx) {
         super(ctx);
-    }
-
-    /**
-     * Retrieves cache flags from corresponding bits.
-     *
-     * @param cacheFlagsBits Integer representation of cache flags bit set.
-     * @return Skip store flag.
-     */
-    public static boolean parseCacheFlags(int cacheFlagsBits) {
-        if (cacheFlagsBits == 0)
-            return false;
-
-        if ((cacheFlagsBits & 1) != 0)
-            return true;
-
-        return false;
     }
 
     /**
@@ -376,7 +364,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         final Object key = req0.key();
 
-        final boolean skipStore = parseCacheFlags(req0.cacheFlags());
+        final Set<GridClientCacheFlag> cacheFlags = GridClientCacheFlag.parseCacheFlags(req0.cacheFlags());
 
         try {
             GridRestCommand cmd = req0.command();
@@ -446,70 +434,70 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 case CACHE_CONTAINS_KEYS: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new ContainsKeysCommand(getKeys(req0)));
 
                     break;
                 }
 
                 case CACHE_CONTAINS_KEY: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new ContainsKeyCommand(key));
 
                     break;
                 }
 
                 case CACHE_GET: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new GetCommand(key));
 
                     break;
                 }
 
                 case CACHE_GET_AND_PUT: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new GetAndPutCommand(key, getValue(req0)));
 
                     break;
                 }
 
                 case CACHE_GET_AND_REPLACE: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new GetAndReplaceCommand(key, getValue(req0)));
 
                     break;
                 }
 
                 case CACHE_GET_AND_PUT_IF_ABSENT: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new GetAndPutIfAbsentCommand(key, getValue(req0)));
 
                     break;
                 }
 
                 case CACHE_PUT_IF_ABSENT: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new PutIfAbsentCommand(key, ttl, getValue(req0)));
 
                     break;
                 }
 
                 case CACHE_GET_ALL: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new GetAllCommand(getKeys(req0)));
 
                     break;
                 }
 
                 case CACHE_PUT: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key, new
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key, new
                         PutCommand(key, ttl, getValue(req0)));
 
                     break;
                 }
 
                 case CACHE_ADD: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new AddCommand(key, ttl, getValue(req0)));
 
                     break;
@@ -532,35 +520,35 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     // HashMap wrapping for correct serialization
                     map = new HashMap<>(map);
 
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new PutAllCommand(map));
 
                     break;
                 }
 
                 case CACHE_REMOVE: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new RemoveCommand(key));
 
                     break;
                 }
 
                 case CACHE_REMOVE_VALUE: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new RemoveValueCommand(key, getValue(req0)));
 
                     break;
                 }
 
                 case CACHE_REPLACE_VALUE: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new ReplaceValueCommand(key, getValue(req0), req0.value2()));
 
                     break;
                 }
 
                 case CACHE_GET_AND_REMOVE: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new GetAndRemoveCommand(key));
 
                     break;
@@ -572,7 +560,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     // HashSet wrapping for correct serialization
                     Set<Object> keys = map == null ? null : new HashSet<>(map.keySet());
 
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new RemoveAllCommand(keys));
 
                     break;
@@ -588,7 +576,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     GridCompoundFuture compFut = new GridCompoundFuture();
 
                     for (Object cName : cacheNames)
-                        compFut.add(executeCommand(req.destinationId(), req.clientId(), (String)cName, skipStore, key,
+                        compFut.add(executeCommand(req.destinationId(), req.clientId(), (String)cName, cacheFlags, key,
                             new RemoveAllCommand(null)));
 
                     compFut.markInitialized();
@@ -622,7 +610,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     if (val == null)
                         throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new ReplaceCommand(key, ttl, val));
 
                     break;
@@ -632,21 +620,21 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     final Object val1 = req0.value();
                     final Object val2 = req0.value2();
 
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new CasCommand(val2, val1, key));
 
                     break;
                 }
 
                 case CACHE_APPEND: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new AppendCommand(key, req0));
 
                     break;
                 }
 
                 case CACHE_PREPEND: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, skipStore, key,
+                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, cacheFlags, key,
                         new PrependCommand(key, req0));
 
                     break;
@@ -679,12 +667,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             return fut;
         }
-        catch (IgniteException e) {
-            U.error(log, "Failed to execute cache command: " + req, e);
-
-            return new GridFinishedFuture<>(e);
-        }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException | IgniteCheckedException e) {
             U.error(log, "Failed to execute cache command: " + req, e);
 
             return new GridFinishedFuture<>(e);
@@ -740,7 +723,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @param destId Target node Id for the operation. If {@code null} - operation could be executed anywhere.
      * @param clientId Client ID.
      * @param cacheName Cache name.
-     * @param skipStore Skip store.
+     * @param cacheFlags Cache flags.
      * @param key Key to set affinity mapping in the response.
      * @param op Operation to perform.
      * @return Operation result in future.
@@ -750,7 +733,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         @Nullable UUID destId,
         UUID clientId,
         final String cacheName,
-        final boolean skipStore,
+        final Set<GridClientCacheFlag> cacheFlags,
         final Object key,
         final CacheProjectionCommand op) throws IgniteCheckedException {
 
@@ -758,7 +741,12 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
 
         if (locExec) {
-            IgniteInternalCache<?, ?> prj = localCache(cacheName).forSubjectId(clientId).setSkipStore(skipStore);
+            IgniteInternalCache<?, ?> prj = localCache(cacheName)
+                .forSubjectId(clientId)
+                .setSkipStore(cacheFlags.contains(SKIP_STORE));
+
+            if (cacheFlags.contains(KEEP_BINARIES))
+                prj = prj.keepBinary();
 
             return op.apply((IgniteInternalCache<Object, Object>)prj, ctx).
                 chain(resultWrapper((IgniteInternalCache<Object, Object>)prj, key));
@@ -769,7 +757,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
             return ctx.closure().callAsync(BALANCE,
-                new FlaggedCacheOperationCallable(clientId, cacheName, skipStore, op, key),
+                new FlaggedCacheOperationCallable(clientId, cacheName, cacheFlags, op, key),
                 prj.nodes());
         }
     }
@@ -898,7 +886,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** */
         private final String cacheName;
         /** */
-        private final boolean skipStore;
+        private final Set<GridClientCacheFlag> cacheFlags;
         /** */
         private final CacheProjectionCommand op;
         /** */
@@ -912,25 +900,31 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /**
          * @param clientId Client ID.
          * @param cacheName Cache name.
-         * @param skipStore Skip store.
+         * @param cacheFlags Cache flags.
          * @param op Operation.
          * @param key Key.
          */
         private FlaggedCacheOperationCallable(UUID clientId,
             String cacheName,
-            boolean skipStore,
+            Set<GridClientCacheFlag> cacheFlags,
             CacheProjectionCommand op,
-            Object key) {
+            Object key
+        ) {
             this.clientId = clientId;
             this.cacheName = cacheName;
-            this.skipStore = skipStore;
+            this.cacheFlags = cacheFlags;
             this.op = op;
             this.key = key;
         }
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
-            IgniteInternalCache<?, ?> prj = cache(g, cacheName).forSubjectId(clientId).setSkipStore(skipStore);
+            IgniteInternalCache<?, ?> prj = cache(g, cacheName)
+                .forSubjectId(clientId)
+                .setSkipStore(cacheFlags.contains(SKIP_STORE));
+
+            if (cacheFlags.contains(KEEP_BINARIES))
+                prj = prj.keepBinary();
 
             // Need to apply both operation and response transformation remotely
             // as cache could be inaccessible on local node and

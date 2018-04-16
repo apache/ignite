@@ -250,6 +250,14 @@ $btn-content-padding-with-border: 9px 11px;
     @include btn-ignite--link-dashed($color, $activeHover, $disabled);
 }
 
+.btn-ignite--link-dashed-primary {
+    $color: $ignite-brand-primary;
+    $activeHover: change-color($color, $lightness: 26%);
+    $disabled: change-color($color, $saturation: 57%, $lightness: 68%);
+
+    @include btn-ignite--link-dashed($color, $activeHover, $disabled);
+}
+
 .btn-ignite--link-dashed-secondary {
     $activeHover: change-color($ignite-brand-success, $lightness: 26%);
     @include btn-ignite--link-dashed($text-color, $activeHover, $gray-light);
@@ -302,6 +310,10 @@ $btn-content-padding-with-border: 9px 11px;
         $line-color: $ignite-brand-primary;
         border-right-color: change-color($line-color, $lightness: 41%);
     }
+    .btn-ignite.btn-ignite--success {
+        $line-color: $ignite-brand-success;
+        border-right-color: change-color($line-color, $saturation: 63%, $lightness: 33%);
+    }
 }
 
 @mixin ignite-link($color, $color-hover) {
@@ -322,6 +334,15 @@ $btn-content-padding-with-border: 9px 11px;
 }
 
 .link-success {
+    @include ignite-link(
+        $color: $ignite-brand-success,
+        $color-hover: change-color($ignite-brand-success, $lightness: 26%)
+    );
+}
+
+.btn-ignite--link {
+    background: transparent;
+
     @include ignite-link(
         $color: $ignite-brand-success,
         $color-hover: change-color($ignite-brand-success, $lightness: 26%)

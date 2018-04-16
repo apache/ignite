@@ -260,6 +260,8 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     public void testOnlyInsertsAllowed() {
         assertStatementForbidden("CREATE TABLE PUBLIC.X (x int primary key, y int)");
 
+        assertStatementForbidden("CREATE INDEX idx_1 ON Person(name)");
+
         assertStatementForbidden("SELECT * from Person");
 
         assertStatementForbidden("insert into PUBLIC.Person(\"id\", \"name\") " +

@@ -26,7 +26,7 @@ const stop = argv._.includes('stop');
 
 const mongoUrl = process.env.DB_URL || 'mongodb://localhost/console-e2e';
 
-const insertTestUser = ({userId = '000000000000000000000001', token = 'ppw4tPI3JUOGHva8CODO' } = options = {}) => {
+const insertTestUser = ({userId = '000000000000000000000001', token = 'ppw4tPI3JUOGHva8CODO'} = {}) => {
     return new Promise((res, rej) => {
         MongoClient
             .connect(mongoUrl, function(err, db) {
