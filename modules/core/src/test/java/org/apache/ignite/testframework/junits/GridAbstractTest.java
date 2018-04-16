@@ -1679,9 +1679,8 @@ public abstract class GridAbstractTest extends TestCase {
 
         TestCounters cntrs = getTestCounters();
 
-        if (isDebug())
-            info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
-                ", stopped=" + cntrs.getStopped() + ']');
+        info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
+            ", stopped=" + cntrs.getStopped() + ']');
 
         try {
             afterTest();
@@ -1693,6 +1692,9 @@ public abstract class GridAbstractTest extends TestCase {
                 info(">>> Stopping test class: " + testClassDescription() + " <<<");
 
                 TestCounters counters = getTestCounters();
+
+                info("Test counters [numOfTests=" + counters.getNumberOfTests() + ", started=" + counters.getStarted() +
+                    ", stopped=" + counters.getStopped() + ']');
 
                 // Stop all threads started by runMultithreaded() methods.
                 GridTestUtils.stopThreads(log);
