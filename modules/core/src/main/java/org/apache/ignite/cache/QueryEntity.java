@@ -405,7 +405,7 @@ public class QueryEntity implements Serializable {
      * @return Set of names of fields that must have non-null values.
      */
     public Map<String, IgniteBiTuple<Integer, Integer>> getDecimalInfo() {
-        return unmodifiableMap(decimalInfo);
+        return decimalInfo == null ? Collections.emptyMap() : unmodifiableMap(decimalInfo);
     }
 
     /**
