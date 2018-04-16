@@ -21,48 +21,15 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Base class for decision trees test.
  */
-public class BaseKNNTest extends GridCommonAbstractTest {
-    /** Count of nodes. */
-    private static final int NODE_COUNT = 4;
-
+public class LabeledDatasetHelper {
     /** Separator. */
     private static final String SEPARATOR = "\t";
-
-    /** Grid instance. */
-    protected Ignite ignite;
-
-    /**
-     * Default constructor.
-     */
-    public BaseKNNTest() {
-        super(false);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override protected void beforeTest() throws Exception {
-        ignite = grid(NODE_COUNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        for (int i = 1; i <= NODE_COUNT; i++)
-            startGrid(i);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
 
     /**
      * Loads labeled dataset from file with .txt extension.
@@ -70,9 +37,9 @@ public class BaseKNNTest extends GridCommonAbstractTest {
      * @param rsrcPath path to dataset.
      * @return null if path is incorrect.
      */
-    LabeledDataset loadDatasetFromTxt(String rsrcPath, boolean isFallOnBadData) {
+    public static LabeledDataset loadDatasetFromTxt(String rsrcPath, boolean isFallOnBadData) {
         try {
-            Path path = Paths.get(this.getClass().getClassLoader().getResource(rsrcPath).toURI());
+            Path path = Paths.get(LabeledDatasetHelper.class.getClassLoader().getResource(rsrcPath).toURI());
             try {
                 return LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, false, isFallOnBadData);
             }

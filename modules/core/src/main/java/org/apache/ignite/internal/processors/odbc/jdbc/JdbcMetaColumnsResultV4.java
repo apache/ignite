@@ -15,22 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions.linear;
+package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import org.apache.ignite.ml.math.impls.matrix.SparseBlockDistributedMatrix;
-import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
+import java.util.Collection;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Tests for {@link LinearRegressionQRTrainer} on {@link SparseBlockDistributedMatrix}.
+ * JDBC columns metadata result.
  */
-public class BlockDistributedLinearRegressionQRTrainerTest extends GridAwareAbstractLinearRegressionTrainerTest {
-    /** */
-    public BlockDistributedLinearRegressionQRTrainerTest() {
-        super(
-            new LinearRegressionQRTrainer(),
-            SparseBlockDistributedMatrix::new,
-            SparseBlockDistributedVector::new,
-            1e-6
-        );
+public class JdbcMetaColumnsResultV4 extends JdbcMetaColumnsResult {
+    /**
+     * Default constructor is used for deserialization.
+     */
+    JdbcMetaColumnsResultV4() {
+        super(META_COLUMNS_V4);
+    }
+
+    /**
+     * @param meta Columns metadata.
+     */
+    JdbcMetaColumnsResultV4(Collection<JdbcColumnMeta> meta) {
+        super(META_COLUMNS_V4, meta);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected JdbcColumnMeta createMetaColumn() {
+        return new JdbcColumnMetaV4();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(JdbcMetaColumnsResultV4.class, this);
     }
 }
