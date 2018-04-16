@@ -15,7 +15,11 @@ Build image
 
         cp -rfv ../../target/bin/apache-ignite-fabric-*.zip
 
-4) Build docker image
+4) Unpack Apache Ignite's binary archive
+
+        unzip apache-ignite-fabric-*.zip
+
+5) Build docker image
 
         docker build . -t apacheignite/ignite[:<version>]
 

@@ -26,7 +26,7 @@ WORKDIR /opt/ignite
 RUN apk --update --no-cache add bash
 
 # Copy main binary archive
-COPY apache-ignite-fabric apache-ignite-fabric
+COPY apache-ignite-fabric* apache-ignite-fabric
 
 # Copy sh files and set permission
 COPY run.sh $IGNITE_HOME/
