@@ -23,7 +23,7 @@ interested in):
         ...
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring-data-2.0</artifactId>
+            <artifactId>ignite-spring-data_2.0</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...
