@@ -87,6 +87,12 @@ public class CommandHandler {
     private static final String CMD_USER = "--user";
 
     /** */
+    protected static final String CMD_PING_INTERVAL = "--ping-interval";
+
+    /** */
+    protected static final String CMD_PING_TIMEOUT = "--ping-timeout";
+
+    /** */
     private static final String BASELINE_ADD = "add";
 
     /** */
@@ -121,6 +127,12 @@ public class CommandHandler {
 
     /** */
     public static final int EXIT_CODE_UNEXPECTED_ERROR = 4;
+
+    /** */
+    private static final long DFLT_PING_INTERVAL = 5000L;
+
+    /** */
+    private static final long DFLT_PING_TIMEOUT = 30_000L;
 
     /** */
     private static final Scanner IN = new Scanner(System.in);
@@ -559,7 +571,8 @@ public class CommandHandler {
      */
     private void usage(String desc, Command cmd, String... args) {
         log(desc);
-        log("    control.sh [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] " + cmd.text() + String.join("", args));
+        log("    control.sh [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] " +
+                " [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] " + cmd.text() + String.join("", args));
         nl();
     }
 
@@ -616,6 +629,10 @@ public class CommandHandler {
 
         String baselineArgs = "";
 
+        Long pingInterval = DFLT_PING_INTERVAL;
+
+        Long pingTimeout = DFLT_PING_TIMEOUT;
+
         boolean force = false;
 
         List<Command> commands = new ArrayList<>();
@@ -658,6 +675,7 @@ public class CommandHandler {
                 switch (str) {
                     case CMD_HOST:
                         host = nextArg("Expected host name");
+
                         break;
 
                     case CMD_PORT:
@@ -672,6 +690,41 @@ public class CommandHandler {
                         catch (NumberFormatException ignored) {
                             throw new IllegalArgumentException("Invalid value for port: " + port);
                         }
+
+                        break;
+
+                    case CMD_PING_INTERVAL:
+                        String raw = nextArg("Expected ping interval");
+
+                        try {
+                            long buf = Long.valueOf(raw);
+
+                            if (buf <= 0)
+                                throw new IllegalArgumentException("Invalid value for ping interval: " + buf);
+                            else
+                                pingInterval = buf;
+                        }
+                        catch (NumberFormatException ignored) {
+                            throw new IllegalArgumentException("Invalid value for ping interval: " + raw);
+                        }
+
+                        break;
+
+                    case CMD_PING_TIMEOUT:
+                        raw = nextArg("Expected ping timeout");
+
+                        try {
+                            long buf = Long.valueOf(raw);
+
+                            if (buf <= 0)
+                                throw new IllegalArgumentException("Invalid value for ping timeout: " + buf);
+                            else
+                                pingTimeout = buf;
+                        }
+                        catch (NumberFormatException ignored) {
+                            throw new IllegalArgumentException("Invalid value for ping timeout: " + raw);
+                        }
+
                         break;
 
                     case CMD_USER:
@@ -685,6 +738,7 @@ public class CommandHandler {
                     case CMD_FORCE:
                         force = true;
                         break;
+
                     default:
                         throw new IllegalArgumentException("Unexpected argument: " + str);
                 }
@@ -707,7 +761,7 @@ public class CommandHandler {
         if (hasUsr != hasPwd)
             throw new IllegalArgumentException("Both user and password should be specified");
 
-        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, force);
+        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, pingTimeout, pingInterval, force);
     }
 
     /**
@@ -742,6 +796,8 @@ public class CommandHandler {
                 log("Default values:");
                 log("    HOST_OR_IP=" + DFLT_HOST);
                 log("    PORT=" + DFLT_PORT);
+                log("    PING_INTERVAL=" + DFLT_PING_INTERVAL);
+                log("    PING_TIMEOUT=" + DFLT_PING_TIMEOUT);
                 nl();
 
                 log("Exit codes:");
@@ -763,6 +819,10 @@ public class CommandHandler {
             }
 
             GridClientConfiguration cfg = new GridClientConfiguration();
+
+            cfg.setPingInterval(args.pingInterval());
+
+            cfg.setPingTimeout(args.pingTimeout());
 
             cfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
 
