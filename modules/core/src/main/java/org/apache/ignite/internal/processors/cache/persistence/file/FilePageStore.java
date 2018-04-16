@@ -21,6 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -91,6 +93,13 @@ public class FilePageStore implements PageStore {
 
     /** */
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+
+    /** Interrupted flag. */
+    private ThreadLocal<Boolean> interrupted = new ThreadLocal<Boolean>() {
+        @Override protected Boolean initialValue() {
+            return false;
+        }
+    };
 
     /**
      * @param file File.
@@ -174,7 +183,7 @@ public class FilePageStore implements PageStore {
      * @return Next available position in the file to store a data.
      * @throws PersistentStorageIOException If check is failed.
      */
-    private long checkFile() throws PersistentStorageIOException {
+    private long checkFile() throws PersistentStorageIOException, ClosedByInterruptException {
         try {
             ByteBuffer hdr = ByteBuffer.allocate(headerSize()).order(ByteOrder.LITTLE_ENDIAN);
 
@@ -224,7 +233,10 @@ public class FilePageStore implements PageStore {
             return fileSize;
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("File check failed", e);
+            if(e instanceof ClosedByInterruptException)
+                throw (ClosedByInterruptException)e;
+            else
+                throw new PersistentStorageIOException("File check failed", e);
         }
     }
 
@@ -239,7 +251,12 @@ public class FilePageStore implements PageStore {
             if (!inited)
                 return;
 
-            fileIO.force();
+            try {
+                fileIO.force();
+            }
+            catch (ClosedChannelException ignored) {
+                // No-op.
+            }
 
             fileIO.close();
 
@@ -343,7 +360,7 @@ public class FilePageStore implements PageStore {
             int len = pageSize;
 
             do {
-                int n = fileIO.read(pageBuf, off);
+                int n = read0(fileIO, pageBuf, off);
 
                 // If page was not written yet, nothing to read.
                 if (n < 0) {
@@ -398,7 +415,7 @@ public class FilePageStore implements PageStore {
             long off = 0;
 
             do {
-                int n = fileIO.read(buf, off);
+                int n = read0(fileIO, buf, off);
 
                 // If page was not written yet, nothing to read.
                 if (n < 0)
@@ -419,6 +436,14 @@ public class FilePageStore implements PageStore {
      * @throws IgniteCheckedException If failed to initialize store file.
      */
     private void init() throws IgniteCheckedException {
+        init0(false);
+    }
+
+    /**
+     * @param force Call force() if {@code true}.
+     * @throws IgniteCheckedException If failed to initialize store file.
+     */
+    private void init0(boolean force) throws IgniteCheckedException {
         if (!inited) {
             lock.writeLock().lock();
 
@@ -429,9 +454,33 @@ public class FilePageStore implements PageStore {
                     IgniteCheckedException err = null;
 
                     try {
-                        this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
+                        boolean interrupted = this.interrupted.get();
 
-                        long newSize = cfgFile.length() == 0 ? initFile() : checkFile();
+                        long newSize;
+
+                        while(true) {
+                            try {
+                                this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
+
+                                newSize = cfgFile.length() == 0 ? initFile() : checkFile();
+
+                                if(force)
+                                    fileIO.force();
+
+                                if (interrupted)
+                                    Thread.currentThread().interrupt();
+
+                                break;
+                            }
+                            catch (ClosedByInterruptException ignore) {
+                                interrupted = true;
+
+                                Thread.interrupted();
+                            }
+                            finally {
+                                this.interrupted.set(false);
+                            }
+                        }
 
                         assert allocated.get() == 0;
 
@@ -524,6 +573,39 @@ public class FilePageStore implements PageStore {
     }
 
     /**
+     * Read that correctly handles InterruptedException.
+     *
+     * @param fileIO File io.
+     * @param destBuf Destination buffer.
+     * @param position Position.
+     */
+    private int read0(FileIO fileIO, ByteBuffer destBuf, long position) throws IOException {
+        boolean interrupted = this.interrupted.get();
+
+        while(true) {
+            try {
+                int num = -1;
+
+                if(interrupted)
+                    Thread.currentThread().interrupt();
+                else
+                    num =  fileIO.read(destBuf, position);
+
+                return num;
+            }
+            catch (ClosedByInterruptException ignore) {
+                interrupted = true;
+
+                Thread.interrupted();
+            }
+            finally {
+                this.interrupted.set(false);
+            }
+        }
+    }
+
+
+    /**
      * @param pageBuf Page buffer.
      * @param pageSize Page size.
      */
@@ -548,12 +630,7 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
-            init();
-
-            fileIO.force();
-        }
-        catch (IOException e) {
-            throw new PersistentStorageIOException("Sync error", e);
+            init0(true);
         }
         finally {
             lock.writeLock().unlock();
