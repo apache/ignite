@@ -77,6 +77,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
 
@@ -487,6 +489,17 @@ public class GridNioServer<T> {
         impl.offerStateChange(fut);
 
         return fut;
+    }
+
+    /**
+     * @param ses Session.
+     */
+    public void closeFromWorkerThread(GridNioSession ses) {
+        assert ses instanceof GridSelectorNioSessionImpl : ses;
+
+        GridSelectorNioSessionImpl ses0 = (GridSelectorNioSessionImpl)ses;
+
+        ((AbstractNioClientWorker)ses0.worker()).close((GridSelectorNioSessionImpl)ses, null);
     }
 
     /**
@@ -1738,6 +1751,8 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            Throwable err = null;
+
             try {
                 boolean reset = false;
 
@@ -1763,8 +1778,23 @@ public class GridNioServer<T> {
             catch (Throwable e) {
                 U.error(log, "Caught unhandled exception in NIO worker thread (restart the node).", e);
 
+                err = e;
+
                 if (e instanceof Error)
                     throw e;
+            }
+            finally {
+                if (err instanceof OutOfMemoryError)
+                    lsnr.onFailure(CRITICAL_ERROR, err);
+                else if (!closed) {
+                    if (err == null)
+                        lsnr.onFailure(SYSTEM_WORKER_TERMINATION,
+                            new IllegalStateException("Thread " + name() + " is terminated unexpectedly"));
+                    else if (err instanceof InterruptedException)
+                        lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
+                }
+                else if (err != null)
+                    lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
             }
         }
 
@@ -2170,7 +2200,12 @@ public class GridNioServer<T> {
                 dumpSelectorInfo(sb, keys);
 
             for (SelectionKey key : keys) {
-                GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
+                GridNioKeyAttachment attach = (GridNioKeyAttachment)key.attachment();
+
+                if (!attach.hasSession())
+                    continue;
+
+                GridSelectorNioSessionImpl ses = attach.session();
 
                 boolean sesInfo = p == null || p.apply(ses);
 
@@ -2774,6 +2809,8 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            Throwable err = null;
+
             try {
                 boolean reset = false;
 
@@ -2796,8 +2833,28 @@ public class GridNioServer<T> {
                     }
                 }
             }
+            catch (Throwable t) {
+                if (!(t instanceof IgniteInterruptedCheckedException))
+                    err = t;
+
+                throw t;
+            }
             finally {
-                closeSelector(); // Safety.
+                try {
+                    closeSelector(); // Safety.
+                }
+                catch (RuntimeException ignore) {
+                    // No-op.
+                }
+
+                if (err == null && !closed)
+                    err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
+
+                if (err instanceof OutOfMemoryError)
+                    lsnr.onFailure(CRITICAL_ERROR, err);
+                else if (err != null)
+                    lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
+
             }
         }
 

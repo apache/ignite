@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 
 /**
  * Authentication context.
@@ -40,6 +41,12 @@ public class AuthenticationContext {
 
     /** */
     private Map<String, Object> nodeAttrs;
+
+    /** Authorization context. */
+    private AuthorizationContext athrCtx;
+
+    /** True if this is a client node context. */
+    private boolean client;
 
     /**
      * Gets subject type.
@@ -129,5 +136,38 @@ public class AuthenticationContext {
      */
     public void nodeAttributes(Map<String, Object> nodeAttrs) {
         this.nodeAttrs = nodeAttrs;
+    }
+
+    /**
+     * @return Native Apache Ignite authorization context acquired after authentication or {@code null} if native
+     * Ignite authentication is not used.
+     */
+    public AuthorizationContext authorizationContext(){
+        return athrCtx;
+    }
+
+    /**
+     * Set authorization context acquired after native Apache Ignite authentication.
+     */
+    public AuthenticationContext authorizationContext(AuthorizationContext newVal) {
+        athrCtx = newVal;
+
+        return this;
+    }
+
+    /**
+     * @return {@code true} if this is a client node context.
+     */
+    public boolean isClient() {
+        return client;
+    }
+
+    /**
+     * Sets flag indicating if this is client node context.
+     */
+    public AuthenticationContext setClient(boolean newVal) {
+        client = newVal;
+
+        return this;
     }
 }

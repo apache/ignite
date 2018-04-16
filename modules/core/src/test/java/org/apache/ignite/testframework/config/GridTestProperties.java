@@ -83,6 +83,15 @@ public final class GridTestProperties {
     /** "True value" enables {@link BinaryBasicNameMapper} in {@link BinaryTypeConfiguration#getNameMapper()}  */
     public static final String BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER = "binary.marshaller.use.simple.name.mapper";
 
+    /**
+     * Name of class which provides static method preprocessConfiguration(IgniteConfiguration cfg) to
+     * alter {@link org.apache.ignite.configuration.IgniteConfiguration} before node is started.
+     * <p>
+     * Note: this pre-preprocessor is started only if test starts node using one of GridAbstractTest's startGrid
+     * method.
+     */
+    public static final String IGNITE_CFG_PREPROCESSOR_CLS = "ignite.cfg.preprocessor.class";
+
     /** */
     static {
         // Initialize IGNITE_HOME system property.

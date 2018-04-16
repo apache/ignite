@@ -897,7 +897,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
             // Can be empty on initial start of PDS cluster (default user will be created and stored after activate)
             if (!F.isEmpty(initUsrs.usrs)) {
-                users.clear();
+                if (users == null)
+                    users = new ConcurrentHashMap<>();
+                else
+                    users.clear();
 
                 for (User u : initUsrs.usrs)
                     users.put(u.name(), u);

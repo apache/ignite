@@ -44,12 +44,19 @@ import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
  * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run ExampleNodeStartup in
  * another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
  */
-
 public class HelloWorldGAExample {
+    /** Ignite instance */
     private static Ignite ignite = null;
+    /** GAGrid */
     private static GAGrid gaGrid = null;
+    /** GAConfiguration */
     private static GAConfiguration gaConfig = null;
 
+    /**
+     * Executes example.
+     *
+     * @param args Command line arguments, none required.
+     */
     public static void main(String args[]) {
         System.setProperty("IGNITE_QUIET", "false");
 

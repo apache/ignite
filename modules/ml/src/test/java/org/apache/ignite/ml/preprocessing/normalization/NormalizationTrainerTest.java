@@ -17,14 +17,15 @@
 
 package org.apache.ignite.ml.preprocessing.normalization;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -66,8 +67,7 @@ public class NormalizationTrainerTest {
 
         NormalizationPreprocessor<Integer, double[]> preprocessor = standardizationTrainer.fit(
             datasetBuilder,
-            (k, v) -> v,
-            3
+            (k, v) -> v
         );
 
         assertArrayEquals(new double[] {0, 4, 1}, preprocessor.getMin(), 1e-8);
