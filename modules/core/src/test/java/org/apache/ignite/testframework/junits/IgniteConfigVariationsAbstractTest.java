@@ -132,6 +132,9 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
             memoryUsage();
         }
+        else {
+            info("Will NOT stop nodes: " + this);
+        }
     }
 
     /**
@@ -246,6 +249,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             }
 
             info("Running test in data mode [dataMode=" + dataMode +
+                ", igniteInstance=" + getTestIgniteInstanceName() +
                 ", marshaller=" + getConfiguration().getMarshaller() + ']');
 
             if (i != 0)

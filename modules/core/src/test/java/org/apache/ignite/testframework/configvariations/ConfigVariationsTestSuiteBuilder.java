@@ -191,6 +191,8 @@ public class ConfigVariationsTestSuiteBuilder {
             + ", igniteCfg=" + factory.getIgniteConfigurationDescription()
             + ", cacheCfg=" + factory.getCacheConfigurationDescription() + "]";
 
+        System.out.println("Building test suite [suffix=" + clsNameSuffix + ", stopNodes=" + stopNodes + ']');
+
         VariationsTestsConfig testCfg = new VariationsTestsConfig(factory, clsNameSuffix, stopNodes, cacheStartMode,
             gridsCnt, !skipWaitPartMapExchange);
 
@@ -223,7 +225,12 @@ public class ConfigVariationsTestSuiteBuilder {
             boolean startCache = i == 0;
             boolean stopCache = i + 1 == testedNodeCnt;
 
-            VariationsTestsConfig cfg0 = new VariationsTestsConfig(cfg.configurationFactory(), cfg.description(),
+            System.out.println("Building multi-node test suite [clsSuffix=" + cfg.description() +
+                ", testedNode=" + i + ", stopNodes=" + stopNodes + ']');
+
+            VariationsTestsConfig cfg0 = new VariationsTestsConfig(
+                cfg.configurationFactory(),
+                cfg.description() + "-node-" + i,
                 stopNodes, startCache, stopCache, cfg.cacheStartMode(), cfg.gridCount(), i, withClients,
                 !skipWaitParMapExchange);
 
