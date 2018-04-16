@@ -26,7 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -64,7 +64,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -91,7 +90,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     private final IgniteLogger log;
 
     /** Affinity map. */
-    private final ConcurrentMap<AffinityAssignmentKey, IgniteInternalFuture<AffinityInfo>> affMap = new ConcurrentHashMap<>();
+    private final ConcurrentSkipListMap<AffinityAssignmentKey, IgniteInternalFuture<AffinityInfo>> affMap = new ConcurrentSkipListMap<>();
 
     /** Listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
@@ -219,16 +218,17 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param topVerRmv Collection with affinity topology versions for removing.
+     * Removes cached affinity instances with affinity topology versions less than {@code topVerRmv}.
+     *
+     * @param topVerRmv topology versions for removing.
      */
-    public void removeCachedAffinity(Collection<AffinityTopologyVersion> topVerRmv) {
+    public void removeCachedAffinity(AffinityTopologyVersion topVerRmv) {
         assert topVerRmv != null;
-
-        Collection<String> caches = ctx.cache().cacheNames();
 
         int oldSize = affMap.size();
 
-        Iterator<Map.Entry<AffinityAssignmentKey, IgniteInternalFuture<AffinityInfo>>> it = affMap.entrySet().iterator();
+        Iterator<Map.Entry<AffinityAssignmentKey, IgniteInternalFuture<AffinityInfo>>> it =
+            affMap.headMap(new AffinityAssignmentKey("topVerRmv", topVerRmv)).entrySet().iterator();
 
         while (it.hasNext()) {
             Map.Entry<AffinityAssignmentKey, IgniteInternalFuture<AffinityInfo>> entry = it.next();
@@ -238,8 +238,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             if (!entry.getValue().isDone())
                 continue;
 
-            if (topVerRmv.contains(entry.getKey().topVer) || !caches.contains(entry.getKey().cacheName))
-                it.remove();
+            it.remove();
         }
 
         if (log.isDebugEnabled())
@@ -692,7 +691,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class AffinityAssignmentKey {
+    private static class AffinityAssignmentKey implements Comparable<AffinityAssignmentKey> {
         /** */
         private String cacheName;
 
@@ -733,6 +732,13 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(AffinityAssignmentKey.class, this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compareTo(AffinityAssignmentKey o) {
+            assert o != null;
+
+            return this.topVer.compareTo(o.topVer);
         }
     }
 

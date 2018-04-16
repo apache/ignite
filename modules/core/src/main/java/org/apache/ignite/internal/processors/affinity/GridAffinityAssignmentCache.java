@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -203,11 +202,13 @@ public class GridAffinityAssignmentCache {
      */
     public void initialize(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment) {
         assert topVer.compareTo(lastVersion()) >= 0 : "[topVer = " + topVer + ", last=" + lastVersion() + ']';
+
         assert idealAssignment != null;
 
         GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment);
 
-        affCache.put(topVer, new HistoryAffinityAssignment(assignment));
+        HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignment(assignment));
+
         head.set(assignment);
 
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
@@ -220,7 +221,9 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        onHistoryAdded();
+        //In case if value was replaced there is no sense to clean the history
+        if (hAff == null)
+            onHistoryAdded();
     }
 
     /**
@@ -263,6 +266,8 @@ public class GridAffinityAssignmentCache {
         idealAssignment = null;
 
         affCache.clear();
+
+        fullHistSize.set(0);
 
         head.set(new GridAffinityAssignment(AffinityTopologyVersion.NONE));
 
@@ -475,12 +480,14 @@ public class GridAffinityAssignmentCache {
 
         GridAffinityAssignment aff = head.get();
 
-        assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT  || aff.primaryPartitions(evt.eventNode().id()).isEmpty() : evt;
-        assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT  || aff.backupPartitions(evt.eventNode().id()).isEmpty() : evt;
+        assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT || aff.primaryPartitions(evt.eventNode().id()).isEmpty() : evt;
+
+        assert evt.type() == EVT_DISCOVERY_CUSTOM_EVT || aff.backupPartitions(evt.eventNode().id()).isEmpty() : evt;
 
         GridAffinityAssignment assignmentCpy = new GridAffinityAssignment(topVer, aff);
 
-        affCache.put(topVer, new HistoryAffinityAssignment(assignmentCpy));
+        HistoryAffinityAssignment hAff = affCache.put(topVer, new HistoryAffinityAssignment(assignmentCpy));
+
         head.set(assignmentCpy);
 
         for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
@@ -493,7 +500,9 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        onHistoryAdded();
+        //In case if value was replaced there is no sense to clean the history
+        if (hAff == null)
+            onHistoryAdded();
     }
 
     /**
@@ -778,7 +787,7 @@ public class GridAffinityAssignmentCache {
 
             int rmvCnt = MAX_HIST_SIZE / 2;
 
-            Collection<AffinityTopologyVersion> topVerRmv = new HashSet<>(rmvCnt);
+            AffinityTopologyVersion topVerRmv = null;
 
             while (it.hasNext() && rmvCnt > 0) {
                 AffinityAssignment aff0 = it.next();
@@ -789,7 +798,7 @@ public class GridAffinityAssignmentCache {
 
                 fullHistSize.decrementAndGet();
 
-                topVerRmv.add(aff0.topologyVersion());
+                topVerRmv = aff0.topologyVersion();
             }
 
             ctx.affinity().removeCachedAffinity(topVerRmv);
