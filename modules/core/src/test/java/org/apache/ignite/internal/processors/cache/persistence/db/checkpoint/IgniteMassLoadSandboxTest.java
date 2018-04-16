@@ -457,7 +457,6 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         }
     }
 
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TimeUnit.MINUTES.toMillis(20);

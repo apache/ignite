@@ -100,8 +100,8 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
             memory.releasePage(1, pageId, ptr);
         }
 
-        GridMultiCollectionWrapper<FullPageId> ids = memory.beginCheckpoint();
-        int cpPages = ids.size();
+        PageIdCollection[] ids = memory.beginCheckpoint();
+        int cpPages = PagesStripedConcurrentHashSet.size(ids);
         log.info("Started CP with [" + cpPages + "] pages in it, created [" + markDirty + "] pages");
 
         for (int i = 0; i < cpPages; i++) {
@@ -163,8 +163,8 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
             memory.releasePage(1, pageId, ptr);
         }
 
-        GridMultiCollectionWrapper<FullPageId> ids = memory.beginCheckpoint();
-        int cpPages = ids.size();
+        PageIdCollection[] ids = memory.beginCheckpoint();
+        int cpPages = PagesStripedConcurrentHashSet.size(ids);
         log.info("Started CP with [" + cpPages + "] pages in it, created [" + markDirty + "] pages");
 
         for (int i = 0; i < cpPages; i++) {

@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -73,9 +71,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.future.CountDownFuture;
@@ -265,7 +261,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /**
      * @param directMemoryProvider Memory allocator to use.
-     * @param sizes segments sizes, last is checkpoint pool size.
+     * @param sizes data segment's (chunk) sizes, last is checkpoint pool size.
      * @param ctx Cache shared context.
      * @param pageSize Page size.
      * @param flushDirtyPage write callback invoked when a dirty page is removed for replacement.
@@ -829,11 +825,15 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (rmv)
             seg.loadedPages.remove(grpId, PageIdUtils.effectivePageId(pageId));
 
-        if (seg.segCheckpointPages != null)
-            seg.segCheckpointPages.remove(new FullPageId(pageId, grpId));
+        FullPageId fullPageId = new FullPageId(pageId, grpId);
 
-        if (seg.dirtyPages != null)
-            seg.dirtyPages.remove(new FullPageId(pageId, grpId));
+        PageIdCollection pages0 = seg.segCheckpointPages;
+
+        if (pages0 != null)
+            pages0.remove(fullPageId);
+
+        if (seg.segDirtyPages != null)
+            seg.segDirtyPages.remove(fullPageId);
 
         return relPtr;
     }
@@ -984,11 +984,11 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public GridMultiCollectionWrapper<FullPageId> beginCheckpoint() throws IgniteException {
+    @Override public PageIdCollection[] beginCheckpoint() throws IgniteException {
         if (segments == null)
-            return new GridMultiCollectionWrapper<>(Collections.<FullPageId>emptyList());
+            return new PageIdCollection[] {};
 
-        Collection[] collections = new Collection[segments.length];
+        PageIdCollection[] sets = new PageIdCollection[segments.length];
 
         for (int i = 0; i < segments.length; i++) {
             Segment seg = segments[i];
@@ -996,9 +996,9 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (seg.segCheckpointPages != null)
                 throw new IgniteException("Failed to begin checkpoint (it is already in progress).");
 
-            collections[i] = seg.segCheckpointPages = seg.dirtyPages;
+            sets[i] = seg.segCheckpointPages = seg.segDirtyPages;
 
-            seg.dirtyPages = new GridConcurrentHashSet<>();
+            seg.segDirtyPages = createPagesSet();
         }
 
         memMetrics.resetDirtyPages();
@@ -1006,7 +1006,28 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (throttlingPlc != ThrottlingPolicy.DISABLED)
             writeThrottle.onBeginCheckpoint();
 
-        return new GridMultiCollectionWrapper<>(collections);
+        return sets;
+    }
+
+    /**
+     * @return regular or striped concurrent Hash/Skip list set for isolated storage of dirty pages for same page store
+     * file.
+     */
+    private PageIdCollection createPagesSet() {
+        if(isParallelDirtyPages()) {
+            return IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, true)
+                ? new PagesStripedConcurrentSkipListSet()
+                : new PagesStripedConcurrentHashSet();
+        }
+        else
+            return new PagesGridConcurrentHashSet();
+    }
+
+    /**
+     * @return true if dirty pages can be processed in parallel&striped manner.
+     */
+    public static boolean isParallelDirtyPages() {
+        return IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DIRTY_PAGES_PARALLEL, true);
     }
 
     /**
@@ -1515,7 +1536,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     boolean isInCheckpoint(FullPageId pageId) {
         Segment seg = segment(pageId.groupId(), pageId.pageId());
 
-        Collection<FullPageId> pages0 = seg.segCheckpointPages;
+        PageIdCollection pages0 = seg.segCheckpointPages;
 
         return pages0 != null && pages0.contains(pageId);
     }
@@ -1527,7 +1548,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     boolean clearCheckpoint(FullPageId fullPageId) {
         Segment seg = segment(fullPageId.groupId(), fullPageId.pageId());
 
-        Collection<FullPageId> pages0 = seg.segCheckpointPages;
+        PageIdCollection pages0 = seg.segCheckpointPages;
 
         assert pages0 != null;
 
@@ -1584,14 +1605,14 @@ public class PageMemoryImpl implements PageMemoryEx {
             assert stateChecker.checkpointLockIsHeldByThread();
 
             if (!wasDirty || forceAdd) {
-                boolean added = segment(pageId.groupId(), pageId.pageId()).dirtyPages.add(pageId);
+                boolean added = segment(pageId.groupId(), pageId.pageId()).segDirtyPages.add(pageId);
 
                 if (added)
                     memMetrics.incrementDirtyPages();
             }
         }
         else {
-            boolean rmv = segment(pageId.groupId(), pageId.pageId()).dirtyPages.remove(pageId);
+            boolean rmv = segment(pageId.groupId(), pageId.pageId()).segDirtyPages.remove(pageId);
 
             if (rmv)
                 memMetrics.decrementDirtyPages();
@@ -1846,12 +1867,12 @@ public class PageMemoryImpl implements PageMemoryEx {
         private long memPerTbl;
 
         /** Pages marked as dirty since the last checkpoint. */
-        private Collection<FullPageId> dirtyPages = new GridConcurrentHashSet<>();
+        private PageIdCollection segDirtyPages = createPagesSet();
 
-        /** */
-        private volatile Collection<FullPageId> segCheckpointPages;
+        /** Pages under current checkpoint. */
+        private volatile PageIdCollection segCheckpointPages;
 
-        /** */
+        /** Maximum allowed dirty pages in segment before checkpoint start. */
         private final int maxDirtyPages;
 
         /** Initial partition generation. */
@@ -1864,6 +1885,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         private boolean closed;
 
         /**
+         * Creates segment.
+         *
          * @param region Memory region.
          * @param throttlingPlc policy determine if write throttling enabled and its type.
          */
@@ -1912,10 +1935,14 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         /**
+         * Heuristic method which allows a thread to check if it safe to start memory structure modifications in regard
+         * with checkpointing for this segment.
          *
+         * @return {@code False} if there are too many dirty pages in segment and a thread should wait for a checkpoint
+         * to begin.
          */
         private boolean safeToUpdate() {
-            return dirtyPages.size() < maxDirtyPages;
+            return segDirtyPages.size() < maxDirtyPages;
         }
 
         /**
@@ -1929,7 +1956,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @return dirtyRatio to be compared with Throttle threshold.
          */
         private double getDirtyPagesRatio() {
-            return ((double)dirtyPages.size()) / pages();
+            return ((double)segDirtyPages.size()) / pages();
         }
 
         /**
@@ -1998,7 +2025,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (PageHeader.isAcquired(absPtr))
                 return false;
 
-            Collection<FullPageId> cpPages = segCheckpointPages;
+            PageIdCollection cpPages = segCheckpointPages;
 
             clearRowCache(fullPageId, absPtr);
 
@@ -2306,7 +2333,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             throw new IgniteOutOfMemoryException("Failed to find a page for eviction [segmentCapacity=" + cap +
                 ", loaded=" + loadedPages.size() +
                 ", maxDirtyPages=" + maxDirtyPages +
-                ", dirtyPages=" + dirtyPages.size() +
+                ", dirtyPages=" + segDirtyPages.size() +
                 ", cpPages=" + (segCheckpointPages == null ? 0 : segCheckpointPages.size()) +
                 ", pinnedInSegment=" + pinnedCnt +
                 ", failedToPrepare=" + failToPrepare +
@@ -2721,7 +2748,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                         if (rmvDirty) {
                             FullPageId fullId = PageHeader.fullPageId(absPtr);
 
-                            seg.dirtyPages.remove(fullId);
+                            seg.segDirtyPages.remove(fullId);
                         }
 
                         GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize, (byte)0);
