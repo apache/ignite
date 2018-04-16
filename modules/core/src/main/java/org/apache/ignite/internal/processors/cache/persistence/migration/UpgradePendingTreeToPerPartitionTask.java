@@ -226,7 +226,9 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
 
                     entry.lockEntry();
                     try {
-                        if (!processRow(pageMemory, grp, row))
+                        if (processRow(pageMemory, grp, row))
+                            processedEntriesCnt++;
+                        else
                             skippedEntries++;
                     }
                     finally {
@@ -235,8 +237,6 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
 
                     oldPendingEntries.removex(row);
                 }
-
-                processedEntriesCnt += cnt;
 
                 if (cnt < BATCH_SIZE)
                     break;

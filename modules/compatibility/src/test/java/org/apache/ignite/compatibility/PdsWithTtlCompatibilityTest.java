@@ -72,7 +72,7 @@ public class PdsWithTtlCompatibilityTest extends IgnitePersistenceCompatibilityA
                     new DataRegionConfiguration()
                         .setMaxSize(32L * 1024 * 1024)
                         .setPersistenceEnabled(true)
-                ).setWalMode(WALMode.DEFAULT));
+                ).setWalMode(WALMode.LOG_ONLY));
 
         return cfg;
     }
@@ -131,8 +131,6 @@ public class PdsWithTtlCompatibilityTest extends IgnitePersistenceCompatibilityA
      */
     public static void validateResultingCacheData(Ignite ignite,
         IgniteCache<Object, Object> cache) throws IgniteInterruptedCheckedException {
-        //This shouldn't be expired.
-        cache.withExpiryPolicy(AccessedExpiryPolicy.factoryOf(Duration.ONE_HOUR).create()).put(0, "updated");
 
         final long expireTime = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(DURATION_SEC + 1);
 
@@ -147,10 +145,8 @@ public class PdsWithTtlCompatibilityTest extends IgnitePersistenceCompatibilityA
         for (Boolean res : future.get())
             assertTrue(res);
 
-        for (int i = 1; i < ENTRIES_CNT; i++)
+        for (int i = 0; i < ENTRIES_CNT; i++)
             assertNull(cache.get(i));
-
-        assertNotNull(cache.get(0));
     }
 
     /** */
@@ -166,7 +162,7 @@ public class PdsWithTtlCompatibilityTest extends IgnitePersistenceCompatibilityA
 
             cfg.setPeerClassLoadingEnabled(false);
 
-            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration().setWalMode(WALMode.LOG_ONLY));
         }
     }
 
@@ -188,6 +184,8 @@ public class PdsWithTtlCompatibilityTest extends IgnitePersistenceCompatibilityA
             IgniteCache<Object, Object> cache = ignite.createCache(cacheCfg);
 
             saveCacheData(cache);
+
+            ignite.active(false);
         }
     }
 }
