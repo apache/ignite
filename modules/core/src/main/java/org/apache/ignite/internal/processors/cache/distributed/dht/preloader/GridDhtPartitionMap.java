@@ -48,7 +48,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     protected long updateSeq;
 
     /** Topology version. */
-    protected AffinityTopologyVersion top;
+    protected AffinityTopologyVersion top = AffinityTopologyVersion.ZERO;
 
     /** */
     protected GridPartitionStateMap map;
