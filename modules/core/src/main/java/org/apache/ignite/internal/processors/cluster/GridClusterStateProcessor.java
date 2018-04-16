@@ -263,6 +263,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private void writeBaselineTopology(BaselineTopology blt, BaselineTopologyHistoryItem prevBltHistItem) throws IgniteCheckedException {
         assert metastorage != null;
 
+        if (inMemoryMode)
+            return;
+
         sharedCtx.database().checkpointReadLock();
 
         try {
@@ -636,46 +639,50 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (!dataBag.commonDataCollectedFor(STATE_PROC.ordinal())) {
-            DiscoveryDataBag.JoiningNodeDiscoveryData joiningNodeData = dataBag.newJoinerDiscoveryData(STATE_PROC.ordinal());
+        DiscoveryDataBag.JoiningNodeDiscoveryData joiningNodeData = dataBag.newJoinerDiscoveryData(STATE_PROC.ordinal());
 
-            BaselineTopologyHistory historyToSend = null;
+        if (joiningNodeData != null && !joiningNodeData.hasJoiningNodeData())
+            compatibilityMode = true; //compatibility mode: only old nodes don't send any data on join
 
-            if (joiningNodeData != null) {
-                if (!joiningNodeData.hasJoiningNodeData() || compatibilityMode) {
-                    //compatibility mode: old nodes don't send any data on join, so coordinator of new version
-                    //doesn't send BaselineTopology history, only its current globalState
-                    dataBag.addGridCommonData(STATE_PROC.ordinal(), globalState);
+        if (dataBag.commonDataCollectedFor(STATE_PROC.ordinal()) || joiningNodeData == null)
+            return;
 
-                    return;
-                }
+        if (!joiningNodeData.hasJoiningNodeData() || compatibilityMode) {
+            //compatibility mode: old nodes don't send any data on join, so coordinator of new version
+            //doesn't send BaselineTopology history, only its current globalState
+            dataBag.addGridCommonData(STATE_PROC.ordinal(), globalState);
 
-                DiscoveryDataClusterState joiningNodeState = null;
-
-                try {
-                    if (joiningNodeData.joiningNodeData() != null)
-                        joiningNodeState = marsh.unmarshal(
-                            (byte[]) joiningNodeData.joiningNodeData(),
-                            U.resolveClassLoader(ctx.config()));
-                } catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to unmarshal disco data from joining node: " + joiningNodeData.joiningNodeId());
-
-                    return;
-                }
-
-                if (!bltHist.isEmpty()) {
-                    if (joiningNodeState != null && joiningNodeState.baselineTopology() != null) {
-                        int lastId = joiningNodeState.baselineTopology().id();
-
-                        historyToSend = bltHist.tailFrom(lastId);
-                    }
-                    else
-                        historyToSend = bltHist;
-                }
-
-                dataBag.addGridCommonData(STATE_PROC.ordinal(), new BaselineStateAndHistoryData(globalState, historyToSend));
-            }
+            return;
         }
+
+        DiscoveryDataClusterState joiningNodeState = null;
+
+        try {
+            if (joiningNodeData.joiningNodeData() != null)
+                joiningNodeState = marsh.unmarshal(
+                    (byte[])joiningNodeData.joiningNodeData(),
+                    U.resolveClassLoader(ctx.config())
+                );
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to unmarshal disco data from joining node: " + joiningNodeData.joiningNodeId());
+
+            return;
+        }
+
+        BaselineTopologyHistory historyToSend = null;
+
+        if (!bltHist.isEmpty()) {
+            if (joiningNodeState != null && joiningNodeState.baselineTopology() != null) {
+                int lastId = joiningNodeState.baselineTopology().id();
+
+                historyToSend = bltHist.tailFrom(lastId);
+            }
+            else
+                historyToSend = bltHist;
+        }
+
+        dataBag.addGridCommonData(STATE_PROC.ordinal(), new BaselineStateAndHistoryData(globalState, historyToSend));
     }
 
     /** {@inheritDoc} */

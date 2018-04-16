@@ -27,11 +27,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compatibility.testframework.junits.logger.ListenedGridTestLog4jLogger;
+import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
 import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -170,7 +170,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
                 StringBuilder pathBuilder = new StringBuilder();
 
-                for (URL url : IgniteUtils.classLoaderUrls(ldr)) {
+                for (URL url : CompatibilityTestsUtils.classLoaderUrls(ldr)) {
                     String path = url.getPath();
 
                     boolean excluded = false;

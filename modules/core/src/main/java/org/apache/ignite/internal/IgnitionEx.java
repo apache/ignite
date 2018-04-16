@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -70,8 +71,11 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsThreadFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -113,10 +117,10 @@ import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.IgniteState.STOPPED;
+import static org.apache.ignite.IgniteState.STOPPED_ON_FAILURE;
 import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
@@ -133,6 +137,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
 
@@ -407,7 +412,7 @@ public class IgnitionEx {
                             " milliseconds. Killing node...");
 
                     // We are not able to kill only one grid so whole JVM will be stopped.
-                    System.exit(Ignition.KILL_EXIT_CODE);
+                    Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
                 }
             }
         }, timeoutMs, TimeUnit.MILLISECONDS);
@@ -1802,7 +1807,13 @@ public class IgnitionEx {
                 cfg.getStripedPoolSize(),
                 cfg.getIgniteInstanceName(),
                 "sys",
-                log);
+                log,
+                new Thread.UncaughtExceptionHandler() {
+                    @Override public void uncaughtException(Thread thread, Throwable t) {
+                        if (grid != null)
+                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                    }
+                });
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1842,6 +1853,12 @@ public class IgnitionEx {
                 cfg.getIgniteInstanceName(),
                 "data-streamer",
                 log,
+                new Thread.UncaughtExceptionHandler() {
+                    @Override public void uncaughtException(Thread thread, Throwable t) {
+                        if (grid != null)
+                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                    }
+                },
                 true);
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
@@ -2240,6 +2257,8 @@ public class IgnitionEx {
 
             initializeDefaultSpi(myCfg);
 
+            GridDiscoveryManager.initCommunicationErrorResolveConfiguration(myCfg);
+
             initializeDefaultCacheConfiguration(myCfg);
 
             ExecutorConfiguration[] execCfgs = myCfg.getExecutorConfiguration();
@@ -2554,7 +2573,15 @@ public class IgnitionEx {
                     throw e;
             }
             finally {
-                state = grid0.context().segmented() ? STOPPED_ON_SEGMENTATION : STOPPED;
+                if (!grid0.context().invalid())
+                    state = STOPPED;
+                else {
+                    FailureContext failure = grid0.context().failure().failureContext();
+
+                    state = failure.type() == FailureType.SEGMENTATION ?
+                        STOPPED_ON_SEGMENTATION :
+                        STOPPED_ON_FAILURE;
+                }
 
                 grid = null;
 

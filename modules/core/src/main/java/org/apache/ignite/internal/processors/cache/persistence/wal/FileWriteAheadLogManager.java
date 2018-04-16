@@ -65,10 +65,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.NodeInvalidator;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
@@ -116,6 +117,8 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.DIRECT;
 import static org.apache.ignite.internal.util.IgniteUtils.findField;
@@ -681,7 +684,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         catch (IgniteCheckedException e) {
             U.error(log, "Unable to perform segment rollover: " + e.getMessage(), e);
 
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
         }
     }
 
@@ -737,7 +740,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public void fsync(WALPointer ptr) throws IgniteCheckedException, StorageException {
+    @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
         if (serializer == null || mode == WALMode.NONE)
             return;
 
@@ -749,14 +752,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         FileWALPointer filePtr = (FileWALPointer)(ptr == null ? lastWALPtr.get() : ptr);
 
-        if (mode == WALMode.BACKGROUND)
-            return;
-
-        if (mode == LOG_ONLY) {
+        if (mode == LOG_ONLY)
             cur.flushOrWait(filePtr);
 
-            return;
-        }
+        if (!explicitFsync && mode != WALMode.FSYNC)
+            return; // No need to sync in LOG_ONLY or BACKGROUND unless explicit fsync is required.
 
         // No need to sync if was rolled over.
         if (filePtr != null && !cur.needFsync(filePtr))
@@ -1236,7 +1236,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         catch (IOException e) {
             StorageException se = new StorageException("Unable to initialize WAL segment", e);
 
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), se);
+            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 
             throw se;
         }
@@ -1385,7 +1385,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @throws StorageException If node is no longer valid and we missed a WAL operation.
      */
     private void checkNode() throws StorageException {
-        if (cctx.kernalContext().invalidated())
+        if (cctx.kernalContext().invalid())
             throw new StorageException("Failed to perform WAL operation (environment was invalidated by a " +
                     "previous error)");
     }
@@ -1501,6 +1501,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
             }
 
+            Throwable err = null;
+
             try {
                 synchronized (this) {
                     while (curAbsWalIdx == -1 && !stopped)
@@ -1561,6 +1563,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
             catch (InterruptedException ignore) {
                 Thread.currentThread().interrupt();
+            }
+            catch (Throwable t) {
+                err = t;
+            }
+            finally {
+                if (err == null && !stopped)
+                    err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
+
+                if (err instanceof OutOfMemoryError)
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
 
@@ -1702,7 +1716,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
-                if (mode == WALMode.FSYNC) {
+                if (mode != WALMode.NONE) {
                     try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {
                         f0.force();
                     }
@@ -1876,7 +1890,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     Files.move(tmpZip.toPath(), zip.toPath());
 
-                    if (mode == WALMode.FSYNC) {
+                    if (mode != WALMode.NONE) {
                         try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
                             f0.force();
                         }
@@ -1886,8 +1900,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
                 catch (IgniteCheckedException | IOException e) {
                     U.error(log, "Unexpected error during WAL compression", e);
-
-                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
                 }
                 catch (InterruptedException ignore) {
                     Thread.currentThread().interrupt();
@@ -2007,6 +2019,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override public void run() {
+            Throwable err = null;
+
             while (!Thread.currentThread().isInterrupted() && !stopped) {
                 try {
                     long segmentToDecompress = segmentsQueue.take();
@@ -2036,10 +2050,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 catch (InterruptedException ignore) {
                     Thread.currentThread().interrupt();
                 }
-                catch (IOException e) {
-                    U.error(log, "Unexpected error during WAL decompression", e);
+                catch (Throwable t) {
+                    err = t;
+                }
+                finally {
+                    if (err == null && !stopped)
+                        err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
 
-                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+                    if (err instanceof OutOfMemoryError)
+                        cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                    else if (err != null)
+                        cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
                 }
             }
         }
@@ -2766,7 +2787,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
 
                         // Do the final fsync.
-                        if (mode == WALMode.FSYNC) {
+                        if (mode != WALMode.NONE) {
                             if (mmap)
                                 ((MappedByteBuffer)buf.buf).force();
                             else
@@ -2817,7 +2838,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             lock.lock();
 
             try {
-                assert cctx.kernalContext().invalidated() || written == lastFsyncPos || mode != WALMode.FSYNC :
+                assert cctx.kernalContext().invalid() ||
+                    written == lastFsyncPos || mode != WALMode.FSYNC :
                     "fsync [written=" + written + ", lastFsync=" + lastFsyncPos + ", idx=" + idx + ']';
 
                 fileIO = null;
@@ -3147,78 +3169,94 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** {@inheritDoc} */
         @Override public void run() {
-            while (!shutdown && !Thread.currentThread().isInterrupted()) {
-                while (waiters.isEmpty()) {
-                    if (!shutdown)
-                        LockSupport.park();
-                    else {
-                        unparkWaiters(Long.MAX_VALUE);
+            Throwable err = null;
 
-                        return;
+            try {
+                while (!shutdown && !Thread.currentThread().isInterrupted()) {
+                    while (waiters.isEmpty()) {
+                        if (!shutdown)
+                            LockSupport.park();
+                        else {
+                            unparkWaiters(Long.MAX_VALUE);
+
+                            return;
+                        }
+                    }
+
+                    Long pos = null;
+
+                    for (Long val : waiters.values()) {
+                        if (val > Long.MIN_VALUE)
+                            pos = val;
+                    }
+
+                    if (pos == null)
+                        continue;
+                    else if (pos < UNCONDITIONAL_FLUSH) {
+                        try {
+                            assert pos == FILE_CLOSE || pos == FILE_FORCE : pos;
+
+                            if (pos == FILE_CLOSE)
+                                currHnd.fileIO.close();
+                            else if (pos == FILE_FORCE)
+                                currHnd.fileIO.force();
+                        }
+                        catch (IOException e) {
+                            log.error("Exception in WAL writer thread: ", e);
+
+                            err = e;
+
+                            unparkWaiters(Long.MAX_VALUE);
+
+                            return;
+                        }
+
+                        unparkWaiters(pos);
+                    }
+
+                    List<SegmentedRingByteBuffer.ReadSegment> segs = currentHandle().buf.poll(pos);
+
+                    if (segs == null) {
+                        unparkWaiters(pos);
+
+                        continue;
+                    }
+
+                    for (int i = 0; i < segs.size(); i++) {
+                        SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
+
+                        try {
+                            writeBuffer(seg.position(), seg.buffer());
+                        }
+                        catch (Throwable e) {
+                            log.error("Exception in WAL writer thread: ", e);
+
+                            err = e;
+                        }
+                        finally {
+                            seg.release();
+
+                            long p = pos <= UNCONDITIONAL_FLUSH || err != null ? Long.MAX_VALUE : currentHandle().written;
+
+                            unparkWaiters(p);
+                        }
                     }
                 }
 
-                Long pos = null;
-
-                for (Long val : waiters.values()) {
-                    if (val > Long.MIN_VALUE)
-                        pos = val;
-                }
-
-                if (pos == null)
-                    continue;
-                else if (pos < UNCONDITIONAL_FLUSH) {
-                    try {
-                        assert pos == FILE_CLOSE || pos == FILE_FORCE : pos;
-
-                        if (pos == FILE_CLOSE)
-                            currHnd.fileIO.close();
-                        else if (pos == FILE_FORCE)
-                            currHnd.fileIO.force();
-                    }
-                    catch (IOException e) {
-                        log.error("Exception in WAL writer thread: ", e);
-
-                        err = e;
-
-                        unparkWaiters(Long.MAX_VALUE);
-
-                        return;
-                    }
-
-                    unparkWaiters(pos);
-                }
-
-                List<SegmentedRingByteBuffer.ReadSegment> segs = currentHandle().buf.poll(pos);
-
-                if (segs == null) {
-                    unparkWaiters(pos);
-
-                    continue;
-                }
-
-                for (int i = 0; i < segs.size(); i++) {
-                    SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
-
-                    try {
-                        writeBuffer(seg.position(), seg.buffer());
-                    }
-                    catch (Throwable e) {
-                        log.error("Exception in WAL writer thread: ", e);
-
-                        err = e;
-                    }
-                    finally {
-                        seg.release();
-
-                        long p = pos <= UNCONDITIONAL_FLUSH || err != null ? Long.MAX_VALUE : currentHandle().written;
-
-                        unparkWaiters(p);
-                    }
-                }
+                unparkWaiters(Long.MAX_VALUE);
             }
+            catch (Throwable t) {
+                err = t;
+            }
+            finally {
+                if (err == null && !shutdown)
+                    err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
 
-            unparkWaiters(Long.MAX_VALUE);
+                if (err instanceof OutOfMemoryError)
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+            }
         }
 
         /**
@@ -3284,7 +3322,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             Throwable err = walWriter.err;
 
             if (err != null)
-                NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), err);
+                cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
 
             if (expPos == UNCONDITIONAL_FLUSH)
                 expPos = (currentHandle().buf.tail());
@@ -3373,7 +3411,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             catch (IOException e) {
                 StorageException se = new StorageException("Unable to write", e);
 
-                NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), se);
+                cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 
                 throw se;
             }

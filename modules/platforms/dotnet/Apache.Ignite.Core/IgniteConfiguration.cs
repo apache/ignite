@@ -194,6 +194,9 @@ namespace Apache.Ignite.Core
         /** */
         private bool? _isActiveOnStart;
 
+        /** */
+        private bool? _authenticationEnabled;
+        
         /** Local event listeners. Stored as array to ensure index access. */
         private LocalEventListener[] _localEventListenersInternal;
 
@@ -219,6 +222,11 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="RedirectJavaConsoleOutput"/> property.
         /// </summary>
         public const bool DefaultRedirectJavaConsoleOutput = true;
+
+        /// <summary>
+        /// Default value for <see cref="AuthenticationEnabled"/> property.
+        /// </summary>
+        public const bool DefaultAuthenticationEnabled = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -295,6 +303,7 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
             writer.WriteBooleanNullable(_isActiveOnStart);
+            writer.WriteBooleanNullable(_authenticationEnabled);
             writer.WriteObjectDetached(ConsistentId);
 
             // Thread pools
@@ -609,6 +618,7 @@ namespace Apache.Ignite.Core
             _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
             _isActiveOnStart = r.ReadBooleanNullable();
+            _authenticationEnabled = r.ReadBooleanNullable();
             ConsistentId = r.ReadObject<object>();
 
             // Thread pools
@@ -1425,5 +1435,15 @@ namespace Apache.Ignite.Core
         /// </summary>
         [DefaultValue(DefaultRedirectJavaConsoleOutput)]
         public bool RedirectJavaConsoleOutput { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether user authentication is enabled for the cluster. Default is <c>false</c>. 
+        /// </summary>
+        [DefaultValue(DefaultAuthenticationEnabled)]
+        public bool AuthenticationEnabled
+        {
+            get { return _authenticationEnabled ?? DefaultAuthenticationEnabled; }
+            set { _authenticationEnabled = value; }
+        }
     }
 }

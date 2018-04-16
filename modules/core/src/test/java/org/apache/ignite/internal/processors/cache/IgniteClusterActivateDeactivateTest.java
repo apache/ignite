@@ -47,6 +47,7 @@ import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
@@ -1113,6 +1114,70 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         checkCaches1(10);
         checkFeaturesOnNode(8);
         checkFeaturesOnNode(9);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testActivateFailover3() throws Exception {
+        stateChangeFailover3(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeactivateFailover3() throws Exception {
+        stateChangeFailover3(false);
+    }
+
+    /**
+     * @param activate If {@code true} tests activation, otherwise deactivation.
+     * @throws Exception If failed.
+     */
+    private void stateChangeFailover3(boolean activate) throws Exception {
+        testReconnectSpi = true;
+
+        startNodesAndBlockStatusChange(4, 0, 0, !activate);
+
+        client = false;
+
+        IgniteInternalFuture startFut1 = GridTestUtils.runAsync(new Callable() {
+            @Override public Object call() throws Exception {
+                startGrid(4);
+
+                return null;
+            }
+        }, "start-node1");
+
+        IgniteInternalFuture startFut2 = GridTestUtils.runAsync(new Callable() {
+            @Override public Object call() throws Exception {
+                startGrid(5);
+
+                return null;
+            }
+        }, "start-node2");
+
+        U.sleep(1000);
+
+        // Stop all nodes participating in state change and not allow last node to finish exchange.
+        for (int i = 0; i < 4; i++)
+            ((IgniteDiscoverySpi)ignite(i).configuration().getDiscoverySpi()).simulateNodeFailure();
+
+        for (int i = 0; i < 4; i++)
+            stopGrid(getTestIgniteInstanceName(i), true, false);
+
+        startFut1.get();
+        startFut2.get();
+
+        assertFalse(ignite(4).active());
+        assertFalse(ignite(5).active());
+
+        ignite(4).active(true);
+
+        for (int i = 0; i < 4; i++)
+            startGrid(i);
+
+        checkCaches1(6);
     }
 
     /**
