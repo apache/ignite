@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cluster;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -69,22 +70,23 @@ public class DiscoveryDataClusterState implements Serializable {
      * Local flag for state transition active state result (global state is updated asynchronously by custom message),
      * {@code null} means that state change is not completed yet.
      */
-    private transient volatile Boolean transitionRes;
+    private transient final Boolean transitionRes;
 
     /**
      * Previous cluster state if this state is a transition state and it was not received by a joining node.
      */
-    private transient DiscoveryDataClusterState prevState;
+    private transient final DiscoveryDataClusterState prevState;
 
     /** Transition result error. */
-    private transient volatile Exception transitionError;
+    private transient final Exception transitionError;
 
     /**
      * @param active Current status.
      * @return State instance.
      */
     static DiscoveryDataClusterState createState(boolean active, @Nullable BaselineTopology baselineTopology) {
-        return new DiscoveryDataClusterState(null, active, baselineTopology, null, null, null);
+        return new DiscoveryDataClusterState(null, active, baselineTopology, null,
+            null, null, null, null);
     }
 
     /**
@@ -113,7 +115,9 @@ public class DiscoveryDataClusterState implements Serializable {
             baselineTopology,
             transitionReqId,
             transitionTopVer,
-            transitionNodes);
+            transitionNodes,
+            null,
+            null);
     }
 
     /**
@@ -122,6 +126,8 @@ public class DiscoveryDataClusterState implements Serializable {
      * @param transitionReqId State change request ID.
      * @param transitionTopVer State change topology version.
      * @param transitionNodes Nodes participating in state change exchange.
+     * @param res Local flag for state transition result.
+     * @param error Transition error.
      */
     private DiscoveryDataClusterState(
         DiscoveryDataClusterState prevState,
@@ -129,14 +135,17 @@ public class DiscoveryDataClusterState implements Serializable {
         @Nullable BaselineTopology baselineTopology,
         @Nullable UUID transitionReqId,
         @Nullable AffinityTopologyVersion transitionTopVer,
-        @Nullable Set<UUID> transitionNodes
-    ) {
+        @Nullable Set<UUID> transitionNodes,
+        @Nullable Boolean res,
+        @Nullable Exception error) {
         this.prevState = prevState;
         this.active = active;
         this.baselineTopology = baselineTopology;
         this.transitionReqId = transitionReqId;
         this.transitionTopVer = transitionTopVer;
-        this.transitionNodes = transitionNodes;
+        this.transitionNodes = transitionNodes == null ? null : Collections.unmodifiableSet(transitionNodes);
+        this.transitionRes = res;
+        this.transitionError = error;
     }
 
     /**
@@ -153,9 +162,13 @@ public class DiscoveryDataClusterState implements Serializable {
      * @param reqId Request ID.
      * @param active New cluster state.
      */
-    public void setTransitionResult(UUID reqId, boolean active) {
-        if (reqId.equals(transitionReqId))
-            transitionRes = active;
+    public DiscoveryDataClusterState withTransitionResult(UUID reqId, boolean active) {
+        if (reqId.equals(transitionReqId)) {
+            return new DiscoveryDataClusterState(this.prevState, this.active, this.baselineTopology, this.transitionReqId,
+                this.transitionTopVer, this.transitionNodes, active, this.transitionError);
+        }
+
+        return this;
     }
 
     /**
@@ -217,8 +230,9 @@ public class DiscoveryDataClusterState implements Serializable {
     /**
      * @param ex Exception
      */
-    public void transitionError(Exception ex) {
-        transitionError = ex;
+    public DiscoveryDataClusterState transitionError(Exception ex) {
+        return new DiscoveryDataClusterState(this.prevState, this.active, this.baselineTopology, this.transitionReqId,
+            this.transitionTopVer, this.transitionNodes, this.transitionRes, ex);
     }
 
     /**
@@ -234,6 +248,8 @@ public class DiscoveryDataClusterState implements Serializable {
                 null,
                 active,
                 baselineTopology,
+                null,
+                null,
                 null,
                 null,
                 null

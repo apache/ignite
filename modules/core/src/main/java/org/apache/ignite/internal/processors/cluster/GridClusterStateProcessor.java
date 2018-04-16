@@ -197,7 +197,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                         }
                     }
 
-                    transitionRes = globalState.transitionResult();
+                    transitionRes = this.globalState.transitionResult();
 
                     assert transitionRes != null;
 
@@ -397,7 +397,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             GridFutureAdapter<Void> transitionFut = transitionFuts.remove(state.transitionRequestId());
 
             if (transitionFut != null) {
-                state.setTransitionResult(msg.requestId(), msg.clusterActive());
+                globalState = globalState.withTransitionResult(msg.requestId(), msg.clusterActive());
 
                 transitionFut.onDone();
             }
@@ -499,7 +499,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     nodeIds);
 
                 if (msg.forceChangeBaselineTopology())
-                    globalState.setTransitionResult(msg.requestId(), msg.activate());
+                    globalState = globalState.withTransitionResult(msg.requestId(), msg.activate());
 
                 AffinityTopologyVersion stateChangeTopVer = topVer.nextMinorVersion();
 
@@ -1130,7 +1130,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 if (req.activate())
                     onFinalActivate(req);
 
-                globalState.setTransitionResult(req.requestId(), req.activate());
+                globalState = globalState.withTransitionResult(req.requestId(), req.activate());
             }
 
             sendChangeGlobalStateResponse(req.requestId(), req.initiatorNodeId(), null);
