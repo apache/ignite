@@ -221,6 +221,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.snapshot;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
+import static org.apache.ignite.internal.GridKernalState.PRE_STOPPING;
 import static org.apache.ignite.internal.GridKernalState.STARTED;
 import static org.apache.ignite.internal.GridKernalState.STARTING;
 import static org.apache.ignite.internal.GridKernalState.STOPPED;
@@ -2158,6 +2159,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 notifyLifecycleBeansEx(LifecycleEventType.BEFORE_NODE_STOP);
             }
 
+            long txOnStopTimeout = CU.transactionConfiguration(null, ctx.config()).getTxOnStopTimeout();
+
+            if (!cancel && txOnStopTimeout > 0 && state == STARTED) {
+                gw.setState(PRE_STOPPING);
+
+                IgniteInternalFuture<Boolean> fut = ctx.cache().context().tm().finishNearLocalTxs();
+
+                try {
+                    fut.get(txOnStopTimeout);
+                }
+                catch (Throwable e) {
+                    U.error(log, "Failed to wait Transactions completion: ", e);
+
+                    if (e instanceof Error)
+                        throw (Error)e;
+                }
+            }
+
             List<GridComponent> comps = ctx.components();
 
             // Callback component in reverse order while kernal is still functional
@@ -2206,7 +2225,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 Thread.currentThread().interrupt();
 
             try {
-                assert gw.getState() == STARTED || gw.getState() == STARTING || gw.getState() == DISCONNECTED;
+                assert gw.getState() == STARTED || gw.getState() == STARTING || gw.getState() == DISCONNECTED
+                    || gw.getState() == PRE_STOPPING;
 
                 // No more kernal calls from this point on.
                 gw.setState(STOPPING);

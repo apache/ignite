@@ -44,6 +44,9 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 
+import static org.apache.ignite.internal.GridKernalState.STARTED;
+import static org.apache.ignite.transactions.TransactionState.COMMITTED;
+import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 
 /**
@@ -314,7 +317,16 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
 
     /** {@inheritDoc} */
     @Override public void close() {
-        enter();
+        try {
+            enter();
+        }
+        catch (IllegalStateException e) {
+            if((tx.state() == COMMITTED || tx.state() == ROLLED_BACK)
+                && cctx.kernalContext().gateway().getState() != STARTED)
+                return;
+            else
+                throw e;
+        }
 
         try {
             cctx.endTx(tx);

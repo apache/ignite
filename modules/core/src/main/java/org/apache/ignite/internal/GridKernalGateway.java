@@ -53,6 +53,14 @@ public interface GridKernalGateway {
     public void readLock() throws IllegalStateException;
 
     /**
+     * Same as {@link #readLock()} but throws IllegalStateException
+     * if grid state is not {@link GridKernalState#STARTED}.
+     *
+     * @throws IllegalStateException Thrown in case when no kernal calls are allowed.
+     */
+    public void readLockOnStarted() throws IllegalStateException;
+
+    /**
      * Same as {@link #readLock()} but doesn't throw IllegalStateException if grid stop.
      */
     public void readLockAnyway();

@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticT
 import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxCompletionOnNodeStopTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNoDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutTest;
@@ -70,6 +71,7 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
         suite.addTestSuite(TxRollbackOnTimeoutNearCacheTest.class);
         suite.addTestSuite(IgniteCacheThreadLocalTxTest.class);
+        suite.addTestSuite(TxCompletionOnNodeStopTest.class);
 
         suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
 
