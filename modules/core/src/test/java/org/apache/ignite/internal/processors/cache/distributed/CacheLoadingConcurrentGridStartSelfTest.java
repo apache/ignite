@@ -38,6 +38,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
@@ -275,6 +276,8 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
             @Override public void apply(Ignite grid) {
                 try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(DEFAULT_CACHE_NAME)) {
                     dataStreamer.allowOverwrite(allowOverwrite);
+
+                    ((DataStreamerImpl)dataStreamer).maxRemapCount(KEYS_CNT);
 
                     for (int i = 0; i < KEYS_CNT; i++) {
                         set.add(dataStreamer.addData(i, "Data"));
