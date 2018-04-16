@@ -30,8 +30,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -320,7 +318,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 long updateSeq = this.updateSeq.incrementAndGet();
 
-                needRefresh = initPartitions0(affVer, grp.affinity().readyAssignments(affVer), exchFut, updateSeq);
+                needRefresh = initPartitions(affVer, grp.affinity().readyAssignments(affVer), exchFut, updateSeq);
 
                 consistencyCheck();
             }
@@ -344,7 +342,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param updateSeq Update sequence.
      * @return {@code True} if partitions must be refreshed.
      */
-    private boolean initPartitions0(AffinityTopologyVersion affVer, List<List<ClusterNode>> affAssignment, GridDhtPartitionsExchangeFuture exchFut, long updateSeq) {
+    private boolean initPartitions(AffinityTopologyVersion affVer, List<List<ClusterNode>> affAssignment, GridDhtPartitionsExchangeFuture exchFut, long updateSeq) {
         boolean needRefresh = false;
 
         if (grp.affinityNode()) {
@@ -353,12 +351,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             ClusterNode oldest = discoCache.oldestAliveServerNode();
 
             GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
-
-            assert grp.affinity().lastVersion().equals(affVer) :
-                "Invalid affinity [topVer=" + grp.affinity().lastVersion() +
-                ", grp=" + grp.cacheOrGroupName() +
-                ", affVer=" + affVer +
-                ", fut=" + exchFut + ']';
 
             int num = grp.affinity().partitions();
 
@@ -575,10 +567,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             List<List<ClusterNode>> affAssignment;
 
                             if (affReady) {
-                                assert grp.affinity().lastVersion().equals(evts.topologyVersion());
-
                                 affVer = evts.topologyVersion();
-                                affAssignment = grp.affinity().readyAssignments(evts.topologyVersion());
+
+                                assert grp.affinity().lastVersion().equals(affVer) :
+                                        "Invalid affinity [topVer=" + grp.affinity().lastVersion() +
+                                                ", grp=" + grp.cacheOrGroupName() +
+                                                ", affVer=" + affVer +
+                                                ", fut=" + exchFut + ']';
+
+                                affAssignment = grp.affinity().readyAssignments(affVer);
                             }
                             else {
                                 assert !exchFut.context().mergeExchanges();
@@ -587,7 +584,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 affAssignment = grp.affinity().idealAssignment();
                             }
 
-                            initPartitions0(affVer, affAssignment, exchFut, updateSeq);
+                            initPartitions(affVer, affAssignment, exchFut, updateSeq);
                         }
                     }
 
