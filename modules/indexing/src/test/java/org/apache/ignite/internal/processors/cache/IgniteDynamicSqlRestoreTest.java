@@ -160,6 +160,8 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
 
             IgniteCache cache = ig.getOrCreateCache(getTestTableConfiguration());
 
+            fillTestData(ig);
+
             stopGrid(1);
 
             cache.query(new SqlFieldsQuery("create index myindexa on TestIndexObject(a)")).getAll();
@@ -177,8 +179,6 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             ig.cluster().active(true);
 
             //then: config for cache was applying successful
-            fillTestData(ig);
-
             IgniteCache<Object, Object> cache = ig.cache(TEST_CACHE_NAME);
 
             assertThat(doExplainPlan(cache, "explain select * from TestIndexObject where a > 5"), containsString("myindexa"));
@@ -199,6 +199,8 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
 
             IgniteCache cache = ig.getOrCreateCache(getTestTableConfiguration());
 
+            fillTestData(ig);
+
             stopGrid(1);
 
             cache.query(new SqlFieldsQuery("create index myindexa on TestIndexObject(a)")).getAll();
@@ -214,8 +216,6 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
             startGrid(0);
 
             ig.cluster().active(true);
-
-            fillTestData(ig);
 
             stopAllGrids();
         }
