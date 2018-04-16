@@ -38,11 +38,17 @@ import org.junit.Assert;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 
+/**
+ * Test base for test for sql features.
+ */
 public class BaseSqlTest extends GridCommonAbstractTest {
+    /** Size of data in the test table. */
     private final static long EMP_CNT = 1000;
 
+    /** Name of client node. */
     private static final String CLIENT_NODE_NAME = "clientNode";
 
+    /** Cache associated with test table. */
     private static IgniteCache empCache;
 
     /** Client node instance. */
@@ -59,6 +65,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName,
         IgniteTestResources rsrcs) throws Exception {
         return configureIgnite(super.getConfiguration(igniteInstanceName, rsrcs));
@@ -108,7 +115,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(2);
+        startGrid("server1", configureIgnite(getConfiguration("server1")), null);
+        startGrid("server2", configureIgnite(getConfiguration("server2")), null);
 
         client = (IgniteEx) startGrid(CLIENT_NODE_NAME, configureIgnite(clientConfiguration()), null);
 
@@ -165,23 +173,40 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     }
 
+    /**
+     * Result of sql query. Contains metadata and all values in memory.
+     */
     static class Result {
+        /** Names of columns. */
         private List<String> colNames;
+        /** Table */
         private List<List<?>> vals;
 
+        /** */
         public Result(List<String> colNames, List<List<?>> vals) {
             this.colNames = colNames;
             this.vals = vals;
         }
 
+        /**
+         * @return metadata - name of columns.
+         */
         public List<String> columnNames() {
             return colNames;
         }
 
+        /**
+         * @return table, the actual data.
+         */
         public List<List<?>> values() {
             return vals;
         }
 
+        /**
+         * Creates result from cursor.
+         * @param cursor cursor to use to read column names and data.
+         * @return Result that contains data and metadata, fetched from cursor.
+         */
         public static Result fromCursor(FieldsQueryCursor<List<?>> cursor){
             List<String> cols = readColNames(cursor);
             List<List<?>> vals = cursor.getAll();
@@ -252,6 +277,12 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             equalTo(valsFromCache));
     }
 
+    /**
+     * Read colon names from cursor.
+     *
+     * @param cursor source of metadata.
+     * @return List containing colon names.
+     */
     private static List<String> readColNames(FieldsQueryCursor<?> cursor) {
         ArrayList<String> colNames = new ArrayList<>();
 
@@ -261,16 +292,31 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return Collections.unmodifiableList(colNames);
     }
 
+    /**
+     * Shortcut for {@link #execute(SqlFieldsQuery)}, that has String argument.
+     */
     protected Result execute(String qry) {
         return execute(new SqlFieldsQuery(qry));
     }
 
+    /**
+     * Performs update query.
+     *
+     * @param updateQry query string.
+     * @return number of changed rows.
+     */
     protected Long executeUpdate(String updateQry) {
         return (Long) execute(new SqlFieldsQuery(updateQry)).values().get(0).get(0);
     }
 
-    protected final Result execute(SqlFieldsQuery updateQry) {
-        FieldsQueryCursor<List<?>> cursor = client.context().query().querySqlFields(updateQry, false);
+    /**
+     * Execute query from client node.
+     *
+     * @param qry query string.
+     * @return Result of query.
+     */
+    protected final Result execute(SqlFieldsQuery qry) {
+        FieldsQueryCursor<List<?>> cursor = client.context().query().querySqlFields(qry, false);
 
         return Result.fromCursor(cursor);
     }
