@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.group;
+package org.apache.ignite.ml.nn;
 
 import java.io.Serializable;
 import java.util.List;

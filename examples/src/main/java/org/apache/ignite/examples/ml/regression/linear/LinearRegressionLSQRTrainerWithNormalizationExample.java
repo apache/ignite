@@ -24,7 +24,11 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ml.math.matrix.SparseDistributedMatrixExample;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocessor;
+import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.thread.IgniteThread;
@@ -37,8 +41,10 @@ import java.util.UUID;
  * Run linear regression model over distributed matrix.
  *
  * @see LinearRegressionLSQRTrainer
+ * @see NormalizationTrainer
+ * @see NormalizationPreprocessor
  */
-public class DistributedLinearRegressionWithLSQRTrainerExample {
+public class LinearRegressionLSQRTrainerWithNormalizationExample {
     /** */
     private static final double[][] data = {
         {8, 78, 284, 9.100000381, 109},
@@ -107,19 +113,24 @@ public class DistributedLinearRegressionWithLSQRTrainerExample {
             // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread
             // because we create ignite cache internally.
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                DistributedLinearRegressionWithLSQRTrainerExample.class.getSimpleName(), () -> {
+                SparseDistributedMatrixExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
+
+                System.out.println(">>> Create new normalization trainer object.");
+                NormalizationTrainer<Integer, double[]> normalizationTrainer = new NormalizationTrainer<>();
+
+                System.out.println(">>> Perform the training to get the normalization preprocessor.");
+                IgniteBiFunction<Integer, double[], double[]> preprocessor = normalizationTrainer.fit(
+                    ignite,
+                    dataCache,
+                    (k, v) -> Arrays.copyOfRange(v, 1, v.length)
+                );
 
                 System.out.println(">>> Create new linear regression trainer object.");
                 LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
                 System.out.println(">>> Perform the training to get the model.");
-                LinearRegressionModel mdl = trainer.fit(
-                    ignite,
-                    dataCache,
-                    (k, v) -> Arrays.copyOfRange(v, 1, v.length),
-                    (k, v) -> v[0]
-                );
+                LinearRegressionModel mdl = trainer.fit(ignite, dataCache, preprocessor, (k, v) -> v[0]);
 
                 System.out.println(">>> Linear regression model: " + mdl);
 
@@ -129,11 +140,11 @@ public class DistributedLinearRegressionWithLSQRTrainerExample {
 
                 try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
                     for (Cache.Entry<Integer, double[]> observation : observations) {
+                        Integer key = observation.getKey();
                         double[] val = observation.getValue();
-                        double[] inputs = Arrays.copyOfRange(val, 1, val.length);
                         double groundTruth = val[0];
 
-                        double prediction = mdl.apply(new DenseLocalOnHeapVector(inputs));
+                        double prediction = mdl.apply(new DenseLocalOnHeapVector(preprocessor.apply(key, val)));
 
                         System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
                     }
