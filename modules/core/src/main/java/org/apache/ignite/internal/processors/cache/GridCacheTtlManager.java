@@ -40,8 +40,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** Entries pending removal. */
     private GridConcurrentSkipListSetEx pendingEntries;
 
-    /** */
-    private boolean eagerTtlEnabled;
+    /** See {@link CacheConfiguration#isEagerTtl()}. */
+    private volatile boolean eagerTtlEnabled;
 
     /** */
     private GridCacheContext dhtCtx;
@@ -166,6 +166,12 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * @return {@code True} if unprocessed expired entries remains.
      */
     public boolean expire(int amount) {
+        // TTL manager is not initialized or eagerTtl disabled for cache.
+        if (!eagerTtlEnabled)
+            return false;
+
+        assert cctx != null;
+
         long now = U.currentTimeMillis();
 
         try {
