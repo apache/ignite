@@ -2691,10 +2691,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @SuppressWarnings({"RedundantTypeArguments"})
     @Override public boolean initialValue(
         CacheObject val,
-        GridCacheVersion ver,
+        final GridCacheVersion ver,
         long ttl,
         long expireTime,
-        boolean preload,
+        final boolean preload,
         AffinityTopologyVersion topVer,
         GridDrType drType,
         boolean fromStore
