@@ -18,6 +18,8 @@
 package org.apache.ignite.sqltests;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -27,11 +29,9 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.sqltests.datamodel.Department;
-import org.apache.ignite.sqltests.datamodel.Employee;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -39,33 +39,24 @@ import org.junit.Assert;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 public class BaseSqlTest extends GridCommonAbstractTest {
-
-    private final static long DEPS_CNT = 100;
     private final static long EMP_CNT = 1000;
-
-    private static final String DEP_CACHE = "DepartmentCache";
-    private static final String EMP_CACHE = "EmployeeCache";
-
-    private static IgniteCache<Long, Employee> empCache;
-    private static IgniteCache<Long, Department> depCache;
-
-
-
-    protected IgniteConfiguration configureIgnite(IgniteConfiguration cfg) {
-        // No-op. Override to add behaviour.
-        return cfg;
-    }
 
     private static final String CLIENT_NODE_NAME = "clientNode";
 
+    private static IgniteCache empCache;
+
+    /** Client node instance. */
     private static IgniteEx client;
 
-    protected CacheConfiguration newCacheCfg(String name) {
-        return new CacheConfiguration<>(name);
-    }
-
-    protected void populateData() {
-        executeUpdate("CREATE TABLE Employee ");
+    /**
+     * Hook to change nodes configurations in children.
+     *
+     * @param cfg - ignite configuration to configure.
+     * @return - configured ignite configuration.
+     */
+    protected IgniteConfiguration configureIgnite(IgniteConfiguration cfg) {
+        // No-op. Override to add behaviour.
+        return cfg;
     }
 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName,
@@ -81,6 +72,39 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return optimize(clCfg);
     }
 
+    /**
+     * Creates common "Employee" table and fills it with data.
+     *
+     * @param withStr With clause for created table, such as "template=partitioned"
+     */
+    protected final void fillCommonData(String withStr) {
+        executeUpdate("CREATE TABLE Employee (" +
+            "id LONG PRIMARY KEY, " +
+            "depId LONG, " +
+            "firstName VARCHAR, " +
+            "lastName VARCHAR) " +
+            (F.isEmpty(withStr) ? "" : " WITH \"" + withStr + '"') +
+            ";");
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?)");
+
+        final long depId = 42;
+
+        for (int i = 0; i < EMP_CNT; i++) {
+            String firstName = UUID.randomUUID().toString();
+            String lastName = UUID.randomUUID().toString();
+
+            execute(qry.setArgs(i, depId, firstName, lastName));
+        }
+    }
+
+    /**
+     * Sets up data. Override in children to add/change behaviour.
+     */
+    protected void fillData(){
+        fillCommonData(""); // default.
+    }
+
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -88,24 +112,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
         client = (IgniteEx) startGrid(CLIENT_NODE_NAME, configureIgnite(clientConfiguration()), null);
 
-        empCache = client.createCache(newCacheCfg(EMP_CACHE).setSqlSchema("PUBLIC").setIndexedTypes(Long.class, Employee.class));
-        depCache = client.createCache(newCacheCfg(DEP_CACHE).setSqlSchema("PUBLIC").setIndexedTypes(Long.class, Department.class));
+        fillData();
 
-        for (long id = 0; id < EMP_CNT; id++) {
-            long depId = id % DEPS_CNT;
-
-            Employee emp = new Employee(id, depId, UUID.randomUUID().toString(), UUID.randomUUID().toString());
-
-            empCache.put(id, emp);
-        }
-
-        for (long id = 0; id < DEPS_CNT; id++) {
-
-            Department dep = new Department(id, UUID.randomUUID().toString());
-
-            depCache.put(id, dep);
-        }
-
+        empCache = client.cache("SQL_PUBLIC_EMPLOYEE");
     }
 
 
@@ -118,7 +127,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     public void testBasicSelect() {
 
-        Result emps =  checkedSelect("SELECT * FROM Employee", empCache);
+        Result emps = checkedSelect("SELECT * FROM Employee", empCache);
 
         assertEquals("Unexpected size of employees", EMP_CNT, emps.values().size());
     }
@@ -143,11 +152,11 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         assertSortedBy(result.values(), asc);
     }
 
-    public void testBasicJoin() {
-        execute("SELECT * FROM Employee e JOIN Department d on e.depId = d.id");
-    }
+//    public void testBasicJoin() {
+//        execute("SELECT * FROM Employee e JOIN Department d on e.depId = d.id");
+//    }
 
-    protected Result checkedSelect(String selectQry, IgniteCache<Long, ?> cache) {
+    protected Result checkedSelect(String selectQry, IgniteCache<?, ?> cache) {
         Result res = execute(selectQry);
 
         assertValuesAreInCache(res, cache);
@@ -194,9 +203,10 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         }
     }
 
-    protected void assertValuesAreInCache(Result res,  IgniteCache<Long, ?> cache) {
+    protected void assertValuesAreInCache(Result res,  IgniteCache<?, ?> cache) {
         int idRowIdx = res.columnNames().indexOf("ID");
-        assert idRowIdx > 0 : "Column with name \"id\" have not been found in column names " + res.columnNames();
+
+        assert idRowIdx >= 0 : "Column with name \"id\" have not been found in column names " + res.columnNames();
 
         IgniteCache<Long, BinaryObject> binCache = cache.withKeepBinary();
 
@@ -208,16 +218,37 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
             assertNotNull("Cache does not contain entry with id " + id, cached);
 
-            checkEqual(cached, row, res.columnNames());
+            checkMatches(cached, row, res.columnNames());
         }
     }
 
-    private static void checkEqual(BinaryObject fromCache, List<?> fromSql, List<String> colNames) {
+    private static void checkMatches(BinaryObject fromCache, List<?> fromSql, List<String> colNames) {
+        Collection<String> binValCols = fromCache.type().fieldNames();
+
+        ArrayList<String> allBinCols = new ArrayList<>(binValCols);
+        allBinCols.add("ID");
+
+        // todo: more informative assert(s).
+        assertTrue("Colon names are not equal",
+            allBinCols.containsAll(colNames) && colNames.containsAll(allBinCols));
+
         List<?> valsFromCache = colNames.stream()
+            .filter(name -> !name.equals("ID"))
             .map(name -> fromCache.field(name))
             .collect(Collectors.toList());
 
-        Assert.assertThat("Binary object content does not match values returned by sql query", fromSql,
+        List<Object> valsFromSql = new ArrayList<>();
+
+        for (int i = 0; i < colNames.size(); i++) {
+            String name = colNames.get(i);
+
+            if (name.equals("ID"))
+                continue;
+
+            valsFromSql.add(fromSql.get(i));
+        }
+
+        Assert.assertThat("Binary object content does not match values returned by sql query", valsFromSql,
             equalTo(valsFromCache));
     }
 
@@ -227,18 +258,20 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         for (int i = 0; i < cursor.getColumnsCount(); i++)
             colNames.add(cursor.getFieldName(i));
 
-        return colNames;
+        return Collections.unmodifiableList(colNames);
     }
 
-    public Result execute(String qry) {
-        FieldsQueryCursor<List<?>> cursor = client.context().query().querySqlFields(new SqlFieldsQuery(qry), false);
+    protected Result execute(String qry) {
+        return execute(new SqlFieldsQuery(qry));
+    }
+
+    protected Long executeUpdate(String updateQry) {
+        return (Long) execute(new SqlFieldsQuery(updateQry)).values().get(0).get(0);
+    }
+
+    protected final Result execute(SqlFieldsQuery updateQry) {
+        FieldsQueryCursor<List<?>> cursor = client.context().query().querySqlFields(updateQry, false);
 
         return Result.fromCursor(cursor);
-    }
-
-    public long executeUpdate(String updateQry) {
-        List<List<?>> res = client.context().query().querySqlFields(new SqlFieldsQuery(updateQry), false).getAll();
-
-        return (Long) res.get(0).get(0);
     }
 }

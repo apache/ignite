@@ -21,7 +21,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 
 public class PartitionedSqlTest extends BaseSqlTest {
-    @Override protected CacheConfiguration newCacheCfg(String name) {
-        return super.newCacheCfg(name).setCacheMode(CacheMode.PARTITIONED);
+    @Override protected void fillData() {
+        super.fillCommonData("template=");
     }
 }

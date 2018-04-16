@@ -21,11 +21,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 
 public class ReplicatedSqlTest extends BaseSqlTest {
-    @Override protected CacheConfiguration newCacheCfg(String name) {
-        CacheConfiguration cfg = super.newCacheCfg(name);
-
-        cfg.setCacheMode(CacheMode.REPLICATED);
-
-        return cfg;
+    @Override protected void fillData() {
+        fillCommonData("template=replicated");
     }
 }
