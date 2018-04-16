@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryField;
@@ -154,43 +153,6 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
     /**
      * @throws Exception If failed.
      */
-    public void testPutAllAsyncComparable() throws Exception {
-        checkPutAllAsync(new ComparableComplexObject());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutAllAsyncNotcomparable() throws Exception {
-        checkPutAllAsync(new NotComparableComplexObject(cache));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutAllAsyncP2P() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5038");
-
-        checkPutAllAsync(new P2PComplexObject(cache));
-    }
-
-    /**
-     * @param obj ComplexObject.
-     * @throws Exception If failed.
-     */
-    private void checkPutAllAsync(ComplexObject obj) throws Exception {
-        SortingPredicate pred = createEventListener();
-
-        cache.putAllAsync(obj.unsortedMap()).get(1_000);
-
-        removeEventListener(pred);
-
-        assertTrue("Sorting failed.", obj.checkOrder(pred.list));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testInvokeAllComparable() throws Exception {
         checkInvokeAll(new ComparableComplexObject());
     }
@@ -219,80 +181,6 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         SortingPredicate pred = createEventListener();
 
         cache.invokeAll(obj.unsortedInvokeMap());
-
-        removeEventListener(pred);
-
-        assertTrue("Sorting failed.", obj.checkOrder(pred.list));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeAllAsyncMapComparable() throws Exception {
-        checkInvokeAllAsyncMap(new ComparableComplexObject());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeAllAsyncMapNotcomparable() throws Exception {
-        checkInvokeAllAsyncMap(new NotComparableComplexObject(cache));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeAllAsyncP2P() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5038");
-
-        checkInvokeAllAsyncMap(new P2PComplexObject(cache));
-    }
-
-    /**
-     * @param obj ComplexObject.
-     * @throws Exception If failed.
-     */
-    private void checkInvokeAllAsyncMap(ComplexObject obj) throws Exception {
-        SortingPredicate pred = createEventListener();
-
-        cache.invokeAllAsync(obj.unsortedInvokeMap()).get(1_000);
-
-        removeEventListener(pred);
-
-        assertTrue("Sorting failed.", obj.checkOrder(pred.list));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeAllAsyncSetComparable() throws Exception {
-        checkInvokeAllAsyncSet(new ComparableComplexObject());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeAllAsyncSetNotcomparable() throws Exception {
-        checkInvokeAllAsyncSet(new NotComparableComplexObject(cache));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testInvokeAllAsyncSetP2P() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5038");
-
-        checkInvokeAllAsyncSet(new P2PComplexObject(cache));
-    }
-
-    /**
-     * @param obj ComplexObject.
-     * @throws Exception If failed.
-     */
-    private void checkInvokeAllAsyncSet(ComplexObject obj) throws Exception {
-        SortingPredicate pred = createEventListener();
-
-        cache.invokeAllAsync(obj.unsortedMap().keySet(), proc).get(1_000);
 
         removeEventListener(pred);
 
@@ -334,47 +222,6 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         SortingPredicate pred = createEventListener();
 
         cache.removeAll(map.keySet());
-
-        removeEventListener(pred);
-
-        assertTrue("Sorting failed.", obj.checkOrder(pred.list));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRemoveAllAsyncComparable() throws Exception {
-        checkRemoveAllAsync(new ComparableComplexObject());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRemoveAllAsyncNotcomparable() throws Exception {
-        checkRemoveAllAsync(new NotComparableComplexObject(cache));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRemoveAllAsyncP2P() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5038");
-
-        checkRemoveAllAsync(new P2PComplexObject(cache));
-    }
-
-    /**
-     * @param obj ComplexObject.
-     * @throws Exception If failed.
-     */
-    private void checkRemoveAllAsync(ComplexObject obj) throws Exception {
-        Map<Object, Object> map = obj.unsortedMap();
-
-        cache.putAll(map);
-
-        SortingPredicate pred = createEventListener();
-
-        cache.removeAllAsync(map.keySet()).get(1_000);
 
         removeEventListener(pred);
 
