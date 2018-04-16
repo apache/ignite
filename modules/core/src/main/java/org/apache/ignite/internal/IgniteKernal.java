@@ -99,6 +99,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -2159,9 +2160,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 notifyLifecycleBeansEx(LifecycleEventType.BEFORE_NODE_STOP);
             }
 
-            long txOnStopTimeout = CU.transactionConfiguration(null, ctx.config()).getTxOnStopTimeout();
+            TransactionConfiguration txCfg = CU.transactionConfiguration(null, ctx.config());
 
-            if (!cancel && txOnStopTimeout > 0 && state == STARTED) {
+            long txOnStopTimeout = txCfg.getTxOnStopTimeout();
+
+            if (!cancel && txOnStopTimeout > 0 && state == STARTED
+                && (ctx.clientNode() || !txCfg.isSkipServerOnStopWaiting())) {
                 gw.setState(PRE_STOPPING);
 
                 IgniteInternalFuture<Boolean> fut = ctx.cache().context().tm().finishNearLocalTxs();

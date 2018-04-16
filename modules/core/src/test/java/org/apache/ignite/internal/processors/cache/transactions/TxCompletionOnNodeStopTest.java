@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -32,7 +31,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -123,29 +121,27 @@ public class TxCompletionOnNodeStopTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
-                @Override public Object call() {
-                    IgniteCache<Object, Object> cache0 = ignite.cache(DEFAULT_CACHE_NAME);
+            IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(() -> {
+                IgniteCache<Object, Object> cache0 = ignite.cache(DEFAULT_CACHE_NAME);
 
-                    try (Transaction tx = ignite.transactions().txStart()) {
-                        latch.countDown();
+                try (Transaction tx = ignite.transactions().txStart()) {
+                    latch.countDown();
 
-                        for (int i = 0; U.currentTimeMillis() - tx.startTime() < OPERATIONS_TIMEOUT; i++)
-                            cache0.put(i, String.valueOf(i));
+                    for (int i = 0; U.currentTimeMillis() - tx.startTime() < OPERATIONS_TIMEOUT; i++)
+                        cache0.put(i, String.valueOf(i));
+
+                    fail();
+                }
+                catch (Exception e) {
+                    if (!X.hasCause(e, IllegalStateException.class, NodeStoppingException.class)) {
+
+                        U.error(log(), "Unexpected exception", e);
 
                         fail();
                     }
-                    catch (Exception e) {
-                        if (!X.hasCause(e, IllegalStateException.class, NodeStoppingException.class)) {
-
-                            U.error(log(), "Unexpected exception", e);
-
-                            fail();
-                        }
-                    }
-
-                    return null;
                 }
+
+                return null;
             });
 
             latch.await();
@@ -237,70 +233,64 @@ public class TxCompletionOnNodeStopTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        IgniteInternalFuture<Object> stoppingFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                txsStartLatch.await();
-                try {
-                    log().info("Grid stopping started.");
+        IgniteInternalFuture<Object> stoppingFut = GridTestUtils.runAsync(() -> {
+            txsStartLatch.await();
 
-                    stopGrid(IGNITE_IDX, false);
+            try {
+                log().info("Grid stopping started.");
 
-                    log().info("Grid stopped.");
-                }
-                catch (Exception e) {
-                    U.error(log(), "Unexpected exception", e);
+                stopGrid(IGNITE_IDX, false);
 
-                    fail();
-                }
-
-                stopGridLatch.countDown();
-
-                return null;
+                log().info("Grid stopped.");
             }
+            catch (Exception e) {
+                U.error(log(), "Unexpected exception", e);
+
+                fail();
+            }
+
+            stopGridLatch.countDown();
+
+            return null;
         });
 
         final AtomicInteger threadCnt = new AtomicInteger();
 
-        IgniteInternalFuture<Long> txsFut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                int threadNum = threadCnt.getAndIncrement();
+        IgniteInternalFuture<Long> txsFut = GridTestUtils.runMultiThreadedAsync(() -> {
+            int threadNum = threadCnt.getAndIncrement();
 
-                int add = threadNum * TX_SIZE;
+            int add = threadNum * TX_SIZE;
 
-                T2<TransactionConcurrency, TransactionIsolation> txMode =
-                    txModes[threadNum >= txModes.length ? threadNum - txModes.length : threadNum];
+            T2<TransactionConcurrency, TransactionIsolation> txMode =
+                txModes[threadNum >= txModes.length ? threadNum - txModes.length : threadNum];
 
-                log().info(String.format(">>> Start TX concurrency=%s, isolation=%s, threadNum=%s",
-                    txMode.get1(), txMode.get2(), threadNum));
+            log().info(String.format(">>> Start TX concurrency=%s, isolation=%s, threadNum=%s",
+                txMode.get1(), txMode.get2(), threadNum));
 
-                try (Transaction tx = ignite.transactions()
-                    .txStart(txMode.get1(), txMode.get2(), OPERATIONS_TIMEOUT, TX_SIZE)) {
-                    for (int i = 0; i < TX_SIZE; i++) {
-                        if (i == TX_SIZE / 2) {
-                            txsStartLatch.countDown();
+            try (Transaction tx = ignite.transactions()
+                .txStart(txMode.get1(), txMode.get2(), OPERATIONS_TIMEOUT, TX_SIZE)) {
+                for (int i = 0; i < TX_SIZE; i++) {
+                    if (i == TX_SIZE / 2) {
+                        txsStartLatch.countDown();
 
-                            boolean preStopping = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                                @Override public boolean apply() {
-                                    return ignite.context().gateway().getState() == GridKernalState.PRE_STOPPING;
-                                }
-                            }, OPERATIONS_TIMEOUT);
+                        boolean preStopping = GridTestUtils.waitForCondition(() ->
+                            ignite.context().gateway().getState() == GridKernalState.PRE_STOPPING, OPERATIONS_TIMEOUT);
 
-                            assertTrue(preStopping);
-                        }
-
-                        cache.put(i + add, String.valueOf(i + add));
+                        assertTrue(preStopping);
                     }
 
-                    if (threadNum < txModes.length)
-                        tx.commit();
-                    else
-                        tx.rollback();
-
-                    stopGridLatch.await(); // In order to call close() after grid stopped.
+                    cache.put(i + add, String.valueOf(i + add));
                 }
 
-                return null;
+                if (threadNum < txModes.length)
+                    tx.commit();
+                else
+                    tx.rollback();
+
+                stopGridLatch.await(); // In order to call close() after grid stopped.
             }
+
+            return null;
         }, txModes.length * 2, "tx-thread");
 
         txsFut.get();

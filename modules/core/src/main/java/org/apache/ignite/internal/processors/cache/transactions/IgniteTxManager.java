@@ -574,7 +574,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
-     * @return Future that will be completed when all {@link GridNearTxLocal} transactions are finished.
+     * @return Future that will be completed when all {@link GridNearTxLocal} transactions are fully finished.
      */
     public IgniteInternalFuture<Boolean> finishNearLocalTxs() {
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
@@ -597,36 +597,28 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                 IgniteInternalFuture<IgniteInternalTx> finishFut = tx.finishFuture();
 
-                finishFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> f) {
-                        GridNearTxLocal locTx = null;
+                finishFut.listen(f -> {
+                    GridNearTxLocal locTx = null;
 
-                        try {
-                            locTx = (GridNearTxLocal)f.get();
+                    try {
+                        locTx = (GridNearTxLocal)f.get();
 
-                            assert locTx != null;
+                        assert locTx != null;
 
-                            NearTxFinishFuture finishFut = locTx.nearFinishFut(); // Creates on commit phase.
+                        NearTxFinishFuture nearFinishFut = locTx.nearFinishFut(); // Creates on commit phase.
 
-                            if (finishFut == null)
-                                resFut.onDone();
-                            else {
-                                finishFut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
-                                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                                        resFut.onDone();
-                                    }
-                                });
-                            }
-                        }
-                        catch (Throwable e) {
+                        if (nearFinishFut == null)
                             resFut.onDone();
+                        else
+                            nearFinishFut.listen(fut -> resFut.onDone());
+                    }
+                    catch (Throwable e) {
+                        resFut.onDone();
 
-                            U.error(log, "Failed to wait Transaction completion: " + locTx, e);
+                        U.error(log, "Failed to wait Transaction completion: " + locTx, e);
 
-                            if (e instanceof Error)
-                                throw (Error)e;
-                        }
-
+                        if (e instanceof Error)
+                            throw (Error)e;
                     }
                 });
 

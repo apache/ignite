@@ -70,6 +70,9 @@ public class TransactionConfiguration implements Serializable {
     /** Timeout for waiting transactions on grid stop. */
     private long txOnStopTimeout = DFLT_TX_ON_STOP_TIMEOUT;
 
+    /** Skip on stop waiting for server nodes. */
+    private boolean skipServerOnStopWaiting;
+
     /** Name of class implementing GridCacheTmLookup. */
     private String tmLookupClsName;
 
@@ -103,6 +106,7 @@ public class TransactionConfiguration implements Serializable {
         txManagerFactory = cfg.getTxManagerFactory();
         useJtaSync = cfg.isUseJtaSynchronization();
         txOnStopTimeout = cfg.getTxOnStopTimeout();
+        skipServerOnStopWaiting = cfg.isSkipServerOnStopWaiting();
     }
 
     /**
@@ -249,7 +253,7 @@ public class TransactionConfiguration implements Serializable {
     }
 
     /**
-     * Gets timeout, in milliseconds, for waiting transactions in {@link Ignition#stop(boolean)}
+     * Gets timeout, in milliseconds, for waiting transactions completion in {@link Ignition#stop(boolean)}
      * method with {@code false} parameter before stopping the grid.
      * <p>
      * If not set, default value is {@link #DFLT_TX_ON_STOP_TIMEOUT}.
@@ -262,7 +266,7 @@ public class TransactionConfiguration implements Serializable {
     }
 
     /**
-     * Sets timeout for waiting transactions in {@link Ignition#stop(boolean)}
+     * Sets timeout for waiting transactions completion in {@link Ignition#stop(boolean)}
      * method with {@code false} parameter before stopping the grid, in milliseconds.
      *
      * @param txOnStopTimeout New timeout for waiting transactions on grid stop.
@@ -271,7 +275,26 @@ public class TransactionConfiguration implements Serializable {
         this.txOnStopTimeout = txOnStopTimeout;
     }
 
+    /**
+     * Returns {@code true} if waiting for transactions completion is skipped for server nodes
+     * in {@link Ignition#stop(boolean)} method with {@code false} parameter.
+     *
+     * <p>
+     * If not set, default value is {@code false}.
+     * </p>
+     * @return {@code true} if waiting for transactions completion is skipped.
+     */
+    public boolean isSkipServerOnStopWaiting() {
+        return skipServerOnStopWaiting;
+    }
 
+    /**
+     * @param skipServerOnStopWaiting If {@code true} waiting for transactions completion will be skipped
+     * for server nodes in {@link Ignition#stop(boolean)} method with {@code false} parameter.
+     */
+    public void setSkipServerOnStopWaiting(boolean skipServerOnStopWaiting) {
+        this.skipServerOnStopWaiting = skipServerOnStopWaiting;
+    }
 
     /**
      * Gets class name of transaction manager finder for integration for JEE app servers.
