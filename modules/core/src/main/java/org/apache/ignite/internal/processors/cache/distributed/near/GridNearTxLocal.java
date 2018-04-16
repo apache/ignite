@@ -680,7 +680,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         if (opCtx != null && opCtx.isAutoSorting()) {
             map0 = CacheObjectUtils.sort(map, cacheCtx.cacheObjectContext());
-            invokeMap0 = CacheObjectUtils.sort(invokeMap, cacheCtx.cacheObjectContext());
+            invokeMap0 = (Map<?, EntryProcessor<K, V, Object>>) CacheObjectUtils.sort(invokeMap,
+                cacheCtx.cacheObjectContext());
         } else {
             map0 = map;
             invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>) invokeMap;

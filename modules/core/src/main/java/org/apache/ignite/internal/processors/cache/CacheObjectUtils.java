@@ -208,11 +208,11 @@ public class CacheObjectUtils {
      * it is already sorted (and given comparator same as current),
      *  and {@code SortedSet} if it was successfully sorted.
      */
-    public static Collection sort(@Nullable Collection col, CacheObjectValueContext ctx) {
+    public static <T> Collection<T> sort(@Nullable Collection<T> col, CacheObjectValueContext ctx) {
         if (col == null || col.size() == 1 || col instanceof SortedSet)
             return col;
 
-        SortedSet sortedSet = new TreeSet(compatibleComparator(col, ctx));
+        SortedSet<T> sortedSet = new TreeSet<>(compatibleComparator(col, ctx));
 
         sortedSet.addAll(col);
 
@@ -225,11 +225,11 @@ public class CacheObjectUtils {
      * @return {@code null} if given map was null, same {@code map} if it contains only one entry or
      * it is already sorted, {@code new SortedMap} if it was successfully sorted.
      */
-    public static Map sort(@Nullable Map map, CacheObjectValueContext ctx) {
+    public static <K, V> Map<K, V> sort(@Nullable Map<K, V> map, CacheObjectValueContext ctx) {
         if (map == null || map.size() == 1 || map instanceof SortedMap)
             return map;
 
-        SortedMap sortedMap = new TreeMap(compatibleComparator(map.keySet(), ctx));
+        SortedMap<K, V> sortedMap = new TreeMap<>(compatibleComparator(map.keySet(), ctx));
 
         sortedMap.putAll(map);
 
@@ -241,13 +241,13 @@ public class CacheObjectUtils {
      * if all given objects are {@link KeyCacheObject KeyCacheObjects}.
      * {@link HashcodeComparator} for other objects.
      */
-    private static Comparator compatibleComparator(Collection col, CacheObjectValueContext ctx) {
-        for (Object obj : col) {
+    private static <T> Comparator<T> compatibleComparator(Collection<T> col, CacheObjectValueContext ctx) {
+        for (T obj : col) {
             if (!(obj instanceof KeyCacheObject))
-                return new HashcodeComparator();
+                return new HashcodeComparator<T>();
         }
 
-        return new KeyCacheObjectComparator(ctx);
+        return (Comparator<T>) new KeyCacheObjectComparator(ctx);
     }
 
     /**
@@ -290,7 +290,7 @@ public class CacheObjectUtils {
      * Compares objects by {@link Comparable#compareTo(Object) compareTo} method of possible.
      * If objects are not comparable, compares them by hashcode.
      */
-    private static final class HashcodeComparator implements Comparator {
+    private static final class HashcodeComparator<T> implements Comparator<T> {
         /** {@inheritDoc} */
         @Override public int compare(Object o1, Object o2) {
             return compareObjects(o1, o2);
