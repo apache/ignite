@@ -164,7 +164,14 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testDefaultContext() throws Exception {
+        // Store exists default SSL context to restore after test.
+        final SSLContext dfltSslCtx = SSLContext.getDefault();
+
+        // Setup default context
+        SSLContext.setDefault(getTestSslContextFactory().create());
+
         setSslCtxFactoryToCli = true;
+
         // Factory return default SSL context
         sslCtxFactory = new Factory<SSLContext>() {
             @Override public SSLContext create() {
@@ -177,23 +184,16 @@ public class JdbcThinConnectionSSLTest extends JdbcThinAbstractSelfTest {
             }
         };
 
-        System.setProperty("javax.net.ssl.keyStore", CLI_KEY_STORE_PATH);
-        System.setProperty("javax.net.ssl.keyStorePassword", "123456");
-        System.setProperty("javax.net.ssl.trustStore", TRUST_KEY_STORE_PATH);
-        System.setProperty("javax.net.ssl.trustStorePassword", "123456");
-
         startGrids(1);
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require")) {
             checkConnection(conn);
         }
         finally {
-            System.getProperties().remove("javax.net.ssl.keyStore");
-            System.getProperties().remove("javax.net.ssl.keyStorePassword");
-            System.getProperties().remove("javax.net.ssl.trustStore");
-            System.getProperties().remove("javax.net.ssl.trustStorePassword");
-
             stopAllGrids();
+
+            // Restore SSL context.
+            SSLContext.setDefault(dfltSslCtx);
         }
     }
 
