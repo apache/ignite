@@ -220,10 +220,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
                 connection.setClientID(clientId.trim());
             }
 
-            if (exceptionListener != null)
-                connection.setExceptionListener(exceptionListener);
-            else
-                connection.setExceptionListener(new IgniteJmsExceptionListener());
+            connection.setExceptionListener(new IgniteJmsExceptionListener());
 
             // build the JMS objects
             if (destinationType == Queue.class) {
@@ -561,7 +558,10 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     private class IgniteJmsExceptionListener implements ExceptionListener {
         /** {@inheritDoc} */
         @Override public void onException(JMSException e) {
-            U.warn(log, "DEFAULT Encountered JMS exception: " + e);
+            U.warn(log, "Caught JMS exception: " + e);
+
+            if (exceptionListener != null)
+                exceptionListener.onException(e);
         }
     }
 }
