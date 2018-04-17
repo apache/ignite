@@ -2403,6 +2403,9 @@ public abstract class GridAbstractTest extends TestCase {
         private boolean reset;
 
         /** */
+        private Exception clsInitFailEx;
+
+        /** */
         private IgniteTestResources rsrcs;
 
         /**
@@ -2468,6 +2471,13 @@ public abstract class GridAbstractTest extends TestCase {
          */
         public int getStopped() {
             return stopped;
+        }
+
+        /**
+         * @param clsInitFailEx Class initialization failed exception.
+         */
+        public void setClassInitializationFailedException(Exception clsInitFailEx) {
+            this.clsInitFailEx = clsInitFailEx;
         }
 
         /**
