@@ -35,4 +35,14 @@ page-sign-in {
         background-color: #ffffff;
         color: #444444;
     }
+
+    .ps-grid {
+        display: grid;
+        grid-gap: 10px;
+        grid-template-columns: 1fr 1fr;
+
+        .ps-grid-full-width {
+            grid-column: 1 / 3;
+        }
+    }
 }
