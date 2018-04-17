@@ -662,6 +662,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             throw new IgniteCheckedException("Failed to read cache configuration from disk for cache: " +
                 conf.getAbsolutePath(), e);
         }
+        catch (IgniteCheckedException e) {
+            if (e.getCause() != null && e.getCause() instanceof ClassNotFoundException)
+                throw new IgniteCheckedException("During cache configuration loading from given file occurred error. " +
+                    "Make sure that user library containing required class is valid. " +
+                    "If library is valid then delete cache configuration file and restart cache [file=" +
+                    conf.getAbsolutePath() + ']', e);
+            else
+                throw e;
+        }
     }
 
     /** {@inheritDoc} */
