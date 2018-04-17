@@ -63,11 +63,10 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
             startGrid("client-" + i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
+    /**
+     *
+     * @throws Exception If fails.
+     */
     public void testGetOffHeapPrimaryEntriesCount() throws Exception {
         String cacheName = "testGetOffHeapPrimaryEntriesCount";
         IgniteCache<Integer, Integer> cache = grid("client-0").createCache(cacheConfiguration(cacheName));

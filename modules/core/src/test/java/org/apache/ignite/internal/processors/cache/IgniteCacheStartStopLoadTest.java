@@ -73,11 +73,6 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(nodeCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

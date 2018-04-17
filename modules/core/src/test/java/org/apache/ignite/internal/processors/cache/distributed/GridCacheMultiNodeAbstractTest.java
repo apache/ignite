@@ -97,19 +97,6 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        cache1 = null;
-        cache2 = null;
-        cache3 = null;
-
-        ignite1 = null;
-        ignite2 = null;
-        ignite3 = null;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         removeListeners(ignite1);
         removeListeners(ignite2);

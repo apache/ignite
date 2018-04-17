@@ -109,14 +109,6 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        ignite1 = null;
-        ignite2 = null;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         removeListeners(ignite1);
         removeListeners(ignite2);

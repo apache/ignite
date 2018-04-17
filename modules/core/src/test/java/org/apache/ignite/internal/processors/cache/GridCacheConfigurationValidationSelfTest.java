@@ -133,13 +133,6 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * This test method does not require remote nodes.
      *

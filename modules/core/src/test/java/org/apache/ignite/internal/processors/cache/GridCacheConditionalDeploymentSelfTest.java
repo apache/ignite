@@ -97,11 +97,6 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
         ignite0.cache(DEFAULT_CACHE_NAME).put(1, new TestValue());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        Ignition.stopAll(true);
-    }
-
     /**
      * @throws Exception In case of error.
      */

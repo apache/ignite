@@ -133,13 +133,6 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
         awaitPartitionMapExchange();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids(true);
-    }
-
     /**
      * @return Number of server nodes.
      */
