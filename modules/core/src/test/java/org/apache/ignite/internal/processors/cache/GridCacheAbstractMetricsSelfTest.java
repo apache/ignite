@@ -690,36 +690,40 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.LOCAL)
             return;
 
-        boolean isTransactional = cache.getConfiguration(CacheConfiguration.class)
-            .getAtomicityMode() == CacheAtomicityMode.TRANSACTIONAL;
-
-        // In transactional cache operations work slower than in atomic.
-        int count = isTransactional ? KEY_CNT / 20 : KEY_CNT;
-
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < KEY_CNT; i++) {
             cache.put(i, i);
 
-            assertEquals(i + 1, cache.metrics().getSize());
-            assertEquals(i + 1, cache.metrics().getSizeLong());
-            assertEquals(i + 1, cache.metrics().getKeySize());
-            assertEquals(i + 1, cache.metrics().getKeySizeLong());
-            assertEquals(i + 1, cache.localMetrics().getSize());
-            assertEquals(i + 1, cache.localMetrics().getSizeLong());
-            assertEquals(i + 1, cache.localMetrics().getKeySize());
-            assertEquals(i + 1, cache.localMetrics().getKeySizeLong());
+            CacheMetrics metrics = cache.metrics();
+
+            assertEquals(i + 1, metrics.getSize());
+            assertEquals(i + 1, metrics.getSizeLong());
+            assertEquals(i + 1, metrics.getKeySize());
+            assertEquals(i + 1, metrics.getKeySizeLong());
+
+            CacheMetrics localMetrics = cache.localMetrics();
+
+            assertEquals(i + 1, localMetrics.getSize());
+            assertEquals(i + 1, localMetrics.getSizeLong());
+            assertEquals(i + 1, localMetrics.getKeySize());
+            assertEquals(i + 1, localMetrics.getKeySizeLong());
         }
 
-        for (int i = 0; i < count / 2; i++) {
+        for (int i = 0; i < KEY_CNT / 2; i++) {
             cache.remove(i, i);
 
-            assertEquals(count - i - 1, cache.metrics().getSize());
-            assertEquals(count - i - 1, cache.metrics().getSizeLong());
-            assertEquals(count - i - 1, cache.metrics().getKeySize());
-            assertEquals(count - i - 1, cache.metrics().getKeySizeLong());
-            assertEquals(count - i - 1, cache.localMetrics().getSize());
-            assertEquals(count - i - 1, cache.localMetrics().getSizeLong());
-            assertEquals(count - i - 1, cache.localMetrics().getKeySize());
-            assertEquals(count - i - 1, cache.localMetrics().getKeySizeLong());
+            CacheMetrics metrics = cache.metrics();
+
+            assertEquals(KEY_CNT - i - 1, metrics.getSize());
+            assertEquals(KEY_CNT - i - 1, metrics.getSizeLong());
+            assertEquals(KEY_CNT - i - 1, metrics.getKeySize());
+            assertEquals(KEY_CNT - i - 1, metrics.getKeySizeLong());
+
+            CacheMetrics localMetrics = cache.localMetrics();
+
+            assertEquals(KEY_CNT - i - 1, localMetrics.getSize());
+            assertEquals(KEY_CNT - i - 1, localMetrics.getSizeLong());
+            assertEquals(KEY_CNT - i - 1, localMetrics.getKeySize());
+            assertEquals(KEY_CNT - i - 1, localMetrics.getKeySizeLong());
         }
 
         cache.removeAll();
