@@ -473,6 +473,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected final void setUp() throws Exception {
+        info("Starting setUp: " + testDescription());
+
         // Disable SSL hostname verifier.
         HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
             @Override public boolean verify(String s, SSLSession sslSes) {
@@ -483,13 +485,19 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         getTestCounters().incrementStarted();
 
         super.setUp();
+
+        info("Done setUp: " + testDescription());
     }
 
     /** {@inheritDoc} */
     @Override protected final void tearDown() throws Exception {
+        info("Starting tearDown: " + testDescription());
+
         getTestCounters().incrementStopped();
 
         super.tearDown();
+
+        info("Done tearDown: " + testDescription());
     }
 
     /** {@inheritDoc} */

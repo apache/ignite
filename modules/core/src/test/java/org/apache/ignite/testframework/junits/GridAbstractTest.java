@@ -1988,6 +1988,8 @@ public abstract class GridAbstractTest extends TestCase {
     /** {@inheritDoc} */
     @SuppressWarnings({"ProhibitedExceptionDeclared"})
     @Override protected void runTest() throws Throwable {
+        info("Begin runTest: " + testDescription());
+
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
         Thread runner = new IgniteThread(getTestIgniteInstanceName(), "test-runner", new Runnable() {
@@ -2006,6 +2008,8 @@ public abstract class GridAbstractTest extends TestCase {
         runner.start();
 
         runner.join(isDebug() ? 0 : getTestTimeout());
+
+        info("Done runTest: " + testDescription());
 
         if (runner.isAlive()) {
             U.error(log,
