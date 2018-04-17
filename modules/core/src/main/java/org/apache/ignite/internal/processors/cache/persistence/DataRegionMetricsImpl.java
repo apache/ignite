@@ -289,6 +289,14 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     }
 
     /**
+     * Updates eviction rate metric.
+     */
+    public void updateEvictionRate() {
+        if (metricsEnabled)
+            evictRate.onHit();
+    }
+
+    /**
      * @param intervalNum Interval number.
      */
     private long subInt(int intervalNum) {
