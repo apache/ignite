@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -143,7 +144,7 @@ public class DiscoveryDataClusterState implements Serializable {
         this.baselineTopology = baselineTopology;
         this.transitionReqId = transitionReqId;
         this.transitionTopVer = transitionTopVer;
-        this.transitionNodes = transitionNodes == null ? null : Collections.unmodifiableSet(transitionNodes);
+        this.transitionNodes = transitionNodes == null ? null : Collections.unmodifiableSet(new HashSet<>(transitionNodes));
         this.transitionRes = res;
         this.transitionError = error;
     }
@@ -217,7 +218,7 @@ public class DiscoveryDataClusterState implements Serializable {
      * @return Nodes participating in state change exchange.
      */
     public Set<UUID> transitionNodes() {
-        return transitionNodes;
+        return transitionNodes == null ? null : new HashSet<>(transitionNodes);
     }
 
     /**
