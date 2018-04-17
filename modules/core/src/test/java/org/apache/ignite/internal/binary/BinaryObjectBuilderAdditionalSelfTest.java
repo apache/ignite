@@ -49,7 +49,6 @@ import junit.framework.TestCase;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -1521,36 +1520,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         assert OBJ.equals(binaryObj.type().fieldTypeName("asListHint"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asSetHint"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asMapHint"));
-    }
-
-    /**
-     * Check that correct type is stored in binary object for singleton collections.
-     */
-    public void testSingletonCollectionsSerialization() {
-        System.setProperty(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION, "true");
-        try {
-            final BinaryObjectBuilder root = newWrapper("SingletonColBinary");
-
-            final Set<Integer> hashSet = new HashSet<>();
-            hashSet.add(Integer.MAX_VALUE);
-
-            final Map<String, String> hashMap = new HashMap<>();
-            hashMap.put("key", "val");
-
-            // objects
-            root.setField("asSet", Collections.singleton(Integer.MAX_VALUE));
-            root.setField("asMap", Collections.singletonMap("key", "val"));
-
-            BinaryObject binaryObj = root.build();
-
-            final String COL = "Collection";
-            final String MAP = "Map";
-
-            assert COL.equals(binaryObj.type().fieldTypeName("asSet"));
-            assert MAP.equals(binaryObj.type().fieldTypeName("asMap"));
-        }finally {
-            System.clearProperty(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION);
-        }
     }
 
     /**

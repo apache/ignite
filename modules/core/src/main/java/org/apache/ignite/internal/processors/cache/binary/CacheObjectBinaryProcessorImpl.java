@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -359,7 +360,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 for (Object item : col)
                     pCol.add(marshalToBinary(item));
 
-                return U.unwrapSingletonCollection(pCol);
+                return (pCol instanceof MutableSingletonList) ? U.convertToSingletonList(pCol) : pCol;
             }
         }
 
@@ -372,7 +373,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 for (Map.Entry<?, ?> e : map.entrySet())
                     pMap.put(marshalToBinary(e.getKey()), marshalToBinary(e.getValue()));
 
-                return U.unwrapSingletonMap(pMap);
+                return pMap;
             }
         }
 
