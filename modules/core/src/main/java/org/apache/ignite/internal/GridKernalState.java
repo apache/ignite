@@ -29,6 +29,9 @@ public enum GridKernalState {
     /** Kernal is starting.*/
     STARTING,
 
+    /** Pre stopping. */
+    PRE_STOPPING,
+
     /** Kernal is stopping. */
     STOPPING,
 

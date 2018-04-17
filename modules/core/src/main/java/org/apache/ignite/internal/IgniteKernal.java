@@ -99,6 +99,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -221,6 +222,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.snapshot;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
+import static org.apache.ignite.internal.GridKernalState.PRE_STOPPING;
 import static org.apache.ignite.internal.GridKernalState.STARTED;
 import static org.apache.ignite.internal.GridKernalState.STARTING;
 import static org.apache.ignite.internal.GridKernalState.STOPPED;
@@ -2158,6 +2160,27 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 notifyLifecycleBeansEx(LifecycleEventType.BEFORE_NODE_STOP);
             }
 
+            TransactionConfiguration txCfg = CU.transactionConfiguration(null, ctx.config());
+
+            long txOnStopTimeout = txCfg.getTxOnStopTimeout();
+
+            if (!cancel && txOnStopTimeout > 0 && state == STARTED
+                && (ctx.clientNode() || !txCfg.isSkipServerOnStopWaiting())) {
+                gw.setState(PRE_STOPPING);
+
+                IgniteInternalFuture<Boolean> fut = ctx.cache().context().tm().finishNearLocalTxs();
+
+                try {
+                    fut.get(txOnStopTimeout);
+                }
+                catch (Throwable e) {
+                    U.error(log, "Failed to wait Transactions completion: ", e);
+
+                    if (e instanceof Error)
+                        throw (Error)e;
+                }
+            }
+
             List<GridComponent> comps = ctx.components();
 
             // Callback component in reverse order while kernal is still functional
@@ -2206,7 +2229,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 Thread.currentThread().interrupt();
 
             try {
-                assert gw.getState() == STARTED || gw.getState() == STARTING || gw.getState() == DISCONNECTED;
+                assert gw.getState() == STARTED || gw.getState() == STARTING || gw.getState() == DISCONNECTED
+                    || gw.getState() == PRE_STOPPING;
 
                 // No more kernal calls from this point on.
                 gw.setState(STOPPING);

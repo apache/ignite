@@ -71,8 +71,20 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "BusyWait"})
     @Override public void readLock() throws IllegalStateException {
+        readLock0(GridKernalState.PRE_STOPPING);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readLockOnStarted() throws IllegalStateException {
+        readLock0();
+    }
+
+    /**
+     * @param ignoredStates Ignored Kernal states.
+     */
+    @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "BusyWait"})
+    private void readLock0(GridKernalState... ignoredStates) throws IllegalStateException {
         if (stackTrace == null)
             stackTrace = stackTrace();
 
@@ -83,6 +95,11 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
         GridKernalState state = this.state.get();
 
         if (state != GridKernalState.STARTED) {
+            for (GridKernalState ignoredState : ignoredStates) {
+                if (state == ignoredState)
+                    return;
+            }
+
             // Unlock just acquired lock.
             lock.unlock();
 
