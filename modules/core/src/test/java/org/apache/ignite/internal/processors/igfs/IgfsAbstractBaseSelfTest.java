@@ -322,11 +322,6 @@ public abstract class IgfsAbstractBaseSelfTest extends IgfsCommonAbstractTest {
         assert igfs.listFiles(IgfsPath.ROOT).isEmpty();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        G.stopAll(true);
-    }
-
     /**
      * Start grid with IGFS.
      *

@@ -331,11 +331,6 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        G.stopAll(true);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         primaryFsUri = new URI(primaryFileSystemUriPath());
 

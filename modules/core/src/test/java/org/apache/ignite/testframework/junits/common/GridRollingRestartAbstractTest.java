@@ -124,8 +124,6 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        stopAllGrids();
-
         rollingRestartThread.shutdown();
     }
 

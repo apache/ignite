@@ -115,13 +115,6 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
             startGrid(i + NODES_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
