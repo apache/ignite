@@ -176,7 +176,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         if (testsCfg.withClients())
             resCfg.setClientMode(expectedClient(igniteInstanceName));
 
-        info("Creating cache configuration [instanceName=" + igniteInstanceName + ", cfg=" + cfg + ']');
+        info("Creating configuration [instanceName=" + igniteInstanceName + ", cfg=" + cfg + ']');
 
         return resCfg;
     }

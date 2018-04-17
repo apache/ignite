@@ -225,14 +225,14 @@ public class ConfigVariationsTestSuiteBuilder {
             boolean startCache = i == 0;
             boolean stopCache = i + 1 == testedNodeCnt;
 
-            System.out.println("Building multi-node test suite [clsSuffix=" + cfg.description() +
-                ", testedNode=" + i + ", stopNodes=" + stopNodes + ']');
-
             VariationsTestsConfig cfg0 = new VariationsTestsConfig(
                 cfg.configurationFactory(),
                 cfg.description() + "-node-" + i,
                 stopNodes, startCache, stopCache, cfg.cacheStartMode(), cfg.gridCount(), i, withClients,
                 !skipWaitParMapExchange);
+
+            System.out.println("Building multi-node test suite [clsSuffix=" + cfg0.description() +
+                ", testedNode=" + i + ", stopNodes=" + stopNodes + ']');
 
             suite.addTest(new IgniteConfigVariationsTestSuite(cls, cfg0));
         }

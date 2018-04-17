@@ -574,9 +574,8 @@ public abstract class GridAbstractTest extends TestCase {
 
         TestCounters cntrs = getTestCounters();
 
-        if (isDebug())
-            info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
-                ", stopped=" + cntrs.getStopped() + ']');
+        info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
+            ", stopped=" + cntrs.getStopped() + ']');
 
         if (cntrs.isReset()) {
             info("Resetting test counters.");
@@ -1680,7 +1679,7 @@ public abstract class GridAbstractTest extends TestCase {
         TestCounters cntrs = getTestCounters();
 
         info("Test counters [numOfTests=" + cntrs.getNumberOfTests() + ", started=" + cntrs.getStarted() +
-            ", stopped=" + cntrs.getStopped() + ']');
+            ", stopped=" + cntrs.getStopped() + ", test=" + this + ']');
 
         try {
             afterTest();
@@ -2501,16 +2500,25 @@ public abstract class GridAbstractTest extends TestCase {
             if (numOfTests == -1) {
                 GridAbstractTest this0 = GridAbstractTest.this;
 
+                info("Counting the number of tests in the test: " + GridAbstractTest.this + " " + this0.testDescription());
+
                 int cnt;
 
-                if (this0.forceTestCnt)
+                if (this0.forceTestCnt) {
                     cnt = this0.testCnt;
+
+                    info("Number of tests is enforced: " + this0.testCnt);
+                }
                 else {
                     cnt = 0;
 
-                    for (Method m : this0.getClass().getMethods())
-                        if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
+                    for (Method m : this0.getClass().getMethods()) {
+                        if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers())) {
+                            info("Counting test method: " + m.getName());
+
                             cnt++;
+                        }
+                    }
                 }
 
                 numOfTests = cnt;
