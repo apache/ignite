@@ -317,8 +317,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
      *
      */
     public void wallRollOver() {
-        if (metricsEnabled)
-            this.lastWalSegmentRollOverTime = U.currentTimeMillis();
+        this.lastWalSegmentRollOverTime = U.currentTimeMillis();
     }
 
     /**

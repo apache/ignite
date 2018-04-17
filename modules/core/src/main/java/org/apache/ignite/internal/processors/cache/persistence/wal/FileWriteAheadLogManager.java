@@ -1057,7 +1057,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return hnd;
 
         if (hnd.close(true)) {
-            metrics.wallRollOver();
+            if (metrics.metricsEnabled())
+                metrics.wallRollOver();
 
             FileWriteHandle next = initNextWriteHandle(cur);
 

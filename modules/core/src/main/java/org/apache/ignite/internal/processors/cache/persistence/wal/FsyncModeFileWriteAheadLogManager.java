@@ -959,6 +959,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             return hnd;
 
         if (hnd.close(true)) {
+            if (metrics.metricsEnabled())
+                metrics.wallRollOver();
+
             FileWriteHandle next = initNextWriteHandle(cur.idx);
 
             boolean swapped = currentHndUpd.compareAndSet(this, hnd, next);
