@@ -35,11 +35,32 @@ namespace ignite
                 /** Minus token. */
                 MINUS,
 
-                /** End of data. */
-                EOD,
+                /** Quoted token. */
+                QUOTED,
 
-                /** Parsing error. */
-                ERROR,
+                /** String literal token. */
+                STRING,
+
+                /** Dot. */
+                DOT,
+
+                /** Comma. */
+                COMMA,
+
+                /** Parenthesis: left. */
+                PARENTHESIS_LEFT,
+
+                /** Parenthesis: right. */
+                PARENTHESIS_RIGHT,
+
+                /** Semicolon. */
+                SEMICOLON,
+
+                /** Simple word. */
+                WORD,
+
+                /** End of data. */
+                EOD
             };
         };
 
@@ -88,7 +109,7 @@ namespace ignite
              * @param num Number of chars we need.
              * @return @c true if we have and false otherwise.
              */
-            bool HaveData(int32_t num);
+            bool HaveData(int32_t num) const;
 
             /** SQL string. */
             const std::string& sql;
@@ -96,11 +117,14 @@ namespace ignite
             /** Current token position. */
             int32_t pos;
 
+            /** Current token begin. */
+            int32_t tokenBegin;
+
             /** Current token size. */
-            int32_t size;
+            int32_t tokenSize;
 
             /** Current token type. */
-            TokenType::Type type;
+            TokenType::Type tokenType;
         };
     }
 }
