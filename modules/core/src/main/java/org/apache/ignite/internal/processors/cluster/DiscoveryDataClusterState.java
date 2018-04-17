@@ -71,7 +71,7 @@ public class DiscoveryDataClusterState implements Serializable {
      * Local flag for state transition active state result (global state is updated asynchronously by custom message),
      * {@code null} means that state change is not completed yet.
      */
-    private transient final Boolean transitionRes;
+    private final Boolean transitionRes;
 
     /**
      * Previous cluster state if this state is a transition state and it was not received by a joining node.
@@ -85,9 +85,10 @@ public class DiscoveryDataClusterState implements Serializable {
      * @param active Current status.
      * @return State instance.
      */
-    static DiscoveryDataClusterState createState(boolean active, @Nullable BaselineTopology baselineTopology) {
+    static DiscoveryDataClusterState createState(boolean active, @Nullable BaselineTopology baselineTopology,
+        @Nullable Boolean transitionRes) {
         return new DiscoveryDataClusterState(null, active, baselineTopology, null,
-            null, null, null, null);
+            null, null, transitionRes, null);
     }
 
     /**
@@ -103,7 +104,8 @@ public class DiscoveryDataClusterState implements Serializable {
         @Nullable BaselineTopology baselineTopology,
         UUID transitionReqId,
         AffinityTopologyVersion transitionTopVer,
-        Set<UUID> transitionNodes
+        Set<UUID> transitionNodes,
+        @Nullable Boolean transitionRes
     ) {
         assert transitionReqId != null;
         assert transitionTopVer != null;
@@ -252,7 +254,7 @@ public class DiscoveryDataClusterState implements Serializable {
                 null,
                 null,
                 null,
-                null,
+                transitionRes,
                 null
             ) :
             prevState;

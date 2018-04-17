@@ -302,7 +302,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         // Start first node as inactive if persistence is enabled.
         boolean activeOnStart = inMemoryMode && ctx.config().isActiveOnStart();
 
-        globalState = DiscoveryDataClusterState.createState(activeOnStart, null);
+        globalState = DiscoveryDataClusterState.createState(activeOnStart, null,
+            globalState == null ? null : globalState.transitionResult());
 
         ctx.event().addLocalEventListener(lsr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
@@ -496,7 +497,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     msg.activate() ? msg.baselineTopology() : globalState.baselineTopology(),
                     msg.requestId(),
                     topVer,
-                    nodeIds);
+                    nodeIds,
+                    globalState.transitionResult());
 
                 if (msg.forceChangeBaselineTopology())
                     globalState = globalState.withTransitionResult(msg.requestId(), msg.activate());
@@ -549,7 +551,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** {@inheritDoc} */
     @Override public DiscoveryDataClusterState pendingState(ChangeGlobalStateMessage stateMsg) {
         return DiscoveryDataClusterState.createState(stateMsg.activate() || stateMsg.forceChangeBaselineTopology(),
-            stateMsg.baselineTopology());
+            stateMsg.baselineTopology(), globalState.transitionResult());
     }
 
     /**
@@ -1229,7 +1231,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         DiscoveryDataClusterState state = globalState;
 
         if (!state.active() && !state.transition() && state.baselineTopology() == null) {
-            DiscoveryDataClusterState newState = DiscoveryDataClusterState.createState(false, blt);
+            DiscoveryDataClusterState newState = DiscoveryDataClusterState.createState(false, blt,
+                globalState.transitionResult());
 
             globalState = newState;
         }
