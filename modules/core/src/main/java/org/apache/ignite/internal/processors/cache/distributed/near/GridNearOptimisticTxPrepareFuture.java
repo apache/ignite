@@ -282,7 +282,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         if (isDone())
             return false;
 
-        ERR_UPD.compareAndSet(this, null, err);
+        if (err != null) {
+            ERR_UPD.compareAndSet(this, null, err);
+
+            if (keyLockFut != null)
+                keyLockFut.onDone(err);
+        }
 
         return onComplete();
     }
@@ -327,7 +332,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             boolean txStateCheck = remap ? tx.state() == PREPARING : tx.state(PREPARING);
 
             if (!txStateCheck) {
-                if (tx.setRollbackOnly()) {
+                if (tx.isRollbackOnly() || tx.setRollbackOnly()) {
                     if (tx.remainingTime() == -1)
                         onError(new IgniteTxTimeoutCheckedException("Transaction timed out and " +
                             "was rolled back: " + this), false);

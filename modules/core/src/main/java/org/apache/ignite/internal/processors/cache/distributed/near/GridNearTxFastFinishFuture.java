@@ -37,18 +37,27 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
     /** */
     private final boolean commit;
 
+    /** */
+    private final boolean onTimeout;
+
     /**
      * @param tx Transaction.
      * @param commit Commit flag.
      */
-    GridNearTxFastFinishFuture(GridNearTxLocal tx, boolean commit) {
+    GridNearTxFastFinishFuture(GridNearTxLocal tx, boolean commit, boolean onTimeout) {
         this.tx = tx;
         this.commit = commit;
+        this.onTimeout = onTimeout;
     }
 
     /** {@inheritDoc} */
     @Override public boolean commit() {
         return commit;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onTimeout() {
+        finish();
     }
 
     /**
@@ -61,7 +70,7 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
                 tx.state(PREPARED);
                 tx.state(COMMITTING);
 
-                tx.context().tm().fastFinishTx(tx, true);
+                tx.context().tm().fastFinishTx(tx, true, true);
 
                 tx.state(COMMITTED);
             }
@@ -70,7 +79,7 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
                 tx.state(PREPARED);
                 tx.state(ROLLING_BACK);
 
-                tx.context().tm().fastFinishTx(tx, false);
+                tx.context().tm().fastFinishTx(tx, false, !onTimeout);
 
                 tx.state(ROLLED_BACK);
             }

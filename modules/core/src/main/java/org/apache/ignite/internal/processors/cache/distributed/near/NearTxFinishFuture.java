@@ -27,5 +27,10 @@ public interface NearTxFinishFuture extends IgniteInternalFuture<IgniteInternalT
     /**
      * @return Commit flag.
      */
-    boolean commit();
+    public boolean commit();
+
+    /**
+     * Quick completion on TX timeout.
+     */
+    public void onTimeout();
 }
