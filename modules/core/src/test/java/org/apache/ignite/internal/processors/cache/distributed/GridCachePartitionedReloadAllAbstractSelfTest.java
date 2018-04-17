@@ -135,8 +135,6 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         map.clear();
-
-        caches = null;
     }
 
     /**

@@ -50,14 +50,6 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
     /** Tested store. */
     protected GridCacheWriteBehindStore<Integer, String> store;
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        delegate = null;
-        store = null;
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Initializes store.
      *

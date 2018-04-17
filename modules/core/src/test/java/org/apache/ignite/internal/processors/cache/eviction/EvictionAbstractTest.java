@@ -139,13 +139,6 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         return c;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        filter = null;
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

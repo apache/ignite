@@ -74,13 +74,6 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
             cachesAtomic[i] = ignites[i].cache(CACHE_ATOMIC);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        cachesAtomic = null;
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Test atomic cache.
      *

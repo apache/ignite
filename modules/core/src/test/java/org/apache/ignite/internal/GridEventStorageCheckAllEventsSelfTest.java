@@ -109,11 +109,6 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         assertEvent(evts.get(0).type(), EVT_TASK_DEPLOYED, evts);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        ignite = null;
-    }
-
     /**
      * @param evtType Actual event type.
      * @param expType Expected event type.

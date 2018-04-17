@@ -102,15 +102,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        caches = null;
-
-        ignites = null;
-    }
-
     /**
      * Check whether cache with byte array entry works correctly in PESSIMISTIC transaction.
      *

@@ -102,13 +102,6 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        store = null;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         store.forceFail(false);
 
