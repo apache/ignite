@@ -101,6 +101,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
+import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -367,14 +368,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             checkWalConfiguration();
 
-            walWorkDir = initDirectory(
+            final File walWorkDir0 = walWorkDir = initDirectory(
                 dsCfg.getWalPath(),
                 DataStorageConfiguration.DFLT_WAL_PATH,
                 resolveFolders.folderName(),
                 "write ahead log work directory"
             );
 
-            walArchiveDir = initDirectory(
+            final File walArchiveDir0 = walArchiveDir = initDirectory(
                 dsCfg.getWalArchivePath(),
                 DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH,
                 resolveFolders.folderName(),
@@ -388,6 +389,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             metrics = dbMgr.persistentStoreMetricsImpl();
 
             checkOrPrepareFiles();
+
+            metrics.walSize(new CO<Long>() {
+                @Override public Long apply() {
+                    long size = 0;
+
+                    for (File f : walWorkDir0.listFiles())
+                        size += f.length();
+
+                    for (File f : walArchiveDir0.listFiles())
+                        size += f.length();
+
+                    return size;
+                }
+            });
 
             IgniteBiTuple<Long, Long> tup = scanMinMaxArchiveIndices();
 
@@ -1042,6 +1057,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return hnd;
 
         if (hnd.close(true)) {
+            metrics.wallRollOver();
+
             FileWriteHandle next = initNextWriteHandle(cur);
 
             next.writeHeader();

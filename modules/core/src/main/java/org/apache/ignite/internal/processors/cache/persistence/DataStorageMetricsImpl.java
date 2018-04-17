@@ -16,8 +16,11 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
 
 /**
@@ -73,7 +76,16 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private volatile boolean metricsEnabled;
 
     /** */
-    private IgniteWriteAheadLogManager wal;
+    private volatile IgniteWriteAheadLogManager wal;
+
+    /** */
+    private volatile IgniteOutClosure<Long> walSize;
+
+    /** */
+    private volatile long lastWalSegmentRollOverTime;
+
+    /** */
+    private final AtomicLong totalCheckpointTime = new AtomicLong();
 
     /**
      * @param metricsEnabled Metrics enabled flag.
@@ -226,11 +238,87 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         resetRates();
     }
 
+    /** {@inheritDoc} */
+    @Override public long getWalTotalSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        IgniteOutClosure<Long> walSize = this.walSize;
+
+        return walSize != null ? walSize.apply() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getWalLastRollOverTime() {
+        if (!metricsEnabled)
+            return 0;
+
+        return lastWalSegmentRollOverTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointTotalTime() {
+        if (!metricsEnabled)
+            return 0;
+
+        return totalCheckpointTime.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getDirtyPages() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesRead() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesWritten() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesReplaced() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalSize() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapSize() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffheapUsedSize() {
+        return 0;
+    }
+
     /**
      * @param wal Write-ahead log manager.
      */
     public void wal(IgniteWriteAheadLogManager wal) {
         this.wal = wal;
+    }
+
+    /**
+     *
+     */
+    public void walSize(IgniteOutClosure<Long> cls){
+        this.walSize = cls;
+    }
+
+    /**
+     *
+     */
+    public void wallRollOver() {
+        if (metricsEnabled)
+            this.lastWalSegmentRollOverTime = U.currentTimeMillis();
     }
 
     /**
@@ -269,6 +357,8 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
             lastCpTotalPages = totalPages;
             lastCpDataPages = dataPages;
             lastCpCowPages = cowPages;
+
+            totalCheckpointTime.addAndGet(duration);
         }
     }
 
@@ -313,5 +403,8 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
         walFsyncTimeDuration = new HitRateMetrics((int)rateTimeInterval, subInts);
         walFsyncTimeNum = new HitRateMetrics((int)rateTimeInterval, subInts);
+
+        totalCheckpointTime.set(0);
+        lastWalSegmentRollOverTime = 0;
     }
 }

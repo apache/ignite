@@ -67,6 +67,24 @@ public interface DataStorageMetrics {
     public long getWalBuffPollSpinsRate();
 
     /**
+     * Total size in bytes for storage wal files.
+     *
+     */
+    public long getWalTotalSize();
+
+    /**
+     * Time of the last WAL segment rollover.
+     *
+     */
+    public long getWalLastRollOverTime();
+
+    /**
+     * Total checkpoint time from last restart.
+     *
+     */
+    public long getCheckpointTotalTime();
+
+    /**
      * Gets the duration of the last checkpoint in milliseconds.
      *
      * @return Total checkpoint duration in milliseconds.
@@ -121,4 +139,46 @@ public interface DataStorageMetrics {
      * @return Total number of pages copied to a temporary checkpoint buffer during the last checkpoint.
      */
     public long getLastCheckpointCopiedOnWritePagesNumber();
+
+    /**
+     * Total dirty pages for the next checkpoint.
+     *
+     */
+    public long getDirtyPages();
+
+    /**
+     * The number of read pages from last restart.
+     *
+     */
+    public long getPagesRead();
+
+    /**
+     * The number of written pages from last restart.
+     *
+     */
+    public long getPagesWritten();
+
+    /**
+     * The number of replaced pages from last restart.
+     *
+     */
+    public long getPagesReplaced();
+
+    /**
+     * Total size in bytes for storage.
+     *
+     */
+    public long getTotalSize();
+
+    /**
+     * Total offheap size in bytes.
+     *
+     */
+    public long getOffHeapSize();
+
+    /**
+     * Total used offheap size in bytes for all data regions.
+     *
+     */
+    public long getOffheapUsedSize();
 }
