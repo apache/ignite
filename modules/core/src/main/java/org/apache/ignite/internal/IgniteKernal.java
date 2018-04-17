@@ -1988,6 +1988,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             U.quiet(false, "");
             U.quiet(false, "Ignite node started OK (id=" + U.id8(locNode.id()) +
                 (F.isEmpty(igniteInstanceName) ? "" : ", instance name=" + igniteInstanceName) + ')');
+
+            if (!cluster().active()) {
+                U.quiet(false, ">>> Ignite cluster is not active (limited functionality available). "
+                    + "Use control.(sh|bat) script or IgniteCluster interface to activate.");
+            }
         }
 
         if (log.isInfoEnabled()) {
