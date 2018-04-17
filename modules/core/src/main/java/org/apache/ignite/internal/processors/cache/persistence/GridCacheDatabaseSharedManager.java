@@ -2000,7 +2000,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (storeOnly && grpId != METASTORAGE_CACHE_ID)
                                 continue;
 
-                            if (!ignoreGrps.contains(grpId) && isValidGroup(grpId)) {
+                            if (!ignoreGrps.contains(grpId)) {
                                 long pageId = pageRec.fullPageId().pageId();
 
                                 PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
@@ -2035,7 +2035,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         if (storeOnly && gId != METASTORAGE_CACHE_ID)
                             continue;
 
-                        if (!ignoreGrps.contains(gId) && isValidGroup(gId)) {
+                        if (!ignoreGrps.contains(gId)) {
                             final int pId = destroyRec.partitionId();
 
                             PageMemoryEx pageMem = gId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(gId);
@@ -2056,7 +2056,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (storeOnly && grpId != METASTORAGE_CACHE_ID)
                                 continue;
 
-                            if (!ignoreGrps.contains(grpId) && isValidGroup(grpId)) {
+                            if (!ignoreGrps.contains(grpId)) {
                                 long pageId = r.pageId();
 
                                 PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
@@ -2105,16 +2105,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointHist.loadHistory(cpDir);
 
         return lastRead == null ? null : lastRead.next();
-    }
-
-    /**
-     * Check that grpId is valid. Group with given id must be either metastorage cache
-     * or must be registered in {@link org.apache.ignite.internal.processors.cache.GridCacheProcessor}.
-     *
-     * @param grpId Group id.
-     */
-    private boolean isValidGroup(int grpId) {
-        return cctx.cache().cacheGroupDescriptors().get(grpId) != null || grpId == METASTORAGE_CACHE_ID;
     }
 
     /**
@@ -2246,12 +2236,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         for (DataEntry dataEntry : dataRec.writeEntries()) {
                             int cacheId = dataEntry.cacheId();
 
-                            DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheId);
-
-                            if (cacheDesc == null)
-                                continue;
-
-                            int grpId = cacheDesc.groupId();
+                            int grpId = cctx.cache().cacheDescriptor(cacheId).groupId();
 
                             if (!ignoreGrps.contains(grpId)) {
                                 GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
