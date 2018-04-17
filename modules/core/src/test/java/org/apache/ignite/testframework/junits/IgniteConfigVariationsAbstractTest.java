@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -665,8 +666,15 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     protected boolean isCompatible() throws Exception {
         switch (dataMode) {
             case BINARILIZABLE:
-            case PLANE_OBJECT:
-                return !(getConfiguration().getMarshaller() instanceof JdkMarshaller);
+            case PLANE_OBJECT: {
+                IgniteConfiguration cfg = getConfiguration();
+                Marshaller marsh = cfg.getMarshaller();
+
+                U.debug(log, "Running check [instance=" + getTestIgniteInstanceName() + ", cfg=" + cfg +
+                    ", marsh=" + marsh + ", dataMode=" + dataMode + "]");
+
+                return !(marsh instanceof JdkMarshaller);
+            }
         }
         return false;
     }
