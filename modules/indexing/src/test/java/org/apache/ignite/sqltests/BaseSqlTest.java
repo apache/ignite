@@ -46,7 +46,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.hamcrest.core.IsEqual;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 
 /**
  * Test base for test for sql features.
@@ -69,6 +71,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     /** Node name of first server. */
     private final String SRV1_NAME = "server1";
+
+    protected static final String[] ALL_FIELDS = new String[] {"ID", "DEPID", "FIRSTNAME", "LASTNAME", "AGE"};
 
     /**
      * Makes configuration for client node.
@@ -118,6 +122,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         fillCommonData(""); // default.
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -339,45 +344,61 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     protected void assertContainsEq(String msg, Collection actual, Collection expected) {
         if (actual.size() != expected.size())
-            throw new AssertionError("Collections contain different number of elements:" +
+            throw new AssertionError(msg + " Collections contain different number of elements:" +
                 " [actual=" + actual + ", expected=" + expected + "].");
 
         if (!actual.containsAll(expected))
-            throw new AssertionError("Collections differ:" +
+            throw new AssertionError(msg + " Collections differ:" +
                 " [actual=" + actual + ", expected=" + expected + "].");
     }
 
-    protected static List<List<Object>> select(Ignite node, @Nullable IgniteBiPredicate<Long, BinaryObject> filter, String... fields) {
-        final boolean includePK = Arrays.asList(fields).contains("ID");
-
+    /**
+     * Performs scan query with fields projection.
+     *
+     * @param node node to use as entry point for query.
+     * @param filter filter for rows.
+     * @param fields to use in result (projection).
+     */
+    protected static List<List<Object>> select(
+        Ignite node,
+        @Nullable IgniteBiPredicate<Long, BinaryObject> filter,
+        String... fields) {
         IgniteClosure<Cache.Entry<Long, BinaryObject>, List<Object>> transformer = e -> {
             List<Object> res = new ArrayList<>();
-            if (includePK)
-                res.add(e.getKey());
 
             BinaryObject val = e.getValue();
-            for(String field : fields) {
+
+            for (String field : fields) {
                 if (val.hasField(field))
                     res.add(val.field(field));
+                else if (field.equals("ID"))
+                    res.add(e.getKey());
                 else
-                    throw new AssertionError("Field with name " + field + " not found in binary object " + val);
+                    throw new AssertionError("Field with name " + field +
+                        " not found in binary object " + val);
             }
 
             return res;
         };
 
-        QueryCursor cursor = node.cache(EMP_CACHE_NAME).withKeepBinary()
+        QueryCursor<List<Object>> cursor= node.cache(EMP_CACHE_NAME).withKeepBinary()
             .query(new ScanQuery<>(filter), transformer);
 
         return cursor.getAll();
     }
 
-    public static Set<Object> distinct(Collection<?> col) {
-        return new HashSet<>(col);
+    /**
+     * Make collection to be distinct - put all in Set.
+     *
+     * @param src collection.
+     * @return Set with elements from {@code src} collection.
+     */
+    public static Set<Object> distinct(Collection<?> src) {
+        return new HashSet<>(src);
     }
 
     protected void testAllNodes(Consumer<Ignite> consumer) {
-        for(Ignite node : Ignition.allGrids()) {
+        for (Ignite node : Ignition.allGrids()) {
             log.info("Testing on node " + node.name() + '.');
 
             consumer.accept(node);
@@ -399,6 +420,13 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             Result emps = checkedSelectAll("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", node, node.cache(EMP_CACHE_NAME));
 
             assertEquals("Fetched number of employees is incorrect", 100, emps.values().size());
+
+            IgniteBiPredicate<Long, BinaryObject> between = (key, val) -> 101 <= key && key <= 200;
+
+            List<List<Object>> expected = select(node, between, ALL_FIELDS);
+
+            Assert.assertThat("Select results differ from scan query ", emps.values(), IsEqual.equalTo(expected));
+
         });
     }
 
