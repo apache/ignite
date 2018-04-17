@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -457,7 +458,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         private Task CloseWhenComplete(Task task)
         {
-            return task.ContinueWith(x => Close());
+            return task.ContWith(x => Close());
         }
 
         /** <inheritdoc /> */

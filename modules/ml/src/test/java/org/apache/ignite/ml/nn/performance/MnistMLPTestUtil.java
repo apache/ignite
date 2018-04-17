@@ -25,11 +25,10 @@ import java.util.Random;
 import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.trees.performance.ColumnDecisionTreeTrainerBenchmark;
 import org.apache.ignite.ml.util.MnistUtils;
 
 /** */
-class MnistMLPTestUtil {
+public class MnistMLPTestUtil {
     /** Name of the property specifying path to training set images. */
     private static final String PROP_TRAINING_IMAGES = "mnist.training.images";
 
@@ -62,7 +61,7 @@ class MnistMLPTestUtil {
      * @return List of MNIST images.
      * @throws IOException In case of exception.
      */
-    static List<MnistUtils.MnistLabeledImage> loadTrainingSet(int cnt) throws IOException {
+    public static List<MnistUtils.MnistLabeledImage> loadTrainingSet(int cnt) throws IOException {
         Properties props = loadMNISTProperties();
         return MnistUtils.mnistAsList(props.getProperty(PROP_TRAINING_IMAGES), props.getProperty(PROP_TRAINING_LABELS), new Random(123L), cnt);
     }
@@ -74,7 +73,7 @@ class MnistMLPTestUtil {
      * @return List of MNIST images.
      * @throws IOException In case of exception.
      */
-    static List<MnistUtils.MnistLabeledImage> loadTestSet(int cnt) throws IOException {
+    public static List<MnistUtils.MnistLabeledImage> loadTestSet(int cnt) throws IOException {
         Properties props = loadMNISTProperties();
         return MnistUtils.mnistAsList(props.getProperty(PROP_TEST_IMAGES), props.getProperty(PROP_TEST_LABELS), new Random(123L), cnt);
     }
@@ -83,7 +82,7 @@ class MnistMLPTestUtil {
     private static Properties loadMNISTProperties() throws IOException {
         Properties res = new Properties();
 
-        InputStream is = ColumnDecisionTreeTrainerBenchmark.class.getClassLoader().getResourceAsStream("manualrun/trees/columntrees.manualrun.properties");
+        InputStream is = MnistMLPTestUtil.class.getClassLoader().getResourceAsStream("manualrun/trees/columntrees.manualrun.properties");
 
         res.load(is);
 
