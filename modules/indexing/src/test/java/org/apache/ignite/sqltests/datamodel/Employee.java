@@ -35,10 +35,14 @@ public class Employee implements Serializable {
     @QuerySqlField
     private Long depId;
 
-    public Employee(Long id, Long depId, String firstName, String lastName) {
+    @QuerySqlField
+    private Integer age;
+
+    public Employee(Long id, Long depId, String firstName, String lastName, Integer age) {
         this.id = id;
         this.depId = depId;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.age = age;
     }
 }

@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
@@ -87,26 +88,30 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             "id LONG PRIMARY KEY, " +
             "depId LONG, " +
             "firstName VARCHAR, " +
-            "lastName VARCHAR) " +
+            "lastName VARCHAR, " +
+            "age INT) " +
             (F.isEmpty(withStr) ? "" : " WITH \"" + withStr + '"') +
             ";");
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?)");
+        SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?, ?)");
 
         final long depId = 42;
 
-        for (int i = 0; i < EMP_CNT; i++) {
+        Random rnd = new Random();
+
+        for (long id = 0; id < EMP_CNT; id++) {
             String firstName = UUID.randomUUID().toString();
             String lastName = UUID.randomUUID().toString();
+            Integer age = rnd.nextInt(50) + 18;
 
-            execute(qry.setArgs(i, depId, firstName, lastName));
+            execute(qry.setArgs(id, depId, firstName, lastName, age));
         }
     }
 
     /**
      * Sets up data. Override in children to add/change behaviour.
      */
-    protected void fillData(){
+    protected void fillData() {
         fillCommonData(""); // default.
     }
 
@@ -116,30 +121,24 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         startGrid("server1", configureIgnite(getConfiguration("server1")), null);
         startGrid("server2", configureIgnite(getConfiguration("server2")), null);
 
-        client = (IgniteEx) startGrid(CLIENT_NODE_NAME, configureIgnite(clientConfiguration()), null);
+        client = (IgniteEx)startGrid(CLIENT_NODE_NAME, configureIgnite(clientConfiguration()), null);
 
         fillData();
 
         empCache = client.cache("SQL_PUBLIC_EMPLOYEE");
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
         super.afterTestsStopped();
     }
 
-    public void testBasicSelect() {
-        Result emps = execute("SELECT * FROM Employee");
-
-        assertResultEqualToBinaryObjects(emps, empCache);
-
-        assertEquals("Unexpected size of employees", EMP_CNT, emps.values().size());
-    }
-
     /**
      * Assert that all returned results exactly matches values from cache.
      * Intended to verify "SELECT *" results.
+     *
      * @param res result of "SELECT *..."
      * @param cache cache to verify values.
      */
@@ -153,7 +152,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         for (List<?> rowData : res.values()) {
             Map<String, Object> row = zipToMap(res.columnNames(), rowData);
 
-            Long id = (Long) row.get("ID");
+            Long id = (Long)row.get("ID");
 
             BinaryObject cached = binCache.get(id);
 
@@ -162,27 +161,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             assertEqualToBinaryObj(cached, row);
         }
     }
-
-    public void testSelectBetween() {
-        Result emps = checkedSelectAll("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", empCache);
-
-        assertEquals("Fetched number of employees is incorrect", 100, emps.values().size());
-    }
-
-    public void testEmptyBetween() {
-        Result emps = execute("SELECT * FROM Employee e WHERE e.id BETWEEN 200 AND 101");
-        assertTrue("SQL sould return empty result set, but returned: " + emps, emps.values().isEmpty());
-    }
-
-    public void testSelectOrderByLastName () {
-        Result result = checkedSelectAll("SELECT * FROM Employee e ORDER BY e.lastName", empCache);
-
-        int lastNameIdx = result.columnNames().indexOf("LASTNAME");
-
-        Comparator<List<?>> asc = Comparator.comparing((List<?> row) -> (String)row.get(lastNameIdx));
-        assertSortedBy(result.values(), asc);
-    }
-
 
     protected Result checkedSelectAll(String selectQry, IgniteCache<?, ?> cache) {
         Result res = execute(selectQry);
@@ -197,6 +175,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * Result of sql query. Contains metadata and all values in memory.
      */
     static class Result {
+
         /** Names of columns. */
         private List<String> colNames;
         /** Table */
@@ -228,11 +207,12 @@ public class BaseSqlTest extends GridCommonAbstractTest {
          * @param cursor cursor to use to read column names and data.
          * @return Result that contains data and metadata, fetched from cursor.
          */
-        public static Result fromCursor(FieldsQueryCursor<List<?>> cursor){
+        public static Result fromCursor(FieldsQueryCursor<List<?>> cursor) {
             List<String> cols = readColNames(cursor);
             List<List<?>> vals = cursor.getAll();
             return new Result(cols, vals);
         }
+
     }
 
     /**
@@ -256,17 +236,24 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return res;
     }
 
-    protected <T> void assertSortedBy(List<T> seq, Comparator<T> cmp) {
-        Iterator<T> it = seq.iterator();
+    /**
+     * Assert that results are sorted by comparator.
+     *
+     * @param vals values to check.
+     * @param cmp comparator to use.
+     * @param <T> any type.
+     */
+    protected <T> void assertSortedBy(List<T> vals, Comparator<T> cmp) {
+        Iterator<T> it = vals.iterator();
         if (!it.hasNext())
             return;
 
         T last = it.next();
-        while(it.hasNext()){
+        while (it.hasNext()) {
             T cur = it.next();
             if (cmp.compare(last, cur) > 0)
                 throw new AssertionError("List is not sorted, element '" + last + "' is greater than '" +
-                    cur + "'. List: " + seq);
+                    cur + "'. List: " + vals);
         }
     }
 
@@ -290,7 +277,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             allBinCols.containsAll(fromSql.keySet()));
 
         for (String colName : binValCols)
-            assertEquals("Value for column " +  colName + " in cache and in sql result differ.",
+            assertEquals("Value for column " + colName + " in cache and in sql result differ.",
                 fromCache.field(colName), fromSql.get(colName));
     }
 
@@ -323,7 +310,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @return number of changed rows.
      */
     protected Long executeUpdate(String updateQry) {
-        return (Long) execute(new SqlFieldsQuery(updateQry)).values().get(0).get(0);
+        return (Long)execute(new SqlFieldsQuery(updateQry)).values().get(0).get(0);
     }
 
     /**
@@ -336,5 +323,31 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         FieldsQueryCursor<List<?>> cursor = client.context().query().querySqlFields(qry, false);
 
         return Result.fromCursor(cursor);
+    }
+
+    public void testBasicSelect() {
+        Result emps = checkedSelectAll("SELECT * FROM Employee", empCache);
+
+        assertEquals("Unexpected size of employees", EMP_CNT, emps.values().size());
+    }
+
+    public void testSelectBetween() {
+        Result emps = checkedSelectAll("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", empCache);
+
+        assertEquals("Fetched number of employees is incorrect", 100, emps.values().size());
+    }
+
+    public void testEmptyBetween() {
+        Result emps = execute("SELECT * FROM Employee e WHERE e.id BETWEEN 200 AND 101");
+        assertTrue("SQL sould return empty result set, but returned: " + emps, emps.values().isEmpty());
+    }
+
+    public void testSelectOrderByLastName() {
+        Result result = checkedSelectAll("SELECT * FROM Employee e ORDER BY e.lastName", empCache);
+
+        int lastNameIdx = result.columnNames().indexOf("LASTNAME");
+
+        Comparator<List<?>> asc = Comparator.comparing((List<?> row) -> (String)row.get(lastNameIdx));
+        assertSortedBy(result.values(), asc);
     }
 }
