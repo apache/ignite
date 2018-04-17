@@ -64,21 +64,26 @@ public class ExchangeLatchManager {
     private final GridKernalContext ctx;
 
     /** Discovery manager. */
+    @GridToStringExclude
     private final GridDiscoveryManager discovery;
 
     /** IO manager. */
+    @GridToStringExclude
     private final GridIoManager io;
 
     /** Current coordinator. */
+    @GridToStringExclude
     private volatile ClusterNode coordinator;
 
     /** Pending acks collection. */
     private final ConcurrentMap<T2<String, AffinityTopologyVersion>, Set<UUID>> pendingAcks = new ConcurrentHashMap<>();
 
     /** Server latches collection. */
+    @GridToStringInclude
     private final ConcurrentMap<T2<String, AffinityTopologyVersion>, ServerLatch> serverLatches = new ConcurrentHashMap<>();
 
     /** Client latches collection. */
+    @GridToStringInclude
     private final ConcurrentMap<T2<String, AffinityTopologyVersion>, ClientLatch> clientLatches = new ConcurrentHashMap<>();
 
     /** Lock. */
@@ -283,6 +288,9 @@ public class ExchangeLatchManager {
                 if (clientLatches.containsKey(latchId)) {
                     ClientLatch latch = clientLatches.remove(latchId);
                     latch.complete();
+                }
+                else if (coordinator.isLocal()) {
+                    serverLatches.remove(latchId);
                 }
                 else if (!coordinator.isLocal()) {
                     pendingAcks.computeIfAbsent(latchId, (id) -> new GridConcurrentHashSet<>());
@@ -692,5 +700,10 @@ public class ExchangeLatchManager {
         @Override public String toString() {
             return S.toString(CompletableLatch.class, this);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ExchangeLatchManager.class, this);
     }
 }
