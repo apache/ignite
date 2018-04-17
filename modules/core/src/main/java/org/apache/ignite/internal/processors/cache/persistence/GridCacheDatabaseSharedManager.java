@@ -460,6 +460,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             createDataRegionConfiguration(memCfg),
             false
         );
+
+        persStoreMetrics.regionMetrics(memMetricsMap.values());
     }
 
     /**

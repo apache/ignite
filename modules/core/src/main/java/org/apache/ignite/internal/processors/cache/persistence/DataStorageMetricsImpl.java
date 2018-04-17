@@ -16,9 +16,12 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.mxbean.DataStorageMetricsMXBean;
@@ -86,6 +89,9 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
     /** */
     private final AtomicLong totalCheckpointTime = new AtomicLong();
+
+    /** */
+    private volatile Collection<DataRegionMetrics> regionMetrics;
 
     /**
      * @param metricsEnabled Metrics enabled flag.
@@ -266,22 +272,74 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public long getDirtyPages() {
-        return 0;
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long dirtyPages = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            dirtyPages += rm.getDirtyPages();
+
+        return dirtyPages;
     }
 
     /** {@inheritDoc} */
     @Override public long getPagesRead() {
-        return 0;
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long readPages = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            readPages += rm.getPagesRead();
+
+        return readPages;
     }
 
     /** {@inheritDoc} */
     @Override public long getPagesWritten() {
-        return 0;
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long writtenPages = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            writtenPages += rm.getPagesWritten();
+
+        return writtenPages;
     }
 
     /** {@inheritDoc} */
     @Override public long getPagesReplaced() {
-        return 0;
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long replacedPages = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            replacedPages += rm.getPagesReplaced();
+
+        return replacedPages;
     }
 
     /** {@inheritDoc} */
@@ -318,6 +376,13 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
      */
     public void wallRollOver() {
         this.lastWalSegmentRollOverTime = U.currentTimeMillis();
+    }
+
+    /**
+     *
+     */
+    public void regionMetrics(Collection<DataRegionMetrics> regionMetrics){
+        this.regionMetrics = regionMetrics;
     }
 
     /**

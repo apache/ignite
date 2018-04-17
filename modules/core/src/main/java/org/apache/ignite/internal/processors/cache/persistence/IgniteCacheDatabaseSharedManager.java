@@ -247,6 +247,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             CU.isPersistenceEnabled(memCfg)
         );
 
+
         dataRegionsInitialized = true;
     }
 

@@ -165,4 +165,22 @@ public interface DataRegionMetrics {
      * @return Page size in bytes.
      */
     public int getPageSize();
+
+    /**
+     * The number of read pages from last restart.
+     *
+     */
+    public long getPagesRead();
+
+    /**
+     * The number of written pages from last restart.
+     *
+     */
+    public long getPagesWritten();
+
+    /**
+     * The number of replaced pages from last restart .
+     *
+     */
+    public long getPagesReplaced();
 }

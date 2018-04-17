@@ -41,7 +41,16 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     private final LongAdder largeEntriesPages = new LongAdder();
 
     /** Counter for number of dirty pages. */
-    private LongAdder dirtyPages = new LongAdder();
+    private final LongAdder dirtyPages = new LongAdder();
+
+    /** */
+    private final LongAdder readPages = new LongAdder();
+
+    /** */
+    private final LongAdder writtenPages = new LongAdder();
+
+    /** */
+    private final LongAdder replacedPages = new LongAdder();
 
     /** */
     private volatile boolean metricsEnabled;
@@ -212,13 +221,37 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     }
 
     /** {@inheritDoc} */
-    public int getPageSize() {
+    @Override public int getPageSize() {
         if (!metricsEnabled)
             return 0;
 
         assert pageMem != null;
 
         return pageMem.pageSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesRead() {
+        if (!metricsEnabled)
+            return 0;
+
+        return readPages.longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesWritten() {
+        if (!metricsEnabled)
+            return 0;
+
+        return writtenPages.longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesReplaced() {
+        if (!metricsEnabled)
+            return 0;
+
+        return replacedPages.longValue();
     }
 
     /**
@@ -229,7 +262,25 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
             pageReplaceRate.onHit();
 
             pageReplaceAge.onHits(pageAge);
+
+            replacedPages.increment();
         }
+    }
+
+    /**
+     * Updates page read.
+     */
+    public void pageRead(){
+        if (metricsEnabled)
+            readPages.increment();
+    }
+
+    /**
+     * Updates page written.
+     */
+    public void pageWritten(){
+        if (metricsEnabled)
+            writtenPages.increment();
     }
 
     /**
