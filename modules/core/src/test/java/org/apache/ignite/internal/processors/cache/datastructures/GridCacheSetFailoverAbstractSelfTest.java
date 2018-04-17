@@ -60,6 +60,11 @@ public abstract class GridCacheSetFailoverAbstractSelfTest extends IgniteCollect
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrids(gridCount());
     }

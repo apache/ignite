@@ -111,6 +111,17 @@ public class H2CompareBigQueryTest extends AbstractH2CompareQueryTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        cacheCustOrd = null;
+        cacheReplOrd = null;
+        cacheOrdParam = null;
+        cacheCancel = null;
+        cacheExec = null;
+    }
+
     /**
      * Extracts the big query from file.
      *

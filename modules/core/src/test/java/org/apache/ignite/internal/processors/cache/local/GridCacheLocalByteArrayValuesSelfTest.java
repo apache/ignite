@@ -72,6 +72,15 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
         cache = ignite.cache(CACHE_REGULAR);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        cache = null;
+
+        ignite = null;
+    }
+
     /**
      * Check whether cache with byte array entry works correctly in PESSIMISTIC transaction.
      *

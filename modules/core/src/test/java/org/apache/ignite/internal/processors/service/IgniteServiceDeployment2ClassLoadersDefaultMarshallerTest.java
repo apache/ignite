@@ -136,6 +136,12 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        extClsLdr1 = null;
+        extClsLdr2 = null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 

@@ -116,6 +116,12 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
         preloadBatchSize = DFLT_BATCH_SIZE;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        // Clean up memory for test suite.
+        lbean = null;
+    }
+
     /**
      * @throws Exception If failed.
      */

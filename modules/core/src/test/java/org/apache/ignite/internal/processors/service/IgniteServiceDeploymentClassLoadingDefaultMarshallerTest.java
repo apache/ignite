@@ -116,6 +116,11 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
         extClsLdr = getExternalClassLoader();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        extClsLdr = null;
+    }
+
     /**
      * @throws Exception If failed.
      */

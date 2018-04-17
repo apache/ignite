@@ -59,6 +59,11 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrids(gridCount());
     }
