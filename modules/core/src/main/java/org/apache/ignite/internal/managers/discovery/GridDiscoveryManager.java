@@ -130,6 +130,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
+import org.apache.ignite.thread.OomExceptionHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -923,6 +924,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             segChkWrk = new SegmentCheckWorker();
 
             segChkThread = new IgniteThread(segChkWrk);
+
+            segChkThread.setUncaughtExceptionHandler(new OomExceptionHandler(ctx));
 
             segChkThread.start();
         }
