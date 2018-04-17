@@ -49,8 +49,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /** Name of client node. */
     private static final String CLIENT_NODE_NAME = "clientNode";
 
-    /** Cache associated with test table. */
-    private static IgniteCache empCache;
+    /** Name of the test table cache. */
+    private static final String EMP_CACHE_NAME = "SQL_PUBLIC_EMPLOYEE";
 
     /** Client node instance. */
     private static IgniteEx client;
@@ -79,7 +79,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     /**
-     *  Makes configuration for client node.
+     * Makes configuration for client node.
      */
     private IgniteConfiguration clientConfiguration() throws Exception {
         IgniteConfiguration clCfg = getConfiguration(CLIENT_NODE_NAME);
@@ -135,8 +135,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         client = (IgniteEx)startGrid(CLIENT_NODE_NAME, configureIgnite(clientConfiguration()), null);
 
         fillData();
-
-        empCache = client.cache("SQL_PUBLIC_EMPLOYEE");
     }
 
     /** {@inheritDoc} */
@@ -173,7 +171,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         }
     }
 
-    protected Result checkedSelectAll(String selectQry, Ignite node,  IgniteCache<?, ?> cache) {
+    protected Result checkedSelectAll(String selectQry, Ignite node, IgniteCache<?, ?> cache) {
         Result res = executeFrom(selectQry, node);
 
         assertResultEqualToBinaryObjects(res, cache);
@@ -361,10 +359,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         log.info("Node " + SRV2_NAME + " testing is done.");
     }
 
-
     public void testBasicSelect() {
-        testAllNodes((node) -> {
-            Result emps = checkedSelectAll("SELECT * FROM Employee", node, empCache);
+        testAllNodes(node -> {
+            Result emps = checkedSelectAll("SELECT * FROM Employee", node, node.cache(EMP_CACHE_NAME));
 
             assertEquals("Unexpected size of employees", EMP_CNT, emps.values().size());
         });
@@ -372,22 +369,22 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     public void testSelectBetween() {
         testAllNodes(node -> {
-            Result emps = checkedSelectAll("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", node, empCache);
+            Result emps = checkedSelectAll("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", node, node.cache(EMP_CACHE_NAME));
 
             assertEquals("Fetched number of employees is incorrect", 100, emps.values().size());
         });
     }
 
     public void testEmptyBetween() {
-        testAllNodes( node -> {
+        testAllNodes(node -> {
             Result emps = executeFrom("SELECT * FROM Employee e WHERE e.id BETWEEN 200 AND 101", node);
             assertTrue("SQL sould return empty result set, but returned: " + emps, emps.values().isEmpty());
         });
     }
 
     public void testSelectOrderByLastName() {
-        testAllNodes( node -> {
-            Result result = checkedSelectAll("SELECT * FROM Employee e ORDER BY e.lastName", node, empCache);
+        testAllNodes(node -> {
+            Result result = checkedSelectAll("SELECT * FROM Employee e ORDER BY e.lastName", node, node.cache(EMP_CACHE_NAME));
 
             int lastNameIdx = result.columnNames().indexOf("LASTNAME");
 
