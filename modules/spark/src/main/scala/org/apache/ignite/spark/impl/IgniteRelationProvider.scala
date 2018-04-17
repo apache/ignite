@@ -186,7 +186,8 @@ class IgniteRelationProvider extends RelationProvider
         if (optimizationDisabled) {
             experimentalMethods.extraOptimizations = 
                 experimentalMethods.extraOptimizations.filter(_ != IgniteOptimization)
-        } else {
+        } 
+        else {
             val optimizationExists = experimentalMethods.extraOptimizations.contains(IgniteOptimization)
 
             if (!optimizationExists)
