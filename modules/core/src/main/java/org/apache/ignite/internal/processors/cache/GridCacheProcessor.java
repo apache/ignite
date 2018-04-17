@@ -2005,7 +2005,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
 
-        CacheGroupContext grp = new CacheGroupContext(sharedCtx,
+        CacheGroupContext grp = new CacheGroupContext(
+            sharedCtx,
             desc.groupId(),
             desc.receivedFrom(),
             cacheType,

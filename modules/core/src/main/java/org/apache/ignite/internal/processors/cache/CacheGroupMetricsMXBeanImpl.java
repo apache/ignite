@@ -25,13 +25,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
+
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.DATA;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.INDEX;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.INDEX_REUSE_LIST;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.INDEX_TREE;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.INTERNAL;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PARTITION;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PK_INDEX;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PURE_DATA;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.REUSE_LIST;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.TOTAL;
 
 /**
  * Management bean that provides access to {@link CacheGroupContext}.
@@ -39,6 +52,9 @@ import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /** Cache group context. */
     private final CacheGroupContext ctx;
+
+    /** */
+    private final int pageSize;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -53,11 +69,11 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
 
     /**
      * Creates MBean;
-     *
-     * @param ctx Cache group context.
+     *  @param ctx Cache group context.
      */
     public CacheGroupMetricsMXBeanImpl(CacheGroupContext ctx) {
         this.ctx = ctx;
+        this.pageSize = ctx.dataRegion() != null ? ctx.dataRegion().pageMemory().pageSize() : 0;
     }
 
     /** {@inheritDoc} */
@@ -251,5 +267,74 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         }
 
         return assignmentMap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexesSize() {
+        return ctx.dataStructureSize().sizeOf(INDEX).size() * pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexesTreeSize() {
+        return ctx.dataStructureSize().sizeOf(INDEX_TREE).size() * pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexesReuseListSize() {
+        return ctx.dataStructureSize().sizeOf(INDEX_REUSE_LIST).size() * pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPKIndexesSize() {
+        return ctx.dataStructureSize().sizeOf(PK_INDEX).size() * pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getReuseListSize() {
+        return ctx.dataStructureSize().sizeOf(REUSE_LIST).size() * pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPureDataSize() {
+        return ctx.dataStructureSize().sizeOf(PURE_DATA).size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getDataSize() {
+        return ctx.dataStructureSize().sizeOf(DATA).size() * pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getInternalSize() {
+        return ctx.dataStructureSize().sizeOf(INTERNAL).size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPartitionSize() {
+        return ctx.dataStructureSize().sizeOf(PARTITION).size() * pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalSize() {
+        return ctx.dataStructureSize().sizeOf(TOTAL).size() * pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getType() {
+        CacheMode type = ctx.config().getCacheMode();
+
+        return String.valueOf(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Integer> getPartitionIndexes() {
+        List<GridDhtLocalPartition> parts = ctx.topology().localPartitions();
+
+        List<Integer> partsRes = new ArrayList<>(parts.size());
+
+        for (GridDhtLocalPartition part : parts)
+            partsRes.add(part.id());
+
+        return partsRes;
     }
 }

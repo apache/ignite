@@ -406,7 +406,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         persStoreMetrics = new DataStorageMetricsImpl(
             persistenceCfg.isMetricsEnabled(),
             persistenceCfg.getMetricsRateTimeInterval(),
-            persistenceCfg.getMetricsSubIntervalCount()
+            persistenceCfg.getMetricsSubIntervalCount(),
+            nodeSize
         );
 
         metastorageLifecycleLsnrs = ctx.internalSubscriptionProcessor().getMetastorageSubscribers();
@@ -455,11 +456,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     @Override protected void initDataRegions(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         super.initDataRegions(memCfg);
 
-        addDataRegion(
-            memCfg,
-            createDataRegionConfiguration(memCfg),
-            false
-        );
+        addDataRegion(memCfg, createDataRegionConfiguration(memCfg), false);
     }
 
     /**
@@ -576,7 +573,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             PageMemoryEx storePageMem = (PageMemoryEx)createPageMemory(memProvider, memCfg, plcCfg, memMetrics, false);
 
-            DataRegion regCfg = new DataRegion(storePageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, storePageMem));
+            DataRegion regCfg = new DataRegion(
+                storePageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, storePageMem), nodeSize);
 
             CheckpointStatus status = readCheckpointStatus();
 

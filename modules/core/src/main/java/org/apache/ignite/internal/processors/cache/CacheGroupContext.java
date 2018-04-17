@@ -34,6 +34,8 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeContext;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeNoopContext;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -57,7 +59,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -149,10 +150,13 @@ public class CacheGroupContext {
     private boolean qryEnabled;
 
     /** MXBean. */
-    private CacheGroupMetricsMXBean mxBean;
+    private CacheGroupMetricsMXBeanImpl mxBean;
 
     /** */
     private volatile boolean walEnabled;
+
+    /** */
+    private final DataStructureSizeContext groupSize;
 
     /**
      * @param grpId Group ID.
@@ -180,7 +184,8 @@ public class CacheGroupContext {
         FreeList freeList,
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer,
-        boolean walEnabled) {
+        boolean walEnabled
+    ) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
         assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
@@ -210,7 +215,15 @@ public class CacheGroupContext {
 
         caches = new ArrayList<>();
 
+        groupSize = dataRegion != null ?
+            dataRegion.dataStructureSize().createChild(this) :
+            new DataStructureSizeNoopContext();
+
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
+    }
+
+    public DataStructureSizeContext dataStructureSize() {
+        return groupSize;
     }
 
     /**
@@ -1008,7 +1021,7 @@ public class CacheGroupContext {
     /**
      * @return MXBean.
      */
-    public CacheGroupMetricsMXBean mxBean() {
+    public CacheGroupMetricsMXBeanImpl mxBean() {
         return mxBean;
     }
 

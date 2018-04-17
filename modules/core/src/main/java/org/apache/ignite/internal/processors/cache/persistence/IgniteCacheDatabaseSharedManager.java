@@ -39,6 +39,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeNode;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -52,7 +53,7 @@ import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictio
 import org.apache.ignite.internal.processors.cache.persistence.evict.Random2LruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.RandomLruPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -68,6 +69,10 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.DATA;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PURE_DATA;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.REUSE_LIST;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.TOTAL;
 
 /**
  *
@@ -96,13 +101,16 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected DataRegion dfltDataRegion;
 
     /** */
-    protected Map<String, CacheFreeListImpl> freeListMap;
+    protected Map<String, CacheFreeList> freeListMap;
 
     /** */
-    private CacheFreeListImpl dfltFreeList;
+    private CacheFreeList dfltFreeList;
 
     /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
+
+    /** */
+    protected final DataStructureSizeNode nodeSize = new DataStructureSizeNode();
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -174,18 +182,24 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         for (DataRegion memPlc : dataRegionMap.values()) {
             DataRegionConfiguration memPlcCfg = memPlc.config();
 
-            DataRegionMetricsImpl memMetrics = (DataRegionMetricsImpl) memMetricsMap.get(memPlcCfg.getName());
+            DataRegionMetricsImpl memMetrics = (DataRegionMetricsImpl)memMetricsMap.get(memPlcCfg.getName());
 
             boolean persistenceEnabled = memPlcCfg.isPersistenceEnabled();
 
-            CacheFreeListImpl freeList = new CacheFreeListImpl(0,
-                    cctx.igniteInstanceName(),
-                    memMetrics,
-                    memPlc,
-                    null,
-                    persistenceEnabled ? cctx.wal() : null,
-                    0L,
-                    true);
+            CacheFreeList freeList = new CacheFreeList(
+                0,
+                cctx.igniteInstanceName(),
+                memMetrics,
+                memPlc,
+                null,
+                persistenceEnabled ? cctx.wal() : null,
+                0L,
+                true,
+                memPlc.dataStructureSize().sizeOf(REUSE_LIST),
+                memPlc.dataStructureSize().sizeOf(PURE_DATA),
+                memPlc.dataStructureSize().sizeOf(DATA),
+                memPlc.dataStructureSize().sizeOf(TOTAL)
+            );
 
             freeListMap.put(memPlcCfg.getName(), freeList);
         }
@@ -292,11 +306,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         final String dataRegName = dataRegCfg.getName();
 
         return new IgniteOutClosure<Long>() {
-            private CacheFreeListImpl freeList;
+            private CacheFreeList freeList;
 
             @Override public Long apply() {
                 if (freeList == null) {
-                    CacheFreeListImpl freeList0 = freeListMap.get(dataRegName);
+                    CacheFreeList freeList0 = freeListMap.get(dataRegName);
 
                     if (freeList0 == null)
                         return 0L;
@@ -551,7 +565,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void dumpStatistics(IgniteLogger log) {
         if (freeListMap != null) {
-            for (CacheFreeListImpl freeList : freeListMap.values())
+            for (CacheFreeList freeList : freeListMap.values())
                 freeList.dumpStatistics(log);
         }
     }
@@ -844,7 +858,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         int sysPageSize = pageMem.systemPageSize();
 
-        CacheFreeListImpl freeListImpl = freeListMap.get(plcCfg.getName());
+        CacheFreeList freeListImpl = freeListMap.get(plcCfg.getName());
 
         for (;;) {
             long allocatedPagesCnt = pageMem.loadedPages();
@@ -887,7 +901,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         PageMemory pageMem = createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable);
 
-        return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
+        return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem), nodeSize);
     }
 
     /**
@@ -1047,5 +1061,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void walEnabled(int grpId, boolean enabled) {
         // No-op.
+    }
+
+    public DataStructureSizeNode dataStructureSize() {
+        return nodeSize;
     }
 }

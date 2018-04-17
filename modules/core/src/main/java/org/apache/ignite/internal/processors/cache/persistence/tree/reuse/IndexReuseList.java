@@ -19,17 +19,18 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.reuse;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 
 /**
- * Reuse list.
+ * Index reuse list.
  */
-public class ReuseListImpl extends PagesList implements ReuseList {
+public class IndexReuseList extends PagesList implements ReuseList {
     /** */
-    private static final AtomicReferenceFieldUpdater<ReuseListImpl, Stripe[]> bucketUpdater =
-        AtomicReferenceFieldUpdater.newUpdater(ReuseListImpl.class, Stripe[].class, "bucket");
+    private static final AtomicReferenceFieldUpdater<IndexReuseList, Stripe[]> bucketUpdater =
+        AtomicReferenceFieldUpdater.newUpdater(IndexReuseList.class, Stripe[].class, "bucket");
 
     /** */
     private volatile Stripe[] bucket;
@@ -43,13 +44,16 @@ public class ReuseListImpl extends PagesList implements ReuseList {
      * @param initNew {@code True} if new metadata should be initialized.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseListImpl(int cacheId,
+    public IndexReuseList(
+        int cacheId,
         String name,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
-        boolean initNew) throws IgniteCheckedException {
-        super(cacheId, name, pageMem, 1, wal, metaPageId);
+        boolean initNew,
+        DataStructureSize selfPages
+    ) throws IgniteCheckedException {
+        super(cacheId, name, pageMem, 1, wal, metaPageId, selfPages);
 
         reuseList = this;
 
@@ -65,7 +69,7 @@ public class ReuseListImpl extends PagesList implements ReuseList {
 
     /** {@inheritDoc} */
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
-        put(bag, 0, 0, 0, 0);
+        put(wrapMetrics(bag), 0, 0, 0, 0);
     }
 
     /** {@inheritDoc} */

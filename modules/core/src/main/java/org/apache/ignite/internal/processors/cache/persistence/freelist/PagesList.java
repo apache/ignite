@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -134,9 +135,10 @@ public abstract class PagesList extends DataStructure {
         PageMemory pageMem,
         int buckets,
         IgniteWriteAheadLogManager wal,
-        long metaPageId
+        long metaPageId,
+        DataStructureSize selfPages
     ) {
-        super(cacheId, pageMem, wal);
+        super(cacheId, pageMem, wal, selfPages);
 
         this.name = name;
         this.buckets = buckets;
@@ -1139,7 +1141,7 @@ public abstract class PagesList extends DataStructure {
                 if (recycleId != 0L) {
                     assert !isReuseBucket(bucket);
 
-                    reuseList.addForRecycle(new SingletonReuseBag(recycleId));
+                    addForRecycle(new SingletonReuseBag(recycleId));
                 }
 
                 return dataPageId;
@@ -1225,7 +1227,7 @@ public abstract class PagesList extends DataStructure {
                 recycleId = merge(pageId, page, nextId, bucket);
 
             if (recycleId != 0L)
-                reuseList.addForRecycle(new SingletonReuseBag(recycleId));
+                addForRecycle(new SingletonReuseBag(recycleId));
 
             return true;
         }

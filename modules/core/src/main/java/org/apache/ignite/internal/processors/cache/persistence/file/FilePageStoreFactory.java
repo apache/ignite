@@ -32,5 +32,9 @@ public interface FilePageStoreFactory {
      * @param type Data type, can be {@link PageIdAllocator#FLAG_IDX} or {@link PageIdAllocator#FLAG_DATA}.
      * @param file File Page store file.
      */
-    public FilePageStore createPageStore(byte type, File file, AllocatedPageTracker allocatedTracker) throws IgniteCheckedException;
+    public FilePageStore createPageStore(
+        byte type,
+        File file,
+        AllocatedPageTracker allocatedTracker
+    ) throws IgniteCheckedException;
 }

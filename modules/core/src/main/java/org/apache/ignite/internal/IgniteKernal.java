@@ -42,6 +42,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -2662,6 +2663,29 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         A.notNull(nodeId, "nodeId");
 
         return cluster().pingNode(UUID.fromString(nodeId));
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getCurrentCoordinator() {
+        long topVer = ctx.discovery().topologyVersion();
+
+        Collection<ClusterNode> nodes = ctx.discovery().nodes(topVer);
+
+        if (F.isEmpty(nodes))
+            return "N/A";
+
+        ClusterNode firstNode = nodes.iterator().next();
+
+        if (firstNode.isClient() || firstNode.isDaemon())
+            return "N/A";
+
+        UUID crdId = firstNode.id();
+
+        Object crdConstId = firstNode.consistentId();
+
+        long crdOrder = firstNode.order();
+
+        return "nodeId=" + crdId + ",consistentId=" + crdConstId + ",order=" + crdOrder + ",topVer=" + topVer;
     }
 
     /** {@inheritDoc} */
