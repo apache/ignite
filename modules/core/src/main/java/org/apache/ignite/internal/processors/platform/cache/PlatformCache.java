@@ -1515,7 +1515,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         assert writer != null;
         assert metrics != null;
 
-        writer.writeLong(metrics.maximumTime());
+        writer.writeLong(metrics.minimumTime());
         writer.writeLong(metrics.maximumTime());
         writer.writeDouble(metrics.averageTime());
         writer.writeInt(metrics.executions());
