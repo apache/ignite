@@ -71,6 +71,7 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         Mockito.when(partitionMock.id()).thenReturn(id);
         Mockito.when(partitionMock.updateCounter()).thenReturn(updateCounter);
         Mockito.when(partitionMock.fullSize()).thenReturn(size);
+        Mockito.when(partitionMock.state()).thenReturn(GridDhtPartitionState.OWNING);
         return partitionMock;
     }
 
