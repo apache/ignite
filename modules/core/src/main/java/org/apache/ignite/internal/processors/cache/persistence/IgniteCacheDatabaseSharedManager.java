@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
+import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -956,9 +957,27 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     ) {
         memMetrics.persistenceEnabled(false);
 
+        DirectMemoryProvider memProvider0 = new DirectMemoryProvider() {
+            @Override public void initialize(long[] chunkSizes) {
+                memProvider.initialize(chunkSizes);
+            }
+
+            @Override public void shutdown() {
+                memProvider.shutdown();
+            }
+
+            @Override public DirectMemoryRegion nextRegion() {
+                DirectMemoryRegion nextMemoryRegion = memProvider.nextRegion();
+
+                memMetrics.updateOffHeapSize(nextMemoryRegion.size());
+
+                return nextMemoryRegion;
+            }
+        };
+
         PageMemory pageMem = new PageMemoryNoStoreImpl(
             log,
-            memProvider,
+            memProvider0,
             cctx,
             memCfg.getPageSize(),
             memPlcCfg,

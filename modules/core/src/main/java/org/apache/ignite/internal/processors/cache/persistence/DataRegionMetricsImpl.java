@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -51,6 +52,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** */
     private final LongAdder replacedPages = new LongAdder();
+
+    /** */
+    private final AtomicLong offHeapSize = new AtomicLong();
 
     /** */
     private volatile boolean metricsEnabled;
@@ -252,6 +256,30 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
             return 0;
 
         return replacedPages.longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        return offHeapSize.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffheapUsedSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        return pageMem.loadedPages() * pageMem.pageSize();
+    }
+
+    /**
+     *
+     * @param size Region size.
+     */
+    public void updateOffHeapSize(long size) {
+        this.offHeapSize.addAndGet(size);
     }
 
     /**

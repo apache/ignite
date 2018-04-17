@@ -84,6 +84,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
+import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -963,7 +964,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         DirectMemoryProvider memProvider,
         DataStorageConfiguration memCfg,
         DataRegionConfiguration plcCfg,
-        DataRegionMetricsImpl memMetrics,
+        final DataRegionMetricsImpl memMetrics,
         final boolean trackable
     ) {
         if (!plcCfg.isPersistenceEnabled())
@@ -1000,8 +1001,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         else
             changeTracker = null;
 
+        DirectMemoryProvider memProvider0 = new DirectMemoryProvider() {
+            @Override public void initialize(long[] chunkSizes) {
+                memProvider.initialize(chunkSizes);
+            }
+
+            @Override public void shutdown() {
+                memProvider.shutdown();
+            }
+
+            @Override public DirectMemoryRegion nextRegion() {
+                DirectMemoryRegion nextMemoryRegion = memProvider.nextRegion();
+
+                memMetrics.updateOffHeapSize(nextMemoryRegion.size());
+
+                return nextMemoryRegion;
+            }
+        };
+
         PageMemoryImpl pageMem = new PageMemoryImpl(
-            memProvider,
+            memProvider0,
             calculateFragmentSizes(
                 memCfg.getConcurrencyLevel(),
                 cacheSize,
@@ -1010,6 +1029,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cctx,
             memCfg.getPageSize(),
             (fullId, pageBuf, tag) -> {
+                memMetrics.pageWritten();
+
                 // First of all, write page to disk.
                 storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
 

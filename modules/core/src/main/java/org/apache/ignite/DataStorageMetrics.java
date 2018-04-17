@@ -164,11 +164,6 @@ public interface DataStorageMetrics {
      */
     public long getPagesReplaced();
 
-    /**
-     * Total size in bytes for storage.
-     *
-     */
-    public long getTotalSize();
 
     /**
      * Total offheap size in bytes.
@@ -181,4 +176,10 @@ public interface DataStorageMetrics {
      *
      */
     public long getOffheapUsedSize();
+
+    /**
+     *
+     * @return Total size of memory allocated, in bytes.
+     */
+    public long getTotalAllocatedSize();
 }

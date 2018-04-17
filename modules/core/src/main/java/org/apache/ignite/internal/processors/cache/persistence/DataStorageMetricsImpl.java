@@ -343,18 +343,56 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getTotalSize() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
     @Override public long getOffHeapSize() {
-        return 0;
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long offHeapSize = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            offHeapSize += rm.getOffHeapSize();
+
+        return offHeapSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getOffheapUsedSize() {
-        return 0;
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long offHeapUsedSize = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            offHeapUsedSize += rm.getOffheapUsedSize();
+
+        return offHeapUsedSize;
+    }
+
+    @Override public long getTotalAllocatedSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long totalAllocatedSize = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            totalAllocatedSize += rm.getTotalAllocatedSize();
+
+        return totalAllocatedSize;
     }
 
     /**

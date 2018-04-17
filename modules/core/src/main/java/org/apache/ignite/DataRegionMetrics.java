@@ -183,4 +183,16 @@ public interface DataRegionMetrics {
      *
      */
     public long getPagesReplaced();
+
+    /**
+     * Total offheap size in bytes.
+     *
+     */
+    public long getOffHeapSize();
+
+    /**
+     * Total used offheap size in bytes for all data regions.
+     *
+     */
+    public long getOffheapUsedSize();
 }
