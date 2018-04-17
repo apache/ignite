@@ -91,11 +91,6 @@ public class GridDhtPartitionsStateValidator {
             if (node != null && node.version().compareTo(SIZES_VALIDATION_AVAILABLE_SINCE) < 0)
                 ignoringNodes.add(id);
         }
-
-        // Validate cache sizes.
-        result = validatePartitionsSizes(top, messages, ignoringNodes);
-        if (!result.isEmpty())
-            throw new IgniteCheckedException("Partitions cache sizes are inconsistent for " + fold(topVer, result));
     }
 
     /**
@@ -141,54 +136,6 @@ public class GridDhtPartitionsStateValidator {
                 long currentCounter = partIdx >= 0 ? countersMap.updateCounterAt(partIdx) : 0;
 
                 process(invalidPartitions, updateCountersAndNodesByPartitions, part, nodeId, currentCounter);
-            }
-        }
-
-        return invalidPartitions;
-    }
-
-    /**
-     * Validate partitions cache sizes for given {@code top}.
-     *
-     * @param top Topology to validate.
-     * @param messages Single messages received from all nodes.
-     * @param ignoringNodes Nodes for what we ignore validation.
-     * @return Invalid partitions map with following structure: (partId, (nodeId, cacheSize)).
-     * If map is empty validation is successful.
-     */
-     Map<Integer, Map<UUID, Long>> validatePartitionsSizes(
-            GridDhtPartitionTopology top,
-            Map<UUID, GridDhtPartitionsSingleMessage> messages,
-            Set<UUID> ignoringNodes) {
-        Map<Integer, Map<UUID, Long>> invalidPartitions = new HashMap<>();
-
-        Map<Integer, T2<UUID, Long>> sizesAndNodesByPartitions = new HashMap<>();
-
-        // Populate sizes statistics from local node partitions.
-        for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
-            if (top.partitionState(cctx.localNodeId(), part.id()) != GridDhtPartitionState.OWNING)
-                continue;
-
-            sizesAndNodesByPartitions.put(part.id(), new T2<>(cctx.localNodeId(), part.fullSize()));
-        }
-
-        int partitions = top.partitions();
-
-        // Then process and validate sizes from other nodes.
-        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : messages.entrySet()) {
-            UUID nodeId = e.getKey();
-            if (ignoringNodes.contains(nodeId))
-                continue;
-
-            Map<Integer, Long> sizesMap = e.getValue().partitionSizes(top.groupId());
-
-            for (int part = 0; part < partitions; part++) {
-                if (top.partitionState(nodeId, part) != GridDhtPartitionState.OWNING)
-                    continue;
-
-                long currentSize = sizesMap.containsKey(part) ? sizesMap.get(part) : 0L;
-
-                process(invalidPartitions, sizesAndNodesByPartitions, part, nodeId, currentSize);
             }
         }
 

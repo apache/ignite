@@ -401,7 +401,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             checkObsolete();
 
             if (isStartVersion() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
-                assert row == null || row.key() == key: "Unexpected row key";
+                assert row == null || row.key() == key : "Unexpected row key";
 
                 CacheDataRow read = row == null ? cctx.offheap().read(this) : row;
 
@@ -1411,7 +1411,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (readThrough && needVal && old == null &&
                 (cctx.readThrough() && (op == GridCacheOperation.TRANSFORM || cctx.loadPreviousValue()))) {
-                    old0 = readThrough(null, key, false, subjId, taskName);
+                old0 = readThrough(null, key, false, subjId, taskName);
 
                 old = cctx.toCacheObject(old0);
 
@@ -2462,7 +2462,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         ttlAndExpireTimeExtras(ttl, expireTime);
 
-        storeValue(val, expireTime, ver, null);
+        cctx.shared().database().checkpointReadLock();
+
+        try {
+            storeValue(val, expireTime, ver, null);
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
+        }
     }
 
     /**
@@ -2575,7 +2582,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     CacheObject val = this.val;
 
                     if (val != null && expiryPlc != null)
-                        updateTtl(expiryPlc);
+                            updateTtl(expiryPlc);
 
                     return val;
                 }
@@ -3406,7 +3413,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (log.isTraceEnabled())
             log.trace("onExpired clear [key=" + key + ", entry=" + System.identityHashCode(this) + ']');
 
-        removeValue();
+        cctx.shared().database().checkpointReadLock();
+        try {
+            removeValue();
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
+        }
 
         if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
             cctx.events().addEvent(partition(),
