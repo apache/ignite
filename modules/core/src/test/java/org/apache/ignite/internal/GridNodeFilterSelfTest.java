@@ -51,7 +51,6 @@ public class GridNodeFilterSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         ignite = null;
-
         rmtIgnite = null;
     }
 
