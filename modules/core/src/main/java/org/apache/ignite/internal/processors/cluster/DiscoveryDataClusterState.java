@@ -119,7 +119,7 @@ public class DiscoveryDataClusterState implements Serializable {
             transitionReqId,
             transitionTopVer,
             transitionNodes,
-            null,
+            transitionRes,
             null);
     }
 
