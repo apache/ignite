@@ -21,10 +21,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -34,9 +35,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
-
-import static org.hamcrest.core.IsEqual.equalTo;
 
 /**
  * Test base for test for sql features.
@@ -125,8 +123,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         empCache = client.cache("SQL_PUBLIC_EMPLOYEE");
     }
 
-
-
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
@@ -134,14 +130,41 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     public void testBasicSelect() {
+        Result emps = execute("SELECT * FROM Employee");
 
-        Result emps = checkedSelect("SELECT * FROM Employee", empCache);
+        assertResultEqualToBinaryObjects(emps, empCache);
 
         assertEquals("Unexpected size of employees", EMP_CNT, emps.values().size());
     }
 
+    /**
+     * Assert that all returned results exactly matches values from cache.
+     * Intended to verify "SELECT *" results.
+     * @param res result of "SELECT *..."
+     * @param cache cache to verify values.
+     */
+    private void assertResultEqualToBinaryObjects(Result res, IgniteCache cache) {
+        int idRowIdx = res.columnNames().indexOf("ID");
+
+        assert idRowIdx >= 0 : "Column with name \"ID\" have not been found in column names " + res.columnNames();
+
+        IgniteCache<Long, BinaryObject> binCache = cache.withKeepBinary();
+
+        for (List<?> rowData : res.values()) {
+            Map<String, Object> row = zipToMap(res.columnNames(), rowData);
+
+            Long id = (Long) row.get("ID");
+
+            BinaryObject cached = binCache.get(id);
+
+            assertNotNull("Cache does not contain entry with id " + id, cached);
+
+            assertEqualToBinaryObj(cached, row);
+        }
+    }
+
     public void testSelectBetween() {
-        Result emps = checkedSelect("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", empCache);
+        Result emps = checkedSelectAll("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", empCache);
 
         assertEquals("Fetched number of employees is incorrect", 100, emps.values().size());
     }
@@ -152,7 +175,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     public void testSelectOrderByLastName () {
-        Result result = checkedSelect("SELECT * FROM Employee e ORDER BY e.lastName", empCache);
+        Result result = checkedSelectAll("SELECT * FROM Employee e ORDER BY e.lastName", empCache);
 
         int lastNameIdx = result.columnNames().indexOf("LASTNAME");
 
@@ -160,14 +183,11 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         assertSortedBy(result.values(), asc);
     }
 
-//    public void testBasicJoin() {
-//        execute("SELECT * FROM Employee e JOIN Department d on e.depId = d.id");
-//    }
 
-    protected Result checkedSelect(String selectQry, IgniteCache<?, ?> cache) {
+    protected Result checkedSelectAll(String selectQry, IgniteCache<?, ?> cache) {
         Result res = execute(selectQry);
 
-        assertValuesAreInCache(res, cache);
+        assertResultEqualToBinaryObjects(res, cache);
 
         return res;
 
@@ -204,6 +224,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
         /**
          * Creates result from cursor.
+         *
          * @param cursor cursor to use to read column names and data.
          * @return Result that contains data and metadata, fetched from cursor.
          */
@@ -212,6 +233,27 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             List<List<?>> vals = cursor.getAll();
             return new Result(cols, vals);
         }
+    }
+
+    /**
+     * @param colons metadata: names of colons.
+     * @param values actual values retrived from sql.
+     * @return map colon name -> sql value.
+     */
+    private static Map<String, Object> zipToMap(List<String> colons, List<?> values) {
+        assert colons.size() == values.size() : "incorrect row sizes of colons and values differ!";
+
+        Iterator<String> colIt = colons.iterator();
+        Iterator<?> valIt = values.iterator();
+
+        Map<String, Object> res = new HashMap<>();
+
+        while (colIt.hasNext())
+            res.put(colIt.next(), valIt.next());
+
+        assertTrue("Colon names contain duplicates.", res.size() == colons.size());
+
+        return res;
     }
 
     protected <T> void assertSortedBy(List<T> seq, Comparator<T> cmp) {
@@ -228,53 +270,28 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         }
     }
 
-    protected void assertValuesAreInCache(Result res,  IgniteCache<?, ?> cache) {
-        int idRowIdx = res.columnNames().indexOf("ID");
-
-        assert idRowIdx >= 0 : "Column with name \"id\" have not been found in column names " + res.columnNames();
-
-        IgniteCache<Long, BinaryObject> binCache = cache.withKeepBinary();
-
-        for (List<?> row : res.values()) {
-
-            Long id = (Long) row.get(idRowIdx);
-
-            BinaryObject cached = binCache.get(id);
-
-            assertNotNull("Cache does not contain entry with id " + id, cached);
-
-            checkMatches(cached, row, res.columnNames());
-        }
-    }
-
-    private static void checkMatches(BinaryObject fromCache, List<?> fromSql, List<String> colNames) {
+    /**
+     * Assert that result returned by sql is equal to binary object.
+     * Useful with "SELECT *" when all the fields are returned.
+     *
+     * @param fromCache
+     * @param fromSql
+     */
+    private static void assertEqualToBinaryObj(BinaryObject fromCache, Map<String, Object> fromSql) {
         Collection<String> binValCols = fromCache.type().fieldNames();
 
         ArrayList<String> allBinCols = new ArrayList<>(binValCols);
         allBinCols.add("ID");
 
-        // todo: more informative assert(s).
-        assertTrue("Colon names are not equal",
-            allBinCols.containsAll(colNames) && colNames.containsAll(allBinCols));
+        assertEquals("Returned sql columns count is not equal to binary object's one.",
+            allBinCols.size(), fromSql.size());
 
-        List<?> valsFromCache = colNames.stream()
-            .filter(name -> !name.equals("ID"))
-            .map(name -> fromCache.field(name))
-            .collect(Collectors.toList());
+        assertTrue("Column names are not the same in binary object and sql result.",
+            allBinCols.containsAll(fromSql.keySet()));
 
-        List<Object> valsFromSql = new ArrayList<>();
-
-        for (int i = 0; i < colNames.size(); i++) {
-            String name = colNames.get(i);
-
-            if (name.equals("ID"))
-                continue;
-
-            valsFromSql.add(fromSql.get(i));
-        }
-
-        Assert.assertThat("Binary object content does not match values returned by sql query", valsFromSql,
-            equalTo(valsFromCache));
+        for (String colName : binValCols)
+            assertEquals("Value for column " +  colName + " in cache and in sql result differ.",
+                fromCache.field(colName), fromSql.get(colName));
     }
 
     /**
