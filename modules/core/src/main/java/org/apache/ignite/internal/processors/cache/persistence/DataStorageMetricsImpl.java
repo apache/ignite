@@ -378,6 +378,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         return offHeapUsedSize;
     }
 
+    /** {@inheritDoc} */
     @Override public long getTotalAllocatedSize() {
         if (!metricsEnabled)
             return 0;

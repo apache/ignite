@@ -69,18 +69,21 @@ public interface DataStorageMetrics {
     /**
      * Total size in bytes for storage wal files.
      *
+     * @return Total size in bytes for storage wal files.
      */
     public long getWalTotalSize();
 
     /**
      * Time of the last WAL segment rollover.
      *
+     * @return  Time of the last WAL segment rollover.
      */
     public long getWalLastRollOverTime();
 
     /**
      * Total checkpoint time from last restart.
      *
+     * @return  Total checkpoint time from last restart.
      */
     public long getCheckpointTotalTime();
 
@@ -143,43 +146,49 @@ public interface DataStorageMetrics {
     /**
      * Total dirty pages for the next checkpoint.
      *
+     * @return  Total dirty pages for the next checkpoint.
      */
     public long getDirtyPages();
 
     /**
      * The number of read pages from last restart.
      *
+     * @return The number of read pages from last restart.
      */
     public long getPagesRead();
 
     /**
      * The number of written pages from last restart.
      *
+     * @return The number of written pages from last restart.
      */
     public long getPagesWritten();
 
     /**
      * The number of replaced pages from last restart.
      *
+     * @return The number of replaced pages from last restart.
      */
     public long getPagesReplaced();
-
 
     /**
      * Total offheap size in bytes.
      *
+     * @return Total offheap size in bytes.
      */
     public long getOffHeapSize();
 
     /**
-     * Total used offheap size in bytes for all data regions.
+     * Total used offheap size in bytes.
      *
+     * @return Total used offheap size in bytes.
      */
     public long getOffheapUsedSize();
 
     /**
+     * Total size of memory allocated in bytes.
      *
-     * @return Total size of memory allocated, in bytes.
+     * @return Total size of memory allocated in bytes.
      */
     public long getTotalAllocatedSize();
 }
