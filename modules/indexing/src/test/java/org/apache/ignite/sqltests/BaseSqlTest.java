@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.Consumer;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -53,6 +55,12 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /** Client node instance. */
     private static IgniteEx client;
 
+    /** Node name of second server. */
+    private final String SRV2_NAME = "server2";
+
+    /** Node name of first server. */
+    private final String SRV1_NAME = "server1";
+
     /**
      * Hook to change nodes configurations in children.
      *
@@ -70,6 +78,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return configureIgnite(super.getConfiguration(igniteInstanceName, rsrcs));
     }
 
+    /**
+     *  Makes configuration for client node.
+     */
     private IgniteConfiguration clientConfiguration() throws Exception {
         IgniteConfiguration clCfg = getConfiguration(CLIENT_NODE_NAME);
 
@@ -84,7 +95,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param withStr With clause for created table, such as "template=partitioned"
      */
     protected final void fillCommonData(String withStr) {
-        executeUpdate("CREATE TABLE Employee (" +
+        execute("CREATE TABLE Employee (" +
             "id LONG PRIMARY KEY, " +
             "depId LONG, " +
             "firstName VARCHAR, " +
@@ -118,8 +129,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid("server1", configureIgnite(getConfiguration("server1")), null);
-        startGrid("server2", configureIgnite(getConfiguration("server2")), null);
+        startGrid(SRV1_NAME, configureIgnite(getConfiguration(SRV1_NAME)), null);
+        startGrid(SRV2_NAME, configureIgnite(getConfiguration(SRV2_NAME)), null);
 
         client = (IgniteEx)startGrid(CLIENT_NODE_NAME, configureIgnite(clientConfiguration()), null);
 
@@ -162,8 +173,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         }
     }
 
-    protected Result checkedSelectAll(String selectQry, IgniteCache<?, ?> cache) {
-        Result res = execute(selectQry);
+    protected Result checkedSelectAll(String selectQry, Ignite node,  IgniteCache<?, ?> cache) {
+        Result res = executeFrom(selectQry, node);
 
         assertResultEqualToBinaryObjects(res, cache);
 
@@ -297,57 +308,91 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Shortcut for {@link #execute(SqlFieldsQuery)}, that has String argument.
+     * Shortcut for {@link #executeFrom(SqlFieldsQuery, Ignite)}, that has String argument.
      */
-    protected Result execute(String qry) {
-        return execute(new SqlFieldsQuery(qry));
+    protected Result executeFrom(String qry, Ignite node) {
+        return executeFrom(new SqlFieldsQuery(qry), node);
     }
 
     /**
-     * Performs update query.
-     *
-     * @param updateQry query string.
-     * @return number of changed rows.
-     */
-    protected Long executeUpdate(String updateQry) {
-        return (Long)execute(new SqlFieldsQuery(updateQry)).values().get(0).get(0);
-    }
-
-    /**
-     * Execute query from client node.
+     * Shortcut for {@link #execute(SqlFieldsQuery)}.
      *
      * @param qry query string.
+     * @return number of changed rows.
+     */
+    protected Result execute(String qry) {
+        return executeFrom(new SqlFieldsQuery(qry), client);
+    }
+
+    /**
+     * Performs query from client node.
+     *
+     * @param qry query.
+     * @return number of changed rows.
+     */
+    protected Result execute(SqlFieldsQuery qry) {
+        return executeFrom(qry, client);
+    }
+
+    /**
+     * Execute query from node.
+     *
+     * @param qry query.
+     * @param node node to use to perform query.
      * @return Result of query.
      */
-    protected final Result execute(SqlFieldsQuery qry) {
-        FieldsQueryCursor<List<?>> cursor = client.context().query().querySqlFields(qry, false);
+    protected final Result executeFrom(SqlFieldsQuery qry, Ignite node) {
+        FieldsQueryCursor<List<?>> cursor = ((IgniteEx)node).context().query().querySqlFields(qry, false);
 
         return Result.fromCursor(cursor);
     }
 
-    public void testBasicSelect() {
-        Result emps = checkedSelectAll("SELECT * FROM Employee", empCache);
+    protected void testAllNodes(Consumer<Ignite> consumer) {
+        log.info("Testing on client node");
+        consumer.accept(client);
+        log.info("Client node is done.");
 
-        assertEquals("Unexpected size of employees", EMP_CNT, emps.values().size());
+        log.info("Testing on " + SRV1_NAME);
+        consumer.accept(grid(SRV1_NAME));
+        log.info("Node " + SRV1_NAME + " testing is done.");
+
+        log.info("Testing on " + SRV2_NAME);
+        consumer.accept(grid(SRV2_NAME));
+        log.info("Node " + SRV2_NAME + " testing is done.");
+    }
+
+
+    public void testBasicSelect() {
+        testAllNodes((node) -> {
+            Result emps = checkedSelectAll("SELECT * FROM Employee", node, empCache);
+
+            assertEquals("Unexpected size of employees", EMP_CNT, emps.values().size());
+        });
     }
 
     public void testSelectBetween() {
-        Result emps = checkedSelectAll("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", empCache);
+        testAllNodes(node -> {
+            Result emps = checkedSelectAll("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", node, empCache);
 
-        assertEquals("Fetched number of employees is incorrect", 100, emps.values().size());
+            assertEquals("Fetched number of employees is incorrect", 100, emps.values().size());
+        });
     }
 
     public void testEmptyBetween() {
-        Result emps = execute("SELECT * FROM Employee e WHERE e.id BETWEEN 200 AND 101");
-        assertTrue("SQL sould return empty result set, but returned: " + emps, emps.values().isEmpty());
+        testAllNodes( node -> {
+            Result emps = executeFrom("SELECT * FROM Employee e WHERE e.id BETWEEN 200 AND 101", node);
+            assertTrue("SQL sould return empty result set, but returned: " + emps, emps.values().isEmpty());
+        });
     }
 
     public void testSelectOrderByLastName() {
-        Result result = checkedSelectAll("SELECT * FROM Employee e ORDER BY e.lastName", empCache);
+        testAllNodes( node -> {
+            Result result = checkedSelectAll("SELECT * FROM Employee e ORDER BY e.lastName", node, empCache);
 
-        int lastNameIdx = result.columnNames().indexOf("LASTNAME");
+            int lastNameIdx = result.columnNames().indexOf("LASTNAME");
 
-        Comparator<List<?>> asc = Comparator.comparing((List<?> row) -> (String)row.get(lastNameIdx));
-        assertSortedBy(result.values(), asc);
+            Comparator<List<?>> asc = Comparator.comparing((List<?> row) -> (String)row.get(lastNameIdx));
+            assertSortedBy(result.values(), asc);
+        });
     }
 }
