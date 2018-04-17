@@ -1445,9 +1445,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             @Override public T applyx(IgniteInternalFuture<EntryProcessorResult<T>> fut1)
                 throws IgniteCheckedException {
                 try {
-                    EntryProcessorResult<T> res = fut1.get();
-
-                    return res != null ? res.get() : null;
+                    return fut1.get().get();
                 }
                 catch (RuntimeException e) {
                     throw new GridClosureException(e);
