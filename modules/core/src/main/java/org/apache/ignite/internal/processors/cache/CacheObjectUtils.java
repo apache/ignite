@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Cache object utility methods.
@@ -91,7 +90,7 @@ public class CacheObjectUtils {
         for (Object obj : col)
             col0.add(unwrapBinary(ctx, obj, keepBinary, cpy));
 
-        return U.unwrapSingletonCollection(col0);
+        return col0;
     }
 
     /**
@@ -114,7 +113,7 @@ public class CacheObjectUtils {
                 unwrapBinary(ctx, e.getKey(), false, cpy),
                 unwrapBinary(ctx, e.getValue(), false, cpy));
 
-        return U.unwrapSingletonMap(map0);
+        return map0;
     }
 
     /**
@@ -133,7 +132,7 @@ public class CacheObjectUtils {
         for (Object obj : col)
             col0.add(unwrapBinaryIfNeeded(ctx, obj, keepBinary, cpy));
 
-        return U.unwrapSingletonCollection(col0);
+        return col0;
     }
 
     /**

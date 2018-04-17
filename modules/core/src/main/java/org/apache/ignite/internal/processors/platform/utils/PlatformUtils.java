@@ -949,7 +949,7 @@ public class PlatformUtils {
         for (Object obj : col)
             col0.add(unwrapBinary(obj));
 
-        return U.unwrapSingletonCollection(col0);
+        return col0;
     }
 
     /**
@@ -979,7 +979,7 @@ public class PlatformUtils {
         for (Map.Entry<Object, Object> e : map.entrySet())
             map0.put(unwrapBinary(e.getKey()), unwrapBinary(e.getValue()));
 
-        return U.unwrapSingletonMap(map0);
+        return map0;
     }
     /**
      * Create Java object.
