@@ -34,6 +34,7 @@ import java.util.function.Consumer;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -44,7 +45,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,24 +69,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     /** Node name of first server. */
     private final String SRV1_NAME = "server1";
-
-    /**
-     * Hook to change nodes configurations in children.
-     *
-     * @param cfg - ignite configuration to configure.
-     * @return - configured ignite configuration.
-     */
-    // TODO: Remove
-    protected IgniteConfiguration configureIgnite(IgniteConfiguration cfg) {
-        // No-op. Override to add behaviour.
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName,
-        IgniteTestResources rsrcs) throws Exception {
-        return configureIgnite(super.getConfiguration(igniteInstanceName, rsrcs));
-    }
 
     /**
      * Makes configuration for client node.
@@ -139,10 +121,10 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(SRV1_NAME, configureIgnite(getConfiguration(SRV1_NAME)), null);
-        startGrid(SRV2_NAME, configureIgnite(getConfiguration(SRV2_NAME)), null);
+        startGrid(SRV1_NAME, getConfiguration(SRV1_NAME), null);
+        startGrid(SRV2_NAME, getConfiguration(SRV2_NAME), null);
 
-        client = (IgniteEx)startGrid(CLIENT_NODE_NAME, configureIgnite(clientConfiguration()), null);
+        client = (IgniteEx)startGrid(CLIENT_NODE_NAME, clientConfiguration(), null);
 
         fillData();
     }
@@ -365,7 +347,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                 " [actual=" + actual + ", expected=" + expected + "].");
     }
 
-    protected List<List<Object>> select(Ignite node, @Nullable IgniteBiPredicate<Long, BinaryObject> filter, String... fields) {
+    protected static List<List<Object>> select(Ignite node, @Nullable IgniteBiPredicate<Long, BinaryObject> filter, String... fields) {
         final boolean includePK = Arrays.asList(fields).contains("ID");
 
         IgniteClosure<Cache.Entry<Long, BinaryObject>, List<Object>> transformer = e -> {
@@ -394,19 +376,14 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return new HashSet<>(col);
     }
 
-    // TODO: Use Ignition.allGrids()
     protected void testAllNodes(Consumer<Ignite> consumer) {
-        log.info("Testing on client node");
-        consumer.accept(client);
-        log.info("Client node is done.");
+        for(Ignite node : Ignition.allGrids()) {
+            log.info("Testing on node " + node.name() + '.');
 
-        log.info("Testing on " + SRV1_NAME);
-        consumer.accept(grid(SRV1_NAME));
-        log.info("Node " + SRV1_NAME + " testing is done.");
+            consumer.accept(node);
 
-        log.info("Testing on " + SRV2_NAME);
-        consumer.accept(grid(SRV2_NAME));
-        log.info("Node " + SRV2_NAME + " testing is done.");
+            log.info("Testing on node " + node.name() + " is done.");
+        }
     }
 
     public void testBasicSelect() {
