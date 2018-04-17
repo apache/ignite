@@ -23,12 +23,13 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -253,22 +254,15 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         ccfg.setGroupName(DEFAULT_CACHE_NAME);
 
-        ccfgs = new CacheConfiguration[]{ccfg};
-
-        startGrids(SRVS);
+        ccfgs = new CacheConfiguration[] {ccfg};
 
         try {
-            ignite(0).active(true);
+            startGrids(SRVS);
 
             fail();
         }
-        catch (IgniteException e) {
-            // Expected error.
+        catch (IgniteCheckedException e) {
+            assertTrue(X.getCause(e).getMessage().contains("Failed to start configured cache."));
         }
-
-        for (int i = 0; i < SRVS; i++)
-            assertFalse(ignite(i).active());
-
-        checkNoCaches(SRVS);
     }
 }
