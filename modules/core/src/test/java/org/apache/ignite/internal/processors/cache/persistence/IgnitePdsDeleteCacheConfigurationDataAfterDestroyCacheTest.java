@@ -80,7 +80,10 @@ public class IgnitePdsDeleteCacheConfigurationDataAfterDestroyCacheTest extends 
         super.afterTest();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     * @returns always {@code true} in order to be able to kill nodes when checkpointer thread hangs.
+     */
     @Override protected boolean isMultiJvm() {
         return true;
     }
