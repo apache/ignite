@@ -24,7 +24,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -33,18 +32,12 @@ import static org.apache.ignite.configuration.WALMode.NONE;
 /**
  * Test REST with enabled authentication.
  */
-public class JettyRestProcessorAuthenticationSelfTest extends JettyRestProcessorUnsignedSelfTest {
+public abstract class JettyRestProcessorAuthenticationSelfTest extends JettyRestProcessorUnsignedSelfTest {
     /** */
-    private static final String DFLT_LOGIN = "ignite";
+    protected static final String DFLT_USER = "ignite";
 
     /** */
-    private static final String DFLT_PWD = "ignite";
-
-    /** */
-    private String login = DFLT_LOGIN;
-
-    /** */
-    private String pwd = DFLT_PWD;
+    protected static final String DFLT_PWD = "ignite";
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -54,11 +47,8 @@ public class JettyRestProcessorAuthenticationSelfTest extends JettyRestProcessor
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        login = DFLT_LOGIN;
-        pwd = DFLT_PWD;
+    @Override protected boolean securityEnabled() {
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -97,32 +87,13 @@ public class JettyRestProcessorAuthenticationSelfTest extends JettyRestProcessor
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected String restUrl() {
-        String url = super.restUrl();
-
-        if (!F.isEmpty(login)) {
-            url += "ignite.login=" + login;
-
-            if (!F.isEmpty(pwd))
-                url += "&ignite.password=" + pwd;
-
-            url += '&';
-        }
-
-        return url;
-    }
-
     /**
      * @throws Exception If failed.
      */
-    public void testMissingCredentials() throws Exception {
-        login = null;
-        pwd = null;
+    public void testAuthenticationCommand() throws Exception {
+        String ret = content(null, GridRestCommand.AUTHENTICATE);
 
-        String ret = content(null, GridRestCommand.VERSION);
-
-        assertResponseContainsError(ret, "The user name or password is incorrect");
+        assertResponseSucceeded(ret, false);
     }
 
     /**

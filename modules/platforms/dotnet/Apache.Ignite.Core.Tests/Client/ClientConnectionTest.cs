@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using Apache.Ignite.Core.Client;
     using Apache.Ignite.Core.Client.Cache;
     using Apache.Ignite.Core.Configuration;
+    using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -97,11 +98,11 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 cliCfg.Password = "ignite";
 
-                cliCfg.Username = null;
+                cliCfg.UserName = null;
                 ex = Assert.Throws<IgniteClientException>(() => { Ignition.StartClient(cliCfg); });
-                Assert.IsTrue(ex.Message.StartsWith("IgniteClientConfiguration.Username cannot be null"));
+                Assert.IsTrue(ex.Message.StartsWith("IgniteClientConfiguration.UserName cannot be null"));
 
-                cliCfg.Username = "";
+                cliCfg.UserName = "";
                 ex = Assert.Throws<IgniteClientException>(() => { Ignition.StartClient(cliCfg); });
                 Assert.IsTrue(ex.Message.StartsWith("IgniteClientConfiguration.Username cannot be empty"));
             }
@@ -117,12 +118,12 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 var cliCfg = SecureClientConfig();
 
-                cliCfg.Username = "invalid";
+                cliCfg.UserName = "invalid";
 
                 var ex = Assert.Throws<IgniteClientException>(() => { Ignition.StartClient(cliCfg); });
                 Assert.True(ex.StatusCode == ClientStatusCode.AuthenticationFailed);
 
-                cliCfg.Username = "ignite";
+                cliCfg.UserName = "ignite";
                 cliCfg.Password = "invalid";
 
                 ex = Assert.Throws<IgniteClientException>(() => { Ignition.StartClient(cliCfg); });
@@ -164,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 var cliCfg = SecureClientConfig();
 
-                cliCfg.Username = "my_User";
+                cliCfg.UserName = "my_User";
                 cliCfg.Password = "my_Password";
 
                 using (var cli = Ignition.StartClient(cliCfg))
@@ -310,7 +311,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var evt = new ManualResetEventSlim();
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
 
-            var putGetTask = Task.Factory.StartNew(() =>
+            var putGetTask = TaskRunner.Run(() =>
             {
                 using (var client = StartClient())
                 {
@@ -531,7 +532,7 @@ namespace Apache.Ignite.Core.Tests.Client
             return new IgniteClientConfiguration()
             {
                 Host = "localhost",
-                Username = "ignite",
+                UserName = "ignite",
                 Password = "ignite"
             };
         }
