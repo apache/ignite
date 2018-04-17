@@ -142,15 +142,6 @@ public class IgniteCacheCrossCacheJoinRandomTest extends AbstractH2CompareQueryT
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        cachesData = null;
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected Statement initializeH2Schema() throws SQLException {
         Statement st = super.initializeH2Schema();
 

@@ -183,8 +183,6 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractT
         checkNoLeaks();
 
         super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */

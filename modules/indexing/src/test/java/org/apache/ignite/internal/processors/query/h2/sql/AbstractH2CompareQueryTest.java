@@ -134,10 +134,6 @@ public abstract class AbstractH2CompareQueryTest extends GridCommonAbstractTest 
         st.execute("DROP ALL OBJECTS");
 
         conn.close();
-
-        stopAllGrids();
-
-        ignite = null;
     }
 
     /**

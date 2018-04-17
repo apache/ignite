@@ -200,17 +200,6 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         binaryMarshaller = grid(0).configuration().getMarshaller() instanceof BinaryMarshaller;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        orgCache = null;
-        personCache = null;
-        strCache = null;
-        intCache = null;
-        noOpCache = null;
-    }
-
     /** @return cache mode. */
     protected abstract CacheMode cacheMode();
 

@@ -40,13 +40,6 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
         startGrid();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        Ignition.stopAll(true);
-    }
-
     /** */
     protected static CacheConfiguration<Object, TestObject> cacheCfg() {
         return new CacheConfiguration<Object, TestObject>(DEFAULT_CACHE_NAME)

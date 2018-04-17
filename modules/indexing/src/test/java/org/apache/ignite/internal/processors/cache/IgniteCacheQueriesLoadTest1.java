@@ -215,13 +215,6 @@ public class IgniteCacheQueriesLoadTest1 extends GridCommonAbstractTest {
         preLoading();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        assert G.allGrids().isEmpty();
-    }
-
     /**
      * @throws Exception If fail.
      */
