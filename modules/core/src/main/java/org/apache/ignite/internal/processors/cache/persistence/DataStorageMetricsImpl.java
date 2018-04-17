@@ -402,8 +402,5 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
 
         walFsyncTimeDuration = new HitRateMetrics((int)rateTimeInterval, subInts);
         walFsyncTimeNum = new HitRateMetrics((int)rateTimeInterval, subInts);
-
-        totalCheckpointTime.set(0);
-        lastWalSegmentRollOverTime = 0;
     }
 }
