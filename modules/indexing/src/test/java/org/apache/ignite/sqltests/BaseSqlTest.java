@@ -67,6 +67,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param cfg - ignite configuration to configure.
      * @return - configured ignite configuration.
      */
+    // TODO: Remove
     protected IgniteConfiguration configureIgnite(IgniteConfiguration cfg) {
         // No-op. Override to add behaviour.
         return cfg;
@@ -345,6 +346,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return Result.fromCursor(cursor);
     }
 
+    // TODO: Use Ignition.allGrids()
     protected void testAllNodes(Consumer<Ignite> consumer) {
         log.info("Testing on client node");
         consumer.accept(client);
