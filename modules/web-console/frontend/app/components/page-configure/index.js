@@ -164,7 +164,6 @@ export default angular
                     state: actionsWindow.filter((a) => !actions.includes(a)).reduce(ConfigureState._combinedReducer, {})
                 };
             })
-            .debug('UNDOED')
             .do((a) => ConfigureState.dispatchAction(a))
             .subscribe();
         ConfigEffects.connect();

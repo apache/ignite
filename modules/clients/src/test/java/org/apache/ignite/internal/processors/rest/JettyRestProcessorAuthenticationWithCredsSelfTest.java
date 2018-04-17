@@ -15,8 +15,18 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.processors.rest;
+
 /**
- * <!-- Package description. -->
- * ML Grid clustering benchmarks.
+ * Test REST with enabled authentication and credentials in each request.
  */
-package org.apache.ignite.yardstick.ml.clustering;
+public class JettyRestProcessorAuthenticationWithCredsSelfTest extends JettyRestProcessorAuthenticationSelfTest {
+    /** {@inheritDoc} */
+    @Override protected String restUrl() {
+        String url = super.restUrl();
+
+        url += "ignite.login=" + DFLT_USER + "&ignite.password=" + DFLT_PWD + "&";
+
+        return url;
+    }
+}
