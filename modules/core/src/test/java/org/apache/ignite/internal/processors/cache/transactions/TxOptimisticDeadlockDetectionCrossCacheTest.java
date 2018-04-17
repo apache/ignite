@@ -28,7 +28,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -105,23 +104,21 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
 
         final AtomicInteger commitCnt = new AtomicInteger();
 
-        IgniteEx grid = grid(0);
-
-        grid.events().localListen(new CacheLocksListener(), EventType.EVT_CACHE_OBJECT_LOCKED);
+        grid(0).events().localListen(new CacheLocksListener(), EventType.EVT_CACHE_OBJECT_LOCKED);
 
         AffinityTopologyVersion waitTopVer = new AffinityTopologyVersion(2, 1);
 
-        IgniteInternalFuture<?> exchFut = grid.context().cache().context().exchange().affinityReadyFuture(waitTopVer);
+        IgniteInternalFuture<?> exchFut = grid(0).context().cache().context().exchange().affinityReadyFuture(waitTopVer);
 
         if (exchFut != null && !exchFut.isDone()) {
             log.info("Waiting for topology exchange future [waitTopVer=" + waitTopVer + ", curTopVer="
-                + grid.context().cache().context().exchange().readyAffinityVersion() + "]" );
+                + grid(0).context().cache().context().exchange().readyAffinityVersion() + "]" );
 
             exchFut.get();
         }
 
         log.info("Finished topology exchange future [curTopVer="
-            + grid.context().cache().context().exchange().readyAffinityVersion() + "]" );
+            + grid(0).context().cache().context().exchange().readyAffinityVersion() + "]" );
 
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
