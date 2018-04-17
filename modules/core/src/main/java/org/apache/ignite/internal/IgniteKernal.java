@@ -104,6 +104,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -2662,6 +2663,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         A.notNull(nodeId, "nodeId");
 
         return cluster().pingNode(UUID.fromString(nodeId));
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getCurrentCoordinator() {
+        AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
+
+        ClusterNode crd = ctx.discovery().oldestAliveServerNode(topVer);
+
+        if (crd == null)
+            return "N/A";
+
+        UUID crdId = crd.id();
+
+        Object crdConstId = crd.consistentId();
+
+        long crdOrder = crd.order();
+
+        return "nodeId=" + crdId + ",consistentId=" + crdConstId + ",order=" + crdOrder + ",topVer=" + topVer;
     }
 
     /** {@inheritDoc} */
