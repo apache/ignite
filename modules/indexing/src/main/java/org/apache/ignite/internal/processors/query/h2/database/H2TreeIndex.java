@@ -24,7 +24,10 @@ import java.util.NoSuchElementException;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -72,6 +75,9 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** */
     private final List<InlineIndexHelper> inlineIdxs;
 
+    /** */
+    private final IgniteLogger log;
+
     /** Cache context. */
     private final GridCacheContext<?, ?> cctx;
 
@@ -97,6 +103,8 @@ public class H2TreeIndex extends GridH2IndexBase {
         assert segmentsCnt > 0 : segmentsCnt;
 
         this.cctx = cctx;
+
+        log = cctx.kernalContext().log(getClass());
 
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 
@@ -245,6 +253,13 @@ public class H2TreeIndex extends GridH2IndexBase {
             assert cctx.shared().database().checkpointLockIsHeldByThread();
 
             return tree.putx(row);
+        }
+        catch (BPlusTree.TreeCorruptedException e) {
+            log.error("", e);
+
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+            throw DbException.convert(e);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);
