@@ -25,9 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
@@ -251,5 +253,24 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         }
 
         return assignmentMap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getType() {
+        CacheMode type = ctx.config().getCacheMode();
+
+        return String.valueOf(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Integer> getPartitionIndexes() {
+        List<GridDhtLocalPartition> parts = ctx.topology().localPartitions();
+
+        List<Integer> partsRes = new ArrayList<>(parts.size());
+
+        for (GridDhtLocalPartition part : parts)
+            partsRes.add(part.id());
+
+        return partsRes;
     }
 }

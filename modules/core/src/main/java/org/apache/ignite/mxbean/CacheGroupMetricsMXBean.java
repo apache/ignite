@@ -139,4 +139,16 @@ public interface CacheGroupMetricsMXBean {
      */
     @MXBeanDescription("Affinity partitions assignment map.")
     public Map<Integer, List<String>> getAffinityPartitionsAssignmentMap();
+
+    /**
+     * Cache group type.
+     */
+    @MXBeanDescription("Cache group type.")
+    public String getType();
+
+    /**
+     * Local partition indexes.
+     */
+    @MXBeanDescription("Local partition indexes.")
+    public List<Integer> getPartitionIndexes();
 }
