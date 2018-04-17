@@ -23,7 +23,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.Activators;
@@ -33,7 +32,7 @@ import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
-import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
+import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
@@ -99,7 +98,8 @@ public class MLPTrainerExample {
 
                 // Train neural network and get multilayer perceptron model.
                 MultilayerPerceptron mlp = trainer.fit(
-                    new CacheBasedDatasetBuilder<>(ignite, trainingSet),
+                    ignite,
+                    trainingSet,
                     (k, v) -> new double[] {v.x, v.y},
                     (k, v) -> new double[] {v.lb}
                 );

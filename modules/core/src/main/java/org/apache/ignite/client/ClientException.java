@@ -20,7 +20,7 @@ package org.apache.ignite.client;
 /**
  * Common thin client checked exception.
  */
-public class ClientException extends Exception {
+public class ClientException extends RuntimeException {
     /** Serial version uid. */
     private static final long serialVersionUID = 0L;
 
@@ -28,6 +28,7 @@ public class ClientException extends Exception {
      * Constructs a new exception with {@code null} as its detail message.
      */
     public ClientException() {
+        // No-op.
     }
 
     /**
