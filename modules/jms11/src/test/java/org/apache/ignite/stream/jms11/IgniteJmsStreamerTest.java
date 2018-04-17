@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.jms.ConnectionFactory;
@@ -54,6 +55,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.After;
 import org.junit.Before;
@@ -512,12 +514,10 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
      */
     public void testExceptionListener() throws Exception {
         // restart broker with auth plugin
-        if (broker.isStarted()) {
+        if (broker.isStarted())
             broker.stop();
 
-            broker.waitUntilStopped();
-        } else
-            broker.waitUntilStopped();
+        broker.waitUntilStopped();
 
         broker.setPlugins(new BrokerPlugin[]{new SimpleAuthenticationPlugin(new ArrayList())});
 
@@ -529,6 +529,8 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
         Destination dest = new ActiveMQQueue(QUEUE_NAME);
 
+        CountDownLatch latch = new CountDownLatch(1);
+
         try (IgniteDataStreamer<String, String> dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME)) {
             JmsStreamer<ObjectMessage, String, String> jmsStreamer = newJmsStreamer(ObjectMessage.class, dataStreamer);
 
@@ -537,29 +539,32 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
                     System.out.println("ERROR");
 
                     lsnrExceptions.add(e);
+
+                    latch.countDown();
                 }
             });
 
             jmsStreamer.setDestination(dest);
 
-            try {
-                jmsStreamer.start();
+            GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    jmsStreamer.start();
 
-                fail("Expecting security exception");
-            } catch (IgniteException ie) {
-                assertTrue("Caught IgniteException, expected: ", ie.getCause().getCause() instanceof SecurityException);
-            }
+                    return null;
+                }
+            }, SecurityException.class);
 
-            while(lsnrExceptions.isEmpty())
-                Thread.sleep(200);
+            latch.await(5, TimeUnit.SECONDS);
 
             assertTrue(lsnrExceptions.size() > 0);
 
-            try {
-                jmsStreamer.stop();
-            } catch (Exception ie) {
-                assertTrue("Caught IgniteException, expected: ", ie instanceof IgniteException);
-            }
+            GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    jmsStreamer.stop();
+
+                    return null;
+                }
+            }, IgniteException.class);
         }
     }
 

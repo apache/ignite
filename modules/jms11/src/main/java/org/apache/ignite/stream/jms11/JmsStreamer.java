@@ -152,7 +152,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     /** Message listeners. */
     private Set<IgniteJmsMessageListener> listeners = Collections.newSetFromMap(new ConcurrentHashMap<IgniteJmsMessageListener, Boolean>());
 
-    /** The Jms {@link ExceptionListener} xception listener to use. */
+    /** The Jms {@link ExceptionListener} to use. */
     private ExceptionListener exceptionListener;
 
     /** Scheduler for handling {@link #batchClosureMillis}. */
@@ -558,7 +558,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     private class IgniteJmsExceptionListener implements ExceptionListener {
         /** {@inheritDoc} */
         @Override public void onException(JMSException e) {
-            U.warn(log, "Caught JMS exception: " + e);
+            U.error(log, "Caught JMS exception: " + e);
 
             if (exceptionListener != null)
                 exceptionListener.onException(e);
