@@ -1310,13 +1310,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         null,
                                         req.keepBinary());
 
-                                assert e.lockedBy(mappedVer) ||
-                                    (ctx.mvcc().isRemoved(e.context(), mappedVer) && req.timeout() > 0) :
+                                assert e.lockedBy(mappedVer) || ctx.mvcc().isRemoved(e.context(), mappedVer) :
                                     "Entry does not own lock for tx [locNodeId=" + ctx.localNodeId() +
                                         ", entry=" + e +
                                         ", mappedVer=" + mappedVer + ", ver=" + ver +
-                                        ", tx=" + tx + ", req=" + req +
-                                        ", err=" + err + ']';
+                                        ", tx=" + tx + ", req=" + req + ']';
 
                                 boolean filterPassed = false;
 

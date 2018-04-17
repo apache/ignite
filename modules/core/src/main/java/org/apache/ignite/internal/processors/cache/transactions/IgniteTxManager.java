@@ -2323,13 +2323,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * Please don't use directly. Use tx.resume() instead.
      *
      * @param tx Transaction to be resumed.
+     * @param threadId Thread id to restore.
      *
      * @see #suspendTx(GridNearTxLocal)
      * @see GridNearTxLocal#suspend()
      * @see GridNearTxLocal#resume()
      * @throws IgniteCheckedException If failed to resume tx.
      */
-    public void resumeTx(GridNearTxLocal tx) throws IgniteCheckedException {
+    public void resumeTx(GridNearTxLocal tx, long threadId) throws IgniteCheckedException {
         assert tx != null && !tx.system() : tx;
 
         if (!tx.state(ACTIVE)) {
@@ -2340,8 +2341,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         assert !threadMap.containsValue(tx) : tx;
         assert !transactionMap(tx).containsValue(tx) : tx;
         assert !haveSystemTxForThread(Thread.currentThread().getId());
-
-        long threadId = Thread.currentThread().getId();
 
         if (threadMap.putIfAbsent(threadId, tx) != null)
             throw new IgniteCheckedException("Thread already has started a transaction.");

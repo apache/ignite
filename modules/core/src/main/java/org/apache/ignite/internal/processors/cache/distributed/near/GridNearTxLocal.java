@@ -2977,16 +2977,17 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @throws IgniteCheckedException If the transaction is in an incorrect state, or timed out.
      */
     public void resume() throws IgniteCheckedException {
-        resume(true);
+        resume(true, Thread.currentThread().getId());
     }
 
     /**
      * Resumes transaction (possibly in another thread) if it was previously suspended.
      *
      * @param checkTimeout Whether timeout should be checked.
+     * @param threadId Thread id to restore.
      * @throws IgniteCheckedException If the transaction is in an incorrect state, or timed out.
      */
-    private void resume(boolean checkTimeout) throws IgniteCheckedException {
+    private void resume(boolean checkTimeout, long threadId) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Resume near local tx: " + this);
 
@@ -2996,7 +2997,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         synchronized (this) {
             checkValid(checkTimeout);
 
-            cctx.tm().resumeTx(this);
+            cctx.tm().resumeTx(this, threadId);
         }
     }
 
@@ -4267,7 +4268,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     @Override public void onTimeout() {
         if (state() == SUSPENDED) {
             try {
-                resume(false);
+                resume(false, threadId());
             }
             catch (IgniteCheckedException e) {
                 log.warning("Error resuming suspended transaction on timeout: " + this, e);
