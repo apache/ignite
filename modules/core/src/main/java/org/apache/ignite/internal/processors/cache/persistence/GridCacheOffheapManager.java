@@ -617,17 +617,22 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         CacheDataStore store0;
 
-        partStoreLock.lock(p);
-
+        grp.shared().database().checkpointReadLock();
         try {
-            store0 = createCacheDataStore0(p);
-            store0.updateCounter(updCounter);
-            store0.updateInitialCounter(initUpdCounter);
+            partStoreLock.lock(p);
+            try {
+                store0 = createCacheDataStore0(p);
+                store0.updateCounter(updCounter);
+                store0.updateInitialCounter(initUpdCounter);
 
-            partDataStores.put(p, store0);
+                partDataStores.put(p, store0);
+            }
+            finally {
+                partStoreLock.unlock(p);
+            }
         }
         finally {
-            partStoreLock.unlock(p);
+            grp.shared().database().checkpointReadUnlock();
         }
 
         return store0;
