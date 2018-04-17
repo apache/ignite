@@ -115,11 +115,6 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         startGridsMultiThreaded(gridCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param queue Ignite queue.
      * @return Cache configuration.

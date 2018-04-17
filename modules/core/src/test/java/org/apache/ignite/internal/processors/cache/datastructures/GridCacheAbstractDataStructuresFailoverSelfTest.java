@@ -116,11 +116,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        // No-op
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGridsMultiThreaded(gridCount());
 
