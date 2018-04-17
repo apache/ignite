@@ -729,7 +729,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             notifyMetastorageReadyForReadWrite();
         }
         catch (StorageException e) {
-            throw new IgniteCheckedException(e);
+            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
         }
         finally {
             checkpointReadUnlock();
@@ -1954,7 +1954,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         if (status.needRestoreMemory()) {
             if (apply)
-                throw new IgniteCheckedException("Failed to restore memory state (checkpoint marker is present " +
+                throw new StorageException("Failed to restore memory state (checkpoint marker is present " +
                     "on disk, but checkpoint record is missed in WAL) " +
                     "[cpStatus=" + status + ", lastRead=" + lastRead + "]");
 
