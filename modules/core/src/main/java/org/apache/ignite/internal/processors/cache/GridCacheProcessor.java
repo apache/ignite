@@ -1279,6 +1279,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
 
+            IgnitePageStoreManager pageStore;
+
+            if (destroy && (pageStore = sharedCtx.pageStore()) != null) {
+                try {
+                    pageStore.removeCacheData(new StoredCacheData(ctx.config()));
+                } catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to delete cache configuration data while destroying cache" +
+                            "[cache=" + ctx.name() + "]", e);
+                }
+            }
+
             if (log.isInfoEnabled()) {
                 if (ctx.group().sharedGroup())
                     log.info("Stopped cache [cacheName=" + cache.name() + ", group=" + ctx.group().name() + ']');
