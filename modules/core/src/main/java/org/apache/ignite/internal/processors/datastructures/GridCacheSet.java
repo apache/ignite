@@ -76,9 +76,6 @@ public abstract class GridCacheSet<T> extends AbstractCollection<T> implements I
     /** Set header key. */
     private final GridCacheSetHeaderKey setKey;
 
-    /** */
-    private final boolean binaryMarsh;
-
     /** Access to affinityRun() and affinityCall() functions. */
     private final IgniteCompute compute;
 
@@ -93,7 +90,6 @@ public abstract class GridCacheSet<T> extends AbstractCollection<T> implements I
         this.name = name;
         id = hdr.id();
         collocated = hdr.collocated();
-        binaryMarsh = ctx.binaryMarshaller();
         compute = ctx.kernalContext().grid().compute();
 
         cache = ctx.cache();
@@ -126,11 +122,13 @@ public abstract class GridCacheSet<T> extends AbstractCollection<T> implements I
      */
     @SuppressWarnings("unchecked")
     public boolean checkHeader() throws IgniteCheckedException {
+        assert id != null;
+
         IgniteInternalCache<GridCacheSetHeaderKey, GridCacheSetHeader> cache0 = ctx.cache();
 
         GridCacheSetHeader hdr = cache0.get(new GridCacheSetHeaderKey(name));
 
-        return hdr != null && hdr.id().equals(id);
+        return hdr != null && id.equals(hdr.id());
     }
 
     /** {@inheritDoc} */
@@ -328,18 +326,20 @@ public abstract class GridCacheSet<T> extends AbstractCollection<T> implements I
 
     /** {@inheritDoc} */
     public void affinityRun(IgniteRunnable job) {
-        if (!collocated)
+        if (!collocated) {
             throw new IgniteException("Failed to execute affinityRun() for non-collocated set: " + name() +
                 ". This operation is supported only for collocated sets.");
+        }
 
         compute.affinityRun(cache.name(), setKey, job);
     }
 
     /** {@inheritDoc} */
     public <R> R affinityCall(IgniteCallable<R> job) {
-        if (!collocated)
+        if (!collocated) {
             throw new IgniteException("Failed to execute affinityCall() for non-collocated set: " + name() +
                 ". This operation is supported only for collocated sets.");
+        }
 
         return compute.affinityCall(cache.name(), setKey, job);
     }

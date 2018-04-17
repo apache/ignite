@@ -149,7 +149,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
      */
     private void assertSetIteratorsCleared() {
         for (int i = 0; i < gridCount(); i++) {
-            IgniteKernal grid = (IgniteKernal)grid(i);
+            IgniteKernal grid = (IgniteKernal) grid(i);
 
             for (IgniteCache cache : grid.caches()) {
                 GridCacheQueryManager queries = grid.internalCache(cache.getName()).context().queries();
@@ -157,7 +157,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                 Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
 
                 for (Object obj : map.values())
-                    assertEquals("Iterators not removed for grid " + i, 0, ((Map)obj).size());
+                    assertEquals("Iterators not removed for grid " + i, 0, ((Map) obj).size());
             }
         }
     }
@@ -513,7 +513,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg);
 
-        assert set0.size() == 0 : set0.size();
+        assertEquals(0, set0.size());
 
         for (int i = 0; i < 5000; i++)
             assertTrue(set0.add(i));
@@ -683,7 +683,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
                     assertNotNull(set);
 
-                    assert set.collocated() == collocated;
+                    assertTrue(set.collocated() == collocated);
 
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -726,6 +726,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         for (IgniteInternalFuture fut : futs)
             fut.get();
     }
+
 
     /**
      * @throws Exception If failed.
@@ -1031,16 +1032,16 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set1 = ignite.set("set1", colCfg);
         IgniteSet set2 = ignite.set("set2", colCfg);
 
-        assert cctx(set1).cacheId() == cctx(set2).cacheId();
+        assertTrue(cctx(set1).cacheId() == cctx(set2).cacheId());
 
         colCfg.setCollocated(false);
 
         IgniteSet set3 = ignite.set("set3", colCfg);
         IgniteSet set4 = ignite.set("set4", colCfg);
 
-        assert cctx(set3).cacheId() != cctx(set4).cacheId();
-        assert cctx(set1).groupId() == cctx(set3).groupId();
-        assert cctx(set3).groupId() == cctx(set4).groupId();
+        assertTrue(cctx(set3).cacheId() != cctx(set4).cacheId());
+        assertTrue(cctx(set1).groupId() == cctx(set3).groupId());
+        assertTrue(cctx(set3).groupId() == cctx(set4).groupId());
 
         colCfg.setAtomicityMode(TRANSACTIONAL);
         colCfg.setCollocated(true);
@@ -1048,18 +1049,18 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set5 = ignite.set("set5", colCfg);
         IgniteSet set6 = ignite.set("set6", colCfg);
 
-        assert cctx(set5).cacheId() == cctx(set6).cacheId();
-        assert cctx(set1).cacheId() != cctx(set5).cacheId();
-        assert cctx(set1).groupId() == cctx(set5).groupId();
+        assertTrue(cctx(set5).cacheId() == cctx(set6).cacheId());
+        assertTrue(cctx(set1).cacheId() != cctx(set5).cacheId());
+        assertTrue(cctx(set1).groupId() == cctx(set5).groupId());
 
         colCfg.setCollocated(false);
 
         IgniteSet set7 = ignite.set("set7", colCfg);
         IgniteSet set8 = ignite.set("set8", colCfg);
 
-        assert cctx(set7).cacheId() != cctx(set8).cacheId();
-        assert cctx(set3).cacheId() != cctx(set7).cacheId();
-        assert cctx(set3).groupId() == cctx(set7).groupId();
+        assertTrue(cctx(set7).cacheId() != cctx(set8).cacheId());
+        assertTrue(cctx(set3).cacheId() != cctx(set7).cacheId());
+        assertTrue(cctx(set3).groupId() == cctx(set7).groupId());
 
         colCfg.setCollocated(true);
 
@@ -1068,14 +1069,14 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set9 = ignite.set("set9", colCfg);
         IgniteSet set10 = ignite.set("set10", colCfg);
 
-        assert cctx(set9).cacheId() == cctx(set10).cacheId();
-        assert cctx(set1).groupId() != cctx(set9).groupId();
+        assertTrue(cctx(set9).cacheId() == cctx(set10).cacheId());
+        assertTrue(cctx(set1).groupId() != cctx(set9).groupId());
 
         colCfg.setCollocated(false);
 
         IgniteSet set11 = ignite.set("set11", colCfg);
 
-        assert cctx(set3).groupId() != cctx(set11).groupId();
+        assertTrue(cctx(set3).groupId() != cctx(set11).groupId());
     }
 
     /**

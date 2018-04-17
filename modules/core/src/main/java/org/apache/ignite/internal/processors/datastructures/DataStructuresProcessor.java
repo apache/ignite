@@ -1062,7 +1062,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final IgniteInternalCache cache;
 
         if (create) {
-            cache = compatibleCache(cfg, grpName, !(type == DataStructureType.SET && !cfg.isCollocated()), name);
+            cache = compatibleCache(cfg, grpName, type != DataStructureType.SET || cfg.isCollocated(), name);
 
             DistributedCollectionMetadata newVal = new DistributedCollectionMetadata(type, cfg, cache.name());
 
