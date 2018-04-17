@@ -525,11 +525,11 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
 
         connFactory = new ActiveMQConnectionFactory(BrokerRegistry.getInstance().findFirst().getVmConnectorURI());
 
-        List<Throwable> lsnrExceptions = new LinkedList<>();
+        final List<Throwable> lsnrExceptions = new LinkedList<>();
+
+        final CountDownLatch latch = new CountDownLatch(1);
 
         Destination dest = new ActiveMQQueue(QUEUE_NAME);
-
-        CountDownLatch latch = new CountDownLatch(1);
 
         try (IgniteDataStreamer<String, String> dataStreamer = grid().dataStreamer(DEFAULT_CACHE_NAME)) {
             JmsStreamer<ObjectMessage, String, String> jmsStreamer = newJmsStreamer(ObjectMessage.class, dataStreamer);
@@ -554,7 +554,7 @@ public class IgniteJmsStreamerTest extends GridCommonAbstractTest {
                 }
             }, SecurityException.class);
 
-            latch.await(5, TimeUnit.SECONDS);
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
 
             assertTrue(lsnrExceptions.size() > 0);
 
