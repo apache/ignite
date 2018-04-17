@@ -15,15 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering;
+package org.apache.ignite.ml.clustering.kmeans;
 
 import org.apache.ignite.ml.Model;
 
-/** Base interface for all clusterization models. */
-public interface ClusterizationModel<P, V> extends Model<P, V> {
-    /** Gets the clusters count. */
-    public int clustersCount();
-
-    /** Get cluster centers. */
-    public P[] centers();
+/**
+ * Base interface for clusterers.
+ */
+public interface Clusterer<P, M extends Model> {
+    /**
+     * Cluster given points set into k clusters.
+     *
+     * @param points Points set.
+     * @param k Clusters count.
+     */
+    public M cluster(P points, int k);
 }
