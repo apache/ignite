@@ -99,13 +99,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
-        if (tx.remainingTime() == -1) {
-            if (keyLockFut != null)
-                keyLockFut.onDone((GridNearTxPrepareResponse)null);
-
-            return false;
-        }
-
         if ((entry.context().isNear() || entry.context().isLocal()) && owner != null) {
             IgniteTxEntry txEntry = tx.entry(entry.txKey());
 
