@@ -65,11 +65,6 @@ public class SparseDistributedVectorTest extends GridCommonAbstractTest {
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * {@inheritDoc}
      */

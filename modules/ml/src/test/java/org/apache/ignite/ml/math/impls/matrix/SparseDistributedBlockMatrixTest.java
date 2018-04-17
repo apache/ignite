@@ -75,11 +75,6 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
             startGrid(i);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * {@inheritDoc}
      */

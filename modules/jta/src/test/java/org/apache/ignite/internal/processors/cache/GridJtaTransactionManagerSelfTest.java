@@ -64,8 +64,6 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        stopAllGrids();
-
         jotm.stop();
     }
 
