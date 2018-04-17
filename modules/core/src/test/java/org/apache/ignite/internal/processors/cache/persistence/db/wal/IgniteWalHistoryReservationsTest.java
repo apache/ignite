@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -64,7 +65,8 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
                 new DataRegionConfiguration()
                     .setMaxSize(200 * 1024 * 1024)
                     .setPersistenceEnabled(true))
-            .setWalMode(WALMode.LOG_ONLY);
+            .setWalMode(WALMode.LOG_ONLY)
+            .setWalSegmentSize(512 * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -350,6 +352,45 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
             assertTrue(p0.updateCounter() > 0);
             assertEquals(p0.updateCounter(), p1.updateCounter());
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWalHistoryPartiallyRemoved() throws Exception {
+        int entryCnt = 10_000;
+
+        IgniteEx ig0 = (IgniteEx) startGrids(2);
+
+        ig0.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ig0.cache("cache1");
+
+        for (int k = 0; k < entryCnt; k++)
+            cache.put(k, k);
+
+        GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                forceCheckpoint();
+
+                return null;
+            }
+        });
+
+        String nodeId0 = U.maskForFileName(ig0.localNode().consistentId().toString());
+
+        String walArchPath = ig0.configuration().getDataStorageConfiguration().getWalArchivePath();
+
+        stopAllGrids();
+
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), walArchPath + "/" +
+                nodeId0, false));
+
+        startGrid(0);
+
+        Ignite ig1 = startGrid(1);
+
+        ig1.cluster().active(true);
     }
 
     /**
