@@ -281,11 +281,11 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
         fut.onDone("result");
 
         if(exec != null){
-            CountDownLatch futDone = new CountDownLatch(1);
+            CountDownLatch futDoneLatch = new CountDownLatch(1);
 
-            chain.listen(f -> futDone.countDown());
+            chain.listen(f -> futDoneLatch.countDown());
 
-            futDone.await();
+            futDoneLatch.await();
         }
 
         assertEquals("result", chain.get(1));
