@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.commandline;
 
+import org.apache.ignite.internal.client.GridClientConfiguration;
+
 /**
  * Bean with all parsed and validated arguments.
  */
@@ -49,11 +51,10 @@ public class Arguments {
      */
     private String baselineArgs;
 
-
-    /** Ping timeout for grid client. */
+    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}.*/
     private long pingTimeout;
 
-    /** Ping interval for grid client. */
+    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}.*/
     private long pingInterval;
 
     /**
@@ -65,8 +66,8 @@ public class Arguments {
      * @param baselineAct Baseline action.
      * @param baselineArgs Baseline args.
      * @param force Force flag.
-     * @param pingTimeout Ping timeout.
-     * @param pingInterval Ping interval.
+     * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
+     * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
      * @param force Force flag.
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd,
@@ -134,6 +135,8 @@ public class Arguments {
     }
 
     /**
+     * See {@link GridClientConfiguration#pingTimeout}.
+     *
      * @return Ping timeout.
      */
     public long pingTimeout() {
@@ -141,6 +144,8 @@ public class Arguments {
     }
 
     /**
+     * See {@link GridClientConfiguration#pingInterval}.
+     *
      * @return Ping interval.
      */
     public long pingInterval() {
