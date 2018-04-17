@@ -612,7 +612,7 @@ public abstract class GridAbstractTest extends TestCase {
             catch (Exception | Error t) {
                 t.printStackTrace();
 
-                getTestCounters().setStopped(getTestCounters().getNumberOfTests() - 1);
+                getTestCounters().setClassInitializationFailedException(t);
 
                 try {
                     tearDown();
@@ -629,6 +629,8 @@ public abstract class GridAbstractTest extends TestCase {
         info(">>> Starting test: " + testDescription() + " <<<");
 
         try {
+            getTestCounters().checkClassInitialized();
+
             beforeTest();
         }
         catch (Exception | Error t) {
@@ -1687,7 +1689,9 @@ public abstract class GridAbstractTest extends TestCase {
         finally {
             serializedObj.clear();
 
-            if (isLastTest()) {
+            boolean lastTest = isLastTest();
+
+            if (lastTest) {
                 info(">>> Stopping test class: " + testClassDescription() + " <<<");
 
                 TestCounters counters = getTestCounters();
@@ -1725,7 +1729,7 @@ public abstract class GridAbstractTest extends TestCase {
 
             cleanReferences();
 
-           if (isLastTest() && isSafeTopology() && stopGridErr)
+           if (lastTest && isSafeTopology() && stopGridErr)
                throw new RuntimeException("Not all Ignite instances has been stopped. Please, see log for details.");
         }
     }
@@ -2403,7 +2407,7 @@ public abstract class GridAbstractTest extends TestCase {
         private boolean reset;
 
         /** */
-        private Exception clsInitFailEx;
+        private Throwable clsInitFailEx;
 
         /** */
         private IgniteTestResources rsrcs;
@@ -2476,8 +2480,16 @@ public abstract class GridAbstractTest extends TestCase {
         /**
          * @param clsInitFailEx Class initialization failed exception.
          */
-        public void setClassInitializationFailedException(Exception clsInitFailEx) {
+        public void setClassInitializationFailedException(Throwable clsInitFailEx) {
             this.clsInitFailEx = clsInitFailEx;
+        }
+
+        /**
+         * @throws IgniteCheckedException If test class initialization failed.
+         */
+        public void checkClassInitialized() throws IgniteCheckedException {
+            if (clsInitFailEx != null)
+                throw new IgniteCheckedException("Test class initialization failed", clsInitFailEx);
         }
 
         /**
