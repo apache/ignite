@@ -1139,22 +1139,20 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Set<UUID> setOwners(AffinityAssignment aff, int p, Set<UUID> ownersByUpdCounters, boolean haveHistory, boolean updateSeq) {
+    @Override public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq) {
         Set<UUID> result = haveHistory ? Collections.<UUID>emptySet() : new HashSet<UUID>();
 
         lock.writeLock().lock();
 
         try {
-            Set<UUID> affinityOwners = aff.getIds(p);
-
             for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
-                UUID remoteNodeId = e.getKey();
                 GridDhtPartitionMap partMap = e.getValue();
+                UUID remoteNodeId = e.getKey();
 
                 if (!partMap.containsKey(p))
                     continue;
 
-                if (affinityOwners.contains(remoteNodeId) && !ownersByUpdCounters.contains(remoteNodeId)) {
+                if (partMap.get(p) == OWNING && !owners.contains(remoteNodeId)) {
                     partMap.put(p, MOVING);
 
                     if (!haveHistory)
@@ -1163,12 +1161,12 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                     partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
 
                     U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                            "[nodeId=" + remoteNodeId + ", groupId=" + grpId +
-                            ", partId=" + p + ", haveHistory=" + haveHistory + "]");
+                        "[nodeId=" + remoteNodeId + ", groupId=" + grpId +
+                        ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                 }
             }
 
-            part2node.put(p, ownersByUpdCounters);
+            part2node.put(p, owners);
 
             if (updateSeq)
                 this.updateSeq.incrementAndGet();

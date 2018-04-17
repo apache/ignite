@@ -648,16 +648,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public boolean afterExchange(GridDhtPartitionsExchangeFuture exchFut) {
         boolean changed = false;
 
-/*
-        if (grp.cacheOrGroupName().equals("default")) {
-            GridDhtPartitionMap map = node2part.get(ctx.localNodeId());
-
-            for (GridDhtLocalPartition part : localPartitions()) {
-                log.warning("A " + exchFut.exchangeId().topologyVersion() + " " + part.id() + " " + part.state() + " " + map.get(part.id()) + " " + part.updateCounter() + " " + part.fullSize());
-            }
-        }
-*/
-
         int num = grp.affinity().partitions();
 
         AffinityTopologyVersion topVer = exchFut.context().events().topologyVersion();
@@ -2065,7 +2055,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Set<UUID> setOwners(AffinityAssignment aff, int p, Set<UUID> ownersByUpdCounters, boolean haveHistory, boolean updateSeq) {
+    @Override public Set<UUID> setOwners(int p, Set<UUID> ownersByUpdCounters, boolean haveHistory, boolean updateSeq) {
         Set<UUID> result = haveHistory ? Collections.<UUID>emptySet() : new HashSet<UUID>();
 
         ctx.database().checkpointReadLock();
@@ -2074,17 +2064,19 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             lock.writeLock().lock();
 
             try {
-                Set<UUID> affOwners = aff.getIds(p);
+                GridDhtLocalPartition locPart = locParts.get(p);
 
-                if (affOwners.contains(ctx.localNodeId()) && !ownersByUpdCounters.contains(ctx.localNodeId())) {
-                    rebalancePartition(p, haveHistory);
+                if (locPart != null) {
+                    if (locPart.state() == OWNING && !ownersByUpdCounters.contains(ctx.localNodeId())) {
+                        rebalancePartition(p, haveHistory);
 
-                    if (!haveHistory)
-                        result.add(ctx.localNodeId());
+                        if (!haveHistory)
+                            result.add(ctx.localNodeId());
 
-                    U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                        "[nodeId=" + ctx.localNodeId() + ", grp=" + grp.cacheOrGroupName() +
-                        ", partId=" + p + ", haveHistory=" + haveHistory + "]");
+                        U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
+                            "[nodeId=" + ctx.localNodeId() + ", grp=" + grp.cacheOrGroupName() +
+                            ", partId=" + p + ", haveHistory=" + haveHistory + "]");
+                    }
                 }
 
                 for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
@@ -2094,7 +2086,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if (!partMap.containsKey(p))
                         continue;
 
-                    if (affOwners.contains(remoteNodeId) && !ownersByUpdCounters.contains(remoteNodeId)) {
+                    if (partMap.get(p) == OWNING && !ownersByUpdCounters.contains(remoteNodeId)) {
                         partMap.put(p, MOVING);
 
                         if (!haveHistory)

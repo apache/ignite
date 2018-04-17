@@ -222,16 +222,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // TODO ignite-db
             throw new IgniteException(e);
         }
-
-        // Create partitions in OWNING state by default in case of persistence is enabled.
-/*
-        if (grp.persistenceEnabled())
-            state.set(setPartState(this.state.get(), OWNING));
-*/
-/*
-        if (ctx.localNodeId().toString().endsWith("3") && grp.cacheOrGroupName().contains("sys") && id == 99)
-            U.dumpStack(log,"Create " + id);
-*/
     }
 
     /**
@@ -517,13 +507,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param stateToRestore State to restore.
      */
     public void restoreState(GridDhtPartitionState stateToRestore) {
-        GridDhtPartitionState prev = getPartState(state.get());
-        state.set(setPartState(state.get(), stateToRestore));
-
-/*
-        if (grp.cacheOrGroupName().contains("sys") && ctx.localNodeId().toString().endsWith("3") && id == 99)
-            U.dumpStack(log, "Restore " + id + " " + prev + " " + stateToRestore);
-*/
+        state.set(setPartState(state.get(),stateToRestore));
     }
 
     /**
@@ -534,18 +518,11 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     private boolean casState(long state, GridDhtPartitionState toState) {
         if (grp.persistenceEnabled() && grp.walEnabled()) {
             synchronized (this) {
-                GridDhtPartitionState prev = getPartState(this.state.get());
-
                 boolean update = this.state.compareAndSet(state, setPartState(state, toState));
 
                 if (update)
                     try {
                         ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, toState, updateCounter()));
-
-/*
-                        if (grp.cacheOrGroupName().contains("sys") && ctx.localNodeId().toString().endsWith("3") && id == 99)
-                            U.dumpStack(log, "Cas " + id + " " + prev + " " + toState);
-*/
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Error while writing to log", e);
