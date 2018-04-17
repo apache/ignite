@@ -183,9 +183,10 @@ class IgniteRelationProvider extends RelationProvider
 
         val experimentalMethods = sqlCtx.sparkSession.sessionState.experimentalMethods
 
-        if (optimizationDisabled)
-            experimentalMethods.extraOptimizations.filter(_ != IgniteOptimization)
-        else {
+        if (optimizationDisabled) {
+            experimentalMethods.extraOptimizations = 
+                experimentalMethods.extraOptimizations.filter(_ != IgniteOptimization)
+        } else {
             val optimizationExists = experimentalMethods.extraOptimizations.contains(IgniteOptimization)
 
             if (!optimizationExists)

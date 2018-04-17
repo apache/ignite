@@ -35,7 +35,7 @@ class IgniteOptimizationDisableEnableSpec extends AbstractDataFrameSpec {
             if (spark.sparkContext.isStopped)
                 createSparkSession()
 
-            assert(!igniteOptimizationExists(), "Session shouldn't contains IgniteOptimization")
+            assert(!igniteOptimizationExists(spark), "Session shouldn't contains IgniteOptimization")
 
             personDataFrame = spark.read
                 .format(FORMAT_IGNITE)
@@ -43,10 +43,46 @@ class IgniteOptimizationDisableEnableSpec extends AbstractDataFrameSpec {
                 .option(OPTION_TABLE, "person")
                 .load()
 
-            assert(igniteOptimizationExists(),
+            assert(igniteOptimizationExists(spark),
                 "Session should contains IgniteOptimization after executing query over Ignite Data Frame")
 
             spark.stop()
+        }
+
+        it("should remove Ignite Optimization if it disabled at runtime") {
+            if (!spark.sparkContext.isStopped)
+                spark.stop()
+
+            val newSession = SparkSession.builder()
+                .appName("Ignite Optimization check")
+                .master("local")
+                .config("spark.executor.instances", "2")
+                .getOrCreate()
+
+            assert(!igniteOptimizationExists(newSession), "Session shouldn't contains IgniteOptimization")
+
+            var newPersonDataFrame = newSession.read
+                .format(FORMAT_IGNITE)
+                .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                .option(OPTION_TABLE, "person")
+                .load()
+
+            assert(igniteOptimizationExists(newSession),
+                "Session should contains IgniteOptimization after executing query over Ignite Data Frame")
+
+
+            newSession.conf.set(OPTION_DISABLE_SPARK_SQL_OPTIMIZATION, "true")
+
+            newPersonDataFrame = newSession.read
+                .format(FORMAT_IGNITE)
+                .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                .option(OPTION_TABLE, "person")
+                .load()
+
+            assert(!igniteOptimizationExists(newSession),
+                "Session shouldn't contains IgniteOptimization")
+
+            newSession.close()
         }
 
         it("shouldn't add Ignite Optimization to a session when it's disabled") {
@@ -80,7 +116,7 @@ class IgniteOptimizationDisableEnableSpec extends AbstractDataFrameSpec {
         }
     }
 
-    def igniteOptimizationExists(session: SparkSession = spark): Boolean =
+    def igniteOptimizationExists(session: SparkSession): Boolean =
         session.sessionState.experimentalMethods.extraOptimizations.contains(IgniteOptimization)
 
     override protected def beforeAll(): Unit = {
