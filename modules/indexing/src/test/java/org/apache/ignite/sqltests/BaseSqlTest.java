@@ -18,26 +18,35 @@
 package org.apache.ignite.sqltests;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Test base for test for sql features.
@@ -346,6 +355,45 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return Result.fromCursor(cursor);
     }
 
+    protected void assertContainsEq(String msg, Collection actual, Collection expected) {
+        if (actual.size() != expected.size())
+            throw new AssertionError("Collections contain different number of elements:" +
+                " [actual=" + actual + ", expected=" + expected + "].");
+
+        if (!actual.containsAll(expected))
+            throw new AssertionError("Collections differ:" +
+                " [actual=" + actual + ", expected=" + expected + "].");
+    }
+
+    protected List<List<Object>> select(Ignite node, @Nullable IgniteBiPredicate<Long, BinaryObject> filter, String... fields) {
+        final boolean includePK = Arrays.asList(fields).contains("ID");
+
+        IgniteClosure<Cache.Entry<Long, BinaryObject>, List<Object>> transformer = e -> {
+            List<Object> res = new ArrayList<>();
+            if (includePK)
+                res.add(e.getKey());
+
+            BinaryObject val = e.getValue();
+            for(String field : fields) {
+                if (val.hasField(field))
+                    res.add(val.field(field));
+                else
+                    throw new AssertionError("Field with name " + field + " not found in binary object " + val);
+            }
+
+            return res;
+        };
+
+        QueryCursor cursor = node.cache(EMP_CACHE_NAME).withKeepBinary()
+            .query(new ScanQuery<>(filter), transformer);
+
+        return cursor.getAll();
+    }
+
+    public static Set<Object> distinct(Collection<?> col) {
+        return new HashSet<>(col);
+    }
+
     // TODO: Use Ignition.allGrids()
     protected void testAllNodes(Consumer<Ignite> consumer) {
         log.info("Testing on client node");
@@ -392,6 +440,16 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
             Comparator<List<?>> asc = Comparator.comparing((List<?> row) -> (String)row.get(lastNameIdx));
             assertSortedBy(result.values(), asc);
+        });
+    }
+
+    public void testBasicDistinct() {
+        testAllNodes(node -> {
+            Result ages = executeFrom("SELECT DISTINCT age FROM Employee", node);
+
+            Set<Object> expected = distinct(select(node, null, "age"));
+
+            assertContainsEq("Values in cache differ from values returned from sql.", ages.values(), expected);
         });
     }
 }
