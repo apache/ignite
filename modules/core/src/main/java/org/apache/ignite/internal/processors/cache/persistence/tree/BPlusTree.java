@@ -125,6 +125,49 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private volatile TreeMetaData treeMeta;
 
     /** */
+    public static class TreeCorruptedException extends IgniteCheckedException {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * Default constructor.
+         */
+        public TreeCorruptedException() {
+        }
+
+        /**
+         * @param msg Message.
+         */
+        public TreeCorruptedException(String msg) {
+            super(msg);
+        }
+
+        /**
+         * @param cause Cause.
+         */
+        public TreeCorruptedException(Throwable cause) {
+            super(cause);
+        }
+
+        /**
+         * @param msg Message.
+         * @param cause Cause.
+         * @param writableStackTrace Writable stack trace.
+         */
+        public TreeCorruptedException(String msg, @Nullable Throwable cause, boolean writableStackTrace) {
+            super(msg, cause, writableStackTrace);
+        }
+
+        /**
+         * @param msg Message.
+         * @param cause Cause.
+         */
+        public TreeCorruptedException(String msg, @Nullable Throwable cause) {
+            super(msg, cause);
+        }
+    }
+
+    /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
         /** */
         private boolean keys = true;
