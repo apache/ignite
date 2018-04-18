@@ -67,7 +67,6 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
         );
 
         cfg.setDataStorageConfiguration(dsCfg);
-
         cfg.setClassLoader(getExternalClassLoader());
         cfg.setCacheConfiguration(getCacheConfiguration());
 
@@ -77,13 +76,12 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
     /** */
     @SuppressWarnings("unchecked")
     private CacheConfiguration getCacheConfiguration() throws Exception {
-        CacheConfiguration cacheCfg = new CacheConfiguration();
-
-        cacheCfg.setName("test_cache");
+        CacheConfiguration cacheCfg = new CacheConfiguration("test_cache");
 
         Factory storeFactory = (Factory)getExternalClassLoader()
             .loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestStoreFactory")
             .newInstance();
+
         cacheCfg.setCacheStoreFactory(storeFactory);
 
         return cacheCfg;
@@ -98,6 +96,7 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
         ignite.cluster().active(true);
 
         ignite.context().config().setClassLoader(U.gridClassLoader());
+
         GridCacheSharedContext sharedCtx = ignite.context().cache().context();
         FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
 
@@ -105,6 +104,7 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
 
         Throwable e = GridTestUtils.assertThrowsWithCause((Callable<Void>)() -> {
                 pageStore.readCacheConfigurations();
+
                 return null;
             },
             ClassNotFoundException.class);
