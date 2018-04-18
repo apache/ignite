@@ -1074,7 +1074,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             if (computed != null)
                                 invokeRes = CacheInvokeResult.fromResult(ctx.unwrapTemporary(computed));
 
-                            if (invokeEntry.modified()) {
+                            if (invokeEntry.modified() && updated != null) {
                                 validation = true;
 
                                 ctx.validateKeyAndValue(entry.key(), updated);

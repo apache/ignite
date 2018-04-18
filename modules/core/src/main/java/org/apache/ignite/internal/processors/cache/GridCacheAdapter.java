@@ -104,6 +104,7 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFi
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -4283,7 +4284,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         }
                         catch (IgniteCheckedException e1) {
                             try {
-                                tx0.rollbackNearTxLocalAsync();
+                                tx0.rollbackNearTxLocalAsync(e1 instanceof IgniteTxTimeoutCheckedException);
                             }
                             catch (Throwable e2) {
                                 if (e2 != e1)
