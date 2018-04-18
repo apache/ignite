@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.Cache
 {
     extern alias ExamplesDll;
@@ -157,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Person.
         /// </summary>
-        public class Person
+        private class Person
         {
             [QuerySqlField]
             public string Name { get; set; }
@@ -171,7 +172,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// </summary>
         /// <param name="cache">Cache instance.</param>
         [SuppressMessage("ReSharper", "ReturnValueOfPureMethodIsNotUsed")]
-        private void ExecuteTwoQueries(ICache<int, Person> cache)
+        private static void ExecuteTwoQueries(ICache<int, Person> cache)
         {
             IQueryable<ICacheEntry<int, Person>> queryable = cache.AsCacheQueryable();
 
@@ -184,7 +185,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Check metrics after two queries are executed.
         /// </summary>
         /// <param name="metrics">Query metrics.</param>
-        private void CheckMetrics(IQueryMetrics metrics)
+        private static void CheckMetrics(IQueryMetrics metrics)
         {
             Assert.AreEqual(2, metrics.Executions, "Check Executions count.");
             Assert.AreEqual(0, metrics.Fails, "Check Fails count.");
