@@ -22,20 +22,44 @@ import java.io.File;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
+import static org.apache.ignite.transactions.TransactionConcurrency.*;
+import static org.apache.ignite.transactions.TransactionIsolation.*;
 
 /**
  * Command line handler test.
@@ -72,6 +96,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
@@ -84,6 +110,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         dsCfg.getDefaultDataRegionConfiguration().setPersistenceEnabled(true);
 
         cfg.setConsistentId(igniteInstanceName);
+
+        cfg.setClientMode("client".equals(igniteInstanceName));
 
         return cfg;
     }
@@ -311,5 +339,108 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--baseline", "version", String.valueOf(ignite.cluster().topologyVersion())));
 
         assertEquals(2, ignite.cluster().currentBaselineTopology().size());
+    }
+
+    /**
+     * Test active transactions.
+     *
+     * @throws Exception If failed.
+     */
+    public void testActiveTransactions() throws Exception {
+        Ignite ignite = startGridsMultiThreaded(2);
+
+        ignite.cluster().active(true);
+
+        Ignite client = startGrid("client");
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
+            .setAtomicityMode(TRANSACTIONAL).setWriteSynchronizationMode(FULL_SYNC));
+
+        for (Ignite ig : G.allGrids()) {
+            final TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
+
+            spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+                @Override public boolean apply(ClusterNode node, Message message) {
+                    return message instanceof GridNearTxFinishRequest;
+                }
+            });
+
+            assertNotNull(ig.cache(DEFAULT_CACHE_NAME));
+        }
+
+        AtomicInteger idx = new AtomicInteger();
+
+        CountDownLatch lockLatch = new CountDownLatch(1);
+        CountDownLatch unlockLatch = new CountDownLatch(1);
+
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                int id = idx.getAndIncrement();
+
+                switch (id) {
+                    case 0:
+                        try (Transaction tx = grid(0).transactions().txStart()) {
+                            grid(0).cache(DEFAULT_CACHE_NAME).putAll(generate(0, 100));
+
+                            lockLatch.countDown();
+
+                            U.awaitQuiet(unlockLatch);
+
+                            tx.commit();
+                        }
+
+                        break;
+                    case 1:
+                        try (Transaction tx = grid(0).transactions().withLabel("label1").txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0)) {
+                            U.awaitQuiet(lockLatch);
+
+                            grid(0).cache(DEFAULT_CACHE_NAME).put(0, 0);
+                        }
+
+                        break;
+                    case 2:
+                        try (Transaction tx = grid(1).transactions().txStart()) {
+                            U.awaitQuiet(lockLatch);
+
+                            grid(1).cache(DEFAULT_CACHE_NAME).put(0, 0);
+                        }
+
+                        break;
+                    case 3:
+                        try (Transaction tx = client.transactions().withLabel("label2").txStart(OPTIMISTIC, READ_COMMITTED, 0, 0)) {
+                            U.awaitQuiet(lockLatch);
+
+                            client.cache(DEFAULT_CACHE_NAME).put(100, 10);
+
+                        client.cache(DEFAULT_CACHE_NAME).put(0, 0);
+
+                            tx.commit();
+                        }
+
+                        break;
+                }
+            }
+        }, 4, "tx-thread");
+
+        doSleep(1500);
+
+        assertEquals(EXIT_CODE_OK, execute("--tx"));
+
+        unlockLatch.countDown();
+
+        fut.get();
+    }
+
+    /**
+     * @param from From.
+     * @param cnt Count.
+     */
+    private Map<Object, Object> generate(int from, int cnt) {
+        Map<Object, Object> map = new TreeMap<>();
+
+        for (int i = 0; i < cnt; i++ )
+            map.put(i + from, i + from);
+
+        return map;
     }
 }

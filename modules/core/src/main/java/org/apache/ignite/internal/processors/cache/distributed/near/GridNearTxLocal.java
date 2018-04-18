@@ -2895,7 +2895,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /**
      * @return DHT map.
      */
-    IgniteTxMappings mappings() {
+    public IgniteTxMappings mappings() {
         return mappings;
     }
 
