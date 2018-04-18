@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.concurrent.Callable;
@@ -18,7 +35,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
     /** Error message */
-    private static final String ERR_MESSAGE = "During cache configuration loading from given file occurred error. " +
+    private static final String ERR_MESSAGE = "An error occurred during cache configuration loading from given file. " +
         "Make sure that user library containing required class is valid. " +
         "If library is valid then delete cache configuration file and restart cache";
 
@@ -40,48 +57,42 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration res = super.getConfiguration(igniteInstanceName);
-
-        res.setConsistentId(igniteInstanceName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
         dsCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration()
-                .setMaxSize(1024 * 1024 * 1024)
                 .setPersistenceEnabled(true)
         );
 
-        res.setDataStorageConfiguration(dsCfg);
+        cfg.setDataStorageConfiguration(dsCfg);
 
-        return res;
+        cfg.setClassLoader(getExternalClassLoader());
+        cfg.setCacheConfiguration(getCacheConfiguration());
+
+        return cfg;
     }
 
     /** */
     @SuppressWarnings("unchecked")
-    private CacheConfiguration getCacheConfiguration(ClassLoader clsLdr) throws Exception {
-        CacheConfiguration res = new CacheConfiguration();
-        res.setName("test_cache");
+    private CacheConfiguration getCacheConfiguration() throws Exception {
+        CacheConfiguration cacheCfg = new CacheConfiguration();
 
-        Factory storeFactory = (Factory)clsLdr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestStoreFactory")
+        cacheCfg.setName("test_cache");
+
+        Factory storeFactory = (Factory)getExternalClassLoader()
+            .loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestStoreFactory")
             .newInstance();
-        res.setCacheStoreFactory(storeFactory);
+        cacheCfg.setCacheStoreFactory(storeFactory);
 
-        return res;
+        return cacheCfg;
     }
 
     /**
      * @throws Exception if failed.
      */
     public void testFilePageStoreManagerShouldThrowExceptionWhenFactoryClassCannotBeLoaded() throws Exception {
-        String instanceName = getTestIgniteInstanceName(0);
-
-        ClassLoader externalClsLdr = getExternalClassLoader();
-
-        IgniteConfiguration cfg = optimize(getConfiguration(instanceName));
-        cfg.setCacheConfiguration(getCacheConfiguration(externalClsLdr));
-        cfg.setClassLoader(externalClsLdr);
-
-        IgniteEx ignite = (IgniteEx)startGrid(instanceName, cfg, null);
+        IgniteEx ignite = (IgniteEx)startGrid();
 
         ignite.cluster().active(true);
 
