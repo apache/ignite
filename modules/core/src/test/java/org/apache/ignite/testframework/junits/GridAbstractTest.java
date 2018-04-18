@@ -2453,6 +2453,7 @@ public abstract class GridAbstractTest extends TestCase {
             numOfTests = -1;
             started = 0;
             stopped = 0;
+            clsInitFailEx = null;
             reset = false;
         }
 
