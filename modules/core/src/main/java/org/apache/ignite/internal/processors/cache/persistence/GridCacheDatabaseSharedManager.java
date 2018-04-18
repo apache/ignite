@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.Serializable;
 import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -285,7 +286,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private static final String MBEAN_GROUP = "Persistent Store";
 
     /** WAL marker prefix for meta store. */
-    private static final String WAL_KEY_PREFIX = "grp-wal-disabled-";
+    private static final String WAL_KEY_PREFIX = "grp-wal-";
+
+    /** WAL marker prefix for meta store. */
+    private static final String WAL_GLOBAL_KEY_PREFIX = WAL_KEY_PREFIX + "disabled-";
+
+    /** WAL marker prefix for meta store. */
+    private static final String WAL_LOCAL_KEY_PREFIX = WAL_KEY_PREFIX + "local-disabled-";
 
     /** WAL marker predicate for meta store. */
     private static final IgnitePredicate<String> WAL_KEY_PREFIX_PRED = new IgnitePredicate<String>() {
@@ -385,7 +392,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private List<MetastorageLifecycleListener> metastorageLifecycleLsnrs;
 
     /** Initially disabled cache groups. */
-    private Collection<Integer> initiallyWalDisabledGrps;
+    private Collection<Integer> initiallyGlobalWalDisabledGrps = new HashSet<>();
+
+    private Collection<Integer> initiallyLocalWalDisabledGrps = new HashSet<>();
 
     /** File I/O factory for writing checkpoint markers. */
     private final FileIOFactory ioFactory;
@@ -596,7 +605,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 applyLastUpdates(status, true);
 
-                initiallyWalDisabledGrps = walDisabledGroups();
+                fillWalDisabledGroups();
 
                 notifyMetastorageReadyForRead();
             }
@@ -1974,7 +1983,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         int applied = 0;
         WALPointer lastRead = null;
 
-        Collection<Integer> ignoreGrps = storeOnly ? Collections.emptySet() : initiallyWalDisabledGrps;
+        Collection<Integer> ignoreGrps = storeOnly ? Collections.emptySet() :
+            F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
 
         try (WALIterator it = cctx.wal().replay(status.endPtr)) {
             while (it.hasNextX()) {
@@ -2228,7 +2238,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         long start = U.currentTimeMillis();
         int applied = 0;
 
-        Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() : initiallyWalDisabledGrps;
+        Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
+            F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
 
         try (WALIterator it = cctx.wal().replay(status.startPtr)) {
             Map<T2<Integer, Integer>, T2<Integer, Long>> partStates = new HashMap<>();
@@ -4401,13 +4412,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public boolean walEnabled(int grpId) {
-        return !initiallyWalDisabledGrps.contains(grpId);
+    @Override public boolean walEnabled(int grpId, boolean local) {
+        if (local)
+            return !initiallyLocalWalDisabledGrps.contains(grpId);
+        else
+            return !initiallyGlobalWalDisabledGrps.contains(grpId);
     }
 
     /** {@inheritDoc} */
-    @Override public void walEnabled(int grpId, boolean enabled) {
-        String key = walGroupIdToKey(grpId);
+    @Override public void walEnabled(int grpId, boolean enabled, boolean local) {
+        String key = walGroupIdToKey(grpId, local);
 
         checkpointReadLock();
 
@@ -4427,26 +4441,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * @return List of initially WAL-disabled groups.
+     *
      */
-    private Collection<Integer> walDisabledGroups() {
+    private void fillWalDisabledGroups() {
         MetaStorage meta = cctx.database().metaStorage();
 
         try {
             Set<String> keys = meta.readForPredicate(WAL_KEY_PREFIX_PRED).keySet();
 
             if (keys.isEmpty())
-                return Collections.emptySet();
-
-            HashSet<Integer> res = new HashSet<>(keys.size());
+                return;
 
             for (String key : keys) {
-                int grpId = walKeyToGroupId(key);
+                T2<Integer, Boolean> t2 = walKeyToGroupIdAndLocalFlag(key);
 
-                res.add(grpId);
+                if (t2.get2())
+                    initiallyLocalWalDisabledGrps.add(t2.get1());
+                else
+                    initiallyGlobalWalDisabledGrps.add(t2.get1());
             }
-
-            return res;
 
         }
         catch (IgniteCheckedException e) {
@@ -4460,8 +4473,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param grpId Group ID.
      * @return Key.
      */
-    private static String walGroupIdToKey(int grpId) {
-        return WAL_KEY_PREFIX + grpId;
+    private static String walGroupIdToKey(int grpId, boolean local) {
+        if (local)
+            return WAL_LOCAL_KEY_PREFIX + grpId;
+        else
+            return WAL_GLOBAL_KEY_PREFIX + grpId;
     }
 
     /**
@@ -4470,7 +4486,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param key Key.
      * @return Group ID.
      */
-    private static int walKeyToGroupId(String key) {
-        return Integer.parseInt(key.substring(WAL_KEY_PREFIX.length()));
+    private static T2<Integer, Boolean> walKeyToGroupIdAndLocalFlag(String key) {
+        if (key.startsWith(WAL_LOCAL_KEY_PREFIX))
+            return new T2<>(Integer.parseInt(key.substring(WAL_LOCAL_KEY_PREFIX.length())), true);
+        else
+            return new T2<>(Integer.parseInt(key.substring(WAL_GLOBAL_KEY_PREFIX.length())), false);
     }
 }

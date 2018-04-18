@@ -357,6 +357,13 @@ public interface GridDhtPartitionTopology {
     public boolean own(GridDhtLocalPartition part);
 
     /**
+     * Owns all moving partitions for the given topology version.
+     *
+     * @param topVer Topology version.
+     */
+    public void ownMoving(AffinityTopologyVersion topVer);
+
+    /**
      * @param part Evicted partition.
      * @param updateSeq Update sequence increment flag.
      */
