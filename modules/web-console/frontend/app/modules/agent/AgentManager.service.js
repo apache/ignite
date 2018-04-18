@@ -121,7 +121,7 @@ export default class IgniteAgentManager {
             .distinctUntilChanged(({ cluster }) => prevCluster === cluster)
             .do(({ cluster }) => prevCluster = cluster);
 
-        this.clusterVersion = '2.1.0';
+        this.clusterVersion = '2.4.0';
 
         if (!this.isDemoMode()) {
             this.connectionSbj.subscribe({
