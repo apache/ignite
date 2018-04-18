@@ -28,7 +28,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeInvalidator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -125,47 +127,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private volatile TreeMetaData treeMeta;
 
     /** */
-    public static class TreeCorruptedException extends IgniteCheckedException {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * Default constructor.
-         */
-        public TreeCorruptedException() {
-        }
-
-        /**
-         * @param msg Message.
-         */
-        public TreeCorruptedException(String msg) {
-            super(msg);
-        }
-
-        /**
-         * @param cause Cause.
-         */
-        public TreeCorruptedException(Throwable cause) {
-            super(cause);
-        }
-
-        /**
-         * @param msg Message.
-         * @param cause Cause.
-         * @param writableStackTrace Writable stack trace.
-         */
-        public TreeCorruptedException(String msg, @Nullable Throwable cause, boolean writableStackTrace) {
-            super(msg, cause, writableStackTrace);
-        }
-
-        /**
-         * @param msg Message.
-         * @param cause Cause.
-         */
-        public TreeCorruptedException(String msg, @Nullable Throwable cause) {
-            super(msg, cause);
-        }
-    }
+    private final GridKernalContext cctx;
 
     /** */
     private final GridTreePrinter<Long> treePrinter = new GridTreePrinter<Long>() {
@@ -774,9 +736,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long metaPageId,
         ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
-        IOVersions<? extends BPlusLeafIO<L>> leafIos
+        IOVersions<? extends BPlusLeafIO<L>> leafIos,
+        GridKernalContext cctx
     ) throws IgniteCheckedException {
-        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList);
+        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, cctx);
         setIos(innerIos, leafIos);
     }
 
@@ -797,7 +760,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
         long metaPageId,
-        ReuseList reuseList
+        ReuseList reuseList,
+        GridKernalContext cctx
     ) throws IgniteCheckedException {
         super(cacheId, pageMem, wal);
 
@@ -813,6 +777,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         this.name = name;
         this.reuseList = reuseList;
         this.globalRmvId = globalRmvId;
+        this.cctx = cctx;
     }
 
     /**
@@ -2604,8 +2569,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @throws IgniteCheckedException If the operation can not be retried.
          */
         final void checkLockRetry() throws IgniteCheckedException {
-            if (lockRetriesCnt == 0)
-                throw new IgniteCheckedException("Maximum of retries " + getLockRetries() + " reached.");
+            if (lockRetriesCnt == 0) {
+                IgniteCheckedException e = new IgniteCheckedException("Maximum of retries " + getLockRetries() + " reached.");
+
+                if (cctx != null)
+                    NodeInvalidator.INSTANCE.invalidate(cctx, e);
+
+                throw e;
+            }
 
             lockRetriesCnt--;
         }

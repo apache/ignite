@@ -530,7 +530,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 restoreMemory(status, true, storePageMem);
 
-                metaStorage = new MetaStorage(cctx.wal(), regCfg, memMetrics, true);
+                metaStorage = new MetaStorage(cctx.wal(), regCfg, memMetrics, true, cctx.kernalContext());
 
                 metaStorage.init(this);
 
@@ -707,7 +707,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cctx.pageStore().initializeForMetastorage();
 
             metaStorage = new MetaStorage(cctx.wal(), dataRegionMap.get(METASTORE_DATA_REGION_NAME),
-                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME));
+                (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME), cctx.kernalContext());
 
             WALPointer restore = restoreMemory(status);
 

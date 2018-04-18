@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -54,9 +55,10 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
         ReuseList reuseList,
         MetastorageRowStore rowStore,
         long metaPageId,
-        boolean initNew) throws IgniteCheckedException {
+        boolean initNew,
+        GridKernalContext cctx) throws IgniteCheckedException {
         super("Metastorage", cacheId, pageMem, wal,
-            globalRmvId, metaPageId, reuseList, MetastorageInnerIO.VERSIONS, MetastoreLeafIO.VERSIONS);
+            globalRmvId, metaPageId, reuseList, MetastorageInnerIO.VERSIONS, MetastoreLeafIO.VERSIONS, cctx);
 
         this.rowStore = rowStore;
 

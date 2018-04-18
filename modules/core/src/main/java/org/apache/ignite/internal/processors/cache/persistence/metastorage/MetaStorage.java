@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -103,17 +104,21 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     private final Marshaller marshaller = new JdkMarshaller();
 
     /** */
+    private final GridKernalContext cctx;
+
+    /** */
     public MetaStorage(IgniteWriteAheadLogManager wal, DataRegion dataRegion, DataRegionMetricsImpl regionMetrics,
-        boolean readOnly) {
+        boolean readOnly, GridKernalContext cctx) {
         this.wal = wal;
         this.dataRegion = dataRegion;
         this.regionMetrics = regionMetrics;
         this.readOnly = readOnly;
+        this.cctx = cctx;
     }
 
     /** */
-    public MetaStorage(IgniteWriteAheadLogManager wal, DataRegion memPlc, DataRegionMetricsImpl memMetrics) {
-        this(wal, memPlc, memMetrics, false);
+    public MetaStorage(IgniteWriteAheadLogManager wal, DataRegion memPlc, DataRegionMetricsImpl memMetrics, GridKernalContext cctx) {
+        this(wal, memPlc, memMetrics, false, cctx);
     }
 
     /** */
@@ -128,7 +133,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             MetastorageRowStore rowStore = new MetastorageRowStore(freeList, db);
 
             tree = new MetastorageTree(METASTORAGE_CACHE_ID, dataRegion.pageMemory(), wal, rmvId,
-                freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated());
+                freeList, rowStore, treeRoot.pageId().pageId(), treeRoot.isAllocated(), cctx);
 
             if (!readOnly)
                 ((GridCacheDatabaseSharedManager)db).addCheckpointListener(this);

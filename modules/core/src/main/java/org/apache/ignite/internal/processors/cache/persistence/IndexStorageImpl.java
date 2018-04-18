@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -78,7 +79,8 @@ public class IndexStorageImpl implements IndexStorage {
         final byte allocSpace,
         final ReuseList reuseList,
         final long rootPageId,
-        final boolean initNew
+        final boolean initNew,
+        final GridKernalContext cctx
     ) {
         try {
             this.pageMem = pageMem;
@@ -88,7 +90,7 @@ public class IndexStorageImpl implements IndexStorage {
             this.reuseList = reuseList;
 
             metaTree = new MetaTree(grpId, allocPartId, allocSpace, pageMem, wal, globalRmvId, rootPageId,
-                reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew);
+                reuseList, MetaStoreInnerIO.VERSIONS, MetaStoreLeafIO.VERSIONS, initNew, cctx);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -177,9 +179,10 @@ public class IndexStorageImpl implements IndexStorage {
             final ReuseList reuseList,
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos,
-            final boolean initNew
+            final boolean initNew,
+            final GridKernalContext cctx
         ) throws IgniteCheckedException {
-            super(treeName("meta", "Meta"), cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos);
+            super(treeName("meta", "Meta"), cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos, cctx);
 
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;

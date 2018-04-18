@@ -98,7 +98,7 @@ public class IndexStorageSelfTest extends GridCommonAbstractTest {
                 if (metaStore == null) {
                     metaStore = new IndexStorageImpl(mem, null, new AtomicLong(), cacheId,
                         PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX,
-                        null, mem.allocatePage(cacheId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX), true);
+                        null, mem.allocatePage(cacheId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX), true, null);
 
                     storeMap.put(cacheId, metaStore);
                 }
