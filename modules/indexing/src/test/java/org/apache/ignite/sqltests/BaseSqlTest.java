@@ -491,7 +491,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         testAllNodes(node -> {
             Result ages = executeFrom("SELECT DISTINCT age FROM Employee WHERE id < 100", node);
 
-            distinct(select(node, (key, val) -> key < 100, "age"));
+            Set<Object> expAges = distinct(select(node, (key, val) -> key < 100, "age"));
+
+            assertContainsEq(ages.values(), expAges);
         });
     }
 }
