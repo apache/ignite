@@ -80,16 +80,6 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
         return cfg;
     }
 
-<<<<<<< HEAD
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGrids(NODES_CNT);
-    }
-
-=======
->>>>>>> master
     /**
      * @throws Exception If failed.
      */
