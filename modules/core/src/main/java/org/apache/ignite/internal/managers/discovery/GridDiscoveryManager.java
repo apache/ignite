@@ -1603,16 +1603,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     Iterator<BaselineNode> it = offlineNodes.iterator();
 
-                    for (BaselineNode node = it.next(); it.hasNext(); node = it.next()) {
+                    while (true) {
+                        BaselineNode node = it.next();
+
                         sb.append(node.consistentId());
 
                         if (it.hasNext())
                             sb.append(", ");
+                        else
+                            break;
                     }
 
                     sb.append(')');
 
-                    offlineConsistentIds = offlineNodes.toString();
+                    offlineConsistentIds = sb.toString();
                 }
 
                 clo.apply("  ^-- " + bltOffline + " nodes left for auto-activation" + offlineConsistentIds);
