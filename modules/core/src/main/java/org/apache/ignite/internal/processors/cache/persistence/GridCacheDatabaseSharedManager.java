@@ -3667,7 +3667,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private GridFutureAdapter cpBeginFut = new GridFutureAdapter<>();
 
         /** */
-        private GridFutureAdapter cpFinishFut = new GridFutureAdapter<>();
+        private GridFutureAdapter cpFinishFut = new GridFutureAdapter<Void>() {
+            @Override protected boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
+                if (err != null && !cpBeginFut.isDone())
+                    cpBeginFut.onDone(err);
+
+                return super.onDone(res, err, cancel);
+            }
+        };
 
         /** */
         private volatile boolean nextSnapshot;
