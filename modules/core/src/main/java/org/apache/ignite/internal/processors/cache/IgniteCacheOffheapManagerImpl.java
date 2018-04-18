@@ -879,7 +879,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             }
 
             @Override protected void onClose() throws IgniteCheckedException {
-                assert loc != null && loc.state() == OWNING && loc.reservations() > 0;
+                assert loc != null && loc.state() == OWNING && loc.reservations() > 0
+                    : "Partition should be in OWNING state and has at least 1 reservation: " + loc;
 
                 loc.release();
             }
@@ -892,36 +893,37 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         throws IgniteCheckedException {
 
         final TreeMap<Integer, GridCloseableIterator<CacheDataRow>> iterators = new TreeMap<>();
-        Set<Integer> missing = null;
+
+        Set<Integer> missing = new HashSet<>();
 
         for (Integer p : parts.fullSet()) {
             GridCloseableIterator<CacheDataRow> partIter = reservedIterator(p, topVer);
 
             if (partIter == null) {
-                if (missing == null)
-                    missing = new HashSet<>();
-
                 missing.add(p);
+
+                continue;
             }
-            else
-                iterators.put(p, partIter);
+
+            iterators.put(p, partIter);
         }
 
-        IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators, historicalIterator(parts.historicalMap()));
+        IgniteHistoricalIterator historicalIterator = historicalIterator(parts.historicalMap(), missing);
 
-        if (missing != null) {
-            for (Integer p : missing)
-                iter.setPartitionMissing(p);
-        }
+        IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators, historicalIterator);
+
+        for (Integer p : missing)
+            iter.setPartitionMissing(p);
 
         return iter;
     }
 
     /**
      * @param partCntrs Partition counters map.
+     * @param missing Set of partitions need to populate if partition is missing or failed to reserve.
      * @return Historical iterator.
      */
-    @Nullable protected IgniteHistoricalIterator historicalIterator(CachePartitionPartialCountersMap partCntrs)
+    @Nullable protected IgniteHistoricalIterator historicalIterator(CachePartitionPartialCountersMap partCntrs, Set<Integer> missing)
         throws IgniteCheckedException {
         return null;
     }

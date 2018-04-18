@@ -187,7 +187,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
-        CachePartitionFullCountersMap cntrMap = top.fullUpdateCounters();
+        CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
         for (int p = 0; p < partCnt; p++) {
             if (ctx.exchange().hasPendingExchange()) {
@@ -251,7 +251,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         );
                     }
 
-                    msg.partitions().addHistorical(p, cntrMap.initialUpdateCounter(p), cntrMap.updateCounter(p), partCnt);
+                    msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partCnt);
                 }
                 else {
                     Collection<ClusterNode> picked = pickOwners(p, topVer);
