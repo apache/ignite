@@ -80,7 +80,6 @@ import org.apache.ignite.internal.managers.communication.GridCommunicationManage
 import org.apache.ignite.internal.processors.compute.IgniteComputeCustomExecutorConfigurationSelfTest;
 import org.apache.ignite.internal.processors.compute.IgniteComputeCustomExecutorSelfTest;
 import org.apache.ignite.internal.processors.compute.PublicThreadpoolStarvationTest;
-import org.apache.ignite.internal.util.StripedExecutorProxy;
 import org.apache.ignite.internal.util.StripedExecutorProxyTest;
 import org.apache.ignite.internal.util.StripedExecutorTest;
 import org.apache.ignite.p2p.GridMultinodeRedeployContinuousModeSelfTest;
