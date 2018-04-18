@@ -19,9 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistence;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDeleteCacheConfigurationDataAfterDestroyCacheTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
+import org.apache.ignite.internal.processors.cache.persistence.*;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
@@ -114,7 +112,9 @@ public class IgnitePdsTestSuite extends TestSuite {
 
         suite.addTestSuite(IgnitePdsCacheRestoreTest.class);
         suite.addTestSuite(IgnitePdsDataRegionMetricsTest.class);
-        suite.addTestSuite(IgnitePdsDeleteCacheConfigurationDataAfterDestroyCacheTest.class);
+
+        suite.addTestSuite(IgnitePdsDestroyCacheTest.class);
+        suite.addTestSuite(IgnitePdsDestroyCacheWithoutCheckpointsTest.class);
 
         suite.addTestSuite(DefaultPageSizeBackwardsCompatibilityTest.class);
 
