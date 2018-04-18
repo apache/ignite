@@ -53,7 +53,7 @@ public final class ZstdEngine implements CompressionEngine {
 
         if (src.isDirect() && buf.isDirect()) {
             long size = Zstd.compressDirectByteBuffer(buf, buf.position(),buf.limit() - buf.position(),
-                src, src.position(),src.limit() - src.position(), COMPRESS_LEVEL);
+                src, src.position(), src.limit() - src.position(), COMPRESS_LEVEL);
 
             if (Zstd.isError(size)) {
                 if (size == ZSTD_ERROR_DST_SIZE_TOO_SMALL)
@@ -79,7 +79,7 @@ public final class ZstdEngine implements CompressionEngine {
 
                 if (Zstd.isError(res)) {
                     if (res == ZSTD_ERROR_DST_SIZE_TOO_SMALL) {
-                        assert decompressArr.length <= Integer.MAX_VALUE / 2;
+                        assert compressArr.length <= Integer.MAX_VALUE / 2;
 
                         compressArr = new byte[compressArr.length * 2];
                     }
@@ -117,7 +117,7 @@ public final class ZstdEngine implements CompressionEngine {
             src.limit(src.position() + frameSize);
 
             long size = Zstd.decompressDirectByteBuffer(buf, buf.position(), buf.limit() - buf.position(),
-                src, src.position(),src.limit() - src.position());
+                src, src.position(), src.limit() - src.position());
 
             if (Zstd.isError(size)) {
                 src.limit(oldLimit);

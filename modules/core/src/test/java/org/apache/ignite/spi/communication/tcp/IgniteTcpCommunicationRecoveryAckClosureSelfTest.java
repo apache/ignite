@@ -54,6 +54,8 @@ import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_COMPRESSION_ENABLED;
+
 /**
  *
  */
@@ -457,6 +459,8 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
             spi.setListener(new TestListener());
 
             node.setAttributes(spi.getNodeAttributes());
+
+            node.addAttribute(ATTR_COMPRESSION_ENABLED, true);
 
             node.order(i);
 

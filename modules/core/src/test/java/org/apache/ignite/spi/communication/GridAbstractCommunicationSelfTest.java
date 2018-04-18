@@ -33,6 +33,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
+import org.apache.ignite.internal.util.nio.compression.DeflaterFactory;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -82,7 +83,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     protected boolean useSsl = false;
 
     /** */
-    @Nullable protected Factory<CompressionEngine> compressionEngineFactory = null;
+    @Nullable protected Factory<CompressionEngine> compressionEngineFactory = new DeflaterFactory();
 
     /**
      *

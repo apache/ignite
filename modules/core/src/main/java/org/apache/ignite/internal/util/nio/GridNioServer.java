@@ -333,8 +333,7 @@ public class GridNioServer<T> {
 
                     assert sslFilter.directMode();
                 }
-
-                if (filter instanceof GridNioCompressionFilter) {
+                else if (filter instanceof GridNioCompressionFilter) {
                     netCompressFilter = (GridNioCompressionFilter)filter;
 
                     assert netCompressFilter.directMode();
@@ -1342,15 +1341,15 @@ public class GridNioServer<T> {
                 }
             }
 
-            boolean handshakeFinished = false;
-
-            if (sslFilter != null)
-                handshakeFinished = sslFilter.lock(ses);
-
             boolean isCompressed = ses.isCompressed();
 
             if (isCompressed)
                 netCompressFilter.lock(ses);
+
+            boolean handshakeFinished = false;
+
+            if (sslFilter != null)
+                handshakeFinished = sslFilter.lock(ses);
 
             try {
                 writeSystem(ses, sockCh);
@@ -1518,11 +1517,11 @@ public class GridNioServer<T> {
                 }
             }
             finally {
-                if (isCompressed)
-                    netCompressFilter.unlock(ses);
-
                 if (sslFilter != null)
                     sslFilter.unlock(ses);
+
+                if (isCompressed)
+                    netCompressFilter.unlock(ses);
             }
         }
 

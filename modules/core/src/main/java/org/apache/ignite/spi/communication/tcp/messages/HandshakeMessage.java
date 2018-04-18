@@ -48,9 +48,6 @@ public class HandshakeMessage implements Message {
     /** */
     private long connectCnt;
 
-    /** */
-    private boolean compressFlag;
-
     /**
      * Default constructor required by {@link Message}.
      */
@@ -62,16 +59,14 @@ public class HandshakeMessage implements Message {
      * @param nodeId Node ID.
      * @param connectCnt Connect count.
      * @param rcvCnt Number of received messages.
-     * @param compressFlag Compress flag.
      */
-    public HandshakeMessage(UUID nodeId, long connectCnt, long rcvCnt, boolean compressFlag) {
+    public HandshakeMessage(UUID nodeId, long connectCnt, long rcvCnt) {
         assert nodeId != null;
         assert rcvCnt >= 0 : rcvCnt;
 
         this.nodeId = nodeId;
         this.connectCnt = connectCnt;
         this.rcvCnt = rcvCnt;
-        this.compressFlag = compressFlag;
     }
 
     /**
@@ -93,13 +88,6 @@ public class HandshakeMessage implements Message {
      */
     public long received() {
         return rcvCnt;
-    }
-
-    /**
-     * @return Compress flag.
-     */
-    public boolean compressFlag() {
-        return compressFlag;
     }
 
     /**
@@ -131,8 +119,6 @@ public class HandshakeMessage implements Message {
 
         buf.putLong(connectCnt);
 
-        buf.put((byte)(compressFlag ? 1 : 0));
-
         return true;
     }
 
@@ -150,8 +136,6 @@ public class HandshakeMessage implements Message {
         rcvCnt = buf.getLong();
 
         connectCnt = buf.getLong();
-
-        compressFlag = buf.get() != 0;
 
         return true;
     }

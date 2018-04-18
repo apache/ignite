@@ -55,6 +55,7 @@ import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiTestConfig.ConfigType;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_COMPRESSION_ENABLED;
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
 
 /**
@@ -194,6 +195,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         spiConfigure(spi);
 
         Map<String, Object> attrs = spi.getNodeAttributes();
+        attrs.put(ATTR_COMPRESSION_ENABLED, true);
 
         // Set up SPI class name and SPI version.
         Map<String, Serializable> spiAttrs = initSpiClassAndVersionAttributes(spi);

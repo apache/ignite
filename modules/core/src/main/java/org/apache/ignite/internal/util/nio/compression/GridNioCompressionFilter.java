@@ -116,8 +116,7 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
             assert engine != null;
         }
 
-        GridNioCompressionHandler hnd = new GridNioCompressionHandler(this,
-            ses,
+        CompressionHandler hnd = new CompressionHandler(
             engine,
             directBuf,
             order,
@@ -155,11 +154,9 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     public static void lock(GridNioSession ses) {
-        assert  ses != null;
+        assert ses != null;
 
-        GridNioCompressionHandler hnd = compressionHandler(ses);
-
-        hnd.lock();
+        compressionHandler(ses).lock();
     }
 
     /**
@@ -181,15 +178,15 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
         assert ses != null;
         assert input != null;
 
-        GridNioCompressionHandler hnd = compressionHandler(ses);
+        CompressionHandler hnd = compressionHandler(ses);
 
-        hnd.lock();
+        lock(ses);
 
         try {
             return hnd.compress(input);
         }
         finally {
-            hnd.unlock();
+            unlock(ses);
         }
     }
 
@@ -211,20 +208,20 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
         if (!input.hasRemaining())
             return new GridNioFinishedFuture<>(null);
 
-        GridNioCompressionHandler hnd = compressionHandler(ses);
+        CompressionHandler hnd = compressionHandler(ses);
 
-        hnd.lock();
+        lock(ses);
 
         try {
             hnd.compress(input);
 
-            return hnd.writeNetBuffer(ackC);
+            return writeNetBuffer(ses, hnd, ackC);
         }
         catch (IOException e) {
             throw new GridNioException("Failed to compress data: " + ses, e);
         }
         finally {
-            hnd.unlock();
+            unlock(ses);
         }
     }
 
@@ -241,16 +238,12 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
 
         ByteBuffer input = checkMessage(ses, msg);
 
-        GridNioCompressionHandler hnd = compressionHandler(ses);
+        CompressionHandler hnd = compressionHandler(ses);
 
-        hnd.lock();
+        lock(ses);
 
         try {
-            hnd.messageReceived(input);
-
-            ByteBuffer appBuf = hnd.getApplicationBuffer();
-
-            appBuf.flip();
+            ByteBuffer appBuf = hnd.decompress(input);
 
             if (appBuf.hasRemaining())
                 proceedMessageReceived(ses, appBuf);
@@ -261,7 +254,7 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
             throw new GridNioException("Failed to decompress data: " + ses, e);
         }
         finally {
-            hnd.unlock();
+            unlock(ses);
         }
     }
 
@@ -272,26 +265,15 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
         if (!ses.isCompressed())
             return proceedSessionClose(ses);
 
-        GridNioSslFilter sslFilter = null;
+        CompressionHandler hnd = compressionHandler(ses);
 
-        if (nextFilter() instanceof GridNioSslFilter) {
-            sslFilter = (GridNioSslFilter)nextFilter();
-
-            sslFilter.lock(ses);
-        }
-
-        GridNioCompressionHandler hnd = compressionHandler(ses);
-
-        hnd.lock();
+        lock(ses);
 
         try {
             return shutdownSession(ses, hnd);
         }
         finally {
-            hnd.unlock();
-
-            if (sslFilter != null)
-                sslFilter.unlock(ses);
+            unlock(ses);
         }
     }
 
@@ -303,12 +285,12 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @throws GridNioException If failed to forward requests to filter chain.
      * @return Close future.
      */
-    private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioCompressionHandler hnd)
+    private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, CompressionHandler hnd)
         throws IgniteCheckedException {
         assert ses != null;
         assert hnd != null;
 
-        hnd.writeNetBuffer(null);
+        writeNetBuffer(ses, hnd, null);
 
         return proceedSessionClose(ses);
     }
@@ -333,20 +315,55 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @param ses Session instance.
      * @return compression handler.
      */
-    private static GridNioCompressionHandler compressionHandler(GridNioSession ses) {
+    private static CompressionHandler compressionHandler(GridNioSession ses) {
         assert ses != null;
 
         GridCompressionMeta compressMeta = ses.meta(COMPRESSION_META.ordinal());
 
         assert compressMeta != null;
 
-        GridNioCompressionHandler hnd = compressMeta.handler();
+        CompressionHandler hnd = compressMeta.handler();
 
         if (hnd == null)
             throw new IgniteException("Failed to process incoming message (received message before compression " +
                 "handler was created): " + ses);
 
         return hnd;
+    }
+
+    /**
+     * Copies data from out net buffer and passes it to the underlying chain.
+     *
+     * @param ackC Closure invoked when message ACK is received.
+     * @return Write future.
+     * @throws GridNioException If send failed.
+     */
+    GridNioFuture<?> writeNetBuffer(GridNioSession ses, CompressionHandler hnd, @Nullable IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
+        assert hnd != null;
+        assert ses != null;
+
+        ByteBuffer buf = copy(hnd.getOutputBuffer());
+
+        return proceedSessionWrite(ses, buf, true, ackC);
+    }
+
+    /**
+     * Copies the given byte buffer.
+     *
+     * @param original Byte buffer to copy.
+     * @return Copy of the original byte buffer.
+     */
+    private static ByteBuffer copy(ByteBuffer original) {
+        ByteBuffer buf = original.isDirect() ? ByteBuffer.allocateDirect(original.remaining()) :
+            ByteBuffer.allocate(original.remaining());
+
+        buf.order(original.order());
+
+        buf.put(original);
+
+        buf.flip();
+
+        return buf;
     }
 
     /**
