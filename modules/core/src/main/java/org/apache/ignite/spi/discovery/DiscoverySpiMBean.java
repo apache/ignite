@@ -49,10 +49,36 @@ public interface DiscoverySpiMBean {
     public long getNodesFailed();
 
     /**
+     * Gets left nodes count.
+     *
+     * @return Left nodes count.
+     */
+    @MXBeanDescription("Nodes left count.")
+    public long getNodesLeft();
+
+    /**
      * Gets current coordinator.
      *
      * @return Gets current coordinator.
+     * @deprecated Use {@link #getCoordinatorNodeFormatted()} instead.
      */
+    @Deprecated
     @MXBeanDescription("Coordinator node ID.")
     @Nullable public UUID getCoordinator();
+
+    /**
+     * Gets current coordinator node formatted as a string.
+     *
+     * @return Current coordinator string representation.
+     */
+    @MXBeanDescription("Coordinator node formatted as a string.")
+    @Nullable public String getCoordinatorNodeFormatted();
+
+    /**
+     * Gets local node formatted as a string.
+     *
+     * @return Local node string representation.
+     */
+    @MXBeanDescription("Local node formatted as a string.")
+    public String getLocalNodeFormatted();
 }

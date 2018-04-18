@@ -41,14 +41,12 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
-import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
@@ -71,7 +69,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
 @DiscoverySpiMutableCustomMessageSupport(false)
-public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, IgniteDiscoverySpi {
+public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscoverySpi {
     /** */
     public static final String DFLT_ROOT_PATH = "/apacheIgnite";
 
@@ -389,7 +387,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public void setAuthenticator(DiscoverySpiNodeAuthenticator auth) {
-        this.nodeAuth = auth;
+        nodeAuth = auth;
     }
 
     /**
@@ -424,11 +422,6 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     /** {@inheritDoc} */
     @Override public boolean isClientMode() throws IllegalStateException {
         return impl.localNode().isClient();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
-        super.onContextInitialized0(spiCtx);
     }
 
     /** {@inheritDoc} */
@@ -583,6 +576,11 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         }
 
         /** {@inheritDoc} */
+        @Override public long getNodesLeft() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
         @Override public long getNodesFailed() {
             return stats.failedNodesCnt();
         }
@@ -590,6 +588,16 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
         /** {@inheritDoc} */
         @Nullable @Override public UUID getCoordinator() {
             return impl.getCoordinator();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String getCoordinatorNodeFormatted() {
+            return String.valueOf(impl.node(impl.getCoordinator()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getLocalNodeFormatted() {
+            return String.valueOf(getLocalNode());
         }
 
         /** {@inheritDoc} */
