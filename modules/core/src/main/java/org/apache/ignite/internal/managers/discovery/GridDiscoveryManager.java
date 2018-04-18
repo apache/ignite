@@ -1601,7 +1601,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     offlineConsistentIds = ' ' + F.nodeConsistentIds(offlineNodes).toString();
                 }
 
-                clo.apply("  ^-- " + bltOffline + " nodes left for auto-activation" + offlineConsistentIds);
+                if (bltOffline == 0)
+                    clo.apply("  ^-- All baseline nodes are online, will start auto-activation");
+                else
+                    clo.apply("  ^-- " + bltOffline + " nodes left for auto-activation" + offlineConsistentIds);
             }
         }
 
