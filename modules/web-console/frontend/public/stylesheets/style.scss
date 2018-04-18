@@ -1938,6 +1938,16 @@ treecontrol.tree-classic {
     }
 }
 
+.ribbon-wrapper.left {
+    overflow: visible;
+
+    .ribbon {
+        transform: rotate(-45deg);
+        left: -75px;
+        top: 10px;
+    }
+}
+
 html, body {
     width: 100%;
     min-height: 100vh;
