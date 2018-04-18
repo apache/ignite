@@ -147,7 +147,8 @@ public class H2TreeIndex extends GridH2IndexBase {
                         cols,
                         inlineIdxs,
                         computeInlineSize(inlineIdxs, inlineSize),
-                        rowCache) {
+                        rowCache,
+                        cctx.kernalContext().failure()) {
                         @Override public int compareValues(Value v1, Value v2) {
                             return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                         }
@@ -253,13 +254,6 @@ public class H2TreeIndex extends GridH2IndexBase {
             assert cctx.shared().database().checkpointLockIsHeldByThread();
 
             return tree.putx(row);
-        }
-        catch (BPlusTree.TreeCorruptedException e) {
-            log.error("", e);
-
-            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
-
-            throw DbException.convert(e);
         }
         catch (IgniteCheckedException e) {
             throw DbException.convert(e);

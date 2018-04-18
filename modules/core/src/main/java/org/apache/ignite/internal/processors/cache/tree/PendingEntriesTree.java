@@ -60,7 +60,8 @@ public class PendingEntriesTree extends BPlusTree<PendingRow, PendingRow> {
             metaPageId,
             reuseList,
             grp.sharedGroup() ? CacheIdAwarePendingEntryInnerIO.VERSIONS : PendingEntryInnerIO.VERSIONS,
-            grp.sharedGroup() ? CacheIdAwarePendingEntryLeafIO.VERSIONS : PendingEntryLeafIO.VERSIONS);
+            grp.sharedGroup() ? CacheIdAwarePendingEntryLeafIO.VERSIONS : PendingEntryLeafIO.VERSIONS,
+            grp.shared().kernalContext().failure());
 
         this.grp = grp;
 
