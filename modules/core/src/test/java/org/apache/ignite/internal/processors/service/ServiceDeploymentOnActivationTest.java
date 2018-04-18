@@ -28,10 +28,16 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.ServiceConfiguration;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
 public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
+    /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** */
     private static final String SERVICE_NAME = "test-service";
 
@@ -55,6 +61,10 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+        discoverySpi.setIpFinder(IP_FINDER);
+        cfg.setDiscoverySpi(discoverySpi);
+
         cfg.setClientMode(client);
 
         if (srvcCfg != null)
@@ -62,10 +72,12 @@ public class ServiceDeploymentOnActivationTest extends GridCommonAbstractTest {
 
         if (persistence) {
             cfg.setDataStorageConfiguration(
-                new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration()
-                        .setPersistenceEnabled(true).setMaxSize(10 * 1024 * 1024)
-                ).setWalMode(WALMode.LOG_ONLY)
+                new DataStorageConfiguration()
+                    .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                            .setPersistenceEnabled(true)
+                            .setMaxSize(10 * 1024 * 1024)
+                    ).setWalMode(WALMode.LOG_ONLY)
             );
         }
 
