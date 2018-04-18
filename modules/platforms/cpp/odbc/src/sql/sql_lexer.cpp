@@ -17,8 +17,9 @@
 
 #include <cctype>
 
-#include "ignite/odbc/sql/sql_lexer.h"
 #include "ignite/odbc/odbc_error.h"
+#include "ignite/odbc/sql/sql_lexer.h"
+
 
 namespace ignite
 {
