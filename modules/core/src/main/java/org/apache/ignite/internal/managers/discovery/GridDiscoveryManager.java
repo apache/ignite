@@ -1599,24 +1599,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     offlineNodes.removeAll(discoCache.aliveBaselineNodes());
 
-                    StringBuilder sb = new StringBuilder(" (");
-
-                    Iterator<BaselineNode> it = offlineNodes.iterator();
-
-                    while (true) {
-                        BaselineNode node = it.next();
-
-                        sb.append(node.consistentId());
-
-                        if (it.hasNext())
-                            sb.append(", ");
-                        else
-                            break;
-                    }
-
-                    sb.append(')');
-
-                    offlineConsistentIds = sb.toString();
+                    offlineConsistentIds = ' ' + F.nodeConsistentIds(offlineNodes).toString();
                 }
 
                 clo.apply("  ^-- " + bltOffline + " nodes left for auto-activation" + offlineConsistentIds);
