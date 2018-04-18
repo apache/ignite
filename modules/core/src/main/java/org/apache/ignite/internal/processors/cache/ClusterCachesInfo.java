@@ -75,9 +75,6 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * Logic related to cache discovery data processing.
  */
 class ClusterCachesInfo {
-    /** Version since which merge of config is supports. */
-    private static final IgniteProductVersion V_MERGE_CONFIG_SINCE = IgniteProductVersion.fromString("2.4.2");
-
     /** */
     private final GridKernalContext ctx;
 
@@ -1122,7 +1119,7 @@ class ClusterCachesInfo {
     private void updateRegisteredCachesIfNeeded(Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply,
         Collection<DynamicCacheDescriptor> cachesToSave, boolean hasSchemaPatchConflict) {
         //Skip merge of config if least one conflict was found.
-        if (!hasSchemaPatchConflict && isMergeConfigSupports(ctx.discovery().localNode())) {
+        if (!hasSchemaPatchConflict) {
             boolean isClusterActive = ctx.state().clusterState().active();
 
             //Merge of config for cluster only for inactive grid.
@@ -1537,8 +1534,6 @@ class ClusterCachesInfo {
         boolean hasSchemaPatchConflict = false;
         boolean active = ctx.state().clusterState().active();
 
-        boolean isMergeConfigSupport = isMergeConfigSupports(null);
-
         for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.caches().values()) {
             CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
 
@@ -1556,7 +1551,7 @@ class ClusterCachesInfo {
 
                 registerNewCache(joinData, nodeId, cacheInfo);
             }
-            else if (!active && isMergeConfigSupport) {
+            else if (!active) {
                 DynamicCacheDescriptor desc = registeredCaches.get(cfg.getName());
 
                 QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
@@ -1662,30 +1657,6 @@ class ClusterCachesInfo {
                 assert old == null : old;
             }
         }
-    }
-
-    /**
-     * @return {@code true} if grid supports merge of config and {@code False} otherwise.
-     */
-    public boolean isMergeConfigSupports(ClusterNode joiningNode) {
-        DiscoCache discoCache = ctx.discovery().discoCache();
-
-        if (discoCache == null)
-            return true;
-
-        if (joiningNode != null && joiningNode.version().compareToIgnoreTimestamp(V_MERGE_CONFIG_SINCE) < 0)
-            return false;
-
-        Collection<ClusterNode> nodes = discoCache.allNodes();
-
-        for (ClusterNode node : nodes) {
-            IgniteProductVersion version = node.version();
-
-            if (version.compareToIgnoreTimestamp(V_MERGE_CONFIG_SINCE) < 0)
-                return false;
-        }
-
-        return true;
     }
 
     /**
