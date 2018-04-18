@@ -254,14 +254,12 @@ public class FilePageStore implements PageStore {
             try {
                 fileIO.force();
             }
-            catch (ClosedChannelException ignored) {
-                // No-op.
+            finally {
+                fileIO.close();
+
+                if (cleanFile)
+                    cfgFile.delete();
             }
-
-            fileIO.close();
-
-            if (cleanFile)
-                cfgFile.delete();
         }
         catch (IOException e) {
             throw new PersistentStorageIOException(e);
@@ -578,29 +576,15 @@ public class FilePageStore implements PageStore {
      * @param fileIO File io.
      * @param destBuf Destination buffer.
      * @param position Position.
+     * @throws IgniteCheckedException If interrupted.
+     * @throws IOException When other IO errors occurs.
      */
-    private int read0(FileIO fileIO, ByteBuffer destBuf, long position) throws IOException {
-        boolean interrupted = this.interrupted.get();
-
-        while(true) {
-            try {
-                int num = -1;
-
-                if(interrupted)
-                    Thread.currentThread().interrupt();
-                else
-                    num =  fileIO.read(destBuf, position);
-
-                return num;
-            }
-            catch (ClosedByInterruptException ignore) {
-                interrupted = true;
-
-                Thread.interrupted();
-            }
-            finally {
-                this.interrupted.set(false);
-            }
+    private int read0(FileIO fileIO, ByteBuffer destBuf, long position) throws IOException, IgniteCheckedException {
+        try {
+            return fileIO.read(destBuf, position);
+        }
+        catch (ClosedByInterruptException e) {
+            throw new IgniteCheckedException("Read interrupted", e);
         }
     }
 
