@@ -101,7 +101,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(2);
-
+    }
 
     /**
      * Success if user tx was timed out.
