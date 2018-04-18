@@ -46,9 +46,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.hamcrest.core.IsEqual;
 import org.jetbrains.annotations.Nullable;
-import org.junit.Assert;
 
 /**
  * Test base for test for sql features.
@@ -342,13 +340,30 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return Result.fromCursor(cursor);
     }
 
+    /**
+     * Shortcut for {@link #assertContainsEq(Collection, Collection)} without message.
+     */
+    protected void assertContainsEq(Collection actual, Collection expected) {
+        assertContainsEq(null , actual, expected);
+    }
+
+    /**
+     * Assert that collections contain the equal elements ({@link Object#equals(Object)}), ignoring the order.
+     *
+     * @param msg message to add if assert fails.
+     * @param actual collection.
+     * @param expected collection.
+     */
     protected void assertContainsEq(String msg, Collection actual, Collection expected) {
+        if (!F.isEmpty(msg))
+            msg += " ";
+
         if (actual.size() != expected.size())
-            throw new AssertionError(msg + " Collections contain different number of elements:" +
+            throw new AssertionError(msg + "Collections contain different number of elements:" +
                 " [actual=" + actual + ", expected=" + expected + "].");
 
         if (!actual.containsAll(expected))
-            throw new AssertionError(msg + " Collections differ:" +
+            throw new AssertionError(msg + "Collections differ:" +
                 " [actual=" + actual + ", expected=" + expected + "].");
     }
 
@@ -425,15 +440,29 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
             List<List<Object>> expected = select(node, between, ALL_FIELDS);
 
-            Assert.assertThat("Select results differ from scan query ", emps.values(), IsEqual.equalTo(expected));
+            assertContainsEq(emps.values(), expected);
+        });
+    }
 
+    public void testSelectFields() {
+        testAllNodes(node -> {
+            Result res = executeFrom("SELECT firstName, id, age FROM Employee;", node);
+
+            String[] fields = {"FIRSTNAME", "ID", "AGE"};
+
+            assertEquals("Returned column names are incorrect.", res.columnNames(), Arrays.asList(fields));
+
+            List<List<Object>> expected = select(node, null, fields);
+
+            assertContainsEq(res.values(), expected);
         });
     }
 
     public void testEmptyBetween() {
         testAllNodes(node -> {
             Result emps = executeFrom("SELECT * FROM Employee e WHERE e.id BETWEEN 200 AND 101", node);
-            assertTrue("SQL sould return empty result set, but returned: " + emps, emps.values().isEmpty());
+
+            assertTrue("SQL should have returned empty result set, but it have returned: " + emps, emps.values().isEmpty());
         });
     }
 
@@ -455,6 +484,14 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             Set<Object> expected = distinct(select(node, null, "age"));
 
             assertContainsEq("Values in cache differ from values returned from sql.", ages.values(), expected);
+        });
+    }
+
+    public void testDistinctWithWhere() {
+        testAllNodes(node -> {
+            Result ages = executeFrom("SELECT DISTINCT age FROM Employee WHERE id < 100", node);
+
+            distinct(select(node, (key, val) -> key < 100, "age"));
         });
     }
 }
