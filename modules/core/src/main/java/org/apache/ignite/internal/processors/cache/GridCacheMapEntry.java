@@ -3633,7 +3633,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected boolean storeValue(@Nullable CacheObject val,
         long expireTime,
         GridCacheVersion ver) throws IgniteCheckedException {
-        assert val != null : "null values in update for key: " + key;
         return storeValue(val, expireTime, ver, null);
     }
 
