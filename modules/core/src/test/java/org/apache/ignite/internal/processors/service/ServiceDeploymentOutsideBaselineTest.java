@@ -113,6 +113,33 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testDeployOnNodeAddedToBlt() throws Exception {
+        persistence = true;
+
+        Ignite insideNode = startGrid(0);
+
+        IgniteCluster cluster = insideNode.cluster();
+
+        cluster.active(true);
+
+        Ignite outsideNode = startGrid(1);
+
+        cluster.setBaselineTopology(cluster.topologyVersion());
+
+        CountDownLatch exeLatch = new CountDownLatch(1);
+
+        DummyService.exeLatch(SERVICE_NAME, exeLatch);
+
+        IgniteFuture<Void> depFut = outsideNode.services().deployClusterSingletonAsync(SERVICE_NAME, new DummyService());
+
+        depFut.get(10, TimeUnit.SECONDS);
+
+        assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
+    }
+
+    /**
      * @param persistence If {@code true}, then persistence will be enabled.
      * @param staticDeploy If {@code true}, then static deployments will be used instead of a dynamic one.
      * @throws Exception If failed.
