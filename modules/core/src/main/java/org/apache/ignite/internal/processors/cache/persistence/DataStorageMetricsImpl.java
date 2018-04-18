@@ -82,7 +82,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     private volatile IgniteWriteAheadLogManager wal;
 
     /** */
-    private volatile IgniteOutClosure<Long> walSize;
+    private volatile IgniteOutClosure<Long> walSizeProvider;
 
     /** */
     private volatile long lastWalSegmentRollOverTime;
@@ -249,7 +249,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         if (!metricsEnabled)
             return 0;
 
-        IgniteOutClosure<Long> walSize = this.walSize;
+        IgniteOutClosure<Long> walSize = this.walSizeProvider;
 
         return walSize != null ? walSize.apply() : 0;
     }
@@ -404,16 +404,16 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
     }
 
     /**
-     *
+     * @param walSizeProvider Wal size provider.
      */
-    public void walSize(IgniteOutClosure<Long> cls){
-        this.walSize = cls;
+    public void setWalSizeProvider(IgniteOutClosure<Long> walSizeProvider){
+        this.walSizeProvider = walSizeProvider;
     }
 
     /**
      *
      */
-    public void wallRollOver() {
+    public void onWallRollOver() {
         this.lastWalSegmentRollOverTime = U.currentTimeMillis();
     }
 

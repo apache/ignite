@@ -16,11 +16,13 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMXBeanImpl.GroupAllocationTrucker;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -35,6 +37,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** */
     private final LongAdder totalAllocatedPages = new LongAdder();
+
+    /** */
+    private final ConcurrentHashMap<Integer, GroupAllocationTrucker> groupAllocationTruckers = new ConcurrentHashMap<>();
 
     /**
      * Counter for number of pages occupied by large entries (one entry is larger than one page).
@@ -298,7 +303,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     /**
      * Updates page read.
      */
-    public void pageRead(){
+    public void onPageRead(){
         if (metricsEnabled)
             readPages.increment();
     }
@@ -306,7 +311,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     /**
      * Updates page written.
      */
-    public void pageWritten(){
+    public void onPageWritten(){
         if (metricsEnabled)
             writtenPages.increment();
     }
@@ -350,6 +355,16 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
             if (delta > 0)
                 updateAllocationRateMetrics(delta);
         }
+    }
+
+    /**
+     * Get or allocate group allocation trucker.
+     *
+     * @param grpId Group id.
+     * @return Group allocation trucker.
+     */
+    public GroupAllocationTrucker getOrAllocateGroupPageAllocationTracker(int grpId) {
+        return groupAllocationTruckers.getOrDefault(grpId, new GroupAllocationTrucker(this));
     }
 
     /**

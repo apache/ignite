@@ -343,7 +343,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             checkOrPrepareFiles();
 
-            metrics.walSize(new CO<Long>() {
+            metrics.setWalSizeProvider(new CO<Long>() {
                 @Override public Long apply() {
                     long size = 0;
 
@@ -960,7 +960,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         if (hnd.close(true)) {
             if (metrics.metricsEnabled())
-                metrics.wallRollOver();
+                metrics.onWallRollOver();
 
             FileWriteHandle next = initNextWriteHandle(cur.idx);
 

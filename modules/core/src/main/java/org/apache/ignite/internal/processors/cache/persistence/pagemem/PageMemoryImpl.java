@@ -778,7 +778,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 try {
                     storeMgr.read(grpId, pageId, buf);
 
-                    memMetrics.pageRead();
+                    memMetrics.onPageRead();
                 }
                 catch (IgniteDataIntegrityViolationException ignore) {
                     U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
@@ -788,7 +788,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     tryToRestorePage(fullId, buf);
 
-                    memMetrics.pageRead();
+                    memMetrics.onPageRead();
                 }
                 finally {
                     rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
@@ -1183,7 +1183,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             assert PageIO.getType(outBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
             assert PageIO.getVersion(outBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(fullId.pageId());
 
-            memMetrics.pageWritten();
+            memMetrics.onPageWritten();
 
             return true;
         }

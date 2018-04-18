@@ -66,7 +66,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -390,7 +389,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             checkOrPrepareFiles();
 
-            metrics.walSize(new CO<Long>() {
+            metrics.setWalSizeProvider(new CO<Long>() {
                 @Override public Long apply() {
                     long size = 0;
 
@@ -1058,7 +1057,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         if (hnd.close(true)) {
             if (metrics.metricsEnabled())
-                metrics.wallRollOver();
+                metrics.onWallRollOver();
 
             FileWriteHandle next = initNextWriteHandle(cur);
 

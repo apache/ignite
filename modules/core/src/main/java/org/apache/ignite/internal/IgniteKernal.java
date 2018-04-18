@@ -2666,24 +2666,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public String getCurrentCoordinator() {
-        AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
-
-        ClusterNode crd = ctx.discovery().oldestAliveServerNode(topVer);
-
-        if (crd == null)
-            return "N/A";
-
-        UUID crdId = crd.id();
-
-        Object crdConstId = crd.consistentId();
-
-        long crdOrder = crd.order();
-
-        return "nodeId=" + crdId + ",consistentId=" + crdConstId + ",order=" + crdOrder + ",topVer=" + topVer;
-    }
-
-    /** {@inheritDoc} */
     @Override public void undeployTaskFromGrid(String taskName) throws JMException {
         A.notNull(taskName, "taskName");
 

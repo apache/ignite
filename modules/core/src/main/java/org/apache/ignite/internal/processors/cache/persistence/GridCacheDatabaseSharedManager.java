@@ -1029,7 +1029,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cctx,
             memCfg.getPageSize(),
             (fullId, pageBuf, tag) -> {
-                memMetrics.pageWritten();
+                memMetrics.onPageWritten();
 
                 // First of all, write page to disk.
                 storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);

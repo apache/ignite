@@ -147,8 +147,20 @@ public interface CacheGroupMetricsMXBean {
     public String getType();
 
     /**
-     * Local partition indexes.
+     * Local partition ids.
      */
-    @MXBeanDescription("Local partition indexes.")
-    public List<Integer> getPartitionIndexes();
+    @MXBeanDescription("Local partition ids.")
+    public List<Integer> getPartitionIds();
+
+    /**
+     * Cache group total allocated pages.
+     */
+    @MXBeanDescription("Cache group total allocated pages.")
+    public long getTotalAllocatedPages();
+
+    /**
+     * Total size of memory allocated for group, in bytes.
+     */
+    @MXBeanDescription("Total size of memory allocated for group, in bytes.")
+    public long getTotalAllocatedSize();
 }

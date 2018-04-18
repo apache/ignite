@@ -232,14 +232,6 @@ public interface IgniteMXBean {
     public boolean pingNode(String nodeId);
 
     /**
-     * Current coordinator info. NodeId, constId, order, topVer.
-     *
-     * @return Current coordinator info.
-     */
-    @MXBeanDescription("Return current coordinator info. NodeId,constId,order,topVer.")
-    public String getCurrentCoordinator();
-
-    /**
      * @param active Activate/DeActivate flag.
      */
     @MXBeanDescription(
