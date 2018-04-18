@@ -2572,8 +2572,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         final void checkLockRetry() throws IgniteCheckedException {
             if (lockRetriesCnt == 0) {
                 IgniteCheckedException e = new IgniteCheckedException("Maximum of retries " + getLockRetries() + " reached.");
+
                 if (failureProcessor != null)
                     failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
                 throw e;
             }
 
