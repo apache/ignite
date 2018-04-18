@@ -294,7 +294,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         boolean txStateCheck = remap ? tx.state() == PREPARING : tx.state(PREPARING);
 
         if (!txStateCheck) {
-            if (tx.setRollbackOnly()) {
+            if (tx.isRollbackOnly() || tx.setRollbackOnly()) {
                 if (tx.timedOut())
                     onError(null, new IgniteTxTimeoutCheckedException("Transaction timed out and " +
                         "was rolled back: " + this));

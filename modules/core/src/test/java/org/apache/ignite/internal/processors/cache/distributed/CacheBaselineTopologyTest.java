@@ -32,6 +32,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -81,6 +83,15 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     private boolean delayRebalance;
 
     /** */
+    private boolean disableAutoActivation;
+
+    /** */
+    private Map<String, Object> userAttrs;
+
+    /** */
+    private static final String DATA_NODE = "dataNodeUserAttr";
+
+    /** */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
@@ -99,6 +110,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         client = false;
+
+        disableAutoActivation = false;
     }
 
     /** {@inheritDoc} */
@@ -111,6 +124,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         cfg.setConsistentId(igniteInstanceName);
+
+        if (disableAutoActivation)
+            cfg.setAutoActivationEnabled(false);
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration().setDefaultDataRegionConfiguration(
@@ -129,6 +145,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             .setWalMode(WALMode.LOG_ONLY)
         );
 
+        if (userAttrs != null)
+            cfg.setUserAttributes(userAttrs);
+
         if (client)
             cfg.setClientMode(true);
 
@@ -136,6 +155,89 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             cfg.setCommunicationSpi(new DelayRebalanceCommunicationSpi());
 
         return cfg;
+    }
+
+    /**
+     * Verifies that rebalance on cache with Node Filter happens when BaselineTopology changes.
+     *
+     * @throws Exception
+     */
+    public void testRebalanceForCacheWithNodeFilter() throws Exception {
+        try {
+            final int EMPTY_NODE_IDX = 2;
+
+            userAttrs = U.newHashMap(1);
+            userAttrs.put(DATA_NODE, true);
+
+            startGrids(2);
+
+            userAttrs.put(DATA_NODE, false);
+
+            IgniteEx ignite = startGrid(2);
+
+            ignite.cluster().active(true);
+
+            awaitPartitionMapExchange();
+
+            IgniteCache<Integer, Integer> cache =
+                ignite.createCache(
+                    new CacheConfiguration<Integer, Integer>()
+                        .setName(CACHE_NAME)
+                        .setCacheMode(PARTITIONED)
+                        .setBackups(1)
+                        .setPartitionLossPolicy(READ_ONLY_SAFE)
+                        .setAffinity(new RendezvousAffinityFunction(32, null))
+                        .setNodeFilter(new DataNodeFilter())
+                );
+
+            for (int k = 0; k < 10_000; k++)
+                cache.put(k, k);
+
+            Thread.sleep(500);
+
+            printSizesDataNodes(NODE_COUNT - 1, EMPTY_NODE_IDX);
+
+            userAttrs.put(DATA_NODE, true);
+
+            startGrid(3);
+
+            ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion());
+
+            awaitPartitionMapExchange();
+
+            Thread.sleep(500);
+
+            printSizesDataNodes(NODE_COUNT, EMPTY_NODE_IDX);
+        }
+        finally {
+            userAttrs = null;
+        }
+    }
+
+    /** */
+    private void printSizesDataNodes(int nodesCnt, int emptyNodeIdx) {
+        for (int i = 0; i < nodesCnt; i++) {
+            IgniteEx ig = grid(i);
+
+            int locSize = ig.cache(CACHE_NAME).localSize(CachePeekMode.PRIMARY);
+
+            if (i == emptyNodeIdx)
+                assertEquals("Cache local size on "
+                    + i
+                    + " node is expected to be zero", 0, locSize);
+            else
+                assertTrue("Cache local size on "
+                    + i
+                    + " node is expected to be non zero", locSize > 0);
+        }
+    }
+
+    /** */
+    private static class DataNodeFilter implements IgnitePredicate<ClusterNode> {
+
+        @Override public boolean apply(ClusterNode clusterNode) {
+            return clusterNode.attribute(DATA_NODE);
+        }
     }
 
     /**
@@ -790,11 +892,15 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         delayRebalance = true;
 
+        /* There is a problem with handling simultaneous auto activation after restart and manual activation.
+           To properly catch the moment when cluster activation has finished we temporary disable auto activation. */
+        disableAutoActivation = true;
+
         startGrids(4);
 
         ig = grid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         cache = ig.cache(cacheName);
 
@@ -896,7 +1002,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void reset() {
-            delegate.reset();;
+            delegate.reset();
         }
 
         /** {@inheritDoc} */
