@@ -34,7 +34,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  *
  */
 public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
-    /** Error message */
+    /** Error message. */
     private static final String ERR_MESSAGE = "An error occurred during cache configuration loading from given file. " +
         "Make sure that user library containing required class is valid. " +
         "If library is valid then delete cache configuration file and restart cache";
@@ -73,7 +73,10 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** */
+    /**
+     * @return Cache configuration.
+     * @throws Exception if failed.
+     */
     @SuppressWarnings("unchecked")
     private CacheConfiguration getCacheConfiguration() throws Exception {
         CacheConfiguration cacheCfg = new CacheConfiguration("test_cache");
@@ -102,7 +105,7 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
 
         assertNotNull(pageStore);
 
-        Throwable e = GridTestUtils.assertThrowsWithCause((Callable<Void>)() -> {
+        Throwable e = GridTestUtils.assertThrowsWithCause(() -> {
                 pageStore.readCacheConfigurations();
 
                 return null;
