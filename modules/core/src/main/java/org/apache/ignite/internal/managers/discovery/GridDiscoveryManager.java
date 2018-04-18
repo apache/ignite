@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -1430,7 +1431,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return null;
                 }
-            }, topVer, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
+            }, topVer, discoCache, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
 
         if (log.isDebugEnabled()) {
             String dbg = "";
@@ -1481,7 +1482,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return null;
                 }
-            }, topVer, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
+            }, topVer, discoCache, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
     }
 
     /**
@@ -1563,8 +1564,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param heap Heap size.
      * @param offheap Offheap size.
      */
-    private void topologySnapshotMessage(IgniteClosure<String, Void> clo, long topVer, int srvNodesNum,
-        int clientNodesNum, int totalCpus, double heap, double offheap) {
+    private void topologySnapshotMessage(IgniteClosure<String, Void> clo, long topVer, DiscoCache discoCache,
+        int srvNodesNum, int clientNodesNum, int totalCpus, double heap, double offheap) {
         String summary = PREFIX + " [" +
             (discoOrdered ? "ver=" + topVer + ", " : "") +
             "servers=" + srvNodesNum +
@@ -1574,6 +1575,49 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             ", heap=" + heap + "GB]";
 
         clo.apply(summary);
+
+        DiscoveryDataClusterState state = discoCache.state();
+
+        clo.apply("  ^-- Node [id=" + discoCache.localNode().id().toString().toUpperCase() + ", clusterState="
+            + (state.active() ? "ACTIVE" : "INACTIVE") + ']');
+
+        BaselineTopology blt = state.baselineTopology();
+
+        if (blt != null && discoCache.baselineNodes() != null) {
+            int bltSize = discoCache.baselineNodes().size();
+            int bltOnline = discoCache.aliveBaselineNodes().size();
+            int bltOffline = bltSize - bltOnline;
+
+            clo.apply("  ^-- Baseline [id=" + blt.id() + ", size=" + bltSize + ", online=" + bltOnline
+                + ", offline=" + bltOffline + ']');
+
+            if (!state.active() && ctx.config().isAutoActivationEnabled()) {
+                String offlineConsistentIds = "";
+
+                if (bltOffline > 0 && bltOffline <= 5) {
+                    Collection<BaselineNode> offlineNodes = new HashSet<>(discoCache.baselineNodes());
+
+                    offlineNodes.removeAll(discoCache.aliveBaselineNodes());
+
+                    StringBuilder sb = new StringBuilder(" (");
+
+                    Iterator<BaselineNode> it = offlineNodes.iterator();
+
+                    for (BaselineNode node = it.next(); it.hasNext(); node = it.next()) {
+                        sb.append(node.consistentId());
+
+                        if (it.hasNext())
+                            sb.append(", ");
+                    }
+
+                    sb.append(')');
+
+                    offlineConsistentIds = offlineNodes.toString();
+                }
+
+                clo.apply("  ^-- " + bltOffline + " nodes left for auto-activation" + offlineConsistentIds);
+            }
+        }
 
         DataStorageConfiguration memCfg = ctx.config().getDataStorageConfiguration();
 
