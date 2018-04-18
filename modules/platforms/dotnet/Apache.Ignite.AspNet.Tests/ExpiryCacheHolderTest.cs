@@ -514,7 +514,7 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
-            public IQueryMetrics QueryMetrics()
+            public IQueryMetrics GetQueryMetrics()
             {
                 throw new NotImplementedException();
             }

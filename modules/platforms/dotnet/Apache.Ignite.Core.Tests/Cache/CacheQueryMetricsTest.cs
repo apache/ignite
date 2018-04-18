@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -64,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             ExecuteTwoQueries(cache);
 
-            CheckMetrics(cache.QueryMetrics());
+            CheckMetrics(cache.GetQueryMetrics());
         }
 
         /// <summary>
@@ -75,18 +76,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = GetCache();
 
-            try
-            {
-                var query = new SqlFieldsQuery("select * from NOT_A_TABLE");
+            Assert.Throws<IgniteException>(() => cache.Query(new SqlFieldsQuery("select * from NOT_A_TABLE")));
 
-                cache.Query(query);
-            }
-            catch (Exception e)
-            {
-                Console.Write("Ignore exception: " + e);
-            }
-
-            Assert.AreEqual(1, cache.QueryMetrics().Fails, "Check Fails count.");
+            Assert.AreEqual(1, cache.GetQueryMetrics().Fails, "Check Fails count.");
         }
 
         /// <summary>
@@ -101,7 +93,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.ResetQueryMetrics();
 
-            IQueryMetrics metrics = cache.QueryMetrics();
+            IQueryMetrics metrics = cache.GetQueryMetrics();
 
             Assert.AreEqual(0, metrics.Executions, "Check Executions count.");
             Assert.AreEqual(0, metrics.Fails, "Check Fails count.");
@@ -111,7 +103,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             ExecuteTwoQueries(cache);
 
-            CheckMetrics(cache.QueryMetrics());
+            CheckMetrics(cache.GetQueryMetrics());
         }
 
         /// <summary>

@@ -574,9 +574,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             return GetEnumerator();
         }
 
-        public IQueryMetrics QueryMetrics()
+        public IQueryMetrics GetQueryMetrics()
         {
-            return _cache.QueryMetrics();
+            return _cache.GetQueryMetrics();
         }
 
         public void ResetQueryMetrics()

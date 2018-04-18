@@ -1410,7 +1410,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        public IQueryMetrics QueryMetrics()
+        public IQueryMetrics GetQueryMetrics()
         {
             return DoInOp((int)CacheOp.QueryMetrics, stream =>
             {

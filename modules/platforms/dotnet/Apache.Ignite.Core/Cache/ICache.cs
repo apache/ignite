@@ -912,7 +912,7 @@ namespace Apache.Ignite.Core.Cache
         /// Gets query metrics.
         /// </summary>
         /// <returns>Query metrics.</returns>
-        IQueryMetrics QueryMetrics();
+        IQueryMetrics GetQueryMetrics();
 
         /// <summary>
         /// Reset query metrics.
