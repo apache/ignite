@@ -60,6 +60,7 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
+
         dsCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
