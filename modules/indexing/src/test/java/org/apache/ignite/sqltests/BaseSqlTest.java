@@ -438,7 +438,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
             IgniteBiPredicate<Long, BinaryObject> between = (key, val) -> 101 <= key && key <= 200;
 
-            List<List<Object>> expected = select(node, between, ALL_FIELDS);
+            String[] fields = emps.columnNames().toArray(new String[0]);
+
+            List<List<Object>> expected = select(node, between, fields);
 
             assertContainsEq(emps.values(), expected);
         });
