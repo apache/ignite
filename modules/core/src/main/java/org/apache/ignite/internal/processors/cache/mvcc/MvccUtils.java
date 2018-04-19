@@ -434,20 +434,30 @@ public class MvccUtils {
      * @param ctx Grid kernal context.
      * @return Currently started active user transaction, or {@code null} if none started.
      */
-    @Nullable public static GridNearTxLocal activeTx(GridKernalContext ctx) {
+    @Nullable private static GridNearTxLocal activeTx(GridKernalContext ctx) {
         GridNearTxLocal tx = tx(ctx);
 
         if (tx != null) {
             assert tx.state() == TransactionState.ACTIVE;
 
-            if (!tx.isOperationAllowed(true))
-                throw new IgniteSQLException("SQL queries and cache operations " +
-                    "may not be used in the same transaction.", IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
-
             return tx;
         }
 
         return null;
+    }
+
+    /**
+     * @param ctx Grid kernal context.
+     * @return Currently started active user transaction, or {@code null} if none started.
+     */
+    @Nullable public static GridNearTxLocal activeSqlTx(GridKernalContext ctx) {
+        GridNearTxLocal tx = activeTx(ctx);
+
+        if (tx != null && !tx.isOperationAllowed(true))
+            throw new IgniteSQLException("SQL queries and cache operations " +
+                "may not be used in the same transaction.", IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
+
+        return tx;
     }
 
     /**

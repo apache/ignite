@@ -58,7 +58,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -1758,7 +1757,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridNearTxLocal tx = null;
 
         if (MvccUtils.mvccEnabled(ctx))
-            tx = MvccUtils.activeTx(ctx);
+            tx = MvccUtils.activeSqlTx(ctx);
 
         if (cmd instanceof SqlBeginTransactionCommand) {
             if (tx != null) {
@@ -2233,7 +2232,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private boolean autoStartTx(SqlFieldsQuery qry) {
         // Let's do this call before anything else so that we always check tx type properly.
-        GridNearTxLocal tx = MvccUtils.activeTx(ctx);
+        GridNearTxLocal tx = MvccUtils.activeSqlTx(ctx);
 
         return qry instanceof SqlFieldsQueryEx && !((SqlFieldsQueryEx)qry).isAutoCommit() && tx == null;
     }
@@ -3107,7 +3106,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!MvccUtils.mvccEnabled(ctx))
             return;
 
-        GridNearTxLocal tx = MvccUtils.activeTx(ctx);
+        GridNearTxLocal tx = MvccUtils.activeSqlTx(ctx);
 
         if (tx != null)
             doRollback(tx);

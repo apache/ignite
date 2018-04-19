@@ -734,7 +734,7 @@ public class GridReduceQueryExecutor {
                     .timeout(timeoutMillis)
                     .schemaName(schemaName);
 
-                IgniteTxAdapter curTx = MvccUtils.activeTx(ctx);
+                IgniteTxAdapter curTx = MvccUtils.activeSqlTx(ctx);
 
                 if (curTx != null && curTx.mvccInfo() != null)
                     req.mvccSnapshot(curTx.mvccInfo().snapshot());
