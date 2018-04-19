@@ -1373,8 +1373,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @param topVer Topology version.
      */
-    public void ackTopology(long topVer) {
-        ackTopology(topVer, false);
+    public void ackTopology(long topVer, int evtType, ClusterNode evtNode) {
+        ackTopology(topVer, evtType, evtNode, false);
     }
 
     /**
@@ -1383,7 +1383,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param topVer Topology version.
      * @param throttle Suppress printing if this topology was already printed.
      */
-    private void ackTopology(long topVer, boolean throttle) {
+    private void ackTopology(long topVer, int evtType, ClusterNode evtNode, boolean throttle) {
         assert !isLocDaemon;
 
         DiscoCache discoCache = discoCacheHist.get(new AffinityTopologyVersion(topVer));
@@ -1430,7 +1430,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return null;
                 }
-            }, topVer, discoCache, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
+            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
 
         if (log.isDebugEnabled()) {
             String dbg = "";
@@ -1481,7 +1481,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return null;
                 }
-            }, topVer, discoCache, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
+            }, topVer, discoCache, evtType, evtNode, srvNodes.size(), clientNodes.size(), totalCpus, heap, offheap);
     }
 
     /**
@@ -1564,7 +1564,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param offheap Offheap size.
      */
     private void topologySnapshotMessage(IgniteClosure<String, Void> clo, long topVer, DiscoCache discoCache,
-        int srvNodesNum, int clientNodesNum, int totalCpus, double heap, double offheap) {
+        int evtType, ClusterNode evtNode, int srvNodesNum, int clientNodesNum, int totalCpus, double heap,
+        double offheap) {
         String summary = PREFIX + " [" +
             (discoOrdered ? "ver=" + topVer + ", " : "") +
             "servers=" + srvNodesNum +
@@ -1601,8 +1602,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     offlineConsistentIds = ' ' + F.nodeConsistentIds(offlineNodes).toString();
                 }
 
-                if (bltOffline == 0)
-                    clo.apply("  ^-- All baseline nodes are online, will start auto-activation");
+                if (bltOffline == 0) {
+                    if (evtType == EVT_NODE_JOINED && discoCache.baselineNode(evtNode))
+                        clo.apply("  ^-- All baseline nodes are online, will start auto-activation");
+                }
                 else
                     clo.apply("  ^-- " + bltOffline + " nodes left for auto-activation" + offlineConsistentIds);
             }
@@ -2775,7 +2778,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             if (log.isInfoEnabled())
                                 log.info("Added new node to topology: " + node);
 
-                            ackTopology(topVer.topologyVersion(), true);
+                            ackTopology(topVer.topologyVersion(), type, node, true);
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Added new node to topology: " + node);
@@ -2796,7 +2799,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             if (log.isInfoEnabled())
                                 log.info("Node left topology: " + node);
 
-                            ackTopology(topVer.topologyVersion(), true);
+                            ackTopology(topVer.topologyVersion(), type, node, true);
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Node left topology: " + node);
@@ -2818,7 +2821,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         log.info("Client node reconnected to topology: " + node);
 
                     if (!isLocDaemon)
-                        ackTopology(topVer.topologyVersion(), true);
+                        ackTopology(topVer.topologyVersion(), type, node, true);
 
                     break;
                 }
@@ -2832,7 +2835,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         if (!isLocDaemon) {
                             U.warn(log, "Node FAILED: " + node);
 
-                            ackTopology(topVer.topologyVersion(), true);
+                            ackTopology(topVer.topologyVersion(), type, node, true);
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Node FAILED: " + node);
