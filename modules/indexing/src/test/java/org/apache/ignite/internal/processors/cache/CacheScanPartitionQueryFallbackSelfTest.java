@@ -149,6 +149,64 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     }
 
     /**
+     * Scan (with explicit {@code setLocal(true)}) should perform on the local node.
+     *
+     * @throws Exception If failed.
+     */
+    public void testScanLocalExplicit() throws Exception {
+        cacheMode = CacheMode.PARTITIONED;
+        backups = 0;
+        commSpiFactory = new TestLocalCommunicationSpiFactory();
+
+        try {
+            Ignite ignite = startGrids(GRID_CNT);
+
+            IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
+
+            int part = anyLocalPartition(cache.context());
+
+            QueryCursor<Cache.Entry<Integer, Integer>> qry =
+                cache.query(new ScanQuery<Integer, Integer>().setPartition(part).setLocal(true));
+
+            doTestScanQuery(qry, part);
+
+            part = remotePartition(cache.context()).getKey();
+
+            qry = cache.query(new ScanQuery<Integer, Integer>().setPartition(part).setLocal(true));
+
+            assertTrue(qry.getAll().isEmpty());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * Scan (with explicit {@code setLocal(true)}, no partition specified) should perform on the local node.
+     *
+     * @throws Exception If failed.
+     */
+    public void testScanLocalExplicitNoPart() throws Exception {
+        cacheMode = CacheMode.PARTITIONED;
+        backups = 0;
+        commSpiFactory = new TestLocalCommunicationSpiFactory();
+
+        try {
+            Ignite ignite = startGrids(GRID_CNT);
+
+            IgniteCacheProxy<Integer, Integer> cache = fillCache(ignite);
+
+            QueryCursor<Cache.Entry<Integer, Integer>> qry =
+                cache.query(new ScanQuery<Integer, Integer>().setLocal(true));
+
+            assertFalse(qry.getAll().isEmpty());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * Scan should perform on the remote node.
      *
      * @throws Exception If failed.

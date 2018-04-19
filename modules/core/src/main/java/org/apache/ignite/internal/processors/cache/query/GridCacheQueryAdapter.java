@@ -516,14 +516,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "unchecked"})
     @Override public GridCloseableIterator executeScanQuery() throws IgniteCheckedException {
-        assert type == SCAN : "Wrong processing of qyery: " + type;
+        assert type == SCAN : "Wrong processing of query: " + type;
 
         // Affinity nodes snapshot.
         Collection<ClusterNode> nodes = new ArrayList<>(nodes());
 
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        if (nodes.isEmpty() && part == null)
+        if (nodes.isEmpty())
             return new GridEmptyCloseableIterator();
 
         if (log.isDebugEnabled())
