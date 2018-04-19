@@ -116,119 +116,40 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testDeployFromNodeAddedToBlt() throws Exception {
-        persistence = true;
-
-        Ignite insideNode = startGrid(0);
-
-        IgniteCluster cluster = insideNode.cluster();
-
-        cluster.active(true);
-
-        Ignite outsideNode = startGrid(1);
-
-        cluster.setBaselineTopology(cluster.topologyVersion());
-
-        CountDownLatch exeLatch = new CountDownLatch(1);
-
-        DummyService.exeLatch(SERVICE_NAME, exeLatch);
-
-        IgniteFuture<Void> depFut = outsideNode.services().deployClusterSingletonAsync(SERVICE_NAME, new DummyService());
-
-        depFut.get(10, TimeUnit.SECONDS);
-
-        assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
+        checkDeployWithNodeAddedToBlt(true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDeployToNodeAddedToBlt() throws Exception {
-        persistence = true;
-
-        Ignite insideNode = startGrid(0);
-
-        IgniteCluster cluster = insideNode.cluster();
-
-        cluster.active(true);
-
-        startGrid(1);
-
-        cluster.setBaselineTopology(cluster.topologyVersion());
-
-        CountDownLatch exeLatch = new CountDownLatch(2);
-
-        DummyService.exeLatch(SERVICE_NAME, exeLatch);
-
-        IgniteFuture<Void> depFut = insideNode.services().deployNodeSingletonAsync(SERVICE_NAME, new DummyService());
-
-        depFut.get(10, TimeUnit.SECONDS);
-
-        assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
+        checkDeployWithNodeAddedToBlt(false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDeployFromNodeRemovedFromBlt() throws Exception {
-        persistence = true;
+        checkDeployFromNodeRemovedFromBlt(true, false);
+    }
 
-        Ignite insideNode = startGrid(0);
-        startGrid(1);
-
-        IgniteCluster cluster = insideNode.cluster();
-
-        cluster.active(true);
-
-        stopGrid(1);
-
-        cluster.setBaselineTopology(cluster.topologyVersion());
-
-        Ignite rmvNode = startGrid(1);
-
-        CountDownLatch exeLatch = new CountDownLatch(1);
-
-        DummyService.exeLatch(SERVICE_NAME, exeLatch);
-
-        IgniteFuture<Void> depFut = rmvNode.services().deployClusterSingletonAsync(SERVICE_NAME, new DummyService());
-
-        depFut.get(10, TimeUnit.SECONDS);
-
-        assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployFromNodeRemovedFromBltStatic() throws Exception {
+        checkDeployFromNodeRemovedFromBlt(true, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDeployToNodeRemovedFromBlt() throws Exception {
-        persistence = true;
-
-        Ignite insideNode = startGrid(0);
-        startGrid(1);
-
-        IgniteCluster cluster = insideNode.cluster();
-
-        cluster.active(true);
-
-        stopGrid(1);
-
-        cluster.setBaselineTopology(cluster.topologyVersion());
-
-        startGrid(1);
-
-        CountDownLatch exeLatch = new CountDownLatch(2);
-
-        DummyService.exeLatch(SERVICE_NAME, exeLatch);
-
-        IgniteFuture<Void> depFut = insideNode.services().deployNodeSingletonAsync(SERVICE_NAME, new DummyService());
-
-        depFut.get(10, TimeUnit.SECONDS);
-
-        assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
+        checkDeployFromNodeRemovedFromBlt(false, false);
     }
 
     /**
      * @param persistence If {@code true}, then persistence will be enabled.
-     * @param staticDeploy If {@code true}, then static deployments will be used instead of a dynamic one.
+     * @param staticDeploy If {@code true}, then static deployment will be used instead of a dynamic one.
      * @throws Exception If failed.
      */
     private void checkDeploymentFromOutsideNode(boolean persistence, boolean staticDeploy) throws Exception {
@@ -248,15 +169,40 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
 
         DummyService.exeLatch(SERVICE_NAME, exeLatch);
 
-        if (staticDeploy) {
-            srvcCfg = getServiceConfiguration();
+        deployServiceFromNewNode(staticDeploy);
 
-            startGrid(1);
+        assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
+    }
+
+    /**
+     * @param from If {@code true}, then added node will be an initiator of deployment.
+     * Otherwise deployment <b>to</b> this node will be tested.
+     * @throws Exception If failed.
+     */
+    private void checkDeployWithNodeAddedToBlt(boolean from) throws Exception {
+        persistence = true;
+
+        Ignite insideNode = startGrid(0);
+
+        IgniteCluster cluster = insideNode.cluster();
+
+        cluster.active(true);
+
+        Ignite outsideNode = startGrid(1);
+
+        cluster.setBaselineTopology(cluster.topologyVersion());
+
+        CountDownLatch exeLatch = new CountDownLatch(from ? 1 : 2);
+
+        DummyService.exeLatch(SERVICE_NAME, exeLatch);
+
+        if (from) {
+            IgniteFuture<Void> depFut = outsideNode.services().deployClusterSingletonAsync(SERVICE_NAME, new DummyService());
+
+            depFut.get(10, TimeUnit.SECONDS);
         }
         else {
-            Ignite outsideNode = startGrid(1);
-
-            IgniteFuture<Void> depFut = outsideNode.services().deployClusterSingletonAsync(SERVICE_NAME, new DummyService());
+            IgniteFuture<Void> depFut = outsideNode.services().deployNodeSingletonAsync(SERVICE_NAME, new DummyService());
 
             depFut.get(10, TimeUnit.SECONDS);
         }
@@ -265,9 +211,65 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     }
 
     /**
+     * @param from If {@code true}, then added node will be an initiator of deployment.
+     * Otherwise deployment <b>to</b> this node will be tested.
+     * @param staticDeploy If {@code true}, then static deployment will be used instead of a dynamic one.
+     * @throws Exception If failed.
+     */
+    private void checkDeployFromNodeRemovedFromBlt(boolean from, boolean staticDeploy) throws Exception {
+        persistence = true;
+
+        Ignite insideNode = startGrid(0);
+        startGrid(1);
+
+        IgniteCluster cluster = insideNode.cluster();
+
+        cluster.active(true);
+
+        stopGrid(1);
+
+        cluster.setBaselineTopology(cluster.topologyVersion());
+
+        CountDownLatch exeLatch = new CountDownLatch(from ? 1 : 2);
+
+        DummyService.exeLatch(SERVICE_NAME, exeLatch);
+
+        if (from)
+            deployServiceFromNewNode(staticDeploy);
+        else {
+            startGrid(1);
+
+            IgniteFuture<Void> depFut = insideNode.services().deployNodeSingletonAsync(SERVICE_NAME, new DummyService());
+
+            depFut.get(10, TimeUnit.SECONDS);
+        }
+
+        assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
+    }
+
+    /**
+     * @param staticDeploy If {@code true}, then static deployment will be used instead of a dynamic one.
+     * @throws Exception If node failed to start.
+     */
+    private void deployServiceFromNewNode(boolean staticDeploy) throws Exception {
+        if (staticDeploy) {
+            srvcCfg = getClusterSingletonServiceConfiguration();
+
+            startGrid(1);
+        }
+        else {
+            Ignite node = startGrid(1);
+
+            IgniteFuture<Void> depFut = node.services().deployClusterSingletonAsync(SERVICE_NAME, new DummyService());
+
+            depFut.get(10, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
      * @return Test service configuration;
      */
-    private ServiceConfiguration getServiceConfiguration() {
+    private ServiceConfiguration getClusterSingletonServiceConfiguration() {
         ServiceConfiguration srvcCfg = new ServiceConfiguration();
         srvcCfg.setName(SERVICE_NAME);
         srvcCfg.setService(new DummyService());
