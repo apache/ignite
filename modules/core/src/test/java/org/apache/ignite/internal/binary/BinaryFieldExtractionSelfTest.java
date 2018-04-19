@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
+import java.sql.Time;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -95,6 +96,27 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
 
             buf.flip();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTimeMarshalling() throws Exception {
+        BinaryMarshaller marsh = createMarshaller();
+
+        TimeValue obj = new TimeValue(11111L);
+
+        BinaryObjectImpl binObj = toBinary(obj, marsh);
+
+        BinaryFieldEx field = (BinaryFieldEx)binObj.type().field("time");
+
+        ByteBuffer buf = ByteBuffer.allocate(16);
+
+        field.writeField(binObj, buf);
+
+        buf.flip();
+
+        assertEquals(field.value(binObj), field.<Time>readField(buf));
     }
 
     /**
@@ -191,6 +213,19 @@ public class BinaryFieldExtractionSelfTest extends GridCommonAbstractTest {
             lVal = seed;
             fVal = seed;
             dVal = seed;
+        }
+    }
+
+    /** */
+    private static class TimeValue {
+        /** */
+        private Time time;
+
+        /**
+         * @param time Time.
+         */
+        TimeValue(long time) {
+            this.time = new Time(time);
         }
     }
 

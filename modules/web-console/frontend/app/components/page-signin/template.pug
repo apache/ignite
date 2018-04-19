@@ -27,10 +27,9 @@ section
                 .row
                     .col-xs-12.col-md-11
                         -var form = '$ctrl.form_signup'
-                        form(name=form novalidate)
-                            .settings-row
-                                h3 Don't Have An Account?
-                            .settings-row
+                        h3 Don't Have An Account?
+                        form.ps-grid(name=form novalidate)
+                            .ps-grid-full-width
                                 +form-field__email({
                                     label: 'Email:',
                                     model: '$ctrl.data.signup.email',
@@ -42,7 +41,7 @@ section
                                     ng-model-options='{allowInvalid: true}'
                                 )
                                     +form-field__error({error: 'server', message: `{{$ctrl.serverErrors.signup}}`})
-                            .settings-row
+                            div
                                 +form-field__password({
                                     label: 'Password:',
                                     model: '$ctrl.data.signup.password',
@@ -52,7 +51,7 @@ section
                                 })(
                                     ignite-on-enter-focus-move='confirmInput'
                                 )
-                            .settings-row
+                            div
                                 +form-field__password({
                                     label: 'Confirm:',
                                     model: 'confirm',
@@ -63,7 +62,7 @@ section
                                     ignite-on-enter-focus-move='firstNameInput'
                                     ignite-match='$ctrl.data.signup.password'
                                 )
-                            .settings-row
+                            div
                                 +form-field__text({
                                     label: 'First name:',
                                     model: '$ctrl.data.signup.firstName',
@@ -73,7 +72,7 @@ section
                                 })(
                                     ignite-on-enter-focus-move='lastNameInput'
                                 )
-                            .settings-row
+                            div
                                 +form-field__text({
                                     label: 'Last name:',
                                     model: '$ctrl.data.signup.lastName',
@@ -83,17 +82,7 @@ section
                                 })(
                                     ignite-on-enter-focus-move='companyInput'
                                 )
-                            .settings-row
-                                +form-field__text({
-                                    label: 'Company:',
-                                    model: '$ctrl.data.signup.company',
-                                    name: '"company"',
-                                    placeholder: 'Input company name',
-                                    required: true
-                                })(
-                                    ignite-on-enter-focus-move='countryInput'
-                                )
-                            .settings-row
+                            .ps-grid-full-width
                                 +form-field__dropdown({
                                     label: 'Country:',
                                     model: '$ctrl.data.signup.country',
@@ -104,7 +93,17 @@ section
                                 })(
                                     ignite-on-enter-focus-move='signup_submit'
                                 )
-                            .login-footer
+                            .ps-grid-full-width
+                                +form-field__text({
+                                    label: 'Company:',
+                                    model: '$ctrl.data.signup.company',
+                                    name: '"company"',
+                                    placeholder: 'Input company name',
+                                    required: true
+                                })(
+                                    ignite-on-enter-focus-move='countryInput'
+                                )
+                            .login-footer.ps-grid-full-width
                                 button#signup_submit.btn-ignite.btn-ignite--primary(
                                     ng-click='$ctrl.signup()'
                                     ng-disabled=`!$ctrl.canSubmitForm(${form})`

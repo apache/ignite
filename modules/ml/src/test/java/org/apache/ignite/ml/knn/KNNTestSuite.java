@@ -26,6 +26,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     KNNClassificationTest.class,
+    KNNRegressionTest.class,
     LabeledDatasetTest.class
 })
 public class KNNTestSuite {
