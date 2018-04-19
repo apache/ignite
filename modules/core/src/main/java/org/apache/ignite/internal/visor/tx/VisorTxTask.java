@@ -51,6 +51,9 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<VisorTxNodeInfo, VisorTxTaskResult>, VisorTxTaskResult> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Override protected VisorJob<VisorTxTaskArg, VisorTxTaskResult> job(VisorTxTaskArg arg) {
         return new VisorTxJob(arg, debug);

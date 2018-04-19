@@ -52,7 +52,6 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxNodeInfo;
-import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
@@ -963,8 +962,7 @@ public class CommandHandler {
         if (proj != null && consistentIds != null)
             throw new IllegalArgumentException("Projection can't be used together with list of consistent ids.");
 
-        return new VisorTxTaskArg(limit, killXid == null ? VisorTxOperation.LIST : VisorTxOperation.KILL, duration, size,
-                null, proj, consistentIds, killXid, lbRegex, sortOrder);
+        return new VisorTxTaskArg(limit, duration, size, null, proj, consistentIds, killXid, lbRegex, sortOrder);
     }
 
     /**

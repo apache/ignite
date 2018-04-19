@@ -39,9 +39,6 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     private @Nullable Integer limit;
 
     /** */
-    private VisorTxOperation op;
-
-    /** */
     private @Nullable Long minDuration;
 
     /** */
@@ -74,7 +71,6 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
 
     /**
      * @param limit Limit to collect.
-     * @param op Op.
      * @param minDuration Min duration.
      * @param minSize Min size.
      * @param state State.
@@ -84,11 +80,10 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
      * @param lbRegex Label regex.
      * @param sortOrder Sort order.
      */
-    public VisorTxTaskArg(@Nullable Integer limit, VisorTxOperation op, @Nullable Long minDuration, @Nullable Integer minSize,
+    public VisorTxTaskArg(@Nullable Integer limit, @Nullable Long minDuration, @Nullable Integer minSize,
         @Nullable TransactionState state, @Nullable VisorTxProjection proj, @Nullable List<String> consistentIds,
         @Nullable String killXid, @Nullable String lbRegex, @Nullable VisorTxSortOrder sortOrder) {
         this.limit = limit;
-        this.op = op;
         this.minDuration = minDuration;
         this.minSize = minSize;
         this.state = state;
@@ -102,11 +97,6 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     /** */
     @Nullable public Integer getLimit() {
         return limit;
-    }
-
-    /** */
-    public VisorTxOperation getOp() {
-        return op;
     }
 
     /** */
@@ -152,7 +142,6 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         out.writeInt(limit == null ? -1 : limit);
-        U.writeEnum(out, op);
         out.writeLong(minDuration == null ? -1 : minDuration);
         out.writeInt(minSize == null ? -1 : minSize);
         U.writeEnum(out, state);
@@ -166,7 +155,6 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         limit = fixNull(in.readInt());
-        op = VisorTxOperation.fromOrdinal(in.readByte());
         minDuration = fixNull(in.readLong());
         minSize = fixNull(in.readInt());
         state = TransactionState.fromOrdinal(in.readByte());
