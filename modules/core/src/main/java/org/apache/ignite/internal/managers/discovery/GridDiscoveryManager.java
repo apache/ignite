@@ -1372,6 +1372,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * Prints the latest topology info into log taking into account logging/verbosity settings.
      *
      * @param topVer Topology version.
+     * @param evtType Event type.
+     * @param evtNode Event node.
      */
     public void ackTopology(long topVer, int evtType, ClusterNode evtNode) {
         ackTopology(topVer, evtType, evtNode, false);
@@ -1381,6 +1383,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * Logs grid size for license compliance.
      *
      * @param topVer Topology version.
+     * @param evtType Event type.
+     * @param evtNode Event node.
      * @param throttle Suppress printing if this topology was already printed.
      */
     private void ackTopology(long topVer, int evtType, ClusterNode evtNode, boolean throttle) {
@@ -1557,6 +1561,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      * @param clo Wrapper of logger.
      * @param topVer Topology version.
+     * @param discoCache Discovery cache.
+     * @param evtType Event type.
+     * @param evtNode Event node.
      * @param srvNodesNum Server nodes number.
      * @param clientNodesNum Client nodes number.
      * @param totalCpus Total cpu number.
