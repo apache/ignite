@@ -21,18 +21,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.ConcurrentModificationException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
@@ -42,6 +42,7 @@ import org.apache.ignite.internal.visor.VisorMultiNodeTask;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 
@@ -94,12 +95,18 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<VisorTxN
         });
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override protected Map<VisorTxNodeInfo, VisorTxTaskResult> reduce0(List<ComputeJobResult> results) throws IgniteException {
         Map<VisorTxNodeInfo, VisorTxTaskResult> mapRes = new TreeMap<>();
 
-        for (ComputeJobResult result : results)
-            mapRes.put(new VisorTxNodeInfo(
-                result.getNode().id(), result.getNode().consistentId(), result.getNode().order()), result.getData());
+        for (ComputeJobResult result : results) {
+            VisorTxTaskResult data = result.getData();
+
+            if (data.getInfos().isEmpty())
+                continue;
+
+            mapRes.put(new VisorTxNodeInfo(result.getNode()), data);
+        }
 
         return mapRes;
     }
@@ -110,6 +117,9 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<VisorTxN
     private static class VisorTxJob extends VisorJob<VisorTxTaskArg, VisorTxTaskResult> {
         /** */
         private static final long serialVersionUID = 0L;
+
+        /** */
+        public static final int DEFAULT_LIMIT = 50;
 
         /**
          * @param arg Formal job argument.
@@ -128,7 +138,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<VisorTxN
 
             List<VisorTxInfo> infos = new ArrayList<>();
 
-            int limit = arg.getLimit() == null ? 50 : arg.getLimit();
+            int limit = arg.getLimit() == null ? DEFAULT_LIMIT : arg.getLimit();
 
             Pattern lbMatch = null;
 
@@ -136,13 +146,21 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<VisorTxN
                 try {
                     lbMatch = Pattern.compile(arg.getLabelRegex());
                 }
-                catch (Exception e) {
-                    // Ignore.
+                catch (PatternSyntaxException ignored) {
+                    // No-op.
                 }
             }
 
+            IgniteUuid kill = null;
+
+            if (arg.getKillXid() != null)
+                kill = IgniteUuid.fromString(arg.getKillXid());
+
             for (Transaction transaction : transactions) {
                 GridNearTxLocal locTx = ((TransactionProxyImpl)transaction).tx();
+
+                if (kill != null && !kill.equals(transaction.xid()))
+                    continue;
 
                 if (arg.getState() != null && locTx.state() != arg.getState())
                     continue;
@@ -156,10 +174,8 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<VisorTxN
                 if (arg.getMinSize() != null && locTx.size() < arg.getMinSize())
                     continue;
 
-                if (lbMatch != null && locTx.label() != null) {
-                    if (!lbMatch.matcher(locTx.label()).matches())
-                        continue;
-                }
+                if (lbMatch != null && (locTx.label() == null || !lbMatch.matcher(locTx.label()).matches()))
+                    continue;
 
                 Collection<UUID> mappings = new ArrayList<>();
 
@@ -169,12 +185,15 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<VisorTxN
                     for (GridDistributedTxMapping mapping : locTx.mappings().mappings()) {
                         mappings.add(mapping.primary().id());
 
-                        size += new ArrayList<>(mapping.entries()).size(); // prevent ConcurrentModificationException.
+                        size += mapping.entries().size(); // Entries are not synchronized so no visibility guaranties.
                     }
                 }
 
                 infos.add(new VisorTxInfo(locTx.xid(), duration, locTx.isolation(), locTx.concurrency(),
                     locTx.timeout(), locTx.label(), mappings, locTx.state(), size));
+
+                if (kill != null)
+                    locTx.rollbackAsync();
 
                 if (infos.size() == limit)
                     break;

@@ -175,6 +175,9 @@ public class CommandHandler {
     /** */
     private String peekedArg;
 
+    /** */
+    private Object lastOperationResult;
+
     /**
      * Output specified string to console.
      *
@@ -622,8 +625,14 @@ public class CommandHandler {
         try {
             Map<VisorTxNodeInfo, VisorTxTaskResult> res = executeTask(client, VisorTxTask.class, arg);
 
+            lastOperationResult = res;
+
             if (res.isEmpty())
                 log("Nothing found.");
+            else if (arg.getKillXid() != null)
+                log("Killed transactions:");
+            else
+                log("Matching transactions:");
 
             for (Map.Entry<VisorTxNodeInfo, VisorTxTaskResult> entry : res.entrySet()) {
                 if (entry.getValue().getInfos().isEmpty())
@@ -955,7 +964,7 @@ public class CommandHandler {
             throw new IllegalArgumentException("Projection can't be used together with list of consistent ids.");
 
         return new VisorTxTaskArg(limit, killXid == null ? VisorTxOperation.LIST : VisorTxOperation.KILL, duration, size,
-                null, proj, consistentIds, null, lbRegex, sortOrder);
+                null, proj, consistentIds, killXid, lbRegex, sortOrder);
     }
 
     /**
@@ -1090,6 +1099,15 @@ public class CommandHandler {
         CommandHandler hnd = new CommandHandler();
 
         System.exit(hnd.execute(Arrays.asList(args)));
+    }
+
+    /**
+     * Used for tests.
+     * @return Last operation result;
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T getLastOperationResult() {
+        return (T)lastOperationResult;
     }
 }
 

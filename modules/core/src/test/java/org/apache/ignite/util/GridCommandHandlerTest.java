@@ -26,12 +26,9 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -42,17 +39,21 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.tx.VisorTxInfo;
+import org.apache.ignite.internal.visor.tx.VisorTxNodeInfo;
+import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -148,6 +149,32 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         args.add("--force");
 
         return new CommandHandler().execute(args);
+    }
+
+    /**
+     * @param hnd Handler.
+     * @param args Arguments.
+     * @return Result of execution
+     */
+    protected int execute(CommandHandler hnd, ArrayList<String> args) {
+        // Add force to avoid interactive confirmation
+        args.add("--force");
+
+        return hnd.execute(args);
+    }
+
+    /**
+     * @param hnd Handler.
+     * @param args Arguments.
+     * @return Result of execution
+     */
+    protected int execute(CommandHandler hnd, String... args) {
+        ArrayList<String> args0 = new ArrayList<>(Arrays.asList(args));
+
+        // Add force to avoid interactive confirmation
+        args0.add("--force");
+
+        return hnd.execute(args0);
     }
 
     /**
@@ -387,6 +414,12 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                             U.awaitQuiet(unlockLatch);
 
                             tx.commit();
+
+                            fail("Commit must fail");
+                        }
+                        catch (Exception ignored) {
+                            // No-op.
+                            assertTrue(X.hasCause(ignored, TransactionRollbackException.class));
                         }
 
                         break;
@@ -412,7 +445,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
                             client.cache(DEFAULT_CACHE_NAME).put(100, 10);
 
-                        client.cache(DEFAULT_CACHE_NAME).put(0, 0);
+                            client.cache(DEFAULT_CACHE_NAME).put(0, 0);
 
                             tx.commit();
                         }
@@ -424,11 +457,85 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         doSleep(1500);
 
-        assertEquals(EXIT_CODE_OK, execute("--tx"));
+        CommandHandler h = new CommandHandler();
+
+        final VisorTxInfo[] toKill = {null};
+
+        validate(h, map -> {
+            VisorTxNodeInfo i = new VisorTxNodeInfo(grid(0).cluster().localNode());
+
+            VisorTxTaskResult res = map.get(i);
+
+            for (VisorTxInfo info : res.getInfos()) {
+                if (info.getSize() == 100) {
+                    toKill[0] = info;
+
+                    break;
+                }
+            }
+
+            assertEquals(3, map.size());
+        }, "--tx");
+
+        assertNotNull(toKill);
+
+        validate(h, map -> {
+            VisorTxNodeInfo i = new VisorTxNodeInfo(grid(0).cluster().localNode());
+
+            for (Map.Entry<VisorTxNodeInfo, VisorTxTaskResult> entry : map.entrySet())
+                assertEquals(entry.getKey().equals(i) ? 1 : 0, entry.getValue().getInfos().size());
+        }, "--tx", "label", "label1");
+
+        validate(h, map -> {
+            VisorTxNodeInfo i1 = new VisorTxNodeInfo(grid(0).cluster().localNode());
+            VisorTxNodeInfo i2 = new VisorTxNodeInfo(grid("client").cluster().localNode());
+
+            for (Map.Entry<VisorTxNodeInfo, VisorTxTaskResult> entry : map.entrySet()) {
+                if (entry.getKey().equals(i1)) {
+                    assertEquals(1, entry.getValue().getInfos().size());
+
+                    assertEquals("label1", entry.getValue().getInfos().get(0).getLabel());
+                }
+                else if (entry.getKey().equals(i2)) {
+                    assertEquals(1, entry.getValue().getInfos().size());
+
+                    assertEquals("label2", entry.getValue().getInfos().get(0).getLabel());
+                }
+                else
+                    assertTrue(entry.getValue().getInfos().isEmpty());
+
+
+            }
+        }, "--tx", "label", "^label[0-9]");
+
+        validate(h, map -> {
+                assertEquals(1, map.size());
+
+                Map.Entry<VisorTxNodeInfo, VisorTxTaskResult> killedEntry = map.entrySet().iterator().next();
+
+                VisorTxInfo info = killedEntry.getValue().getInfos().get(0);
+
+                assertEquals(toKill[0].getXid(), info.getXid());
+            }, "--tx",
+            "kill", toKill[0].getXid().toString(),
+            "nodes", grid(0).localNode().consistentId().toString());
 
         unlockLatch.countDown();
 
         fut.get();
+    }
+
+    /**
+     * @param h Handler.
+     * @param validateClo Validate clo.
+     * @param args Args.
+     */
+    private void validate(
+        CommandHandler h, IgniteInClosure<Map<VisorTxNodeInfo, VisorTxTaskResult>> validateClo, String... args)
+        throws IgniteCheckedException {
+        assertEquals(EXIT_CODE_OK, execute(h, args));
+
+        validateClo.apply(h.getLastOperationResult());
     }
 
     /**

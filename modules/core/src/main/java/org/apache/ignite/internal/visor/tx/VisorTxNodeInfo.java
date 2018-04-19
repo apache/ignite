@@ -2,6 +2,7 @@ package org.apache.ignite.internal.visor.tx;
 
 import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
 
 /**
  */
@@ -19,14 +20,12 @@ public class VisorTxNodeInfo implements Serializable, Comparable<VisorTxNodeInfo
     private final long order;
 
     /**
-     * @param id Id.
-     * @param consistentId Consistent id.
-     * @param order Order.
+     * @param node Cluster node.
      */
-    public VisorTxNodeInfo(UUID id, Object consistentId, long order) {
-        this.id = id;
-        this.consistentId = consistentId;
-        this.order = order;
+    public VisorTxNodeInfo(ClusterNode node) {
+        this.id = node.id();
+        this.consistentId = node.consistentId();
+        this.order = node.order();
     }
 
     /** */

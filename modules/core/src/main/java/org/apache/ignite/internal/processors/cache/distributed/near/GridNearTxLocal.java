@@ -3512,7 +3512,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             fut0.onDone(new IgniteTxTimeoutCheckedException("Failed to commit transaction, " +
                                 "transaction is concurrently rolled back on timeout: " + tx));
                         else
-                            fut0.onDone(new IgniteCheckedException("Failed to commit transaction, " +
+                            fut0.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction, " +
                                 "transaction is concurrently rolled back: " + tx));
                     }
                 });
