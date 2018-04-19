@@ -694,7 +694,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /**
      * @return Properties set contains connection parameters.
      */
-    Properties storeToProperties() {
+    public Properties storeToProperties() {
         Properties props = new Properties();
 
         for (ConnectionProperty prop : propsArray) {
