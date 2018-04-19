@@ -117,6 +117,7 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
@@ -149,6 +150,8 @@ import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
+import org.apache.ignite.plugin.security.SecurityException;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
@@ -181,6 +184,14 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
+    /** Template of message of conflicts during configuration merge*/
+    private static final String MERGE_OF_CONFIG_CONFLICTS_MESSAGE =
+        "Conflicts during configuration merge for cache '%s' : \n%s";
+
+    /** Template of message of node join was fail because it requires to merge of config */
+    private static final String MERGE_OF_CONFIG_REQUIRED_MESSAGE = "Failed to join node to the active cluster " +
+        "(the config of the cache '%s' has to be merged which is impossible on active grid). " +
+        "Deactivate grid and retry node join or clean the joining node.";
     /** */
     private final boolean startClientCaches =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
@@ -740,15 +751,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cacheType != CacheType.USER && cfg.getDataRegionName() == null)
                 cfg.setDataRegionName(sharedCtx.database().systemDateRegionName());
 
-            if (!cacheType.userCache())
-                stopSeq.addLast(cacheName);
-            else
-                stopSeq.addFirst(cacheName);
-
-            caches.put(cacheName, new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, cacheType, cacheData.sql(), 0));
+            addStoredCache(caches, cacheData, cacheName, cacheType, true);
         }
         else
-            templates.put(cacheName, new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, CacheType.USER, false, 0));
+            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
+    }
+
+    /**
+     * Add stored cache data to caches storage.
+     *
+     * @param caches Cache storage.
+     * @param cacheData Cache data to add.
+     * @param cacheName Cache name.
+     * @param cacheType Cache type.
+     * @param isStaticalyConfigured Statically configured flag.
+     */
+    private void addStoredCache(Map<String, CacheInfo> caches, StoredCacheData cacheData, String cacheName,
+        CacheType cacheType, boolean isStaticalyConfigured) {
+        if (!cacheType.userCache())
+            stopSeq.addLast(cacheName);
+        else
+            stopSeq.addFirst(cacheName);
+
+        caches.put(cacheName, new CacheInfo(cacheData, cacheType, cacheData.sql(), 0, isStaticalyConfigured));
     }
 
     /**
@@ -771,6 +796,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cfgs[i] = cfg;
 
             addCacheOnJoin(cfg, false, caches, templates);
+        }
+
+        if (CU.isPersistenceEnabled(ctx.config()) && ctx.cache().context().pageStore() != null) {
+            Map<String, StoredCacheData> storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
+
+            if (!F.isEmpty(storedCaches))
+                for (StoredCacheData storedCacheData : storedCaches.values()) {
+                    String cacheName = storedCacheData.config().getName();
+
+                    //Ignore stored caches if it already added by static config(static config has higher priority).
+                    if (!caches.containsKey(cacheName))
+                        addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName), false);
+                }
         }
     }
 
@@ -1126,6 +1164,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheConfiguration cfg = cacheCtx.config();
 
+        if (cacheCtx.userCache())
+            authorizeCacheCreate(cacheCtx.name(), cfg);
+
         // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
         if (cfg.isStoreKeepBinary() && cfg.isStoreKeepBinary() != CacheConfiguration.DFLT_STORE_KEEP_BINARY
             && !(ctx.config().getMarshaller() instanceof BinaryMarshaller))
@@ -1242,6 +1283,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ctx.group().stopCache(ctx, destroy);
 
             U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
+
+            IgnitePageStoreManager pageStore;
+
+            if (destroy && (pageStore = sharedCtx.pageStore()) != null) {
+                try {
+                    pageStore.removeCacheData(new StoredCacheData(ctx.config()));
+                } catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to delete cache configuration data while destroying cache" +
+                            "[cache=" + ctx.name() + "]", e);
+                }
+            }
 
             if (log.isInfoEnabled()) {
                 if (ctx.group().sharedGroup())
@@ -2434,6 +2486,50 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         sharedCtx.walState().onCachesInfoCollected();
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(
+        ClusterNode node, JoiningNodeDiscoveryData discoData
+    ) {
+        if(!cachesInfo.isMergeConfigSupports(node))
+            return null;
+
+        if (discoData.hasJoiningNodeData() && discoData.joiningNodeData() instanceof CacheJoinNodeDiscoveryData) {
+            CacheJoinNodeDiscoveryData nodeData = (CacheJoinNodeDiscoveryData)discoData.joiningNodeData();
+
+            boolean isGridActive = ctx.state().clusterState().active();
+
+            StringBuilder errorMessage = new StringBuilder();
+
+            for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
+                DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
+
+                if (localDesc == null)
+                    continue;
+
+                QuerySchemaPatch schemaPatch = localDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
+
+                if (schemaPatch.hasConflicts() || (isGridActive && !schemaPatch.isEmpty())) {
+                    if (errorMessage.length() > 0)
+                        errorMessage.append("\n");
+
+                    if (schemaPatch.hasConflicts())
+                        errorMessage.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE,
+                            localDesc.cacheName(), schemaPatch.getConflictsMessage()));
+                    else
+                        errorMessage.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, localDesc.cacheName()));
+                }
+            }
+
+            if (errorMessage.length() > 0) {
+                String msg = errorMessage.toString();
+
+                return new IgniteNodeValidationResult(node.id(), msg, msg);
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @param msg Message.
      */
@@ -3151,6 +3247,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<DynamicCacheChangeRequest> sndReqs = new ArrayList<>(reqs.size());
 
         for (DynamicCacheChangeRequest req : reqs) {
+            authorizeCacheChange(req);
+
             DynamicCacheStartFuture fut = new DynamicCacheStartFuture(req.requestId());
 
             try {
@@ -3213,6 +3311,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return res;
+    }
+
+    /**
+     * Authorize dynamic cache management.
+     */
+    private void authorizeCacheChange(DynamicCacheChangeRequest req) {
+        if (req.cacheType() == null || req.cacheType() == CacheType.USER) {
+            if (req.stop())
+                ctx.security().authorize(req.cacheName(), SecurityPermission.CACHE_DESTROY, null);
+            else
+                authorizeCacheCreate(req.cacheName(), req.startCacheConfiguration());
+        }
+    }
+
+    /**
+     * Authorize start/create cache operation.
+     */
+    private void authorizeCacheCreate(String cacheName, CacheConfiguration cacheCfg) {
+        ctx.security().authorize(cacheName, SecurityPermission.CACHE_CREATE, null);
+
+        if (cacheCfg != null && cacheCfg.isOnheapCacheEnabled() &&
+            System.getProperty(IgniteSystemProperties.IGNITE_DISABLE_ONHEAP_CACHE, "false")
+                .toUpperCase().equals("TRUE")
+            )
+            throw new SecurityException("Authorization failed for enabling on-heap cache.");
     }
 
     /**
@@ -3363,7 +3486,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable private IgniteNodeValidationResult validateHashIdResolvers(ClusterNode node) {
-        if (!node.isClient()) {
+        if (!CU.clientNode(node)) {
             for (DynamicCacheDescriptor desc : cacheDescriptors().values()) {
                 CacheConfiguration cfg = desc.cacheConfiguration();
 
@@ -3372,7 +3495,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     Object nodeHashObj = aff.resolveNodeHash(node);
 
-                    for (ClusterNode topNode : ctx.discovery().allNodes()) {
+                    for (ClusterNode topNode : ctx.discovery().aliveServerNodes()) {
                         Object topNodeHashObj = aff.resolveNodeHash(topNode);
 
                         if (nodeHashObj.hashCode() == topNodeHashObj.hashCode()) {

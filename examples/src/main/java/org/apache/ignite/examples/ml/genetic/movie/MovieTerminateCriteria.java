@@ -32,10 +32,10 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  *
  * Class terminates Genetic algorithm when fitnessScore > 32  <br/>
  */
-
 public class MovieTerminateCriteria implements ITerminateCriteria {
-
+    /** Ignite logger */
     private IgniteLogger igniteLogger = null;
+    /** Ignite instance */
     private Ignite ignite = null;
 
     /**
@@ -61,7 +61,7 @@ public class MovieTerminateCriteria implements ITerminateCriteria {
         igniteLogger.info("Generation: " + currentGeneration);
         igniteLogger.info("Fittest is Chromosome Key: " + fittestChromosome);
         igniteLogger.info("Chromsome: " + fittestChromosome);
-        printMovies(GAGridUtils.getGenesForChromosome(ignite, fittestChromosome));
+        printMovies(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome));
         igniteLogger.info("##########################################################################################");
 
         if (!(fittestChromosome.getFitnessScore() > 32)) {

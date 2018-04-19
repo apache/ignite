@@ -36,4 +36,5 @@ export exclamation from './exclamation.svg';
 export collapse from './collapse.svg';
 export expand from './expand.svg';
 export home from './home.svg';
+export refresh from './refresh.svg';
 

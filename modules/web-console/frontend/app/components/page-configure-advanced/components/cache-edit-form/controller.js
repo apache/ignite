@@ -64,9 +64,8 @@ export default class CacheEditFormController {
             .do(filterModel)
             .subscribe();
 
+        // TODO: Do we really need this?
         this.$scope.ui = this.IgniteFormUtils.formUI();
-        this.$scope.ui.activePanels = [0];
-        this.$scope.ui.topPanels = [0, 1, 2, 3];
     }
     $onDestroy() {
         this.subscription.unsubscribe();

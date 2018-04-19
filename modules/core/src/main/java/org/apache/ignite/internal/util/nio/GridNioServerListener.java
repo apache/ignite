@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util.nio;
 
+import org.apache.ignite.failure.FailureType;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -69,4 +70,9 @@ public interface GridNioServerListener<T> {
      * @param ses Session that is idle.
      */
     public void onSessionIdleTimeout(GridNioSession ses);
+
+    /**
+     * Called when critical failure occurs in server implementation.
+     */
+    public void onFailure(FailureType failureType, Throwable failure);
 }

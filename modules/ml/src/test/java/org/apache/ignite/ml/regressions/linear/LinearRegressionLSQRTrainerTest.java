@@ -17,14 +17,14 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -72,7 +72,8 @@ public class LinearRegressionLSQRTrainerTest {
         LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
         LinearRegressionModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, parts),
+            data,
+            parts,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[4]
         );
@@ -110,7 +111,8 @@ public class LinearRegressionLSQRTrainerTest {
         LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
         LinearRegressionModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, parts),
+            data,
+            parts,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[coef.length]
         );

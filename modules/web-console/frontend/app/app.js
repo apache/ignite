@@ -27,7 +27,6 @@ import './modules/nodes/nodes.module';
 import './modules/demo/Demo.module';
 
 import './modules/states/logout.state';
-import './modules/states/configuration.state';
 import './modules/states/admin.state';
 import './modules/states/errors.state';
 
@@ -134,6 +133,7 @@ import uiGridHovering from './components/ui-grid-hovering';
 import uiGridFilters from './components/ui-grid-filters';
 import listEditable from './components/list-editable';
 import breadcrumbs from './components/breadcrumbs';
+import panelCollapsible from './components/panel-collapsible';
 import clusterSelector from './components/cluster-selector';
 import connectedClusters from './components/connected-clusters';
 import pageSignIn from './components/page-signin';
@@ -191,7 +191,6 @@ angular.module('ignite-console', [
     'ignite-console.demo',
     // States.
     'ignite-console.states.logout',
-    'ignite-console.states.configuration',
     'ignite-console.states.admin',
     'ignite-console.states.errors',
     // Common modules.
@@ -226,6 +225,7 @@ angular.module('ignite-console', [
     AngularStrapTooltip.name,
     AngularStrapSelect.name,
     listEditable.name,
+    panelCollapsible.name,
     clusterSelector.name,
     servicesModule.name,
     connectedClusters.name,

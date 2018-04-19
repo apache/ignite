@@ -1256,7 +1256,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 key0 = invokeEntry.key();
             }
 
-            ctx.validateKeyAndValue(txEntry.key(), ctx.toCacheObject(val0));
+            val0 = ctx.toCacheObject(val0);
+
+            if (val0 != null)
+                ctx.validateKeyAndValue(txEntry.key(), (CacheObject)val0);
 
             if (res != null)
                 ret.addEntryProcessResult(ctx, txEntry.key(), key0, res, null, txEntry.keepBinary());
@@ -1292,7 +1295,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @throws IgniteCheckedException If transaction check failed.
      */
     protected void checkValid() throws IgniteCheckedException {
-        if (local() && !dht() && remainingTime() == -1)
+        checkValid(true);
+    }
+
+    /**
+     * Checks transaction expiration.
+     *
+     * @param checkTimeout Whether timeout should be checked.
+     * @throws IgniteCheckedException If transaction check failed.
+     */
+    protected void checkValid(boolean checkTimeout) throws IgniteCheckedException {
+        if (local() && !dht() && remainingTime() == -1 && checkTimeout)
             state(MARKED_ROLLBACK, true);
 
         if (isRollbackOnly()) {
