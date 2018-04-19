@@ -371,6 +371,44 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             throw new AssertionError(msg + "Collections differ:" +
                 " [actual=" + actual + ", expected=" + expected + "].");
     }
+
+    /**
+     * Finds value for specified field either in key or value of cache entry using table metadata.
+     *
+     * @param entry Entry that contain value.
+     * @param field Field to find value for.
+     * @param meta Table metadata.
+     */
+    private static Object findInEntry(Cache.Entry<?,?> entry, String field, QueryEntity meta) {
+        Object key = entry.getKey();
+        Object val = entry.getValue();
+
+        // Look up for the field in the key
+        if (key instanceof BinaryObject) {
+            BinaryObject compositeKey = (BinaryObject) key;
+
+            if (compositeKey.hasField(field))
+                return compositeKey.field(field);
+        }
+        else if (meta.getKeyFieldName().equals(field))
+            return key;
+
+        // And in the value.
+        if (val instanceof BinaryObject){
+            BinaryObject compositeVal = (BinaryObject) val;
+
+            if (compositeVal.hasField(field))
+                return compositeVal.field(field);
+
+        }
+        else if (meta.getValueFieldName().equals(field))
+            return val;
+
+
+        throw new RuntimeException("Field with name " + field +
+            " not found in the table. Avaliable fields: " + meta.getFields());
+    }
+
     /**
      * Performs scan query with fields projection.
      *
@@ -384,54 +422,18 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         String... fields) {
 
         IgniteCache<Object, Object> cache = node.cache(EMP_CACHE_NAME);
+
         Collection<QueryEntity> entities = cache.getConfiguration(CacheConfiguration.class).getQueryEntities();
 
         assert entities.size() == 1 : "Cache should contain exactly one table";
 
-        QueryEntity meta = entities.iterator().next();
+        final QueryEntity meta = entities.iterator().next();
 
-        IgniteClosure<Cache.Entry<K, V>, List<Object>> transformer = e -> {
+        IgniteClosure<Cache.Entry<K, V>, List<Object>> transformer = entry -> {
             List<Object> res = new ArrayList<>();
 
-            Object key = e.getKey();
-            Object val = e.getValue();
-
-            for (String field : fields) {
-                // Look up for the field in the key
-                if (key instanceof BinaryObject) {
-                    BinaryObject compositeKey = (BinaryObject) key;
-
-                    if (compositeKey.hasField(field)) {
-                        res.add(compositeKey.field(field));
-                        continue;
-                    }
-                }
-                else {
-                    if (meta.getKeyFieldName().equals(field)) {
-                        res.add(key);
-                        continue;
-                    }
-                }
-
-                // And in the value.
-                if (val instanceof BinaryObject){
-                    BinaryObject compositeVal = (BinaryObject) val;
-
-                    if (compositeVal.hasField(field)) {
-                        res.add(compositeVal.field(field));
-                        continue;
-                    }
-                }
-                else {
-                    if (meta.getValueFieldName().equals(field)) {
-                        res.add(val);
-                        continue;
-                    }
-                }
-
-                throw new AssertionError("Field with name " + field +
-                        " not found in binary object " + val);
-            }
+            for (String field : fields)
+               res.add(findInEntry(entry, field, meta));
 
             return res;
         };
