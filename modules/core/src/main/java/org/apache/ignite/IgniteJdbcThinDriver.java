@@ -195,12 +195,15 @@ public class IgniteJdbcThinDriver implements Driver {
     public static synchronized Driver register() {
         try {
             if (!registered) {
-                registered = true;
                 DriverManager.registerDriver(INSTANCE);
+
+                registered = true;
             }
-        } catch (SQLException e) {
-            throw new RuntimeException("Can't register Ignite JDBC thin driver!", e);
         }
+        catch (SQLException e) {
+            throw new RuntimeException("Failed to register Ignite JDBC thin driver.", e);
+        }
+
         return INSTANCE;
     }
 }
