@@ -35,6 +35,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestDelayingCommunicationSpi;
@@ -146,7 +147,221 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testPrimaryFullAsync() throws Exception {
-        checkRestarts(FULL_ASYNC);
+        checkRestartsForAsyncMode();
+    }
+
+    private Set<Integer> populateCache(IgniteEx ignite, int range) {
+        Set<Integer> set = new LinkedHashSet<>();
+        try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+            streamer.allowOverwrite(true);
+            for (int i = 0; i < range; i++) {
+                streamer.addData(i, 0);
+
+                set.add(i);
+
+                if (i > 0 && i % 10_000 == 0)
+                    System.err.println("Put: " + i);
+            }
+        }
+        return set;
+    }
+
+    private void checkWriteValuesSingleThread(int gridCnt, int range) throws Exception{
+        IgniteEx ignite = grid(0);
+
+        final Set<Integer> keys = populateCache(ignite, range);
+
+        final Affinity<Integer> aff = ignite.affinity(DEFAULT_CACHE_NAME);
+
+        boolean putDone = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                Iterator<Integer> it = keys.iterator();
+
+                while (it.hasNext()) {
+                    Integer key = it.next();
+
+                    Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(key);
+
+                    for (int i = 0; i < gridCnt; i++) {
+                        ClusterNode locNode = grid(i).localNode();
+
+                        IgniteCache<Object, Object> cache = grid(i).cache(DEFAULT_CACHE_NAME);
+
+                        Object val = cache.localPeek(key);
+
+                        if (affNodes.contains(locNode)) {
+                            if (val == null)
+                                return false;
+                        }
+                        else
+                            assertNull(val);
+                    }
+
+                    it.remove();
+                }
+
+                return true;
+            }
+        }, 30_000);
+
+        assertTrue(putDone);
+
+        assertTrue(keys.isEmpty());
+    }
+
+    private void checkRestartsForAsyncMode() throws Exception {
+        this.writeSync = FULL_ASYNC;
+
+        final int gridCnt = 6;
+
+        startGrids(gridCnt);
+
+        awaitPartitionMapExchange();
+
+        try {
+            assertEquals(testClientNode(), (boolean)grid(0).configuration().isClientMode());
+
+            final int range = 100_000;
+
+            checkWriteValuesSingleThread(gridCnt, range);
+
+            System.err.println("FINISHED PUTS");
+
+            delay = true;
+
+            final IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+            final AtomicBoolean done = new AtomicBoolean();
+            // Start put threads.
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    Random rnd = new Random();
+
+                    while (!done.get()) {
+                        try {
+                            int cnt = rnd.nextInt(5);
+
+                            if (cnt < 2) {
+                                int key = rnd.nextInt(range);
+
+                                int val = rnd.nextInt();
+
+                                cache.put(key, val);
+                            }
+                            else {
+                                Map<Integer, Integer> upd = new TreeMap<>();
+
+                                for (int i = 0; i < cnt; i++)
+                                    upd.put(rnd.nextInt(range), rnd.nextInt());
+
+                                cache.putAll(upd);
+                            }
+                        }
+                        catch (CachePartialUpdateException ignored) {
+                            // No-op.
+                        }
+                    }
+
+                    return null;
+                }
+            }, 4, "putAll-thread");
+
+            Random rnd = new Random();
+
+            // Restart random nodes.
+            for (int r = 0; r < 20; r++) {
+                int idx0 = rnd.nextInt(gridCnt - 1) + 1;
+
+                stopGrid(idx0);
+
+                U.sleep(200);
+
+                startGrid(idx0);
+            }
+
+            done.set(true);
+
+            fut.get();
+
+            awaitPartitionMapExchange();
+
+            for (int k = 0; k < range; k++) {
+                Collection<ClusterNode> affNodes = affinity(cache).mapKeyToPrimaryAndBackups(k);
+
+                // Test is valid with at least one backup.
+                assert affNodes.size() >= 2;
+
+                Object val = null;
+                GridCacheVersion ver = null;
+                UUID nodeId = null;
+
+                for (int i = 0; i < gridCnt; i++) {
+                    ClusterNode locNode = grid(i).localNode();
+
+                    GridCacheAdapter<Object, Object> c = ((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME);
+
+                    GridCacheEntryEx entry = null;
+
+                    try {
+                        entry = c.entryEx(k);
+
+                        entry.unswap();
+                    }
+                    catch (GridDhtInvalidPartitionException ignored) {
+                        // Skip key.
+                    }
+
+                    for (int r = 0; r < 10; r++) {
+                        try {
+                            if (affNodes.contains(locNode)) {
+                                assert c.affinity().isPrimaryOrBackup(locNode, k);
+
+                                boolean primary = c.affinity().isPrimary(locNode, k);
+
+                                assertNotNull("Failed to find entry on node for key [locNode=" + locNode.id() +
+                                    ", key=" + k + ']', entry);
+
+                                if (val == null) {
+                                    assertNull(ver);
+
+                                    val = CU.value(entry.rawGet(), entry.context(), false);
+                                    ver = entry.version();
+                                    nodeId = locNode.id();
+                                }
+                                else {
+                                    assertNotNull(ver);
+
+                                    assertEquals("Failed to check value for key [key=" + k + ", node=" +
+                                            locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
+                                        val, CU.value(entry.rawGet(), entry.context(), false));
+
+                                    assertEquals("Failed to check version for key [key=" + k + ", node=" +
+                                            locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
+                                        ver, entry.version());
+                                }
+                            }
+                            else
+                                assertTrue("Invalid entry: " + entry, entry == null || !entry.partitionValid());
+                        }
+                        catch (AssertionError e) {
+                            if (r == 9) {
+                                info("Failed to verify cache contents: " + e.getMessage());
+
+                                throw e;
+                            }
+
+                            info("Failed to verify cache contents, will retry: " + e.getMessage());
+
+                            // Give some time to finish async updates.
+                            U.sleep(1000);
+                        }
+                    }
+                }
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**
@@ -166,67 +381,17 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         try {
             assertEquals(testClientNode(), (boolean)grid(0).configuration().isClientMode());
 
-            final IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
-
             final int range = 100_000;
 
-            final Set<Integer> keys = new LinkedHashSet<>();
+            checkWriteValuesSingleThread(gridCnt, range);
 
-            try (IgniteDataStreamer<Integer, Integer> streamer = grid(0).dataStreamer(DEFAULT_CACHE_NAME)) {
-                streamer.allowOverwrite(true);
-
-                for (int i = 0; i < range; i++) {
-                    streamer.addData(i, 0);
-
-                    keys.add(i);
-
-                    if (i > 0 && i % 10_000 == 0)
-                        System.err.println("Put: " + i);
-                }
-            }
-
-            final Affinity<Integer> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
-
-            boolean putDone = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    Iterator<Integer> it = keys.iterator();
-
-                    while (it.hasNext()) {
-                        Integer key = it.next();
-
-                        Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(key);
-
-                        for (int i = 0; i < gridCnt; i++) {
-                            ClusterNode locNode = grid(i).localNode();
-
-                            IgniteCache<Object, Object> cache = grid(i).cache(DEFAULT_CACHE_NAME);
-
-                            Object val = cache.localPeek(key);
-
-                            if (affNodes.contains(locNode)) {
-                                if (val == null)
-                                    return false;
-                            }
-                            else
-                                assertNull(val);
-                        }
-
-                        it.remove();
-                    }
-
-                    return true;
-                }
-            }, 30_000);
-
-            assertTrue(putDone);
-            assertTrue(keys.isEmpty());
+            System.err.println("FINISHED PUTS");
 
             final AtomicBoolean done = new AtomicBoolean();
 
             delay = true;
 
-            System.err.println("FINISHED PUTS");
-
+            final IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
             // Start put threads.
             IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -306,51 +471,35 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                         // Skip key.
                     }
 
-                    for (int r = 0; r < 10; r++) {
-                        try {
-                            if (affNodes.contains(locNode)) {
-                                assert c.affinity().isPrimaryOrBackup(locNode, k);
+                    if (affNodes.contains(locNode)) {
+                        assert c.affinity().isPrimaryOrBackup(locNode, k);
 
-                                boolean primary = c.affinity().isPrimary(locNode, k);
+                        boolean primary = c.affinity().isPrimary(locNode, k);
 
-                                assertNotNull("Failed to find entry on node for key [locNode=" + locNode.id() +
-                                    ", key=" + k + ']', entry);
+                        assertNotNull("Failed to find entry on node for key [locNode=" + locNode.id() +
+                            ", key=" + k + ']', entry);
 
-                                if (val == null) {
-                                    assertNull(ver);
+                        if (val == null) {
+                            assertNull(ver);
 
-                                    val = CU.value(entry.rawGet(), entry.context(), false);
-                                    ver = entry.version();
-                                    nodeId = locNode.id();
-                                }
-                                else {
-                                    assertNotNull(ver);
-
-                                    assertEquals("Failed to check value for key [key=" + k + ", node=" +
-                                        locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
-                                        val, CU.value(entry.rawGet(), entry.context(), false));
-
-                                    assertEquals("Failed to check version for key [key=" + k + ", node=" +
-                                        locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
-                                        ver, entry.version());
-                                }
-                            }
-                            else
-                                assertTrue("Invalid entry: " + entry, entry == null || !entry.partitionValid());
+                            val = CU.value(entry.rawGet(), entry.context(), false);
+                            ver = entry.version();
+                            nodeId = locNode.id();
                         }
-                        catch (AssertionError e) {
-                            if (r == 9) {
-                                info("Failed to verify cache contents: " + e.getMessage());
+                        else {
+                            assertNotNull(ver);
 
-                                throw e;
-                            }
+                            assertEquals("Failed to check value for key [key=" + k + ", node=" +
+                                    locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
+                                val, CU.value(entry.rawGet(), entry.context(), false));
 
-                            info("Failed to verify cache contents, will retry: " + e.getMessage());
-
-                            // Give some time to finish async updates.
-                            U.sleep(1000);
+                            assertEquals("Failed to check version for key [key=" + k + ", node=" +
+                                    locNode.id() + ", primary=" + primary + ", recNodeId=" + nodeId + ']',
+                                ver, entry.version());
                         }
                     }
+                    else
+                        assertTrue("Invalid entry: " + entry, entry == null || !entry.partitionValid());
                 }
             }
         }
