@@ -495,6 +495,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDis
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
+        unregisterMBean();
+
         if (impl != null)
             impl.stop();
     }
