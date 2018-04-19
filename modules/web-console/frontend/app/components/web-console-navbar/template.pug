@@ -33,3 +33,6 @@
 
         a(ng-if='!item.children && item.click' ng-click='item.click()')
             | {{::item.text}}
+
+        a(ng-if='!item.children && item.href' href='{{item.href}}' target='_blank')
+            | {{::item.text}}
