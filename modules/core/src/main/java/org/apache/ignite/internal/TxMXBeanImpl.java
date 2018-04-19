@@ -24,8 +24,10 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -82,12 +84,12 @@ public class TxMXBeanImpl implements TxMXBean {
 
     /** {@inheritDoc} */
     @Override public long getTxHoldingLockNum() {
-        return 0; // TODO
+        return txHoldingLockNum();
     }
 
     /** {@inheritDoc} */
     @Override public long getLockedKeysNum() {
-        return 0; // TODO
+        return txLockedKeysNum();
     }
 
     /** {@inheritDoc} */
@@ -197,6 +199,32 @@ public class TxMXBeanImpl implements TxMXBean {
         };
 
         return F.size(gridKernalCtx.cache().context().tm().activeTransactions(), pred);
+    }
+
+    /**
+     * Count total number of holding locks on local node.
+     */
+    private long txHoldingLockNum() {
+        long holdingLockCounter = 0;
+
+        IgniteTxManager tm = gridKernalCtx.cache().context().tm();
+        for (IgniteInternalTx tx : tm.activeTransactions()) {
+            if ((tx.optimistic() && tx.state() == TransactionState.ACTIVE) || tx.empty() || !tx.local())
+                continue;
+
+            holdingLockCounter++;
+        }
+
+        return holdingLockCounter;
+    }
+
+    /**
+     * Count total number of locked keys on local node.
+     */
+    private long txLockedKeysNum() {
+        GridCacheMvccManager mvccManager = gridKernalCtx.cache().context().mvcc();
+
+        return mvccManager.lockedKeys().size() + mvccManager.nearLockedKeys().size();
     }
 
     /** {@inheritDoc} */
