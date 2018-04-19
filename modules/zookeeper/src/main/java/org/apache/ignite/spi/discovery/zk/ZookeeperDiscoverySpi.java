@@ -41,13 +41,12 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
-import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoveryMetricsProvider;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiDataExchange;
 import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
@@ -57,6 +56,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperClusterNode;
 import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryImpl;
+import org.apache.ignite.spi.discovery.zk.internal.ZookeeperDiscoveryStatistics;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT;
@@ -69,7 +69,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 @DiscoverySpiOrderSupport(true)
 @DiscoverySpiHistorySupport(true)
 @DiscoverySpiMutableCustomMessageSupport(false)
-public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, IgniteDiscoverySpi {
+public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscoverySpi {
     /** */
     public static final String DFLT_ROOT_PATH = "/apacheIgnite";
 
@@ -136,6 +136,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** */
     private IgniteDiscoverySpiInternalListener internalLsnr;
+
+    /** */
+    private final ZookeeperDiscoveryStatistics stats = new ZookeeperDiscoveryStatistics();
 
     /**
      * @return Base path in ZK for znodes created by SPI.
@@ -384,7 +387,7 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public void setAuthenticator(DiscoverySpiNodeAuthenticator auth) {
-        this.nodeAuth = auth;
+        nodeAuth = auth;
     }
 
     /**
@@ -422,12 +425,9 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     }
 
     /** {@inheritDoc} */
-    @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
-        super.onContextInitialized0(spiCtx);
-    }
-
-    /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
+        startStopwatch();
+
         if (sesTimeout == 0)
             sesTimeout = ignite.configuration().getFailureDetectionTimeout().intValue();
 
@@ -465,7 +465,10 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
             locNode,
             lsnr,
             exchange,
-            internalLsnr);
+            internalLsnr,
+            stats);
+
+        registerMBean(igniteInstanceName, new ZookeeperDiscoverySpiMBeanImpl(this), ZookeeperDiscoverySpiMBean.class);
 
         try {
             impl.startJoinAndWait();
@@ -492,6 +495,8 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
+        unregisterMBean();
+
         if (impl != null)
             impl.stop();
     }
@@ -553,5 +558,73 @@ public class ZookeeperDiscoverySpi extends IgniteSpiAdapter implements Discovery
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ZookeeperDiscoverySpi.class, this);
+    }
+
+    /** */
+    private class ZookeeperDiscoverySpiMBeanImpl extends IgniteSpiMBeanAdapter implements ZookeeperDiscoverySpiMBean {
+        /** {@inheritDoc} */
+        public ZookeeperDiscoverySpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getSpiState() {
+            return impl.getSpiState();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getNodesJoined() {
+            return stats.joinedNodesCnt();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getNodesLeft() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getNodesFailed() {
+            return stats.failedNodesCnt();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public UUID getCoordinator() {
+            return impl.getCoordinator();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String getCoordinatorNodeFormatted() {
+            return String.valueOf(impl.node(impl.getCoordinator()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getLocalNodeFormatted() {
+            return String.valueOf(getLocalNode());
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getZkConnectionString() {
+            return zkConnectionString;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getZkSessionTimeout() {
+            return sesTimeout;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getZkSessionId() {
+            return impl.getZkSessionId();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getZkRootPath() {
+            return zkRootPath;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getNodeOrder() {
+            return getLocalNode().order();
+        }
     }
 }
