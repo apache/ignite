@@ -36,10 +36,12 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
@@ -369,7 +371,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             throw new AssertionError(msg + "Collections differ:" +
                 " [actual=" + actual + ", expected=" + expected + "].");
     }
-
     /**
      * Performs scan query with fields projection.
      *
@@ -377,29 +378,65 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param filter filter for rows.
      * @param fields to use in result (projection).
      */
-    protected static List<List<Object>> select(
+    protected static <K, V> List<List<Object>> select(
         Ignite node,
-        @Nullable IgniteBiPredicate<Long, BinaryObject> filter,
+        @Nullable IgniteBiPredicate<K, V> filter,
         String... fields) {
-        IgniteClosure<Cache.Entry<Long, BinaryObject>, List<Object>> transformer = e -> {
+
+        IgniteCache<Object, Object> cache = node.cache(EMP_CACHE_NAME);
+        Collection<QueryEntity> entities = cache.getConfiguration(CacheConfiguration.class).getQueryEntities();
+
+        assert entities.size() == 1 : "Cache should contain exactly one table";
+
+        QueryEntity meta = entities.iterator().next();
+
+        IgniteClosure<Cache.Entry<K, V>, List<Object>> transformer = e -> {
             List<Object> res = new ArrayList<>();
 
-            BinaryObject val = e.getValue();
+            Object key = e.getKey();
+            Object val = e.getValue();
 
             for (String field : fields) {
-                if (val.hasField(field))
-                    res.add(val.field(field));
-                else if (field.equals("ID"))
-                    res.add(e.getKey());
-                else
-                    throw new AssertionError("Field with name " + field +
+                // Look up for the field in the key
+                if (key instanceof BinaryObject) {
+                    BinaryObject compositeKey = (BinaryObject) key;
+
+                    if (compositeKey.hasField(field)) {
+                        res.add(compositeKey.field(field));
+                        continue;
+                    }
+                }
+                else {
+                    if (meta.getKeyFieldName().equals(field)) {
+                        res.add(key);
+                        continue;
+                    }
+                }
+
+                // And in the value.
+                if (val instanceof BinaryObject){
+                    BinaryObject compositeVal = (BinaryObject) val;
+
+                    if (compositeVal.hasField(field)) {
+                        res.add(compositeVal.field(field));
+                        continue;
+                    }
+                }
+                else {
+                    if (meta.getValueFieldName().equals(field)) {
+                        res.add(val);
+                        continue;
+                    }
+                }
+
+                throw new AssertionError("Field with name " + field +
                         " not found in binary object " + val);
             }
 
             return res;
         };
 
-        QueryCursor<List<Object>> cursor= node.cache(EMP_CACHE_NAME).withKeepBinary()
+        QueryCursor<List<Object>> cursor = node.cache(EMP_CACHE_NAME).withKeepBinary()
             .query(new ScanQuery<>(filter), transformer);
 
         return cursor.getAll();
@@ -496,7 +533,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         testAllNodes(node -> {
             Result ages = executeFrom("SELECT DISTINCT age FROM Employee WHERE id < 100", node);
 
-            Set<Object> expAges = distinct(select(node, (key, val) -> key < 100, "age"));
+            Set<Object> expAges = distinct(select(node, (Long key, BinaryObject val) -> key < 100, "age"));
 
             assertContainsEq(ages.values(), expAges);
         });
