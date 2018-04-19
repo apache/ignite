@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
@@ -82,6 +83,9 @@ import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Known classes which are safe to use on server nodes. */
     private static final Collection<Class<?>> KNOWN_CLS = new HashSet<>();
+
+    /** Non collocated IgniteSet version will use spearated cache. */
+    private static final IgniteProductVersion SEPARATE_CACHE_SET_SINCE = IgniteProductVersion.fromString("2.6.0");
 
     /**
      *
@@ -437,25 +441,28 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                 hdr = (GridCacheSetHeader)cache.get(key);
 
                 // If old version was not found than create new header but don't put it into cache.
-                if (hdr == null) {
+                if (hdr == null && separatedCacheSetEnabled()) {
                     hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), false);
 
                     oldVer = false;
                 }
             }
-            else if (create) {
-                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
 
-                GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
+            if (hdr == null) {
+                if (create) {
+                    hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
 
-                if (old != null)
-                    hdr = old;
-            }
-            else {
-                hdr = (GridCacheSetHeader)cache.get(key);
+                    GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
 
-                if (hdr == null)
-                    return null;
+                    if (old != null)
+                        hdr = old;
+                }
+                else {
+                    hdr = (GridCacheSetHeader)cache.get(key);
+
+                    if (hdr == null)
+                        return null;
+                }
             }
 
             GridCacheSetProxy<T> set = setsMap.get(hdr.id());
@@ -490,6 +497,22 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      */
     @Nullable public GridConcurrentHashSet<SetItemKey> setData(IgniteUuid id) {
         return setDataMap.get(id);
+    }
+
+    /**
+     * Check that IgniteSet can use a separate cache implementation.
+     *
+     * @return {@code True} If IgniteSet can use a separate cache for non collocated version.
+     */
+    private boolean separatedCacheSetEnabled() {
+        Collection<ClusterNode> nodes = cctx.kernalContext().grid().cluster().nodes();
+
+        for (ClusterNode node : nodes) {
+            if (node.version().compareTo(SEPARATE_CACHE_SET_SINCE) < 0)
+                return false;
+        }
+
+        return true;
     }
 
     /**
