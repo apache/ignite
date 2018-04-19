@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.yardstick.cache;
 
 import java.util.concurrent.ExecutionException;
@@ -21,57 +38,38 @@ import org.apache.ignite.yardstick.cache.model.SampleValue;
 import org.jetbrains.annotations.NotNull;
 import org.yardstickframework.BenchmarkUtils;
 
+/**
+ * Class for preload data before benchmark.
+ */
 public class Loader implements IgniteClosure<Integer, Integer> {
-//    private static AtomicBoolean invoked = new AtomicBoolean();
-
+    /** */
     private AtomicBoolean loaded = new AtomicBoolean();
 
-
+    /** */
     private IgniteCache<Integer, SampleValue> cache;
 
+    /** */
     private IgniteBenchmarkArguments args;
 
+    /** */
     private Ignite ignite;
 
-    public Loader(
+    /**
+     * Constructor.
+     *
+     * @param cache cache to preload data.
+     * @param args arguments.
+     * @param ignite Ignite instance.
+     */
+    Loader(
         IgniteCache<Integer, SampleValue> cache, IgniteBenchmarkArguments args, Ignite ignite) {
         this.cache = cache;
         this.args = args;
         this.ignite = ignite;
     }
 
+    /** {@inheritDoc} */
     @Override public Integer apply(Integer integer) {
-//        IgniteCache<Integer, SampleValue> cache = (IgniteCache<Integer, SampleValue>)cacheForOperation();
-
-//        if(check(cache)) {
-//            BenchmarkUtils.println("Check method returned true");
-//
-//            return null;
-//        }
-//        else
-//            BenchmarkUtils.println("Check method returned false");
-
-//        if(invoked()){
-//            BenchmarkUtils.println("Preload has already been invoked");
-//
-//            while(!loaded.get()){
-//                BenchmarkUtils.println("Waiting for preload to complete.");
-//
-//                try {
-//                    Thread.sleep(1000L);
-//                }
-//                catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//
-//            return null;
-//        }
-//        else{
-//            BenchmarkUtils.println("Preload has not been invoked");
-//        }
-
-
         CacheConfiguration<Integer, SampleValue> cc = cache.getConfiguration(CacheConfiguration.class);
 
         String dataRegName = cc.getDataRegionName();
@@ -129,8 +127,7 @@ public class Loader implements IgniteClosure<Integer, Integer> {
             BenchmarkUtils.println("Initial allocated pages = " + impl.getTotalAllocatedPages());
 
             ExecutorService serv = Executors.newSingleThreadExecutor(new ThreadFactory() {
-                @Override
-                public Thread newThread(@NotNull Runnable r) {
+                @Override public Thread newThread(@NotNull Runnable r) {
                     return new Thread(r, "Preload checker");
                 }
             });
@@ -138,7 +135,6 @@ public class Loader implements IgniteClosure<Integer, Integer> {
             Future<?> fut = serv.submit(new Runnable() {
                 @Override public void run()  {
                     while (!loaded.get()) {
-
                         if (impl.getTotalAllocatedPages() >= pagesToLoad)
                             loaded.getAndSet(true);
 
@@ -188,39 +184,6 @@ public class Loader implements IgniteClosure<Integer, Integer> {
             e.printStackTrace();
         }
 
-
         return cnt;
     }
-
-    private synchronized boolean check(IgniteCache<Integer, SampleValue> cache){
-        if(cache.get(Integer.MAX_VALUE) == null){
-            BenchmarkUtils.println("Key MAX_VALUE is not found");
-
-            while(cache.get(Integer.MAX_VALUE) == null) {
-                cache.put(Integer.MAX_VALUE, new SampleValue());
-
-                try {
-                    Thread.sleep(1000L);
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            return false;
-        }
-        else {
-            BenchmarkUtils.println("Key MAX_VALUE is found");
-
-            return true;
-        }
-    }
-
-//    private synchronized boolean invoked(){
-//        if(!invoked.get()){
-//            invoked.getAndSet(true);
-//
-//            return false;
-//        }
-//        return true;
-//    }
 }

@@ -218,13 +218,11 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
         }
     }
 
+    /**
+     * Preload data before benchmarking.
+     */
     protected void preload() {
-        IgniteSemaphore semaphore = ignite().semaphore(
-            "semName", // Distributed semaphore name.
-            1,        // Number of permits.
-            true,      // Release acquired permits if node, that owned them, left topology.
-            true       // Create if it doesn't exist.
-        );
+        IgniteSemaphore semaphore = ignite().semaphore("preloadSemaphore",1,true,true);
 
         semaphore.acquire();
 
