@@ -123,6 +123,8 @@ import org.apache.ignite.internal.processors.query.schema.SchemaExchangeWorkerTa
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
@@ -2498,6 +2500,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             StringBuilder errorMessage = new StringBuilder();
 
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
+                SecurityContext secCtx = SecurityContextHolder.get();
+
+                if (secCtx != null && cacheInfo.cacheType() == CacheType.USER) {
+                    try {
+                        authorizeCacheCreate(cacheInfo.cacheData().config(), secCtx);
+                    }
+                    catch (SecurityException ex) {
+                        if (errorMessage.length() > 0)
+                            errorMessage.append("\n");
+
+                        errorMessage.append(ex.getMessage());
+                    }
+                }
+
                 DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
 
                 if (localDesc == null)
@@ -3311,21 +3327,26 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Authorize dynamic cache management.
+     * Authorize creating cache.
+     */
+    private void authorizeCacheCreate(CacheConfiguration cfg, SecurityContext secCtx) {
+        ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, secCtx);
+
+        if (cfg != null && cfg.isOnheapCacheEnabled() &&
+            IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_ONHEAP_CACHE))
+            throw new SecurityException("Authorization failed for enabling on-heap cache.");
+    }
+
+    /**
+     * Authorize dynamic cache management for this node.
      */
     private void authorizeCacheChange(DynamicCacheChangeRequest req) {
+        // Null security context means authorize this node.
         if (req.cacheType() == null || req.cacheType() == CacheType.USER) {
             if (req.stop())
-                ctx.security().authorize(req.cacheName(), SecurityPermission.CACHE_DESTROY, null);
-            else {
-                ctx.security().authorize(req.cacheName(), SecurityPermission.CACHE_CREATE, null);
-
-                if (req.startCacheConfiguration() != null && req.startCacheConfiguration().isOnheapCacheEnabled() &&
-                    System.getProperty(IgniteSystemProperties.IGNITE_DISABLE_ONHEAP_CACHE, "false")
-                        .toUpperCase().equals("TRUE")
-                    )
-                    throw new SecurityException("Authorization failed for enabling on-heap cache.");
-            }
+                ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, null);
+            else
+                authorizeCacheCreate(req.startCacheConfiguration(), null);
         }
     }
 
