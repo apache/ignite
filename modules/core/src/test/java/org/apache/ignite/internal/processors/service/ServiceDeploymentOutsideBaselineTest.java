@@ -88,34 +88,34 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     public void testDeployOutsideBaseline() throws Exception {
-        checkDeployment(true, false);
+        checkDeploymentFromOutsideNode(true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDeployOutsideBaselineNoPersistence() throws Exception {
-        checkDeployment(false, false);
+        checkDeploymentFromOutsideNode(false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDeployOutsideBaselineStatic() throws Exception {
-        checkDeployment(true, true);
+        checkDeploymentFromOutsideNode(true, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDeployOutsideBaselineStaticNoPersistence() throws Exception {
-        checkDeployment(false, true);
+        checkDeploymentFromOutsideNode(false, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testDeployOnNodeAddedToBlt() throws Exception {
+    public void testDeployFromNodeAddedToBlt() throws Exception {
         persistence = true;
 
         Ignite insideNode = startGrid(0);
@@ -140,11 +140,98 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testDeployToNodeAddedToBlt() throws Exception {
+        persistence = true;
+
+        Ignite insideNode = startGrid(0);
+
+        IgniteCluster cluster = insideNode.cluster();
+
+        cluster.active(true);
+
+        startGrid(1);
+
+        cluster.setBaselineTopology(cluster.topologyVersion());
+
+        CountDownLatch exeLatch = new CountDownLatch(2);
+
+        DummyService.exeLatch(SERVICE_NAME, exeLatch);
+
+        IgniteFuture<Void> depFut = insideNode.services().deployNodeSingletonAsync(SERVICE_NAME, new DummyService());
+
+        depFut.get(10, TimeUnit.SECONDS);
+
+        assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployFromNodeRemovedFromBlt() throws Exception {
+        persistence = true;
+
+        Ignite insideNode = startGrid(0);
+        startGrid(1);
+
+        IgniteCluster cluster = insideNode.cluster();
+
+        cluster.active(true);
+
+        stopGrid(1);
+
+        cluster.setBaselineTopology(cluster.topologyVersion());
+
+        Ignite rmvNode = startGrid(1);
+
+        CountDownLatch exeLatch = new CountDownLatch(1);
+
+        DummyService.exeLatch(SERVICE_NAME, exeLatch);
+
+        IgniteFuture<Void> depFut = rmvNode.services().deployClusterSingletonAsync(SERVICE_NAME, new DummyService());
+
+        depFut.get(10, TimeUnit.SECONDS);
+
+        assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeployToNodeRemovedFromBlt() throws Exception {
+        persistence = true;
+
+        Ignite insideNode = startGrid(0);
+        startGrid(1);
+
+        IgniteCluster cluster = insideNode.cluster();
+
+        cluster.active(true);
+
+        stopGrid(1);
+
+        cluster.setBaselineTopology(cluster.topologyVersion());
+
+        startGrid(1);
+
+        CountDownLatch exeLatch = new CountDownLatch(2);
+
+        DummyService.exeLatch(SERVICE_NAME, exeLatch);
+
+        IgniteFuture<Void> depFut = insideNode.services().deployNodeSingletonAsync(SERVICE_NAME, new DummyService());
+
+        depFut.get(10, TimeUnit.SECONDS);
+
+        assertTrue(exeLatch.await(10, TimeUnit.SECONDS));
+    }
+
+    /**
      * @param persistence If {@code true}, then persistence will be enabled.
      * @param staticDeploy If {@code true}, then static deployments will be used instead of a dynamic one.
      * @throws Exception If failed.
      */
-    private void checkDeployment(boolean persistence, boolean staticDeploy) throws Exception {
+    private void checkDeploymentFromOutsideNode(boolean persistence, boolean staticDeploy) throws Exception {
         this.persistence = persistence;
 
         Ignite insideNode = startGrid(0);
