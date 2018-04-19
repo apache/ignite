@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistence;
+import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateWithPersistenceResetBaseline;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
@@ -110,6 +111,7 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(IgniteDbPutGetWithCacheStoreTest.class);
 
         suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistence.class);
+        suite.addTestSuite(IgniteClusterActivateDeactivateWithPersistenceResetBaseline.class);
 
         suite.addTestSuite(IgnitePdsCacheRestoreTest.class);
         suite.addTestSuite(IgnitePdsDataRegionMetricsTest.class);

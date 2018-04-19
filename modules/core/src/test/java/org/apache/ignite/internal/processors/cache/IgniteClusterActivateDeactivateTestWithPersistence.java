@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- *
+ * Variant of {@link IgniteClusterActivateDeactivateTest} with persistence enabled.
  */
 public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteClusterActivateDeactivateTest {
     /** {@inheritDoc} */
@@ -92,7 +92,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
     private Map<Integer, Integer> startGridsAndLoadData(int srvs) throws Exception {
         Ignite srv = startGrids(srvs);
 
-        srv.active(true);
+        srv.cluster().active(true);
 
         srv.createCaches(Arrays.asList(cacheConfigurations1()));
 
@@ -130,7 +130,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         checkNoCaches(srvs);
 
-        srv.active(true);
+        srv.cluster().active(true);
 
         final int CACHES = withNewCaches ? 4 : 2;
 
@@ -151,6 +151,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         startGrid(nodes++);
 
+        resetBaselineTopologyIfNeeded();
+
         for (int i = 0; i < nodes; i++) {
             for (int c = 0; c < CACHES; c++)
                 checkCache(ignite(i), CACHE_NAME_PREFIX + c, true);
@@ -161,6 +163,8 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         client = true;
 
         startGrid(nodes++);
+
+        resetBaselineTopologyIfNeeded();
 
         for (int c = 0; c < CACHES; c++)
             checkCache(ignite(nodes - 1), CACHE_NAME_PREFIX + c, false);
@@ -211,7 +215,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         }, "client-starter-thread");
 
         clientStartLatch.countDown();
-        srv.active(true);
+        srv.cluster().active(true);
 
         clStartFut.get();
     }
@@ -241,15 +245,15 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         Ignite srv = startGrids(SRVS);
 
-        srv.active(true);
+        srv.cluster().active(true);
 
-        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        CacheConfiguration<?, ?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         srv.createCache(ccfg);
 
         stopAllGrids();
 
-        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME + 1);
+        ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME + 1);
 
         ccfg.setGroupName(DEFAULT_CACHE_NAME);
 
@@ -258,7 +262,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         startGrids(SRVS);
 
         try {
-            ignite(0).active(true);
+            ignite(0).cluster().active(true);
 
             fail();
         }
@@ -267,7 +271,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         }
 
         for (int i = 0; i < SRVS; i++)
-            assertFalse(ignite(i).active());
+            assertFalse(ignite(i).cluster().active());
 
         checkNoCaches(SRVS);
     }
