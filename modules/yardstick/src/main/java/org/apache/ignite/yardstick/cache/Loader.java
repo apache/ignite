@@ -39,7 +39,7 @@ import org.jetbrains.annotations.NotNull;
 import org.yardstickframework.BenchmarkUtils;
 
 /**
- * Class for preload data before benchmark.
+ * Class for preload data before benchmarking PDS.
  */
 public class Loader implements IgniteClosure<Integer, Integer> {
     /** */
@@ -61,8 +61,7 @@ public class Loader implements IgniteClosure<Integer, Integer> {
      * @param args arguments.
      * @param ignite Ignite instance.
      */
-    Loader(
-        IgniteCache<Integer, SampleValue> cache, IgniteBenchmarkArguments args, Ignite ignite) {
+    Loader(IgniteCache<Integer, SampleValue> cache, IgniteBenchmarkArguments args, Ignite ignite) {
         this.cache = cache;
         this.args = args;
         this.ignite = ignite;
@@ -177,8 +176,8 @@ public class Loader implements IgniteClosure<Integer, Integer> {
             impl.disableMetrics();
 
             BenchmarkUtils.println("Objects loaded = " + cnt);
-            BenchmarkUtils.println("Total allocated pages = " + impl.getTotalAllocatedPages());
 
+            BenchmarkUtils.println("Total allocated pages = " + impl.getTotalAllocatedPages());
         }
         catch (IgniteCheckedException e) {
             e.printStackTrace();
