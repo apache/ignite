@@ -195,11 +195,35 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
             HostAndPortRange [] addrs = getAddresses();
 
-            for (int i = 0; i < addrs.length; i++)
+            for (int i = 0; i < addrs.length; i++) {
+                if (i > 0)
+                    sbUrl.append(',');
+
                 sbUrl.append(addrs[i].toString());
+            }
 
             if (!F.isEmpty(getSchema()))
                 sbUrl.append('/').append(getSchema());
+
+            boolean first = true;
+
+            for (ConnectionProperty prop : propsArray) {
+                String strProp = prop.valueObject();
+
+                if (strProp != null && !String.valueOf(prop.getDfltVal()).equals(strProp)) {
+                    if (first)
+                        sbUrl.append('?');
+                    else
+                        sbUrl.append('&');
+
+                    if (strProp.contains("&"))
+                        sbUrl.append(prop.name).append("={").append(strProp).append('}');
+                    else
+                        sbUrl.append(prop.name).append('=').append(strProp);
+
+                    first = false;
+                }
+            }
 
             return sbUrl.toString();
         }

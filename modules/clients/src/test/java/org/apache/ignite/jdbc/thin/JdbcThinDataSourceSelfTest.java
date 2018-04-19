@@ -43,7 +43,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * DataSource test.
@@ -76,7 +75,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private CacheConfiguration cacheConfiguration(@NotNull String name) throws Exception {
+    private CacheConfiguration cacheConfiguration(String name) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(name);
@@ -128,9 +127,66 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
         assertEquals("jdbc:ignite:thin://127.0.0.1:10800/test", ids.getUrl());
         assertEquals("jdbc:ignite:thin://127.0.0.1:10800/test", ids.getURL());
 
-        try(Connection conn = ids.getConnection()) {
-            assertEquals(ids.getSchema().toUpperCase(), conn.getSchema());
-        }
+        ids.setAddresses("127.0.0.1:" + ClientConnectorConfiguration.DFLT_PORT + ".."
+            + (ClientConnectorConfiguration.DFLT_PORT + 10), "myhost:10801..10802");
+
+        ids.setLazy(true);
+        ids.setUsername("user0");
+        ids.setPassword("password0");
+        ids.setAutoCloseServerCursor(true);
+        ids.setCollocated(true);
+        ids.setDistributedJoins(true);
+        ids.setEnforceJoinOrder(true);
+        ids.setReplicatedOnly(true);
+        ids.setSkipReducerOnUpdate(true);
+        ids.setSocketReceiveBuffer(65536);
+        ids.setSocketSendBuffer(65536);
+        ids.setSslClientCertificateKeyStorePassword("cliStorePasswd");
+        ids.setSslClientCertificateKeyStoreType("JKS");
+        ids.setSslClientCertificateKeyStoreUrl("/home/user/key_store_path");
+        ids.setSslTrustCertificateKeyStorePassword("trustStorePasswd!@#$%^&*");
+        ids.setSslTrustCertificateKeyStoreType("PKCS12");
+        ids.setSslTrustCertificateKeyStoreUrl("/home/user/trust_store_path");
+        ids.setSslMode("require");
+        ids.setSslProtocol("TLS");
+
+        assertEquals("jdbc:ignite:thin://127.0.0.1:10800..10810,myhost:10801..10802/test"
+                + "?distributedJoins=true"
+                + "&enforceJoinOrder=true"
+                + "&collocated=true"
+                + "&replicatedOnly=true"
+                + "&autoCloseServerCursor=true"
+                + "&lazy=true"
+                + "&skipReducerOnUpdate=true"
+                + "&sslMode=require"
+                + "&sslProtocol=TLS"
+                + "&sslClientCertificateKeyStoreUrl=/home/user/key_store_path"
+                + "&sslClientCertificateKeyStorePassword=cliStorePasswd"
+                + "&sslClientCertificateKeyStoreType=JKS"
+                + "&sslTrustCertificateKeyStoreUrl=/home/user/trust_store_path"
+                + "&sslTrustCertificateKeyStorePassword={trustStorePasswd!@#$%^&*}"
+                + "&sslTrustCertificateKeyStoreType=PKCS12"
+                + "&user=user0"
+                + "&password=password0",
+            ids.getURL());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testResetUrl() throws Exception {
+        IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
+
+        ids.setUrl("jdbc:ignite:thin://127.0.0.1:10800/test?lazy=true");
+
+        assertEquals("test", ids.getSchema());
+        assertTrue(ids.isLazy());
+
+        ids.setUrl("jdbc:ignite:thin://mydomain.org,localhost?collocated=true");
+
+        assertNull(ids.getSchema());
+        assertFalse(ids.isLazy());
+        assertTrue(ids.isCollocated());
     }
 
     /**
