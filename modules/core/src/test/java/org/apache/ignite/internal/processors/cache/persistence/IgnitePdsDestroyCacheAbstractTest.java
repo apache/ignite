@@ -135,7 +135,7 @@ public abstract class IgnitePdsDestroyCacheAbstractTest extends GridCommonAbstra
     /**
      * @param ignite Ignite instance.
      */
-    protected  void checkDestroyCachesAbruptly(Ignite ignite) throws Exception {
+    protected void checkDestroyCachesAbruptly(Ignite ignite) throws Exception {
         loadCaches(ignite);
 
         log.warning("Destroying caches");
