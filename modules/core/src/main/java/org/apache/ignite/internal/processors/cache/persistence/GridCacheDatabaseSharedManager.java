@@ -1013,6 +1013,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             @Override public DirectMemoryRegion nextRegion() {
                 DirectMemoryRegion nextMemoryRegion = memProvider.nextRegion();
 
+                if (nextMemoryRegion == null)
+                    return nextMemoryRegion;
+
                 memMetrics.updateOffHeapSize(nextMemoryRegion.size());
 
                 return nextMemoryRegion;

@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 
@@ -85,6 +86,16 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     }
 
     /**
+     *
+     */
+    private static class NoopAllocationTrucker implements AllocatedPageTracker{
+        /** {@inheritDoc} */
+        @Override public void updateTotalAllocatedPages(long delta) {
+            // No-op.
+        }
+    }
+
+    /**
      * Creates Group metrics MBean.
      *
      * @param ctx Cache group context.
@@ -92,9 +103,16 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     public CacheGroupMetricsMXBeanImpl(CacheGroupContext ctx) {
         this.ctx = ctx;
 
-        DataRegionMetricsImpl dataRegionMetrics = ctx.dataRegion().memoryMetrics();
+        DataRegion region = ctx.dataRegion();
 
-        this.groupPageAllocationTracker = dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.groupId());
+        // On client node, region is null.
+        if (region != null) {
+            DataRegionMetricsImpl dataRegionMetrics = ctx.dataRegion().memoryMetrics();
+
+            this.groupPageAllocationTracker = dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.groupId());
+        }
+        else
+            this.groupPageAllocationTracker = new GroupAllocationTrucker(new NoopAllocationTrucker());
     }
 
     /** {@inheritDoc} */
