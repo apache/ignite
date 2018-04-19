@@ -280,7 +280,7 @@ public class CommandHandler {
                 break;
         }
 
-        return str == null ? null : str + "\nPress 'yes' to continue...";
+        return str == null ? null : str + "\nPress 'yes' to continue . . . ";
     }
 
     /**
@@ -384,7 +384,7 @@ public class CommandHandler {
 
         GridClientNode node = getBalancedNode(compute);
 
-        return compute.projection(node).execute(taskCls.getName(),
+        return compute.execute(taskCls.getName(),
             new VisorTaskArgument<>(node.nodeId(), taskArgs, false));
     }
 
@@ -637,7 +637,7 @@ public class CommandHandler {
 
             if (res.isEmpty())
                 log("Nothing found.");
-            else if (arg.getXid() != null)
+            else if (arg.getOperation() == VisorTxOperation.KILL)
                 log("Killed transactions:");
             else
                 log("Matching transactions:");
@@ -1023,9 +1023,9 @@ public class CommandHandler {
                 usage("  Remove nodes from baseline topology:", BASELINE, " remove consistentId1[,consistentId2,....,consistentIdN] [--force]");
                 usage("  Set baseline topology:", BASELINE, " set consistentId1[,consistentId2,....,consistentIdN] [--force]");
                 usage("  Set baseline topology based on version:", BASELINE, " version topologyVersion [--force]");
-                usage("  List or kill transactions:", TX, " [kill] [xid XID] [minDuration SECONDS] " +
+                usage("  List or kill transactions:", TX, " [xid XID] [minDuration SECONDS] " +
                     "[minSize SIZE] [label PATTERN_REGEX] [servers|clients] " +
-                    "[nodes consistentId1[,consistentId2,....,consistentIdN] [limit NUMBER] [order DURATION|SIZE] [--force]");
+                    "[nodes consistentId1[,consistentId2,....,consistentIdN] [limit NUMBER] [order DURATION|SIZE] [kill] [--force]");
 
                 log("By default commands affecting the cluster require interactive confirmation. ");
                 log("  --force option can be used to execute commands without prompting for confirmation.");
@@ -1049,7 +1049,7 @@ public class CommandHandler {
             Arguments args = parseAndValidate(rawArgs);
 
             if (!confirm(args)) {
-                log("Operation canceled.");
+                log("Operation cancelled.");
 
                 return EXIT_CODE_OK;
             }

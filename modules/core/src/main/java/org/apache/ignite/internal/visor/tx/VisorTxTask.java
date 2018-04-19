@@ -104,7 +104,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
         for (ComputeJobResult result : results) {
             VisorTxTaskResult data = result.getData();
 
-            if (data.getInfos().isEmpty())
+            if (data == null || data.getInfos().isEmpty())
                 continue;
 
             mapRes.put(result.getNode(), data);
