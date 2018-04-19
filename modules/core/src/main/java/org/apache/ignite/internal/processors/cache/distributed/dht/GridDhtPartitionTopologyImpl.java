@@ -2410,6 +2410,33 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public void ownMoving(AffinityTopologyVersion topVer) {
+        lock.writeLock().lock();
+
+        try {
+            for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
+                if (locPart.state() == MOVING) {
+                    boolean reserved = locPart.reserve();
+
+                    try {
+                        if (reserved && locPart.state() == MOVING && lastTopChangeVer.equals(topVer))
+                            grp.topology().own(locPart);
+                        else // topology changed, rebalancing must be restarted
+                            return;
+                    }
+                    finally {
+                        if (reserved)
+                            locPart.release();
+                    }
+                }
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void onEvicted(GridDhtLocalPartition part, boolean updateSeq) {
         ctx.database().checkpointReadLock();
 

@@ -152,7 +152,10 @@ public class CacheGroupContext {
     private CacheGroupMetricsMXBean mxBean;
 
     /** */
-    private volatile boolean walEnabled;
+    private volatile boolean localWalEnabled;
+
+    /** */
+    private volatile boolean globalWalEnabled;
 
     /**
      * @param grpId Group ID.
@@ -196,9 +199,10 @@ public class CacheGroupContext {
         this.reuseList = reuseList;
         this.locStartVer = locStartVer;
         this.cacheType = cacheType;
-        this.walEnabled = walEnabled;
+        this.globalWalEnabled = walEnabled;
+        this.localWalEnabled = true;
 
-        persistWalState(walEnabled);
+        persistGlobalWalState(walEnabled);
 
         ioPlc = cacheType.ioPolicy();
 
@@ -1021,22 +1025,52 @@ public class CacheGroupContext {
      * WAL enabled flag.
      */
     public boolean walEnabled() {
-        return walEnabled;
+        return localWalEnabled && globalWalEnabled;
     }
 
     /**
-     * @param enabled WAL enabled flag.
+     * Local WAL enabled flag.
      */
-    public void walEnabled(boolean enabled) {
-        persistWalState(enabled);
+    public boolean localWalEnabled() {
+        return localWalEnabled;
+    }
 
-        this.walEnabled = enabled;
+    /**
+     * @Global WAL enabled flag.
+     */
+    public boolean globalWalEnabled() {
+        return globalWalEnabled;
+    }
+
+    /**
+     * @param enabled Global WAL enabled flag.
+     */
+    public void globalWalEnabled(boolean enabled) {
+        persistGlobalWalState(enabled);
+
+        this.globalWalEnabled = enabled;
+    }
+
+    /**
+     * @param enabled Local WAL enabled flag.
+     */
+    public void localWalEnabled(boolean enabled) {
+        persistLocalWalState(enabled);
+
+        this.localWalEnabled = enabled;
     }
 
     /**
      * @param enabled Enabled flag..
      */
-    private void persistWalState(boolean enabled) {
-        shared().database().walEnabled(grpId, enabled);
+    private void persistGlobalWalState(boolean enabled) {
+        shared().database().walEnabled(grpId, enabled, false);
+    }
+
+    /**
+     * @param enabled Enabled flag..
+     */
+    private void persistLocalWalState(boolean enabled) {
+        shared().database().walEnabled(grpId, enabled, true);
     }
 }

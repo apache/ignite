@@ -14,27 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.testsuites;
-
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoPdsRecoveryAfterFileCorruptionTest;
+package org.apache.ignite.internal.processors.cache.persistence;
 
 /**
- * Same as {@link IgnitePdsTestSuite2} but is started with direct-oi jar in classpath.
+ * Native IO tests can't use page store, so this test limit pages count to 128.
+ * 524288 bytes to be read 128 times, 64Mbytes total read load.
  */
-public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
-    /**
-     * @return Suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite 2 (Native IO)");
-
-        IgnitePdsTestSuite2.addRealPageStoreTests(suite);
-
-        //Integrity test with reduced count of pages.
-        suite.addTestSuite(IgniteNativeIoPdsRecoveryAfterFileCorruptionTest.class);
-
-        return suite;
+public class IgniteNativeIoPdsRecoveryAfterFileCorruptionTest extends IgnitePdsRecoveryAfterFileCorruptionTest {
+    /** {@inheritDoc} */
+    @Override protected int getTotalPagesToTest() {
+        return 128;
     }
 }
