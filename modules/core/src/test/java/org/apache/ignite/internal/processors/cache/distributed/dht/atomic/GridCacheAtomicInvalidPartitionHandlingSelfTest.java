@@ -139,9 +139,9 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
-    public void testPrimaryPrimarySync() throws Exception {
+    /*public void testPrimaryPrimarySync() throws Exception {
         checkRestarts(PRIMARY_SYNC);
-    }
+    }*/
 
     /**
      * @throws Exception If failed.

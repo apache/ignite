@@ -61,8 +61,10 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Cache Failover Test Suite");
 
-        suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class);
+        for (int i = 0; i < 33; i++)
+            suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
+
+        /*suite.addTestSuite(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class);
         suite.addTestSuite(GridCacheRebalancingPartitionDistributionTest.class);
 
         GridTestUtils.addTestIfNeeded(suite, GridCacheIncrementTransformTest.class, ignoredTests);
@@ -90,7 +92,7 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheTxNodeFailureSelfTest.class);
 
-        suite.addTestSuite(AtomicPutAllChangingTopologyTest.class);
+        suite.addTestSuite(AtomicPutAllChangingTopologyTest.class);*/
 
         return suite;
     }
