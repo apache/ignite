@@ -36,7 +36,7 @@ public class WorkersRegistry implements GridWorkerListener {
      * @param w Worker.
      */
     public void register(GridWorker w) {
-        if (registeredWorkers.putIfAbsent(w.name(), w) != null)
+        if (registeredWorkers.putIfAbsent(w.runner().getName(), w) != null)
             throw new IllegalStateException("Worker is already registered [worker=" + w + ']');
     }
 
@@ -75,6 +75,6 @@ public class WorkersRegistry implements GridWorkerListener {
 
     /** {@inheritDoc} */
     @Override public void onStopped(GridWorker w) {
-        unregister(w.name());
+        unregister(w.runner().getName());
     }
 }

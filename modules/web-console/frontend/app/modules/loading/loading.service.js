@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-export default ['IgniteLoading', ['$timeout', ($timeout) => {
+export default ['IgniteLoading', [() => {
     const _overlays = {};
 
     const start = (key) => {
-        $timeout(() => {
+        setTimeout(() => {
             const loadingOverlay = _overlays[key];
 
             loadingOverlay && loadingOverlay.addClass('loading-active');
@@ -27,7 +27,7 @@ export default ['IgniteLoading', ['$timeout', ($timeout) => {
     };
 
     const finish = (key) => {
-        $timeout(() => {
+        setTimeout(() => {
             const loadingOverlay = _overlays[key];
 
             loadingOverlay && loadingOverlay.removeClass('loading-active');
