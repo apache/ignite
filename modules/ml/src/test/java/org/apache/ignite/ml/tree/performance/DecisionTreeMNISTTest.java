@@ -17,16 +17,16 @@
 
 package org.apache.ignite.ml.tree.performance;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.nn.performance.MnistMLPTestUtil;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressor;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static junit.framework.TestCase.assertTrue;
 
@@ -50,7 +50,8 @@ public class DecisionTreeMNISTTest {
             new SimpleStepFunctionCompressor<>());
 
         DecisionTreeNode mdl = trainer.fit(
-            new LocalDatasetBuilder<>(trainingSet, 10),
+            trainingSet,
+            10,
             (k, v) -> v.getPixels(),
             (k, v) -> (double) v.getLabel()
         );

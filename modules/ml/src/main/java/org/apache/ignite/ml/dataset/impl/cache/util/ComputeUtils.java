@@ -163,9 +163,14 @@ public class ComputeUtils {
             qry.setPartition(part);
 
             long cnt = upstreamCache.localSizeLong(part);
-            try (QueryCursor<Cache.Entry<K, V>> cursor = upstreamCache.query(qry)) {
-                return partDataBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator(), cnt), cnt, ctx);
+
+            if (cnt > 0) {
+                try (QueryCursor<Cache.Entry<K, V>> cursor = upstreamCache.query(qry)) {
+                    return partDataBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator(), cnt), cnt, ctx);
+                }
             }
+
+            return null;
         });
     }
 

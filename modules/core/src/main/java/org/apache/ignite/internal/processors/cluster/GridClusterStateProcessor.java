@@ -1035,7 +1035,13 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 ", client=" + ctx.clientNode() +
                 ", daemon" + ctx.isDaemon() + "]");
         }
-        IgniteCompute comp = ((ClusterGroupAdapter)ctx.cluster().get().forServers()).compute();
+
+        ClusterGroupAdapter clusterGroupAdapter = (ClusterGroupAdapter)ctx.cluster().get().forServers();
+
+        if (F.isEmpty(clusterGroupAdapter.nodes()))
+            return false;
+
+        IgniteCompute comp = clusterGroupAdapter.compute();
 
         return comp.call(new IgniteCallable<Boolean>() {
             @IgniteInstanceResource

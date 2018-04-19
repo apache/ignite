@@ -121,7 +121,8 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
          * Creates cleanup worker.
          */
         CleanupWorker() {
-            super(cctx.igniteInstanceName(), "ttl-cleanup-worker", cctx.logger(GridCacheSharedTtlCleanupManager.class));
+            super(cctx.igniteInstanceName(), "ttl-cleanup-worker", cctx.logger(GridCacheSharedTtlCleanupManager.class),
+                cctx.kernalContext().workersRegistry());
         }
 
         /** {@inheritDoc} */
