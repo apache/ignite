@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -50,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 @GridInternal
-public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<VisorTxNodeInfo, VisorTxTaskResult>, VisorTxTaskResult> {
+public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterNode, VisorTxTaskResult>, VisorTxTaskResult> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -66,7 +65,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<VisorTxN
         if (taskArg.getConsistentIds() != null) {
             return F.transform(ignite.cluster().forPredicate(new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
-                    return taskArg.getConsistentIds().contains((String)node.consistentId());
+                    return taskArg.getConsistentIds().contains((String)node.consistentId().toString());
                 }
             }).nodes(), new IgniteClosure<ClusterNode, UUID>() {
                 @Override public UUID apply(ClusterNode node) {
@@ -99,8 +98,8 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<VisorTxN
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Map<VisorTxNodeInfo, VisorTxTaskResult> reduce0(List<ComputeJobResult> results) throws IgniteException {
-        Map<VisorTxNodeInfo, VisorTxTaskResult> mapRes = new TreeMap<>();
+    @Nullable @Override protected Map<ClusterNode, VisorTxTaskResult> reduce0(List<ComputeJobResult> results) throws IgniteException {
+        Map<ClusterNode, VisorTxTaskResult> mapRes = new TreeMap<>();
 
         for (ComputeJobResult result : results) {
             VisorTxTaskResult data = result.getData();
@@ -108,7 +107,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<VisorTxN
             if (data.getInfos().isEmpty())
                 continue;
 
-            mapRes.put(new VisorTxNodeInfo(result.getNode()), data);
+            mapRes.put(result.getNode(), data);
         }
 
         return mapRes;
@@ -154,15 +153,10 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<VisorTxN
                 }
             }
 
-            IgniteUuid kill = null;
-
-            if (arg.getKillXid() != null)
-                kill = IgniteUuid.fromString(arg.getKillXid());
-
             for (Transaction transaction : transactions) {
                 GridNearTxLocal locTx = ((TransactionProxyImpl)transaction).tx();
 
-                if (kill != null && !kill.equals(transaction.xid()))
+                if (arg.getXid() != null && !locTx.xid().toString().equals(arg.getXid()))
                     continue;
 
                 if (arg.getState() != null && locTx.state() != arg.getState())
@@ -195,7 +189,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<VisorTxN
                 infos.add(new VisorTxInfo(locTx.xid(), duration, locTx.isolation(), locTx.concurrency(),
                     locTx.timeout(), locTx.label(), mappings, locTx.state(), size));
 
-                if (kill != null)
+                if (arg.getOperation() == VisorTxOperation.KILL)
                     locTx.rollbackAsync();
 
                 if (infos.size() == limit)

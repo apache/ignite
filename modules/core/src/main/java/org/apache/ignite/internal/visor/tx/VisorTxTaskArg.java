@@ -36,6 +36,9 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    private VisorTxOperation op;
+
+    /** */
     private @Nullable Integer limit;
 
     /** */
@@ -54,7 +57,7 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     private @Nullable List<String> consistentIds;
 
     /** */
-    private @Nullable String killXid;
+    private @Nullable String xid;
 
     /** */
     private @Nullable String lbRegex;
@@ -74,15 +77,16 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
      * @param minDuration Min duration.
      * @param minSize Min size.
      * @param state State.
-     * @param proj Predicate.
+     * @param proj Projection.
      * @param consistentIds Consistent ids for NODES projection.
-     * @param killXid Kill xid.
+     * @param xid Xid.
      * @param lbRegex Label regex.
      * @param sortOrder Sort order.
      */
-    public VisorTxTaskArg(@Nullable Integer limit, @Nullable Long minDuration, @Nullable Integer minSize,
+    public VisorTxTaskArg(VisorTxOperation op, @Nullable Integer limit, @Nullable Long minDuration, @Nullable Integer minSize,
         @Nullable TransactionState state, @Nullable VisorTxProjection proj, @Nullable List<String> consistentIds,
-        @Nullable String killXid, @Nullable String lbRegex, @Nullable VisorTxSortOrder sortOrder) {
+        @Nullable String xid, @Nullable String lbRegex, @Nullable VisorTxSortOrder sortOrder) {
+        this.op = op;
         this.limit = limit;
         this.minDuration = minDuration;
         this.minSize = minSize;
@@ -90,8 +94,13 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
         this.proj = proj;
         this.consistentIds = consistentIds;
         this.lbRegex = lbRegex;
-        this.killXid = killXid;
+        this.xid = xid;
         this.sortOrder = sortOrder;
+    }
+
+    /** */
+    public VisorTxOperation getOperation() {
+        return op;
     }
 
     /** */
@@ -130,8 +139,8 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
     }
 
     /** */
-    @Nullable public String getKillXid() {
-        return killXid;
+    @Nullable public String getXid() {
+        return xid;
     }
 
     /** */
@@ -141,6 +150,7 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeEnum(out, op);
         out.writeInt(limit == null ? -1 : limit);
         out.writeLong(minDuration == null ? -1 : minDuration);
         out.writeInt(minSize == null ? -1 : minSize);
@@ -148,12 +158,13 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
         U.writeEnum(out, proj);
         U.writeCollection(out, consistentIds);
         out.writeUTF(lbRegex == null ? "" : lbRegex);
-        out.writeUTF(killXid == null ? "" : killXid);
+        out.writeUTF(xid == null ? "" : xid);
         U.writeEnum(out, sortOrder);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        op = VisorTxOperation.fromOrdinal(in.readByte());
         limit = fixNull(in.readInt());
         minDuration = fixNull(in.readLong());
         minSize = fixNull(in.readInt());
@@ -161,7 +172,7 @@ public class VisorTxTaskArg extends VisorDataTransferObject {
         proj = VisorTxProjection.fromOrdinal(in.readByte());
         consistentIds = U.readList(in);
         lbRegex = fixNull(in.readUTF());
-        killXid = fixNull(in.readUTF());
+        xid = fixNull(in.readUTF());
         sortOrder = VisorTxSortOrder.fromOrdinal(in.readByte());
     }
 

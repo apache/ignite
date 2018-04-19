@@ -37,20 +37,14 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.commandline.CommandHandler;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
-import org.apache.ignite.internal.visor.tx.VisorTxNodeInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -59,8 +53,9 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UNEXPECTED_ERROR;
-import static org.apache.ignite.transactions.TransactionConcurrency.*;
-import static org.apache.ignite.transactions.TransactionIsolation.*;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /**
  * Command line handler test.
@@ -96,8 +91,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
@@ -383,17 +376,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)
             .setAtomicityMode(TRANSACTIONAL).setWriteSynchronizationMode(FULL_SYNC));
 
-        for (Ignite ig : G.allGrids()) {
-            final TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)client.configuration().getCommunicationSpi();
-
-            spi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-                @Override public boolean apply(ClusterNode node, Message message) {
-                    return message instanceof GridNearTxFinishRequest;
-                }
-            });
-
+        for (Ignite ig : G.allGrids())
             assertNotNull(ig.cache(DEFAULT_CACHE_NAME));
-        }
 
         AtomicInteger idx = new AtomicInteger();
 
@@ -424,8 +408,12 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
                         break;
                     case 1:
+                        U.awaitQuiet(lockLatch);
+
+                        doSleep(3000);
+
                         try (Transaction tx = grid(0).transactions().withLabel("label1").txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0)) {
-                            U.awaitQuiet(lockLatch);
+                            grid(0).cache(DEFAULT_CACHE_NAME).putAll(generate(200, 110));
 
                             grid(0).cache(DEFAULT_CACHE_NAME).put(0, 0);
                         }
@@ -443,7 +431,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                         try (Transaction tx = client.transactions().withLabel("label2").txStart(OPTIMISTIC, READ_COMMITTED, 0, 0)) {
                             U.awaitQuiet(lockLatch);
 
-                            client.cache(DEFAULT_CACHE_NAME).put(100, 10);
+                            client.cache(DEFAULT_CACHE_NAME).putAll(generate(100, 10));
 
                             client.cache(DEFAULT_CACHE_NAME).put(0, 0);
 
@@ -455,16 +443,19 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             }
         }, 4, "tx-thread");
 
-        doSleep(1500);
+        U.awaitQuiet(lockLatch);
+
+        doSleep(5000);
 
         CommandHandler h = new CommandHandler();
 
         final VisorTxInfo[] toKill = {null};
 
+        // Basic test.
         validate(h, map -> {
-            VisorTxNodeInfo i = new VisorTxNodeInfo(grid(0).cluster().localNode());
+            ClusterNode node = grid(0).cluster().localNode();
 
-            VisorTxTaskResult res = map.get(i);
+            VisorTxTaskResult res = map.get(node);
 
             for (VisorTxInfo info : res.getInfos()) {
                 if (info.getSize() == 100) {
@@ -479,24 +470,26 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         assertNotNull(toKill);
 
+        // Test filter by label.
         validate(h, map -> {
-            VisorTxNodeInfo i = new VisorTxNodeInfo(grid(0).cluster().localNode());
+            ClusterNode node = grid(0).cluster().localNode();
 
-            for (Map.Entry<VisorTxNodeInfo, VisorTxTaskResult> entry : map.entrySet())
-                assertEquals(entry.getKey().equals(i) ? 1 : 0, entry.getValue().getInfos().size());
+            for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : map.entrySet())
+                assertEquals(entry.getKey().equals(node) ? 1 : 0, entry.getValue().getInfos().size());
         }, "--tx", "label", "label1");
 
+        // Test filter by label regex.
         validate(h, map -> {
-            VisorTxNodeInfo i1 = new VisorTxNodeInfo(grid(0).cluster().localNode());
-            VisorTxNodeInfo i2 = new VisorTxNodeInfo(grid("client").cluster().localNode());
+            ClusterNode node1 = grid(0).cluster().localNode();
+            ClusterNode node2 = grid("client").cluster().localNode();
 
-            for (Map.Entry<VisorTxNodeInfo, VisorTxTaskResult> entry : map.entrySet()) {
-                if (entry.getKey().equals(i1)) {
+            for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : map.entrySet()) {
+                if (entry.getKey().equals(node1)) {
                     assertEquals(1, entry.getValue().getInfos().size());
 
                     assertEquals("label1", entry.getValue().getInfos().get(0).getLabel());
                 }
-                else if (entry.getKey().equals(i2)) {
+                else if (entry.getKey().equals(node2)) {
                     assertEquals(1, entry.getValue().getInfos().size());
 
                     assertEquals("label2", entry.getValue().getInfos().get(0).getLabel());
@@ -504,20 +497,36 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 else
                     assertTrue(entry.getValue().getInfos().isEmpty());
 
-
             }
         }, "--tx", "label", "^label[0-9]");
 
+        // test order by size.
+        validate(h, map -> {
+            VisorTxTaskResult res = map.get(grid(0).localNode());
+
+            assertTrue(res.getInfos().get(0).getSize() >=  res.getInfos().get(1).getSize());
+
+        }, "--tx", "order", "SIZE");
+
+        // test order by duration.
+        validate(h, map -> {
+            VisorTxTaskResult res = map.get(grid(0).localNode());
+
+            assertTrue(res.getInfos().get(0).getDuration() >=  res.getInfos().get(1).getDuration());
+
+        }, "--tx", "order", "DURATION");
+
+        // Test kill by xid.
         validate(h, map -> {
                 assertEquals(1, map.size());
 
-                Map.Entry<VisorTxNodeInfo, VisorTxTaskResult> killedEntry = map.entrySet().iterator().next();
+                Map.Entry<ClusterNode, VisorTxTaskResult> killedEntry = map.entrySet().iterator().next();
 
                 VisorTxInfo info = killedEntry.getValue().getInfos().get(0);
 
                 assertEquals(toKill[0].getXid(), info.getXid());
-            }, "--tx",
-            "kill", toKill[0].getXid().toString(),
+            }, "--tx", "kill",
+            "xid", toKill[0].getXid().toString(),
             "nodes", grid(0).localNode().consistentId().toString());
 
         unlockLatch.countDown();
@@ -531,7 +540,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @param args Args.
      */
     private void validate(
-        CommandHandler h, IgniteInClosure<Map<VisorTxNodeInfo, VisorTxTaskResult>> validateClo, String... args)
+        CommandHandler h, IgniteInClosure<Map<ClusterNode, VisorTxTaskResult>> validateClo, String... args)
         throws IgniteCheckedException {
         assertEquals(EXIT_CODE_OK, execute(h, args));
 

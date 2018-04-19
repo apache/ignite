@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientClosedException;
@@ -51,7 +52,7 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
-import org.apache.ignite.internal.visor.tx.VisorTxNodeInfo;
+import org.apache.ignite.internal.visor.tx.VisorTxOperation;
 import org.apache.ignite.internal.visor.tx.VisorTxProjection;
 import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
@@ -103,6 +104,9 @@ public class CommandHandler {
     private static final String CMD_USER = "--user";
 
     /** */
+    public static final String CONFIRM_MSG = "yes";
+
+    /** */
     private static final String BASELINE_ADD = "add";
 
     /** */
@@ -145,7 +149,7 @@ public class CommandHandler {
     private static final String TX_LIMIT = "limit";
 
     /** */
-    private static final String TX_SORT = "sort";
+    private static final String TX_ORDER = "order";
 
     /** */
     private static final String TX_SERVERS = "servers";
@@ -164,6 +168,9 @@ public class CommandHandler {
 
     /** */
     private static final String TX_NODES = "nodes";
+
+    /** */
+    private static final String TX_XID = "xid";
 
     /** */
     private static final String TX_KILL = "kill";
@@ -244,7 +251,7 @@ public class CommandHandler {
         if (prompt == null)
             return true;
 
-        return "y".equalsIgnoreCase(readLine(prompt));
+        return CONFIRM_MSG.equalsIgnoreCase(readLine(prompt));
     }
 
     /**
@@ -268,12 +275,12 @@ public class CommandHandler {
                 break;
 
             case TX:
-                if (args.transactionArguments().getKillXid() != null)
-                    str = "Warning: the command will stop transaction.";
+                if (args.transactionArguments().getOperation() == VisorTxOperation.KILL)
+                    str = "Warning: the command will kill some transactions.";
                 break;
         }
 
-        return str == null ? null : str + "\nPress 'y' to continue...";
+        return str == null ? null : str + "\nPress 'yes' to continue...";
     }
 
     /**
@@ -473,6 +480,7 @@ public class CommandHandler {
 
         for (String consistentId : s.split(","))
             consistentIds.add(consistentId.trim());
+
         return consistentIds;
     }
 
@@ -487,6 +495,7 @@ public class CommandHandler {
         nl();
 
         Map<String, VisorBaselineNode> baseline = res.getBaseline();
+
         Map<String, VisorBaselineNode> servers = res.getServers();
 
         if (F.isEmpty(baseline))
@@ -622,37 +631,35 @@ public class CommandHandler {
      */
     private void transactions(GridClient client, VisorTxTaskArg arg) throws GridClientException {
         try {
-            Map<VisorTxNodeInfo, VisorTxTaskResult> res = executeTask(client, VisorTxTask.class, arg);
+            Map<ClusterNode, VisorTxTaskResult> res = executeTask(client, VisorTxTask.class, arg);
 
             lastOperationResult = res;
 
             if (res.isEmpty())
                 log("Nothing found.");
-            else if (arg.getKillXid() != null)
+            else if (arg.getXid() != null)
                 log("Killed transactions:");
             else
                 log("Matching transactions:");
 
-            for (Map.Entry<VisorTxNodeInfo, VisorTxTaskResult> entry : res.entrySet()) {
+            for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
                 if (entry.getValue().getInfos().isEmpty())
                     continue;
 
-                VisorTxNodeInfo key = entry.getKey();
+                ClusterNode key = entry.getKey();
 
-                log("Node: [id=" + U.id8(key.getId()) + ", consistentId=" + key.getConsistentId() +
-                    ", order=" + key.getOrder() + ']');
+                log(key.toString());
 
                 for (VisorTxInfo info : entry.getValue().getInfos())
                     log("    Tx: [xid=" + info.getXid() +
                         ", label=" + info.getLabel() +
                         ", state=" + info.getState() +
                         ", duration=" + info.getDuration() / 1000 +
-                        ", state=" + info.getState() +
                         ", isolation=" + info.getIsolation() +
                         ", concurrency=" + info.getConcurrency() +
                         ", timeout=" + info.getTimeout() +
                         ", size=" + info.getSize() +
-                        ", nodes=" + F.transform(info.getPrimaryNodes(), new IgniteClosure<UUID, String>() {
+                        ", dhtNodes=" + F.transform(info.getPrimaryNodes(), new IgniteClosure<UUID, String>() {
                         @Override public String apply(UUID id) {
                             return U.id8(id);
                         }
@@ -661,7 +668,7 @@ public class CommandHandler {
             }
         }
         catch (Throwable e) {
-            log("Failed to retrieve transactions.");
+            log("Failed to perform operation.");
 
             throw e;
         }
@@ -879,7 +886,9 @@ public class CommandHandler {
 
         List<String> consistentIds = null;
 
-        String killXid = null;
+        VisorTxOperation op = VisorTxOperation.LIST;
+
+        String xid = null;
 
         boolean end = false;
 
@@ -893,13 +902,13 @@ public class CommandHandler {
                 case TX_LIMIT:
                     nextArg("");
 
-                    limit = (int) parseLong(TX_LIMIT);
+                    limit = (int) nextLongArg(TX_LIMIT);
                     break;
 
-                case TX_SORT:
+                case TX_ORDER:
                     nextArg("");
 
-                    sortOrder = VisorTxSortOrder.fromString(nextArg(TX_SORT));
+                    sortOrder = VisorTxSortOrder.fromString(nextArg(TX_ORDER));
 
                     break;
 
@@ -924,13 +933,13 @@ public class CommandHandler {
                 case TX_DURATION:
                     nextArg("");
 
-                    duration = parseLong(TX_DURATION) * 1000L;
+                    duration = nextLongArg(TX_DURATION) * 1000L;
                     break;
 
                 case TX_SIZE:
                     nextArg("");
 
-                    size = (int) parseLong(TX_SIZE);
+                    size = (int) nextLongArg(TX_SIZE);
                     break;
 
                 case TX_LABEL:
@@ -947,10 +956,16 @@ public class CommandHandler {
 
                     break;
 
+                case TX_XID:
+                    nextArg("");
+
+                    xid = nextArg(TX_XID);
+                    break;
+
                 case TX_KILL:
                     nextArg("");
 
-                    killXid = nextArg(TX_KILL);
+                    op = VisorTxOperation.KILL;
                     break;
 
                 default:
@@ -962,13 +977,13 @@ public class CommandHandler {
         if (proj != null && consistentIds != null)
             throw new IllegalArgumentException("Projection can't be used together with list of consistent ids.");
 
-        return new VisorTxTaskArg(limit, duration, size, null, proj, consistentIds, killXid, lbRegex, sortOrder);
+        return new VisorTxTaskArg(op, limit, duration, size, null, proj, consistentIds, xid, lbRegex, sortOrder);
     }
 
     /**
      * @return Numeric value.
      */
-    private long parseLong(String lb) {
+    private long nextLongArg(String lb) {
         String str = nextArg("Expecting " + lb);
 
         try {
@@ -1008,10 +1023,9 @@ public class CommandHandler {
                 usage("  Remove nodes from baseline topology:", BASELINE, " remove consistentId1[,consistentId2,....,consistentIdN] [--force]");
                 usage("  Set baseline topology:", BASELINE, " set consistentId1[,consistentId2,....,consistentIdN] [--force]");
                 usage("  Set baseline topology based on version:", BASELINE, " version topologyVersion [--force]");
-                usage("  List active transactions:", TX, " [limit NUMBER] [sort DURATION|SIZE] [minDuration SECONDS] " +
+                usage("  List or kill transactions:", TX, " [kill] [xid XID] [minDuration SECONDS] " +
                     "[minSize SIZE] [label PATTERN_REGEX] [servers|clients] " +
-                    "[nodes consistentId1[,consistentId2,....,consistentIdN]");
-                usage("  Kill transaction by known xid:", TX, " kill XID [--force]");
+                    "[nodes consistentId1[,consistentId2,....,consistentIdN] [limit NUMBER] [order DURATION|SIZE] [--force]");
 
                 log("By default commands affecting the cluster require interactive confirmation. ");
                 log("  --force option can be used to execute commands without prompting for confirmation.");
