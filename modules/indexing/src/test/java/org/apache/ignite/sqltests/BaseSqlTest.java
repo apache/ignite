@@ -412,16 +412,14 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /**
      * Performs scan query with fields projection.
      *
-     * @param node node to use as entry point for query.
+     * @param cache cache to query.
      * @param filter filter for rows.
      * @param fields to use in result (projection).
      */
     protected static <K, V> List<List<Object>> select(
-        Ignite node,
+        IgniteCache<K, V> cache,
         @Nullable IgniteBiPredicate<K, V> filter,
         String... fields) {
-
-        IgniteCache<Object, Object> cache = node.cache(EMP_CACHE_NAME);
 
         Collection<QueryEntity> entities = cache.getConfiguration(CacheConfiguration.class).getQueryEntities();
 
@@ -438,7 +436,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             return res;
         };
 
-        QueryCursor<List<Object>> cursor = node.cache(EMP_CACHE_NAME).withKeepBinary()
+        QueryCursor<List<Object>> cursor = cache.withKeepBinary()
             .query(new ScanQuery<>(filter), transformer);
 
         return cursor.getAll();
@@ -482,7 +480,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
             String[] fields = emps.columnNames().toArray(new String[0]);
 
-            List<List<Object>> expected = select(node, between, fields);
+            List<List<Object>> expected = select(node.cache(EMP_CACHE_NAME), between, fields);
 
             assertContainsEq(emps.values(), expected);
         });
@@ -496,7 +494,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
             assertEquals("Returned column names are incorrect.", res.columnNames(), Arrays.asList(fields));
 
-            List<List<Object>> expected = select(node, null, fields);
+            List<List<Object>> expected = select(node.cache(EMP_CACHE_NAME), null, fields);
 
             assertContainsEq(res.values(), expected);
         });
@@ -525,7 +523,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         testAllNodes(node -> {
             Result ages = executeFrom("SELECT DISTINCT age FROM Employee", node);
 
-            Set<Object> expected = distinct(select(node, null, "age"));
+            Set<Object> expected = distinct(select(node.cache(EMP_CACHE_NAME), null, "age"));
 
             assertContainsEq("Values in cache differ from values returned from sql.", ages.values(), expected);
         });
@@ -535,7 +533,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         testAllNodes(node -> {
             Result ages = executeFrom("SELECT DISTINCT age FROM Employee WHERE id < 100", node);
 
-            Set<Object> expAges = distinct(select(node, (Long key, BinaryObject val) -> key < 100, "age"));
+            Set<Object> expAges = distinct(select(node.cache(EMP_CACHE_NAME), (Long key, BinaryObject val) -> key < 100, "age"));
 
             assertContainsEq(ages.values(), expAges);
         });
