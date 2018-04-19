@@ -101,10 +101,6 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
     /** */
     private Class[] testSpiRecord;
 
-    @Override protected long getTestTimeout() {
-        return 60_000;
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -1061,14 +1057,14 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testActivateFailover1() throws Exception {
-//        stateChangeFailover1(true);
+        stateChangeFailover1(true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDeactivateFailover1() throws Exception {
-//        stateChangeFailover1(false);
+        stateChangeFailover1(false);
     }
 
     /**
@@ -1116,14 +1112,14 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testActivateFailover2() throws Exception {
-//        stateChangeFailover2(true);
+        stateChangeFailover2(true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDeactivateFailover2() throws Exception {
-//        stateChangeFailover2(false);
+        stateChangeFailover2(false);
     }
 
     /**
@@ -1178,14 +1174,14 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testActivateFailover3() throws Exception {
-//        stateChangeFailover3(true);
+        stateChangeFailover3(true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testDeactivateFailover3() throws Exception {
-//        stateChangeFailover3(false);
+        stateChangeFailover3(false);
     }
 
     /**
