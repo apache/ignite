@@ -167,8 +167,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: object written with Java OptimizedMarshaller. */
         public const byte OptimizedMarshaller = 254;
 
-        /** Type: platform object proxy. */
-        public const int IgniteUuid = 2018070327;
+        /** Type: Ignite UUID. */
+        public const int IgniteUuid = 63;
 
         /** Type ids. */
         private static readonly Dictionary<Type, byte> TypeIds = new Dictionary<Type, byte>

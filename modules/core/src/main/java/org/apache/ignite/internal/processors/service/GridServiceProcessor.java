@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -103,6 +104,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDeploymentException;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.thread.IgniteThreadFactory;
+import org.apache.ignite.thread.OomExceptionHandler;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -112,7 +114,6 @@ import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_MODE;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -154,8 +155,12 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     /** Busy lock. */
     private volatile GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
+    /** Uncaught exception handler for thread pools. */
+    private final UncaughtExceptionHandler oomeHnd = new OomExceptionHandler(ctx);
+
     /** Thread factory. */
-    private ThreadFactory threadFactory = new IgniteThreadFactory(ctx.igniteInstanceName(), "service");
+    private ThreadFactory threadFactory = new IgniteThreadFactory(ctx.igniteInstanceName(), "service",
+        oomeHnd);
 
     /** Thread local for service name. */
     private ThreadLocal<String> svcName = new ThreadLocal<>();
@@ -175,7 +180,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     public GridServiceProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.igniteInstanceName(), "srvc-deploy"));
+        depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.igniteInstanceName(),
+            "srvc-deploy", oomeHnd));
 
         String servicesCompatibilityMode = getString(IGNITE_SERVICES_COMPATIBILITY_MODE);
 
@@ -373,7 +379,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
         busyLock = new GridSpinBusyLock();
 
-        depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.igniteInstanceName(), "srvc-deploy"));
+        depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.igniteInstanceName(),
+            "srvc-deploy", oomeHnd));
 
         start();
 

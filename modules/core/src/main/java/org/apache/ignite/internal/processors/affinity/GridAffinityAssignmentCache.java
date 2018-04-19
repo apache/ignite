@@ -34,14 +34,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityCentralizedFunction;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -52,7 +54,10 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.getFloat;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
@@ -61,6 +66,9 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
 public class GridAffinityAssignmentCache {
     /** Cleanup history size. */
     private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 500);
+
+    /** Partition distribution. */
+    private final float partDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 50f);
 
     /** Group name if specified or cache name. */
     private final String cacheOrGrpName;
@@ -267,16 +275,19 @@ public class GridAffinityAssignmentCache {
      * Calculates affinity cache for given topology version.
      *
      * @param topVer Topology version to calculate affinity cache for.
-     * @param discoEvt Discovery event that caused this topology version change.
+     * @param events Discovery events that caused this topology version change.
      * @param discoCache Discovery cache.
      * @return Affinity assignments.
      */
     @SuppressWarnings("IfMayBeConditional")
-    public List<List<ClusterNode>> calculate(AffinityTopologyVersion topVer, @Nullable DiscoveryEvent discoEvt,
-        @Nullable DiscoCache discoCache) {
+    public List<List<ClusterNode>> calculate(
+        AffinityTopologyVersion topVer,
+        @Nullable ExchangeDiscoveryEvents events,
+        @Nullable DiscoCache discoCache
+    ) {
         if (log.isDebugEnabled())
             log.debug("Calculating affinity [topVer=" + topVer + ", locNodeId=" + ctx.localNodeId() +
-                ", discoEvt=" + discoEvt + ']');
+                ", discoEvts=" + events + ']');
 
         List<List<ClusterNode>> prevAssignment = idealAssignment;
 
@@ -303,46 +314,68 @@ public class GridAffinityAssignmentCache {
 
         List<List<ClusterNode>> assignment;
 
-        if (prevAssignment != null && discoEvt != null) {
-            boolean affNode = CU.affinityNode(discoEvt.eventNode(), nodeFilter);
+        if (prevAssignment != null && events != null) {
+            /* Skip affinity calculation only when all nodes triggered exchange
+               don't belong to affinity for current group (client node or filtered by nodeFilter). */
+            boolean skipCalculation = true;
 
-            if (!affNode)
+            for (DiscoveryEvent event : events.events()) {
+                boolean affinityNode = CU.affinityNode(event.eventNode(), nodeFilter);
+
+                if (affinityNode || event.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                    skipCalculation = false;
+
+                    break;
+                }
+            }
+
+            if (skipCalculation)
                 assignment = prevAssignment;
             else if (hasBaseline && !changedBaseline) {
                 if (baselineAssignment == null)
                     baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
                         discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
-                        prevAssignment, discoEvt, topVer, backups));
+                        prevAssignment, events.lastEvent(), topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
             }
             else if (hasBaseline && changedBaseline) {
                 baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
                     discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
-                    prevAssignment, discoEvt, topVer, backups));
+                    prevAssignment, events.lastEvent(), topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
             }
-            else
+            else {
                 assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
-                    discoEvt, topVer, backups));
+                    events.lastEvent(), topVer, backups));
+            }
         }
         else {
+            DiscoveryEvent event = null;
+
+            if (events != null)
+                event = events.lastEvent();
+
             if (hasBaseline) {
                 baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
                     discoCache.state().baselineTopology().createBaselineView(sorted, nodeFilter),
-                    prevAssignment, discoEvt, topVer, backups));
+                    prevAssignment, event, topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
             }
-            else
+            else {
                 assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
-                    discoEvt, topVer, backups));
+                    event, topVer, backups));
+            }
         }
 
         assert assignment != null;
 
         idealAssignment = assignment;
+
+        if (ctx.cache().cacheMode(cacheOrGrpName) == PARTITIONED)
+            printDistributionIfThresholdExceeded(assignment, sorted.size());
 
         if (hasBaseline) {
             baselineTopology = discoCache.state().baselineTopology();
@@ -392,6 +425,44 @@ public class GridAffinityAssignmentCache {
         }
 
         return result;
+    }
+
+    /**
+     * Calculates and logs partitions distribution if threshold of uneven distribution {@link #partDistribution} is exceeded.
+     *
+     * @param assignments Assignments to calculate partitions distribution.
+     * @param nodes Affinity nodes number.
+     * @see IgniteSystemProperties#IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD
+     */
+    private void printDistributionIfThresholdExceeded(List<List<ClusterNode>> assignments, int nodes) {
+        int locPrimaryCnt = 0;
+        int locBackupCnt = 0;
+
+        for (List<ClusterNode> assignment : assignments) {
+            for (int i = 0; i < assignment.size(); i++) {
+                ClusterNode node = assignment.get(i);
+
+                if (node.isLocal()) {
+                    if (i == 0)
+                        locPrimaryCnt++;
+                    else
+                        locBackupCnt++;
+                }
+            }
+        }
+
+        float expCnt = (float)partsCnt / nodes;
+
+        float deltaPrimary = Math.abs(1 - (float)locPrimaryCnt / expCnt) * 100;
+        float deltaBackup = Math.abs(1 - (float)locBackupCnt / (expCnt * backups)) * 100;
+
+        if (deltaPrimary > partDistribution || deltaBackup > partDistribution) {
+            log.info(String.format("Local node affinity assignment distribution is not ideal " +
+                    "[cache=%s, expectedPrimary=%.2f, actualPrimary=%d, " +
+                    "expectedBackups=%.2f, actualBackups=%d, warningThreshold=%.2f%%]",
+                cacheOrGrpName, expCnt, locPrimaryCnt,
+                expCnt * backups, locBackupCnt, partDistribution));
+        }
     }
 
     /**
