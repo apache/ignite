@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -33,20 +32,20 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.mxbean.TxMXBean;
+import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.transactions.TransactionState;
 
 /**
  * Transactions MXBean implementation.
  */
-public class TxMXBeanImpl implements TxMXBean {
+public class TransactionMetricsMxBeanImpl implements TransactionMetricsMxBean {
     /** Grid kernal context. */
     private final GridKernalContextImpl gridKernalCtx;
 
     /**
      * @param ctx Context.
      */
-    TxMXBeanImpl(GridKernalContextImpl ctx) {
+    TransactionMetricsMxBeanImpl(GridKernalContextImpl ctx) {
         this.gridKernalCtx = ctx;
     }
 
@@ -58,18 +57,6 @@ public class TxMXBeanImpl implements TxMXBean {
     /** {@inheritDoc} */
     @Override public Map<String, String> getLongRunningNearTxs(final int duration) {
         return getNearTxs(duration);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String stopTransaction(String txId) throws IgniteCheckedException {
-        final Collection<GridNearTxLocal> txs = nearTxs(0);
-        if (!F.isEmpty(txId))
-            for (GridNearTxLocal tx : txs)
-                if (tx.xid().toString().equals(txId)) {
-                    tx.close();
-                    return String.format("Transaction %s is %s", tx.xid(), tx.state());
-                }
-        throw new IgniteCheckedException("Transaction with id " + txId + " is not found");
     }
 
     /** {@inheritDoc} */
@@ -229,7 +216,7 @@ public class TxMXBeanImpl implements TxMXBean {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TxMXBeanImpl.class, this);
+        return S.toString(TransactionMetricsMxBeanImpl.class, this);
     }
 
 }

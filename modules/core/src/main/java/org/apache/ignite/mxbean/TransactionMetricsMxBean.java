@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
  * Transactions MXBean interface.
  */
 @MXBeanDescription("MBean that provides access to Ignite transactions.")
-public interface TxMXBean {
+public interface TransactionMetricsMxBean {
     /**
      * All near transactions
      *
@@ -42,17 +42,6 @@ public interface TxMXBean {
     @MXBeanParametersNames("duration")
     @MXBeanParametersDescriptions("Duration, at least (ms).")
     public Map<String, String> getLongRunningNearTxs(int duration);
-
-    /**
-     * Stop transaction.
-     *
-     * @return Updated status of Transaction.
-     * */
-    @MXBeanDescription("Stop transaction.")
-    @MXBeanParametersNames("txId")
-    @MXBeanParametersDescriptions("Transaction id to stop.")
-    public String stopTransaction(String txId) throws IgniteCheckedException;
-
 
     /**
      * The number of transactions which were committed.

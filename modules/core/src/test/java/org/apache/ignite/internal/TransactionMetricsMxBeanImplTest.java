@@ -31,7 +31,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.mxbean.TxMXBean;
+import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -46,7 +46,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  *
  */
-public class TxMXBeanImplTest extends GridCommonAbstractTest {
+public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
     /** */
@@ -82,20 +82,6 @@ public class TxMXBeanImplTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testTxStop() throws Exception {
-        IgniteEx ignite = startGrid(0);
-        TxMXBean txMXBean = txMXBean(0);
-
-        ignite.transactions().txStart();
-        assertEquals(1, txMXBean.getAllNearTxs().size());
-
-        txMXBean.stopTransaction(txMXBean.getAllNearTxs().keySet().iterator().next());
-        assertEquals(0, txMXBean.getAllNearTxs().size());
-    }
-
-    /**
-     *
-     */
     public void testTxMetric() throws Exception {
         //given:
         int keysNumber = 10;
@@ -112,7 +98,7 @@ public class TxMXBeanImplTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        TxMXBean txMXBean = txMXBean(0);
+        TransactionMetricsMxBean txMXBean = txMXBean(0);
 
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -188,7 +174,7 @@ public class TxMXBeanImplTest extends GridCommonAbstractTest {
         IgniteEx primaryNode2 = startGrid(1);
         IgniteEx nearNode = startGrid(2);
 
-        TxMXBean txMXBeanBackup = txMXBean(2);
+        TransactionMetricsMxBean txMXBeanBackup = txMXBean(2);
 
         awaitPartitionMapExchange();
 
@@ -296,11 +282,11 @@ public class TxMXBeanImplTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private TxMXBean txMXBean(int igniteInt) throws Exception {
+    private TransactionMetricsMxBean txMXBean(int igniteInt) throws Exception {
         ObjectName mbeanName = U.makeMBeanName(
             getTestIgniteInstanceName(igniteInt),
             "Transactions",
-            TxMXBeanImpl.class.getSimpleName()
+            TransactionMetricsMxBeanImpl.class.getSimpleName()
         );
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
@@ -308,6 +294,6 @@ public class TxMXBeanImplTest extends GridCommonAbstractTest {
         if (!mbeanSrv.isRegistered(mbeanName))
             fail("MBean is not registered: " + mbeanName.getCanonicalName());
 
-        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, TxMXBean.class, true);
+        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, TransactionMetricsMxBean.class, true);
     }
 }
