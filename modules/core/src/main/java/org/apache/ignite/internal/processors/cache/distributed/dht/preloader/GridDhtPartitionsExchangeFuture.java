@@ -1904,18 +1904,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Checks that some futures were merged to the current.
-     * Future without merges has only one DiscoveryEvent.
-     * If we merge futures to the current (see {@link GridCachePartitionExchangeManager#mergeExchanges(GridDhtPartitionsExchangeFuture, GridDhtPartitionsFullMessage)})
-     * we add new discovery event from merged future.
-     *
-     * @return {@code True} If some futures were merged to current, false in other case.
-     */
-    private boolean hasMergedExchanges() {
-        return context().events().events().size() > 1;
-    }
-
-    /**
      * @param fut Current future.
      * @return Pending join request if any.
      */
@@ -2459,12 +2447,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     log.info("Coordinator received all messages, try merge [ver=" + initialVersion() + ']');
 
                 boolean finish = cctx.exchange().mergeExchangesOnCoordinator(this);
-
-                // Synchronize in case of changed coordinator (thread switched to sys-*)
-                synchronized (mux) {
-                    if (hasMergedExchanges())
-                        updateTopologies(true);
-                }
 
                 if (!finish)
                     return;
@@ -3100,9 +3082,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         return; // Node is stopping, no need to further process exchange.
                     }
-
-                    if (hasMergedExchanges())
-                        updateTopologies(false);
 
                     assert resTopVer.equals(exchCtx.events().topologyVersion()) :  "Unexpected result version [" +
                         "msgVer=" + resTopVer +
