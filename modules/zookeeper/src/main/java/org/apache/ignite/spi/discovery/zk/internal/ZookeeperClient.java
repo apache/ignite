@@ -162,6 +162,13 @@ public class ZookeeperClient implements Watcher {
         }
     }
 
+    /** */
+    String state() {
+        synchronized (stateMux) {
+            return state.toString();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void process(WatchedEvent evt) {
         if (closing)

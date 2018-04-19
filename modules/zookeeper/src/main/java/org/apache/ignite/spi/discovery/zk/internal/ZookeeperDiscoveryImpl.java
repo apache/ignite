@@ -59,8 +59,6 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -71,7 +69,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerUtils;
@@ -191,6 +188,9 @@ public class ZookeeperDiscoveryImpl {
     /** */
     private long prevSavedEvtsTopVer;
 
+    /** */
+    private final ZookeeperDiscoveryStatistics stats;
+
     /**
      * @param spi Discovery SPI.
      * @param igniteInstanceName Instance name.
@@ -200,6 +200,7 @@ public class ZookeeperDiscoveryImpl {
      * @param lsnr Discovery events listener.
      * @param exchange Discovery data exchange.
      * @param internalLsnr Internal listener (used for testing only).
+     * @param stats Zookeeper DiscoverySpi statistics collector.
      */
     public ZookeeperDiscoveryImpl(
         ZookeeperDiscoverySpi spi,
@@ -209,7 +210,8 @@ public class ZookeeperDiscoveryImpl {
         ZookeeperClusterNode locNode,
         DiscoverySpiListener lsnr,
         DiscoverySpiDataExchange exchange,
-        IgniteDiscoverySpiInternalListener internalLsnr) {
+        IgniteDiscoverySpiInternalListener internalLsnr,
+        ZookeeperDiscoveryStatistics stats) {
         assert locNode.id() != null && locNode.isLocal() : locNode;
 
         MarshallerUtils.setNodeName(marsh, igniteInstanceName);
@@ -235,6 +237,8 @@ public class ZookeeperDiscoveryImpl {
 
         if (internalLsnr != null)
             this.internalLsnr = internalLsnr;
+
+        this.stats = stats;
     }
 
     /**
@@ -2184,6 +2188,8 @@ public class ZookeeperDiscoveryImpl {
         joinCtx.addJoinedNode(nodeEvtData, commonData);
 
         rtState.evtsData.onNodeJoin(joinedNode);
+
+        stats.onNodeJoined();
     }
 
     /**
@@ -3485,6 +3491,8 @@ public class ZookeeperDiscoveryImpl {
             topSnapshot,
             Collections.<Long, Collection<ClusterNode>>emptyMap(),
             null);
+
+        stats.onNodeFailed();
     }
 
     /**
@@ -4460,5 +4468,25 @@ public class ZookeeperDiscoveryImpl {
         DISCONNECTED,
         /** */
         STOPPED
+    }
+
+    /** */
+    public UUID getCoordinator() {
+        Map.Entry<Long, ZookeeperClusterNode> e = rtState.top.nodesByOrder.firstEntry();
+
+        return e != null ? e.getValue().id() : null;
+    }
+
+    /** */
+    public String getSpiState() {
+        return rtState.zkClient.state();
+    }
+
+    /** */
+    public String getZkSessionId() {
+        if (rtState.zkClient != null && rtState.zkClient.zk() != null)
+            return Long.toHexString(rtState.zkClient.zk().getSessionId());
+        else
+            return null;
     }
 }
