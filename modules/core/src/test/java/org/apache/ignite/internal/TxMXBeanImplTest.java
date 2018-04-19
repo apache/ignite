@@ -37,11 +37,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  *
@@ -123,7 +123,7 @@ public class TxMXBeanImplTest extends GridCommonAbstractTest {
         assertEquals(1, txMXBean.getTxCommittedNum());
 
         //when: transaction is opening
-        final Transaction tx1 = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+        final Transaction tx1 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
 
         int localKeysNum = 0;
 
@@ -202,7 +202,13 @@ public class TxMXBeanImplTest extends GridCommonAbstractTest {
         CountDownLatch transactionStarter = new CountDownLatch(primaryKeys1.size());
 
         for (int i = 0; i < primaryKeys1.size(); i++)
-            new Thread(new TxThread(commitAllower, transactionStarter, nearNode, primaryKeys1.get(i), primaryKeys2.get(i))).start();
+            new Thread(new TxThread(
+                commitAllower,
+                transactionStarter,
+                nearNode,
+                primaryKeys1.get(i),
+                primaryKeys2.get(i)
+            )).start();
 
         transactionStarter.await();
 
@@ -211,6 +217,7 @@ public class TxMXBeanImplTest extends GridCommonAbstractTest {
         assertEquals(TRANSACTIONS, transactions.size());
 
         int match = 0;
+
         for (String txInfo : transactions.values()) {
             if (txInfo.contains("ACTIVE")
                 && txInfo.contains("NEAR")
@@ -239,12 +246,15 @@ public class TxMXBeanImplTest extends GridCommonAbstractTest {
         private int key2;
 
         /**
-         * @param ignite Ignite.
-         * @param key1 key 1.
-         * @param key2 key 2.
+         * Create TxThread.
          */
-        private TxThread(CountDownLatch commitAllower, CountDownLatch transactionStarter, final Ignite ignite,
-            final int key1, final int key2) {
+        private TxThread(
+            CountDownLatch commitAllower,
+            CountDownLatch transactionStarter,
+            final Ignite ignite,
+            final int key1,
+            final int key2
+        ) {
             this.commitAllower = commitAllower;
             this.transactionStarter = transactionStarter;
             this.ignite = ignite;
@@ -267,7 +277,7 @@ public class TxMXBeanImplTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ)) {
+            try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 ignite.cache(DEFAULT_CACHE_NAME).put(key1, Thread.currentThread().getName());
                 ignite.cache(DEFAULT_CACHE_NAME).put(key2, Thread.currentThread().getName());
 
@@ -287,10 +297,17 @@ public class TxMXBeanImplTest extends GridCommonAbstractTest {
      *
      */
     private TxMXBean txMXBean(int igniteInt) throws Exception {
-        ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(igniteInt), "Transactions", TxMXBeanImpl.class.getSimpleName());
+        ObjectName mbeanName = U.makeMBeanName(
+            getTestIgniteInstanceName(igniteInt),
+            "Transactions",
+            TxMXBeanImpl.class.getSimpleName()
+        );
+
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
+
         if (!mbeanSrv.isRegistered(mbeanName))
             fail("MBean is not registered: " + mbeanName.getCanonicalName());
+
         return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, TxMXBean.class, true);
     }
 }
