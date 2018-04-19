@@ -17,11 +17,8 @@
 
 package org.apache.ignite.sqltests;
 
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
-
 public class PartitionedSqlTest extends BaseSqlTest {
     @Override protected void fillData() {
-        super.fillCommonData("template=");
+        super.fillCommonData("template=partitioned");
     }
 }
