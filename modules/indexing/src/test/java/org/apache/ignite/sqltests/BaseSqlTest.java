@@ -72,6 +72,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     protected static final String[] ALL_FIELDS = new String[] {"ID", "DEPID", "FIRSTNAME", "LASTNAME", "AGE"};
 
+    @InjectTestSuite.Parameter
+    private Configuration cfg = new Configuration();
+
     /**
      * Makes configuration for client node.
      */
@@ -497,5 +500,10 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
             assertContainsEq(ages.values(), expAges);
         });
+    }
+
+    public void testCfg() {
+        // false by default, injected as true
+        assertTrue(cfg.persistenceEnabled());
     }
 }

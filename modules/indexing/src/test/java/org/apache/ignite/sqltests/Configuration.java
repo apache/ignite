@@ -17,19 +17,19 @@
 
 package org.apache.ignite.sqltests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+public class Configuration {
+    private boolean persistenceEnabled = false;
 
-public class SqlTestSuite {
-    public static Test suite(){
-        TestSuite suite = new TestSuite();
+    public Configuration withPersistenceEnabled(boolean persistenceEnabled) {
+        this.persistenceEnabled = persistenceEnabled;
+        return this;
+    }
 
-        Configuration cfgDisk = new Configuration().withPersistenceEnabled(true);
-        suite.addTest(new InjectTestSuite(cfgDisk, PartitionedSqlTest.class, ReplicatedSqlTest.class));
+    public boolean persistenceEnabled() {
+        return persistenceEnabled;
+    }
 
-        Configuration cfgInMemory = new Configuration().withPersistenceEnabled(false);
-        suite.addTest(new InjectTestSuite(cfgInMemory, PartitionedSqlTest.class, ReplicatedSqlTest.class));
-
-        return suite;
+    @Override public String toString(){
+        return "[persistenceEnabled=" + persistenceEnabled + "]";
     }
 }
