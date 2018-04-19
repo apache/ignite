@@ -86,7 +86,7 @@ prepEnv () {
         done
         if ${installFlag}; then
             echo "[INFO] Software installation required root privileges"
-            sudo ${installCmd} install ${packages}
+            ${installCmd} install ${packages}
         fi
     fi
 }
@@ -104,13 +104,28 @@ getBin () {
     BIN_NAME="apache-ignite-fabric-${IGNITE_VERSION}-bin.zip"
     binPreparedFlag=false
 
+    # Search binary in packaging root directory 
     if [ -f "${BIN_NAME}" ]; then
-    binPreparedFlag=true
-    fi
-    if ! ${binPreparedFlag}; then
-        curl -O https://archive.apache.org/dist/ignite/${IGNITE_VERSION}/${BIN_NAME}
         binPreparedFlag=true
     fi
+
+    # Get from target
+    if ! ${binPreparedFlag}; then
+        if $(cp -rf ../target/bin/${BIN_NAME} ./ &>/dev/null); then
+            binPreparedFlag=true
+        fi
+    fi
+
+    # Get from Apache Dist
+    if ! ${binPreparedFlag}; then
+        if $(curl -O https://archive.apache.org/dist/ignite/${IGNITE_VERSION}/${BIN_NAME} &>/dev/null); then
+            binPreparedFlag=true
+        else
+           rm -rf ${BIN_NAME} 
+        fi
+    fi
+
+    # Fail if none of the above acquiring method succeeded
     if ! ${binPreparedFlag}; then
         echo "[ERROR] Can't find | get Apache Ignite's binary archive"
         exit 1
@@ -189,6 +204,13 @@ START_TIME=$(date +%s)
 clear
 
 
+# Check for sudo
+if [ $EUID -ne 0 ]; then
+    echo "[ERROR] Packages building requires root | sudo privileges"
+    exit 1
+fi
+
+
 # Parse input options
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -220,6 +242,7 @@ if [ ${BUILD_RPM_FLAG} == false -a ${BUILD_DEB_FLAG} == false ]; then
     usage
     exit 1
 fi
+
 
 PACKAGING_DIR="$(pwd)"
 
