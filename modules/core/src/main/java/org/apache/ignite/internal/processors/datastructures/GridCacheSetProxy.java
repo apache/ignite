@@ -55,7 +55,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         };
 
     /** Delegate set. */
-    private GridCacheSet<T> delegate;
+    private GridCacheSetImpl<T> delegate;
 
     /** Cache context. */
     private GridCacheContext cctx;
@@ -80,7 +80,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
      * @param cctx Cache context.
      * @param delegate Delegate set.
      */
-    public GridCacheSetProxy(GridCacheContext cctx, GridCacheSet<T> delegate) {
+    public GridCacheSetProxy(GridCacheContext cctx, GridCacheSetImpl<T> delegate) {
         this.cctx = cctx;
         this.delegate = delegate;
 
@@ -92,7 +92,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     /**
      * @return Set delegate.
      */
-    public GridCacheSet delegate() {
+    public GridCacheSetImpl delegate() {
         return delegate;
     }
 
@@ -362,7 +362,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         try {
             delegate.close();
 
-            if (delegate instanceof GridCacheSetImpl) {
+            if (!delegate.shared()) {
                 destroyFut = new IgniteFutureImpl<>(
                     cctx.kernalContext().cache().dynamicDestroyCache(cctx.cache().name(), false, true,
                         false));

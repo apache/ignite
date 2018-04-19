@@ -54,7 +54,6 @@ import org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueue
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeaderKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueProxy;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSetSharedImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeaderKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
@@ -430,7 +429,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         try {
             GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
-            boolean oldVer = true;
+            boolean sharedCache = true;
 
             GridCacheSetHeader hdr = null;
 
@@ -444,7 +443,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                 if (hdr == null && separatedCacheSetEnabled()) {
                     hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), false);
 
-                    oldVer = false;
+                    sharedCache = false;
                 }
             }
 
@@ -469,8 +468,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             if (set == null) {
                 GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
-                    set = new GridCacheSetProxy<>(cctx,
-                        oldVer ? new GridCacheSetSharedImpl<T>(cctx, name, hdr) : new GridCacheSetImpl<T>(cctx, name, hdr)));
+                    set = new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr, sharedCache)));
 
                 if (old != null)
                     set = old;

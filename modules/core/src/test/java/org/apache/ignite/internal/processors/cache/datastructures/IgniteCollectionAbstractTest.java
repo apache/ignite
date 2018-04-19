@@ -27,7 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueAdapter;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSet;
+import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -143,6 +143,6 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
         if (set instanceof GridCacheSetProxy)
             return GridTestUtils.getFieldValue(set, GridCacheSetProxy.class, "cctx");
         else
-            return GridTestUtils.getFieldValue(set, GridCacheSet.class, "ctx");
+            return GridTestUtils.getFieldValue(set, GridCacheSetImpl.class, "ctx");
     }
 }
