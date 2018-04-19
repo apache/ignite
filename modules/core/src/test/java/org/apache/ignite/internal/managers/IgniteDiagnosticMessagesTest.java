@@ -101,6 +101,14 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
+    }
+
+
     /**
      * @throws Exception If failed.
      */
