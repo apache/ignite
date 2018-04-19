@@ -374,7 +374,7 @@ public class GridAffinityAssignmentCache {
 
         idealAssignment = assignment;
 
-        if (ctx.cache().cacheMode(cacheOrGrpName) == PARTITIONED)
+        if (ctx.cache().cacheMode(cacheOrGrpName) == PARTITIONED && !ctx.discovery().localNode().isClient())
             printDistributionIfThresholdExceeded(assignment, sorted.size());
 
         if (hasBaseline) {
