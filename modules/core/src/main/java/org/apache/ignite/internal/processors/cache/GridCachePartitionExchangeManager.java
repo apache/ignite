@@ -1633,6 +1633,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
+        U.warn(diagnosticLog, "Latch manager state: " + latchMgr);
+
         dumpPendingObjects(exchTopVer, diagCtx);
 
         for (CacheGroupContext grp : cctx.cache().cacheGroups())
