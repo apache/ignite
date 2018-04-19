@@ -49,7 +49,7 @@ public class JdbcThinDataSource extends ConnectionPropertiesImpl implements Data
     private PrintWriter logOut;
 
     /** Custom logger handler. */
-    private Handler logHndl;
+    private Handler logHnd;
 
     /** {@inheritDoc} */
     @Override public Connection getConnection() throws SQLException {
@@ -90,15 +90,15 @@ public class JdbcThinDataSource extends ConnectionPropertiesImpl implements Data
 
     /** {@inheritDoc} */
     @Override public void setLogWriter(PrintWriter out) throws SQLException {
-        if (logHndl != null)
-            LOG.removeHandler(logHndl);
+        if (logHnd != null)
+            LOG.removeHandler(logHnd);
 
         logOut = out;
 
         if (out != null) {
-            logHndl = new StreamHandler(new WriterOutputStream(out), new SimpleFormatter());
+            logHnd = new StreamHandler(new WriterOutputStream(out), new SimpleFormatter());
 
-            LOG.addHandler(logHndl);
+            LOG.addHandler(logHnd);
         }
     }
 
