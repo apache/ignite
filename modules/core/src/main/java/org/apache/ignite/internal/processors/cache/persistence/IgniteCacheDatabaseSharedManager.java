@@ -957,7 +957,33 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     ) {
         memMetrics.persistenceEnabled(false);
 
-        DirectMemoryProvider memProvider0 = new DirectMemoryProvider() {
+        PageMemory pageMem = new PageMemoryNoStoreImpl(
+            log,
+            wrapMetricsMemoryProvider(memProvider, memMetrics),
+            cctx,
+            memCfg.getPageSize(),
+            memPlcCfg,
+            memMetrics,
+            false
+        );
+
+        memMetrics.pageMemory(pageMem);
+
+        return pageMem;
+    }
+
+    /**
+     * @param memoryProvider0 Memory provider.
+     * @param memMetrics Memory metrics.
+     * @return Wrapped memory provider.
+     */
+    protected DirectMemoryProvider wrapMetricsMemoryProvider(
+        final DirectMemoryProvider memoryProvider0,
+        final DataRegionMetricsImpl memMetrics
+    ) {
+        return new DirectMemoryProvider() {
+            private final DirectMemoryProvider memProvider = memoryProvider0;
+
             @Override public void initialize(long[] chunkSizes) {
                 memProvider.initialize(chunkSizes);
             }
@@ -970,27 +996,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 DirectMemoryRegion nextMemoryRegion = memProvider.nextRegion();
 
                 if (nextMemoryRegion == null)
-                    return nextMemoryRegion;
+                    return null;
 
                 memMetrics.updateOffHeapSize(nextMemoryRegion.size());
 
                 return nextMemoryRegion;
             }
         };
-
-        PageMemory pageMem = new PageMemoryNoStoreImpl(
-            log,
-            memProvider0,
-            cctx,
-            memCfg.getPageSize(),
-            memPlcCfg,
-            memMetrics,
-            false
-        );
-
-        memMetrics.pageMemory(pageMem);
-
-        return pageMem;
     }
 
     /**

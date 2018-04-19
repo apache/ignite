@@ -389,19 +389,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             checkOrPrepareFiles();
 
-            metrics.setWalSizeProvider(new CO<Long>() {
-                @Override public Long apply() {
-                    long size = 0;
+            if (metrics != null)
+                metrics.setWalSizeProvider(new CO<Long>() {
+                    @Override public Long apply() {
+                        long size = 0;
 
-                    for (File f : walWorkDir0.listFiles())
-                        size += f.length();
+                        for (File f : walWorkDir0.listFiles())
+                            size += f.length();
 
-                    for (File f : walArchiveDir0.listFiles())
-                        size += f.length();
+                        for (File f : walArchiveDir0.listFiles())
+                            size += f.length();
 
-                    return size;
-                }
-            });
+                        return size;
+                    }
+                });
 
             IgniteBiTuple<Long, Long> tup = scanMinMaxArchiveIndices();
 

@@ -964,7 +964,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         DirectMemoryProvider memProvider,
         DataStorageConfiguration memCfg,
         DataRegionConfiguration plcCfg,
-        final DataRegionMetricsImpl memMetrics,
+        DataRegionMetricsImpl memMetrics,
         final boolean trackable
     ) {
         if (!plcCfg.isPersistenceEnabled())
@@ -1001,29 +1001,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         else
             changeTracker = null;
 
-        DirectMemoryProvider memProvider0 = new DirectMemoryProvider() {
-            @Override public void initialize(long[] chunkSizes) {
-                memProvider.initialize(chunkSizes);
-            }
-
-            @Override public void shutdown() {
-                memProvider.shutdown();
-            }
-
-            @Override public DirectMemoryRegion nextRegion() {
-                DirectMemoryRegion nextMemoryRegion = memProvider.nextRegion();
-
-                if (nextMemoryRegion == null)
-                    return nextMemoryRegion;
-
-                memMetrics.updateOffHeapSize(nextMemoryRegion.size());
-
-                return nextMemoryRegion;
-            }
-        };
-
         PageMemoryImpl pageMem = new PageMemoryImpl(
-            memProvider0,
+            wrapMetricsMemoryProvider(memProvider, memMetrics),
             calculateFragmentSizes(
                 memCfg.getConcurrencyLevel(),
                 cacheSize,
