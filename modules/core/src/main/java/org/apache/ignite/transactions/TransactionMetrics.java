@@ -18,6 +18,7 @@
 package org.apache.ignite.transactions;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * Transaction metrics, shared across all caches.
@@ -50,4 +51,53 @@ public interface TransactionMetrics extends Serializable {
      * @return Number of transaction rollbacks.
      */
     public int txRollbacks();
+
+    /**
+     * All near transactions
+     *
+     * @return near transactions.
+     */
+    public Map<String, String> getAllNearTxs();
+
+    /**
+     * Long running near transactions
+     *
+     * @return near transactions.
+     */
+    public Map<String, String> getLongRunningNearTxs(int duration);
+
+    /**
+     * The number of transactions which were committed.
+     *
+     * @return number of transactions which were committed.
+     */
+    public long getTxCommittedNum();
+
+    /**
+     * The number of transactions which were rollback.
+     *
+     * @return number of transactions which were rollback.
+     */
+    public long getTxRolledBackNum();
+
+    /**
+     * The number of active transactions holding at least one key lock.
+     *
+     * @return number of active transactions holding at least one key lock.
+     */
+    public long getTxHoldingLockNum();
+
+    /**
+     * The number of keys locked on the node.
+     *
+     * @return number of keys locked on the node.
+     */
+    public long getLockedKeysNum();
+
+    /**
+     * The number of active transactions for which this node is the initiator.
+     *
+     * @return number of active transactions for which this node is the initiator.
+     */
+    public long getOwnerTxNum();
 }

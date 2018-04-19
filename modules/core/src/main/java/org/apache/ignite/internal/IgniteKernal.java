@@ -650,7 +650,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * @param name  New attribute name.
+     * @param name New attribute name.
      * @param val New attribute value.
      * @throws IgniteCheckedException If duplicated SPI name found.
      */
@@ -750,8 +750,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         @Nullable final Map<String, ? extends ExecutorService> customExecSvcs,
         GridAbsClosure errHnd
     )
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getIgniteInstanceName()));
 
         GridKernalGateway gw = this.gw.get();
@@ -954,7 +953,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             try {
                 startProcessor(new PdsConsistentIdProcessor(ctx));
                 startProcessor(createComponent(DiscoveryNodeValidationProcessor.class, ctx));
-                startProcessor(new  GridAffinityProcessor(ctx));
+                startProcessor(new GridAffinityProcessor(ctx));
                 startProcessor(createComponent(GridSegmentationProcessor.class, ctx));
                 startProcessor(createComponent(IgniteCacheObjectProcessor.class, ctx));
                 startProcessor(createComponent(IGridClusterStateProcessor.class, ctx));
@@ -1720,6 +1719,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * Returns class name filter for marshaller.
+     *
      * @return Class name filter for marshaller.
      */
     private IgnitePredicate<String> classNameFilter() throws IgniteCheckedException {
@@ -1774,9 +1774,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         return clsSet;
     }
 
-
     /**
      * Reads class names from resource referred by given system property name and returns set of classes.
+     *
      * @param fileName File name containing list of classes.
      * @param clsSet Class set for update.
      * @return Set of classes.
@@ -1805,7 +1805,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     }
                     catch (IllegalArgumentException e) {
                         throw new IgniteCheckedException("Exception occurred while reading list of classes" +
-                        "[path=" + fileName + ", row=" + i + ", line=" + s + ']', e);
+                            "[path=" + fileName + ", row=" + i + ", line=" + s + ']', e);
                     }
                 }
             }
@@ -1836,7 +1836,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     *
      * @return Whether or not REST is enabled.
      */
     private boolean isRestEnabled() {
@@ -1903,7 +1902,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             log.info("Config URL: " + System.getProperty(IGNITE_CONFIG_URL, "n/a"));
     }
 
-
     /**
      * Acks configuration.
      */
@@ -1921,7 +1919,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert log != null;
 
         if (log.isInfoEnabled())
-            log.info("Logger: " + log.getLoggerInfo() );
+            log.info("Logger: " + log.getLoggerInfo());
     }
 
     /**
@@ -2345,8 +2343,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * USED ONLY FOR TESTING.
      *
      * @param name Cache name.
-     * @param <K>  Key type.
-     * @param <V>  Value type.
+     * @param <K> Key type.
+     * @param <V> Value type.
      * @return Internal cache instance.
      */
     /*@java.test.only*/
@@ -2410,7 +2408,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     *
      * @return {@code True} is this node is daemon.
      */
     private boolean isDaemon() {
@@ -2420,11 +2417,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * Whether or not remote JMX management is enabled for this node. Remote JMX management is
-     * enabled when the following system property is set:
-     * <ul>
-     *     <li>{@code com.sun.management.jmxremote}</li>
-     * </ul>
+     * Whether or not remote JMX management is enabled for this node. Remote JMX management is enabled when the
+     * following system property is set: <ul> <li>{@code com.sun.management.jmxremote}</li> </ul>
      *
      * @return {@code True} if remote JMX management is enabled - {@code false} otherwise.
      */
@@ -2433,9 +2427,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
-     * Whether or not node restart is enabled. Node restart us supported when this node was started
-     * with {@code bin/ignite.{sh|bat}} script using {@code -r} argument. Node can be
-     * programmatically restarted using {@link Ignition#restart(boolean)}} method.
+     * Whether or not node restart is enabled. Node restart us supported when this node was started with {@code
+     * bin/ignite.{sh|bat}} script using {@code -r} argument. Node can be programmatically restarted using {@link
+     * Ignition#restart(boolean)}} method.
      *
      * @return {@code True} if restart mode is enabled, {@code false} otherwise.
      * @see Ignition#restart(boolean)
@@ -2812,7 +2806,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
-
     /** {@inheritDoc} */
     @Override public Collection<IgniteCache> createCaches(Collection<CacheConfiguration> cacheCfgs) {
         A.notNull(cacheCfgs, "cacheCfgs");
@@ -2886,12 +2879,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             if (ctx.cache().cache(cacheCfg.getName()) == null) {
                 res =
                     sql ? ctx.cache().dynamicStartSqlCache(cacheCfg).get() :
-                    ctx.cache().dynamicStartCache(cacheCfg,
-                    cacheCfg.getName(),
-                    null,
-                    false,
-                    true,
-                    true).get();
+                        ctx.cache().dynamicStartCache(cacheCfg,
+                            cacheCfg.getName(),
+                            null,
+                            false,
+                            true,
+                            true).get();
             }
 
             return new IgniteBiTuple<>((IgniteCache<K, V>)ctx.cache().publicJCache(cacheCfg.getName()), res);
@@ -4022,7 +4015,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * @return IgniteKernal instance.
-     *
      * @throws ObjectStreamException If failed.
      */
     protected Object readResolve() throws ObjectStreamException {
@@ -4159,7 +4151,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
          * @param qryExecSvc Query executor service
          * @param schemaExecSvc Schema executor service
          * @param customExecSvcs Custom named executors
-         *
          * @throws IgniteCheckedException if fails to register any of the MBeans
          */
         private void registerAllMBeans(
@@ -4194,7 +4185,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             registerMBean("Kernal", metricsBean.getClass().getSimpleName(), metricsBean, ClusterMetricsMXBean.class);
 
             // Transactions
-            TransactionMetricsMxBean txMXBean = new TransactionMetricsMxBeanImpl(ctx);
+            TransactionMetricsMxBean txMXBean = new TransactionMetricsMxBeanImpl(ctx.cache().transactions().metrics());
             registerMBean("Transactions", txMXBean.getClass().getSimpleName(), txMXBean, TransactionMetricsMxBean.class);
 
             // Executors
@@ -4243,7 +4234,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
          *
          * @param name name of the bean to register
          * @param exec executor to register a bean for
-         *
          * @throws IgniteCheckedException if registration fails.
          */
         private void registerExecutorMBean(String name, ExecutorService exec) throws IgniteCheckedException {
@@ -4258,7 +4248,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
          * @param impl bean implementation
          * @param itf bean interface
          * @param <T> bean type
-         *
          * @throws IgniteCheckedException if registration fails
          */
         private <T> void registerMBean(String grp, String name, T impl, Class<T> itf) throws IgniteCheckedException {
