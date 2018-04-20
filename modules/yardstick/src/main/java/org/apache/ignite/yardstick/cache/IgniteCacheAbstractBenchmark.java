@@ -82,9 +82,6 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
     private final AtomicInteger opCacheIdx = new AtomicInteger();
 
     /** */
-    private AtomicBoolean loaded;
-
-    /** */
     private final ThreadLocal<IgniteCache<K, V>> opCache = new ThreadLocal<>();
 
     /**
