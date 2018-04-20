@@ -85,6 +85,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
+import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -459,6 +460,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             createDataRegionConfiguration(memCfg),
             false
         );
+
+        persStoreMetrics.regionMetrics(memMetricsMap.values());
     }
 
     /**
@@ -970,7 +973,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             changeTracker = null;
 
         PageMemoryImpl pageMem = new PageMemoryImpl(
-            memProvider,
+            wrapMetricsMemoryProvider(memProvider, memMetrics),
             calculateFragmentSizes(
                 memCfg.getConcurrencyLevel(),
                 cacheSize,
@@ -979,6 +982,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             cctx,
             memCfg.getPageSize(),
             (fullId, pageBuf, tag) -> {
+                memMetrics.onPageWritten();
+
                 // First of all, write page to disk.
                 storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
 

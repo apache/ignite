@@ -124,7 +124,9 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
 
         Object memProvider = U.field(pageMem, "directMemoryProvider");
 
-        return ((File) U.field(memProvider, "allocationPath")).getAbsolutePath();
+        Object memProvider0 = U.field(memProvider, "memProvider");
+
+        return ((File) U.field(memProvider0, "allocationPath")).getAbsolutePath();
     }
 
     /**
