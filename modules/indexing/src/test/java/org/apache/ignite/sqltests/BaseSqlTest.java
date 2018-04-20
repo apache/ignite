@@ -89,22 +89,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Creates common "Employee" table and fills it with data.
-     *
-     * @param withStr With clause for created table, such as "template=partitioned"
+     * Fills tables with data.
      */
-    protected final void fillCommonData(String withStr) {
-        execute("CREATE TABLE Employee (" +
-            "id LONG PRIMARY KEY, " +
-            "depId LONG, " +
-            "firstName VARCHAR, " +
-            "lastName VARCHAR, " +
-            "age INT) " +
-            (F.isEmpty(withStr) ? "" : " WITH \"" + withStr + '"') +
-            ";");
-
-        execute("CREATE INDEX AgeIndex ON Employee (age);");
-
+    protected void fillCommonData() {
         SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?, ?)");
 
         final long depId = 42;
@@ -121,10 +108,31 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Creates common table "Employee".
+     *
+     * @param withStr With clause for created table, such as "template=partitioned".
+     */
+    protected final void createTables(String withStr) {
+        execute("CREATE TABLE Employee (" +
+            "id LONG PRIMARY KEY, " +
+            "depId LONG, " +
+            "firstName VARCHAR, " +
+            "lastName VARCHAR, " +
+            "age INT) " +
+            (F.isEmpty(withStr) ? "" : " WITH \"" + withStr + '"') +
+            ";");
+
+        execute("CREATE INDEX AgeIndex ON Employee (age);");
+    }
+
+
+    /**
      * Sets up data. Override in children to add/change behaviour.
      */
-    protected void fillData() {
-        fillCommonData(""); // default.
+    protected void setupData() {
+        createTables(""); // default.
+
+        fillCommonData();
     }
 
     /** {@inheritDoc} */
@@ -136,7 +144,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
         client = (IgniteEx)startGrid(CLIENT_NODE_NAME, clientConfiguration(), null);
 
-        fillData();
+        setupData();
     }
 
     /** {@inheritDoc} */

@@ -18,7 +18,9 @@
 package org.apache.ignite.sqltests;
 
 public class PartitionedSqlTest extends BaseSqlTest {
-    @Override protected void fillData() {
-        super.fillCommonData("template=partitioned");
+    @Override protected void setupData() {
+        super.createTables("template=partitioned");
+
+        fillCommonData();
     }
 }

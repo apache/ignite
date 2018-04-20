@@ -17,11 +17,10 @@
 
 package org.apache.ignite.sqltests;
 
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.configuration.CacheConfiguration;
-
 public class ReplicatedSqlTest extends BaseSqlTest {
-    @Override protected void fillData() {
-        fillCommonData("template=replicated");
+    @Override protected void setupData() {
+        createTables("template=replicated");
+
+        fillCommonData();
     }
 }
