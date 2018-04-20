@@ -111,6 +111,7 @@ import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxE
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
+import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
@@ -165,7 +166,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     protected boolean transform;
 
     /** */
-    private final boolean trackTimeout;
+    private boolean trackTimeout;
 
     /** */
     @GridToStringExclude
@@ -182,7 +183,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * Empty constructor required for {@link Externalizable}.
      */
     public GridNearTxLocal() {
-        this.trackTimeout = false;
+        // No-op.
     }
 
     /**
@@ -3333,9 +3334,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     // Make sure that here are no exceptions.
                     prepareFut.get();
 
-                    TransactionState state = state();
-
-                    fut0.finish(state == PREPARED || state == COMMITTING || state == COMMITTED, true, false);
+                    fut0.finish(true, true, false);
                 }
                 catch (Error | RuntimeException e) {
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
@@ -3402,9 +3401,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             GridNearTxFastFinishFuture fut0;
 
             if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false)))
-                return chainFinishFuture(finishFut, false, clearThreadMap, onTimeout);
+                return chainFinishFuture(finishFut, false, true, onTimeout);
 
-            fut0.finish(clearThreadMap);
+            fut0.finish(true);
 
             return fut0;
         }
@@ -3443,7 +3442,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                             log.debug("Got optimistic tx failure [tx=" + this + ", err=" + e + ']');
                     }
 
-                    fut0.finish(false, !onTimeout);
+                    fut0.finish(false, clearThreadMap, onTimeout);
                 }
             });
         }
