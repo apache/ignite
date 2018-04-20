@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -33,7 +34,7 @@ import org.apache.ignite.internal.util.typedef.F;
 /**
  * JDBC thin DataSource implementation.
  */
-public class IgniteJdbcThinDataSource implements DataSource {
+public class IgniteJdbcThinDataSource implements DataSource, Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
