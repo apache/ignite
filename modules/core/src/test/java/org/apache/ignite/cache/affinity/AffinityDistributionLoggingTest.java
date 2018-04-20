@@ -198,7 +198,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
      * @return Log of latest partition map exchange.
      * @throws Exception In case of an error.
      */
-    private String runAndGetExchangeLog(final boolean testClientNode) throws Exception {
+    private String runAndGetExchangeLog(boolean testClientNode) throws Exception {
         assert nodes > 1;
 
         IgniteEx ignite = (IgniteEx)startGrids(nodes - 1);
