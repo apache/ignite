@@ -17,6 +17,8 @@
 
 package org.apache.ignite.mxbean;
 
+import org.apache.ignite.configuration.TransactionConfiguration;
+
 /**
  * Transactions MXBean interface.
  */
@@ -54,7 +56,7 @@ public interface TransactionsMXBean {
             "Minimum duration (seconds).",
             "Minimum size.",
             "Projection (servers|clients).",
-            "Consistent ids, separated by comma.",
+            "Consistent ids (separated by comma).",
             "Transaction XID.",
             "Label regexp.",
             "Limit a number of transactions collected on each node.",
@@ -65,4 +67,33 @@ public interface TransactionsMXBean {
     )
     public String getActiveTransactions(Long minDuration, Integer minSize, String prj,
         String consistentIds, String xid, String lbRegex, Integer limit, String order, boolean detailed, boolean kill);
+
+    /**
+     * Gets transaction timeout on partition map exchange.
+     * <p>
+     * @see TransactionConfiguration#getTxTimeoutOnPartitionMapExchange
+     *
+     * @return Transaction timeout on partition map exchange in milliseconds.
+     */
+    @MXBeanDescription("Returns transaction timeout on partition map exchange in milliseconds.")
+    public long getTxTimeoutOnPartitionMapExchange();
+
+    /**
+     * Sets transaction timeout on partition map exchange.
+     * <p>
+     * If not set, default value is {@link TransactionConfiguration#TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE} which means
+     * transactions will never be rolled back on partition map exchange.
+     * <p>
+     * @see TransactionConfiguration#setTxTimeoutOnPartitionMapExchange
+     *
+     * @param timeout Transaction timeout on partition map exchange in milliseconds.
+     */
+    @MXBeanDescription("Sets transaction timeout on partition map exchange in milliseconds.")
+    @MXBeanParametersNames(
+        "timeout"
+    )
+    @MXBeanParametersDescriptions(
+        "Transaction timeout on partition map exchange in milliseconds."
+    )
+    public void setTxTimeoutOnPartitionMapExchange(long timeout);
 }

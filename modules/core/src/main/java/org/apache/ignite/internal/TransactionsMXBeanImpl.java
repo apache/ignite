@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -57,79 +58,98 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     /** {@inheritDoc} */
     @Override public String getActiveTransactions(Long minDuration, Integer minSize, String prj, String consistentIds,
         String xid, String lbRegex, Integer limit, String order, boolean detailed, boolean kill) {
+        try {
+            IgniteCompute compute = ctx.cluster().get().compute();
 
-        IgniteCompute compute = ctx.cluster().get().compute();
+            VisorTxProjection proj = null;
 
-        VisorTxProjection proj = null;
-
-        if (prj != null) {
-            if ("clients".equals(prj))
-                proj = VisorTxProjection.CLIENT;
-            else if ("servers".equals(prj))
-                proj = VisorTxProjection.SERVER;
-        }
-
-        List<String> consIds = null;
-
-        if (consistentIds != null)
-            consIds = Arrays.stream(consistentIds.split(",")).collect(Collectors.toList());
-
-        VisorTxSortOrder sortOrder = null;
-
-        if (order != null) {
-            if ("DURATION".equals(order))
-                sortOrder = VisorTxSortOrder.DURATION;
-            else if ("SIZE".equals(order))
-                sortOrder = VisorTxSortOrder.SIZE;
-        }
-
-        VisorTxTaskArg arg = new VisorTxTaskArg(kill ? VisorTxOperation.KILL : VisorTxOperation.LIST,
-            limit, minDuration == null ? null : minDuration * 1000, minSize, null, proj, consIds, xid, lbRegex, sortOrder);
-
-        Map<ClusterNode, VisorTxTaskResult> res = compute.execute(new VisorTxTask(),
-            new VisorTaskArgument<>(ctx.cluster().get().localNode().id(), arg, false));
-
-        if (detailed) {
-            StringWriter sw = new StringWriter();
-
-            PrintWriter w = new PrintWriter(sw);
-
-            for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
-                if (entry.getValue().getInfos().isEmpty())
-                    continue;
-
-                ClusterNode key = entry.getKey();
-
-                w.println(key.toString());
-
-                for (VisorTxInfo info : entry.getValue().getInfos())
-                    w.println("    Tx: [xid=" + info.getXid() +
-                        ", label=" + info.getLabel() +
-                        ", state=" + info.getState() +
-                        ", duration=" + info.getDuration() / 1000 +
-                        ", isolation=" + info.getIsolation() +
-                        ", concurrency=" + info.getConcurrency() +
-                        ", timeout=" + info.getTimeout() +
-                        ", size=" + info.getSize() +
-                        ", dhtNodes=" + F.transform(info.getPrimaryNodes(), new IgniteClosure<UUID, String>() {
-                        @Override public String apply(UUID id) {
-                            return U.id8(id);
-                        }
-                    }) +
-                        ']');
+            if (prj != null) {
+                if ("clients".equals(prj))
+                    proj = VisorTxProjection.CLIENT;
+                else if ("servers".equals(prj))
+                    proj = VisorTxProjection.SERVER;
             }
 
-            w.flush();
+            List<String> consIds = null;
 
-            return sw.toString();
+            if (consistentIds != null)
+                consIds = Arrays.stream(consistentIds.split(",")).collect(Collectors.toList());
+
+            VisorTxSortOrder sortOrder = null;
+
+            if (order != null) {
+                if ("DURATION".equals(order))
+                    sortOrder = VisorTxSortOrder.DURATION;
+                else if ("SIZE".equals(order))
+                    sortOrder = VisorTxSortOrder.SIZE;
+            }
+
+            VisorTxTaskArg arg = new VisorTxTaskArg(kill ? VisorTxOperation.KILL : VisorTxOperation.LIST,
+                limit, minDuration == null ? null : minDuration * 1000, minSize, null, proj, consIds, xid, lbRegex, sortOrder);
+
+            Map<ClusterNode, VisorTxTaskResult> res = compute.execute(new VisorTxTask(),
+                new VisorTaskArgument<>(ctx.cluster().get().localNode().id(), arg, false));
+
+            if (detailed) {
+                StringWriter sw = new StringWriter();
+
+                PrintWriter w = new PrintWriter(sw);
+
+                for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+                    if (entry.getValue().getInfos().isEmpty())
+                        continue;
+
+                    ClusterNode key = entry.getKey();
+
+                    w.println(key.toString());
+
+                    for (VisorTxInfo info : entry.getValue().getInfos())
+                        w.println("    Tx: [xid=" + info.getXid() +
+                            ", label=" + info.getLabel() +
+                            ", state=" + info.getState() +
+                            ", duration=" + info.getDuration() / 1000 +
+                            ", isolation=" + info.getIsolation() +
+                            ", concurrency=" + info.getConcurrency() +
+                            ", timeout=" + info.getTimeout() +
+                            ", size=" + info.getSize() +
+                            ", dhtNodes=" + F.transform(info.getPrimaryNodes(), new IgniteClosure<UUID, String>() {
+                            @Override public String apply(UUID id) {
+                                return U.id8(id);
+                            }
+                        }) +
+                            ']');
+                }
+
+                w.flush();
+
+                return sw.toString();
+            }
+            else {
+                int cnt = 0;
+
+                for (VisorTxTaskResult result : res.values())
+                    cnt += result.getInfos().size();
+
+                return Integer.toString(cnt);
+            }
         }
-        else {
-            int cnt = 0;
+        catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
 
-            for (VisorTxTaskResult result : res.values())
-                cnt += result.getInfos().size();
+    /** {@inheritDoc} */
+    @Override public long getTxTimeoutOnPartitionMapExchange() {
+        return ctx.config().getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
+    }
 
-            return Integer.toString(cnt);
+    /** {@inheritDoc} */
+    @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
+        try {
+            ctx.grid().context().cache().setTxTimeoutOnPartitionMapExchange(timeout);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
         }
     }
 

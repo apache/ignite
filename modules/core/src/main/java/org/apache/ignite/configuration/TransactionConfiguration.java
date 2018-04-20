@@ -61,7 +61,7 @@ public class TransactionConfiguration implements Serializable {
     private long dfltTxTimeout = DFLT_TRANSACTION_TIMEOUT;
 
     /** Transaction timeout on partition map exchange. */
-    private long txTimeoutOnPartitionMapExchange = TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE;
+    private volatile long txTimeoutOnPartitionMapExchange = TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE;
 
     /** Pessimistic tx log size. */
     private int pessimisticTxLogSize;
