@@ -558,7 +558,7 @@ public class JmsStreamer<T extends Message, K, V> extends StreamAdapter<T, K, V>
     private class IgniteJmsExceptionListener implements ExceptionListener {
         /** {@inheritDoc} */
         @Override public void onException(JMSException e) {
-            U.error(log, "Caught JMS exception: " + e);
+            U.error(log, "Caught JMS internal exception.", e);
 
             if (exceptionListener != null)
                 exceptionListener.onException(e);
