@@ -370,10 +370,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             GridDhtLocalPartition locPart = getOrCreatePartition(p);
 
                             if (shouldOwn) {
-                                boolean owned = locPart.own();
-
-                                assert owned : "Failed to own partition for oldest node [grp=" + grp.cacheOrGroupName() +
-                                    ", part=" + locPart + ']';
+                                locPart.restoreState(OWNING);
 
                                 if (log.isDebugEnabled())
                                     log.debug("Owned partition for oldest node [grp=" + grp.cacheOrGroupName() +
