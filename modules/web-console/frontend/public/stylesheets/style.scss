@@ -1064,6 +1064,10 @@ button.form-control {
 
 .popover-content {
     padding: 5px;
+
+    button {
+        margin-left: 5px;
+    }
 }
 
 .popover:focus {
@@ -1179,7 +1183,9 @@ button.form-control {
 }
 
 .theme-line .popover.validation-error {
-    max-width: 400px;
+    white-space: pre-wrap;
+    width: auto !important;
+    max-width: 400px !important;
     color: $brand-primary;
     background: white;
     border: 1px solid $brand-primary;
@@ -2142,55 +2148,6 @@ html,body,.splash-screen {
     &.ng-animate {
         -webkit-animation: none 0s;
         animation: none 0s;
-    }
-}
-
-.admin-page {
-    .docs-header {
-        display: flex;
-        flex-direction: row;
-        align-items: baseline;
-
-        margin: 40px 0 20px 0;
-
-        h1 {
-            font-size: 24px;
-            margin: 0 10px 0 0;
-        }
-    }
-
-    .panel-heading {
-        height: 38px;
-
-        border-bottom: 0;
-        padding-bottom: 0;
-
-        cursor: default;
-
-        i {
-            margin-top: 2px;
-            margin-right: 10px;
-        }
-
-        sub {
-            bottom: 0;
-        }
-    }
-
-    .ui-grid-header-cell input {
-      font-weight: normal;
-    }
-
-    .ui-grid-header-cell input {
-      font-weight: normal;
-    }
-
-    .ui-grid-filter-select {
-        width: calc(100% - 10px);
-    }
-
-    .ui-grid-cell-contents > i {
-        line-height: $line-height-base;
     }
 }
 
