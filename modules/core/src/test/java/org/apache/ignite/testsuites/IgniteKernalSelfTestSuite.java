@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.service.IgniteServiceDynamicCachesS
 import org.apache.ignite.internal.processors.service.IgniteServiceProxyTimeoutInitializedTest;
 import org.apache.ignite.internal.processors.service.IgniteServiceReassignmentTest;
 import org.apache.ignite.internal.processors.service.ServiceDeploymentOnActivationTest;
+import org.apache.ignite.internal.processors.service.ServiceDeploymentOutsideBaselineTest;
 import org.apache.ignite.internal.processors.service.ServicePredicateAccessCacheTest;
 import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTest;
 import org.apache.ignite.services.ServiceThreadPoolSelfTest;
@@ -148,6 +149,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridServiceProcessorBatchDeploySelfTest.class);
         suite.addTestSuite(GridServiceDeploymentCompoundFutureSelfTest.class);
         suite.addTestSuite(ServiceDeploymentOnActivationTest.class);
+        suite.addTestSuite(ServiceDeploymentOutsideBaselineTest.class);
 
         suite.addTestSuite(IgniteServiceDeploymentClassLoadingDefaultMarshallerTest.class);
         suite.addTestSuite(IgniteServiceDeploymentClassLoadingJdkMarshallerTest.class);
