@@ -24,22 +24,10 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
  */
 class SegmentArchivedMonitor {
     /**
-     * Time interval (in milliseconds) for waiting to segment archived.
-     */
-    private final long segmentArchivedWaitTime;
-
-    /**
      * Last archived file absolute index, 0-based. Write is quarded by {@code this}. Negative value indicates there are
      * no segments archived.
      */
     private volatile long lastAbsArchivedIdx = -1;
-
-    /**
-     * Create SegmentArchivedMonitor
-     */
-    SegmentArchivedMonitor(long time) {
-        segmentArchivedWaitTime = time;
-    }
 
     /**
      * @return Last archived segment absolute index.
@@ -61,16 +49,10 @@ class SegmentArchivedMonitor {
      * Method will wait activation of particular WAL segment index.
      *
      * @param awaitIdx absolute index  {@link #lastArchivedAbsoluteIndex()} to become true.
-     * @return {@code true} if segment with awaitIdx successfully archived.
      * @throws IgniteInterruptedCheckedException if interrupted.
      */
-    synchronized boolean awaitSegmentArchived(long awaitIdx) throws IgniteInterruptedCheckedException {
-        long waitFinishTime = System.currentTimeMillis() + segmentArchivedWaitTime;
-
-        do {
-            if (lastArchivedAbsoluteIndex() >= awaitIdx)
-                return true;
-
+    synchronized void awaitSegmentArchived(long awaitIdx) throws IgniteInterruptedCheckedException {
+        while (lastArchivedAbsoluteIndex() < awaitIdx) {
             try {
                 wait(2000);
             }
@@ -78,8 +60,5 @@ class SegmentArchivedMonitor {
                 throw new IgniteInterruptedCheckedException(e);
             }
         }
-        while (System.currentTimeMillis() < waitFinishTime);
-
-        return lastArchivedAbsoluteIndex() >= awaitIdx;
     }
 }

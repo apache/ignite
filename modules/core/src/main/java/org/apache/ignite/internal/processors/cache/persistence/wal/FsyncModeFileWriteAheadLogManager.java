@@ -534,8 +534,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     public Collection<File> getAndReserveWalFiles(FileWALPointer low, FileWALPointer high) throws IgniteCheckedException {
         final long awaitIdx = high.index() - 1;
 
-        if (!awaitSegmentArchived(awaitIdx))
-            throw new IgniteCheckedException("Await for segment archived was failed [idx=" + awaitIdx + "]");
+        while (archiver.lastArchivedAbsoluteIndex() < awaitIdx)
+            LockSupport.parkNanos(Thread.currentThread(), 1_000_000);
 
         if (!reserve(low))
             throw new IgniteCheckedException("WAL archive segment has been deleted [idx=" + low.index() + "]");
@@ -564,25 +564,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         }
 
         return res;
-    }
-
-    /**
-     * Method will wait activation of particular WAL segment index.
-     *
-     * @return {@code true} if segment with awaitIdx successfully archived.
-     */
-    private boolean awaitSegmentArchived(long awaitIdx) {
-        long finishWaitTime = System.currentTimeMillis() + dsCfg.getSegmentArchivedWaitTime();
-
-        do {
-            if (archiver.lastArchivedAbsoluteIndex() >= awaitIdx)
-                return true;
-
-            LockSupport.parkNanos(Thread.currentThread(), 1_000_000);
-        }
-        while (System.currentTimeMillis() < finishWaitTime);
-
-        return archiver.lastArchivedAbsoluteIndex() >= awaitIdx;
     }
 
     /** {@inheritDoc}*/

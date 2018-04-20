@@ -152,9 +152,6 @@ public class DataStorageConfiguration implements Serializable {
     /** Default wal compaction enabled. */
     public static final boolean DFLT_WAL_COMPACTION_ENABLED = false;
 
-    /** Default time interval (in milliseconds) for waiting to segment archived. */
-    public static final int DFLT_SEGMENT_ARCHIVE_WAIT_TIME_MILLIS = 180_000;
-
     /** Size of a memory chunk reserved for system cache initially. */
     private long sysRegionInitSize = DFLT_SYS_CACHE_INIT_SIZE;
 
@@ -260,11 +257,6 @@ public class DataStorageConfiguration implements Serializable {
      * Compressed WAL archive gets automatically decompressed on demand.
      */
     private boolean walCompactionEnabled = DFLT_WAL_COMPACTION_ENABLED;
-
-    /**
-     * Time interval (in milliseconds) for waiting to segment archived.
-     */
-    private long segmentArchivedWaitTime = DFLT_SEGMENT_ARCHIVE_WAIT_TIME_MILLIS;
 
     /**
      * Initial size of a data region reserved for system cache.
@@ -917,20 +909,6 @@ public class DataStorageConfiguration implements Serializable {
         this.walCompactionEnabled = walCompactionEnabled;
 
         return this;
-    }
-
-    /**
-     * @return Time interval (in milliseconds) for waiting to segment archived.
-     */
-    public long getSegmentArchivedWaitTime() {
-        return segmentArchivedWaitTime;
-    }
-
-    /**
-     * @param segmentArchivedWaitTime Time interval (in milliseconds) for waiting to segment archived.
-     */
-    public void setSegmentArchivedWaitTime(long segmentArchivedWaitTime) {
-        this.segmentArchivedWaitTime = segmentArchivedWaitTime;
     }
 
     /** {@inheritDoc} */

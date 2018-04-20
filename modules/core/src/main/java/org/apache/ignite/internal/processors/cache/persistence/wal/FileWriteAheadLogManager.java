@@ -273,7 +273,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private FileIOFactory ioFactory;
 
     /** Next WAL segment archived monitor. Manages last archived index, emulates archivation in no-archiver mode. */
-    private final SegmentArchivedMonitor archivedMonitor;
+    private final SegmentArchivedMonitor archivedMonitor = new SegmentArchivedMonitor();
 
     /** Segment reservations storage: Protects WAL segments from deletion during WAL log cleanup. */
     private final SegmentReservationStorage reservationStorage = new SegmentReservationStorage();
@@ -353,7 +353,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         ioFactory = new RandomAccessFileIOFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
-        archivedMonitor = new SegmentArchivedMonitor(dsCfg.getSegmentArchivedWaitTime());
     }
 
     /** For test purposes only. */
@@ -444,8 +443,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     public Collection<File> getAndReserveWalFiles(FileWALPointer low, FileWALPointer high) throws IgniteCheckedException {
         final long awaitIdx = high.index() - 1;
 
-        if (!archivedMonitor.awaitSegmentArchived(awaitIdx))
-            throw new IgniteCheckedException("Await for segment archived was failed [idx=" + awaitIdx + "]");
+        archivedMonitor.awaitSegmentArchived(awaitIdx);
 
         if (!reserve(low))
             throw new IgniteCheckedException("WAL archive segment has been deleted [idx=" + low.index() + "]");
