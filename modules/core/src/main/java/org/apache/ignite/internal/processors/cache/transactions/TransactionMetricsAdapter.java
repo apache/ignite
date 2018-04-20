@@ -63,6 +63,13 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
     private volatile long rollbackTime;
 
     /**
+     * Create TransactionMetricsAdapter.
+     */
+    public TransactionMetricsAdapter() {
+        this(null);
+    }
+
+    /**
      * @param ctx Kernal context.
      */
     public TransactionMetricsAdapter(GridKernalContext ctx) {

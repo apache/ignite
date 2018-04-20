@@ -26,7 +26,17 @@ import org.apache.ignite.transactions.TransactionMetrics;
  */
 public class TransactionMetricsMxBeanImpl implements TransactionMetricsMxBean {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final TransactionMetrics transactionMetrics;
+
+    /**
+     * Create TransactionMetricsMxBeanImpl.
+     */
+    public TransactionMetricsMxBeanImpl() {
+        this(null);
+    }
 
     /**
      * @param transactionMetrics Transaction metrics.
