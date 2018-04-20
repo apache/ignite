@@ -2300,7 +2300,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      *
      * @param tx Transaction to be suspended.
      *
-     * @see #resumeTx(GridNearTxLocal)
+     * @see #resumeTx(GridNearTxLocal, long)
      * @see GridNearTxLocal#suspend()
      * @see GridNearTxLocal#resume()
      * @throws IgniteCheckedException If failed to suspend transaction.
