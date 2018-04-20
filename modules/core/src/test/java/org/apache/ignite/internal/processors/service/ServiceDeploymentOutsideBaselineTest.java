@@ -267,7 +267,7 @@ public class ServiceDeploymentOutsideBaselineTest extends GridCommonAbstractTest
     }
 
     /**
-     * @return Test service configuration;
+     * @return Test service configuration.
      */
     private ServiceConfiguration getClusterSingletonServiceConfiguration() {
         ServiceConfiguration srvcCfg = new ServiceConfiguration();
