@@ -39,6 +39,7 @@
         private static readonly string[] MissingMembers =
         {
             "enableStatistics"  // IGNITE-7276
+            "setTxTimeoutOnPartitionMapExchange" // IGNITE-8075
         };
 
         /// <summary>
