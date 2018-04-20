@@ -450,9 +450,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
                         cntr1.add(1);
                     }
-                    catch (TransactionOptimisticException | InterruptedException e) {
-                        cntr3.add(1);
-                    }
                     catch (TransactionTimeoutException e) {
                         cntr2.add(1);
                     }
@@ -460,6 +457,9 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                         assertEquals(TransactionTimeoutException.class, X.getCause(e).getClass());
 
                         cntr2.add(1);
+                    }
+                    catch (Exception e) {
+                        cntr3.add(1);
                     }
                 }
             }
