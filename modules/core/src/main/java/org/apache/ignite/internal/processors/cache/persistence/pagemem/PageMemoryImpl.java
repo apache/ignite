@@ -1144,7 +1144,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             assert success : "Page was pin when we resolve abs pointer, it can not be evicted";
 
-            if (tmpRelPtr != INVALID_REL_PTR){
+            if (tmpRelPtr != INVALID_REL_PTR) {
                 PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
 
                 long tmpAbsPtr = checkpointPool.absolute(tmpRelPtr);
@@ -1158,9 +1158,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 checkpointPool.releaseFreePage(tmpRelPtr);
 
-                // We pinned the page when allocated the temp buffer, release it now.
-                PageHeader.releasePage(absPtr);
-
                 // Need release again because we pin page when resolve abs pointer,
                 // and page did not have tmp buffer page.
                 if (!pageSingleAcquire)
@@ -1171,9 +1168,6 @@ public class PageMemoryImpl implements PageMemoryEx {
                 copyInBuffer(absPtr, outBuf);
 
                 PageHeader.dirty(absPtr, false);
-
-                // We pinned the page when resolve abs pointer.
-                PageHeader.releasePage(absPtr);
             }
 
             assert PageIO.getType(outBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
@@ -1183,6 +1177,10 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
         finally {
             rwLock.writeUnlock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+
+            // We pinned the page either when allocated the temp buffer, or when resolved abs pointer.
+            // Must release the page only after write unlock.
+            PageHeader.releasePage(absPtr);
         }
     }
 
