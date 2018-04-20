@@ -371,15 +371,15 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param expected collection.
      */
     protected void assertContainsEq(String msg, Collection actual, Collection expected) {
-        if (!F.isEmpty(msg))
-            msg += " ";
+        if (F.isEmpty(msg))
+            msg = "Assertion failed.";
 
         if (actual.size() != expected.size())
-            throw new AssertionError(msg + "Collections contain different number of elements:" +
+            throw new AssertionError(msg + " Collections contain different number of elements:" +
                 " [actual=" + actual + ", expected=" + expected + "].");
 
         if (!actual.containsAll(expected))
-            throw new AssertionError(msg + "Collections differ:" +
+            throw new AssertionError(msg + " Collections differ:" +
                 " [actual=" + actual + ", expected=" + expected + "].");
     }
 
@@ -574,6 +574,52 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             assertContainsEq(ages.values(), expAges);
         });
     }
+
+    public void testWhereGreater(){
+        testAllNodes(node ->{
+            Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age > 30", node);
+            Result noidxActual = executeFrom("SELECT firstName FROM Employee WHERE id > 742", node);
+
+            IgniteCache<Object, Object> cache = node.cache(EMP_CACHE_NAME);
+
+            List<List<Object>> idxExp = select(cache, row -> (Integer)row.get("AGE") > 30, "firstName");
+            List<List<Object>> noidxExp = select(cache, row -> (Long)row.get("ID") > 742, "firstName");
+
+            assertContainsEq(idxActual.values(), idxExp);
+            assertContainsEq(noidxActual.values(), noidxExp);
+        });
+    }
+
+    public void testWhereLess(){
+        testAllNodes(node ->{
+            Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age < 30", node);
+            Result noidxActual = executeFrom("SELECT firstName FROM Employee WHERE id < 142", node);
+
+            IgniteCache<Object, Object> cache = node.cache(EMP_CACHE_NAME);
+
+            List<List<Object>> idxExp = select(cache, row -> (Integer)row.get("AGE") < 30, "firstName");
+            List<List<Object>> noidxExp = select(cache, row -> (Long)row.get("ID") < 142, "firstName");
+
+            assertContainsEq(idxActual.values(), idxExp);
+            assertContainsEq(noidxActual.values(), noidxExp);
+        });
+    }
+
+    public void testWhereEq(){
+        testAllNodes(node ->{
+            Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age = 30", node);
+            Result noidxActual = executeFrom("SELECT firstName FROM Employee WHERE id = 142", node);
+
+            IgniteCache<Object, Object> cache = node.cache(EMP_CACHE_NAME);
+
+            List<List<Object>> idxExp = select(cache, row -> (Integer)row.get("AGE") == 30, "firstName");
+            List<List<Object>> noidxExp = select(cache, row -> (Long)row.get("ID") == 142, "firstName");
+
+            assertContainsEq(idxActual.values(), idxExp);
+            assertContainsEq(noidxActual.values(), noidxExp);
+        });
+    }
+
 
     public void testCfg() {
         // false by default, injected as true
