@@ -1126,6 +1126,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
+        // It is necessary to run database callback before all topology callbacks, so partition states could be
+        // correctly restored from the persistent store.
+        cctx.database().beforeExchange(this);
+
         if (!exchCtx.mergeExchanges()) {
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (grp.isLocal() || cacheGroupStopping(grp.groupId()))
@@ -1136,10 +1140,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grp.topology().beforeExchange(this, !centralizedAff && !forceAffReassignment, false);
             }
         }
-
-        // It is necessary to run database callback after all topology callbacks, so partition states could be
-        // correctly restored from the persistent store.
-        cctx.database().beforeExchange(this);
 
         changeWalModeIfNeeded();
 
