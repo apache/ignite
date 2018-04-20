@@ -523,8 +523,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
-        if (nodes.isEmpty())
+        if (nodes.isEmpty()) {
+            U.warn(log, "No queryable nodes for [query=" + this + "]");
             return new GridEmptyCloseableIterator();
+        }
 
         if (log.isDebugEnabled())
             log.debug("Executing query [query=" + this + ", nodes=" + nodes + ']');
@@ -593,9 +595,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param cctx Cache context.
      * @param prj Projection (optional).
      * @return Collection of data nodes in provided projection (if any).
+     * @throws IgniteCheckedException If partition number is invalid.
      */
     private static Collection<ClusterNode> nodes(final GridCacheContext<?, ?> cctx,
-        @Nullable final ClusterGroup prj, @Nullable final Integer part) {
+        @Nullable final ClusterGroup prj, @Nullable final Integer part) throws IgniteCheckedException {
         assert cctx != null;
 
         final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
@@ -604,6 +607,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         if (prj == null && part == null)
             return affNodes;
+
+        if (part != null && part >= cctx.affinity().partitions())
+            throw new IgniteCheckedException("Invalid partition number: " + part);
 
         final Set<ClusterNode> owners =
             part == null ? Collections.<ClusterNode>emptySet() : new HashSet<>(cctx.topology().owners(part, topVer));
