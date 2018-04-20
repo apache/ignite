@@ -618,7 +618,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             //We should wait for checkpoint finished before invalidation as it can save partition metadata.
             int tag = pageMemory.invalidate(grp.groupId(), p);
 
-            //TODO: IGNTIE-8295: Should we add wal record here about partition destroy\recreation?
             ctx.pageStore().onPartitionDestroyed(grp.groupId(), p, tag);
 
             partStoreLock.lock(p);
