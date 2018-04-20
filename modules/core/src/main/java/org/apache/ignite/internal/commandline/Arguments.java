@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.commandline;
 
+import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+
 /**
  * Bean with all parsed and validated arguments.
  */
@@ -49,6 +51,9 @@ public class Arguments {
      */
     private String baselineArgs;
 
+    /** Transaction arguments. */
+    private final VisorTxTaskArg txArg;
+
     /**
      * @param cmd Command.
      * @param host Host.
@@ -57,11 +62,12 @@ public class Arguments {
      * @param pwd Password.
      * @param baselineAct Baseline action.
      * @param baselineArgs Baseline args.
+     * @param txArg TX arg.
      * @param force Force flag.
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd,
         String baselineAct, String baselineArgs,
-        boolean force
+        VisorTxTaskArg txArg, boolean force
     ) {
         this.cmd = cmd;
         this.host = host;
@@ -71,6 +77,7 @@ public class Arguments {
         this.baselineAct = baselineAct;
         this.baselineArgs = baselineArgs;
         this.force = force;
+        this.txArg = txArg;
     }
 
     /**
@@ -120,6 +127,13 @@ public class Arguments {
      */
     public String baselineArguments() {
         return baselineArgs;
+    }
+
+    /**
+     * @return Transaction arguments.
+     */
+    public VisorTxTaskArg transactionArguments() {
+        return txArg;
     }
 
     /**
