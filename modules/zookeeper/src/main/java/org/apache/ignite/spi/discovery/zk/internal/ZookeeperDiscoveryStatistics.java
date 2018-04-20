@@ -14,26 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.spark
-
-import org.scalatest.Suites
+package org.apache.ignite.spi.discovery.zk.internal;
 
 /**
-  * Test suite for Spark DataFram API implementation.
-  */
-class IgniteDataFrameSuite extends Suites (
-    new IgniteDataFrameSchemaSpec,
-    new IgniteSQLDataFrameSpec,
-    new IgniteSQLDataFrameWriteSpec,
-    new IgniteSQLDataFrameIgniteSessionWriteSpec,
-    new IgniteDataFrameWrongConfigSpec,
-    new IgniteCatalogSpec,
-    new IgniteOptimizationSpec,
-    new IgniteOptimizationStringFuncSpec,
-    new IgniteOptimizationMathFuncSpec,
-    new IgniteOptimizationAggregationFuncSpec,
-    new IgniteOptimizationSystemFuncSpec,
-    new IgniteOptimizationJoinSpec,
-    new IgniteOptimizationDisableEnableSpec
-)
+ *
+ */
+public class ZookeeperDiscoveryStatistics {
+    /** */
+    private int joinedNodesCnt;
+
+    /** */
+    private int failedNodesCnt;
+
+    /** */
+    public int joinedNodesCnt() {
+        return joinedNodesCnt;
+    }
+
+    /** */
+    public int failedNodesCnt() {
+        return failedNodesCnt;
+    }
+
+    /** */
+    public void onNodeJoined() {
+        joinedNodesCnt++;
+    }
+
+    /** */
+    public void onNodeFailed() {
+        failedNodesCnt++;
+    }
+}

@@ -1666,6 +1666,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             long segmentToCompress = lastCompressedIdx + 1;
 
             synchronized (this) {
+                if (stopped)
+                    return -1;
+
                 while (segmentToCompress > Math.min(lastAllowedToCompressIdx, archiver.lastArchivedAbsoluteIndex())) {
                     wait();
 
