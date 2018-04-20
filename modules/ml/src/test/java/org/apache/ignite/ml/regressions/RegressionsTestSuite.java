@@ -27,9 +27,6 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
     LinearRegressionModelTest.class,
-    LocalLinearRegressionQRTrainerTest.class,
-    DistributedLinearRegressionQRTrainerTest.class,
-    BlockDistributedLinearRegressionQRTrainerTest.class,
     LinearRegressionLSQRTrainerTest.class,
     LinearRegressionSGDTrainerTest.class
 })

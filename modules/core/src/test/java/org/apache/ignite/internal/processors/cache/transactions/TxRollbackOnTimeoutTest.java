@@ -439,6 +439,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                         if (delay > 0)
                             sleep(delay);
 
+                        assert v != null;
+
                         node.cache(CACHE_NAME).put(k, v + 1);
 
                         tx.commit();

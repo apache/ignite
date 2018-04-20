@@ -357,6 +357,13 @@ public interface GridDhtPartitionTopology {
     public boolean own(GridDhtLocalPartition part);
 
     /**
+     * Owns all moving partitions for the given topology version.
+     *
+     * @param topVer Topology version.
+     */
+    public void ownMoving(AffinityTopologyVersion topVer);
+
+    /**
      * @param part Evicted partition.
      * @param updateSeq Update sequence increment flag.
      */
@@ -386,8 +393,9 @@ public interface GridDhtPartitionTopology {
      * State of all current owners that aren't contained in the set will be reset to MOVING.
      *
      * @param p Partition ID.
-     * @param updateSeq If should increment sequence when updated.
      * @param owners Set of new owners.
+     * @param haveHistory {@code True} if there is WAL history to rebalance given partition.
+     * @param updateSeq If should increment sequence when updated.
      * @return Set of node IDs that should reload partitions.
      */
     public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq);
