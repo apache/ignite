@@ -1042,6 +1042,15 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
         return true;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        evts = null;
+
+        evtsLatch = null;
+    }
+
     /**
      * @param evt Event.
      */

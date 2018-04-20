@@ -121,6 +121,11 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        store = null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         Connection conn = DriverManager.getConnection(DFLT_CONN_URL, "sa", "");
 
