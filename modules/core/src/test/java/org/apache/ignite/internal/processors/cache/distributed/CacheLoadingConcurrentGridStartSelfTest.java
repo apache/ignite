@@ -277,7 +277,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
                 try (IgniteDataStreamer<Integer, String> dataStreamer = grid.dataStreamer(DEFAULT_CACHE_NAME)) {
                     dataStreamer.allowOverwrite(allowOverwrite);
 
-                    ((DataStreamerImpl)dataStreamer).maxRemapCount(KEYS_CNT);
+                    ((DataStreamerImpl)dataStreamer).maxRemapCount(Integer.MAX_VALUE);
 
                     for (int i = 0; i < KEYS_CNT; i++) {
                         set.add(dataStreamer.addData(i, "Data"));
@@ -370,25 +370,26 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     private void assertCacheSize() throws Exception {
         final IgniteCache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        boolean consistentCache = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 int size = cache.size(CachePeekMode.PRIMARY);
 
                 if (size != KEYS_CNT)
                     log.info("Cache size: " + size);
 
-                return size == KEYS_CNT;
+                int total = 0;
+
+                for (int i = 0; i < GRIDS_CNT; i++)
+                    total += grid(i).cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY);
+
+                if (total != KEYS_CNT)
+                    log.info("Total size: " + size);
+
+                return size == KEYS_CNT && KEYS_CNT == total;
             }
         }, 2 * 60_000);
 
-        assertEquals("Data lost.", KEYS_CNT, cache.size(CachePeekMode.PRIMARY));
-
-        int total = 0;
-
-        for (int i = 0; i < GRIDS_CNT; i++)
-            total += grid(i).cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.PRIMARY);
-
-        assertEquals("Data lost.", KEYS_CNT, total);
+        assertTrue("Data lost. Actual cache size: " + cache.size(CachePeekMode.PRIMARY), consistentCache);
     }
 
     /**
