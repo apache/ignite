@@ -50,9 +50,6 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     /** Pattern to test. */
     private static final String LOG_MESSAGE_PREFIX = "Local node affinity assignment distribution is not ideal ";
 
-    /** Whether to test clients node. */
-    private volatile boolean testClientNode = false;
-
     /** Partitions number. */
     private int parts = 0;
 
@@ -92,9 +89,6 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        if (testClientNode)
-            cfg.setClientMode(true);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -158,7 +152,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     public void test5PartitionsNotIdealDistributionSuppressedLoggingOnClientNode() throws Exception {
         System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0.0");
 
-        nodes = 4;
+        nodes = 5; // 1 of 5 nodes - will be the client node
         parts = 5;
         backups = 3;
 
@@ -221,16 +215,15 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
         GridTestUtils.setFieldValue(aff, "log", log);
 
-        try {
-            if (testClientNode)
-                this.testClientNode = true;
+        if (testClientNode) {
+            IgniteConfiguration cfg = getConfiguration("client");
 
+            cfg.setClientMode(true);
+
+            startGrid(cfg);
+        }
+        else
             startGrid(nodes);
-        }
-        finally {
-            if (testClientNode)
-                this.testClientNode = false;
-        }
 
         awaitPartitionMapExchange();
 
