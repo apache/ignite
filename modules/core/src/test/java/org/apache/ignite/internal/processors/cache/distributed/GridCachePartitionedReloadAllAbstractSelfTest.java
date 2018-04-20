@@ -132,11 +132,6 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
         awaitPartitionMapExchange();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        map.clear();
-    }
-
     /**
      * Create new cache store.
      *

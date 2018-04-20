@@ -85,6 +85,11 @@ public class GridCacheMultiNodeLoadTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        ignite1 = null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return Long.MAX_VALUE;
     }
