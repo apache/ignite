@@ -32,7 +32,7 @@ public interface TransactionMetricsMxBean extends TransactionMetrics {
      * @return near transactions.
      */
     @MXBeanDescription("All near transactions.")
-    public Map<String, String> getAllNearTxs();
+    @Override public Map<String, String> getAllOwnerTransactions();
 
     /**
      * Long running near transactions
@@ -42,7 +42,7 @@ public interface TransactionMetricsMxBean extends TransactionMetrics {
     @MXBeanDescription("Long running near transactions.")
     @MXBeanParametersNames("duration")
     @MXBeanParametersDescriptions("Duration, at least (ms).")
-    public Map<String, String> getLongRunningNearTxs(int duration);
+    @Override public Map<String, String> getLongRunningOwnerTransactions(int duration);
 
     /**
      * The number of transactions which were committed.
@@ -50,7 +50,7 @@ public interface TransactionMetricsMxBean extends TransactionMetrics {
      * @return number of transactions which were committed.
      */
     @MXBeanDescription("The number of transactions which were committed.")
-    public long getTxCommittedNum();
+    @Override public long getTransactionsCommittedNumber();
 
     /**
      * The number of transactions which were rollback.
@@ -58,7 +58,7 @@ public interface TransactionMetricsMxBean extends TransactionMetrics {
      * @return number of transactions which were rollback.
      */
     @MXBeanDescription("The number of transactions which were rollback.")
-    public long getTxRolledBackNum();
+    @Override public long getTransactionsRolledBackNumber();
 
     /**
      * The number of active transactions holding at least one key lock.
@@ -66,7 +66,7 @@ public interface TransactionMetricsMxBean extends TransactionMetrics {
      * @return number of active transactions holding at least one key lock.
      */
     @MXBeanDescription("The number of active transactions holding at least one key lock.")
-    public long getTxHoldingLockNum();
+    @Override public long getTransactionsHoldingLockNumber();
 
     /**
      *  The number of keys locked on the node.
@@ -74,7 +74,7 @@ public interface TransactionMetricsMxBean extends TransactionMetrics {
      * @return number of keys locked on the node.
      */
     @MXBeanDescription("The number of keys locked on the node.")
-    public long getLockedKeysNum();
+    @Override public long getLockedKeysNumber();
 
     /**
      * The number of active transactions for which this node is the initiator.
@@ -82,5 +82,5 @@ public interface TransactionMetricsMxBean extends TransactionMetrics {
      * @return number of active transactions for which this node is the initiator.
      */
     @MXBeanDescription("The number of active transactions for which this node is the initiator.")
-    public long getOwnerTxNum();
+    @Override public long getOwnerTransactionsNumber();
 }

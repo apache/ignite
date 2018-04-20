@@ -53,51 +53,53 @@ public interface TransactionMetrics extends Serializable {
     public int txRollbacks();
 
     /**
-     * All near transactions
+     * Gets a map of all transactions for which the local node is the originating node.
      *
-     * @return near transactions.
+     * @return Map of local node owning transactions.
      */
-    public Map<String, String> getAllNearTxs();
+    public Map<String, String> getAllOwnerTransactions();
 
     /**
-     * Long running near transactions
+     * Gets a map of all transactions for which the local node is the originating node and which duration
+     * exceeds the given duration.
      *
-     * @return near transactions.
+     * @return Map of local node owning transactions which duration is longer than {@code duration}.
      */
-    public Map<String, String> getLongRunningNearTxs(int duration);
+    public Map<String, String> getLongRunningOwnerTransactions(int duration);
 
     /**
-     * The number of transactions which were committed.
+     * The number of transactions which were committed on the local node.
      *
-     * @return number of transactions which were committed.
+     * @return The number of transactions which were committed on the local node.
      */
-    public long getTxCommittedNum();
+    public long getTransactionsCommittedNumber();
 
     /**
-     * The number of transactions which were rollback.
+     * The number of transactions which were rolled back on the local node.
      *
-     * @return number of transactions which were rollback.
+     * @return The number of transactions which were rolled back on the local node.
      */
-    public long getTxRolledBackNum();
+    public long getTransactionsRolledBackNumber();
 
     /**
-     * The number of active transactions holding at least one key lock.
+     * The number of active transactions on the local node holding at least one key lock.
      *
-     * @return number of active transactions holding at least one key lock.
+     * @return The number of active transactions holding at least one key lock.
      */
-    public long getTxHoldingLockNum();
+    public long getTransactionsHoldingLockNumber();
 
     /**
      * The number of keys locked on the node.
      *
-     * @return number of keys locked on the node.
+     * @return The number of keys locked on the node.
      */
-    public long getLockedKeysNum();
+    public long getLockedKeysNumber();
 
     /**
-     * The number of active transactions for which this node is the initiator.
+     * The number of active transactions for which this node is the initiator. Effectively, this method is
+     * semantically equivalent to {@code getAllOwnerTransactions.size()}.
      *
-     * @return number of active transactions for which this node is the initiator.
+     * @return The number of active transactions for which this node is the initiator.
      */
-    public long getOwnerTxNum();
+    public long getOwnerTransactionsNumber();
 }

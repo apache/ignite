@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.util.Map;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.transactions.TransactionMetrics;
 
@@ -57,38 +56,38 @@ public class TransactionMetricsMxBeanImpl implements TransactionMetricsMxBean {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, String> getAllNearTxs() {
-        return transactionMetrics.getAllNearTxs();
+    @Override public Map<String, String> getAllOwnerTransactions() {
+        return transactionMetrics.getAllOwnerTransactions();
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, String> getLongRunningNearTxs(int duration) {
-        return transactionMetrics.getLongRunningNearTxs(duration);
+    @Override public Map<String, String> getLongRunningOwnerTransactions(int duration) {
+        return transactionMetrics.getLongRunningOwnerTransactions(duration);
     }
 
     /** {@inheritDoc} */
-    @Override public long getTxCommittedNum() {
-        return transactionMetrics.getTxCommittedNum();
+    @Override public long getTransactionsCommittedNumber() {
+        return transactionMetrics.getTransactionsCommittedNumber();
     }
 
     /** {@inheritDoc} */
-    @Override public long getTxRolledBackNum() {
-        return transactionMetrics.getTxRolledBackNum();
+    @Override public long getTransactionsRolledBackNumber() {
+        return transactionMetrics.getTransactionsRolledBackNumber();
     }
 
     /** {@inheritDoc} */
-    @Override public long getTxHoldingLockNum() {
-        return transactionMetrics.getTxHoldingLockNum();
+    @Override public long getTransactionsHoldingLockNumber() {
+        return transactionMetrics.getTransactionsHoldingLockNumber();
     }
 
     /** {@inheritDoc} */
-    @Override public long getLockedKeysNum() {
-        return transactionMetrics.getLockedKeysNum();
+    @Override public long getLockedKeysNumber() {
+        return transactionMetrics.getLockedKeysNumber();
     }
 
     /** {@inheritDoc} */
-    @Override public long getOwnerTxNum() {
-        return transactionMetrics.getOwnerTxNum();
+    @Override public long getOwnerTransactionsNumber() {
+        return transactionMetrics.getOwnerTransactionsNumber();
     }
 }
 

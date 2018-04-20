@@ -49,6 +49,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** */
     private static final int TRANSACTIONS = 10;
 
@@ -59,6 +60,7 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
+        cfg.setLocalHost("127.0.0.1");
 
         final CacheConfiguration cCfg = new CacheConfiguration()
             .setName(DEFAULT_CACHE_NAME)
@@ -106,7 +108,7 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
         ignite.transactions().txStart().commit();
 
         //then:
-        assertEquals(1, txMXBean.getTxCommittedNum());
+        assertEquals(1, txMXBean.getTransactionsCommittedNumber());
 
         //when: transaction is opening
         final Transaction tx1 = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ);
@@ -121,18 +123,18 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
         }
 
         //then:
-        assertEquals(localKeysNum, txMXBean.getLockedKeysNum());
-        assertEquals(1, txMXBean.getTxHoldingLockNum());
-        assertEquals(1, txMXBean.getOwnerTxNum());
+        assertEquals(localKeysNum, txMXBean.getLockedKeysNumber());
+        assertEquals(1, txMXBean.getTransactionsHoldingLockNumber());
+        assertEquals(1, txMXBean.getOwnerTransactionsNumber());
 
         //when: transaction rollback
         tx1.rollback();
 
         //then:
-        assertEquals(1, txMXBean.getTxRolledBackNum());
-        assertEquals(0, txMXBean.getLockedKeysNum());
-        assertEquals(0, txMXBean.getTxHoldingLockNum());
-        assertEquals(0, txMXBean.getOwnerTxNum());
+        assertEquals(1, txMXBean.getTransactionsRolledBackNumber());
+        assertEquals(0, txMXBean.getLockedKeysNumber());
+        assertEquals(0, txMXBean.getTransactionsHoldingLockNumber());
+        assertEquals(0, txMXBean.getOwnerTransactionsNumber());
 
         //when: keysNumber transactions from MXbean owner node + keysNumber transactions from client.
         CountDownLatch commitAllower = new CountDownLatch(1);
@@ -159,9 +161,9 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
         transactionStarter.await();
 
         //then:
-        assertEquals(txNumFromOwner + txNumFromClient, txMXBean.getLockedKeysNum());
-        assertEquals(keysNumber + txNumFromClient, txMXBean.getTxHoldingLockNum());
-        assertEquals(keysNumber, txMXBean.getOwnerTxNum());
+        assertEquals(txNumFromOwner + txNumFromClient, txMXBean.getLockedKeysNumber());
+        assertEquals(keysNumber + txNumFromClient, txMXBean.getTransactionsHoldingLockNumber());
+        assertEquals(keysNumber, txMXBean.getOwnerTransactionsNumber());
 
         commitAllower.countDown();
     }
@@ -198,7 +200,7 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
 
         transactionStarter.await();
 
-        final Map<String, String> transactions = txMXBeanBackup.getAllNearTxs();
+        final Map<String, String> transactions = txMXBeanBackup.getAllOwnerTransactions();
 
         assertEquals(TRANSACTIONS, transactions.size());
 
@@ -221,9 +223,9 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
      */
     private static class TxThread implements Runnable {
         /** */
-        private CountDownLatch commitAllower;
+        private CountDownLatch commitAllowLatch;
         /** */
-        private CountDownLatch transactionStarter;
+        private CountDownLatch transactionStartLatch;
         /** */
         private Ignite ignite;
         /** */
@@ -235,14 +237,14 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
          * Create TxThread.
          */
         private TxThread(
-            CountDownLatch commitAllower,
-            CountDownLatch transactionStarter,
+            CountDownLatch commitAllowLatch,
+            CountDownLatch transactionStartLatch,
             final Ignite ignite,
             final int key1,
             final int key2
         ) {
-            this.commitAllower = commitAllower;
-            this.transactionStarter = transactionStarter;
+            this.commitAllowLatch = commitAllowLatch;
+            this.transactionStartLatch = transactionStartLatch;
             this.ignite = ignite;
             this.key1 = key1;
             this.key2 = key2;
@@ -254,8 +256,9 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
          * @param key2 key 2.
          */
         private TxThread(final Ignite ignite, final int key1, final int key2) {
-            this.commitAllower = new CountDownLatch(0);
-            this.transactionStarter = new CountDownLatch(1);
+            commitAllowLatch = new CountDownLatch(0);
+            transactionStartLatch = new CountDownLatch(1);
+
             this.ignite = ignite;
             this.key1 = key1;
             this.key2 = key2;
@@ -267,9 +270,9 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
                 ignite.cache(DEFAULT_CACHE_NAME).put(key1, Thread.currentThread().getName());
                 ignite.cache(DEFAULT_CACHE_NAME).put(key2, Thread.currentThread().getName());
 
-                transactionStarter.countDown();
+                transactionStartLatch.countDown();
 
-                commitAllower.await();
+                commitAllowLatch.await();
 
                 tx.commit();
             }

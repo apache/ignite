@@ -90,37 +90,37 @@ public class TransactionMetricsAdapter implements TransactionMetrics, Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, String> getAllNearTxs() {
+    @Override public Map<String, String> getAllOwnerTransactions() {
         return getNearTxs(0);
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, String> getLongRunningNearTxs(final int duration) {
+    @Override public Map<String, String> getLongRunningOwnerTransactions(final int duration) {
         return getNearTxs(duration);
     }
 
     /** {@inheritDoc} */
-    @Override public long getTxCommittedNum() {
+    @Override public long getTransactionsCommittedNumber() {
         return gridKernalCtx.cache().context().txMetrics().txCommits();
     }
 
     /** {@inheritDoc} */
-    @Override public long getTxRolledBackNum() {
+    @Override public long getTransactionsRolledBackNumber() {
         return gridKernalCtx.cache().context().txMetrics().txRollbacks();
     }
 
     /** {@inheritDoc} */
-    @Override public long getTxHoldingLockNum() {
+    @Override public long getTransactionsHoldingLockNumber() {
         return txHoldingLockNum();
     }
 
     /** {@inheritDoc} */
-    @Override public long getLockedKeysNum() {
+    @Override public long getLockedKeysNumber() {
         return txLockedKeysNum();
     }
 
     /** {@inheritDoc} */
-    @Override public long getOwnerTxNum() {
+    @Override public long getOwnerTransactionsNumber() {
         return nearTxNum();
     }
 
