@@ -58,12 +58,25 @@ in-memory speeds at petabyte scale
 #     2 - Upgrade
 #
 
+echoUpgradeMessage () {
+    echo "======================================================================================================="
+    echo "  WARNING: Updating Apache Ignite's cluster version requires updating every node before starting grid  "
+    echo "======================================================================================================="
+}
+
 case $1 in
     1|configure)
+        # DEB postinst upgrade
+        if [ ! -z "${2}" ]; then
+            echoUpgradeMessage
+        fi
+
         # Add user for service operation
         useradd -r -d %{_datadir}/%{name} -s /usr/sbin/nologin %{user}
+
         # Change ownership for work and log directories
         chown -vR %{user}:%{user} %{_sharedstatedir}/%{name} %{_log}/%{name}
+
         # Install alternatives
         # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
         #update-alternatives --install %{_bindir}/ignitevisorcmd ignitevisorcmd %{_datadir}/%{name}/bin/ignitevisorcmd.sh 0
@@ -74,7 +87,8 @@ case $1 in
         #update-alternatives --display ignitesqlline
         ;;
     2)
-        :
+        # RPM postinst upgrade
+        echoUpgradeMessage
         ;;
 esac
 
@@ -90,6 +104,9 @@ esac
 
 case $1 in
     0|remove)
+        # Stop all nodes
+        systemctl stop 'apache-ignite@*'
+
         # Remove alternatives
         # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
         #update-alternatives --remove ignitevisorcmd /usr/share/%{name}/bin/ignitevisorcmd.sh
@@ -98,7 +115,10 @@ case $1 in
         #update-alternatives --display ignitesqlline || true
         ;;
     1|upgrade)
-        :
+        echo "=================================================================================="
+        echo "  WARNING: All running Apache Ignite's nodes will be stopped upon package update  "
+        echo "=================================================================================="
+        systemctl stop 'apache-ignite@*'
         ;;
 esac
 
@@ -116,8 +136,10 @@ case $1 in
     0|remove)
         # Remove user
         userdel %{user}
+
         # Remove service PID directory
         rm -rfv /var/run/%{name}
+
         # Remove firewalld rules if firewalld is installed and running
         if [[ "$(type firewall-cmd &>/dev/null; echo $?)" -eq 0 && "$(systemctl is-active firewalld)" == "active" ]]
         then

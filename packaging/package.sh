@@ -12,6 +12,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")"    # Run from the script's root
 ##############
 #  SETTINGS  #
 ##############
+APT_YUM_Y=                   # Install with no user interaction option for apt | yum
 BIN_NAME=                    # Name of binary archive used as a source for package building
 IGNITE_VERSION=              # Main product version
 PACKAGING_DIR=               # Root directory of packaging script
@@ -20,7 +21,6 @@ RPM_WORK_DIR=                # Main directory for building RPM packages
 
 BUILD_DEB_FLAG=false         # Whether to build DEB
 BUILD_RPM_FLAG=false         # Whether to build RPM
-BUILD_FROM_SRC_FLAG=false    # Whether to build packages from sources
 
 
 
@@ -32,20 +32,20 @@ BUILD_FROM_SRC_FLAG=false    # Whether to build packages from sources
 usage () {
     cat <<EOF
 
-######################################################################
-#  Build RPM or DEB package from Apache Ignite's sources or binaries #
-######################################################################
+#######################################################################
+#  Build RPM or DEB package from Apache Ignite's sources or binaries  #
+#######################################################################
 
 Prerequisites:
      - RPM: binary archive with name 'apache-ignite-fabric-<version>-bin.zip'
      - DEB: previously built corresponding RPM package
 
-Usage: ./$(basename ${BASH_SOURCE[0]}) --rpm,--deb [--src]
+Usage: ./$(basename ${BASH_SOURCE[0]}) --rpm,--deb [--batch]
 
 Options:
     --rpm, --deb     select package type for building (multiselect)
 
-    --src            prepare binary artifacts from source before packaging
+    --batch          do not ask user for any interation
 
 EOF
 }
@@ -61,7 +61,7 @@ prepEnv () {
     name=$(cat /etc/*release | grep ^NAME | sed -r 's|.*"(.*)".*|\1|')
     case ${name} in
         "Ubuntu")
-            installCmd='apt --no-install-recommends'
+            installCmd="apt --no-install-recommends"
             packages="${packages} rpm"
             ;;
         "CentOS Linux")
@@ -85,21 +85,15 @@ prepEnv () {
             }
         done
         if ${installFlag}; then
-            echo "[INFO] Software installation required root privileges"
-            ${installCmd} install ${packages}
+            ${installCmd} ${APT_YUM_Y} install ${packages}
         fi
     fi
 }
 
 
-# Prepare binary artifacts from sources
-prepBin () {
-    echo "Packaging from sources is not implemented"
-}
-
-
 # Check that binary archive exists and try to download it from Apache Dist Archive is not
 getBin () {
+    set -x
     IGNITE_VERSION=$(cat rpm/apache-ignite.spec | grep Version: | head -1 | sed -r 's|.*:\s+(.*)|\1|')
     BIN_NAME="apache-ignite-fabric-${IGNITE_VERSION}-bin.zip"
     binPreparedFlag=false
@@ -118,7 +112,7 @@ getBin () {
 
     # Get from Apache Dist
     if ! ${binPreparedFlag}; then
-        if $(curl -O https://archive.apache.org/dist/ignite/${IGNITE_VERSION}/${BIN_NAME} &>/dev/null); then
+        if $(curl --fail -O https://archive.apache.org/dist/ignite/${IGNITE_VERSION}/${BIN_NAME} &>/dev/null); then
             binPreparedFlag=true
         else
            rm -rf ${BIN_NAME} 
@@ -127,7 +121,7 @@ getBin () {
 
     # Fail if none of the above acquiring method succeeded
     if ! ${binPreparedFlag}; then
-        echo "[ERROR] Can't find | get Apache Ignite's binary archive"
+        echo "[ERROR] Can't find Apache Ignite's binary archive '${BIN_NAME}'"
         exit 1
     fi
 }
@@ -214,10 +208,6 @@ fi
 # Parse input options
 while [ $# -gt 0 ]; do
     case "$1" in
-        --src)
-            shift
-            BUILD_FROM_SRC_FLAG=true
-            ;;
         --rpm)
             shift
             BUILD_RPM_FLAG=true
@@ -225,6 +215,10 @@ while [ $# -gt 0 ]; do
         --deb)
             BUILD_DEB_FLAG=true
             shift
+            ;;
+        --batch)
+            shift
+            APT_YUM_Y="-y"
             ;;
         --help)
             usage
@@ -255,10 +249,7 @@ trap 'processTrap' EXIT
 prepEnv
 
 if ${BUILD_RPM_FLAG}; then
-    if ${BUILD_FROM_SRC_FLAG}; then
-        prepBin
-    else getBin
-    fi
+    getBin
     buildRPM
 fi
 
