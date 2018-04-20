@@ -72,6 +72,7 @@ import org.apache.ignite.internal.processors.cache.binary.MetadataUpdateProposed
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
@@ -244,10 +245,17 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             if (ctx.deploy().enabled())
                 ctx.cache().context().deploy().ignoreOwnership(true);
 
-            if (!ctx.clientNode() && serviceCache.context().affinityNode()) {
-                // Register query listener and run it for local entries. It is also invoked on rebalancing.
+            if (!ctx.clientNode()) {
+                DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+
+                boolean isLocLsnr = !clusterState.hasBaselineTopology() ||
+                    CU.baselineNode(ctx.cluster().get().localNode(), clusterState);
+
+                // Register query listener and run it for local entries, if data is available locally.
+                // It is also invoked on rebalancing.
+                // Otherwise remote listener is registered.
                 serviceCache.context().continuousQueries().executeInternalQuery(
-                    new ServiceEntriesListener(), null, true, true, false
+                    new ServiceEntriesListener(), null, isLocLsnr, true, false
                 );
             }
             else { // Listener for client nodes is registered in onContinuousProcessorStarted method.
