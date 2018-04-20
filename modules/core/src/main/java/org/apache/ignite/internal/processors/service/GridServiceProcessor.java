@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -107,7 +108,6 @@ import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.thread.OomExceptionHandler;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getString;
@@ -245,11 +245,12 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                 ctx.cache().context().deploy().ignoreOwnership(true);
 
             if (!ctx.clientNode() && serviceCache.context().affinityNode()) {
+                // Register query listener and run it for local entries. It is also invoked on rebalancing.
                 serviceCache.context().continuousQueries().executeInternalQuery(
                     new ServiceEntriesListener(), null, true, true, false
                 );
             }
-            else {
+            else { // Listener for client nodes is registered in onContinuousProcessorStarted method.
                 assert !ctx.isDaemon();
 
                 ctx.closure().runLocalSafe(new Runnable() {
@@ -324,6 +325,8 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
         synchronized (locSvcs) {
             for (Collection<ServiceContextImpl> ctxs0 : locSvcs.values())
                 ctxs.addAll(ctxs0);
+
+            locSvcs.clear();
         }
 
         for (ServiceContextImpl ctx : ctxs) {
@@ -1627,6 +1630,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
 
             ClusterNode oldest = U.oldest(ctx.discovery().nodes(topVer), null);
 
+            // Process deployment on coordinator only.
             if (oldest.isLocal())
                 onDeployment(dep, topVer);
         }
