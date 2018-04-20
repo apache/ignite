@@ -17,7 +17,7 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 /**
- *
+ * POJO bean to store Zookeeper SPI discovery statistics.
  */
 public class ZookeeperDiscoveryStatistics {
     /** */
