@@ -98,7 +98,6 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-//    @SuppressWarnings({"EmptyTryBlock", "unused"})
     public void testJndi() throws Exception {
         IgniteJdbcThinDataSource ids = new IgniteJdbcThinDataSource();
 

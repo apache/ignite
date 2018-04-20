@@ -26,7 +26,6 @@ import java.util.logging.Logger;
 import javax.sql.DataSource;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
@@ -37,9 +36,6 @@ import org.apache.ignite.internal.util.typedef.F;
 public class IgniteJdbcThinDataSource implements DataSource {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Logger. */
-    private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
     /** Connection properties. */
     private ConnectionPropertiesImpl props = new ConnectionPropertiesImpl();
@@ -127,6 +123,9 @@ public class IgniteJdbcThinDataSource implements DataSource {
     public String[] getAddresses() {
         HostAndPortRange[] addrs = props.getAddresses();
 
+        if (addrs == null)
+            return null;
+
         String [] addrsStr = new String[addrs.length];
 
         for (int i = 0; i < addrs.length; ++i)
@@ -162,7 +161,6 @@ public class IgniteJdbcThinDataSource implements DataSource {
             catch (IgniteCheckedException e) {
                 throw new SQLException(e.getMessage(), SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
-
         }
 
         props.setAddresses(addrs);
@@ -198,7 +196,6 @@ public class IgniteJdbcThinDataSource implements DataSource {
 
         props.setUrl(url);
     }
-
 
     /**
      * @return Distributed joins flag.
@@ -613,5 +610,4 @@ public class IgniteJdbcThinDataSource implements DataSource {
     public String getPassword() {
         return props.getPassword();
     }
-
 }
