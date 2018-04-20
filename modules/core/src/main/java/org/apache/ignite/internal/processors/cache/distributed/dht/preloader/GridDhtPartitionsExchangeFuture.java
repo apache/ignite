@@ -59,6 +59,7 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
+import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -1714,6 +1715,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (!grp.isLocal())
                     grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
             }
+
+            cctx.walState().changeLocalStatesOnExchangeDone(exchId.topologyVersion());
         }
 
         if (super.onDone(res, err)) {
@@ -2257,6 +2260,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Collects and determines new owners of partitions for all nodes for given {@code top}.
+     *
      * @param top Topology to assign.
      */
     private void assignPartitionStates(GridDhtPartitionTopology top) {
@@ -2598,6 +2603,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     detectLostPartitions(resTopVer);
             }
 
+            // Recalculate new affinity based on partitions availability.
             if (!exchCtx.mergeExchanges() && forceAffReassignment)
                 idealAffDiff = cctx.affinity().onCustomEventWithEnforcedAffinityReassignment(this);
 
@@ -2781,7 +2787,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 validator.validatePartitionCountersAndSizes(this, top, msgs);
             }
             catch (IgniteCheckedException ex) {
-                log.warning("Partition states validation was failed for cache " + grpDesc.cacheOrGroupName(), ex);
+                log.warning("Partition states validation has failed for group: " + grpDesc.cacheOrGroupName() + ". " + ex.getMessage());
                 // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
             }
         }
