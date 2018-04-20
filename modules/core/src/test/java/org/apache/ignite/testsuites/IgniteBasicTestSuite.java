@@ -42,6 +42,7 @@ import org.apache.ignite.internal.GridStopWithCancelSelfTest;
 import org.apache.ignite.internal.IgniteLocalNodeMapBeforeStartTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.MarshallerContextLockingSelfTest;
+import org.apache.ignite.internal.TransactionsMXBeanImplTest;
 import org.apache.ignite.internal.managers.IgniteDiagnosticMessagesTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.GridLocalIgniteSerializationTest;
@@ -153,6 +154,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridNodeMetricsLogSelfTest.class);
         suite.addTestSuite(GridLocalIgniteSerializationTest.class);
         suite.addTestSuite(GridMBeansTest.class);
+        suite.addTestSuite(TransactionsMXBeanImplTest.class);
 
         suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
         suite.addTestSuite(IgniteLocalNodeMapBeforeStartTest.class);
