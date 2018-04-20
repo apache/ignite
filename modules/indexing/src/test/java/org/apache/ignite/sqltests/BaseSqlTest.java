@@ -122,7 +122,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             (F.isEmpty(withStr) ? "" : " WITH \"" + withStr + '"') +
             ";");
 
-        execute("CREATE INDEX AgeIndex ON Employee (age);");
+        execute("CREATE INDEX AgeIndex ON Employee (age)");
     }
 
 
