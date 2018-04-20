@@ -47,6 +47,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -383,43 +384,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Finds value for specified field either in key or value of cache entry using table metadata.
-     *
-     * @param entry Entry that contain value.
-     * @param field Field to find value for.
-     * @param meta Table metadata.
-     */
-    private static Object findInEntry(Cache.Entry<?,?> entry, String field, QueryEntity meta) {
-        Object key = entry.getKey();
-        Object val = entry.getValue();
-
-        // Look up for the field in the key
-        if (key instanceof BinaryObject) {
-            BinaryObject compositeKey = (BinaryObject) key;
-
-            if (compositeKey.hasField(field))
-                return compositeKey.field(field);
-        }
-        else if (meta.getKeyFieldName().equals(field))
-            return key;
-
-        // And in the value.
-        if (val instanceof BinaryObject){
-            BinaryObject compositeVal = (BinaryObject) val;
-
-            if (compositeVal.hasField(field))
-                return compositeVal.field(field);
-
-        }
-        else if (meta.getValueFieldName().equals(field))
-            return val;
-
-
-        throw new RuntimeException("Field with name " + field +
-            " not found in the table. Avaliable fields: " + meta.getFields());
-    }
-
-    /**
      * Performs scan query with fields projection.
      *
      * @param cache cache to query.
@@ -428,7 +392,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      */
     protected static <K, V> List<List<Object>> select(
         IgniteCache<K, V> cache,
-        @Nullable IgniteBiPredicate<K, V> filter,
+        @Nullable IgnitePredicate<Map<String, Object>> filter,
         String... fields) {
 
         Collection<QueryEntity> entities = cache.getConfiguration(CacheConfiguration.class).getQueryEntities();
@@ -440,16 +404,55 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         IgniteClosure<Cache.Entry<K, V>, List<Object>> transformer = entry -> {
             List<Object> res = new ArrayList<>();
 
-            for (String field : fields)
-               res.add(findInEntry(entry, field, meta));
+            Map<String, Object> row = entryToMap(meta, entry.getKey(), entry.getValue());
 
+            for (String field : fields) {
+                String normField = field.toUpperCase();
+
+                Object val = row.get(normField);
+
+                if (val == null)
+                    throw new RuntimeException("Field with name " + normField +
+                        " not found in the table. Avaliable fields: " + meta.getFields());
+
+                res.add(val);
+            }
             return res;
         };
 
+        IgniteBiPredicate<K, V> filterAdapter = (filter == null) ? null :
+            (key, val) -> filter.apply(entryToMap(meta, key, val));
+
         QueryCursor<List<Object>> cursor = cache.withKeepBinary()
-            .query(new ScanQuery<>(filter), transformer);
+            .query(new ScanQuery<>(filterAdapter), transformer);
 
         return cursor.getAll();
+    }
+
+    private static Map<String, Object> entryToMap(QueryEntity meta, Object key, Object val) {
+        Map<String, Object> row = new HashMap<>();
+
+        // Look up for the field in the key
+        if (key instanceof BinaryObject) {
+            BinaryObject compositeKey = (BinaryObject) key;
+
+            for (String field : compositeKey.type().fieldNames())
+                row.put(field, compositeKey.field(field));
+        }
+        else
+            row.put(meta.getKeyFieldName(), key);
+
+        // And in the value.
+        if (val instanceof BinaryObject){
+            BinaryObject compositeVal = (BinaryObject) val;
+
+            for (String field : compositeVal.type().fieldNames())
+                row.put(field, compositeVal.field(field));
+        }
+        else
+            row.put(meta.getValueFieldName(), val);
+
+        return row;
     }
 
     /**
@@ -480,22 +483,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-    public void testSelectBetween() {
-        testAllNodes(node -> {
-            Result emps = checkedSelectAll("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", node, node.cache(EMP_CACHE_NAME));
-
-            assertEquals("Fetched number of employees is incorrect", 100, emps.values().size());
-
-            IgniteBiPredicate<Long, BinaryObject> between = (key, val) -> 101 <= key && key <= 200;
-
-            String[] fields = emps.columnNames().toArray(new String[0]);
-
-            List<List<Object>> expected = select(node.cache(EMP_CACHE_NAME), between, fields);
-
-            assertContainsEq(emps.values(), expected);
-        });
-    }
-
     public void testSelectFields() {
         testAllNodes(node -> {
             Result res = executeFrom("SELECT firstName, id, age FROM Employee;", node);
@@ -510,6 +497,22 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    public void testSelectBetween() {
+        testAllNodes(node -> {
+            Result emps = checkedSelectAll("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", node, node.cache(EMP_CACHE_NAME));
+
+            assertEquals("Fetched number of employees is incorrect", 100, emps.values().size());
+
+            IgnitePredicate<Map<String, Object>> between = row -> { long id = (Long) row.get("ID"); return 101 <= id && id <= 200;};
+
+            String[] fields = emps.columnNames().toArray(new String[0]);
+
+            List<List<Object>> expected = select(node.cache(EMP_CACHE_NAME), between, fields);
+
+            assertContainsEq(emps.values(), expected);
+        });
+    }
+
     public void testEmptyBetween() {
         testAllNodes(node -> {
             Result emps = executeFrom("SELECT * FROM Employee e WHERE e.id BETWEEN 200 AND 101", node);
@@ -518,7 +521,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-    public void testSelectOrderByLastName() {
+
+
+    public void testBasicOrderByLastName() {
         testAllNodes(node -> {
             Result result = checkedSelectAll("SELECT * FROM Employee e ORDER BY e.lastName", node, node.cache(EMP_CACHE_NAME));
 
@@ -543,7 +548,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         testAllNodes(node -> {
             Result ages = executeFrom("SELECT DISTINCT age FROM Employee WHERE id < 100", node);
 
-            Set<Object> expAges = distinct(select(node.cache(EMP_CACHE_NAME), (Long key, BinaryObject val) -> key < 100, "age"));
+            Set<Object> expAges = distinct(select(node.cache(EMP_CACHE_NAME), row -> (Long)row.get("ID") < 100, "age"));
 
             assertContainsEq(ages.values(), expAges);
         });
