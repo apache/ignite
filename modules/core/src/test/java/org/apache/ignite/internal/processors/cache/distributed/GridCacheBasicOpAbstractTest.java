@@ -81,6 +81,13 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        ignite1 = null;
+        ignite2 = null;
+        ignite3 = null;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         for (Ignite g : G.allGrids())
             g.cache(DEFAULT_CACHE_NAME).clear();
