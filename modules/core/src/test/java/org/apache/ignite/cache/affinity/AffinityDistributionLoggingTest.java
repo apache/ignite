@@ -152,7 +152,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     public void test5PartitionsNotIdealDistributionSuppressedLoggingOnClientNode() throws Exception {
         System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0.0");
 
-        nodes = 5; // 1 of 5 nodes - will be the client node
+        nodes = 4;
         parts = 5;
         backups = 3;
 
