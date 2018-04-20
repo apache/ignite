@@ -2350,6 +2350,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         }
 
         /** {@inheritDoc} */
+        @Nullable @Override public String getCoordinatorNodeFormatted() {
+            return String.valueOf(impl.getNode(impl.getCoordinator()));
+        }
+
+        /** {@inheritDoc} */
+        @Override public String getLocalNodeFormatted() {
+            return String.valueOf(getLocalNode());
+        }
+
+        /** {@inheritDoc} */
         @Override public void dumpDebugInfo() {
             impl.dumpDebugInfo(log);
         }
