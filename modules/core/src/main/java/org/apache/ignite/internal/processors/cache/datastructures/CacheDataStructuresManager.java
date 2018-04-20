@@ -406,7 +406,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         throws IgniteCheckedException
     {
         // Non collocated mode enabled only for PARTITIONED cache.
-        final boolean colloc0 = cctx.cache().configuration().getCacheMode() == PARTITIONED && colloc;
+        final boolean colloc0 = cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc;
 
         return set0(name, colloc0, create);
     }

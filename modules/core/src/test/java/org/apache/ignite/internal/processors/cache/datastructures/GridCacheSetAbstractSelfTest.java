@@ -683,8 +683,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
                     assertNotNull(set);
 
-                    assertTrue(set.collocated() == collocated);
-
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     for (int i = 0; i < ITERATIONS; i++) {
