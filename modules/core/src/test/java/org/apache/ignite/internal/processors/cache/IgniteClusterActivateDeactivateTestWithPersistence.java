@@ -216,6 +216,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         }, "client-starter-thread");
 
         clientStartLatch.countDown();
+
         srv.cluster().active(true);
 
         clStartFut.get();

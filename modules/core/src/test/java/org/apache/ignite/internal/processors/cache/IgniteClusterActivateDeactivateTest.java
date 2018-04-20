@@ -456,6 +456,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
                 GridDhtPartitionsSingleMessage pMsg = (GridDhtPartitionsSingleMessage)msg;
 
                 GridDhtPartitionExchangeId exchangeId = pMsg.exchangeId();
+
                 return exchangeId != null && exchangeId.topologyVersion().equals(topVer);
             }
 
@@ -840,6 +841,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         if (persistenceEnabled()) {
             IgniteInternalFuture<?> affinityReadyFut = grid(0).context().cache().context().exchange().affinityReadyFuture(
                 new AffinityTopologyVersion(SRVS + CLIENTS, 0));
+
             if (affinityReadyFut != null)
                 affinityReadyFut.get();
         }
@@ -1341,34 +1343,70 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @param nodeIdx index of the node to check.
      */
     private void checkFeaturesOnNode(int nodeIdx) throws InterruptedException {
+        checkComputeOnNode(nodeIdx);
+
+        checkServicesOnNode(nodeIdx);
+
+        checkDataStructuresOnNode(nodeIdx);
+    }
+
+    private void checkComputeOnNode(int nodeIdx) throws InterruptedException {
         Ignite ignite = ignite(nodeIdx);
+
+        IgniteCompute compute = ignite.compute(ignite.cluster());
+
+        CountDownLatch runLatch = new CountDownLatch(1);
+
+        compute.broadcast(runLatch::countDown);
+
+        runLatch.await();
+    }
+
+    private void checkServicesOnNode(int nodeIdx) {
+        Ignite ignite = ignite(nodeIdx);
+
         ClusterGroup locCluster = ignite.cluster().forNodeIds(Collections.singletonList(ignite.cluster().localNode().id()));
 
-        // Check compute.
-        IgniteCompute compute = ignite.compute(locCluster);
-        CountDownLatch runLatch = new CountDownLatch(1);
-        compute.broadcast(runLatch::countDown);
-        runLatch.await();
-
-        // Check services.
         IgniteServices services = ignite.services(locCluster);
-        String svcName = "service-" + nodeIdx;
-        assertNull("Service unexpectedly present before deployment", services.service(svcName));
-        services.deployClusterSingleton(svcName, new DummyService());
-        assertNotNull("Service unexpectedly not present", services.service(svcName));
-        services.cancel(svcName);
-        assertNull("Service unexpectedly present after cancellation", services.service(svcName));
 
-        // Check data structures.
+        String svcName = "service-" + nodeIdx;
+
+        assertNull("Service unexpectedly present before deployment", services.service(svcName));
+
+        services.deployClusterSingleton(svcName, new DummyService());
+
+        assertNotNull("Service unexpectedly not present", services.service(svcName));
+
+        services.cancel(svcName);
+
+        assertNull("Service unexpectedly present after cancellation", services.service(svcName));
+    }
+
+    /**
+     * Check that Ignite data structures work correctly on the specified node.
+     *
+     * @param nodeIdx
+     */
+    private void checkDataStructuresOnNode(int nodeIdx) {
+        Ignite ignite = ignite(nodeIdx);
+
         String queueName = "queue-" + nodeIdx;
+
         try (IgniteQueue<String> queue = ignite.queue(queueName, 3, new CollectionConfiguration())) {
             assertTrue("Queue is unexpectedly not empty after creation", queue.isEmpty());
+
             queue.put("1");
+
             queue.put("2");
+
             queue.put("3");
+
             assertEquals("Unexpected queue element", "1", queue.poll());
+
             assertEquals("Unexpected queue element", "2", queue.poll());
+
             assertEquals("Unexpected queue element", "3", queue.poll());
+
             assertTrue("Queue is unexpectedly not empty after polling", queue.isEmpty());
         }
     }
