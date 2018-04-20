@@ -1729,7 +1729,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      *
      */
     protected void cleanPersistenceDir() throws Exception {
-        assertTrue("Grids are not stopped", F.isEmpty(G.allGrids()));
+//        assertTrue("Grids are not stopped. Alive nodes: " + G.allGrids().size(), F.isEmpty(G.allGrids()));
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
