@@ -521,6 +521,27 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    public void testSelectInStatic() {
+        testAllNodes(node -> {
+            Result actual = executeFrom("SELECT age FROM Employee WHERE id IN (1, 256, 42)", node);
+
+            List<List<Object>> expected = select(node.cache(EMP_CACHE_NAME),
+                row -> Arrays.asList(1L, 256L, 42L).contains(row.get("ID")),
+                "AGE");
+
+            assertContainsEq(actual.values(), expected);
+        });
+    }
+
+    public void testSelectInSubquery() {
+        testAllNodes(node -> {
+            Result actual = executeFrom("SELECT lastName FROM Employee WHERE id in (SELECT id FROM Employee WHERE age < 30)", node);
+
+            List<List<Object>> expected = select(node.cache(EMP_CACHE_NAME), row -> (Integer)row.get("AGE") < 30, "lastName");
+
+            assertContainsEq(actual.values(), expected);
+        });
+    }
 
 
     public void testBasicOrderByLastName() {
