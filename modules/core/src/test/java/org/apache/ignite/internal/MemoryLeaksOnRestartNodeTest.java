@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.io.File;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,7 +39,7 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
     private static final int NODES = 3;
 
     /** Allow 5Mb leaks on node restart. */
-    private static final int ALLOW_LEAK_ON_RESTART_IN_MB = 2;
+    private static final int ALLOW_LEAK_ON_RESTART_IN_MB = 1;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -59,6 +60,8 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
      * @throws Exception On failed.
      */
     public void test() throws Exception {
+//        System.setProperty(IgniteSystemProperties.IGNITE_DELAYED_REPLACED_PAGE_WRITE, "false");
+
         // Warmup
         for (int i = 0; i < RESTARTS / 2; ++i) {
             startGrids(NODES);
@@ -85,10 +88,10 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
 
         final long size1 = new File(HEAP_DUMP_FILE_NAME).length();
 
-        final long leakSize = ((size1 - size0) >> 20);
+        final float leakSize = (float)((size1 - size0) >> 20) / NODES / RESTARTS;
 
-        assertTrue("Possible leaks detected. The " + leakSize + "M leaks after " + RESTARTS + " restarts. " +
-                "See the '" + new File(HEAP_DUMP_FILE_NAME).getAbsolutePath() + "'",
-            leakSize < RESTARTS * ALLOW_LEAK_ON_RESTART_IN_MB * NODES);
+        assertTrue("Possible leaks detected. The " + leakSize + "M leaks per node restart after " + RESTARTS
+                + " restarts. See the '" + new File(HEAP_DUMP_FILE_NAME).getAbsolutePath() + "'",
+            leakSize < ALLOW_LEAK_ON_RESTART_IN_MB);
    }
 }
