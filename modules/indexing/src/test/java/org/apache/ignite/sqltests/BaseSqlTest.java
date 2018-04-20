@@ -103,6 +103,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             (F.isEmpty(withStr) ? "" : " WITH \"" + withStr + '"') +
             ";");
 
+        execute("CREATE INDEX AgeIndex ON Employee (age);");
+
         SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?, ?)");
 
         final long depId = 42;
