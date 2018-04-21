@@ -158,4 +158,29 @@ class DataRegionMetricsMXBeanImpl implements DataRegionMetricsMXBean {
     @Override public String getSwapPath() {
         return dataRegCfg.getSwapPath();
     }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesRead() {
+        return memMetrics.getPagesRead();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesWritten() {
+        return memMetrics.getPagesWritten();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesReplaced() {
+        return memMetrics.getPagesReplaced();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapSize() {
+        return memMetrics.getOffHeapSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffheapUsedSize() {
+        return memMetrics.getOffheapUsedSize();
+    }
 }
