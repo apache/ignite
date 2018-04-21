@@ -75,7 +75,7 @@ public class IgniteStandByClusterSuite extends TestSuite {
 //        suite.addTestSuite(CacheBaselineTopologyTest.class);
 //        suite.addTestSuite(IgniteBaselineAffinityTopologyActivationTest.class);
 
-        for(int i = 0; i < 500; i++) {
+        for(int i = 0; i < 200; i++) {
             CacheBaselineTopologyTest t = new CacheBaselineTopologyTest();
             t.setName("testPrimaryLeftAndClusterRestart");
             suite.addTest(t);
