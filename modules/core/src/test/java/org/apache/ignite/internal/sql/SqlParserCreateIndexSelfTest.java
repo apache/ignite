@@ -48,6 +48,7 @@ public class SqlParserCreateIndexSelfTest extends SqlParserAbstractSelfTest {
         parseValidate(null, "CREATE INDEX idx ON tbl(a)", null, "TBL", "IDX", DEFAULT_PROPS, "A", false);
         parseValidate(null, "CREATE INDEX idx ON tbl(a ASC)", null, "TBL", "IDX", DEFAULT_PROPS, "A", false);
         parseValidate(null, "CREATE INDEX idx ON tbl(a DESC)", null, "TBL", "IDX", DEFAULT_PROPS, "A", true);
+        assertParseError(null, "CREATE INDEX idx ON tbl(a) ,", "Unexpected token: ,");
 
         // Case (in)sensitivity.
         parseValidate(null, "CREATE INDEX IDX ON TBL(COL)", null, "TBL", "IDX", DEFAULT_PROPS, "COL", false);
