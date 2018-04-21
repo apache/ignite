@@ -33,8 +33,9 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  * Class terminates Genetic algorithm when fitnessScore > 10
  */
 public class HelloWorldTerminateCriteria implements ITerminateCriteria {
-
+    /** Ignite logger */
     private IgniteLogger igniteLogger = null;
+    /** Ignite instance */
     private Ignite ignite = null;
 
     /**

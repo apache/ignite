@@ -45,9 +45,8 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
  *
  * fitness score.
  */
-
 public class MovieFitnessFunction implements IFitnessFunction {
-
+    /** genes */
     private List<String> genres = null;
 
     /**
