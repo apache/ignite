@@ -43,6 +43,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
@@ -61,6 +62,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
@@ -98,6 +100,9 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -1889,5 +1894,54 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
             dbMgr.waitForCheckpoint("test");
         }
+    }
+
+    /** */
+    protected void manualCacheRebalace(Ignite ignite,
+        final String cacheName) throws IgniteInterruptedCheckedException {
+        if (ignite.configuration().isClientMode())
+            return;
+
+        IgniteFuture<Void> fut =
+            ignite.compute().withTimeout(5_000).broadcastAsync(new IgniteRunnable() {
+                /** */
+                @LoggerResource
+                IgniteLogger log;
+
+                /** */
+                @IgniteInstanceResource
+                private Ignite ignite;
+
+                /** {@inheritDoc} */
+                @Override public void run() {
+                    IgniteCache<?, ?> cache = ignite.cache(cacheName);
+
+                    assertNotNull(cache);
+
+                    boolean finished = false;
+
+                    while (!finished) {
+                        try {
+                            finished = (Boolean)cache.rebalance().get();
+
+                            U.sleep(100);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            throw new IgniteException(e);
+                        }
+                    }
+
+                    if (log.isInfoEnabled())
+                        log.info("Rebalance finished: cache=" + cacheName + ", node=" + ignite.name());
+                }
+            });
+
+        boolean finished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return fut.isDone();
+            }
+        }, 5_000);
+
+        assertTrue(finished);
     }
 }

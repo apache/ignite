@@ -725,8 +725,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         assertEquals(val2, primary.cache(CACHE_NAME).get(key));
         assertEquals(val2, backup.cache(CACHE_NAME).get(key));
 
-        for (int i = 0; i < NODE_COUNT; i++)
-            grid(i).cache(CACHE_NAME).rebalance().get();
+        manualCacheRebalace(grid(0), CACHE_NAME);
 
         awaitPartitionMapExchange();
 
