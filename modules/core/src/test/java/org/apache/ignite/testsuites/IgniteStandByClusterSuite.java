@@ -49,31 +49,45 @@ public class IgniteStandByClusterSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Activate/DeActivate Cluster Test Suite");
 
-        suite.addTestSuite(IgniteClusterActivateDeactivateTest.class);
+//        suite.addTestSuite(IgniteClusterActivateDeactivateTest.class);
+//
+//        suite.addTestSuite(IgniteStandByClusterTest.class);
+//        suite.addTestSuite(IgniteStandByClientReconnectTest.class);
+//        suite.addTestSuite(IgniteStandByClientReconnectToNewClusterTest.class);
+//
+//        suite.addTestSuite(JoinActiveNodeToActiveCluster.class);
+//        suite.addTestSuite(JoinActiveNodeToInActiveCluster.class);
+//        suite.addTestSuite(JoinInActiveNodeToActiveCluster.class);
+//        suite.addTestSuite(JoinInActiveNodeToInActiveCluster.class);
+//
+//        suite.addTestSuite(JoinActiveNodeToActiveClusterWithPersistence.class);
+//        suite.addTestSuite(JoinActiveNodeToInActiveClusterWithPersistence.class);
+//        suite.addTestSuite(JoinInActiveNodeToActiveClusterWithPersistence.class);
+//        suite.addTestSuite(JoinInActiveNodeToInActiveClusterWithPersistence.class);
+//
+//        suite.addTestSuite(IgniteChangeGlobalStateTest.class);
+//        suite.addTestSuite(IgniteChangeGlobalStateCacheTest.class);
+//        suite.addTestSuite(IgniteChangeGlobalStateDataStructureTest.class);
+//        suite.addTestSuite(IgniteChangeGlobalStateDataStreamerTest.class);
+//        suite.addTestSuite(IgniteChangeGlobalStateFailOverTest.class);
+//        suite.addTestSuite(IgniteChangeGlobalStateServiceTest.class);
+//
+//        suite.addTestSuite(CacheBaselineTopologyTest.class);
+//        suite.addTestSuite(IgniteBaselineAffinityTopologyActivationTest.class);
 
-        suite.addTestSuite(IgniteStandByClusterTest.class);
-        suite.addTestSuite(IgniteStandByClientReconnectTest.class);
-        suite.addTestSuite(IgniteStandByClientReconnectToNewClusterTest.class);
+        for(int i = 0; i < 500; i++) {
+            CacheBaselineTopologyTest t = new CacheBaselineTopologyTest();
+            t.setName("testPrimaryLeftAndClusterRestart");
+            suite.addTest(t);
 
-        suite.addTestSuite(JoinActiveNodeToActiveCluster.class);
-        suite.addTestSuite(JoinActiveNodeToInActiveCluster.class);
-        suite.addTestSuite(JoinInActiveNodeToActiveCluster.class);
-        suite.addTestSuite(JoinInActiveNodeToInActiveCluster.class);
+            CacheBaselineTopologyTest t2 = new CacheBaselineTopologyTest();
+            t2.setName("testBaselineTopologyChangesFromClient");
+            suite.addTest(t2);
 
-        suite.addTestSuite(JoinActiveNodeToActiveClusterWithPersistence.class);
-        suite.addTestSuite(JoinActiveNodeToInActiveClusterWithPersistence.class);
-        suite.addTestSuite(JoinInActiveNodeToActiveClusterWithPersistence.class);
-        suite.addTestSuite(JoinInActiveNodeToInActiveClusterWithPersistence.class);
-
-        suite.addTestSuite(IgniteChangeGlobalStateTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateCacheTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateDataStructureTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateDataStreamerTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateFailOverTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateServiceTest.class);
-
-        suite.addTestSuite(CacheBaselineTopologyTest.class);
-        suite.addTestSuite(IgniteBaselineAffinityTopologyActivationTest.class);
+            CacheBaselineTopologyTest t3 = new CacheBaselineTopologyTest();
+            t3.setName("testClientReconnectClusterDeactivateInProgress");
+            suite.addTest(t3);
+        }
 
         return suite;
     }
