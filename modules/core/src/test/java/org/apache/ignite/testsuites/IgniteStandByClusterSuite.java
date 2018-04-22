@@ -65,7 +65,7 @@ public class IgniteStandByClusterSuite extends TestSuite {
 //        suite.addTestSuite(JoinInActiveNodeToActiveClusterWithPersistence.class);
 //        suite.addTestSuite(JoinInActiveNodeToInActiveClusterWithPersistence.class);
 
-        for (int i = 0; i < 500; i ++) {
+        for (int i = 0; i < 250; i ++) {
             IgniteChangeGlobalStateTest t = new IgniteChangeGlobalStateTest();
             t.setName("testActivateAfterFailGetLock");
            suite.addTest(t);
