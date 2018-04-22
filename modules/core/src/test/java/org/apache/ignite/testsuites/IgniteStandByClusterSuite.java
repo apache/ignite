@@ -77,17 +77,23 @@ public class IgniteStandByClusterSuite extends TestSuite {
 
         for(int i = 0; i < 200; i++) {
             CacheBaselineTopologyTest t = new CacheBaselineTopologyTest();
-            t.setName("testPrimaryLeftAndClusterRestart");
+            t.setName("testPrimaryLeft");
             suite.addTest(t);
 
             CacheBaselineTopologyTest t2 = new CacheBaselineTopologyTest();
-            t2.setName("testBaselineTopologyChangesFromClient");
+            t2.setName("testPrimaryLeftAndClusterRestart");
             suite.addTest(t2);
 
             CacheBaselineTopologyTest t3 = new CacheBaselineTopologyTest();
-            t3.setName("testClientReconnectClusterDeactivateInProgress");
+            t3.setName("testBaselineTopologyChangesFromClient");
             suite.addTest(t3);
+
+            CacheBaselineTopologyTest t4 = new CacheBaselineTopologyTest();
+            t4.setName("testBaselineTopologyChangesFromServer");
+            suite.addTest(t4);
         }
+
+
 
         return suite;
     }
