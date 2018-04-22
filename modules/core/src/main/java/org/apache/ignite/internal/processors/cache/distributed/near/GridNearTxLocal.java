@@ -3153,7 +3153,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 TransactionState state = state();
 
                 if (state != COMMITTING && state != COMMITTED)
-                    throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state() +
+                    throw isRollbackOnly() ? timedOut() ? timeoutException() : rollbackException() :
+                        new IgniteCheckedException("Invalid transaction state for commit [state=" + state() +
                         ", tx=" + this + ']');
                 else {
                     if (log.isDebugEnabled())

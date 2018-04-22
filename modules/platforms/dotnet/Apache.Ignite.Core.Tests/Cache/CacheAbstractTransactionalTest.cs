@@ -633,8 +633,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 if (async)
                 {
-                    cache1.PutAsync(1, 10).Wait();
-                    cache2.PutAsync(1, 20).Wait();
+                    cache1.PutAsync(1, 10);
+                    cache2.PutAsync(1, 20);
                 }
                 else
                 {
@@ -653,8 +653,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 if (async)
                 {
-                    cache1.PutAsync(1, 100).Wait();
-                    cache2.PutAsync(1, 200).Wait();
+                    cache1.PutAsync(1, 100);
+                    cache2.PutAsync(1, 200);
                 }
                 else
                 {

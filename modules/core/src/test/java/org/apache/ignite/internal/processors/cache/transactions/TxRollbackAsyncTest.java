@@ -75,9 +75,11 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 
 /**
@@ -435,20 +437,35 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      *
      */
     public void testEnlistManyRead() throws Exception {
-        testEnlistMany(false);
+        testEnlistMany(false, REPEATABLE_READ, PESSIMISTIC);
     }
 
     /**
      *
      */
     public void testEnlistManyWrite() throws Exception {
-        testEnlistMany(true);
+        testEnlistMany(true, REPEATABLE_READ, PESSIMISTIC);
     }
 
     /**
      *
      */
-    private void testEnlistMany(boolean write) throws Exception {
+    public void testEnlistManyReadOptimistic() throws Exception {
+        testEnlistMany(false, SERIALIZABLE, OPTIMISTIC);
+    }
+
+    /**
+     *
+     */
+    public void testEnlistManyWriteOptimistic() throws Exception {
+        testEnlistMany(true, SERIALIZABLE, OPTIMISTIC);
+    }
+
+
+    /**
+     *
+     */
+    private void testEnlistMany(boolean write, TransactionIsolation isolation, TransactionConcurrency conc) throws Exception {
         final Ignite client = startClient();
 
         Map<Integer, Integer> entries = new HashMap<>();
@@ -458,13 +475,42 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = null;
 
-        try(Transaction tx = client.transactions().txStart()) {
+        try(Transaction tx = client.transactions().txStart(conc, isolation, 0, 0)) {
             fut = rollbackAsync(tx, 200);
 
             if (write)
                 client.cache(CACHE_NAME).putAll(entries);
             else
                 client.cache(CACHE_NAME).getAll(entries.keySet());
+
+            tx.commit();
+
+            fail("Commit must fail");
+        }
+        catch (Throwable t) {
+            assertTrue(X.hasCause(t, TransactionRollbackException.class));
+        }
+
+        fut.get();
+
+        assertEquals(0, client.cache(CACHE_NAME).size());
+
+        checkFutures();
+    }
+
+    /**
+     *
+     */
+    public void testRollbackOnOptimisticPrepare() throws Exception {
+        final Ignite client = startClient();
+
+        IgniteInternalFuture<?> fut = null;
+
+        try(Transaction tx = client.transactions().txStart(OPTIMISTIC, SERIALIZABLE, 0, 0)) {
+            for (int i = 0; i < 100000; i++)
+                client.cache(CACHE_NAME).put(i, i);
+
+            fut = rollbackAsync(tx, 100);
 
             tx.commit();
         }

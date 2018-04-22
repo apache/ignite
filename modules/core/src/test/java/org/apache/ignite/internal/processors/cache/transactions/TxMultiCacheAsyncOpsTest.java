@@ -49,6 +49,7 @@ public class TxMultiCacheAsyncOpsTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** */
     private CacheConfiguration[] cacheConfigurations() {
         return IntStream.range(0, CACHES_CNT).mapToObj(
             this::cacheConfiguration).collect(Collectors.toList()).toArray(new CacheConfiguration[CACHES_CNT]);
@@ -95,6 +96,9 @@ public class TxMultiCacheAsyncOpsTest extends GridCommonAbstractTest {
                     grid(0).cache(caches[i].getName()).putAsync(1, (i + 1) * 10);
 
                 tx.commit();
+            }
+            catch (Exception e) {
+                System.out.println();
             }
 
             for (int i = 0; i < caches.length; i++)
