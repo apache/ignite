@@ -49,31 +49,36 @@ public class IgniteStandByClusterSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Activate/DeActivate Cluster Test Suite");
 
-        suite.addTestSuite(IgniteClusterActivateDeactivateTest.class);
+//        suite.addTestSuite(IgniteClusterActivateDeactivateTest.class);
+//
+//        suite.addTestSuite(IgniteStandByClusterTest.class);
+//        suite.addTestSuite(IgniteStandByClientReconnectTest.class);
+//        suite.addTestSuite(IgniteStandByClientReconnectToNewClusterTest.class);
+//
+//        suite.addTestSuite(JoinActiveNodeToActiveCluster.class);
+//        suite.addTestSuite(JoinActiveNodeToInActiveCluster.class);
+//        suite.addTestSuite(JoinInActiveNodeToActiveCluster.class);
+//        suite.addTestSuite(JoinInActiveNodeToInActiveCluster.class);
+//
+//        suite.addTestSuite(JoinActiveNodeToActiveClusterWithPersistence.class);
+//        suite.addTestSuite(JoinActiveNodeToInActiveClusterWithPersistence.class);
+//        suite.addTestSuite(JoinInActiveNodeToActiveClusterWithPersistence.class);
+//        suite.addTestSuite(JoinInActiveNodeToInActiveClusterWithPersistence.class);
 
-        suite.addTestSuite(IgniteStandByClusterTest.class);
-        suite.addTestSuite(IgniteStandByClientReconnectTest.class);
-        suite.addTestSuite(IgniteStandByClientReconnectToNewClusterTest.class);
-
-        suite.addTestSuite(JoinActiveNodeToActiveCluster.class);
-        suite.addTestSuite(JoinActiveNodeToInActiveCluster.class);
-        suite.addTestSuite(JoinInActiveNodeToActiveCluster.class);
-        suite.addTestSuite(JoinInActiveNodeToInActiveCluster.class);
-
-        suite.addTestSuite(JoinActiveNodeToActiveClusterWithPersistence.class);
-        suite.addTestSuite(JoinActiveNodeToInActiveClusterWithPersistence.class);
-        suite.addTestSuite(JoinInActiveNodeToActiveClusterWithPersistence.class);
-        suite.addTestSuite(JoinInActiveNodeToInActiveClusterWithPersistence.class);
-
-        suite.addTestSuite(IgniteChangeGlobalStateTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateCacheTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateDataStructureTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateDataStreamerTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateFailOverTest.class);
-        suite.addTestSuite(IgniteChangeGlobalStateServiceTest.class);
-
-        suite.addTestSuite(CacheBaselineTopologyTest.class);
-        suite.addTestSuite(IgniteBaselineAffinityTopologyActivationTest.class);
+        for (int i = 0; i < 200; i ++) {
+            IgniteChangeGlobalStateTest t = new IgniteChangeGlobalStateTest();
+            t.setName("testActivateAfterFailGetLock");
+           suite.addTest(t);
+        }
+//        suite.addTestSuite(IgniteChangeGlobalStateTest.class);
+//        suite.addTestSuite(IgniteChangeGlobalStateCacheTest.class);
+//        suite.addTestSuite(IgniteChangeGlobalStateDataStructureTest.class);
+//        suite.addTestSuite(IgniteChangeGlobalStateDataStreamerTest.class);
+//        suite.addTestSuite(IgniteChangeGlobalStateFailOverTest.class);
+//        suite.addTestSuite(IgniteChangeGlobalStateServiceTest.class);
+//
+//        suite.addTestSuite(CacheBaselineTopologyTest.class);
+//        suite.addTestSuite(IgniteBaselineAffinityTopologyActivationTest.class);
 
         return suite;
     }
