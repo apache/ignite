@@ -330,15 +330,13 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             if (!txStateCheck) {
                 if (tx.isRollbackOnly() || tx.setRollbackOnly()) {
                     if (tx.remainingTime() == -1)
-                        onError(new IgniteTxTimeoutCheckedException("Transaction timed out and " +
-                            "was rolled back: " + this), false);
+                        onDone(tx.timeoutException());
                     else
-                        onError(new IgniteCheckedException("Invalid transaction state for prepare " +
-                            "[state=" + tx.state() + ", tx=" + this + ']'), false);
+                        onDone(tx.rollbackException());
                 }
                 else
-                    onError(new IgniteTxRollbackCheckedException("Invalid transaction state for " +
-                        "prepare [state=" + tx.state() + ", tx=" + this + ']'), false);
+                    onDone(new IgniteCheckedException("Invalid transaction state for " +
+                        "prepare [state=" + tx.state() + ", tx=" + this + ']'));
 
                 return;
             }

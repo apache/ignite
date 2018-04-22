@@ -296,14 +296,12 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         if (!txStateCheck) {
             if (tx.isRollbackOnly() || tx.setRollbackOnly()) {
                 if (tx.timedOut())
-                    onDone(null, new IgniteTxTimeoutCheckedException("Transaction timed out and " +
-                        "was rolled back: " + this));
+                    onDone(null, tx.timeoutException());
                 else
-                    onDone(null, new IgniteCheckedException("Invalid transaction state for prepare " +
-                        "[state=" + tx.state() + ", tx=" + this + ']'));
+                    onDone(null, tx.rollbackException());
             }
             else
-                onDone(null, new IgniteTxRollbackCheckedException("Invalid transaction state for " +
+                onDone(null, new IgniteCheckedException("Invalid transaction state for " +
                     "prepare [state=" + tx.state() + ", tx=" + this + ']'));
 
             return;
