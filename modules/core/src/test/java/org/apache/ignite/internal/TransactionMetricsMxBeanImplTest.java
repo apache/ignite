@@ -288,7 +288,7 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
     private TransactionMetricsMxBean txMXBean(int igniteInt) throws Exception {
         ObjectName mbeanName = U.makeMBeanName(
             getTestIgniteInstanceName(igniteInt),
-            "Transactions",
+            "TransactionMetrics",
             TransactionMetricsMxBeanImpl.class.getSimpleName()
         );
 
