@@ -1037,7 +1037,11 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set3 = ignite.set("set3", colCfg);
         IgniteSet set4 = ignite.set("set4", colCfg);
 
-        assertTrue(cctx(set3).cacheId() != cctx(set4).cacheId());
+        if (!shared(set4))
+            assertTrue(cctx(set3).cacheId() != cctx(set4).cacheId());
+        else
+            assertTrue(cctx(set3).cacheId() == cctx(set4).cacheId());
+
         assertTrue(cctx(set1).groupId() == cctx(set3).groupId());
         assertTrue(cctx(set3).groupId() == cctx(set4).groupId());
 
@@ -1056,7 +1060,11 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set7 = ignite.set("set7", colCfg);
         IgniteSet set8 = ignite.set("set8", colCfg);
 
-        assertTrue(cctx(set7).cacheId() != cctx(set8).cacheId());
+        if (shared(set8))
+            assertTrue(cctx(set7).cacheId() == cctx(set8).cacheId());
+        else
+            assertTrue(cctx(set7).cacheId() != cctx(set8).cacheId());
+
         assertTrue(cctx(set3).cacheId() != cctx(set7).cacheId());
         assertTrue(cctx(set3).groupId() == cctx(set7).groupId());
 

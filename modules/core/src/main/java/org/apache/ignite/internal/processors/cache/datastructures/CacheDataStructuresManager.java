@@ -83,9 +83,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Known classes which are safe to use on server nodes. */
     private static final Collection<Class<?>> KNOWN_CLS = new HashSet<>();
 
-    /** Non collocated IgniteSet version will use spearated cache. */
-    private static final IgniteProductVersion SEPARATE_CACHE_SET_SINCE = IgniteProductVersion.fromString("2.6.0");
-
     /**
      *
      */
@@ -241,10 +238,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     {
         waitInitialization();
 
-        // Non collocated mode enabled only for PARTITIONED cache.
-        final boolean colloc0 = create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
-
-        return queue0(name, cap, colloc0, create);
+        return queue0(name, cap, colloc, create);
     }
 
     /**
@@ -397,31 +391,31 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param name Set name.
      * @param colloc Collocated flag.
      * @param create Create flag.
+     * @param distinct Use separate cache flag.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public <T> IgniteSet<T> set(final String name,
         boolean colloc,
-        final boolean create)
-        throws IgniteCheckedException
-    {
-        // Non collocated mode enabled only for PARTITIONED cache.
-        final boolean colloc0 = cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc;
-
-        return set0(name, colloc0, create);
+        final boolean create,
+        final boolean distinct)
+        throws IgniteCheckedException {
+        return set0(name, colloc, create, distinct);
     }
 
     /**
      * @param name Name of set.
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
+     * @param distinct Use separate cache flag.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     @Nullable private <T> IgniteSet<T> set0(String name,
         boolean collocated,
-        boolean create)
+        boolean create,
+        boolean distinct)
         throws IgniteCheckedException
     {
         cctx.gate().enter();
@@ -440,7 +434,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                 hdr = (GridCacheSetHeader)cache.get(key);
 
                 // If old version was not found than create new header but don't put it into cache.
-                if (hdr == null && separatedCacheSetEnabled()) {
+                if (hdr == null && distinct) {
                     hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), false);
 
                     sharedCache = false;
@@ -495,22 +489,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      */
     @Nullable public GridConcurrentHashSet<SetItemKey> setData(IgniteUuid id) {
         return setDataMap.get(id);
-    }
-
-    /**
-     * Check that IgniteSet can use a separate cache implementation.
-     *
-     * @return {@code True} If IgniteSet can use a separate cache for non collocated version.
-     */
-    private boolean separatedCacheSetEnabled() {
-        Collection<ClusterNode> nodes = cctx.kernalContext().grid().cluster().nodes();
-
-        for (ClusterNode node : nodes) {
-            if (node.version().compareTo(SEPARATE_CACHE_SET_SINCE) < 0)
-                return false;
-        }
-
-        return true;
     }
 
     /**

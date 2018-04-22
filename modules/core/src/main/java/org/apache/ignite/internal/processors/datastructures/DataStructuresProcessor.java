@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -65,13 +66,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.util.lang.IgniteClosure2X;
+import org.apache.ignite.internal.util.lang.GridClosure3X;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
-import org.apache.ignite.internal.util.typedef.CX2;
+import org.apache.ignite.internal.util.typedef.CX3;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -79,6 +80,7 @@ import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -114,6 +116,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
+
+    /** Non collocated IgniteSet version will use spearate cache. */
+    private static final IgniteProductVersion SEPARATE_CACHE_SET_SINCE = IgniteProductVersion.fromString("2.6.0");
 
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
@@ -844,10 +849,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final boolean create = cfg != null;
 
-        return getCollection(new IgniteClosure2X<GridCacheContext, CollectionConfiguration, IgniteQueue<T>>() {
+        return getCollection(new CX3<GridCacheContext, Boolean, Boolean, IgniteQueue<T>>() {
             @Override public IgniteQueue<T> applyx(GridCacheContext ctx,
-                CollectionConfiguration ignore) throws IgniteCheckedException {
-                return ctx.dataStructures().queue(name, cap0, create && cfg.isCollocated(), create);
+                Boolean collocated, Boolean ignore) throws IgniteCheckedException {
+                return ctx.dataStructures().queue(name, cap0, collocated, create);
             }
         }, cfg, name, grpName, QUEUE, create);
     }
@@ -923,11 +928,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         boolean shared, String dsName)
         throws IgniteCheckedException {
 
+        // At first step we need to check compatible (shared) version.of cache.
         String cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
             cfg.getBackups() + "@" + grpName;
 
         IgniteInternalCache cache = ctx.cache().cache(cacheName);
 
+        // If it was not found or collection header does not exists in shared cache we can create separate cache.
         if (!shared && (cache == null || cache.get(new GridCacheSetHeaderKey(dsName)) == null)) {
             cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
                 cfg.getBackups() + "_" + dsName + "@" + grpName;
@@ -1004,7 +1011,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Collection instance.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private <T> T getCollection(final IgniteClosure2X<GridCacheContext, CollectionConfiguration, T> c,
+    @Nullable private <T> T getCollection(final GridClosure3X<GridCacheContext, Boolean, Boolean, T> c,
         @Nullable CollectionConfiguration cfg,
         String name,
         @Nullable String grpName,
@@ -1061,8 +1068,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final IgniteInternalCache cache;
 
+        boolean sharedMode = !separateCacheSetEnabled() || type != DataStructureType.SET;
+
         if (create) {
-            cache = compatibleCache(cfg, grpName, type != DataStructureType.SET || cfg.isCollocated(), name);
+            sharedMode = sharedMode || cfg.isCollocated() || cfg.getCacheMode() != PARTITIONED;
+
+            cache = compatibleCache(cfg, grpName, sharedMode, name);
 
             DistributedCollectionMetadata newVal = new DistributedCollectionMetadata(type, cfg, cache.name());
 
@@ -1083,9 +1094,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
             if (cache == null)
                 return null;
-        }
 
-        CollectionConfiguration oldCfg = null;
+            CollectionConfiguration oldCfg = ((DistributedCollectionMetadata)oldVal).configuration();
+
+            sharedMode = sharedMode || oldCfg.isCollocated() || oldCfg.getCacheMode() != PARTITIONED;
+        }
 
         if (oldVal != null) {
             if (oldVal.type() != type)
@@ -1096,9 +1109,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
             assert oldVal instanceof DistributedCollectionMetadata;
 
-            oldCfg = ((DistributedCollectionMetadata)oldVal).configuration();
-
-            if (cfg != null && oldCfg.isCollocated() != cfg.isCollocated()) {
+            if (cfg != null &&
+                ((DistributedCollectionMetadata)oldVal).configuration().isCollocated() != cfg.isCollocated()) {
                 throw new IgniteCheckedException("Another collection with the same name but different " +
                     "configuration already created [name=" + name +
                     ", newCollocated=" + cfg.isCollocated() +
@@ -1106,13 +1118,33 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             }
         }
 
-        final CollectionConfiguration collCfg = oldCfg == null ? cfg : oldCfg;
+        final boolean distinctCache = !sharedMode;
+
+        // Non collocated mode enabled only for PARTITIONED cache.
+        final boolean collocated = create &&
+            (cache.context().cache().configuration().getCacheMode() != PARTITIONED || cfg.isCollocated());
 
         return retryTopologySafe(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
-                return c.applyx(cache.context(), collCfg);
+                return c.applyx(cache.context(), collocated, distinctCache);
             }
         });
+    }
+
+    /**
+     * Check that IgniteSet can use a separate cache implementation.
+     *
+     * @return {@code True} If IgniteSet can use a separate cache for non collocated version.
+     */
+    private boolean separateCacheSetEnabled() {
+        Collection<ClusterNode> nodes = ctx.grid().cluster().nodes();
+
+        for (ClusterNode node : nodes) {
+            if (node.version().compareTo(SEPARATE_CACHE_SET_SINCE) < 0)
+                return false;
+        }
+
+        return true;
     }
 
     /**
@@ -1539,11 +1571,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final boolean create = cfg != null;
 
-        return getCollection(new CX2<GridCacheContext, CollectionConfiguration, IgniteSet<T>>() {
-            @Override public IgniteSet<T> applyx(GridCacheContext cctx, CollectionConfiguration cfg) throws IgniteCheckedException {
-                assert cfg != null;
+        return getCollection(new CX3<GridCacheContext, Boolean, Boolean, IgniteSet<T>>() {
+            @Override public IgniteSet<T> applyx(GridCacheContext cctx, Boolean collocated,
+                Boolean distinct) throws IgniteCheckedException {
 
-                return cctx.dataStructures().set(name, cfg.isCollocated(), create);
+                return cctx.dataStructures().set(name, collocated, create, distinct);
             }
         }, cfg, name, grpName, SET, create);
     }

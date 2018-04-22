@@ -145,7 +145,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     }
 
     /**
-     * @return {@code True} If this instance use shared cache for store set data.
+     * @return {@code True} If this instance is using shared cache for store set data.
      */
     public boolean shared() {
         return shared;
