@@ -70,6 +70,10 @@ import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.failure.NoOpFailureHandler;
+import org.apache.ignite.failure.RestartProcessFailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
@@ -77,6 +81,7 @@ import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpir
 import org.apache.ignite.internal.processors.platform.events.PlatformLocalEventListener;
 import org.apache.ignite.internal.processors.platform.plugin.cache.PlatformCachePluginConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
@@ -771,6 +776,28 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setSslContextFactory(readSslContextFactory(in));
 
+        switch (in.readByte()) {
+            case 1:
+                cfg.setFailureHandler(new NoOpFailureHandler());
+
+                break;
+
+            case 2:
+                cfg.setFailureHandler(new RestartProcessFailureHandler());
+
+                break;
+
+            case 3:
+                cfg.setFailureHandler(new StopNodeFailureHandler());
+
+                break;
+
+            case 4:
+                cfg.setFailureHandler(new StopNodeOrHaltFailureHandler(in.readBoolean(), in.readLong()));
+
+                break;
+        }
+
         readPluginConfiguration(cfg, in);
 
         readLocalEventListeners(cfg, in);
@@ -1281,6 +1308,22 @@ public class PlatformConfigurationUtils {
         writeDataStorageConfiguration(w, cfg.getDataStorageConfiguration());
 
         writeSslContextFactory(w, cfg.getSslContextFactory());
+
+        if (cfg.getFailureHandler() == null)
+            w.writeByte((byte)0);
+        else if (cfg.getFailureHandler() instanceof NoOpFailureHandler)
+            w.writeByte((byte)1);
+        else if (cfg.getFailureHandler() instanceof RestartProcessFailureHandler)
+            w.writeByte((byte)2);
+        else if (cfg.getFailureHandler() instanceof StopNodeFailureHandler)
+            w.writeByte((byte)3);
+        else if (cfg.getFailureHandler() instanceof StopNodeOrHaltFailureHandler) {
+            w.writeByte((byte)4);
+
+            w.writeBoolean(U.field(cfg.getFailureHandler(), "tryStop"));
+
+            w.writeLong(U.field(cfg.getFailureHandler(), "timeout"));
+        }
 
         w.writeString(cfg.getIgniteHome());
 

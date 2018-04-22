@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
@@ -196,7 +197,7 @@ namespace Apache.Ignite.Core
 
         /** */
         private bool? _authenticationEnabled;
-        
+
         /** Local event listeners. Stored as array to ensure index access. */
         private LocalEventListener[] _localEventListenersInternal;
 
@@ -510,6 +511,42 @@ namespace Apache.Ignite.Core
 
             // SSL Context factory.
             SslFactorySerializer.Write(writer, SslContextFactory);
+            
+            // Failure handler.
+            if (FailureHandler == null)
+            {
+                writer.WriteByte(0);
+            }
+            else if (FailureHandler is NoOpFailureHandler)
+            {
+                writer.WriteByte(1);
+            }
+            else if (FailureHandler is RestartProcessFailureHandler)
+            {
+                writer.WriteByte(2);
+            }
+            else if (FailureHandler is StopNodeFailureHandler)
+            {
+                writer.WriteByte(3);
+            }
+            else 
+            {
+                var failHnd = FailureHandler as StopNodeOrHaltFailureHandler;
+
+                if (failHnd == null)
+                {
+                    throw new IgniteException(string.Format(
+                        "Unsupported IgniteConfiguration.FailureHandler: '{0}'. " +
+                        "Supported implementations: '{1}', '{2}', '{3}','{4}'.",
+                        FailureHandler.GetType(), typeof(NoOpFailureHandler), typeof(RestartProcessFailureHandler),
+                        typeof(StopNodeFailureHandler), typeof(StopNodeOrHaltFailureHandler)));
+                }
+
+                writer.WriteByte(4);
+
+                failHnd.Write(writer);
+            }
+ 
 
             // Plugins (should be last).
             if (PluginConfigurations != null)
@@ -688,7 +725,8 @@ namespace Apache.Ignite.Core
             // Event storage
             switch (r.ReadByte())
             {
-                case 1: EventStorageSpi = new NoopEventStorageSpi();
+                case 1:
+                    EventStorageSpi = new NoopEventStorageSpi();
                     break;
 
                 case 2:
@@ -735,6 +773,26 @@ namespace Apache.Ignite.Core
 
             // SSL context factory.
             SslContextFactory = SslFactorySerializer.Read(r);
+            
+            //Failure handler.
+            switch (r.ReadByte())
+            {
+                case 1:
+                    FailureHandler = new NoOpFailureHandler();
+                    break;
+
+                case 2:
+                    FailureHandler = new RestartProcessFailureHandler();
+                    break;
+                
+                case 3:
+                    FailureHandler = new StopNodeFailureHandler();
+                    break;
+                
+                case 4:
+                    FailureHandler = StopNodeOrHaltFailureHandler.Read(r);
+                    break;
+            }
         }
 
         /// <summary>
@@ -1445,5 +1503,14 @@ namespace Apache.Ignite.Core
             get { return _authenticationEnabled ?? DefaultAuthenticationEnabled; }
             set { _authenticationEnabled = value; }
         }
+
+        /// <summary>
+        /// Gets or sets the failure handler interface.
+        /// <para />
+        /// Only predefined implementations are supported: 
+        /// <see cref="NoOpFailureHandler"/>, <see cref="RestartProcessFailureHandler"/>,
+        /// <see cref="StopNodeFailureHandler"/>, <see cref="StopNodeOrHaltFailureHandler"/>.
+        /// </summary>
+        public IFailureHandler FailureHandler { get; set; }
     }
 }
