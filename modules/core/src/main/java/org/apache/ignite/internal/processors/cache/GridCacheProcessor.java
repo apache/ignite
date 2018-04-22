@@ -124,7 +124,6 @@ import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchang
 import org.apache.ignite.internal.processors.query.schema.message.SchemaAbstractDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaProposeDiscoveryMessage;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
 import org.apache.ignite.internal.util.F0;
@@ -2500,18 +2499,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             StringBuilder errorMessage = new StringBuilder();
 
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
-                SecurityContext secCtx = SecurityContextHolder.get();
+                try {
+                    byte[] secCtxBytes = node.attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT_V2);
 
-                if (secCtx != null && cacheInfo.cacheType() == CacheType.USER) {
-                    try {
-                        authorizeCacheCreate(cacheInfo.cacheData().config(), secCtx);
-                    }
-                    catch (SecurityException ex) {
-                        if (errorMessage.length() > 0)
-                            errorMessage.append("\n");
+                    if (secCtxBytes != null) {
+                        SecurityContext secCtx = U.unmarshal(marsh, secCtxBytes, U.resolveClassLoader(ctx.config()));
 
-                        errorMessage.append(ex.getMessage());
+                        if (secCtx != null && cacheInfo.cacheType() == CacheType.USER)
+                            authorizeCacheCreate(cacheInfo.cacheData().config(), secCtx);
                     }
+                }
+                catch (SecurityException | IgniteCheckedException ex) {
+                    if (errorMessage.length() > 0)
+                        errorMessage.append("\n");
+
+                    errorMessage.append(ex.getMessage());
                 }
 
                 DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());

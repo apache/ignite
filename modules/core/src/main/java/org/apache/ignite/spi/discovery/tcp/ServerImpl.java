@@ -78,7 +78,6 @@ import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
-import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -3525,14 +3524,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                SecurityContext subj = null;
-
                 if (spi.nodeAuth != null) {
                     // Authenticate node first.
                     try {
                         SecurityCredentials cred = unmarshalCredentials(node);
 
-                        subj = spi.nodeAuth.authenticateNode(node, cred);
+                        SecurityContext subj = spi.nodeAuth.authenticateNode(node, cred);
 
                         if (subj == null) {
                             // Node has not pass authentication.
@@ -3626,17 +3623,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 IgniteNodeValidationResult err;
 
-                SecurityContextHolder.set(subj);
+                err = spi.getSpiContext().validateNode(node);
 
-                try {
-                    err = spi.getSpiContext().validateNode(node);
-
-                    if (err == null)
-                        err = spi.getSpiContext().validateNode(node, msg.gridDiscoveryData().unmarshalJoiningNodeData(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), false, log));
-                }
-                finally {
-                    SecurityContextHolder.clear();
-                }
+                if (err == null)
+                    err = spi.getSpiContext().validateNode(node, msg.gridDiscoveryData().unmarshalJoiningNodeData(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), false, log));
 
                 if (err != null) {
                     final IgniteNodeValidationResult err0 = err;
