@@ -694,36 +694,12 @@ public class CommandHandler {
                         break;
 
                     case CMD_PING_INTERVAL:
-                        String raw = nextArg("Expected ping interval");
-
-                        try {
-                            long buf = Long.valueOf(raw);
-
-                            if (buf <= 0)
-                                throw new IllegalArgumentException("Invalid value for ping interval: " + buf);
-                            else
-                                pingInterval = buf;
-                        }
-                        catch (NumberFormatException ignored) {
-                            throw new IllegalArgumentException("Invalid value for ping interval: " + raw);
-                        }
+                        pingInterval = getPingParam("Expected ping interval", "Invalid value for ping interval");
 
                         break;
 
                     case CMD_PING_TIMEOUT:
-                        raw = nextArg("Expected ping timeout");
-
-                        try {
-                            long buf = Long.valueOf(raw);
-
-                            if (buf <= 0)
-                                throw new IllegalArgumentException("Invalid value for ping timeout: " + buf);
-                            else
-                                pingTimeout = buf;
-                        }
-                        catch (NumberFormatException ignored) {
-                            throw new IllegalArgumentException("Invalid value for ping timeout: " + raw);
-                        }
+                        pingTimeout = getPingParam("Expected ping timeout", "Invalid value for ping timeout");
 
                         break;
 
@@ -762,6 +738,28 @@ public class CommandHandler {
             throw new IllegalArgumentException("Both user and password should be specified");
 
         return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, pingTimeout, pingInterval, force);
+    }
+
+    /**
+     * Get ping param for grid client.
+     *
+     * @param nextArgErr Argument extraction error message.
+     * @param invalidErr Param validation error message.
+     */
+    private Long getPingParam(String nextArgErr, String invalidErr) {
+        String raw = nextArg(nextArgErr);
+
+        try {
+            long val = Long.valueOf(raw);
+
+            if (val <= 0)
+                throw new IllegalArgumentException(invalidErr + ": " + val);
+            else
+                return val;
+        }
+        catch (NumberFormatException ignored) {
+            throw new IllegalArgumentException(invalidErr + ": " + raw);
+        }
     }
 
     /**

@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
  */
 public class CommandHandlerParsingTest extends TestCase {
     /**
-     * Test parsing and validation for user and password arguments
+     * Test parsing and validation for user and password arguments.
      */
     public void testParseAndValidateUserAndPassword() {
         CommandHandler hnd = new CommandHandler();
@@ -81,7 +81,7 @@ public class CommandHandlerParsingTest extends TestCase {
     }
 
     /**
-     * tests connection settings arguments
+     * Tests connection settings arguments.
      */
     public void testConnectionSettings() {
         CommandHandler hnd = new CommandHandler();
