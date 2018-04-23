@@ -304,7 +304,8 @@ public class GridAffinityAssignmentCache {
         List<List<ClusterNode>> assignment;
 
         if (prevAssignment != null && discoEvt != null) {
-            boolean affNode = CU.affinityNode(discoEvt.eventNode(), nodeFilter);
+            boolean affNode = CU.affinityNode(discoEvt.eventNode(), nodeFilter)
+                || discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT;
 
             if (!affNode)
                 assignment = prevAssignment;

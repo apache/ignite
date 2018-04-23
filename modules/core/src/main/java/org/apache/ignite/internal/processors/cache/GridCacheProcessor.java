@@ -117,6 +117,7 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
@@ -181,6 +182,14 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearE
  */
 @SuppressWarnings({"unchecked", "TypeMayBeWeakened", "deprecation"})
 public class GridCacheProcessor extends GridProcessorAdapter {
+    /** Template of message of conflicts during configuration merge*/
+    private static final String MERGE_OF_CONFIG_CONFLICTS_MESSAGE =
+        "Conflicts during configuration merge for cache '%s' : \n%s";
+
+    /** Template of message of node join was fail because it requires to merge of config */
+    private static final String MERGE_OF_CONFIG_REQUIRED_MESSAGE = "Failed to join node to the active cluster " +
+        "(the config of the cache '%s' has to be merged which is impossible on active grid). " +
+        "Deactivate grid and retry node join or clean the joining node.";
     /** */
     private final boolean startClientCaches =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
@@ -740,15 +749,29 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cacheType != CacheType.USER && cfg.getDataRegionName() == null)
                 cfg.setDataRegionName(sharedCtx.database().systemDateRegionName());
 
-            if (!cacheType.userCache())
-                stopSeq.addLast(cacheName);
-            else
-                stopSeq.addFirst(cacheName);
-
-            caches.put(cacheName, new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, cacheType, cacheData.sql(), 0));
+            addStoredCache(caches, cacheData, cacheName, cacheType, true);
         }
         else
-            templates.put(cacheName, new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, CacheType.USER, false, 0));
+            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
+    }
+
+    /**
+     * Add stored cache data to caches storage.
+     *
+     * @param caches Cache storage.
+     * @param cacheData Cache data to add.
+     * @param cacheName Cache name.
+     * @param cacheType Cache type.
+     * @param isStaticalyConfigured Statically configured flag.
+     */
+    private void addStoredCache(Map<String, CacheInfo> caches, StoredCacheData cacheData, String cacheName,
+        CacheType cacheType, boolean isStaticalyConfigured) {
+        if (!cacheType.userCache())
+            stopSeq.addLast(cacheName);
+        else
+            stopSeq.addFirst(cacheName);
+
+        caches.put(cacheName, new CacheInfo(cacheData, cacheType, cacheData.sql(), 0, isStaticalyConfigured));
     }
 
     /**
@@ -771,6 +794,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cfgs[i] = cfg;
 
             addCacheOnJoin(cfg, false, caches, templates);
+        }
+
+        if (CU.isPersistenceEnabled(ctx.config()) && ctx.cache().context().pageStore() != null) {
+            Map<String, StoredCacheData> storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
+
+            if (!F.isEmpty(storedCaches))
+                for (StoredCacheData storedCacheData : storedCaches.values()) {
+                    String cacheName = storedCacheData.config().getName();
+
+                    //Ignore stored caches if it already added by static config(static config has higher priority).
+                    if (!caches.containsKey(cacheName))
+                        addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName), false);
+                }
         }
     }
 
@@ -1242,6 +1278,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ctx.group().stopCache(ctx, destroy);
 
             U.stopLifecycleAware(log, lifecycleAwares(ctx.group(), cache.configuration(), ctx.store().configuredStore()));
+
+            IgnitePageStoreManager pageStore;
+
+            if (destroy && (pageStore = sharedCtx.pageStore()) != null) {
+                try {
+                    pageStore.removeCacheData(new StoredCacheData(ctx.config()));
+                } catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to delete cache configuration data while destroying cache" +
+                            "[cache=" + ctx.name() + "]", e);
+                }
+            }
 
             if (log.isInfoEnabled()) {
                 if (ctx.group().sharedGroup())
@@ -2432,6 +2479,50 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cachesInfo.onGridDataReceived(data);
 
         sharedCtx.walState().onCachesInfoCollected();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(
+        ClusterNode node, JoiningNodeDiscoveryData discoData
+    ) {
+        if(!cachesInfo.isMergeConfigSupports(node))
+            return null;
+
+        if (discoData.hasJoiningNodeData() && discoData.joiningNodeData() instanceof CacheJoinNodeDiscoveryData) {
+            CacheJoinNodeDiscoveryData nodeData = (CacheJoinNodeDiscoveryData)discoData.joiningNodeData();
+
+            boolean isGridActive = ctx.state().clusterState().active();
+
+            StringBuilder errorMessage = new StringBuilder();
+
+            for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
+                DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
+
+                if (localDesc == null)
+                    continue;
+
+                QuerySchemaPatch schemaPatch = localDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
+
+                if (schemaPatch.hasConflicts() || (isGridActive && !schemaPatch.isEmpty())) {
+                    if (errorMessage.length() > 0)
+                        errorMessage.append("\n");
+
+                    if (schemaPatch.hasConflicts())
+                        errorMessage.append(String.format(MERGE_OF_CONFIG_CONFLICTS_MESSAGE,
+                            localDesc.cacheName(), schemaPatch.getConflictsMessage()));
+                    else
+                        errorMessage.append(String.format(MERGE_OF_CONFIG_REQUIRED_MESSAGE, localDesc.cacheName()));
+                }
+            }
+
+            if (errorMessage.length() > 0) {
+                String msg = errorMessage.toString();
+
+                return new IgniteNodeValidationResult(node.id(), msg, msg);
+            }
+        }
+
+        return null;
     }
 
     /**
