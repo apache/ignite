@@ -41,7 +41,7 @@ import static org.apache.ignite.IgniteSystemProperties.getInteger;
 @GridCommonTest(group = "Affinity Processor")
 public class GridAffinityProcessorMemoryLeakTest extends GridCommonAbstractTest {
     /** Max value for affinity history size name. Should be the same as in GridAffinityAssignmentCache.MAX_HIST_SIZE */
-    private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 500);
+    private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 100);
 
     /** Cache name. */
     private static final String CACHE_NAME = "cache";

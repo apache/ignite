@@ -218,17 +218,17 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Removes cached affinity instances with affinity topology versions less than {@code topVerRmv}.
+     * Removes cached affinity instances with affinity topology versions less than {@code topVer}.
      *
-     * @param topVerRmv topology versions for removing.
+     * @param topVer topology version.
      */
-    public void removeCachedAffinity(AffinityTopologyVersion topVerRmv) {
-        assert topVerRmv != null;
+    public void removeCachedAffinity(AffinityTopologyVersion topVer) {
+        assert topVer != null;
 
         int oldSize = affMap.size();
 
         Iterator<Map.Entry<AffinityAssignmentKey, IgniteInternalFuture<AffinityInfo>>> it =
-            affMap.headMap(new AffinityAssignmentKey("topVerRmv", topVerRmv)).entrySet().iterator();
+            affMap.headMap(new AffinityAssignmentKey(topVer)).entrySet().iterator();
 
         while (it.hasNext()) {
             Map.Entry<AffinityAssignmentKey, IgniteInternalFuture<AffinityInfo>> entry = it.next();
@@ -710,6 +710,15 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             this.topVer = topVer;
         }
 
+        /**
+         * Current constructor should be used only in removeCachedAffinity for creating of the special keys for removing.
+         *
+         * @param topVer Topology version.
+         */
+        private AffinityAssignmentKey(@NotNull AffinityTopologyVersion topVer) {
+            this.topVer = topVer;
+        }
+
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             if (this == o)
@@ -746,7 +755,18 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             int res = this.topVer.compareTo(o.topVer);
 
-            return res == 0 ? cacheName.compareTo(o.cacheName) : res;
+            //key with null cache name must be less than any key with not null cache name for the same topVer
+            if (res == 0) {
+                if (cacheName == null)
+                    return -1;
+
+                if (o.cacheName == null)
+                    return 1;
+
+                return cacheName.compareTo(o.cacheName);
+            }
+
+            return res;
         }
     }
 

@@ -801,6 +801,8 @@ public class GridAffinityAssignmentCache {
                 topVerRmv = aff0.topologyVersion();
             }
 
+            topVerRmv = it.hasNext() ? it.next().topologyVersion() : topVerRmv;
+
             ctx.affinity().removeCachedAffinity(topVerRmv);
         }
     }
