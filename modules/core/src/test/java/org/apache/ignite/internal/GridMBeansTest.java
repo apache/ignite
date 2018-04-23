@@ -41,9 +41,39 @@ public class GridMBeansTest extends GridCommonAbstractTest {
     /** Executor name for setExecutorConfiguration */
     private static final String CUSTOM_EXECUTOR_1 = "Custom executor 1";
 
+    /** For storing original value of IGNITE_MBEAN_APPEND_CLASS_LOADER_ID. */
+    private String cldProp;
+
+    /** For storing original value of IGNITE_MBEAN_APPEND_JVM_ID. */
+    private String jvmIdProp;
+
     /** Create test and auto-start the grid */
     public GridMBeansTest() {
-        super(true);
+        super(false);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override protected void beforeTest() throws Exception {
+        cldProp = System.setProperty(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, "false");
+
+        jvmIdProp = System.setProperty(IGNITE_MBEAN_APPEND_JVM_ID, "false");
+
+        startGrid();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected void afterTest() throws Exception {
+        if (cldProp != null)
+            System.setProperty(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, cldProp);
+
+        if (jvmIdProp != null)
+            System.setProperty(IGNITE_MBEAN_APPEND_JVM_ID, jvmIdProp);
+
+        stopGrid();
     }
 
     /**
@@ -124,6 +154,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
     /** Checks that a bean with the specified group and name is available and has the expected attribute */
     private void checkBean(String grp, String name, String attributeName, Object expAttributeVal) throws Exception {
         ObjectName mBeanName = IgniteUtils.makeMBeanName(grid().name(), grp, name);
+
         Object attributeVal = grid().configuration().getMBeanServer().getAttribute(mBeanName, attributeName);
 
         assertEquals(expAttributeVal, attributeVal);
