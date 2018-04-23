@@ -52,9 +52,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         super(false);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cldProp = System.setProperty(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, "false");
 
@@ -63,9 +61,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         startGrid();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     protected void afterTest() throws Exception {
         if (cldProp != null)
             System.setProperty(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, cldProp);
