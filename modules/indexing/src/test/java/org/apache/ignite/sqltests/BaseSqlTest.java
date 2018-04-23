@@ -156,42 +156,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Assert that all returned results exactly matches values from cache.
-     * Intended to verify "SELECT *" results.
-     *
-     * @param res result of "SELECT *..."
-     * @param cache cache to verify values.
-     */
-    private void assertResultEqualToBinaryObjects(Result res, IgniteCache cache) {
-        int idRowIdx = res.columnNames().indexOf("ID");
-
-        assert idRowIdx >= 0 : "Column with name \"ID\" have not been found in column names " + res.columnNames();
-
-        IgniteCache<Long, BinaryObject> binCache = cache.withKeepBinary();
-
-        for (List<?> rowData : res.values()) {
-            Map<String, Object> row = zipToMap(res.columnNames(), rowData);
-
-            Long id = (Long)row.get("ID");
-
-            BinaryObject cached = binCache.get(id);
-
-            assertNotNull("Cache does not contain entry with id " + id, cached);
-
-            assertEqualToBinaryObj(cached, row);
-        }
-    }
-
-    protected Result checkedSelectAll(String selectQry, Ignite node, IgniteCache<?, ?> cache) {
-        Result res = executeFrom(selectQry, node);
-
-        assertResultEqualToBinaryObjects(res, cache);
-
-        return res;
-
-    }
-
-    /**
      * Result of sql query. Contains metadata and all values in memory.
      */
     static class Result {
@@ -236,27 +200,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param colons metadata: names of colons.
-     * @param values actual values retrived from sql.
-     * @return map colon name -> sql value.
-     */
-    private static Map<String, Object> zipToMap(List<String> colons, List<?> values) {
-        assert colons.size() == values.size() : "incorrect row sizes of colons and values differ!";
-
-        Iterator<String> colIt = colons.iterator();
-        Iterator<?> valIt = values.iterator();
-
-        Map<String, Object> res = new HashMap<>();
-
-        while (colIt.hasNext())
-            res.put(colIt.next(), valIt.next());
-
-        assertTrue("Colon names contain duplicates.", res.size() == colons.size());
-
-        return res;
-    }
-
-    /**
      * Assert that results are sorted by comparator.
      *
      * @param vals values to check.
@@ -275,30 +218,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                 throw new AssertionError("List is not sorted, element '" + last + "' is greater than '" +
                     cur + "'. List: " + vals);
         }
-    }
-
-    /**
-     * Assert that result returned by sql is equal to binary object.
-     * Useful with "SELECT *" when all the fields are returned.
-     *
-     * @param fromCache
-     * @param fromSql
-     */
-    private static void assertEqualToBinaryObj(BinaryObject fromCache, Map<String, Object> fromSql) {
-        Collection<String> binValCols = fromCache.type().fieldNames();
-
-        ArrayList<String> allBinCols = new ArrayList<>(binValCols);
-        allBinCols.add("ID");
-
-        assertEquals("Returned sql columns count is not equal to binary object's one.",
-            allBinCols.size(), fromSql.size());
-
-        assertTrue("Column names are not the same in binary object and sql result.",
-            allBinCols.containsAll(fromSql.keySet()));
-
-        for (String colName : binValCols)
-            assertEquals("Value for column " + colName + " in cache and in sql result differ.",
-                fromCache.field(colName), fromSql.get(colName));
     }
 
     /**
@@ -428,7 +347,14 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
         return cursor.getAll();
     }
-
+    
+    /**
+     * Transforms cache entry to map (column name -> value).
+     *
+     * @param meta Meta information (QueryEntity) about table.
+     * @param key Key of the cache entry.
+     * @param val Value of the cache entry.
+     */
     private static Map<String, Object> entryToMap(QueryEntity meta, Object key, Object val) {
         Map<String, Object> row = new HashMap<>();
 
@@ -465,6 +391,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return new HashSet<>(src);
     }
 
+    /**
+     * Applies specified closure to each cluster node.
+     */
     protected void testAllNodes(Consumer<Ignite> consumer) {
         for (Ignite node : Ignition.allGrids()) {
             log.info("Testing on node " + node.name() + '.');
@@ -477,9 +406,13 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     public void testBasicSelect() {
         testAllNodes(node -> {
-            Result emps = checkedSelectAll("SELECT * FROM Employee", node, node.cache(EMP_CACHE_NAME));
+            Result emps = executeFrom("SELECT * FROM Employee", node);
 
-            assertEquals("Unexpected size of employees", EMP_CNT, emps.values().size());
+            assertContainsEq("SELECT * returned unexpected column names.", emps.columnNames(), Arrays.asList(ALL_FIELDS));
+
+            List<List<Object>> expEmps = select(node.cache(EMP_CACHE_NAME), null, emps.columnNames().toArray(new String[0]));
+
+            assertContainsEq(emps.values(), expEmps);
         });
     }
 
@@ -499,13 +432,15 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     public void testSelectBetween() {
         testAllNodes(node -> {
-            Result emps = checkedSelectAll("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", node, node.cache(EMP_CACHE_NAME));
+            Result emps = executeFrom("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", node);
 
             assertEquals("Fetched number of employees is incorrect", 100, emps.values().size());
 
-            IgnitePredicate<Map<String, Object>> between = row -> { long id = (Long) row.get("ID"); return 101 <= id && id <= 200;};
-
             String[] fields = emps.columnNames().toArray(new String[0]);
+
+            assertContainsEq("SELECT * returned unexpected column names.", emps.columnNames(), Arrays.asList(ALL_FIELDS));
+
+            IgnitePredicate<Map<String, Object>> between = row -> { long id = (Long) row.get("ID"); return 101 <= id && id <= 200;};
 
             List<List<Object>> expected = select(node.cache(EMP_CACHE_NAME), between, fields);
 
@@ -546,7 +481,11 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     public void testBasicOrderByLastName() {
         testAllNodes(node -> {
-            Result result = checkedSelectAll("SELECT * FROM Employee e ORDER BY e.lastName", node, node.cache(EMP_CACHE_NAME));
+            Result result = executeFrom("SELECT * FROM Employee e ORDER BY e.lastName", node);
+
+            List<List<Object>> exp = select(node.cache(EMP_CACHE_NAME), null, result.columnNames().toArray(new String[0]));
+
+            assertContainsEq(result.values(), exp);
 
             int lastNameIdx = result.columnNames().indexOf("LASTNAME");
 
