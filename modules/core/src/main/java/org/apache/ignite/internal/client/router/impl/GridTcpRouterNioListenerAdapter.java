@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.client.GridClientException;
 import org.apache.ignite.internal.client.GridClientFuture;
 import org.apache.ignite.internal.client.GridClientFutureListener;
@@ -188,6 +189,11 @@ public abstract class GridTcpRouterNioListenerAdapter implements GridNioServerLi
             ses.send(GridClientPingPacket.PING_MESSAGE);
         else
             throw new IllegalArgumentException("Unsupported input message: " + msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onFailure(FailureType failureType, Throwable failure) {
+        // No-op.
     }
 
     /** {@inheritDoc} */

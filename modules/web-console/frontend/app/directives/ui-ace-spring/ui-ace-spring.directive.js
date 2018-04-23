@@ -15,40 +15,10 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
-
 import template from './ui-ace-spring.pug';
-import controller from './ui-ace-spring.controller';
+import IgniteUiAceSpring from './ui-ace-spring.controller';
 
-export default ['igniteUiAceSpring', ['IgniteVersion', (Version) => {
-    const link = (scope, $el, attrs, [ctrl, igniteUiAceTabs, formCtrl, ngModelCtrl]) => {
-        if (formCtrl && ngModelCtrl)
-            formCtrl.$removeControl(ngModelCtrl);
-
-        if (igniteUiAceTabs && igniteUiAceTabs.onLoad) {
-            scope.onLoad = (editor) => {
-                igniteUiAceTabs.onLoad(editor);
-
-                // Disable highlight in model switch.
-                scope.$watch('master', () => editor.attractAttention = false);
-            };
-        }
-
-        if (igniteUiAceTabs && igniteUiAceTabs.onChange)
-            scope.onChange = igniteUiAceTabs.onChange;
-
-        const noDeepWatch = !(typeof attrs.noDeepWatch !== 'undefined');
-
-        const next = () => {
-            ctrl.data = _.isNil(scope.master) ? null : ctrl.generate(scope.master, scope.detail).asString();
-        };
-
-        // Setup watchers.
-        scope.$watch('master', next, noDeepWatch);
-
-        Version.currentSbj.subscribe({next});
-    };
-
+export default () => {
     return {
         priority: 1,
         restrict: 'E',
@@ -61,10 +31,14 @@ export default ['igniteUiAceSpring', ['IgniteVersion', (Version) => {
             generator: '@',
             client: '@'
         },
-        link,
         template,
-        controller,
+        controller: IgniteUiAceSpring,
         controllerAs: 'ctrl',
-        require: ['igniteUiAceSpring', '?^igniteUiAceTabs', '?^form', '?ngModel']
+        require: {
+            ctrl: 'igniteUiAceSpring',
+            igniteUiAceTabs: '?^igniteUiAceTabs',
+            formCtrl: '?^form',
+            ngModelCtrl: '?ngModel'
+        }
     };
-}]];
+};

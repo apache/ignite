@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -597,6 +598,45 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public List<List<ClusterNode>> allOwners() {
+        lock.readLock().lock();
+
+        try {
+            int parts = partitions();
+
+            List<List<ClusterNode>> res = new ArrayList<>(parts);
+
+            for (int i = 0; i < parts; i++)
+                res.add(new ArrayList<>());
+
+            List<ClusterNode> allNodes = discoCache.cacheGroupAffinityNodes(grpId);
+
+            for (int i = 0; i < allNodes.size(); i++) {
+                ClusterNode node = allNodes.get(i);
+
+                GridDhtPartitionMap nodeParts = node2part.get(node.id());
+
+                if (nodeParts != null) {
+                    for (Map.Entry<Integer, GridDhtPartitionState> e : nodeParts.map().entrySet()) {
+                        if (e.getValue() == OWNING) {
+                            int part = e.getKey();
+
+                            List<ClusterNode> owners = res.get(part);
+
+                            owners.add(node);
+                        }
+                    }
+                }
+            }
+
+            return res;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public List<ClusterNode> moving(int p) {
         return nodes(p, AffinityTopologyVersion.NONE, MOVING, null);
     }
@@ -1064,6 +1104,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public void ownMoving(AffinityTopologyVersion topVer) {
+        // No-op
+    }
+
+    /** {@inheritDoc} */
     @Override public void onEvicted(GridDhtLocalPartition part, boolean updateSeq) {
         assert updateSeq || lock.isWriteLockedByCurrentThread();
 
@@ -1107,23 +1152,21 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         try {
             for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
                 GridDhtPartitionMap partMap = e.getValue();
+                UUID remoteNodeId = e.getKey();
 
                 if (!partMap.containsKey(p))
                     continue;
 
-                if (partMap.get(p) == OWNING && !owners.contains(e.getKey())) {
-                    if (haveHistory)
-                        partMap.put(p, MOVING);
-                    else {
-                        partMap.put(p, RENTING);
+                if (partMap.get(p) == OWNING && !owners.contains(remoteNodeId)) {
+                    partMap.put(p, MOVING);
 
-                        result.add(e.getKey());
-                    }
+                    if (!haveHistory)
+                        result.add(remoteNodeId);
 
                     partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
 
                     U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                        "[nodeId=" + e.getKey() + ", groupId=" + grpId +
+                        "[nodeId=" + remoteNodeId + ", groupId=" + grpId +
                         ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                 }
             }
@@ -1155,6 +1198,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros) {
         return CachePartitionPartialCountersMap.EMPTY;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, Long> partitionSizes() {
+        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */

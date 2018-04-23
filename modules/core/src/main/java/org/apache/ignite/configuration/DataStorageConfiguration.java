@@ -528,16 +528,20 @@ public class DataStorageConfiguration implements Serializable {
      * @return WAL segment size.
      */
     public int getWalSegmentSize() {
-        return walSegmentSize <= 0 ? DFLT_WAL_SEGMENT_SIZE : walSegmentSize;
+        return walSegmentSize == 0 ? DFLT_WAL_SEGMENT_SIZE : walSegmentSize;
     }
 
     /**
      * Sets size of a WAL segment.
+     * If value is not set (or zero), {@link #DFLT_WAL_SEGMENT_SIZE} will be used.
      *
-     * @param walSegmentSize WAL segment size. 64 MB is used by default.  Maximum value is 2Gb
-     * @return {@code this} for chaining.
+     * @param walSegmentSize WAL segment size. Value must be between 512Kb and 2Gb.
+     * @return {@code This} for chaining.
      */
     public DataStorageConfiguration setWalSegmentSize(int walSegmentSize) {
+        if (walSegmentSize != 0)
+            A.ensure(walSegmentSize >= 512 * 1024, "WAL segment size must be between 512Kb and 2Gb.");
+
         this.walSegmentSize = walSegmentSize;
 
         return this;

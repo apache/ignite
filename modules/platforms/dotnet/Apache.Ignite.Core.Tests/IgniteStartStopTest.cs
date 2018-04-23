@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
@@ -47,7 +48,6 @@ namespace Apache.Ignite.Core.Tests
         /// 
         /// </summary>
         [Test]
-        [Ignore("IGNITE-7878")]
         public void TestStartDefault()
         {
             var cfg = new IgniteConfiguration {JvmClasspath = TestUtils.CreateTestClasspath()};
@@ -208,7 +208,7 @@ namespace Apache.Ignite.Core.Tests
 
                 if (i % 2 == 0) // Try to stop ignite from another thread.
                 {
-                    Task.Factory.StartNew(() => grid.Dispose()).Wait();
+                    TaskRunner.Run(() => grid.Dispose()).Wait();
                 }
                 else
                 {
@@ -307,7 +307,7 @@ namespace Apache.Ignite.Core.Tests
 
             // Spam message subscriptions on a separate thread 
             // to test race conditions during processor init on remote node
-            var listenTask = Task.Factory.StartNew(() =>
+            var listenTask = TaskRunner.Run(() =>
             {
                 var filter = new MessageListener();
 

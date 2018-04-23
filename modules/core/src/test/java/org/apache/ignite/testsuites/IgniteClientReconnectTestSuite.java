@@ -26,6 +26,7 @@ import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
 import org.apache.ignite.internal.IgniteClientReconnectCollectionsTest;
 import org.apache.ignite.internal.IgniteClientReconnectComputeTest;
 import org.apache.ignite.internal.IgniteClientReconnectContinuousProcessorTest;
+import org.apache.ignite.internal.IgniteClientReconnectDelayedSpiTest;
 import org.apache.ignite.internal.IgniteClientReconnectDiscoveryStateTest;
 import org.apache.ignite.internal.IgniteClientReconnectFailoverTest;
 import org.apache.ignite.internal.IgniteClientReconnectServicesTest;
@@ -49,6 +50,7 @@ public class IgniteClientReconnectTestSuite extends TestSuite {
         suite.addTestSuite(IgniteClientReconnectApiExceptionTest.class);
         suite.addTestSuite(IgniteClientReconnectDiscoveryStateTest.class);
         suite.addTestSuite(IgniteClientReconnectCacheTest.class);
+        suite.addTestSuite(IgniteClientReconnectDelayedSpiTest.class);
         suite.addTestSuite(IgniteClientReconnectBinaryContexTest.class);
         suite.addTestSuite(IgniteClientReconnectContinuousProcessorTest.class);
         suite.addTestSuite(IgniteClientReconnectComputeTest.class);

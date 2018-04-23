@@ -20,10 +20,14 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
+
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 
 /**
  * Periodically removes expired entities from caches with {@link CacheConfiguration#isEagerTtl()} flag set.
@@ -117,24 +121,44 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
          * Creates cleanup worker.
          */
         CleanupWorker() {
-            super(cctx.igniteInstanceName(), "ttl-cleanup-worker", cctx.logger(GridCacheSharedTtlCleanupManager.class));
+            super(cctx.igniteInstanceName(), "ttl-cleanup-worker", cctx.logger(GridCacheSharedTtlCleanupManager.class),
+                cctx.kernalContext().workersRegistry());
         }
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            while (!isCancelled()) {
-                boolean expiredRemains = false;
+            Throwable err = null;
 
-                for (GridCacheTtlManager mgr : mgrs) {
-                    if (mgr.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
-                        expiredRemains = true;
+            try {
+                while (!isCancelled()) {
+                    boolean expiredRemains = false;
 
-                    if (isCancelled())
-                        return;
+                    for (GridCacheTtlManager mgr : mgrs) {
+                        if (mgr.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
+                            expiredRemains = true;
+
+                        if (isCancelled())
+                            return;
+                    }
+
+                    if (!expiredRemains)
+                        U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
                 }
+            }
+            catch (Throwable t) {
+                if (!(t instanceof IgniteInterruptedCheckedException))
+                    err = t;
 
-                if (!expiredRemains)
-                    U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
+                throw t;
+            }
+            finally {
+                if (err == null && !isCancelled)
+                    err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
+
+                if (err instanceof OutOfMemoryError)
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
     }
