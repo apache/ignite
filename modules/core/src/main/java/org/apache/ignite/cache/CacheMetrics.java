@@ -240,6 +240,7 @@ public interface CacheMetrics {
      * Gets number of non-{@code null} values in the cache.
      *
      * @return Number of non-{@code null} values in the cache.
+     * @deprecated Can overflow. Use {@link CacheMetrics#getCacheSize()} instead.
      */
     @Deprecated
     public int getSize();
@@ -255,6 +256,7 @@ public interface CacheMetrics {
      * Gets number of keys in the cache, possibly with {@code null} values.
      *
      * @return Number of keys in the cache.
+     * @deprecated Can overflow. Use {@link CacheMetrics#getCacheSize()} instead.
      */
     @Deprecated
     public int getKeySize();
