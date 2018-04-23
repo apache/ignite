@@ -17,6 +17,7 @@
 
 #ifndef _MSC_VER
 #   define BOOST_TEST_DYN_LINK
+#   define BOOST_TEST_MAIN
 #endif
 
 #include <boost/test/unit_test.hpp>
