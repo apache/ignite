@@ -75,6 +75,13 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     /** If {@code false} does not acquire read lock on gateway enter. */
     @GridToStringExclude private boolean lock;
 
+    /**
+     * @return Operation context.
+     */
+    CacheOperationContext opCtx() {
+        return opCtx;
+    }
+
     /** Cache operation context. */
     private CacheOperationContext opCtx;
 
@@ -168,6 +175,26 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
                 return this;
 
             return new GatewayProtectedCacheProxy<>(delegate, opCtx.setSkipStore(true), lock);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withAllowAtomicOpsInTx() {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            boolean allowed = opCtx != null && opCtx.allowedAtomicOpsInTx();
+
+            if (allowed)
+                return this;
+
+            CacheOperationContext opCtx0 = opCtx != null ? opCtx.setAllowAtomicOpsInTx(true) :
+                new CacheOperationContext(false, null, false, null, false, null, false, true);
+
+            return ((IgniteCacheProxyImpl<K, V>)delegate).withAllowAtomicOpsInTx(opCtx0, lock);
         }
         finally {
             onLeave(opGate);
@@ -1349,6 +1376,11 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> closeAsync() {
         return delegate.closeAsync();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isLocking() {
+        return lock;
     }
 
     /** {@inheritDoc} */

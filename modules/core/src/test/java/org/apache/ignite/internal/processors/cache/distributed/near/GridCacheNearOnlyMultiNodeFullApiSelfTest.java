@@ -39,6 +39,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
@@ -165,7 +166,9 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /** {@inheritDoc} */
     @Override protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt)
         throws IgniteCheckedException {
-        if (cache.equals(jcache()))
+        if (cache instanceof GatewayProtectedCacheProxy &&
+            ((GatewayProtectedCacheProxy) cache).internalProxy().delegate().equals(
+                ((GatewayProtectedCacheProxy) jcache()).internalProxy().delegate()))
             return super.primaryKeysForCache(fullCache(), cnt);
 
         return super.primaryKeysForCache(cache, cnt);
