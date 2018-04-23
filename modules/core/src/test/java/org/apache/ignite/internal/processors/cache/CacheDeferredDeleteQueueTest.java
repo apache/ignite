@@ -60,6 +60,8 @@ public class CacheDeferredDeleteQueueTest extends GridCommonAbstractTest {
             System.setProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL, ttlProp);
         else
             System.clearProperty(IGNITE_CACHE_REMOVED_ENTRIES_TTL);
+
+        super.afterTestsStopped();
     }
 
     /**
