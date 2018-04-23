@@ -474,9 +474,12 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @return {@code true} if local node is coordinator.
      */
     private boolean isLocalNodeCoordinator() {
-        TcpDiscoverySpi spi = (TcpDiscoverySpi)ctx.discovery().getInjectedDiscoverySpi();
+        DiscoverySpi spi = ctx.discovery().getInjectedDiscoverySpi();
 
-        return spi.isLocalNodeCoordinator();
+        if (spi instanceof TcpDiscoverySpi)
+            return ((TcpDiscoverySpi)spi).isLocalNodeCoordinator();
+        else
+            return F.eq(ctx.localNodeId(), coordinator().id());
     }
 
     /** {@inheritDoc} */
