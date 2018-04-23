@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -37,18 +40,15 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-
 /**
  */
 public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTest {
-    /** Client id. */
-    public static final int CLIENT_ID = 1;
+
+    private static final int SERVER_ID = 0;
+    private static final int CLIENT_ID = 1;
 
     /** Cache params. */
-    public static final String CACHE_PARAMS = "PPRB_PARAMS";
+    private static final String CACHE_PARAMS = "PPRB_PARAMS";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -57,9 +57,8 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
         cfg.setMarshaller(new BinaryMarshaller());
         cfg.setIncludeEventTypes(EventType.EVTS_CACHE);
 
-        if (getTestIgniteInstanceName(CLIENT_ID).equals(igniteInstanceName))
+        if (getTestIgniteInstanceName(CLIENT_ID).equals(igniteInstanceName)) {
             cfg.setClientMode(true);
-        else {
             CacheConfiguration ccfg = getCacheConfiguration();
 
             cfg.setCacheConfiguration(ccfg);
@@ -87,7 +86,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
-        fields.put("ID", "java.lang.Long" );
+        fields.put("ID", "java.lang.Long");
         fields.put("PARTITIONID", "java.lang.Long");
         fields.put("CLIENTID", "java.lang.Long");
         fields.put("PARAMETRCODE", "java.lang.Long");
@@ -113,10 +112,8 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
     /** */
     public void testReconnectClient() throws Exception {
         try {
-            startGrid(0);
-
-            Ignite client = startGrid(1);
-
+            startGrid(SERVER_ID);
+            Ignite client = startGrid(CLIENT_ID);
             checkTopology(2);
 
             client.events().localListen(new IgnitePredicate<Event>() {
@@ -159,7 +156,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
             Thread.sleep(2_000);
 
-            startGrid(0);
+            startGrid(SERVER_ID);
 
             assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
@@ -175,7 +172,10 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
             info("Pre-insert");
 
-            streamer = client.dataStreamer("PPRB_PARAMS");
+            IgniteCache<Object, Object> pprbParams = client.cache(CACHE_PARAMS);
+            assertNotNull(pprbParams);
+
+            streamer = client.dataStreamer(CACHE_PARAMS);
             streamer.allowOverwrite(true);
             streamer.keepBinary(true);
             streamer.perNodeBufferSize(10000);
