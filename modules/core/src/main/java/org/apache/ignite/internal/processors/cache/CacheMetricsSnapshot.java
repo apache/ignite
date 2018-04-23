@@ -111,7 +111,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     private int size;
 
     /** Number of non-{@code null} values in the cache as long value as a long value. */
-    private long sizeLong;
+    private long cacheSize;
 
     /** Number of keys in the cache, possibly with {@code null} values. */
     private int keySize;
@@ -289,7 +289,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
 
         size = entriesStat.size();
-        sizeLong = entriesStat.sizeLong();
+        cacheSize = entriesStat.cacheSize();
         keySize = entriesStat.keySize();
         isEmpty = entriesStat.isEmpty();
 
@@ -355,7 +355,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         writeBehindStoreBatchSize = loc.getWriteBehindStoreBatchSize();
         writeBehindBufSize = loc.getWriteBehindBufferSize();
         size = loc.getSize();
-        sizeLong = loc.getCacheSize();
+        cacheSize = loc.getCacheSize();
         keySize = loc.getKeySize();
 
         keyType = loc.getKeyType();
@@ -640,7 +640,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
 
     /** {@inheritDoc} */
     @Override public long getCacheSize() {
-        return sizeLong;
+        return cacheSize;
     }
 
     /** {@inheritDoc} */

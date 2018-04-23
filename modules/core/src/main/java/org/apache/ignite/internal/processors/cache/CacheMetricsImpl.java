@@ -256,7 +256,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getCacheSize() {
-        return getEntriesStat().sizeLong();
+        return getEntriesStat().cacheSize();
     }
 
     /** {@inheritDoc} */
@@ -837,7 +837,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         stat.offHeapBackupEntriesCount(offHeapBackupEntriesCnt);
         stat.heapEntriesCount(heapEntriesCnt);
         stat.size(size);
-        stat.sizeLong(sizeLong);
+        stat.cacheSize(sizeLong);
         stat.keySize(size);
         stat.isEmpty(isEmpty);
         stat.totalPartitionsCount(owningPartCnt + movingPartCnt);
@@ -1051,7 +1051,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         private int size;
 
         /** Long size. */
-        private long sizeLong;
+        private long cacheSize;
 
         /** Key size. */
         private int keySize;
@@ -1174,15 +1174,15 @@ public class CacheMetricsImpl implements CacheMetrics {
         /**
          * @return Long size.
          */
-        public long sizeLong() {
-            return sizeLong;
+        public long cacheSize() {
+            return cacheSize;
         }
 
         /**
-         * @param sizeLong Size long.
+         * @param cacheSize Size long.
          */
-        public void sizeLong(long sizeLong) {
-            this.sizeLong = sizeLong;
+        public void cacheSize(long cacheSize) {
+            this.cacheSize = cacheSize;
         }
 
         /**
