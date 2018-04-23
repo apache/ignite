@@ -99,7 +99,7 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.GridShmemCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
-import org.apache.ignite.internal.util.nio.compression.CompressionHandler;
+import org.apache.ignite.internal.util.nio.compression.GridNioCompressionHandler;
 import org.apache.ignite.internal.util.nio.compression.GridCompressionMeta;
 import org.apache.ignite.internal.util.nio.compression.GridNioCompressionFilter;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
@@ -3615,14 +3615,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         try {
             BlockingSslHandler sslHnd = null;
-            CompressionHandler compressHnd = null;
+            GridNioCompressionHandler compressHnd = null;
 
             ByteBuffer buf;
 
             boolean isCompressed = compressionMeta != null;
 
             if (isCompressed) {
-                compressHnd = new CompressionHandler(compressionMeta.compressionEngine(), directBuf, ByteOrder.nativeOrder(), log, null);
+                compressHnd = new GridNioCompressionHandler(compressionMeta.compressionEngine(), directBuf, ByteOrder.nativeOrder(), log, null);
 
                 assert compressHnd.getApplicationBuffer().flip().remaining() == 0;
             }

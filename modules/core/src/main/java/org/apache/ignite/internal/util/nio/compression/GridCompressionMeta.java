@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.nio.compression;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.locks.ReentrantLock;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -26,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class GridCompressionMeta {
     /** GridNioCompressionHandler. */
-    private CompressionHandler hnd;
+    private GridNioCompressionHandler hnd;
 
     /** Data already decoded by blocking Compress handler. */
     private ByteBuffer decodedBuf;
@@ -52,14 +51,14 @@ public final class GridCompressionMeta {
     }
 
     /** */
-    @Nullable public CompressionHandler handler() {
+    @Nullable public GridNioCompressionHandler handler() {
         return hnd;
     }
 
     /**
      * @param hnd Handler.
      */
-    public void handler(CompressionHandler hnd) {
+    public void handler(GridNioCompressionHandler hnd) {
         assert hnd != null;
 
         this.hnd = hnd;

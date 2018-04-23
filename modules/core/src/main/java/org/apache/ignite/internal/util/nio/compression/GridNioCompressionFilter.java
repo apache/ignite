@@ -29,7 +29,6 @@ import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
@@ -116,7 +115,7 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
             assert engine != null;
         }
 
-        CompressionHandler hnd = new CompressionHandler(
+        GridNioCompressionHandler hnd = new GridNioCompressionHandler(
             engine,
             directBuf,
             order,
@@ -178,7 +177,7 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
         assert ses != null;
         assert input != null;
 
-        CompressionHandler hnd = compressionHandler(ses);
+        GridNioCompressionHandler hnd = compressionHandler(ses);
 
         lock(ses);
 
@@ -208,7 +207,7 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
         if (!input.hasRemaining())
             return new GridNioFinishedFuture<>(null);
 
-        CompressionHandler hnd = compressionHandler(ses);
+        GridNioCompressionHandler hnd = compressionHandler(ses);
 
         lock(ses);
 
@@ -238,7 +237,7 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
 
         ByteBuffer input = checkMessage(ses, msg);
 
-        CompressionHandler hnd = compressionHandler(ses);
+        GridNioCompressionHandler hnd = compressionHandler(ses);
 
         lock(ses);
 
@@ -265,7 +264,7 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
         if (!ses.isCompressed())
             return proceedSessionClose(ses);
 
-        CompressionHandler hnd = compressionHandler(ses);
+        GridNioCompressionHandler hnd = compressionHandler(ses);
 
         lock(ses);
 
@@ -285,7 +284,7 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @throws GridNioException If failed to forward requests to filter chain.
      * @return Close future.
      */
-    private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, CompressionHandler hnd)
+    private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioCompressionHandler hnd)
         throws IgniteCheckedException {
         assert ses != null;
         assert hnd != null;
@@ -315,14 +314,14 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @param ses Session instance.
      * @return compression handler.
      */
-    private static CompressionHandler compressionHandler(GridNioSession ses) {
+    private static GridNioCompressionHandler compressionHandler(GridNioSession ses) {
         assert ses != null;
 
         GridCompressionMeta compressMeta = ses.meta(COMPRESSION_META.ordinal());
 
         assert compressMeta != null;
 
-        CompressionHandler hnd = compressMeta.handler();
+        GridNioCompressionHandler hnd = compressMeta.handler();
 
         if (hnd == null)
             throw new IgniteException("Failed to process incoming message (received message before compression " +
@@ -338,7 +337,7 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @return Write future.
      * @throws GridNioException If send failed.
      */
-    GridNioFuture<?> writeNetBuffer(GridNioSession ses, CompressionHandler hnd, @Nullable IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
+    GridNioFuture<?> writeNetBuffer(GridNioSession ses, GridNioCompressionHandler hnd, @Nullable IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert hnd != null;
         assert ses != null;
 

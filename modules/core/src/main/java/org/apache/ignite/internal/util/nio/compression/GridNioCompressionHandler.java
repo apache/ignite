@@ -32,7 +32,7 @@ import static org.apache.ignite.internal.util.nio.compression.CompressionEngineR
 /**
  * Class that encapsulate the compression state, compress and decompress logic.
  */
-public final class CompressionHandler {
+public final class GridNioCompressionHandler {
     /** Size of a net buffers. */
     private static final int NET_BUF_SIZE = 1 << 15;
 
@@ -63,7 +63,7 @@ public final class CompressionHandler {
      * @param order Byte order.
      * @param encBuf Encoded buffer to be used.
      */
-    public CompressionHandler(
+    public GridNioCompressionHandler(
         CompressionEngine engine,
         boolean directBuf,
         ByteOrder order,
