@@ -499,33 +499,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
-     */
-    public void testRollbackOnOptimisticPrepare() throws Exception {
-        final Ignite client = startClient();
-
-        IgniteInternalFuture<?> fut = null;
-
-        try(Transaction tx = client.transactions().txStart(OPTIMISTIC, SERIALIZABLE, 0, 0)) {
-            for (int i = 0; i < 100000; i++)
-                client.cache(CACHE_NAME).put(i, i);
-
-            fut = rollbackAsync(tx, 100);
-
-            tx.commit();
-        }
-        catch (Throwable t) {
-            assertTrue(X.hasCause(t, TransactionRollbackException.class));
-        }
-
-        fut.get();
-
-        assertEquals(0, client.cache(CACHE_NAME).size());
-
-        checkFutures();
-    }
-
-    /**
      * Rollback tx while near lock request is delayed.
      */
     public void testRollbackDelayNearLockRequest() throws Exception {
