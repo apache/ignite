@@ -593,52 +593,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
     }
 
-    /**
-     * Destroys given {@code store} and creates new with the same update counters as in given.
-     *
-     * @param store Store to destroy.
-     * @return New cache data store.
-     * @throws IgniteCheckedException If failed.
-     */
-    public CacheDataStore recreateCacheDataStore(CacheDataStore store) throws IgniteCheckedException {
-        long updCounter = store.updateCounter();
-        long initUpdCounter = store.initialUpdateCounter();
-
-        int p = store.partId();
-
-        PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
-
-        CacheDataStore store0;
-
-        grp.shared().database().checkpointReadLock();
-        try {
-            //We should wait for checkpoint finished before invalidation as it can save partition metadata.
-            int tag = pageMemory.invalidate(grp.groupId(), p);
-
-            if (log.isDebugEnabled())
-                log.debug("Recreate partition with new tag: tag=" + tag + ", part=" + getPartition(store));
-
-            ctx.pageStore().onPartitionDestroyed(grp.groupId(), p, tag);
-
-            partStoreLock.lock(p);
-            try {
-                store0 = createCacheDataStore0(p);
-                store0.updateCounter(updCounter);
-                store0.updateInitialCounter(initUpdCounter);
-
-                partDataStores.put(p, store0);
-            }
-            finally {
-                partStoreLock.unlock(p);
-            }
-        }
-        finally {
-            grp.shared().database().checkpointReadUnlock();
-        }
-
-        return store0;
-    }
-
     /** {@inheritDoc} */
     @Override public void onPartitionCounterUpdated(int part, long cntr) {
         CacheDataStore store = partDataStores.get(part);

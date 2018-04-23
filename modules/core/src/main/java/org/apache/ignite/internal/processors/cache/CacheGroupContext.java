@@ -514,13 +514,6 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return {@code True} if fast eviction is allowed.
-     */
-    public boolean allowFastEviction() {
-        return persistenceEnabled() && !queriesEnabled();
-    }
-
-    /**
      * @return {@code True} in case replication is enabled.
      */
     public boolean isDrEnabled() {
