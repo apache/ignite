@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxMultiCacheAsyncOpsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticOnPartitionExchangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
@@ -76,7 +77,6 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(CacheExchangeMergeTest.class);
 
-        // TX timeouts and rolling back.
         suite.addTestSuite(TxRollbackOnTimeoutTest.class);
         suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
         suite.addTestSuite(TxRollbackOnTimeoutNearCacheTest.class);

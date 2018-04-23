@@ -2092,6 +2092,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /** */
         private boolean stop;
 
+        /** Indicates that worker terminates because the node needs to reconnect to the cluster. */
+        private boolean reconnectNeeded;
+
         /**
          * Constructor.
          */
@@ -2303,7 +2306,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 err = e;
             }
             finally {
-                if (err == null && !stop)
+                if (err == null && !stop && !reconnectNeeded)
                     err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
@@ -2612,6 +2615,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         "network issues, will try to reconnect to cluster", e);
 
                     cctx.discovery().reconnect();
+
+                    reconnectNeeded = true;
 
                     return;
                 }
