@@ -15,33 +15,35 @@
  * limitations under the License.
  */
 
-// Directive to enable validation to match specified value.
-export default function() {
+const PASSWORD_VISIBLE_CLASS = 'password-visibility__password-visible';
+
+export class PasswordVisibilityRoot {
+    /** @type {ng.ICompiledExpression} */
+    onPasswordVisibilityToggle;
+
+    isVisible = false;
+    static $inject = ['$element'];
+
+    /**
+     * @param {JQLite} $element
+     */
+    constructor($element) {
+        this.$element = $element;
+    }
+    toggleVisibility() {
+        this.isVisible = !this.isVisible;
+        this.$element.toggleClass(PASSWORD_VISIBLE_CLASS, this.isVisible);
+        if (this.onPasswordVisibilityToggle) this.onPasswordVisibilityToggle({$event: this.isVisible});
+    }
+}
+
+export function directive() {
     return {
-        require: {
-            ngModel: 'ngModel'
-        },
+        restrict: 'A',
         scope: false,
+        controller: PasswordVisibilityRoot,
         bindToController: {
-            igniteMatch: '<'
-        },
-        controller: class {
-            /** @type {ng.INgModelController} */
-            ngModel;
-            /** @type {string} */
-            igniteMatch;
-
-            $postLink() {
-                this.ngModel.$overrideModelOptions({allowInvalid: true});
-                this.ngModel.$validators.mismatch = (value) => value === this.igniteMatch;
-            }
-
-            /**
-             * @param {{igniteMatch: ng.IChangesObject<string>}} changes
-             */
-            $onChanges(changes) {
-                if ('igniteMatch' in changes) this.ngModel.$validate();
-            }
+            onPasswordVisibilityToggle: '&?'
         }
     };
 }
