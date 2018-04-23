@@ -1866,6 +1866,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             for (IgniteInternalFuture<?> fut : mvcc.dataStreamerFutures())
                 dumpDiagnosticInfo(fut, diagCtx);
 
+            U.warn(diagnosticLog, "Pending cache store loader futures:");
+
+            for (IgniteInternalFuture<?> fut : mvcc.cacheStoreLoaderFutures())
+                dumpDiagnosticInfo(fut, diagCtx);
+
             if (tm != null) {
                 U.warn(diagnosticLog, "Pending transaction deadlock detection futures:");
 

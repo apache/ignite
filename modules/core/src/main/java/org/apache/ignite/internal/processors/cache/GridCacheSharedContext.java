@@ -856,6 +856,7 @@ public class GridCacheSharedContext<K, V> {
         f.add(mvcc().finishExplicitLocks(topVer));
         f.add(mvcc().finishAtomicUpdates(topVer));
         f.add(mvcc().finishDataStreamerUpdates(topVer));
+        f.add(mvcc().finishCacheStoreLoadUpdates(topVer));
 
         IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer);
         // To properly track progress of finishing local tx updates we explicitly add this future to compound set.
