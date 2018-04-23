@@ -151,6 +151,7 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
         };
 
         final Thread thread = new Thread(target);
+        
         thread.setDaemon(true);
         thread.start();
 
