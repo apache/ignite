@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.commandline;
 
+import org.apache.ignite.internal.client.GridClientConfiguration;
+
 /**
  * Bean with all parsed and validated arguments.
  */
@@ -49,6 +51,12 @@ public class Arguments {
      */
     private String baselineArgs;
 
+    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}.*/
+    private long pingTimeout;
+
+    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}.*/
+    private long pingInterval;
+
     /**
      * @param cmd Command.
      * @param host Host.
@@ -57,12 +65,13 @@ public class Arguments {
      * @param pwd Password.
      * @param baselineAct Baseline action.
      * @param baselineArgs Baseline args.
+     * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
+     * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
      * @param force Force flag.
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd,
-        String baselineAct, String baselineArgs,
-        boolean force
-    ) {
+                     String baselineAct, String baselineArgs, long pingTimeout,
+                     long pingInterval, boolean force) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -70,6 +79,8 @@ public class Arguments {
         this.pwd = pwd;
         this.baselineAct = baselineAct;
         this.baselineArgs = baselineArgs;
+        this.pingTimeout = pingTimeout;
+        this.pingInterval = pingInterval;
         this.force = force;
     }
 
@@ -120,6 +131,24 @@ public class Arguments {
      */
     public String baselineArguments() {
         return baselineArgs;
+    }
+
+    /**
+     * See {@link GridClientConfiguration#pingTimeout}.
+     *
+     * @return Ping timeout.
+     */
+    public long pingTimeout() {
+        return pingTimeout;
+    }
+
+    /**
+     * See {@link GridClientConfiguration#pingInterval}.
+     *
+     * @return Ping interval.
+     */
+    public long pingInterval() {
+        return pingInterval;
     }
 
     /**
