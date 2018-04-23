@@ -18,57 +18,57 @@ include /app/helpers/jade/mixins
 
 form(id='cluster' name='ui.inputForm' novalidate ng-submit='$ctrl.save()')
     .panel-group
-        include /app/modules/states/configuration/clusters/general
+        include ./templates/general
 
-        include /app/modules/states/configuration/clusters/atomic
-        include /app/modules/states/configuration/clusters/binary
-        include /app/modules/states/configuration/clusters/cache-key-cfg
-        include /app/modules/states/configuration/clusters/checkpoint
-
-        //- Since ignite 2.3
-        include /app/modules/states/configuration/clusters/client-connector
-
-        include /app/modules/states/configuration/clusters/collision
-        include /app/modules/states/configuration/clusters/communication
-        include /app/modules/states/configuration/clusters/connector
-        include /app/modules/states/configuration/clusters/deployment
+        include ./templates/atomic
+        include ./templates/binary
+        include ./templates/cache-key-cfg
+        include ./templates/checkpoint
 
         //- Since ignite 2.3
-        include /app/modules/states/configuration/clusters/data-storage
+        include ./templates/client-connector
 
-        include /app/modules/states/configuration/clusters/discovery
-        include /app/modules/states/configuration/clusters/events
-        include /app/modules/states/configuration/clusters/failover
-        include /app/modules/states/configuration/clusters/hadoop
-        include /app/modules/states/configuration/clusters/load-balancing
-        include /app/modules/states/configuration/clusters/logger
-        include /app/modules/states/configuration/clusters/marshaller
+        include ./templates/collision
+        include ./templates/communication
+        include ./templates/connector
+        include ./templates/deployment
+
+        //- Since ignite 2.3
+        include ./templates/data-storage
+
+        include ./templates/discovery
+        include ./templates/events
+        include ./templates/failover
+        include ./templates/hadoop
+        include ./templates/load-balancing
+        include ./templates/logger
+        include ./templates/marshaller
 
         //- Since ignite 2.0, deprecated in ignite 2.3
-        include /app/modules/states/configuration/clusters/memory
+        include ./templates/memory
 
-        include /app/modules/states/configuration/clusters/misc
-        include /app/modules/states/configuration/clusters/metrics
+        include ./templates/misc
+        include ./templates/metrics
 
         //- Deprecated in ignite 2.1
-        include /app/modules/states/configuration/clusters/odbc
+        include ./templates/odbc
 
         //- Since ignite 2.1, deprecated in ignite 2.3
-        include /app/modules/states/configuration/clusters/persistence
+        include ./templates/persistence
 
         //- Deprecated in ignite 2.3
-        include /app/modules/states/configuration/clusters/sql-connector
+        include ./templates/sql-connector
 
-        include /app/modules/states/configuration/clusters/service
-        include /app/modules/states/configuration/clusters/ssl
+        include ./templates/service
+        include ./templates/ssl
 
         //- Removed in ignite 2.0
-        include /app/modules/states/configuration/clusters/swap
+        include ./templates/swap
 
-        include /app/modules/states/configuration/clusters/thread
-        include /app/modules/states/configuration/clusters/time
-        include /app/modules/states/configuration/clusters/transactions
-        include /app/modules/states/configuration/clusters/attributes
+        include ./templates/thread
+        include ./templates/time
+        include ./templates/transactions
+        include ./templates/attributes
 
 .pc-form-actions-panel(n_g-show='$ctrl.$scope.selectedItem')
     button-preview-project(cluster='$ctrl.cluster' ng-hide='$ctrl.isNew')

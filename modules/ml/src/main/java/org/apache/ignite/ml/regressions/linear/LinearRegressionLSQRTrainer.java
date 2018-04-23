@@ -18,15 +18,15 @@
 package org.apache.ignite.ml.regressions.linear;
 
 import java.util.Arrays;
-import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.math.isolve.LinSysPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.math.isolve.lsqr.AbstractLSQR;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQROnHeap;
 import org.apache.ignite.ml.math.isolve.lsqr.LSQRResult;
+import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
  * Trainer of the linear regression model based on LSQR algorithm.
@@ -42,7 +42,10 @@ public class LinearRegressionLSQRTrainer implements SingleLabelDatasetTrainer<Li
 
         try (LSQROnHeap<K, V> lsqr = new LSQROnHeap<>(
             datasetBuilder,
-            new LinSysPartitionDataBuilderOnHeap<>(new FeatureExtractorWrapper<>(featureExtractor), lbExtractor)
+            new SimpleLabeledDatasetDataBuilder<>(
+                new FeatureExtractorWrapper<>(featureExtractor),
+                lbExtractor.andThen(e -> new double[]{e})
+            )
         )) {
             res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);
         }
@@ -54,38 +57,5 @@ public class LinearRegressionLSQRTrainer implements SingleLabelDatasetTrainer<Li
         Vector weights = new DenseLocalOnHeapVector(Arrays.copyOfRange(x, 0, x.length - 1));
 
         return new LinearRegressionModel(weights, x[x.length - 1]);
-    }
-
-    /**
-     * Feature extractor wrapper that adds additional column filled by 1.
-     *
-     * @param <K> Type of a key in {@code upstream} data.
-     * @param <V> Type of a value in {@code upstream} data.
-     */
-    private static class FeatureExtractorWrapper<K, V> implements IgniteBiFunction<K, V, double[]> {
-        /** */
-        private static final long serialVersionUID = -2686524650955735635L;
-
-        /** Underlying feature extractor. */
-        private final IgniteBiFunction<K, V, double[]> featureExtractor;
-
-        /**
-         * Constructs a new instance of feature extractor wrapper.
-         *
-         * @param featureExtractor Underlying feature extractor.
-         */
-        FeatureExtractorWrapper(IgniteBiFunction<K, V, double[]> featureExtractor) {
-            this.featureExtractor = featureExtractor;
-        }
-
-        /** {@inheritDoc} */
-        @Override public double[] apply(K k, V v) {
-            double[] featureRow = featureExtractor.apply(k, v);
-            double[] row = Arrays.copyOf(featureRow, featureRow.length + 1);
-
-            row[featureRow.length] = 1.0;
-
-            return row;
-        }
     }
 }
