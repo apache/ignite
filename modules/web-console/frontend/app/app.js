@@ -27,7 +27,6 @@ import './modules/nodes/nodes.module';
 import './modules/demo/Demo.module';
 
 import './modules/states/logout.state';
-import './modules/states/configuration.state';
 import './modules/states/admin.state';
 import './modules/states/errors.state';
 
@@ -139,6 +138,7 @@ import clusterSelector from './components/cluster-selector';
 import connectedClusters from './components/connected-clusters';
 import pageSignIn from './components/page-signin';
 import pageLanding from './components/page-landing';
+import passwordVisibility from './components/password-visibility';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
@@ -192,7 +192,6 @@ angular.module('ignite-console', [
     'ignite-console.demo',
     // States.
     'ignite-console.states.logout',
-    'ignite-console.states.configuration',
     'ignite-console.states.admin',
     'ignite-console.states.errors',
     // Common modules.
@@ -241,6 +240,7 @@ angular.module('ignite-console', [
     uiAceJava.name,
     uiAceSpring.name,
     breadcrumbs.name,
+    passwordVisibility.name,
     // Ignite modules.
     IgniteModules.name
 ])
@@ -252,7 +252,7 @@ angular.module('ignite-console', [
 .directive(...igniteCopyToClipboard)
 .directive(...igniteHideOnStateChange)
 .directive(...igniteInformation)
-.directive(...igniteMatch)
+.directive('igniteMatch', igniteMatch)
 .directive(...igniteOnClickFocus)
 .directive(...igniteOnEnter)
 .directive(...igniteOnEnterFocusMove)

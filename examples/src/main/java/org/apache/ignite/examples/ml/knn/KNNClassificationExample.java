@@ -17,9 +17,6 @@
 
 package org.apache.ignite.examples.ml.knn;
 
-import java.util.Arrays;
-import java.util.UUID;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -27,13 +24,16 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.thread.IgniteThread;
+
+import javax.cache.Cache;
+import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * Run kNN multi-class classification trainer over distributed dataset.
@@ -56,7 +56,8 @@ public class KNNClassificationExample {
                 KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
                 KNNClassificationModel knnMdl = trainer.fit(
-                    new CacheBasedDatasetBuilder<>(ignite, dataCache),
+                    ignite,
+                    dataCache,
                     (k, v) -> Arrays.copyOfRange(v, 1, v.length),
                     (k, v) -> v[0]
                 ).withK(3)
@@ -79,7 +80,7 @@ public class KNNClassificationExample {
                         double prediction = knnMdl.apply(new DenseLocalOnHeapVector(inputs));
 
                         totalAmount++;
-                        if(groundTruth != prediction)
+                        if (groundTruth != prediction)
                             amountOfErrors++;
 
                         System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
@@ -88,7 +89,7 @@ public class KNNClassificationExample {
                     System.out.println(">>> ---------------------------------");
 
                     System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
+                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double) totalAmount));
                 }
             });
 

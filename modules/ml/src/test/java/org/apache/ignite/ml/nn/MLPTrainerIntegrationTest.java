@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.nn;
 
-import java.io.Serializable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -25,21 +24,16 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.optimization.LossFunctions;
-import org.apache.ignite.ml.optimization.updatecalculators.NesterovParameterUpdate;
-import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
-import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
-import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
-import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
-import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
-import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
+import org.apache.ignite.ml.optimization.updatecalculators.*;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.io.Serializable;
 
 /**
  * Tests for {@link MLPTrainer} that require to start the whole Ignite infrastructure.
@@ -137,7 +131,8 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
             );
 
             MultilayerPerceptron mlp = trainer.fit(
-                new CacheBasedDatasetBuilder<>(ignite, xorCache),
+                ignite,
+                xorCache,
                 (k, v) -> new double[]{ v.x, v.y },
                 (k, v) -> new double[]{ v.lb}
             );

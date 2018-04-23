@@ -55,6 +55,7 @@ import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Shared serialization/deserialization utils.
@@ -309,6 +310,8 @@ final class ClientUtils {
                                 w.writeBoolean(qf.isKey());
                                 w.writeBoolean(qf.isNotNull());
                                 w.writeObject(qf.getDefaultValue());
+                                w.writeInt(qf.getPrecision());
+                                w.writeInt(qf.getScale());
                             }
                         );
                         ClientUtils.collection(
@@ -392,7 +395,9 @@ final class ClientUtils {
                                 reader.readString(),
                                 reader.readBoolean(),
                                 reader.readBoolean(),
-                                reader.readObject()
+                                reader.readObject(),
+                                reader.readInt(),
+                                reader.readInt()
                             )
                         );
 
@@ -494,6 +499,12 @@ final class ClientUtils {
         /** Default value. */
         private final Object dfltVal;
 
+        /** Precision. */
+        private final int precision;
+
+        /** Scale. */
+        private final int scale;
+
         /** Serialization constructor. */
         QueryField(QueryEntity e, Map.Entry<String, String> nameAndTypeName) {
             name = nameAndTypeName.getKey();
@@ -502,19 +513,28 @@ final class ClientUtils {
             Set<String> keys = e.getKeyFields();
             Set<String> notNulls = e.getNotNullFields();
             Map<String, Object> dflts = e.getDefaultFieldValues();
+            Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = e.getDecimalInfo();
 
             isKey = keys != null && keys.contains(name);
             isNotNull = notNulls != null && notNulls.contains(name);
             dfltVal = dflts == null ? null : dflts.get(name);
+
+            IgniteBiTuple<Integer, Integer> precisionAndScale = decimalInfo == null ? null : decimalInfo.get(name);
+
+            precision = precisionAndScale == null? -1 : precisionAndScale.get1();
+            scale = precisionAndScale == null? -1 : precisionAndScale.get2();
         }
 
         /** Deserialization constructor. */
-        public QueryField(String name, String typeName, boolean isKey, boolean isNotNull, Object dfltVal) {
+        public QueryField(String name, String typeName, boolean isKey, boolean isNotNull, Object dfltVal,
+            int precision, int scale) {
             this.name = name;
             this.typeName = typeName;
             this.isKey = isKey;
             this.isNotNull = isNotNull;
             this.dfltVal = dfltVal;
+            this.precision = precision;
+            this.scale = scale;
         }
 
         /**
@@ -550,6 +570,20 @@ final class ClientUtils {
          */
         Object getDefaultValue() {
             return dfltVal;
+        }
+
+        /**
+         * @return Precision.
+         */
+        public int getPrecision() {
+            return precision;
+        }
+
+        /**
+         * @return Scale.
+         */
+        public int getScale() {
+            return scale;
         }
     }
 

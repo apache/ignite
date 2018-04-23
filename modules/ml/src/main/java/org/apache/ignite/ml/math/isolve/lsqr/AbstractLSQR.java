@@ -19,6 +19,7 @@ package org.apache.ignite.ml.math.isolve.lsqr;
 
 import com.github.fommil.netlib.BLAS;
 import java.util.Arrays;
+import org.apache.ignite.ml.math.Precision;
 
 /**
  * Basic implementation of the LSQR algorithm without assumptions about dataset storage format or data processing
@@ -30,7 +31,7 @@ import java.util.Arrays;
 // TODO: IGNITE-7660: Refactor LSQR algorithm
 public abstract class AbstractLSQR {
     /** The smallest representable positive number such that 1.0 + eps != 1.0. */
-    private static final double eps = Double.longBitsToDouble(Double.doubleToLongBits(1.0) | 1) - 1.0;
+    private static final double eps = Precision.EPSILON;
 
     /** BLAS (Basic Linear Algebra Subprograms) instance. */
     private static BLAS blas = BLAS.getInstance();
