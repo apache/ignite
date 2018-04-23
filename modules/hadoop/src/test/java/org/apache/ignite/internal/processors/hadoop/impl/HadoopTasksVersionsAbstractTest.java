@@ -36,7 +36,7 @@ import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCoun
 /**
  * Tests of Map, Combine and Reduce task executions of any version of hadoop API.
  */
-abstract class HadoopTasksAllVersionsTest extends HadoopAbstractWordCountTest {
+abstract class HadoopTasksVersionsAbstractTest extends HadoopAbstractWordCountTest {
     /** Empty hosts array. */
     private static final String[] HOSTS = new String[0];
 
