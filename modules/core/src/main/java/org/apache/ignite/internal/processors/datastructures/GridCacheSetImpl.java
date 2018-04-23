@@ -107,10 +107,10 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @param ctx Cache context.
      * @param name Set name.
      * @param hdr Set header.
-     * @param shared Use shared data structures cache.
+     * @param sharedCacheMode Use shared data structures cache.
      */
     @SuppressWarnings("unchecked")
-    public GridCacheSetImpl(GridCacheContext ctx, String name, GridCacheSetHeader hdr, boolean shared) {
+    public GridCacheSetImpl(GridCacheContext ctx, String name, GridCacheSetHeader hdr, boolean sharedCacheMode) {
         this.ctx = ctx;
         this.name = name;
         id = hdr.id();
@@ -126,7 +126,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
         hdrPart = ctx.affinity().partition(new GridCacheSetHeaderKey(name));
 
-        this.sharedCacheMode = shared;
+        this.sharedCacheMode = sharedCacheMode;
     }
 
     /** {@inheritDoc} */

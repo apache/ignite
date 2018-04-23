@@ -916,18 +916,20 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /**
+     * Get compatible with collection configuration data structure cache.
+     *
      * @param cfg Collection configuration.
      * @param grpName Group name.
      * @param shared Shared mode (single cache for multiple data structure instances).
-     * @param dsName Datastructure name.
-     * @return Cache name.
+     * @param dsName Data structure name.
+     * @return Data strcuture cache.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private IgniteInternalCache compatibleCache(CollectionConfiguration cfg, String grpName,
         boolean shared, String dsName)
         throws IgniteCheckedException {
 
-        // At first step we need to check compatible (shared) version.of cache.
+        // At first step we need to search shared compatible with current configuration data structure cache.
         String cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
             cfg.getBackups() + "@" + grpName;
 

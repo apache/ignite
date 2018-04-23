@@ -389,7 +389,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param name Set name.
      * @param colloc Collocated flag.
      * @param create Create flag.
-     * @param distinct Use separate cache flag.
+     * @param distinct Separated cache mode flag.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
@@ -405,7 +405,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param name Name of set.
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
-     * @param distinct Use separate cache flag.
+     * @param distinct Separated cache mode flag.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
@@ -427,33 +427,30 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
-            if (!collocated) {
-                // First search for old version.
+            if (distinct) {
+                // For backward compatibility try to find an old header.
                 hdr = (GridCacheSetHeader)cache.get(key);
 
                 // If old version was not found than create new header but don't put it into cache.
-                if (hdr == null && distinct) {
+                if (hdr == null) {
                     hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), false);
 
                     sharedCache = false;
                 }
             }
+            else if (create) {
+                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
 
-            if (hdr == null) {
-                if (create) {
-                    hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
+                GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
 
-                    GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
+                if (old != null)
+                    hdr = old;
+            }
+            else {
+                hdr = (GridCacheSetHeader)cache.get(key);
 
-                    if (old != null)
-                        hdr = old;
-                }
-                else {
-                    hdr = (GridCacheSetHeader)cache.get(key);
-
-                    if (hdr == null)
-                        return null;
-                }
+                if (hdr == null)
+                    return null;
             }
 
             GridCacheSetProxy<T> set = setsMap.get(hdr.id());
