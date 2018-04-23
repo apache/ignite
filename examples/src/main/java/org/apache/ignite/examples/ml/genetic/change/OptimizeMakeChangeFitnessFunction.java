@@ -31,9 +31,8 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
  *
  * an individual solution relative to other solutions. <br/>
  */
-
 public class OptimizeMakeChangeFitnessFunction implements IFitnessFunction {
-
+    /** target amount */
     int targetAmount = 0;
 
     /**

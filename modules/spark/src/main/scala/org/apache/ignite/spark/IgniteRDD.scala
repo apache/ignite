@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.query.QueryCursorEx
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata
 import org.apache.ignite.lang.IgniteUuid
 import org.apache.ignite.spark.impl._
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
@@ -91,8 +92,14 @@ class IgniteRDD[K, V] (
     override protected[spark] def getPreferredLocations(split: Partition): Seq[String] = {
         ensureCache()
 
-        ic.ignite().affinity(cacheName).mapPartitionToPrimaryAndBackups(split.index)
+        if (ic.ignite().configuration().getDiscoverySpi().isInstanceOf[TcpDiscoverySpi]) {
+          ic.ignite().affinity(cacheName).mapPartitionToPrimaryAndBackups(split.index)
             .map(_.asInstanceOf[TcpDiscoveryNode].socketAddresses()).flatten.map(_.getHostName).toList
+        }
+        else {
+          ic.ignite().affinity(cacheName).mapPartitionToPrimaryAndBackups(split.index)
+            .flatten(_.hostNames).toSeq
+        }
     }
 
     /**
@@ -337,6 +344,11 @@ class IgniteRDD[K, V] (
 
 object IgniteRDD {
     /**
+      * Default decimal type.
+      */
+    private[spark] val DECIMAL = DecimalType(DecimalType.MAX_PRECISION, 3)
+
+    /**
       * Gets Spark data type based on type name.
       *
       * @param typeName Type name.
@@ -350,7 +362,7 @@ object IgniteRDD {
         case "java.lang.Long" ⇒ LongType
         case "java.lang.Float" ⇒ FloatType
         case "java.lang.Double" ⇒ DoubleType
-        case "java.math.BigDecimal" ⇒ DataTypes.createDecimalType()
+        case "java.math.BigDecimal" ⇒ DECIMAL
         case "java.lang.String" ⇒ StringType
         case "java.util.Date" ⇒ DateType
         case "java.sql.Date" ⇒ DateType

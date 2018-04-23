@@ -17,9 +17,6 @@
 
 package org.apache.ignite.examples.ml.svm.multiclass;
 
-import java.util.Arrays;
-import java.util.UUID;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -27,14 +24,16 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocessor;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationTrainer;
 import org.apache.ignite.thread.IgniteThread;
+
+import javax.cache.Cache;
+import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * Run SVM multi-class classification trainer over distributed dataset to build two models:
@@ -55,30 +54,32 @@ public class SVMMultiClassClassificationExample {
                 SVMMultiClassClassificationExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                SVMLinearMultiClassClassificationTrainer<Integer, double[]> trainer = new SVMLinearMultiClassClassificationTrainer<>();
+                SVMLinearMultiClassClassificationTrainer trainer = new SVMLinearMultiClassClassificationTrainer();
 
                 SVMLinearMultiClassClassificationModel mdl = trainer.fit(
-                    new CacheBasedDatasetBuilder<>(ignite, dataCache),
+                    ignite,
+                    dataCache,
                     (k, v) -> Arrays.copyOfRange(v, 1, v.length),
-                    (k, v) -> v[0],
-                    5);
+                    (k, v) -> v[0]
+                );
 
                 System.out.println(">>> SVM Multi-class model");
                 System.out.println(mdl.toString());
 
                 NormalizationTrainer<Integer, double[]> normalizationTrainer = new NormalizationTrainer<>();
 
-                NormalizationPreprocessor<Integer, double[]> preprocessor = normalizationTrainer.fit(
-                    new CacheBasedDatasetBuilder<>(ignite, dataCache),
-                    (k, v) -> Arrays.copyOfRange(v, 1, v.length),
-                    5
+                IgniteBiFunction<Integer, double[], double[]> preprocessor = normalizationTrainer.fit(
+                    ignite,
+                    dataCache,
+                    (k, v) -> Arrays.copyOfRange(v, 1, v.length)
                 );
 
                 SVMLinearMultiClassClassificationModel mdlWithNormalization = trainer.fit(
-                    new CacheBasedDatasetBuilder<>(ignite, dataCache),
+                    ignite,
+                    dataCache,
                     preprocessor,
-                    (k, v) -> v[0],
-                    5);
+                    (k, v) -> v[0]
+                );
 
                 System.out.println(">>> SVM Multi-class model with normalization");
                 System.out.println(mdlWithNormalization.toString());
