@@ -675,34 +675,25 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     }
 
     /**
-     * Test {@link CacheMetrics#getSize()}, {@link CacheMetrics#getCacheSize()}, {@link CacheMetrics#getKeySize()}.
+     * Test {@link CacheMetrics#getSize()} and {@link CacheMetrics#getCacheSize()} work equally.
      *
      * @throws Exception If failed.
      */
-    public void testSize() throws Exception {
+    public void testCacheSizeWorksAsSize() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals(0, cache.metrics().getSize());
-        assertEquals(0L, cache.metrics().getCacheSize());
-
-        // Metrics size and key size work differently with the LOCAL cache mode.
-        if (cache.getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.LOCAL)
-            return;
+        assertEquals(cache.metrics().getSize(), cache.metrics().getCacheSize());
 
         for (int i = 0; i < KEY_CNT; i++) {
             cache.put(i, i);
 
             CacheMetrics metrics = cache.metrics();
 
-            assertEquals(i + 1, metrics.getSize());
-            assertEquals(i + 1, metrics.getCacheSize());
-            assertEquals(i + 1, metrics.getKeySize());
+            assertEquals(metrics.getSize(), metrics.getCacheSize());
 
             CacheMetrics localMetrics = cache.localMetrics();
 
-            assertEquals(i + 1, localMetrics.getSize());
-            assertEquals(i + 1, localMetrics.getCacheSize());
-            assertEquals(i + 1, localMetrics.getKeySize());
+            assertEquals(localMetrics.getSize(), localMetrics.getCacheSize());
         }
 
         for (int i = 0; i < KEY_CNT / 2; i++) {
@@ -710,21 +701,16 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
             CacheMetrics metrics = cache.metrics();
 
-            assertEquals(KEY_CNT - i - 1, metrics.getSize());
-            assertEquals(KEY_CNT - i - 1, metrics.getCacheSize());
-            assertEquals(KEY_CNT - i - 1, metrics.getKeySize());
+            assertEquals(metrics.getSize(), metrics.getCacheSize());
 
             CacheMetrics localMetrics = cache.localMetrics();
 
-            assertEquals(KEY_CNT - i - 1, localMetrics.getSize());
-            assertEquals(KEY_CNT - i - 1, localMetrics.getCacheSize());
-            assertEquals(KEY_CNT - i - 1, localMetrics.getKeySize());
+            assertEquals(localMetrics.getSize(), localMetrics.getCacheSize());
         }
 
         cache.removeAll();
 
-        assertEquals(0, cache.metrics().getSize());
-        assertEquals(0L, cache.metrics().getCacheSize());
+        assertEquals(cache.metrics().getSize(), cache.metrics().getCacheSize());
     }
 
     /**
