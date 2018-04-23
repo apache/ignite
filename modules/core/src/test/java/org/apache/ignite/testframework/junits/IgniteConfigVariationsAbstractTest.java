@@ -81,14 +81,14 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     @Override protected void beforeTestsStarted() throws Exception {
         assert testsCfg != null;
 
-        FileUtils.deleteDirectory(workDir);
-
-        info("Ignite's 'work' directory has been cleaned.");
-
         if (Ignition.allGrids().size() != testsCfg.gridCount()) {
             info("All nodes will be stopped, new " + testsCfg.gridCount() + " nodes will be started.");
 
             Ignition.stopAll(true);
+
+            FileUtils.deleteDirectory(workDir);
+
+            info("Ignite's 'work' directory has been cleaned.");
 
             startGrids(testsCfg.gridCount());
 
