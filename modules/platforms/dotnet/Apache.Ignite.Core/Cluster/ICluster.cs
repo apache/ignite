@@ -160,6 +160,6 @@ namespace Apache.Ignite.Core.Cluster
         /// Set transaction timeout on partition map exchange
         /// </summary>
         /// <param name="timeout"></param>
-        void SetTransactionTimeoutOnPartitionMapExchange(TimeSpan timeout);
+        void SetTxTimeoutOnPartitionMapExchange(TimeSpan timeout);
     }
 }

@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             IIgnite ignite = GetIgnite(0);
             
-            ignite.GetCluster().SetTransactionTimeoutOnPartitionMapExchange(TimeSpan.FromSeconds(12));
+            ignite.GetCluster().SetTxTimeoutOnPartitionMapExchange(TimeSpan.FromSeconds(12));
 
             Assert.AreEqual(ignite.GetTransactions().DefaultTimeoutOnPartitionMapExchange, TimeSpan.FromSeconds(12));
         }

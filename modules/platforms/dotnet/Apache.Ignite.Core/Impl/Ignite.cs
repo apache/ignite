@@ -838,7 +838,7 @@ namespace Apache.Ignite.Core.Impl
             return DoOutOp((int) Op.IsWalEnabled, w => w.WriteString(cacheName)) == True;
         }
 
-        public void SetTransactionTimeoutOnPartitionMapExchange(TimeSpan timeout)
+        public void SetTxTimeoutOnPartitionMapExchange(TimeSpan timeout)
         {
             DoOutOp((int) Op.SetTxTimeoutOnPartitionMapExchange, 
                 (BinaryWriter w) => w.WriteLong((long) timeout.TotalMilliseconds));
