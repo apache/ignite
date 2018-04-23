@@ -18,10 +18,10 @@
 package org.apache.ignite.compatibility.persistence;
 
 import java.io.File;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
+import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -38,16 +38,12 @@ public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteC
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        for (String dir : PERSISTENCE_DIRS) {
-            File file = Paths.get(U.defaultWorkDirectory() + File.separator + dir).toFile();
+        for (String dirName : PERSISTENCE_DIRS) {
+            File dir = U.resolveWorkDirectory(U.defaultWorkDirectory(), dirName, true);
 
-            if (!isDirectoryEmpty(file)) {
-                U.delete(file);
-
-                if (!isDirectoryEmpty(file)) {
-                    throw new IllegalStateException("Directory is not empty: [" + file.getAbsolutePath() +
-                        "]; It may be locked by another system process.");
-                }
+            if (!CompatibilityTestsUtils.isDirectoryEmpty(dir)) {
+                throw new IllegalStateException("Directory is not empty and can't be cleaned: " +
+                    "[" + dir.getAbsolutePath() + "]. It may be locked by another system process.");
             }
         }
     }
@@ -59,17 +55,7 @@ public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteC
         //protection if test failed to finish, e.g. by error
         stopAllGrids();
 
-        cleanPersistenceDir();
-    }
-
-    /**
-     * Checks if the given directory is empty.
-     *
-     * @param dir Directory to check.
-     * @return {@code true} if the given directory is empty or doesn't exist, otherwise {@code false}.
-     */
-    @SuppressWarnings("ConstantConditions")
-    protected final boolean isDirectoryEmpty(File dir) {
-        return !dir.exists() || (dir.isDirectory() && dir.list().length == 0);
+        for (String dir : PERSISTENCE_DIRS)
+            U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), dir, false));
     }
 }
