@@ -37,4 +37,5 @@ export expand from './expand.svg';
 export plus from './plus.svg';
 export copy from './copy.svg';
 export home from './home.svg';
-
+export {default as eyeOpened} from './eyeOpened.svg';
+export {default as eyeClosed} from './eyeClosed.svg';
