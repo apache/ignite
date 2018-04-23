@@ -107,7 +107,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
 
         client = false;
 
-        startGrids(NODES_CNT);
+        startGridsMultiThreaded(NODES_CNT);
 
         client = true;
 

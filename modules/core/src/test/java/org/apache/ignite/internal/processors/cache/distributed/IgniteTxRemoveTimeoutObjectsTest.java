@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
@@ -204,5 +205,10 @@ public class IgniteTxRemoveTimeoutObjectsTest extends GridCacheAbstractSelfTest 
         GridTimeoutProcessor timeout = igniteEx.context().timeout();
 
         return GridTestUtils.getFieldValue(timeout, timeout.getClass(), "timeoutObjs");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected NearCacheConfiguration nearConfiguration() {
+        return null;
     }
 }

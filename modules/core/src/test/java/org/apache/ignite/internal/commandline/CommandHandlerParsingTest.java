@@ -19,7 +19,11 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.Arrays;
 import junit.framework.TestCase;
+import org.apache.ignite.internal.visor.tx.VisorTxProjection;
+import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
+import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 
 import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
@@ -108,5 +112,101 @@ public class CommandHandlerParsingTest extends TestCase {
                 e.printStackTrace();
             }
         }
+    }
+
+    /**
+     * test parsing dump transaction arguments
+     */
+    @SuppressWarnings("Null")
+    public void testTransactionArguments() {
+        CommandHandler hnd = new CommandHandler();
+        Arguments args;
+
+        args = hnd.parseAndValidate(asList("--tx"));
+
+        try {
+            hnd.parseAndValidate(asList("--tx", "minDuration"));
+
+            fail("Expected exception");
+        }
+        catch (IllegalArgumentException ignored) {
+        }
+
+        try {
+            hnd.parseAndValidate(asList("--tx", "minDuration", "-1"));
+
+            fail("Expected exception");
+        }
+        catch (IllegalArgumentException ignored) {
+        }
+
+        try {
+            hnd.parseAndValidate(asList("--tx", "minSize"));
+
+            fail("Expected exception");
+        }
+        catch (IllegalArgumentException ignored) {
+        }
+
+        try {
+            hnd.parseAndValidate(asList("--tx", "minSize", "-1"));
+
+            fail("Expected exception");
+        }
+        catch (IllegalArgumentException ignored) {
+        }
+
+        try {
+            hnd.parseAndValidate(asList("--tx", "label"));
+
+            fail("Expected exception");
+        }
+        catch (IllegalArgumentException ignored) {
+        }
+
+        try {
+            hnd.parseAndValidate(asList("--tx", "label", "tx123["));
+
+            fail("Expected exception");
+        }
+        catch (IllegalArgumentException ignored) {
+        }
+
+        try {
+            hnd.parseAndValidate(asList("--tx", "servers", "nodes", "1,2,3"));
+
+            fail("Expected exception");
+        }
+        catch (IllegalArgumentException ignored) {
+        }
+
+        args = hnd.parseAndValidate(asList("--tx", "minDuration", "120", "minSize", "10", "limit", "100", "order", "SIZE",
+            "servers"));
+
+        VisorTxTaskArg arg = args.transactionArguments();
+
+        assertEquals(Long.valueOf(120 * 1000L), arg.getMinDuration());
+        assertEquals(Integer.valueOf(10), arg.getMinSize());
+        assertEquals(Integer.valueOf(100), arg.getLimit());
+        assertEquals(VisorTxSortOrder.SIZE, arg.getSortOrder());
+        assertEquals(VisorTxProjection.SERVER, arg.getProjection());
+
+        args = hnd.parseAndValidate(asList("--tx", "minDuration", "130", "minSize", "1", "limit", "60", "order", "DURATION",
+            "clients"));
+
+        arg = args.transactionArguments();
+
+        assertEquals(Long.valueOf(130 * 1000L), arg.getMinDuration());
+        assertEquals(Integer.valueOf(1), arg.getMinSize());
+        assertEquals(Integer.valueOf(60), arg.getLimit());
+        assertEquals(VisorTxSortOrder.DURATION, arg.getSortOrder());
+        assertEquals(VisorTxProjection.CLIENT, arg.getProjection());
+
+        args = hnd.parseAndValidate(asList("--tx", "nodes", "1,2,3"));
+
+        arg = args.transactionArguments();
+
+        assertNull(arg.getProjection());
+        assertEquals(Arrays.asList("1", "2", "3"), arg.getConsistentIds());
     }
 }

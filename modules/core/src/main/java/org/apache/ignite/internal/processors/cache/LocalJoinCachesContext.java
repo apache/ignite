@@ -86,11 +86,6 @@ public class LocalJoinCachesContext {
      * @param cacheNames Survived caches to clean.
      */
     public void removeSurvivedCaches(Set<String> cacheNames) {
-        if (cacheDescs != null) {
-            for (String cacheName : cacheNames)
-                cacheDescs.remove(cacheName);
-        }
-
         Iterator<T2<DynamicCacheDescriptor, NearCacheConfiguration>> it = locJoinStartCaches.iterator();
 
         for (; it.hasNext();) {
@@ -100,16 +95,6 @@ public class LocalJoinCachesContext {
 
             if (cacheNames.contains(desc.cacheName()))
                 it.remove();
-        }
-    }
-
-    /**
-     * @param cacheGrps Survived caches groups to clean.
-     */
-    public void removeSurvivedCacheGroups(Set<Integer> cacheGrps) {
-        if (cacheGrpDescs != null) {
-            for (Integer grpId : cacheGrps)
-                cacheGrpDescs.remove(grpId);
         }
     }
 
