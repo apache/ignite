@@ -78,6 +78,7 @@ ignite_odbc_tests_SOURCES = \
     src/sql_value_expressions_test.cpp \
     src/sql_types_test.cpp \
     src/sql_date_time_functions_test.cpp \
+    src/sql_parsing_test.cpp \
     src/sql_outer_join_test.cpp \
     src/sql_get_info_test.cpp \
     src/api_robustness_test.cpp \
@@ -97,6 +98,8 @@ ignite_odbc_tests_SOURCES = \
     ../odbc/src/config/connection_string_parser.cpp \
     ../odbc/src/app/application_data_buffer.cpp \
     ../odbc/src/ssl/ssl_mode.cpp \
+    ../odbc/src/sql/sql_parser.cpp \
+    ../odbc/src/sql/sql_lexer.cpp \
     ../odbc/src/row.cpp \
     ../odbc/src/protocol_version.cpp \
     ../odbc/src/column.cpp \
