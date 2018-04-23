@@ -651,11 +651,6 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
-    @Override public byte getProtocolVersion() {
-        return V2;
-    }
-
-    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
         U.writeEnum(out, mode);
@@ -712,7 +707,6 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
 
         out.writeObject(qryMetrics);
 
-        // V2
         out.writeLong(cacheSize);
     }
 
@@ -772,7 +766,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
 
         qryMetrics = (VisorQueryMetrics)in.readObject();
 
-        if (protoVer > V1)
+        if (in.available() > 0)
             cacheSize = in.readLong();
     }
 
