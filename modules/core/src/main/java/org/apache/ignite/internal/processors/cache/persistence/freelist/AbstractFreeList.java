@@ -311,7 +311,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     evictionTracker.forgetPage(pageId);
 
                     if (putIsNeeded)
-                        reuseBag.addFreePage(recycleDataPage(pageId, page, pageAddr, null));
+                        reuseBag.addFreePage(recyclePage(pageId, page, pageAddr, null));
                 }
                 else if (putIsNeeded)
                     put(null, pageId, page, pageAddr, newBucket);
@@ -490,7 +490,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             if (pageId == 0L)
                 pageId = allocateDataPage(row.partition());
-            else if (PageIdUtils.flag(pageId) != PageIdAllocator.FLAG_DATA) {
+            else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) {
                 long reusedPageId = pageId;
 
                 pageId = PageIdUtils.pageId(row.partition(), PageIdAllocator.FLAG_DATA, PageIdUtils.pageIndex(reusedPageId));

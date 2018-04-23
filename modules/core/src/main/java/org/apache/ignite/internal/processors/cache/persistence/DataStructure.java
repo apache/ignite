@@ -346,7 +346,7 @@ public abstract class DataStructure implements PageLockListener {
      * @param page Page pointer.
      * @param pageAddr Page address.
      * @param walPlc Full page WAL record policy.
-     * @return Rotated page ID.
+     * @return Recycled page ID.
      * @throws IgniteCheckedException If failed.
      */
     protected final long recyclePage(
@@ -354,32 +354,20 @@ public abstract class DataStructure implements PageLockListener {
         long page,
         long pageAddr,
         Boolean walPlc) throws IgniteCheckedException {
-        long rotated = PageIdUtils.rotatePageId(pageId);
+        long recycled = 0;
 
-        PageIO.setPageId(pageAddr, rotated);
+        if (PageIdUtils.tag(pageId) == FLAG_DATA) {
+            int rotatedIdPart = PageIO.getRotatedIdPart(pageAddr);
 
-        if (needWalDeltaRecord(pageId, page, walPlc))
-            wal.log(new RecycleRecord(grpId, pageId, rotated));
+            if (rotatedIdPart != 0) {
+                recycled = PageIdUtils.link(pageId, rotatedIdPart);
 
-        return rotated;
-    }
+                PageIO.setRotatedIdPart(pageAddr, 0);
+            }
+        }
 
-    /**
-     * @param pageId Page id.
-     * @param page Page.
-     * @param pageAddr Page address.
-     * @param walPlc Wal policy.
-     * @return Recycled data page ID.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected final long recycleDataPage(
-        long pageId,
-        long page,
-        long pageAddr,
-        Boolean walPlc) throws IgniteCheckedException {
-        long recycled = PageIdUtils.link(
-            PageIdUtils.pageId(INDEX_PARTITION, FLAG_IDX, PageIdUtils.pageIndex(pageId)),
-            PageIO.getRotatedIdPart(pageAddr));
+        if (recycled == 0)
+            recycled = PageIdUtils.rotatePageId(pageId);
 
         PageIO.setPageId(pageAddr, recycled);
 
