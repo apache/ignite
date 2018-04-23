@@ -20,7 +20,6 @@ package org.apache.ignite.compatibility.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.compatibility.persistence.DummyPersistenceCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
-import org.apache.ignite.compatibility.persistence.IgniteUuidCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.MigratingToWalV2SerializerWithCompactionTest;
 
 /**
@@ -39,8 +38,6 @@ public class IgniteCompatibilityBasicTestSuite {
         suite.addTestSuite(FoldersReuseCompatibilityTest.class);
 
         suite.addTestSuite(MigratingToWalV2SerializerWithCompactionTest.class);
-
-        suite.addTestSuite(IgniteUuidCompatibilityTest.class);
 
         return suite;
     }

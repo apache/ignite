@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -54,8 +55,6 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
- /*
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
@@ -67,7 +66,7 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
             new BinaryConfiguration()
                 .setCompactFooter(compactFooter)
         );
-*/
+
         return cfg;
     }
 
@@ -158,6 +157,8 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
         cache.put("Externalizable", new TestExternalizable(42));
         cache.put(new TestExternalizable(42), "Externalizable_As_Key");
         cache.put("testStringContainer", new TestStringContainerToBePrinted("testStringContainer"));
+        cache.put(UUID.fromString("DA9E0049-468C-4680-BF85-D5379164FDCC"),
+            UUID.fromString("B851B870-3BA7-4E5F-BDB8-458B42300000"));
     }
 
     /**
@@ -182,6 +183,8 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
         assertEquals(new TestExternalizable(42), cache.get("Externalizable"));
         assertEquals("Externalizable_As_Key", cache.get(new TestExternalizable(42)));
         assertEquals(new TestStringContainerToBePrinted("testStringContainer"), cache.get("testStringContainer"));
+        assertEquals(UUID.fromString("B851B870-3BA7-4E5F-BDB8-458B42300000"),
+            cache.get(UUID.fromString("DA9E0049-468C-4680-BF85-D5379164FDCC")));
     }
 
     /** */
