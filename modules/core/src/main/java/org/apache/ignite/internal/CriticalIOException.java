@@ -17,26 +17,9 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.IgniteCheckedException;
-
 /**
- *
+ * Marker interface of critical input-output exception.
  */
-public class NodeStoppingException extends IgniteCheckedException implements CriticalIOException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public interface CriticalIOException {
 
-    /**
-     * @param cause Original node stopping cause.
-     */
-    public NodeStoppingException(Exception cause) {
-        super(cause);
-    }
-
-    /**
-     * @param msg Exception message.
-     */
-    public NodeStoppingException(String msg) {
-        super(msg);
-    }
 }
