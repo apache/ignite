@@ -545,36 +545,25 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
     public void testActivateAfterFailGetLock() throws Exception {
         Ignite ig1P = primary(0);
         Ignite ig2P = primary(1);
-        Ignite ig3P = primary(2);
 
         Ignite ig1CP = primaryClient(0);
-        Ignite ig2CP = primaryClient(1);
-        Ignite ig3CP = primaryClient(2);
 
         Ignite ig1B = backUp(0);
-        Ignite ig2B = backUp(1);
-        Ignite ig3B = backUp(2);
 
         Ignite ig1CB = backUpClient(0);
         Ignite ig2CB = backUpClient(1);
         Ignite ig3CB = backUpClient(2);
 
-        assertTrue(ig1P.active());
-        assertTrue(ig2P.active());
-        assertTrue(ig3P.active());
+        assertTrue(ig1P.cluster().active());
 
-        assertTrue(!ig1B.active());
-        assertTrue(!ig2B.active());
-        assertTrue(!ig3B.active());
+        assertTrue(!ig1B.cluster().active());
 
-        assertTrue(!ig1CB.active());
-        assertTrue(!ig2CB.active());
-        assertTrue(!ig3CB.active());
+        assertTrue(!ig1CB.cluster().active());
 
         stopPrimary(0);
 
         try {
-            ig3CB.active(true);
+            ig3CB.cluster().active(true);
 
             fail("Activation should fail");
         }
@@ -585,32 +574,21 @@ public class IgniteChangeGlobalStateTest extends IgniteChangeGlobalStateAbstract
                 assertTrue(t.getMessage().contains("can't get lock during"));
         }
 
-        assertTrue(!ig1B.active());
-        assertTrue(!ig2B.active());
-        assertTrue(!ig3B.active());
+        assertTrue(!ig1B.cluster().active());
 
-        assertTrue(!ig1CB.active());
-        assertTrue(!ig2CB.active());
-        assertTrue(!ig3CB.active());
+        assertTrue(!ig1CB.cluster().active());
 
-        assertTrue(ig2P.active());
-        assertTrue(ig3P.active());
+        assertTrue(ig2P.cluster().active());
 
-        assertTrue(ig1CP.active());
-        assertTrue(ig2CP.active());
-        assertTrue(ig3CP.active());
+        assertTrue(ig1CP.cluster().active());
 
         stopAllPrimary();
 
-        ig2CB.active(true);
+        ig2CB.cluster().active(true);
 
-        assertTrue(ig1B.active());
-        assertTrue(ig2B.active());
-        assertTrue(ig3B.active());
+        assertTrue(ig1B.cluster().active());
 
-        assertTrue(ig1CB.active());
-        assertTrue(ig2CB.active());
-        assertTrue(ig3CB.active());
+        assertTrue(ig1CB.cluster().active());
     }
 
     /**
