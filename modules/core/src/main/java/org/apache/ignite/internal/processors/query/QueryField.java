@@ -61,6 +61,16 @@ public class QueryField implements Serializable {
      * @param nullable Nullable flag.
      * @param dfltValue Default value.
      */
+    public QueryField(String name, String typeName, boolean nullable, Object dfltValue) {
+        this(name, typeName, nullable, dfltValue, -1, -1);
+    }
+
+    /**
+     * @param name Field name.
+     * @param typeName Class name for this field's values.
+     * @param nullable Nullable flag.
+     * @param dfltValue Default value.
+     */
     public QueryField(String name, String typeName, boolean nullable, Object dfltValue, int precision, int scale) {
         this.name = name;
         this.typeName = typeName;

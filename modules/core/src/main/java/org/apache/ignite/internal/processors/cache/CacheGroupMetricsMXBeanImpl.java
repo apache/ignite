@@ -25,12 +25,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.LongAdder;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 
 /**
@@ -39,6 +45,9 @@ import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /** Cache group context. */
     private final CacheGroupContext ctx;
+
+    /** */
+    private final GroupAllocationTrucker groupPageAllocationTracker;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -52,12 +61,58 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     }
 
     /**
-     * Creates MBean;
+     *
+     */
+    public static class GroupAllocationTrucker implements AllocatedPageTracker {
+        /** */
+        private final LongAdder totalAllocatedPages = new LongAdder();
+
+        /** */
+        private final AllocatedPageTracker delegate;
+
+        /**
+         * @param delegate Delegate allocation trucker.
+         */
+        public GroupAllocationTrucker(AllocatedPageTracker delegate) {
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateTotalAllocatedPages(long delta) {
+            totalAllocatedPages.add(delta);
+
+            delegate.updateTotalAllocatedPages(delta);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class NoopAllocationTrucker implements AllocatedPageTracker{
+        /** {@inheritDoc} */
+        @Override public void updateTotalAllocatedPages(long delta) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Creates Group metrics MBean.
      *
      * @param ctx Cache group context.
      */
     public CacheGroupMetricsMXBeanImpl(CacheGroupContext ctx) {
         this.ctx = ctx;
+
+        DataRegion region = ctx.dataRegion();
+
+        // On client node, region is null.
+        if (region != null) {
+            DataRegionMetricsImpl dataRegionMetrics = ctx.dataRegion().memoryMetrics();
+
+            this.groupPageAllocationTracker = dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.groupId());
+        }
+        else
+            this.groupPageAllocationTracker = new GroupAllocationTrucker(new NoopAllocationTrucker());
     }
 
     /** {@inheritDoc} */
@@ -251,5 +306,34 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         }
 
         return assignmentMap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getType() {
+        CacheMode type = ctx.config().getCacheMode();
+
+        return String.valueOf(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Integer> getPartitionIds() {
+        List<GridDhtLocalPartition> parts = ctx.topology().localPartitions();
+
+        List<Integer> partsRes = new ArrayList<>(parts.size());
+
+        for (GridDhtLocalPartition part : parts)
+            partsRes.add(part.id());
+
+        return partsRes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalAllocatedPages() {
+        return groupPageAllocationTracker.totalAllocatedPages.longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        return getTotalAllocatedPages() * ctx.dataRegion().pageMemory().pageSize();
     }
 }

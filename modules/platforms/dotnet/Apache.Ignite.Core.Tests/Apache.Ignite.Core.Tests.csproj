@@ -106,6 +106,7 @@
     <Compile Include="Binary\Serializable\GenericCollectionsTest.cs" />
     <Compile Include="Cache\Affinity\AffinityAttributeTest.cs" />
     <Compile Include="Cache\CacheCreateTest.cs" />
+    <Compile Include="Cache\CacheQueryMetricsTest.cs" />
     <Compile Include="Cache\DataRegionMetricsTest.cs" />
     <Compile Include="Cache\DataStorageMetricsTest.cs" />
     <Compile Include="Cache\PersistenceTest.cs" />
