@@ -201,6 +201,7 @@ import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
 import org.apache.ignite.mxbean.WorkersControlMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
+import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
@@ -4191,9 +4192,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             ClusterMetricsMXBean metricsBean = new ClusterMetricsMXBeanImpl(cluster());
             registerMBean("Kernal", metricsBean.getClass().getSimpleName(), metricsBean, ClusterMetricsMXBean.class);
 
+            // Transaction metrics
+            TransactionMetricsMxBean txMetricsMXBean = new TransactionMetricsMxBeanImpl(ctx.cache().transactions().metrics());
+            registerMBean("TransactionMetrics", txMetricsMXBean.getClass().getSimpleName(), txMetricsMXBean, TransactionMetricsMxBean.class);
+
             // Transactions
-            TransactionMetricsMxBean txMXBean = new TransactionMetricsMxBeanImpl(ctx.cache().transactions().metrics());
-            registerMBean("Transactions", txMXBean.getClass().getSimpleName(), txMXBean, TransactionMetricsMxBean.class);
+            TransactionsMXBean txMXBean = new TransactionsMXBeanImpl(ctx);
+            registerMBean("Transactions", txMXBean.getClass().getSimpleName(), txMXBean, TransactionsMXBean.class);
 
             // Executors
             registerExecutorMBean("GridUtilityCacheExecutor", utilityCachePool);
