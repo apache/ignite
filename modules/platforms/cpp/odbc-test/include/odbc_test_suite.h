@@ -69,14 +69,6 @@ namespace ignite
             void CleanUp();
 
             /**
-             * Start additional with the specified name and config.
-             * 
-             * @param cfg Config path.
-             * @param name Instance name.
-             */
-            static Ignite StartTestNode(const char* cfg, const char* name);
-
-            /**
              * Constructor.
              */
             OdbcTestSuite();
