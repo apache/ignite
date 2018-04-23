@@ -42,6 +42,11 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
     private static final int ALLOW_LEAK_ON_RESTART_IN_MB = 1;
 
     /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 1 * 3600 * 1000;
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
@@ -56,11 +61,18 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        cleanPersistenceDir();
+    }
+
     /**
      * @throws Exception On failed.
      */
     public void test() throws Exception {
-//        System.setProperty(IgniteSystemProperties.IGNITE_DELAYED_REPLACED_PAGE_WRITE, "false");
+        System.setProperty(IgniteSystemProperties.IGNITE_DELAYED_REPLACED_PAGE_WRITE, "false");
 
         // Warmup
         for (int i = 0; i < RESTARTS / 2; ++i) {
@@ -77,21 +89,26 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
 
         // Restarts
         for (int i = 0; i < RESTARTS; ++i) {
+//        while (true) {
             startGrids(NODES);
 
             Thread.sleep(500);
 
             stopAllGrids();
+
+            GridDebug.dumpHeap(HEAP_DUMP_FILE_NAME, true);
         }
 
         GridDebug.dumpHeap(HEAP_DUMP_FILE_NAME, true);
 
         final long size1 = new File(HEAP_DUMP_FILE_NAME).length();
 
-        final float leakSize = (float)((size1 - size0) >> 20) / NODES / RESTARTS;
+        final float leakSize = (float)(size1 - size0) / 1024 / 1024 / NODES / RESTARTS;
 
         assertTrue("Possible leaks detected. The " + leakSize + "M leaks per node restart after " + RESTARTS
                 + " restarts. See the '" + new File(HEAP_DUMP_FILE_NAME).getAbsolutePath() + "'",
             leakSize < ALLOW_LEAK_ON_RESTART_IN_MB);
+
+        log.info("Detected leak: " + leakSize + "M");
    }
 }
