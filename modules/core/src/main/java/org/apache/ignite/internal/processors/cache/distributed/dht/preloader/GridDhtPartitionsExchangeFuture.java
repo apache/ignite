@@ -44,6 +44,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -72,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.LocalJoinCachesContext;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
@@ -797,6 +799,25 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         cctx.cache().startCachesOnLocalJoin(locJoinCtx, initialVersion());
+
+        ensureClientCachesStarted();
+    }
+
+    /**
+     * Start client caches if absent.
+     */
+    private void ensureClientCachesStarted() {
+        GridCacheProcessor cacheProcessor = cctx.cache();
+        List<CacheConfiguration> notStartedCacheConfigs = new ArrayList<>();
+        for (CacheConfiguration cCfg : cctx.gridConfig().getCacheConfiguration()) {
+            if (!cacheProcessor.cacheNames().contains(cCfg.getName())) {
+                notStartedCacheConfigs.add(cCfg);
+            }
+        }
+
+        if (!notStartedCacheConfigs.isEmpty()) {
+            cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false, false);
+        }
     }
 
     /**
@@ -3854,6 +3875,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         /** */
         NONE
     }
+
     /**
      *
      */
