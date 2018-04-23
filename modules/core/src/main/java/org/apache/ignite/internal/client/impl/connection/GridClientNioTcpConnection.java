@@ -210,11 +210,11 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             sock.setTcpNoDelay(tcpNoDelay);
             sock.setKeepAlive(true);
 
-            final long startConnTime = U.currentTimeMillis();
+            final long startConnTime = System.currentTimeMillis();
 
             sock.connect(srvAddr, connectTimeout);
 
-            final long connTimeoutRest = connectTimeout - (U.currentTimeMillis() - startConnTime);
+            final long connTimeoutRest = connectTimeout - (System.currentTimeMillis() - startConnTime);
 
             GridClientFuture<?> handshakeFut = new GridClientFutureAdapter<>();
 
@@ -431,7 +431,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         assert msg != null;
 
         if (msg instanceof GridClientPingPacket) {
-            long now = U.currentTimeMillis();
+            long now = System.currentTimeMillis();
 
             if (Math.min(now, lastPingRcvTime) - lastPingSndTime >= pingTimeout)
                 close(FAILED, false,
@@ -470,7 +470,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
 
             GridNioFuture<?> sndFut = ses.send(msg);
 
-            lastMsgSndTime = U.currentTimeMillis();
+            lastMsgSndTime = System.currentTimeMillis();
 
             if (routeMode) {
                 sndFut.listen(new CI1<IgniteInternalFuture<?>>() {
@@ -504,7 +504,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      * Handles ping response.
      */
     void handlePingResponse() {
-        lastPingRcvTime = U.currentTimeMillis();
+        lastPingRcvTime = System.currentTimeMillis();
     }
 
     /**
@@ -515,7 +515,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
      */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
     void handleResponse(GridClientMessage res) throws IOException {
-        lastMsgRcvTime = U.currentTimeMillis();
+        lastMsgRcvTime = System.currentTimeMillis();
 
         TcpClientFuture fut = pendingReqs.get(res.requestId());
 

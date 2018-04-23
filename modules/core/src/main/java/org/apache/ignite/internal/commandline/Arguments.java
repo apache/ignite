@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.commandline;
 
+import org.apache.ignite.internal.client.GridClientConfiguration;
+
 /**
  * Bean with all parsed and validated arguments.
  */
@@ -49,6 +51,12 @@ public class Arguments {
      */
     private String baselineArgs;
 
+    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}.*/
+    private long pingTimeout;
+
+    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}.*/
+    private long pingInterval;
+
     /**
      * Action for WAL command.
      */
@@ -67,12 +75,15 @@ public class Arguments {
      * @param pwd Password.
      * @param baselineAct Baseline action.
      * @param baselineArgs Baseline args.
+     * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
+     * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
      * @param walAct WAL action.
      * @param walArgs WAL args.
      * @param force Force flag.
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd,
-        String baselineAct, String baselineArgs, String walAct, String walArgs, boolean force) {
+                     String baselineAct, String baselineArgs, long pingTimeout,
+                     long pingInterval,  String walAct, String walArgs, boolean force) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -80,6 +91,8 @@ public class Arguments {
         this.pwd = pwd;
         this.baselineAct = baselineAct;
         this.baselineArgs = baselineArgs;
+        this.pingTimeout = pingTimeout;
+        this.pingInterval = pingInterval;
         this.walAct = walAct;
         this.walArgs = walArgs;
         this.force = force;
@@ -146,6 +159,24 @@ public class Arguments {
      */
     public String walArguments() {
         return walArgs;
+    }
+
+    /**
+     * See {@link GridClientConfiguration#pingTimeout}.
+     *
+     * @return Ping timeout.
+     */
+    public long pingTimeout() {
+        return pingTimeout;
+    }
+
+    /**
+     * See {@link GridClientConfiguration#pingInterval}.
+     *
+     * @return Ping interval.
+     */
+    public long pingInterval() {
+        return pingInterval;
     }
 
     /**

@@ -61,7 +61,7 @@ public class CommandHandlerParsingTest extends TestCase {
             }
 
             try {
-                hnd.parseAndValidate(asList("--user", "testUser", cmd.text()));
+                hnd.parseAndValidate(processArgs(asList("--user", "testUser"), cmd));
 
                 fail("expected exception: Both user and password should be specified");
             }
@@ -70,7 +70,7 @@ public class CommandHandlerParsingTest extends TestCase {
             }
 
             try {
-                hnd.parseAndValidate(asList("--password", "testPass", cmd.text()));
+                hnd.parseAndValidate(processArgs(asList("--password", "testPass"), cmd));
 
                 fail("expected exception: Both user and password should be specified");
             }
@@ -78,12 +78,8 @@ public class CommandHandlerParsingTest extends TestCase {
                 e.printStackTrace();
             }
 
-            List<String> rawArgs = Lists.newArrayList("--user", "testUser", "--password", "testPass", cmd.text());
-
-            if (cmd == WAL)
-                rawArgs.add(WAL_PRINT);
-
-            Arguments args = hnd.parseAndValidate(rawArgs);
+            Arguments args = hnd.parseAndValidate(processArgs(asList("--user", "testUser", "--password", "testPass"),
+                    cmd));
 
             assertEquals("testUser", args.user());
             assertEquals("testPass", args.password());
@@ -132,43 +128,82 @@ public class CommandHandlerParsingTest extends TestCase {
 
     /**
      * Tests host and port arguments.
+     * Tests connection settings arguments.
      */
-    public void testHostAndPort() {
+    public void testConnectionSettings() {
         CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
-            List<String> rawArgs = Lists.newArrayList(cmd.text());
-            if (cmd == WAL)
-                rawArgs.add(WAL_PRINT);
-
-            Arguments args = hnd.parseAndValidate(rawArgs);
+            Arguments args = hnd.parseAndValidate(processArgs(cmd));
 
             assertEquals(cmd, args.command());
             assertEquals(DFLT_HOST, args.host());
             assertEquals(DFLT_PORT, args.port());
 
-            rawArgs = Lists.newArrayList("--port", "12345", "--host", "test-host", cmd.text());
-            if (cmd == WAL)
-                rawArgs.add(WAL_PRINT);
-
-            args = hnd.parseAndValidate(rawArgs);
+            args = hnd.parseAndValidate(processArgs(asList("--port", "12345", "--host", "test-host", "--ping-interval",
+                    "5000", "--ping-timeout", "40000"), cmd));
 
             assertEquals(cmd, args.command());
             assertEquals("test-host", args.host());
             assertEquals("12345", args.port());
+            assertEquals(5000, args.pingInterval());
+            assertEquals(40000, args.pingTimeout());
 
             try {
-                rawArgs = Lists.newArrayList("--port", "wrong-port", cmd.text());
-                if (cmd == WAL)
-                    rawArgs.add(WAL_PRINT);
-
-                hnd.parseAndValidate(rawArgs);
+                hnd.parseAndValidate(processArgs(asList("--port", "wrong-port"), cmd));
 
                 fail("expected exception: Invalid value for port:");
             }
             catch (IllegalArgumentException e) {
                 e.printStackTrace();
             }
+
+            try {
+                hnd.parseAndValidate(processArgs(asList("--ping-interval", "-10"), cmd));
+
+                fail("expected exception: Ping interval must be specified");
+            }
+            catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                hnd.parseAndValidate(processArgs(asList("--ping-timeout", "-10"), cmd));
+
+                fail("expected exception: Ping timeout must be specified");
+            }
+            catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
         }
     }
+
+    /**
+     * Correctly process Command and args in case of WAL command.
+     * @param args Args.
+     * @param cmd Command.
+     */
+    private List<String> processArgs(List<String> args, Command cmd) {
+        List<String> ret = Lists.newArrayList(args);
+
+        ret.add(cmd.text());
+
+        if (cmd == WAL)
+            ret.add(WAL_PRINT);
+
+        return ret;
+    };
+
+    /**
+     * Correctly process Command and args in case of WAL command.
+     * @param cmd Command.
+     */
+    private List<String> processArgs(Command cmd) {
+        List<String> ret = Lists.newArrayList(cmd.text());
+
+        if (cmd == WAL)
+            ret.add(WAL_PRINT);
+
+        return ret;
+    };
 }
