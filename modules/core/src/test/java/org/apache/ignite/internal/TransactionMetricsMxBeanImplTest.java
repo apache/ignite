@@ -100,7 +100,7 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        TransactionMetricsMxBean txMXBean = txMXBean(0);
+        TransactionMetricsMxBean txMXBean = txMetricsMXBean(0);
 
         final IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
@@ -176,7 +176,7 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
         IgniteEx primaryNode2 = startGrid(1);
         IgniteEx nearNode = startGrid(2);
 
-        TransactionMetricsMxBean txMXBeanBackup = txMXBean(2);
+        TransactionMetricsMxBean txMXBeanBackup = txMetricsMXBean(2);
 
         awaitPartitionMapExchange();
 
@@ -285,10 +285,10 @@ public class TransactionMetricsMxBeanImplTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private TransactionMetricsMxBean txMXBean(int igniteInt) throws Exception {
+    private TransactionMetricsMxBean txMetricsMXBean(int igniteInt) throws Exception {
         ObjectName mbeanName = U.makeMBeanName(
             getTestIgniteInstanceName(igniteInt),
-            "Transactions",
+            "TransactionMetrics",
             TransactionMetricsMxBeanImpl.class.getSimpleName()
         );
 
