@@ -2062,7 +2062,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      *
      * @return Wrapped DiscoverySpi SPI.
      */
-    private DiscoverySpi getInjectedDiscoverySpi() {
+    public DiscoverySpi getInjectedDiscoverySpi() {
         try {
             inject();
         }
