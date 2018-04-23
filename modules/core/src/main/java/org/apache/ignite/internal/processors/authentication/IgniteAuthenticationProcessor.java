@@ -68,6 +68,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 
@@ -451,7 +452,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
         // 1. Collect users info only on coordinator
         // 2. Doesn't collect users info to send on client node due to security reason.
-        if (!isEnabled || !F.eq(ctx.localNodeId(), coordinator().id()) || dataBag.isJoiningNodeClient())
+        if (!isEnabled || !isLocalNodeCoordinator() || dataBag.isJoiningNodeClient())
             return;
 
         synchronized (mux) {
@@ -464,6 +465,18 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 dataBag.addGridCommonData(AUTH_PROC.ordinal(), d);
             }
         }
+    }
+
+    /**
+     * Checks whether local node is coordinator. Nodes that are leaving or failed
+     * (but are still in topology) are removed from search.
+     *
+     * @return {@code true} if local node is coordinator.
+     */
+    private boolean isLocalNodeCoordinator() {
+        TcpDiscoverySpi spi = (TcpDiscoverySpi)ctx.discovery().getInjectedDiscoverySpi();
+
+        return spi.isLocalNodeCoordinator();
     }
 
     /** {@inheritDoc} */
