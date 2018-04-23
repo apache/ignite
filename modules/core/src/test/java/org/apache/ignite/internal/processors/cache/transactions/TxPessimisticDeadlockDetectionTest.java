@@ -107,7 +107,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
 
         client = false;
 
-        startGrids(NODES_CNT);
+        startGridsMultiThreaded(NODES_CNT);
 
         client = true;
 
@@ -156,8 +156,6 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
      * @throws Exception If failed.
      */
     public void testDeadlocksLocal() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7581");
-
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             IgniteCache cache = null;
 

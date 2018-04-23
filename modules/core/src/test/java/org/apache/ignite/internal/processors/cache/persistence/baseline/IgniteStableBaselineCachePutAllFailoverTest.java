@@ -28,7 +28,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- *
+ * Failover cache test with putAll operations executed with presence of BaselineTopology
+ * when one random node from BLT is constantly restarted during the load.
  */
 public class IgniteStableBaselineCachePutAllFailoverTest extends CachePutAllFailoverAbstractTest {
     /** */
@@ -84,7 +85,7 @@ public class IgniteStableBaselineCachePutAllFailoverTest extends CachePutAllFail
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         startGrids(GRIDS_COUNT);
 
@@ -99,6 +100,6 @@ public class IgniteStableBaselineCachePutAllFailoverTest extends CachePutAllFail
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 }

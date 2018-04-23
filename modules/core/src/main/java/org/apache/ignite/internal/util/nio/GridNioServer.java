@@ -77,6 +77,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
 
@@ -152,6 +154,9 @@ public class GridNioServer<T> {
 
     /** Filter chain to use. */
     private final GridNioFilterChain<T> filterChain;
+
+    /** Server listener. */
+    private final GridNioServerListener<T> lsnr;
 
     /** Logger. */
     @GridToStringExclude
@@ -312,6 +317,7 @@ public class GridNioServer<T> {
         this.msgQueueLsnr = msgQueueLsnr;
         this.selectorSpins = selectorSpins;
         this.readWriteSelectorsAssign = readWriteSelectorsAssign;
+        this.lsnr = lsnr;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
 
@@ -483,6 +489,17 @@ public class GridNioServer<T> {
         impl.offerStateChange(fut);
 
         return fut;
+    }
+
+    /**
+     * @param ses Session.
+     */
+    public void closeFromWorkerThread(GridNioSession ses) {
+        assert ses instanceof GridSelectorNioSessionImpl : ses;
+
+        GridSelectorNioSessionImpl ses0 = (GridSelectorNioSessionImpl)ses;
+
+        ((AbstractNioClientWorker)ses0.worker()).close((GridSelectorNioSessionImpl)ses, null);
     }
 
     /**
@@ -1381,8 +1398,12 @@ public class GridNioServer<T> {
 
                         finished = msg.writeTo(buf, writer);
 
-                        if (finished && writer != null)
-                            writer.reset();
+                        if (finished) {
+                            onMessageWritten(ses, msg);
+
+                            if (writer != null)
+                                writer.reset();
+                        }
                     }
 
                     // Fill up as many messages as possible to write buffer.
@@ -1406,8 +1427,12 @@ public class GridNioServer<T> {
 
                         finished = msg.writeTo(buf, writer);
 
-                        if (finished && writer != null)
-                            writer.reset();
+                        if (finished) {
+                            onMessageWritten(ses, msg);
+
+                            if (writer != null)
+                                writer.reset();
+                        }
                     }
 
                     int sesBufLimit = buf.limit();
@@ -1579,8 +1604,12 @@ public class GridNioServer<T> {
 
                 finished = msg.writeTo(buf, writer);
 
-                if (finished && writer != null)
-                    writer.reset();
+                if (finished) {
+                    onMessageWritten(ses, msg);
+
+                    if (writer != null)
+                        writer.reset();
+                }
             }
 
             // Fill up as many messages as possible to write buffer.
@@ -1604,8 +1633,12 @@ public class GridNioServer<T> {
 
                 finished = msg.writeTo(buf, writer);
 
-                if (finished && writer != null)
-                    writer.reset();
+                if (finished) {
+                    onMessageWritten(ses, msg);
+
+                    if (writer != null)
+                        writer.reset();
+                }
             }
 
             buf.flip();
@@ -1647,6 +1680,18 @@ public class GridNioServer<T> {
         @Override public String toString() {
             return S.toString(DirectNioClientWorker.class, this, super.toString());
         }
+    }
+
+    /**
+     * Handle message written event.
+     *
+     * @param ses Session.
+     * @param msg Message.
+     */
+    @SuppressWarnings("unchecked")
+    private void onMessageWritten(GridSelectorNioSessionImpl ses, Message msg) {
+        if (lsnr != null)
+            lsnr.onMessageSent(ses, (T)msg);
     }
 
     /**
@@ -1706,6 +1751,8 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            Throwable err = null;
+
             try {
                 boolean reset = false;
 
@@ -1731,8 +1778,23 @@ public class GridNioServer<T> {
             catch (Throwable e) {
                 U.error(log, "Caught unhandled exception in NIO worker thread (restart the node).", e);
 
+                err = e;
+
                 if (e instanceof Error)
                     throw e;
+            }
+            finally {
+                if (err instanceof OutOfMemoryError)
+                    lsnr.onFailure(CRITICAL_ERROR, err);
+                else if (!closed) {
+                    if (err == null)
+                        lsnr.onFailure(SYSTEM_WORKER_TERMINATION,
+                            new IllegalStateException("Thread " + name() + " is terminated unexpectedly"));
+                    else if (err instanceof InterruptedException)
+                        lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
+                }
+                else if (err != null)
+                    lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
             }
         }
 
@@ -2138,7 +2200,12 @@ public class GridNioServer<T> {
                 dumpSelectorInfo(sb, keys);
 
             for (SelectionKey key : keys) {
-                GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
+                GridNioKeyAttachment attach = (GridNioKeyAttachment)key.attachment();
+
+                if (!attach.hasSession())
+                    continue;
+
+                GridSelectorNioSessionImpl ses = attach.session();
 
                 boolean sesInfo = p == null || p.apply(ses);
 
@@ -2742,6 +2809,8 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            Throwable err = null;
+
             try {
                 boolean reset = false;
 
@@ -2764,8 +2833,28 @@ public class GridNioServer<T> {
                     }
                 }
             }
+            catch (Throwable t) {
+                if (!(t instanceof IgniteInterruptedCheckedException))
+                    err = t;
+
+                throw t;
+            }
             finally {
-                closeSelector(); // Safety.
+                try {
+                    closeSelector(); // Safety.
+                }
+                catch (RuntimeException ignore) {
+                    // No-op.
+                }
+
+                if (err == null && !closed)
+                    err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
+
+                if (err instanceof OutOfMemoryError)
+                    lsnr.onFailure(CRITICAL_ERROR, err);
+                else if (err != null)
+                    lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
+
             }
         }
 

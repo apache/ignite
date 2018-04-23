@@ -25,6 +25,15 @@ import org.scalatest.Suites
 class IgniteDataFrameSuite extends Suites (
     new IgniteDataFrameSchemaSpec,
     new IgniteSQLDataFrameSpec,
+    new IgniteSQLDataFrameWriteSpec,
+    new IgniteSQLDataFrameIgniteSessionWriteSpec,
     new IgniteDataFrameWrongConfigSpec,
-    new IgniteCatalogSpec
+    new IgniteCatalogSpec,
+    new IgniteOptimizationSpec,
+    new IgniteOptimizationStringFuncSpec,
+    new IgniteOptimizationMathFuncSpec,
+    new IgniteOptimizationAggregationFuncSpec,
+    new IgniteOptimizationSystemFuncSpec,
+    new IgniteOptimizationJoinSpec,
+    new IgniteOptimizationDisableEnableSpec
 )

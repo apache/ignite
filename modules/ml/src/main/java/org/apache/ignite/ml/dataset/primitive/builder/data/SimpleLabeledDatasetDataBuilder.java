@@ -40,47 +40,61 @@ public class SimpleLabeledDatasetDataBuilder<K, V, C extends Serializable>
     private final IgniteBiFunction<K, V, double[]> featureExtractor;
 
     /** Function that extracts labels from an {@code upstream} data. */
-    private final IgniteBiFunction<K, V, Double> lbExtractor;
-
-    /** Number of columns (features). */
-    private final int cols;
+    private final IgniteBiFunction<K, V, double[]> lbExtractor;
 
     /**
      * Constructs a new instance of partition {@code data} builder that makes {@link SimpleLabeledDatasetData}.
      *
      * @param featureExtractor Function that extracts features from an {@code upstream} data.
      * @param lbExtractor Function that extracts labels from an {@code upstream} data.
-     * @param cols Number of columns (features).
      */
     public SimpleLabeledDatasetDataBuilder(IgniteBiFunction<K, V, double[]> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor, int cols) {
+        IgniteBiFunction<K, V, double[]> lbExtractor) {
         this.featureExtractor = featureExtractor;
         this.lbExtractor = lbExtractor;
-        this.cols = cols;
     }
 
     /** {@inheritDoc} */
     @Override public SimpleLabeledDatasetData build(Iterator<UpstreamEntry<K, V>> upstreamData,
         long upstreamDataSize, C ctx) {
         // Prepares the matrix of features in flat column-major format.
-        double[] features = new double[Math.toIntExact(upstreamDataSize * cols)];
-        double[] labels = new double[Math.toIntExact(upstreamDataSize)];
+        int featureCols = -1;
+        int lbCols = -1;
+        double[] features = null;
+        double[] labels = null;
 
         int ptr = 0;
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
-            double[] row = featureExtractor.apply(entry.getKey(), entry.getValue());
 
-            assert row.length == cols : "Feature extractor must return exactly " + cols + " features";
+            double[] featureRow = featureExtractor.apply(entry.getKey(), entry.getValue());
 
-            for (int i = 0; i < cols; i++)
-                features[Math.toIntExact(i * upstreamDataSize) + ptr] = row[i];
+            if (featureCols < 0) {
+                featureCols = featureRow.length;
+                features = new double[Math.toIntExact(upstreamDataSize * featureCols)];
+            }
+            else
+                assert featureRow.length == featureCols : "Feature extractor must return exactly " + featureCols
+                    + " features";
 
-            labels[ptr] = lbExtractor.apply(entry.getKey(), entry.getValue());
+            for (int i = 0; i < featureCols; i++)
+                features[Math.toIntExact(i * upstreamDataSize) + ptr] = featureRow[i];
+
+            double[] lbRow = lbExtractor.apply(entry.getKey(), entry.getValue());
+
+            if (lbCols < 0) {
+                lbCols = lbRow.length;
+                labels = new double[Math.toIntExact(upstreamDataSize * lbCols)];
+            }
+
+            assert lbRow.length == lbCols : "Label extractor must return exactly " + lbCols + " labels";
+
+            for (int i = 0; i < lbCols; i++)
+                labels[Math.toIntExact(i * upstreamDataSize) + ptr] = lbRow[i];
 
             ptr++;
         }
 
-        return new SimpleLabeledDatasetData(features, Math.toIntExact(upstreamDataSize), cols, labels);
+        return new SimpleLabeledDatasetData(features, labels, Math.toIntExact(upstreamDataSize));
     }
 }

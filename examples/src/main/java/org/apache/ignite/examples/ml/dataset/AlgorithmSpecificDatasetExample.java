@@ -42,11 +42,13 @@ import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
  * {@link DatasetWrapper}) in a sequential manner.
  *
  * In this example we need to implement gradient descent. This is iterative method that involves calculation of gradient
- * on every step. In according with the common idea we defines {@link AlgorithmSpecificDataset} - extended version
- * of {@code Dataset} with {@code gradient} method. As result our gradient descent method looks like a simple loop where
- * every iteration includes call of the {@code gradient} method. In the example we want to keep iteration number as well
- * for logging. Iteration number cannot be recovered from the {@code upstream} data and we need to keep it in the custom
- * partition {@code context} which is represented by {@link AlgorithmSpecificPartitionContext} class.
+ * on every step. In according with the common idea we defines
+ * {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificDataset} - extended version of {@code Dataset} with
+ * {@code gradient} method. As result our gradient descent method looks like a simple loop where every iteration
+ * includes call of the {@code gradient} method. In the example we want to keep iteration number as well for logging.
+ * Iteration number cannot be recovered from the {@code upstream} data and we need to keep it in the custom
+ * partition {@code context} which is represented by
+ * {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificPartitionContext} class.
  */
 public class AlgorithmSpecificDatasetExample {
     /** Run example. */
@@ -64,8 +66,7 @@ public class AlgorithmSpecificDatasetExample {
                 (upstream, upstreamSize) -> new AlgorithmSpecificPartitionContext(),
                 new SimpleLabeledDatasetDataBuilder<Integer, Person, AlgorithmSpecificPartitionContext>(
                     (k, v) -> new double[] {v.getAge()},
-                    (k, v) -> v.getSalary(),
-                    1
+                    (k, v) -> new double[] {v.getSalary()}
                 ).andThen((data, ctx) -> {
                     double[] features = data.getFeatures();
                     int rows = data.getRows();
@@ -78,7 +79,7 @@ public class AlgorithmSpecificDatasetExample {
 
                     System.arraycopy(features, 0, a, rows, features.length);
 
-                    return new SimpleLabeledDatasetData(a, rows, data.getCols() + 1, data.getLabels());
+                    return new SimpleLabeledDatasetData(a, data.getLabels(), rows);
                 })
             ).wrap(AlgorithmSpecificDataset::new)) {
                 // Trains linear regression model using gradient descent.
@@ -123,11 +124,12 @@ public class AlgorithmSpecificDatasetExample {
         double[] gradient(double[] x) {
             return computeWithCtx((ctx, data, partIdx) -> {
                 double[] tmp = Arrays.copyOf(data.getLabels(), data.getRows());
-                blas.dgemv("N", data.getRows(), data.getCols(), 1.0, data.getFeatures(),
+                int featureCols = data.getFeatures().length / data.getRows();
+                blas.dgemv("N", data.getRows(), featureCols, 1.0, data.getFeatures(),
                     Math.max(1, data.getRows()), x, 1, -1.0, tmp, 1);
 
-                double[] res = new double[data.getCols()];
-                blas.dgemv("T", data.getRows(), data.getCols(), 1.0, data.getFeatures(),
+                double[] res = new double[featureCols];
+                blas.dgemv("T", data.getRows(), featureCols, 1.0, data.getFeatures(),
                     Math.max(1, data.getRows()), tmp, 1, 0.0, res, 1);
 
                 int iteration = ctx.getIteration();

@@ -19,12 +19,15 @@ package org.apache.ignite.spark
 
 import org.apache.commons.lang.StringUtils.equalsIgnoreCase
 import org.apache.ignite.{Ignite, IgniteException, IgniteState, Ignition}
-import org.apache.ignite.cache.QueryEntity
+import org.apache.ignite.cache.{CacheMode, QueryEntity}
+import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.internal.util.lang.GridFunc.contains
+import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable.ArrayBuffer
 
 package object impl {
     /**
@@ -113,7 +116,7 @@ package object impl {
       * @tparam V Value class.
       * @return CacheConfiguration and QueryEntity for a given table.
       */
-    private def sqlTableInfo[K, V](ignite: Ignite, tabName: String): Option[(CacheConfiguration[K, V], QueryEntity)] =
+    def sqlTableInfo[K, V](ignite: Ignite, tabName: String): Option[(CacheConfiguration[K, V], QueryEntity)] =
         ignite.cacheNames().map { cacheName ⇒
             val ccfg = ignite.cache[K, V](cacheName).getConfiguration(classOf[CacheConfiguration[K, V]])
 
@@ -129,4 +132,47 @@ package object impl {
       */
     def isKeyColumn(table: QueryEntity, column: String): Boolean =
         contains(table.getKeyFields, column) || equalsIgnoreCase(table.getKeyFieldName, column)
+
+    /**
+      * Computes spark partitions for a given cache.
+      *
+      * @param ic Ignite context.
+      * @param cacheName Cache name
+      * @return Array of IgniteDataFramPartition
+      */
+    def calcPartitions(ic: IgniteContext, cacheName: String): Array[Partition] = {
+        val cache = ic.ignite().cache[Any, Any](cacheName)
+
+        val ccfg = cache.getConfiguration(classOf[CacheConfiguration[Any, Any]])
+
+        if (ccfg.getCacheMode == CacheMode.REPLICATED) {
+            val serverNodes = ic.ignite().cluster().forCacheNodes(cacheName).forServers().nodes()
+
+            Array(IgniteDataFramePartition(0, serverNodes.head, Stream.from(0).take(1024).toList))
+        }
+        else {
+            val aff = ic.ignite().affinity(cacheName)
+
+            val parts = aff.partitions()
+
+            val nodesToParts = (0 until parts).foldLeft(Map[ClusterNode, ArrayBuffer[Int]]()) {
+                case (nodeToParts, ignitePartIdx) ⇒
+                    val primary = aff.mapPartitionToPrimaryAndBackups(ignitePartIdx).head
+
+                    if (nodeToParts.contains(primary)) {
+                        nodeToParts(primary) += ignitePartIdx
+
+                        nodeToParts
+                    }
+                    else
+                        nodeToParts + (primary → ArrayBuffer[Int](ignitePartIdx))
+            }
+
+            val partitions = nodesToParts.zipWithIndex.map { case ((node, nodesParts), i) ⇒
+                IgniteDataFramePartition(i, node, nodesParts.toList)
+            }
+
+            partitions.toArray
+        }
+    }
 }
