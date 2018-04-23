@@ -52,6 +52,10 @@ public class GridMBeansTest extends GridCommonAbstractTest {
      * This implementation registers adds custom executors to the configuration.
      */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        System.setProperty(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, "false");
+
+        System.setProperty(IGNITE_MBEAN_APPEND_JVM_ID, "false");
+
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setExecutorConfiguration(new ExecutorConfiguration(CUSTOM_EXECUTOR_0),
@@ -145,17 +149,6 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         StringBuffer sb = new StringBuffer();
 
         sb.append(domain + ":");
-
-        if (getBoolean(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, true)) {
-            String clsLdrHash = Integer.toHexString(Ignite.class.getClassLoader().hashCode());
-            sb.append("clsLdr=").append(clsLdrHash).append(',');
-        }
-
-        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)) {
-            String jvmId = ManagementFactory.getRuntimeMXBean().getName();
-            sb.append("jvmId=").append(jvmId).append(',');
-        }
-
         sb.append("group=").append(grp).append(",");
         sb.append("igniteInstanceName=").append(instanceName).append(",");
         sb.append("name=").append(name);
