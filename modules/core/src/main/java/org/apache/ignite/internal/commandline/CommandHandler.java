@@ -104,7 +104,7 @@ public class CommandHandler {
     private static final String CMD_USER = "--user";
 
     /** */
-    public static final String CONFIRM_MSG = "yes";
+    public static final String CONFIRM_MSG = "y";
 
     /** */
     private static final String BASELINE_ADD = "add";
@@ -280,7 +280,7 @@ public class CommandHandler {
                 break;
         }
 
-        return str == null ? null : str + "\nPress 'yes' to continue . . . ";
+        return str == null ? null : str + "\nPress '" + CONFIRM_MSG + "' to continue . . . ";
     }
 
     /**

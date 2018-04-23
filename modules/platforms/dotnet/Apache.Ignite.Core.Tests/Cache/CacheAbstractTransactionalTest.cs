@@ -439,7 +439,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(TransactionState.MarkedRollback, tx.State);
 
             var ex = Assert.Throws<TransactionRollbackException>(() => tx.Commit());
-            Assert.IsTrue(ex.Message.StartsWith("Invalid transaction state for prepare [state=MARKED_ROLLBACK"));
 
             tx.Dispose();
 

@@ -33,7 +33,7 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 
 /**
- * Result for {@link VisorBaselineTask}.
+ * Result for {@link VisorTxTask}.
  */
 public class VisorTxTaskResult extends VisorDataTransferObject {
     /** */

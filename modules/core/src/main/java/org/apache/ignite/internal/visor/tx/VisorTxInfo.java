@@ -17,9 +17,15 @@
 
 package org.apache.ignite.internal.visor.tx;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -27,36 +33,43 @@ import org.apache.ignite.transactions.TransactionState;
 
 /**
  */
-public class VisorTxInfo implements Serializable {
+public class VisorTxInfo extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private final IgniteUuid xid;
+    private IgniteUuid xid;
 
     /** */
-    private final long duration;
+    private long duration;
 
     /** */
-    private final TransactionIsolation isolation;
+    private TransactionIsolation isolation;
 
     /** */
-    private final TransactionConcurrency concurrency;
+    private TransactionConcurrency concurrency;
 
     /** */
-    private final long timeout;
+    private long timeout;
 
     /** */
-    private final String lb;
+    private String lb;
 
     /** */
-    private final Collection<UUID> primaryNodes;
+    private Collection<UUID> primaryNodes;
 
     /** */
-    private final TransactionState state;
+    private TransactionState state;
 
     /** */
     private int size;
+
+    /**
+     * Default constructor.
+     */
+    public VisorTxInfo() {
+        // No-op.
+    }
 
     /**
      * @param xid Xid.
@@ -126,5 +139,36 @@ public class VisorTxInfo implements Serializable {
     /** */
     public int getSize() {
         return size;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeGridUuid(out, xid);
+        out.writeLong(duration);
+        U.writeEnum(out, isolation);
+        U.writeEnum(out, concurrency);
+        out.writeLong(timeout);
+        U.writeString(out, lb);
+        U.writeCollection(out, primaryNodes);
+        U.writeEnum(out, state);
+        out.writeInt(size);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        xid = U.readGridUuid(in);
+        duration = in.readLong();
+        isolation = TransactionIsolation.fromOrdinal(in.readByte());
+        concurrency = TransactionConcurrency.fromOrdinal(in.readByte());
+        timeout = in.readLong();
+        lb = U.readString(in);
+        primaryNodes = U.readCollection(in);
+        state = TransactionState.fromOrdinal(in.readByte());
+        size = in.readInt();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorTxInfo.class, this);
     }
 }

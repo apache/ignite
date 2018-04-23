@@ -29,7 +29,7 @@ import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Argument for {@link VisorBaselineTask}.
+ * Argument for {@link VisorTxTask}.
  */
 public class VisorTxTaskArg extends VisorDataTransferObject {
     /** */

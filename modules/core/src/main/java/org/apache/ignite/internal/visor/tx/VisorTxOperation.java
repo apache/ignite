@@ -23,9 +23,9 @@ import org.jetbrains.annotations.Nullable;
  * Defines possible Visor operation on transactions.
  */
 public enum VisorTxOperation {
-    /** Collect baseline information. */
+    /** List matching transactions. */
     LIST,
-    /** Add nodes to baseline. */
+    /** Kill matching transactions. */
     KILL;
 
     /** Enumerated values. */
