@@ -1624,7 +1624,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /**
      * Method checks is new partition map more stale than current partition map
-     * New partition map is stale if topology version or update sequence are less than of current map
+     * New partition map is stale if topology version or update sequence are less or equal than of current map
      *
      * @param currentMap Current partition map
      * @param newMap New partition map
