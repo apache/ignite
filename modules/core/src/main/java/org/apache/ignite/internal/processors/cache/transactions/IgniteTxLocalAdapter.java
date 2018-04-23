@@ -1112,6 +1112,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                         if (txEntry.op() == TRANSFORM) {
                             if (computeInvoke) {
+                                txEntry.readValue(v);
+
                                 GridCacheVersion ver;
 
                                 try {
