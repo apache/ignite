@@ -607,7 +607,7 @@ public final class IgniteSystemProperties {
     /**
      * Path to a directory to generate heap dumps in.
      */
-    public static final String IGNITE_HEAP_DUMP_PATH = "IGNITE_HEAP_DUMP_INTERVAL";
+    public static final String IGNITE_HEAP_DUMP_PATH = "IGNITE_HEAP_DUMP_PATH";
 
     /**
      * Minimal interval in milliseconds between generating a heap dump.
