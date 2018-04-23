@@ -26,8 +26,8 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.benchmarks.jmh.GridBenchmarkUtils;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
-import org.apache.ignite.internal.benchmarks.jmh.tcp.GridTestUtils;
 import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -166,7 +166,7 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
         cfg.setCacheConfiguration(cacheConfiguration());
 
         if (isSsl())
-            cfg.setSslContextFactory(GridTestUtils.sslFactory());
+            cfg.setSslContextFactory(GridBenchmarkUtils.sslFactory());
 
         cfg.setNetworkCompressionFactory(compressionEngineFactory());
 

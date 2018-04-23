@@ -551,7 +551,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     log.debug("Received handshake message [locNodeId=" + locNode.id() + ", rmtNodeId=" + sndId +
                         ", msg=" + msg0 + ']');
 
-                if (isSesCompressed(locNode, rmtNode))
+                if (isNetCompressionEnabled() && isSesCompressed(locNode, rmtNode))
                     ses.setCompressed(true);
 
                 if (usePairedConnections(rmtNode)) {

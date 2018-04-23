@@ -420,7 +420,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
             spi.setListener(new TestListener());
 
             node.setAttributes(spi.getNodeAttributes());
-            node.addAttribute(ATTR_COMPRESSION_ENABLED, true);
 
             node.order(i);
 

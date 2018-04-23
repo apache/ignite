@@ -515,7 +515,6 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
             node.setAttributes(spi.getNodeAttributes());
             node.setAttribute(ATTR_MACS, F.concat(U.allLocalMACs(), ", "));
-            node.setAttribute(ATTR_COMPRESSION_ENABLED, true);
 
             nodes.add(node);
 

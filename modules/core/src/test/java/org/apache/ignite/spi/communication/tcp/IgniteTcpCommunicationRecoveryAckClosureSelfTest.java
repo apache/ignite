@@ -460,8 +460,6 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
             node.setAttributes(spi.getNodeAttributes());
 
-            node.addAttribute(ATTR_COMPRESSION_ENABLED, true);
-
             node.order(i);
 
             nodes.add(node);

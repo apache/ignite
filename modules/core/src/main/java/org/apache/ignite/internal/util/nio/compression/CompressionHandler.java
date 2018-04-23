@@ -111,6 +111,7 @@ public final class CompressionHandler {
      * @throws IOException If failed to compress data.
      */
     public ByteBuffer compress(ByteBuffer buf) throws IOException {
+        assert buf != null;
         assert lock.isHeldByCurrentThread();
 
         // The data buffer is (must be) empty, we can reuse the entire buffer.
@@ -123,7 +124,7 @@ public final class CompressionHandler {
             if (res == BUFFER_OVERFLOW) {
                 assert outNetBuf.capacity() <= Integer.MAX_VALUE / 2;
 
-                outNetBuf = expandBuffer(outNetBuf,outNetBuf.capacity() * 2);
+                outNetBuf = expandBuffer(outNetBuf, outNetBuf.capacity() * 2);
 
                 if (log.isDebugEnabled())
                     log.debug("Expanded output net buffer [outNetBufCapacity=" + outNetBuf.capacity() + ']');

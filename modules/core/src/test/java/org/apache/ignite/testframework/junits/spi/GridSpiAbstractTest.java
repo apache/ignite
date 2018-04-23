@@ -195,7 +195,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         spiConfigure(spi);
 
         Map<String, Object> attrs = spi.getNodeAttributes();
-        attrs.put(ATTR_COMPRESSION_ENABLED, true);
 
         // Set up SPI class name and SPI version.
         Map<String, Serializable> spiAttrs = initSpiClassAndVersionAttributes(spi);

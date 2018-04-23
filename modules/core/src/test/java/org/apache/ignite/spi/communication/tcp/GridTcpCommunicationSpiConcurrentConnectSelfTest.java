@@ -458,7 +458,6 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
             spi.setListener(lsnr);
 
             node.setAttributes(spi.getNodeAttributes());
-            node.setAttribute(ATTR_COMPRESSION_ENABLED, true);
 
             nodes.add(node);
 
