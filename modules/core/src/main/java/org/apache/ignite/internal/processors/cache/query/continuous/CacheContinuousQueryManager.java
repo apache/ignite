@@ -137,6 +137,16 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         }
     }
 
+    /**
+     * USED ONLY FOR TESTING.
+     *
+     * @return Internal cancelable future task for backup cleaner.
+     */
+    /*@java.test.only*/
+    protected GridTimeoutProcessor.CancelableTask getCancelableTask() {
+        return cancelableTask;
+    }
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         // Append cache name to the topic.
