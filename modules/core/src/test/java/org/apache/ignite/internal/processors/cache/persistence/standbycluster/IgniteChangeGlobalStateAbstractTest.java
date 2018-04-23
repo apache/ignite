@@ -351,6 +351,7 @@ public abstract class IgniteChangeGlobalStateAbstractTest extends GridCommonAbst
         pCfg.setConcurrencyLevel(64);
 
         pCfg.setWalMode(WALMode.LOG_ONLY);
+        pCfg.setLockWaitTime(1_000);
 
         pCfg.setDefaultDataRegionConfiguration(
             new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true));
