@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Transactions
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
@@ -77,6 +78,11 @@ namespace Apache.Ignite.Core.Transactions
         /// Gets the default transaction timeout.
         /// </summary>
         TimeSpan DefaultTimeout { get; }
+        
+        /// <summary>
+        /// Gets the default transaction timeout on partition map exchange.
+        /// </summary>
+        TimeSpan DefaultTimeoutOnPartitionMapExchange { get; }
 
         /// <summary>
         /// Gets the metrics.
@@ -89,5 +95,18 @@ namespace Apache.Ignite.Core.Transactions
         /// Resets the metrics.
         /// </summary>
         void ResetMetrics();
+
+        /// <summary>
+        /// Returns instance of Ignite Transactions to mark a transaction with a special label.
+        /// </summary>
+        /// <param name="label"></param>
+        /// <returns><see cref="ITransactions"/></returns>
+        ITransactions WithLabel(string label);
+
+        /// <summary>
+        /// Returns a list of active transactions initiated by this node.
+        /// </summary>
+        /// <returns>Collection of <see cref="ITransaction"/></returns>
+        IList<ITransaction> LocalActiveTransactions();
     }
 }
