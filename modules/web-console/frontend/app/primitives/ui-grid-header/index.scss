@@ -115,7 +115,9 @@
     }
 }
 
-.ui-grid[ui-grid-selection][ui-grid-grouping] {
+.ui-grid[ui-grid-selection],
+.ui-grid[ui-grid-selection][ui-grid-grouping],
+.ui-grid[ui-grid-selection][ui-grid-tree-view] {
     .ui-grid-pinned-container-left {
         .ui-grid-header--subcategories {
             .ui-grid-header-span {
