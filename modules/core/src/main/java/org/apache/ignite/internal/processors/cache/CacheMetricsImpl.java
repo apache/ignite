@@ -825,7 +825,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             offHeapBackupEntriesCnt = -1L;
             heapEntriesCnt = -1L;
             size = -1;
-            sizeLong = -1;
+            sizeLong = -1L;
         }
 
         isEmpty = (offHeapEntriesCnt == 0);
