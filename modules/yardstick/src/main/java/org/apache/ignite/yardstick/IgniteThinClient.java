@@ -1,0 +1,295 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.yardstick;
+
+import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSpring;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.client.ClientCacheConfiguration;
+import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConfiguration;
+import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.yardstick.io.FileUtils;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.io.UrlResource;
+import org.yardstickframework.BenchmarkConfiguration;
+import org.yardstickframework.BenchmarkServer;
+import org.yardstickframework.BenchmarkUtils;
+
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
+
+/**
+ * Standalone Ignite node.
+ */
+public class IgniteThinClient {
+    /** Grid client. */
+    private IgniteClient client;
+
+    /** */
+    public IgniteThinClient() {
+        // No-op.
+    }
+
+    /**
+     * @param ignite Use exist ignite client.
+     */
+    public IgniteThinClient(IgniteClient ignite) {
+        this.client = ignite;
+    }
+
+    /** {@inheritDoc} */
+    public IgniteClient start(BenchmarkConfiguration cfg) throws Exception {
+        IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
+
+        BenchmarkUtils.jcommander(cfg.commandLineArguments(), args, "<ignite-node>");
+
+        IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> tup = loadConfiguration(args.configuration());
+
+        IgniteConfiguration c = tup.get1();
+
+        assert c != null;
+
+        if (args.cleanWorkDirectory())
+            FileUtils.cleanDirectory(U.workDirectory(c.getWorkDirectory(), c.getIgniteHome()));
+
+        ApplicationContext appCtx = tup.get2();
+
+        assert appCtx != null;
+
+        CacheConfiguration[] ccfgs = c.getCacheConfiguration();
+
+        ClientConfiguration clCfg = new ClientConfiguration();
+
+        TcpDiscoverySpi spi = (TcpDiscoverySpi)c.getDiscoverySpi();
+
+        TcpDiscoveryIpFinder finder = spi.getIpFinder();
+
+        Collection<InetSocketAddress> addrs = finder.getRegisteredAddresses();
+
+        List<String> addrList = new ArrayList<>();
+
+        for(InetSocketAddress addr : addrs){
+            String a = addr.toString();
+
+            System.out.println(a);
+
+            String hostPort = a.substring(1, a.length() - 6) + ":10800";
+
+            System.out.println(hostPort);
+            addrList.add(hostPort);
+        }
+
+        String[] adrArr  = new String[addrList.size()];
+
+        for(int i = 0; i < addrList.size(); i++)
+            adrArr[i] = addrList.get(i);
+
+        clCfg.setAddresses(adrArr);
+//        clCfg.setAddresses("127.0.0.1:10800");
+
+//        if (ccfgs != null) {
+//            for (CacheConfiguration cc : ccfgs) {
+//
+//                ClientCacheConfiguration clCacheCfg = new ClientCacheConfiguration();
+//
+//                clCacheCfg.setName(cc.getName());
+//
+//                clCacheCfg.setBackups(args.backups());
+//
+//                clCfg.
+
+
+//                // IgniteNode can not run in CLIENT_ONLY mode,
+//                // except the case when it's used inside IgniteAbstractBenchmark.
+//                boolean cl = args.isClientOnly() && (args.isNearCache());
+//
+//                if (cl)
+//                    c.setClientMode(true);
+//
+//                if (args.isNearCache()) {
+//                    NearCacheConfiguration nearCfg = new NearCacheConfiguration();
+//
+//                    int nearCacheSize = args.getNearCacheSize();
+//
+//                    if (nearCacheSize != 0)
+//                        nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(nearCacheSize));
+//
+//                    cc.setNearConfiguration(nearCfg);
+//                }
+//
+//                if (args.cacheGroup() != null)
+//                    cc.setGroupName(args.cacheGroup());
+//
+//                cc.setWriteSynchronizationMode(args.syncMode());
+//
+//                cc.setBackups(args.backups());
+//
+//                if (args.restTcpPort() != 0) {
+//                    ConnectorConfiguration ccc = new ConnectorConfiguration();
+//
+//                    ccc.setPort(args.restTcpPort());
+//
+//                    if (args.restTcpHost() != null)
+//                        ccc.setHost(args.restTcpHost());
+//
+//                    c.setConnectorConfiguration(ccc);
+//                }
+//
+//                cc.setReadThrough(args.isStoreEnabled());
+//
+//                cc.setWriteThrough(args.isStoreEnabled());
+//
+//                cc.setWriteBehindEnabled(args.isWriteBehind());
+//
+//                BenchmarkUtils.println(cfg, "Cache configured with the following parameters: " + cc);
+//            }
+//        }
+//        else
+//            BenchmarkUtils.println(cfg, "There are no caches configured");
+//
+//        TransactionConfiguration tc = c.getTransactionConfiguration();
+//
+//        tc.setDefaultTxConcurrency(args.txConcurrency());
+//        tc.setDefaultTxIsolation(args.txIsolation());
+//
+//        TcpCommunicationSpi commSpi = (TcpCommunicationSpi)c.getCommunicationSpi();
+//
+//        if (commSpi == null)
+//            commSpi = new TcpCommunicationSpi();
+//
+//        c.setCommunicationSpi(commSpi);
+//
+//        if (args.getPageSize() != DataStorageConfiguration.DFLT_PAGE_SIZE) {
+//            DataStorageConfiguration memCfg = c.getDataStorageConfiguration();
+//
+//            if (memCfg == null) {
+//                memCfg = new DataStorageConfiguration();
+//
+//                c.setDataStorageConfiguration(memCfg);
+//            }
+//
+//            memCfg.setPageSize(args.getPageSize());
+//        }
+//
+//        if (args.persistentStoreEnabled()) {
+//            DataStorageConfiguration pcCfg = new DataStorageConfiguration();
+//
+//            c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
+//
+//            c.setDataStorageConfiguration(pcCfg);
+//        }
+//
+        client = Ignition.startClient(clCfg);
+
+        return client;
+
+//        BenchmarkUtils.println("Configured marshaller: " + ignite.cluster().localNode().attribute(ATTR_MARSHALLER));
+    }
+
+    /**
+     * @param springCfgPath Spring configuration file path.
+     * @return Tuple with grid configuration and Spring application context.
+     * @throws Exception If failed.
+     */
+    public static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath)
+        throws Exception {
+        URL url;
+
+        try {
+            url = new URL(springCfgPath);
+        }
+        catch (MalformedURLException e) {
+            url = IgniteUtils.resolveIgniteUrl(springCfgPath);
+
+            if (url == null)
+                throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
+                    ". Note that this path should be either absolute or a relative local file system path, " +
+                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
+        }
+
+        GenericApplicationContext springCtx;
+
+        try {
+            springCtx = new GenericApplicationContext();
+
+            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(new UrlResource(url));
+
+            springCtx.refresh();
+        }
+        catch (BeansException e) {
+            throw new Exception("Failed to instantiate Spring XML application context [springUrl=" +
+                url + ", err=" + e.getMessage() + ']', e);
+        }
+
+        Map<String, IgniteConfiguration> cfgMap;
+
+        try {
+            cfgMap = springCtx.getBeansOfType(IgniteConfiguration.class);
+        }
+        catch (BeansException e) {
+            throw new Exception("Failed to instantiate bean [type=" + IgniteConfiguration.class + ", err=" +
+                e.getMessage() + ']', e);
+        }
+
+        if (cfgMap == null || cfgMap.isEmpty())
+            throw new Exception("Failed to find ignite configuration in: " + url);
+
+        return new IgniteBiTuple<>(cfgMap.values().iterator().next(), springCtx);
+    }
+
+//    /** {@inheritDoc} */
+//    @Override public void stop() throws Exception {
+//        Ignition.stopAll(true);
+//    }
+//
+//    /** {@inheritDoc} */
+//    @Override public String usage() {
+//        return BenchmarkUtils.usage(new IgniteBenchmarkArguments());
+//    }
+
+    /**
+     * @return Ignite.
+     */
+    public IgniteClient client() {
+        return client;
+    }
+}
