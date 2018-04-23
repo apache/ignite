@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -1109,8 +1108,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
             assert oldVal instanceof DistributedCollectionMetadata;
 
-            if (cfg != null &&
-                ((DistributedCollectionMetadata)oldVal).configuration().isCollocated() != cfg.isCollocated()) {
+            if (cfg != null && ((DistributedCollectionMetadata)oldVal).configuration().isCollocated() != cfg.isCollocated()) {
                 throw new IgniteCheckedException("Another collection with the same name but different " +
                     "configuration already created [name=" + name +
                     ", newCollocated=" + cfg.isCollocated() +
@@ -1137,9 +1135,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return {@code True} If IgniteSet can use a separate cache for non collocated version.
      */
     private boolean separateCacheSetEnabled() {
-        Collection<ClusterNode> nodes = ctx.grid().cluster().nodes();
-
-        for (ClusterNode node : nodes) {
+        for (ClusterNode node : ctx.grid().cluster().nodes()) {
             if (node.version().compareTo(SEPARATE_CACHE_SET_SINCE) < 0)
                 return false;
         }
@@ -1583,11 +1579,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /**
      * @param name Set name.
      * @param cctx Set cache context.
-     * @param collocated Collocation flag.
      * @throws IgniteCheckedException If failed.
      */
-    public void removeSet(final String name, final GridCacheContext cctx,
-        final boolean collocated) throws IgniteCheckedException {
+    public void removeSet(final String name, final GridCacheContext cctx) throws IgniteCheckedException {
         assert name != null;
         assert cctx != null;
 

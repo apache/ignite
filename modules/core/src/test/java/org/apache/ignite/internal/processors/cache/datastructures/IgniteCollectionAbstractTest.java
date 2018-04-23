@@ -152,11 +152,12 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
      */
     protected static boolean shared(IgniteSet set) {
         GridCacheSetImpl impl;
+
         if (set instanceof GridCacheSetProxy)
             impl = GridTestUtils.getFieldValue(set, GridCacheSetProxy.class, "delegate");
         else
             impl = (GridCacheSetImpl)set;
 
-        return impl.shared();
+        return GridTestUtils.getFieldValue(impl, GridCacheSetImpl.class, "sharedCacheMode");
     }
 }

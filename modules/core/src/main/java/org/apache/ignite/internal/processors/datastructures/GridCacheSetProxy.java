@@ -362,7 +362,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         try {
             delegate.close();
 
-            if (!delegate.shared()) {
+            if (!delegate.sharedCacheMode()) {
                 destroyFut = new IgniteFutureImpl<>(
                     cctx.kernalContext().cache().dynamicDestroyCache(cctx.cache().name(), false, true,
                         false));
