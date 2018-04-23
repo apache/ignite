@@ -752,9 +752,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         assertNotNull(set0);
 
-        // Collocated mode enabled only for partitioned caches - get actual value.
-        collocated = set0.collocated();
-
         final Collection<Set<Integer>> sets = new ArrayList<>();
 
         for (int i = 0; i < gridCount(); i++) {
@@ -812,8 +809,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         for (int i = 0; i < gridCount(); i++) {
             GridCacheAdapter cache = grid(i).context().cache().internalCache(cctx.name());
 
-            if (!collocated) {
-                assertNull("Internal cache should be destroyed in non-collocated mode: " + cctx.name(), cache);
+            if (!shared(set0)) {
+                assertNull("Internal cache should be destroyed in non-shared cache mode: " + cctx.name(), cache);
 
                 continue;
             }

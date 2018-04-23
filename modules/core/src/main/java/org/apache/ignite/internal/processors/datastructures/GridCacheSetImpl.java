@@ -113,8 +113,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     public GridCacheSetImpl(GridCacheContext ctx, String name, GridCacheSetHeader hdr, boolean sharedCacheMode) {
         this.ctx = ctx;
         this.name = name;
-        id = hdr.id();
-        collocated = hdr.collocated();
+        id = hdr == null ? null : hdr.id();
+        collocated = hdr != null && hdr.collocated();
         binaryMarsh = ctx.binaryMarshaller();
         compute = ctx.kernalContext().grid().compute();
 
@@ -200,9 +200,13 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @Override public boolean isEmpty() {
         onAccess();
 
-        GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
+        if (sharedCacheMode) {
+            GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
 
-        return (set == null || set.isEmpty()) && size() == 0;
+            return (set == null || set.isEmpty()) && size() == 0;
+        }
+        else
+            return size() == 0;
     }
 
     /** {@inheritDoc} */

@@ -421,9 +421,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         try {
             GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
-            boolean sharedCache = true;
-
-            GridCacheSetHeader hdr = null;
+            GridCacheSetHeader hdr;
 
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
@@ -431,11 +429,10 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                 // For backward compatibility try to find an old header.
                 hdr = (GridCacheSetHeader)cache.get(key);
 
-                // If old version was not found than create new header but don't put it into cache.
                 if (hdr == null) {
-                    hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), false);
-
-                    sharedCache = false;
+                    // For non-collocated IgniteSet version with separated cache we don't need header.
+                    return new GridCacheSetProxy<>(cctx,
+                        new GridCacheSetImpl<T>(cctx, name, null, false));
                 }
             }
             else if (create) {
@@ -457,7 +454,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             if (set == null) {
                 GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
-                    set = new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr, sharedCache)));
+                    set = new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr, true)));
 
                 if (old != null)
                     set = old;
