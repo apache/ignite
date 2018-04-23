@@ -773,7 +773,7 @@ public class CacheMetricsImpl implements CacheMetrics {
                     size = cctx.cache().size();
                     sizeLong = cctx.cache().sizeLong();
 
-                    heapEntriesCnt = size;
+                    heapEntriesCnt = sizeLong;
                 }
             }
             else {
