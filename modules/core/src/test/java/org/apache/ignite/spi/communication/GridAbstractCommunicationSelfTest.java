@@ -48,8 +48,9 @@ import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_COMPRESSION_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_COMPRESSION_ENABLED;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_COMPRESSION_ENGINE_FACTORY_NAME;
 
 /**
  * Super class for all communication self tests.
@@ -83,6 +84,9 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
     /** */
     @Nullable protected Factory<CompressionEngine> compressionEngineFactory;
+
+    /** */
+    protected boolean compressionEnabled = false;
 
     /**
      *
@@ -338,10 +342,8 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
                 if (useSsl)
                     cfg.setSslContextFactory(GridTestUtils.sslFactory());
 
-                if (compressionEngineFactory != null) {
-                    cfg.setNetworkCompressionFactory(compressionEngineFactory);
-                    cfg.setCompressionEnabled(true);
-                }
+                cfg.setNetworkCompressionFactory(compressionEngineFactory);
+                cfg.setNetworkCompressionEnabled(compressionEnabled);
 
                 ignite.setStaticCfg(cfg);
             }
@@ -352,6 +354,9 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
             node.setAttribute(ATTR_MACS, F.concat(U.allLocalMACs(), ", "));
 
             if (compressionEngineFactory != null)
+                node.setAttribute(ATTR_COMPRESSION_ENGINE_FACTORY_NAME, compressionEngineFactory.getClass().getName());
+
+            if (compressionEnabled)
                 node.setAttribute(ATTR_COMPRESSION_ENABLED, true);
 
             node.order(i + 1);

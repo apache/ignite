@@ -156,9 +156,6 @@ public final class IgniteNodeAttributes {
     /** Client mode flag. */
     public static final String ATTR_CLIENT_MODE = ATTR_PREFIX + ".cache.client";
 
-    /** Network compression enabled flag. */
-    public static final String ATTR_COMPRESSION_ENABLED = ATTR_PREFIX + ".spi.compressionEnabled";
-
     /** Configuration consistency check disabled flag. */
     public static final String ATTR_CONSISTENCY_CHECK_SKIPPED = ATTR_PREFIX + ".consistency.check.skipped";
 

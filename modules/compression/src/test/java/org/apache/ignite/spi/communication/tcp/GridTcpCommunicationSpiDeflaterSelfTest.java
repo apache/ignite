@@ -30,6 +30,7 @@ public class GridTcpCommunicationSpiDeflaterSelfTest extends GridTcpCommunicatio
         super(false);
 
         this.compressionEngineFactory = new DeflaterFactory();
+        this.compressionEnabled = true;
     }
 
     /** {@inheritDoc} */

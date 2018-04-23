@@ -167,6 +167,7 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
 import static org.apache.ignite.internal.processors.security.SecurityUtils.SERVICE_PERMISSIONS_SINCE;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
+import static org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi.ATTR_COMPRESSION_ENGINE_FACTORY_NAME;
 
 /**
  * Discovery SPI manager.
@@ -1195,6 +1196,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
         Boolean locSecurityCompatibilityEnabled = locNode.attribute(ATTR_SECURITY_COMPATIBILITY_MODE);
 
+        String locNetworkCompressionEngineFactoryName = locNode.attribute(
+            TcpCommunicationSpi.class.getSimpleName() + '.' + ATTR_COMPRESSION_ENGINE_FACTORY_NAME);
+
         for (ClusterNode n : nodes) {
             int rmtJvmMajVer = nodeJavaMajorVersion(n);
 
@@ -1288,6 +1292,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     "configure system property explicitly) " +
                     "[locSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
                     ", rmtSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
+                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                    ", rmtNodeAddrs=" + U.addressesAsString(n) +
+                    ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");
+            }
+
+            String rmtNetworkCompressionEngineFactoryName = n.attribute(
+                TcpCommunicationSpi.class.getSimpleName() + '.' + ATTR_COMPRESSION_ENGINE_FACTORY_NAME);
+
+            if (!F.eq(locNetworkCompressionEngineFactoryName, rmtNetworkCompressionEngineFactoryName)) {
+                throw new IgniteCheckedException("Remote node has network compression factory different from local " +
+                    "(to make sure all nodes in topology have identical network compression factory, " +
+                    "configure system property explicitly) " +
+                    "[locNetworkCompressionEngineFactory=" + locNetworkCompressionEngineFactoryName +
+                    ", rmtNetworkCompressionEngineFactory=" + rmtNetworkCompressionEngineFactoryName +
                     ", locNodeAddrs=" + U.addressesAsString(locNode) +
                     ", rmtNodeAddrs=" + U.addressesAsString(n) +
                     ", locNodeId=" + locNode.id() + ", rmtNode=" + U.toShortString(n) + "]");

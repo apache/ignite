@@ -99,9 +99,9 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.GridShmemCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
-import org.apache.ignite.internal.util.nio.compression.GridNioCompressionHandler;
 import org.apache.ignite.internal.util.nio.compression.GridCompressionMeta;
 import org.apache.ignite.internal.util.nio.compression.GridNioCompressionFilter;
+import org.apache.ignite.internal.util.nio.compression.GridNioCompressionHandler;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
@@ -159,7 +159,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_COMPRESSION_ENABLED;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.COMPRESSION_META;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 import static org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture.SES_FUT_META;
@@ -289,6 +288,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
     /** */
     public static final String ATTR_PAIRED_CONN = "comm.tcp.pairedConnection";
+
+    /** Network compression enabled flag. */
+    public static final String ATTR_COMPRESSION_ENABLED = "comm.tcp.compressionEnabled";
+
+    /** Network compression engine factory name. */
+    public static final String ATTR_COMPRESSION_ENGINE_FACTORY_NAME = "comm.tcp.compressionEngineFactoryName";
 
     /** Default port which node sets listener to (value is <tt>47100</tt>). */
     public static final int DFLT_PORT = 47100;
@@ -1202,6 +1207,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
+     * Checks that compression engine is configured and to be ready for enable compression with others nodes.
+     *
      * @return {@code True} if network compression enabled.
      */
     private boolean isNetCompressionEnabled() {
@@ -2156,6 +2163,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             res.put(createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null);
             res.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
             res.put(createSpiAttributeName(ATTR_PAIRED_CONN), usePairedConnections);
+            res.put(createSpiAttributeName(ATTR_COMPRESSION_ENABLED),
+                ignite.configuration().isNetworkCompressionEnabled());
+
+            if (ignite.configuration().getNetworkCompressionFactory() != null) {
+                res.put(createSpiAttributeName(ATTR_COMPRESSION_ENGINE_FACTORY_NAME),
+                    ignite.configuration().getNetworkCompressionFactory().getClass().getName());
+            }
 
             return res;
         }
@@ -2426,6 +2440,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         ", selectorsCnt=" + selectorsCnt +
                         ", selectorSpins=" + srvr.selectorSpins() +
                         ", pairedConn=" + usePairedConnections + ']');
+                }
+
+                // Ack network compression.
+                if (log.isInfoEnabled()) {
+                    log.info("Network compression status [compressionEnabled=" +
+                        ignite.configuration().isNetworkCompressionEnabled() + ", engineFactory=" +
+                        (ignite.configuration().getNetworkCompressionFactory() == null ? null :
+                            ignite.configuration().getNetworkCompressionFactory().getClass().getName()) + ']');
                 }
 
                 srvr.idleTimeout(idleConnTimeout);
@@ -3529,8 +3551,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         assert locNode != null;
         assert rmtNode != null;
 
-        Boolean locAttr = locNode.attribute(ATTR_COMPRESSION_ENABLED);
-        Boolean rmtAttr = rmtNode.attribute(ATTR_COMPRESSION_ENABLED);
+        Boolean locAttr = locNode.attribute(U.spiAttribute(this, ATTR_COMPRESSION_ENABLED));
+        Boolean rmtAttr = rmtNode.attribute(U.spiAttribute(this, ATTR_COMPRESSION_ENABLED));
 
         return locAttr != null && rmtAttr != null && (locAttr || rmtAttr);
 

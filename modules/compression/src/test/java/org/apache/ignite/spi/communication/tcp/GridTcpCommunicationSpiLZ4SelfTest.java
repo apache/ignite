@@ -30,6 +30,7 @@ public class GridTcpCommunicationSpiLZ4SelfTest extends GridTcpCommunicationSpiA
         super(false);
 
         this.compressionEngineFactory = new LZ4Factory();
+        this.compressionEnabled = true;
     }
 
     /** {@inheritDoc} */

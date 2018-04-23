@@ -30,6 +30,7 @@ public class GridTcpCommunicationSpiZstdSelfTest extends GridTcpCommunicationSpi
         super(false);
 
         this.compressionEngineFactory = new ZstdFactory();
+        this.compressionEnabled = true;
     }
 
     /** {@inheritDoc} */
