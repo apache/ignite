@@ -1483,8 +1483,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         writer.writeLong(metrics.getEstimatedRebalancingFinishTime());
         writer.writeLong(metrics.getRebalancingStartTime());
         writer.writeLong(metrics.getRebalanceClearingPartitionsLeft());
-        writer.writeLong(metrics.getSizeLong());
-        writer.writeLong(metrics.getKeySizeLong());
+        writer.writeLong(metrics.getCacheSize());
     }
 
     /**

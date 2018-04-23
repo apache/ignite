@@ -67,12 +67,12 @@ namespace Apache.Ignite.Core.Tests.Cache
             var remoteMetrics = metrics.Item2;
 
             Assert.AreEqual(1, localMetrics.Size);
-            Assert.AreEqual(1, localMetrics.SizeLong);
+            Assert.AreEqual(1, localMetrics.CacheSize);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
 
             Assert.AreEqual(0, remoteMetrics.Size);
-            Assert.AreEqual(0, remoteMetrics.SizeLong);
+            Assert.AreEqual(0, remoteMetrics.CacheSize);
             Assert.AreEqual(0, remoteMetrics.CacheGets);
             Assert.AreEqual(0, remoteMetrics.CachePuts);
         }
@@ -89,12 +89,12 @@ namespace Apache.Ignite.Core.Tests.Cache
             var remoteMetrics = metrics.Item2;
 
             Assert.AreEqual(1, localMetrics.Size);
-            Assert.AreEqual(1, localMetrics.SizeLong);
+            Assert.AreEqual(1, localMetrics.CacheSize);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
 
             Assert.AreEqual(0, remoteMetrics.Size);
-            Assert.AreEqual(0, remoteMetrics.SizeLong);
+            Assert.AreEqual(0, remoteMetrics.CacheSize);
             Assert.AreEqual(1, remoteMetrics.CacheGets);
             Assert.AreEqual(1, remoteMetrics.CachePuts);
         }
@@ -115,12 +115,12 @@ namespace Apache.Ignite.Core.Tests.Cache
             var remoteMetrics = metrics.Item1;
 
             Assert.AreEqual(1, localMetrics.Size);
-            Assert.AreEqual(1, localMetrics.SizeLong);
+            Assert.AreEqual(1, localMetrics.CacheSize);
             Assert.AreEqual(1, localMetrics.CacheGets);
             Assert.AreEqual(1, localMetrics.CachePuts);
 
             Assert.AreEqual(1, remoteMetrics.Size);
-            Assert.AreEqual(1, remoteMetrics.SizeLong);
+            Assert.AreEqual(1, remoteMetrics.CacheSize);
             Assert.AreEqual(0, remoteMetrics.CacheGets);
             Assert.AreEqual(0, remoteMetrics.CachePuts);
         }
@@ -209,8 +209,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(59, metrics.HeapEntriesCount);
                 Assert.AreEqual(62, metrics.EstimatedRebalancingFinishTime);
                 Assert.AreEqual(63, metrics.RebalancingStartTime);
-                Assert.AreEqual(65, metrics.SizeLong);
-                Assert.AreEqual(66, metrics.KeySizeLong);
+                Assert.AreEqual(65, metrics.CacheSize);
                 Assert.AreEqual("foo", metrics.KeyType);
                 Assert.AreEqual("bar", metrics.ValueType);
                 Assert.AreEqual(true, metrics.IsStoreByValue);

@@ -115,18 +115,13 @@ class CacheClusterMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getSizeLong() {
-        return cache.clusterMetrics().getSizeLong();
+    @Override public long getCacheSize() {
+        return cache.clusterMetrics().getCacheSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getKeySize() {
         return cache.clusterMetrics().getKeySize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getKeySizeLong() {
-        return cache.clusterMetrics().getKeySizeLong();
     }
 
     /** {@inheritDoc} */

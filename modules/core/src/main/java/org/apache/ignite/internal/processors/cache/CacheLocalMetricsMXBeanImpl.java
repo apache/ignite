@@ -116,18 +116,13 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getSizeLong() {
-        return cache.metrics0().getSizeLong();
+    @Override public long getCacheSize() {
+        return cache.metrics0().getCacheSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getKeySize() {
         return cache.metrics0().getKeySize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getKeySizeLong() {
-        return cache.metrics0().getKeySizeLong();
     }
 
     /** {@inheritDoc} */

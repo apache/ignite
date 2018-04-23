@@ -241,6 +241,7 @@ public interface CacheMetrics {
      *
      * @return Number of non-{@code null} values in the cache.
      */
+    @Deprecated
     public int getSize();
 
     /**
@@ -248,21 +249,15 @@ public interface CacheMetrics {
      *
      * @return Number of non-{@code null} values in the cache.
      */
-    public long getSizeLong();
+    public long getCacheSize();
 
     /**
      * Gets number of keys in the cache, possibly with {@code null} values.
      *
      * @return Number of keys in the cache.
      */
+    @Deprecated
     public int getKeySize();
-
-    /**
-     * Gets number of keys in the cache, possibly with {@code null} values as a long value..
-     *
-     * @return Number of keys in the cache.
-     */
-    public long getKeySizeLong();
 
     /**
      * Returns {@code true} if this cache is empty.

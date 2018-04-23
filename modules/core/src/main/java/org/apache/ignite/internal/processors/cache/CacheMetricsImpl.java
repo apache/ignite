@@ -255,18 +255,13 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getSizeLong() {
+    @Override public long getCacheSize() {
         return getEntriesStat().sizeLong();
     }
 
     /** {@inheritDoc} */
     @Override public int getKeySize() {
         return getEntriesStat().keySize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getKeySizeLong() {
-        return getEntriesStat().keySizeLong();
     }
 
     /** {@inheritDoc} */
@@ -844,7 +839,6 @@ public class CacheMetricsImpl implements CacheMetrics {
         stat.size(size);
         stat.sizeLong(sizeLong);
         stat.keySize(size);
-        stat.keySizeLong(sizeLong);
         stat.isEmpty(isEmpty);
         stat.totalPartitionsCount(owningPartCnt + movingPartCnt);
         stat.rebalancingPartitionsCount(movingPartCnt);
@@ -1062,9 +1056,6 @@ public class CacheMetricsImpl implements CacheMetrics {
         /** Key size. */
         private int keySize;
 
-        /** Long key size. */
-        private long keySizeLong;
-
         /** Is empty. */
         private boolean isEmpty;
 
@@ -1192,20 +1183,6 @@ public class CacheMetricsImpl implements CacheMetrics {
          */
         public void sizeLong(long sizeLong) {
             this.sizeLong = sizeLong;
-        }
-
-        /**
-         * @return Long key size.
-         */
-        public long keySizeLong() {
-            return keySizeLong;
-        }
-
-        /**
-         * @param keySizeLong Key size long.
-         */
-        public void keySizeLong(long keySizeLong) {
-            this.keySizeLong = keySizeLong;
         }
 
         /**

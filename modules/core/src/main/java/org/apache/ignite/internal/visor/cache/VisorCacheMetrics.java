@@ -58,9 +58,6 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** Number of non-{@code null} values in the cache as a long value. */
     private long sizeLong;
 
-    /** Gets number of keys in the cache, possibly with {@code null} values as a long value. */
-    private long keySizeLong;
-
     /** Total number of reads of the owning entity (either cache or entry). */
     private long reads;
 
@@ -230,8 +227,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         size = m.getSize();
         keySize = m.getKeySize();
 
-        sizeLong = m.getSizeLong();
-        keySizeLong = m.getKeySizeLong();
+        sizeLong = m.getCacheSize();
 
         reads = m.getCacheGets();
         writes = m.getCachePuts() + m.getCacheRemovals();
@@ -470,13 +466,6 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
      */
     public long getSizeLong() {
         return sizeLong;
-    }
-
-    /**
-     * @return Gets number of keys in the cache, possibly with {@code null} values as a long value.
-     */
-    public long getKeySizeLong() {
-        return keySizeLong;
     }
 
     /**
@@ -725,7 +714,6 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
 
         // V2
         out.writeLong(sizeLong);
-        out.writeLong(keySizeLong);
     }
 
     /** {@inheritDoc} */
@@ -784,10 +772,8 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
 
         qryMetrics = (VisorQueryMetrics)in.readObject();
 
-        if (protoVer > V1) {
+        if (protoVer > V1)
             sizeLong = in.readLong();
-            keySizeLong = in.readLong();
-        }
     }
 
     /** {@inheritDoc} */

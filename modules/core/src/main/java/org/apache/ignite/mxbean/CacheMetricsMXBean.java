@@ -153,15 +153,11 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, 
 
     /** {@inheritDoc} */
     @MXBeanDescription("Number of non-null values in the cache as a long value.")
-    public long getSizeLong();
+    public long getCacheSize();
 
     /** {@inheritDoc} */
     @MXBeanDescription("Number of keys in the cache (possibly with null values).")
     public int getKeySize();
-
-    /** {@inheritDoc} */
-    @MXBeanDescription("Number of keys in the cache (possibly with null values) as a long value.")
-    public long getKeySizeLong();
 
     /** {@inheritDoc} */
     @MXBeanDescription("True if cache is empty.")

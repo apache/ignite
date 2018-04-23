@@ -116,9 +116,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Number of keys in the cache, possibly with {@code null} values. */
     private int keySize;
 
-    /** Number of keys in the cache, possibly with {@code null} values as a long value. */
-    private long keySizeLong;
-
     /** Cache is empty. */
     private boolean isEmpty;
 
@@ -294,7 +291,6 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         size = entriesStat.size();
         sizeLong = entriesStat.sizeLong();
         keySize = entriesStat.keySize();
-        keySizeLong = entriesStat.keySizeLong();
         isEmpty = entriesStat.isEmpty();
 
         dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
@@ -359,9 +355,8 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         writeBehindStoreBatchSize = loc.getWriteBehindStoreBatchSize();
         writeBehindBufSize = loc.getWriteBehindBufferSize();
         size = loc.getSize();
-        sizeLong = loc.getSizeLong();
+        sizeLong = loc.getCacheSize();
         keySize = loc.getKeySize();
-        keySizeLong = loc.getKeySizeLong();
 
         keyType = loc.getKeyType();
         valType = loc.getValueType();
@@ -644,18 +639,13 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public long getSizeLong() {
+    @Override public long getCacheSize() {
         return sizeLong;
     }
 
     /** {@inheritDoc} */
     @Override public int getKeySize() {
         return keySize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getKeySizeLong() {
-        return keySizeLong;
     }
 
     /** {@inheritDoc} */
