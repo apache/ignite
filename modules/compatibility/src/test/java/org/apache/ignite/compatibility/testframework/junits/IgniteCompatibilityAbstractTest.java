@@ -172,7 +172,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
 
                 StringBuilder pathBuilder = new StringBuilder();
 
-                for (URL url : CompatibilityTestsUtils.classLoaderUrls(ldr)) {
+                for (URL url : CompatibilityTestsUtils.classLoaderUrls(CLASS_LOADER)) {
                     String path = url.getPath();
 
                     if (excluded.stream().noneMatch(path::contains))
