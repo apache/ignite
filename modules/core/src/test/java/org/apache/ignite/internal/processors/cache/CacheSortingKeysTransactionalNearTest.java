@@ -17,10 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /** */
 public class CacheSortingKeysTransactionalNearTest extends CacheSortingKeysTransactionalTest {

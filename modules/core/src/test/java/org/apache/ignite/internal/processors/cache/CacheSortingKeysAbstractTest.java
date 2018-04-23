@@ -42,6 +42,7 @@ import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_CREATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 
 /**
  * Tests that input keys are sorted before locking and sorting is working on different cache configurations.
@@ -229,6 +230,129 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testClearAllComparable() throws Exception {
+        checkClearAll(new ComparableComplexObject());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClearAllNotcomparable() throws Exception {
+        checkClearAll(new NotComparableComplexObject(cache));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClearAllP2P() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5038");
+
+        checkClearAll(new P2PComplexObject(cache));
+    }
+
+    /**
+     * @param obj ComplexObject.
+     * @throws Exception If failed.
+     */
+    private void checkClearAll(ComplexObject obj) throws Exception {
+        Map<Object, Object> map = obj.unsortedMap();
+
+        cache.putAll(map);
+
+        SortingPredicate pred = createEventListener();
+
+        cache.clearAll(map.keySet());
+
+        removeEventListener(pred);
+
+        assertTrue("Sorting failed.", obj.checkOrder(pred.list));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAllComparable() throws Exception {
+        checkGetAll(new ComparableComplexObject());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAllNotcomparable() throws Exception {
+        checkGetAll(new NotComparableComplexObject(cache));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAllP2P() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5038");
+
+        checkGetAll(new P2PComplexObject(cache));
+    }
+
+    /**
+     * @param obj ComplexObject.
+     * @throws Exception If failed.
+     */
+    private void checkGetAll(ComplexObject obj) throws Exception {
+        Map<Object, Object> map = obj.unsortedMap();
+
+        cache.putAll(map);
+
+        SortingPredicate pred = createEventListener();
+
+        cache.getAll(map.keySet());
+
+        removeEventListener(pred);
+
+        assertTrue("Sorting failed.", obj.checkOrder(pred.list));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetEntriesComparable() throws Exception {
+        checkGetEntries(new ComparableComplexObject());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetEntriesNotcomparable() throws Exception {
+        checkGetEntries(new NotComparableComplexObject(cache));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetEntriesP2P() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5038");
+
+        checkGetEntries(new P2PComplexObject(cache));
+    }
+
+    /**
+     * @param obj ComplexObject.
+     * @throws Exception If failed.
+     */
+    private void checkGetEntries(ComplexObject obj) throws Exception {
+        Map<Object, Object> map = obj.unsortedMap();
+
+        cache.putAll(map);
+
+        SortingPredicate pred = createEventListener();
+
+        cache.getAll(map.keySet());
+
+        removeEventListener(pred);
+
+        assertTrue("Sorting failed.", obj.checkOrder(pred.list));
+    }
+
+    /**
      * We use several events because they differs in the same test for different cache configurations.
      *
      * @return SortingPredicate.
@@ -237,7 +361,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         SortingPredicate pred = new SortingPredicate();
 
         grid(0).events().localListen(pred,
-            EVT_CACHE_OBJECT_PUT, EVT_CACHE_ENTRY_CREATED, EVT_CACHE_OBJECT_LOCKED);
+            EVT_CACHE_OBJECT_PUT, EVT_CACHE_ENTRY_CREATED, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_READ);
 
         return pred;
     }
