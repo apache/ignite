@@ -221,7 +221,7 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        //In case if value was replaced there is no sense to clean the history
+        // In case if value was replaced there is no sense to clean the history.
         if (hAff == null)
             onHistoryAdded();
     }
@@ -500,7 +500,7 @@ public class GridAffinityAssignmentCache {
             }
         }
 
-        //In case if value was replaced there is no sense to clean the history
+        // In case if value was replaced there is no sense to clean the history.
         if (hAff == null)
             onHistoryAdded();
     }

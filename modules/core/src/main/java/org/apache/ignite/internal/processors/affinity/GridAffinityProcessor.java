@@ -755,13 +755,16 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             int res = this.topVer.compareTo(o.topVer);
 
-            //key with null cache name must be less than any key with not null cache name for the same topVer
+            // Key with null cache name must be less than any key with not null cache name for the same topVer.
             if (res == 0) {
-                if (cacheName == null)
+                if (cacheName == null && o.cacheName != null)
                     return -1;
 
-                if (o.cacheName == null)
+                if (cacheName != null && o.cacheName == null)
                     return 1;
+
+                if (cacheName == null && o.cacheName == null)
+                    return 0;
 
                 return cacheName.compareTo(o.cacheName);
             }

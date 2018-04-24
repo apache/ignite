@@ -75,11 +75,6 @@ public class GridAffinityProcessorMemoryLeakTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
-    @Override protected void beforeTestsStarted() throws Exception {
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
@@ -150,7 +145,7 @@ public class GridAffinityProcessorMemoryLeakTest extends GridCommonAbstractTest 
 
         cCfg.setGroupName("some group");
 
-        ignite.destroyCache(cacheName); // local cache is not really local - reference can be kept by other nodes if restart during the load happens
+        ignite.destroyCache(cacheName); // Local cache is not really local - reference can be kept by other nodes if restart during the load happens.
 
         return ignite.createCache(cCfg).withKeepBinary();
     }
