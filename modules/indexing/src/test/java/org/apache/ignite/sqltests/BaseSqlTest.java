@@ -57,8 +57,11 @@ import org.jetbrains.annotations.Nullable;
  * Test base for test for sql features.
  */
 public class BaseSqlTest extends GridCommonAbstractTest {
-    /** Size of data in the test table. */
-    private final static long EMP_CNT = 1000;
+    /** Size of Employee test table. */
+    private final static long EMP_CNT = 1000L;
+
+    /** Size of Department test table. */
+    private final static long DEP_CNT = 50L;
 
     /** Name of client node. */
     private static final String CLIENT_NODE_NAME = "clientNode";
@@ -75,7 +78,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /** Node name of first server. */
     private final String SRV1_NAME = "server1";
 
-    protected static final String[] ALL_FIELDS = new String[] {"ID", "DEPID", "FIRSTNAME", "LASTNAME", "AGE", "SALARY"};
+    protected static final String[] ALL_EMP_FIELDS = new String[] {"ID", "DEPID", "FIRSTNAME", "LASTNAME", "AGE", "SALARY"};
 
     @InjectTestSuite.Parameter
     private Configuration cfg = new Configuration();
@@ -95,36 +98,53 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * Fills tables with data.
      */
     protected void fillCommonData() {
-        SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?, ?, ?)");
+        SqlFieldsQuery insDep = new SqlFieldsQuery("INSERT INTO Department VALUES (?, ?)");
 
-        final long depId = 42;
+        SqlFieldsQuery insEmp = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?, ?, ?)");
 
         Random rnd = new Random();
 
+        for(long id = 0; id < DEP_CNT; id++) {
+            String name = UUID.randomUUID().toString();
+
+            execute(insDep.setArgs(id, name));
+        }
+
         for (long id = 0; id < EMP_CNT; id++) {
+            Long depId = (long)rnd.nextInt((int)DEP_CNT);
+
             String firstName = UUID.randomUUID().toString();
             String lastName = UUID.randomUUID().toString();
+
             Integer age = rnd.nextInt(50) + 18;
             Integer salary = rnd.nextInt(50) + 50;
 
-            execute(qry.setArgs(id, depId, firstName, lastName, age, salary));
+            execute(insEmp.setArgs(id, depId, firstName, lastName, age, salary));
         }
     }
 
     /**
      * Creates common table "Employee".
      *
-     * @param withStr With clause for created table, such as "template=partitioned".
+     * @param commonParams Common parameters for the with clause of created table, such as "template=partitioned".
      */
-    protected final void createTables(String withStr) {
+    protected final void createTables(String commonParams) {
         execute("CREATE TABLE Employee (" +
-            "id LONG PRIMARY KEY, " +
+            "id LONG, " +
             "depId LONG, " +
             "firstName VARCHAR, " +
             "lastName VARCHAR, " +
             "age INT, " +
-            "salary INT)" +
-            (F.isEmpty(withStr) ? "" : " WITH \"" + withStr + '"') +
+            "salary INT, " +
+            "PRIMARY KEY (id, depId)" +
+            ") " +
+            "WITH \"affinity_key=depId" + (F.isEmpty(commonParams) ? "" : ", " + commonParams) + "\"" +
+            ";");
+
+        execute("CREATE TABLE Department (" +
+            "id LONG PRIMARY KEY," +
+            "name VARCHAR) " +
+            (F.isEmpty(commonParams) ? "" : " WITH \"" + commonParams + "\"") +
             ";");
 
         execute("CREATE INDEX AgeIndex ON Employee (age)");
@@ -273,6 +293,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @return Result of query.
      */
     protected final Result executeFrom(SqlFieldsQuery qry, Ignite node) {
+        log.info("Executing query from " + node.name() + " : " + qry);
+
         FieldsQueryCursor<List<?>> cursor = ((IgniteEx)node).context().query().querySqlFields(qry, false);
 
         return Result.fromCursor(cursor);
@@ -438,7 +460,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         testAllNodes(node -> {
             Result emps = executeFrom("SELECT * FROM Employee", node);
 
-            assertContainsEq("SELECT * returned unexpected column names.", emps.columnNames(), Arrays.asList(ALL_FIELDS));
+            assertContainsEq("SELECT * returned unexpected column names.", emps.columnNames(), Arrays.asList(ALL_EMP_FIELDS));
 
             List<List<Object>> expEmps = select(node.cache(EMP_CACHE_NAME), null, emps.columnNames().toArray(new String[0]));
 
@@ -468,7 +490,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
             String[] fields = emps.columnNames().toArray(new String[0]);
 
-            assertContainsEq("SELECT * returned unexpected column names.", emps.columnNames(), Arrays.asList(ALL_FIELDS));
+            assertContainsEq("SELECT * returned unexpected column names.", emps.columnNames(), Arrays.asList(ALL_EMP_FIELDS));
 
             IgnitePredicate<Map<String, Object>> between = row -> {
                 long id = (Long)row.get("ID");
