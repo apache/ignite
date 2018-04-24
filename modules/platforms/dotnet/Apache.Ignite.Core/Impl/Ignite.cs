@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Operation codes for PlatformProcessorImpl calls.
         /// </summary>
-        internal enum Op
+        private enum Op
         {
             GetCache = 1,
             CreateCache = 2,

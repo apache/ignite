@@ -19,12 +19,12 @@ namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -169,13 +169,13 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** <inhertiDoc /> */
         public ITransactions WithLabel(string label)
         {
-            Debug.Assert(label != null);
+            IgniteArgumentCheck.NotNullOrEmpty(label, "label");
 
             return _ignite.GetTransactionsWithLabel(label);
         }
 
         /** <inheritDoc /> */
-        public IList<ITransaction> LocalActiveTransactions()
+        public IList<ITransaction> GetLocalActiveTransactions()
         {       
             return DoInOp(OpLocalActiveTransactions, stream =>
             {

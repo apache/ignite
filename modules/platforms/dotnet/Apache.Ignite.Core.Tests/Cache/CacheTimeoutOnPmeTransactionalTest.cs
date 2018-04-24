@@ -48,9 +48,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             var tx = ignite.GetTransactions().TxStart(TransactionConcurrency.Optimistic, TransactionIsolation.ReadCommitted,
                 TimeSpan.FromSeconds(20), 1);
 
-            Assert.IsNotEmpty(ignite.GetTransactions().LocalActiveTransactions());
+            Assert.IsNotEmpty(ignite.GetTransactions().GetLocalActiveTransactions());
 
-            var testTx = ignite.GetTransactions().LocalActiveTransactions()[0];
+            var testTx = ignite.GetTransactions().GetLocalActiveTransactions()[0];
 
             Assert.AreEqual(testTx.Concurrency, tx.Concurrency);
 
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             tx = ignite.GetTransactions().TxStart(TransactionConcurrency.Optimistic, TransactionIsolation.ReadCommitted,
                 TimeSpan.FromSeconds(20), 1);
             
-            testTx = ignite.GetTransactions().LocalActiveTransactions()[0];
+            testTx = ignite.GetTransactions().GetLocalActiveTransactions()[0];
             
             testTx.Rollback();
             
