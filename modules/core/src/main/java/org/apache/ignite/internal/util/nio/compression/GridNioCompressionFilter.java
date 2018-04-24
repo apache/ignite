@@ -151,7 +151,6 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
     /**
      * @param ses Session.
      */
-    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     public static void lock(GridNioSession ses) {
         assert ses != null;
 
@@ -337,7 +336,8 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @return Write future.
      * @throws GridNioException If send failed.
      */
-    GridNioFuture<?> writeNetBuffer(GridNioSession ses, GridNioCompressionHandler hnd, @Nullable IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
+    private GridNioFuture<?> writeNetBuffer(GridNioSession ses, GridNioCompressionHandler hnd,
+        @Nullable IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert hnd != null;
         assert ses != null;
 
