@@ -238,10 +238,9 @@ namespace Apache.Ignite.Core.Transactions
     }
 
     /// <summary>
-    /// Disposable collection of <see cref="ITransaction"/>
+    /// Disposable readonly collection of <see cref="ITransaction"/>
     /// </summary>
     public interface ITransactionCollection : ICollection<ITransaction>, IDisposable
     {
-        
     }
 }
