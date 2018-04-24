@@ -22,15 +22,22 @@ import java.io.File;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.commandline.CommandHandler;
+import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -220,6 +227,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBaselineAddOnNotActiveCluster() throws Exception {
+        PrintStream sysOut = System.out;
+
         try {
             Ignite ignite = startGrid(1);
 
@@ -244,7 +253,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             assertTrue(out.toString().contains("Node not found for consistent ID: bltTest2"));
         }
         finally {
-            System.setOut(System.out);
+            System.setOut(sysOut);
         }
     }
 
@@ -311,5 +320,121 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_OK, execute("--baseline", "version", String.valueOf(ignite.cluster().topologyVersion())));
 
         assertEquals(2, ignite.cluster().currentBaselineTopology().size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheHelp() throws Exception {
+        PrintStream sysOut = System.out;
+        ByteArrayOutputStream out = null;
+
+        try {
+            Ignite ignite = startGrids(1);
+
+            ignite.cluster().active(true);
+
+            out = new ByteArrayOutputStream(4096);
+            System.setOut(new PrintStream(out));
+
+            assertEquals(EXIT_CODE_OK, execute("--cache", "help"));
+
+            for (CacheCommand cmd : CacheCommand.values()) {
+                if (cmd != CacheCommand.HELP)
+                    assertTrue(cmd.text(), out.toString().contains(cmd.text()));
+            }
+        }
+        finally {
+            System.setOut(sysOut);
+
+            if (out != null)
+                System.out.println(out.toString());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheIdleVerify() throws Exception {
+        PrintStream sysOut = System.out;
+        ByteArrayOutputStream out = null;
+
+        try {
+            Ignite ignite = startGrids(2);
+
+            ignite.cluster().active(true);
+
+            IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
+                .setBackups(1)
+                .setName("cacheIV"));
+
+            for (int i = 0; i < 100; i++)
+                cache.put(i, i);
+
+            out = new ByteArrayOutputStream(4096);
+            System.setOut(new PrintStream(out));
+
+            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+
+            assertTrue(out.toString().contains("no conflicts have been found"));
+
+            HashSet<Integer> clearKeys = new HashSet<>(Arrays.asList(1, 2, 3, 4, 5, 6));
+
+            ((IgniteEx)ignite).context().cache().cache("cacheIV").clearLocallyAll(clearKeys, true, true, true);
+
+            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_verify"));
+
+            assertTrue(out.toString().contains("conflict partitions"));
+        }
+        finally {
+            System.setOut(sysOut);
+
+            if (out != null)
+                System.out.println(out.toString());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheIdleAnalyze() throws Exception {
+        PrintStream sysOut = System.out;
+        ByteArrayOutputStream out = null;
+
+        try {
+            Ignite ignite = startGrids(2);
+
+            ignite.cluster().active(true);
+
+            IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
+                .setAffinity(new RendezvousAffinityFunction(false, 32))
+                .setBackups(1)
+                .setName("cacheIA"));
+
+            for (int i = 0; i < 100; i++)
+                cache.put(i, i);
+
+            out = new ByteArrayOutputStream(4096);
+            System.setOut(new PrintStream(out));
+
+            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_analyze", String.valueOf(CU.cacheId("cacheIA")), "1"));
+
+            assertTrue(out.toString().contains("no coflicts have been found in partition"));
+
+            HashSet<Integer> clearKeys = new HashSet<>(Arrays.asList(1, 2, 3, 4, 5, 6));
+
+            ((IgniteEx)ignite).context().cache().cache("cacheIA").clearLocallyAll(clearKeys, true, true, true);
+
+            assertEquals(EXIT_CODE_OK, execute("--cache", "idle_analyze", String.valueOf(CU.cacheId("cacheIA")), "1"));
+
+            assertTrue(out.toString().contains("conflict keys"));
+        }
+        finally {
+            System.setOut(sysOut);
+
+            if (out != null)
+                System.out.println(out.toString());
+        }
     }
 }

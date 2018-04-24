@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.commandline;
 
+import org.apache.ignite.internal.commandline.cache.CacheArguments;
+
 /**
  * Bean with all parsed and validated arguments.
  */
@@ -50,6 +52,11 @@ public class Arguments {
     private String baselineArgs;
 
     /**
+     * Arguments for --cache subcommand.
+     */
+    private CacheArguments cacheArgs;
+
+    /**
      * @param cmd Command.
      * @param host Host.
      * @param port Port.
@@ -58,11 +65,10 @@ public class Arguments {
      * @param baselineAct Baseline action.
      * @param baselineArgs Baseline args.
      * @param force Force flag.
+     * @param cacheArgs --cache subcommand arguments.
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd,
-        String baselineAct, String baselineArgs,
-        boolean force
-    ) {
+        String baselineAct, String baselineArgs, boolean force, CacheArguments cacheArgs) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -71,6 +77,7 @@ public class Arguments {
         this.baselineAct = baselineAct;
         this.baselineArgs = baselineArgs;
         this.force = force;
+        this.cacheArgs = cacheArgs;
     }
 
     /**
@@ -127,5 +134,12 @@ public class Arguments {
      */
     public boolean force() {
         return force;
+    }
+
+    /**
+     * @return Arguments for --cache subcommand.
+     */
+    public CacheArguments cacheArgs() {
+        return cacheArgs;
     }
 }
