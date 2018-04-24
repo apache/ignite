@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -641,9 +640,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 DiscoveryCustomMessage msg = ((DiscoveryCustomEvent)firstDiscoEvt).customMessage();
 
-                forceAffReassignment = DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(msg)
-                    && firstEventCache().minimumNodeVersion().compareToIgnoreTimestamp(FORCE_AFF_REASSIGNMENT_SINCE) >= 0;
-
                 if (msg instanceof ChangeGlobalStateMessage) {
                     assert exchActions != null && !exchActions.empty();
 
@@ -808,9 +804,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void ensureClientCachesStarted() {
         GridCacheProcessor cacheProcessor = cctx.cache();
+
+        Set<String> cacheNames = new HashSet<>(cacheProcessor.cacheNames());
+
         List<CacheConfiguration> notStartedCacheConfigs = new ArrayList<>();
+
         for (CacheConfiguration cCfg : cctx.gridConfig().getCacheConfiguration()) {
-            if (!cacheProcessor.cacheNames().contains(cCfg.getName())) {
+            if (!cacheNames.contains(cCfg.getName())) {
                 notStartedCacheConfigs.add(cCfg);
             }
         }
@@ -818,6 +818,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (!notStartedCacheConfigs.isEmpty()) {
             cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false, false);
         }
+        if (!notStartedCacheConfigs.isEmpty())
+            cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false);
     }
 
     /**
