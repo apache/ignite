@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
@@ -163,6 +162,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** Set if partition must be cleared in MOVING state. */
     private volatile boolean clear;
+
+    /** Set if topology update sequence should be update on partition destroy. */
+    private boolean updateSeqOnDestroy;
 
     /**
      * @param ctx Context.
@@ -657,17 +659,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         if (!reinitialized)
             return;
 
-        // Try fast eviction
-        if (isEmpty() && getSize(state) == 0 && !grp.queriesEnabled()
-                && getReservations(state) == 0 && !groupReserved()) {
-
-            if (partState == RENTING && casState(state, EVICTED) || clearingRequested) {
-                clearFuture.finish();
-
-                return;
-            }
-        }
-
         grp.evictor().evictPartitionAsync(this);
     }
 
@@ -744,7 +735,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * @return {@code True} if partition is safe to destroy.
      */
-    private boolean markForDestroy() {
+    public boolean markForDestroy() {
         while (true) {
             int cnt = evictGuard.get();
 
@@ -771,17 +762,14 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
-            if (markForDestroy())
-                finishDestroy(updateSeq);
+            updateSeqOnDestroy = updateSeq;
         }
     }
 
     /**
      * Destroys partition data store and invokes appropriate callbacks.
-     *
-     * @param updateSeq If {@code true} increment update sequence on cache group topology after successful destroy.
      */
-    private void finishDestroy(boolean updateSeq) {
+    public void destroy() {
         assert state() == EVICTED : this;
         assert evictGuard.get() == -1;
 
@@ -791,7 +779,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         rent.onDone();
 
-        ((GridDhtPreloader)grp.preloader()).onPartitionEvicted(this, updateSeq);
+        ((GridDhtPreloader)grp.preloader()).onPartitionEvicted(this, updateSeqOnDestroy);
 
         clearDeferredDeletes();
     }
