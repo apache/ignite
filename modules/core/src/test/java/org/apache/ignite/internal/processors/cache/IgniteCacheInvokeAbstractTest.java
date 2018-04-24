@@ -70,21 +70,13 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     }
 
     /**
-     * Test {@link IgniteInternalCache#invoke(Object, EntryProcessor, Object...)} works consistent with
+     * Test {@link IgniteInternalCache#invoke(Object, EntryProcessor, Object...)} processes null result consistent with
      * {@link IgniteInternalCache#invokeAsync(Object, EntryProcessor, Object...)}.
      * @throws Exception If failed.
      */
     public void testInternalInvokeNullable() throws Exception {
         IgniteInternalCache<Integer, Integer> cache = grid(0).cachex(DEFAULT_CACHE_NAME);
 
-        invokeNullable(cache);
-    }
-
-    /**
-     * @param cache Cache.
-     * @throws Exception If failed.
-     */
-    private void invokeNullable(final IgniteInternalCache<Integer, Integer> cache) throws Exception {
         EntryProcessor<Integer, Integer, Void> processor = new NullableProcessor();
 
         for (final Integer key : keys()) {
