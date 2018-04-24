@@ -67,6 +67,8 @@ public class FailureProcessor extends GridProcessorAdapter {
         assert hnd != null;
 
         this.hnd = hnd;
+
+        U.quietAndInfo(log, "Configured failure handler: [hnd=" + hnd + ']');
     }
 
     /**
@@ -107,8 +109,8 @@ public class FailureProcessor extends GridProcessorAdapter {
         if (this.failureCtx != null) // Node already terminating, no reason to process more errors.
             return;
 
-        U.error(ignite.log(), "Critical failure. Will be handled accordingly to configured handler [hnd=" +
-            hnd.getClass() + ", failureCtx=" + failureCtx + ']', failureCtx.error());
+        U.error(ignite.log(), "Critical system error detected. Will be handled accordingly to configured handler " +
+            "[hnd=" + hnd.getClass() + ", failureCtx=" + failureCtx + ']', failureCtx.error());
 
         if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
             reserveBuf = null;

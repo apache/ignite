@@ -19,6 +19,7 @@ package org.apache.ignite.failure;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -39,5 +40,10 @@ public class StopNodeFailureHandler implements FailureHandler {
         ).start();
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(StopNodeFailureHandler.class, this);
     }
 }
