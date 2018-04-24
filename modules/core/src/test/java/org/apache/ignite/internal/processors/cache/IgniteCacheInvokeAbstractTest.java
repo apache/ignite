@@ -70,8 +70,6 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     }
 
     /**
-     * Test {@link IgniteInternalCache#invoke(Object, EntryProcessor, Object...)} processes null result consistent with
-     * {@link IgniteInternalCache#invokeAsync(Object, EntryProcessor, Object...)}.
      * @throws Exception If failed.
      */
     public void testInternalInvokeNullable() throws Exception {
