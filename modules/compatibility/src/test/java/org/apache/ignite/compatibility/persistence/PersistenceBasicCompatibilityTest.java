@@ -42,9 +42,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 /**
  * Saves data using previous version of ignite and then load this data using actual version.
  */
-public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
+public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
-    protected static final String TEST_CACHE_NAME = DummyPersistenceCompatibilityTest.class.getSimpleName();
+    protected static final String TEST_CACHE_NAME = PersistenceBasicCompatibilityTest.class.getSimpleName();
 
     /** */
     protected volatile boolean compactFooter;

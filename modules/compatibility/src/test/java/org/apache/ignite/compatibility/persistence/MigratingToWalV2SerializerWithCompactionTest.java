@@ -40,7 +40,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
  */
 public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
-    private static final String TEST_CACHE_NAME = DummyPersistenceCompatibilityTest.class.getSimpleName();
+    private static final String TEST_CACHE_NAME = MigratingToWalV2SerializerWithCompactionTest.class.getSimpleName();
 
     /** Entries count. */
     private static final int ENTRIES = 300;
