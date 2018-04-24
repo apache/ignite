@@ -40,7 +40,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /**
- * Saves data using previous version of ignite and then load this data using actual version
+ * Saves data using previous version of ignite and then load this data using actual version.
  */
 public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
