@@ -128,7 +128,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         execute("CREATE INDEX AgeIndex ON Employee (age)");
     }
 
-
     /**
      * Sets up data. Override in children to add/change behaviour.
      */
@@ -281,7 +280,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * Shortcut for {@link #assertContainsEq(Collection, Collection)} without message.
      */
     protected void assertContainsEq(Collection actual, Collection expected) {
-        assertContainsEq(null , actual, expected);
+        assertContainsEq(null, actual, expected);
     }
 
     /**
@@ -306,7 +305,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                 ", uniqExpected=" + removeFromCopy(expected, actual) + "]");
     }
 
-    private static Collection removeFromCopy(Collection<?> from, Collection<?> toRemove){
+    private static Collection removeFromCopy(Collection<?> from, Collection<?> toRemove) {
         Set<?> copy = new HashSet<>(from);
         copy.removeAll(toRemove);
         return copy;
@@ -344,6 +343,13 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return select(cache, filter, fieldsExtractor);
     }
 
+    /**
+     * Performs scan query with custom transformer (mapper).
+     *
+     * @param cache cache to query.
+     * @param filter filter for rows.
+     * @param transformer result mapper.
+     */
     protected static <K, V> List<List<Object>> select(
         IgniteCache<K, V> cache,
         @Nullable IgnitePredicate<Map<String, Object>> filter,
@@ -369,7 +375,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
         return cursor.getAll();
     }
-    
+
     /**
      * Transforms cache entry to map (column name -> value).
      *
@@ -382,7 +388,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
         // Look up for the field in the key
         if (key instanceof BinaryObject) {
-            BinaryObject compositeKey = (BinaryObject) key;
+            BinaryObject compositeKey = (BinaryObject)key;
 
             for (String field : compositeKey.type().fieldNames())
                 row.put(field, compositeKey.field(field));
@@ -391,8 +397,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             row.put(meta.getKeyFieldName(), key);
 
         // And in the value.
-        if (val instanceof BinaryObject){
-            BinaryObject compositeVal = (BinaryObject) val;
+        if (val instanceof BinaryObject) {
+            BinaryObject compositeVal = (BinaryObject)val;
 
             for (String field : compositeVal.type().fieldNames())
                 row.put(field, compositeVal.field(field));
@@ -462,7 +468,10 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
             assertContainsEq("SELECT * returned unexpected column names.", emps.columnNames(), Arrays.asList(ALL_FIELDS));
 
-            IgnitePredicate<Map<String, Object>> between = row -> { long id = (Long) row.get("ID"); return 101 <= id && id <= 200;};
+            IgnitePredicate<Map<String, Object>> between = row -> {
+                long id = (Long)row.get("ID");
+                return 101 <= id && id <= 200;
+            };
 
             List<List<Object>> expected = select(node.cache(EMP_CACHE_NAME), between, fields);
 
@@ -500,7 +509,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-
     public void testBasicOrderByLastName() {
         testAllNodes(node -> {
             Result result = executeFrom("SELECT * FROM Employee e ORDER BY e.lastName", node);
@@ -536,8 +544,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-    public void testWhereGreater(){
-        testAllNodes(node ->{
+    public void testWhereGreater() {
+        testAllNodes(node -> {
             Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age > 30", node);
             Result noidxActual = executeFrom("SELECT firstName FROM Employee WHERE id > 742", node);
 
@@ -551,8 +559,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-    public void testWhereLess(){
-        testAllNodes(node ->{
+    public void testWhereLess() {
+        testAllNodes(node -> {
             Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age < 30", node);
             Result noidxActual = executeFrom("SELECT firstName FROM Employee WHERE id < 142", node);
 
@@ -581,7 +589,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-    public void testGroupBy(){
+    public void testGroupBy() {
         testAllNodes(node -> {
             Result result = executeFrom("SELECT age, COUNT(*) FROM Employee GROUP BY age HAVING COUNT(*) > 8", node);
 
@@ -589,8 +597,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
             Map<Integer, Long> cntGroups = new HashMap<>();
 
-            for(List<Object> entry : all) {
-                Integer age = (Integer) entry.get(0);
+            for (List<Object> entry : all) {
+                Integer age = (Integer)entry.get(0);
 
                 long cnt = cntGroups.getOrDefault(age, 0L);
 
