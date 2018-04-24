@@ -34,7 +34,7 @@ public class HandshakeMessage implements Message {
     private static final long serialVersionUID = 0L;
 
     /** Message body size in bytes. */
-    private static final int MESSAGE_SIZE = 33;
+    private static final int MESSAGE_SIZE = 32;
 
     /** Full message size (with message type) in bytes. */
     public static final int MESSAGE_FULL_SIZE = MESSAGE_SIZE + DIRECT_TYPE_SIZE;
