@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
         /** */
         private const int OpPrepare = 12;
-        
+
         /** */
         private const int OpLocalActiveTransactions = 13;
 
@@ -79,13 +79,13 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
         /** */
         private readonly TimeSpan _dfltTimeout;
-        
+
         /** */
         private readonly TimeSpan _dfltTimeoutOnPartitionMapExchange;
 
         /** */
         private readonly Guid _localNodeId;
-        
+
         /** */
         private readonly Ignite _ignite;
 
@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
                 (TransactionIsolation) reader.ReadInt(),
                 reader.ReadLongAsTimespan(),
                 reader.ReadLongAsTimespan()
-                ));
+            ));
 
             _dfltConcurrency = res.Item1;
             _dfltIsolation = res.Item2;
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             }, s => s.ReadLong());
 
             var innerTx = new TransactionImpl(id, this, concurrency, isolation, timeout, _localNodeId);
-            
+
             return new Transaction(innerTx);
         }
 
@@ -175,8 +175,8 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /** <inheritDoc /> */
-        public IList<ITransaction> GetLocalActiveTransactions()
-        {       
+        public ITransactionCollection GetLocalActiveTransactions()
+        {
             return DoInOp(OpLocalActiveTransactions, stream =>
             {
                 var reader = Marshaller.StartUnmarshal(stream);
@@ -194,14 +194,14 @@ namespace Apache.Ignite.Core.Impl.Transactions
                     var isolation = reader.ReadInt();
 
                     var timeout = reader.ReadLongAsTimespan();
-                    
-                    var innerTx = new TransactionImpl(id, this, (TransactionConcurrency) concurrency, 
+
+                    var innerTx = new TransactionImpl(id, this, (TransactionConcurrency) concurrency,
                         (TransactionIsolation) isolation, timeout, _localNodeId, false);
-            
+
                     result.Add(new Transaction(innerTx));
                 }
 
-                return result;
+                return new TransactionCollectionImpl(result);
             });
         }
 
@@ -222,13 +222,13 @@ namespace Apache.Ignite.Core.Impl.Transactions
         {
             get { return _dfltTimeout; }
         }
-        
+
         /** <inheritDoc /> */
         public TimeSpan DefaultTimeoutOnPartitionMapExchange
         {
             get { return _dfltTimeoutOnPartitionMapExchange; }
         }
-       
+
         /// <summary>
         /// Executes prepare step of the two phase commit.
         /// </summary>

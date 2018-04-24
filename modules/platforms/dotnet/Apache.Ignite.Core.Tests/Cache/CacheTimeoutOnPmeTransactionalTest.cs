@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Cache
 {
     using System;
+    using System.Linq;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -45,39 +46,38 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             IIgnite ignite = GetIgnite(0);
 
-            var tx = ignite.GetTransactions().TxStart(TransactionConcurrency.Optimistic, TransactionIsolation.ReadCommitted,
-                TimeSpan.FromSeconds(20), 1);
+            using (var tx = ignite.GetTransactions().TxStart(TransactionConcurrency.Optimistic, 
+                TransactionIsolation.ReadCommitted, TimeSpan.FromSeconds(20), 1))
+            using (var activeTxCollection = ignite.GetTransactions().GetLocalActiveTransactions())
+            {
+                Assert.IsNotEmpty(activeTxCollection);
+                
+                var testTx = activeTxCollection.ElementAt(0);
+                
+                Assert.AreEqual(testTx.Concurrency, tx.Concurrency);
 
-            Assert.IsNotEmpty(ignite.GetTransactions().GetLocalActiveTransactions());
+                Assert.AreEqual(testTx.Isolation, tx.Isolation);
 
-            var testTx = ignite.GetTransactions().GetLocalActiveTransactions()[0];
-
-            Assert.AreEqual(testTx.Concurrency, tx.Concurrency);
-
-            Assert.AreEqual(testTx.Isolation, tx.Isolation);
-
-            Assert.AreEqual(testTx.Timeout, tx.Timeout);
+                Assert.AreEqual(testTx.Timeout, tx.Timeout);
             
-            tx.Commit();
+                tx.Commit();
                  
-            Assert.AreEqual(testTx.State, TransactionState.Committed);
+                Assert.AreEqual(testTx.State, TransactionState.Committed);
+                
+            }
             
-            tx.Dispose();
-            
-            testTx.Dispose();
-               
-            tx = ignite.GetTransactions().TxStart(TransactionConcurrency.Optimistic, TransactionIsolation.ReadCommitted,
-                TimeSpan.FromSeconds(20), 1);
-            
-            testTx = ignite.GetTransactions().GetLocalActiveTransactions()[0];
-            
-            testTx.Rollback();
-            
-            Assert.AreEqual(tx.State, TransactionState.RolledBack);
+            using (var tx = ignite.GetTransactions().TxStart(TransactionConcurrency.Optimistic, 
+                TransactionIsolation.ReadCommitted, TimeSpan.FromSeconds(20), 1))
+            using (var activeTxCollection = ignite.GetTransactions().GetLocalActiveTransactions())
+            {
+                Assert.IsNotEmpty(activeTxCollection);
+                
+                var testTx = activeTxCollection.ElementAt(0);
 
-            tx.Dispose();
-            
-            testTx.Dispose();
+                testTx.Rollback();
+
+                Assert.AreEqual(tx.State, TransactionState.RolledBack);
+            }
         }
         
         protected override ITransactions Transactions

@@ -106,7 +106,7 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary>
         /// Returns a list of active transactions initiated by this node.
         /// </summary>
-        /// <returns>Collection of <see cref="ITransaction"/></returns>
-        IList<ITransaction> GetLocalActiveTransactions();
+        /// <returns>Collection of <see cref="ITransactionCollection"/></returns>
+        ITransactionCollection GetLocalActiveTransactions();
     }
 }
