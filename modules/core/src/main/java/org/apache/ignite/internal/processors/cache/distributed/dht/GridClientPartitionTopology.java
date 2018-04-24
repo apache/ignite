@@ -1104,6 +1104,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public void ownMoving(AffinityTopologyVersion topVer) {
+        // No-op
+    }
+
+    /** {@inheritDoc} */
     @Override public void onEvicted(GridDhtLocalPartition part, boolean updateSeq) {
         assert updateSeq || lock.isWriteLockedByCurrentThread();
 

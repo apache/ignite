@@ -138,6 +138,7 @@ import clusterSelector from './components/cluster-selector';
 import connectedClusters from './components/connected-clusters';
 import pageSignIn from './components/page-signin';
 import pageLanding from './components/page-landing';
+import passwordVisibility from './components/password-visibility';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
@@ -239,6 +240,7 @@ angular.module('ignite-console', [
     uiAceJava.name,
     uiAceSpring.name,
     breadcrumbs.name,
+    passwordVisibility.name,
     // Ignite modules.
     IgniteModules.name
 ])
@@ -250,7 +252,7 @@ angular.module('ignite-console', [
 .directive(...igniteCopyToClipboard)
 .directive(...igniteHideOnStateChange)
 .directive(...igniteInformation)
-.directive(...igniteMatch)
+.directive('igniteMatch', igniteMatch)
 .directive(...igniteOnClickFocus)
 .directive(...igniteOnEnter)
 .directive(...igniteOnEnterFocusMove)

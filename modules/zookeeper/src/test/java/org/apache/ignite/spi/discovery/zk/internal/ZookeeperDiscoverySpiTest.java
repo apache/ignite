@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.io.Serializable;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -40,6 +41,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.management.JMX;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.TestingZooKeeperServer;
 import org.apache.ignite.Ignite;
@@ -60,7 +64,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.DiscoverySpiTestListener;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -71,7 +75,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
@@ -107,6 +110,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
+import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestSuite2;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -556,6 +560,38 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
             for (ClusterNode node0 : node.cluster().nodes())
                 assertNotNull(node0.consistentId());
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testMbean() throws Exception {
+        startGrids(3);
+
+        MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
+
+        UUID crdNodeId = grid(0).localNode().id();
+
+        try {
+            for (int i = 0; i < 3; i++) {
+                IgniteEx grid = grid(i);
+
+                ObjectName spiName = U.makeMBeanName(grid.context().igniteInstanceName(), "SPIs",
+                    ZookeeperDiscoverySpi.class.getSimpleName());
+
+                ZookeeperDiscoverySpiMBean bean = JMX.newMBeanProxy(srv, spiName, ZookeeperDiscoverySpiMBean.class);
+
+                assertNotNull(bean);
+
+                assertEquals(String.valueOf(grid.cluster().node(crdNodeId)), bean.getCoordinatorNodeFormatted());
+                assertEquals(String.valueOf(grid.cluster().localNode()), bean.getLocalNodeFormatted());
+                assertEquals(zkCluster.getConnectString(), bean.getZkConnectionString());
+                assertEquals((long)grid.configuration().getFailureDetectionTimeout(), bean.getZkSessionTimeout());
+            }
+        }
+        finally {
+            stopAllGrids();
         }
     }
 

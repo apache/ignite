@@ -421,6 +421,13 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void enableStatistics(Collection<String> caches, boolean enabled);
 
     /**
+     * Sets transaction timeout on partition map exchange.
+     *
+     * @param timeout Transaction timeout on partition map exchange in milliseconds.
+     */
+    public void setTxTimeoutOnPartitionMapExchange(long timeout);
+
+    /**
      * If local client node disconnected from cluster returns future
      * that will be completed when client reconnected.
      *

@@ -94,6 +94,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
+import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -320,14 +321,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             checkWalConfiguration();
 
-            walWorkDir = initDirectory(
+            final File walWorkDir0 = walWorkDir = initDirectory(
                 dsCfg.getWalPath(),
                 DataStorageConfiguration.DFLT_WAL_PATH,
                 resolveFolders.folderName(),
                 "write ahead log work directory"
             );
 
-            walArchiveDir = initDirectory(
+            final File walArchiveDir0 = walArchiveDir = initDirectory(
                 dsCfg.getWalArchivePath(),
                 DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH,
                 resolveFolders.folderName(),
@@ -341,6 +342,20 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             metrics = dbMgr.persistentStoreMetricsImpl();
 
             checkOrPrepareFiles();
+
+            metrics.setWalSizeProvider(new CO<Long>() {
+                @Override public Long apply() {
+                    long size = 0;
+
+                    for (File f : walWorkDir0.listFiles())
+                        size += f.length();
+
+                    for (File f : walArchiveDir0.listFiles())
+                        size += f.length();
+
+                    return size;
+                }
+            });
 
             IgniteBiTuple<Long, Long> tup = scanMinMaxArchiveIndices();
 
@@ -944,6 +959,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             return hnd;
 
         if (hnd.close(true)) {
+            if (metrics.metricsEnabled())
+                metrics.onWallRollOver();
+
             FileWriteHandle next = initNextWriteHandle(cur.idx);
 
             boolean swapped = currentHndUpd.compareAndSet(this, hnd, next);
@@ -1666,6 +1684,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             long segmentToCompress = lastCompressedIdx + 1;
 
             synchronized (this) {
+                if (stopped)
+                    return -1;
+
                 while (segmentToCompress > Math.min(lastAllowedToCompressIdx, archiver.lastArchivedAbsoluteIndex())) {
                     wait();
 
