@@ -140,9 +140,9 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
             Ignite ignite = startGrid(1);
 
             try (IgniteDataStreamer ldr = ignite.dataStreamer(CACHE_NAME)) {
-                ldr.perThreadBufferSize(1);
                 ldr.timeout(TIMEOUT);
                 ldr.receiver(new TestDataReceiver());
+                ldr.perThreadBufferSize(1);
                 ldr.perNodeBufferSize(1);
                 ldr.perNodeParallelOperations(1);
                 ((DataStreamerImpl)ldr).maxRemapCount(0);
