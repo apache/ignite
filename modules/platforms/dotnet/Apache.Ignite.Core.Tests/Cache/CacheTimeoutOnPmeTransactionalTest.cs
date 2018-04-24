@@ -63,6 +63,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(testTx.State, TransactionState.Committed);
             
             tx.Dispose();
+            
+            testTx.Dispose();
                
             tx = ignite.GetTransactions().TxStart(TransactionConcurrency.Optimistic, TransactionIsolation.ReadCommitted,
                 TimeSpan.FromSeconds(20), 1);
@@ -74,6 +76,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(tx.State, TransactionState.RolledBack);
 
             tx.Dispose();
+            
+            testTx.Dispose();
         }
         
         protected override ITransactions Transactions
