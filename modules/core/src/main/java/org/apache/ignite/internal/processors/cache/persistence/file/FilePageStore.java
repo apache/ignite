@@ -266,20 +266,18 @@ public class FilePageStore implements PageStore {
 
             this.tag = tag;
 
-            fileIO.clear();
+            fileIO.close();
 
-            long newAlloc = initFile();
-
-            long delta = newAlloc - allocated.getAndSet(newAlloc);
-
-            assert delta % pageSize == 0;
-
-            allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
+            cfgFile.delete();
         }
         catch (IOException e) {
             throw new PersistentStorageIOException(e);
         }
         finally {
+            inited = false;
+
+            allocated.set(0);
+
             lock.writeLock().unlock();
         }
     }
