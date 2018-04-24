@@ -110,7 +110,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         DataRegionConfiguration regCfg = new DataRegionConfiguration()
             .setName("dfltMemPlc")
             .setMetricsEnabled(true)
-            .setMaxSize(256L * 1024 * 1024)
+            .setMaxSize(2 * 1024L * 1024 * 1024)
             .setPersistenceEnabled(true);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
@@ -154,8 +154,8 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "temp", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "temp", false));
     }
 
     /** {@inheritDoc} */

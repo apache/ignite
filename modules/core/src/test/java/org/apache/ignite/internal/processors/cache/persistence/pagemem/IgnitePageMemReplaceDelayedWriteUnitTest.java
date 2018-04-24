@@ -55,7 +55,7 @@ import static org.mockito.Mockito.when;
  */
 public class IgnitePageMemReplaceDelayedWriteUnitTest {
     /** CPU count. */
-    private static final int CPUS = Runtime.getRuntime().availableProcessors();
+    private static final int CPUS = 32;
 
     /** 1 megabyte in bytes */
     private static final long MB = 1024L * 1024;
@@ -72,7 +72,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
      */
     @Test
     public void testReplacementWithDelayCausesLockForRead() throws IgniteCheckedException {
-        IgniteConfiguration cfg = getConfiguration(MB);
+        IgniteConfiguration cfg = getConfiguration(16 * MB);
 
         AtomicInteger totalEvicted = new AtomicInteger();
 
@@ -129,7 +129,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
      */
     @Test
     public void testBackwardCompatibilityMode() throws IgniteCheckedException {
-        IgniteConfiguration cfg = getConfiguration(MB);
+        IgniteConfiguration cfg = getConfiguration(16 * MB);
 
         AtomicInteger totalEvicted = new AtomicInteger();
 
@@ -223,9 +223,8 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
 
-        PageMemoryImpl memory
-            = new PageMemoryImpl(provider, sizes, sctx, pageSize,
-            pageWriter, null, () -> true, memMetrics, null, null);
+        PageMemoryImpl memory = new PageMemoryImpl(provider, sizes, sctx, pageSize,
+            pageWriter, null, () -> true, memMetrics, PageMemoryImpl.ThrottlingPolicy.DISABLED, null);
 
         memory.start();
         return memory;

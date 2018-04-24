@@ -165,4 +165,39 @@ public interface DataRegionMetrics {
      * @return Page size in bytes.
      */
     public int getPageSize();
+
+    /**
+     * The number of read pages from last restart.
+     *
+     * @return The number of read pages from last restart.
+     */
+    public long getPagesRead();
+
+    /**
+     * The number of written pages from last restart.
+     *
+     * @return The number of written pages from last restart.
+     */
+    public long getPagesWritten();
+
+    /**
+     * The number of replaced pages from last restart .
+     *
+     * @return The number of replaced pages from last restart .
+     */
+    public long getPagesReplaced();
+
+    /**
+     * Total offheap size in bytes.
+     *
+     * @return Total offheap size in bytes.
+     */
+    public long getOffHeapSize();
+
+    /**
+     * Total used offheap size in bytes.
+     *
+     * @return Total used offheap size in bytes.
+     */
+    public long getOffheapUsedSize();
 }

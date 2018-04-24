@@ -29,6 +29,7 @@
 #include "ignite/odbc/meta/column_meta.h"
 #include "ignite/odbc/meta/table_meta.h"
 #include "ignite/odbc/app/parameter_set.h"
+#include "config/configuration.h"
 
 namespace ignite
 {
@@ -75,16 +76,9 @@ namespace ignite
             /**
              * Constructor.
              *
-             * @param version Protocol version.
-             * @param distributedJoins Distributed joins flag.
-             * @param enforceJoinOrder Enforce join order flag.
-             * @param replicatedOnly Replicated only flag.
-             * @param collocated Collocated flag.
-             * @param lazy Lazy flag.
-             * @param skipReducerOnUpdate Skip reducer on update.
+             * @param config Configuration.
              */
-            HandshakeRequest(const ProtocolVersion& version, bool distributedJoins, bool enforceJoinOrder,
-                bool replicatedOnly, bool collocated, bool lazy, bool skipReducerOnUpdate);
+            HandshakeRequest(const config::Configuration& config);
 
             /**
              * Destructor.
@@ -98,26 +92,8 @@ namespace ignite
             void Write(impl::binary::BinaryWriterImpl& writer, const ProtocolVersion&) const;
 
         private:
-            /** Protocol version. */
-            ProtocolVersion version;
-
-            /** Distributed joins flag. */
-            bool distributedJoins;
-
-            /** Enforce join order flag. */
-            bool enforceJoinOrder;
-
-            /** Replicated only flag. */
-            bool replicatedOnly;
-
-            /** Collocated flag. */
-            bool collocated;
-
-            /** Lazy flag. */
-            bool lazy;
-
-            /** Skip reducer on update flag. */
-            bool skipReducerOnUpdate;
+            /** Configuration. */
+            const config::Configuration& config;
         };
 
         /**

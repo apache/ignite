@@ -23,6 +23,12 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
+import java.util.UUID;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientClosedException;
@@ -38,18 +44,31 @@ import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
+import org.apache.ignite.internal.visor.tx.VisorTxInfo;
+import org.apache.ignite.internal.visor.tx.VisorTxOperation;
+import org.apache.ignite.internal.visor.tx.VisorTxProjection;
+import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
+import org.apache.ignite.internal.visor.tx.VisorTxTask;
+import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
+import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
-import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
+import static org.apache.ignite.internal.commandline.Command.ACTIVATE;
+import static org.apache.ignite.internal.commandline.Command.BASELINE;
+import static org.apache.ignite.internal.commandline.Command.DEACTIVATE;
+import static org.apache.ignite.internal.commandline.Command.STATE;
+import static org.apache.ignite.internal.commandline.Command.TX;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
@@ -60,6 +79,9 @@ import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.V
  * Class that execute several commands passed via command line.
  */
 public class CommandHandler {
+    /** Logger. */
+    private static final Logger log = Logger.getLogger(CommandHandler.class.getName());
+
     /** */
     static final String DFLT_HOST = "127.0.0.1";
 
@@ -82,10 +104,22 @@ public class CommandHandler {
     private static final String CMD_USER = "--user";
 
     /** */
+    protected static final String CMD_PING_INTERVAL = "--ping-interval";
+
+    /** */
+    protected static final String CMD_PING_TIMEOUT = "--ping-timeout";
+
+    /** */
+    public static final String CONFIRM_MSG = "y";
+
+    /** */
     private static final String BASELINE_ADD = "add";
 
     /** */
     private static final String BASELINE_REMOVE = "remove";
+
+    /** */
+    private static final String BASELINE_COLLECT = "collect";
 
     /** */
     private static final String BASELINE_SET = "set";
@@ -96,17 +130,8 @@ public class CommandHandler {
     /** */
     private static final String DELIM = "--------------------------------------------------------------------------------";
 
-    /** */
-    static final String CMD_ACTIVATE = "--activate";
-
-    /** */
-    static final String CMD_BASE_LINE = "--baseline";
-
-    /** */
-    static final String CMD_DEACTIVATE = "--deactivate";
-
-    /** */
-    static final String CMD_STATE = "--state";
+    /** Force option is used for auto confirmation. */
+    private static final String CMD_FORCE = "--force";
 
     /** */
     public static final int EXIT_CODE_OK = 0;
@@ -123,6 +148,54 @@ public class CommandHandler {
     /** */
     public static final int EXIT_CODE_UNEXPECTED_ERROR = 4;
 
+    /** */
+    private static final long DFLT_PING_INTERVAL = 5000L;
+
+    /** */
+    private static final long DFLT_PING_TIMEOUT = 30_000L;
+
+    /** */
+    private static final Scanner IN = new Scanner(System.in);
+
+    /** */
+    private static final String TX_LIMIT = "limit";
+
+    /** */
+    private static final String TX_ORDER = "order";
+
+    /** */
+    private static final String TX_SERVERS = "servers";
+
+    /** */
+    private static final String TX_CLIENTS = "clients";
+
+    /** */
+    private static final String TX_DURATION = "minDuration";
+
+    /** */
+    private static final String TX_SIZE = "minSize";
+
+    /** */
+    private static final String TX_LABEL = "label";
+
+    /** */
+    private static final String TX_NODES = "nodes";
+
+    /** */
+    private static final String TX_XID = "xid";
+
+    /** */
+    private static final String TX_KILL = "kill";
+
+    /** */
+    private Iterator<String> argsIt;
+
+    /** */
+    private String peekedArg;
+
+    /** */
+    private Object lastOperationResult;
+
     /**
      * Output specified string to console.
      *
@@ -130,6 +203,18 @@ public class CommandHandler {
      */
     private void log(String s) {
         System.out.println(s);
+    }
+
+    /**
+     * Provides a prompt, then reads a single line of text from the console.
+     *
+     * @param prompt text
+     * @return A string containing the line read from the console
+     */
+    private String readLine(String prompt) {
+        System.out.print(prompt);
+
+        return IN.nextLine();
     }
 
     /**
@@ -167,119 +252,62 @@ public class CommandHandler {
     }
 
     /**
-     * Extract next argument.
+     * Requests interactive user confirmation if forthcoming operation is dangerous.
      *
-     * @param it Arguments iterator.
-     * @param err Error message.
-     * @return Next argument value.
+     * @param args Arguments.
+     * @return {@code true} if operation confirmed (or not needed), {@code false} otherwise.
      */
-    private String nextArg(Iterator<String> it, String err) {
-        if (it.hasNext()) {
-            String arg = it.next();
+    private boolean confirm(Arguments args) {
+        String prompt = confirmationPrompt(args);
 
-            if (arg.startsWith("--"))
-                throw new IllegalArgumentException("Unexpected argument: " + arg);
+        if (prompt == null)
+            return true;
 
-            return arg;
-        }
-
-        throw new IllegalArgumentException(err);
+        return CONFIRM_MSG.equalsIgnoreCase(readLine(prompt));
     }
 
     /**
-     * Parses and validates arguments.
-     *
-     * @param rawArgs Array of arguments.
-     * @return Arguments bean.
-     * @throws IllegalArgumentException In case arguments aren't valid.
+     * @param args Arguments.
+     * @return Prompt text if confirmation needed, otherwise {@code null}.
      */
-    @NotNull Arguments parseAndValidate(String... rawArgs) {
-        String host = DFLT_HOST;
+    private String confirmationPrompt(Arguments args) {
+        if (args.force())
+            return null;
 
-        String port = DFLT_PORT;
+        String str = null;
 
-        String user = null;
+        switch (args.command()) {
+            case DEACTIVATE:
+                str = "Warning: the command will deactivate a cluster.";
+                break;
 
-        String pwd = null;
+            case BASELINE:
+                if (!BASELINE_COLLECT.equals(args.baselineAction()))
+                    str = "Warning: the command will perform changes in baseline.";
+                break;
 
-        String baselineAct = "";
-
-        String baselineArgs = "";
-
-        List<String> commands = new ArrayList<>();
-
-        Iterator<String> it = Arrays.asList(rawArgs).iterator();
-
-        while (it.hasNext()) {
-            String str = it.next().toLowerCase();
-
-            switch (str) {
-                case CMD_HOST:
-                    host = nextArg(it, "Expected host name");
-                    break;
-
-                case CMD_PORT:
-                    port = nextArg(it, "Expected port number");
-
-                    try {
-                        int p = Integer.parseInt(port);
-
-                        if (p <= 0 || p > 65535)
-                            throw new IllegalArgumentException("Invalid value for port: " + port);
-                    }
-                    catch (NumberFormatException ignored) {
-                        throw new IllegalArgumentException("Invalid value for port: " + port);
-                    }
-                    break;
-
-                case CMD_USER:
-                    user = nextArg(it, "Expected user name");
-                    break;
-
-                case CMD_PASSWORD:
-                    pwd = nextArg(it, "Expected password");
-                    break;
-
-                case CMD_ACTIVATE:
-                case CMD_DEACTIVATE:
-                case CMD_STATE:
-                    commands.add(str);
-                    break;
-
-                case CMD_BASE_LINE:
-                    commands.add(CMD_BASE_LINE);
-
-                    if (it.hasNext()) {
-                        baselineAct = it.next().toLowerCase();
-
-                        if (BASELINE_ADD.equals(baselineAct) || BASELINE_REMOVE.equals(baselineAct) ||
-                            BASELINE_SET.equals(baselineAct) || BASELINE_SET_VERSION.equals(baselineAct))
-                            baselineArgs = nextArg(it, "Expected baseline arguments");
-                        else
-                            throw new IllegalArgumentException("Unexpected argument for " + CMD_BASE_LINE + ": "
-                                + baselineAct);
-                    }
-
-            }
+            case TX:
+                if (args.transactionArguments().getOperation() == VisorTxOperation.KILL)
+                    str = "Warning: the command will kill some transactions.";
+                break;
         }
 
-        int sz = commands.size();
+        return str == null ? null : str + "\nPress '" + CONFIRM_MSG + "' to continue . . . ";
+    }
 
-        if (sz < 1)
-            throw new IllegalArgumentException("No action was specified");
+    /**
+     * @param rawArgs Arguments.
+     */
+    private void initArgIterator(List<String> rawArgs) {
+        argsIt = rawArgs.iterator();
+        peekedArg = null;
+    }
 
-        if (sz > 1)
-            throw new IllegalArgumentException("Only one action can be specified, but found: " + sz);
-
-        String cmd = commands.get(0);
-
-        boolean hasUsr = F.isEmpty(user);
-        boolean hasPwd = F.isEmpty(pwd);
-
-        if (hasUsr != hasPwd)
-            throw new IllegalArgumentException("Both user and password should be specified");
-
-        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs);
+    /**
+     * @return Returns {@code true} if the iteration has more elements.
+     */
+    private boolean hasNextArg() {
+        return peekedArg != null || argsIt.hasNext();
     }
 
     /**
@@ -344,14 +372,39 @@ public class CommandHandler {
     }
 
     /**
+     * @param client Client.
+     * @param arg Task argument.
+     * @return Task result.
+     * @throws GridClientException If failed to execute task.
+     */
+    private Map<UUID, VisorTxTaskResult> executeTransactionsTask(GridClient client,
+        VisorTxTaskArg arg) throws GridClientException {
+
+        return executeTask(client, VisorTxTask.class, arg);
+    }
+
+    /**
      *
-     * @param client Client
+     * @param client Client.
+     * @param taskCls Task class.
+     * @param taskArgs Task arguments.
      * @return Task result.
      * @throws GridClientException If failed to execute task.
      */
     private <R> R executeTask(GridClient client, Class<?> taskCls, Object taskArgs) throws GridClientException {
         GridClientCompute compute = client.compute();
 
+        GridClientNode node = getBalancedNode(compute);
+
+        return compute.execute(taskCls.getName(),
+            new VisorTaskArgument<>(node.nodeId(), taskArgs, false));
+    }
+
+    /**
+     * @param compute instance
+     * @return balanced node
+     */
+    private GridClientNode getBalancedNode(GridClientCompute compute) throws GridClientException {
         List<GridClientNode> nodes = new ArrayList<>();
 
         for (GridClientNode node : compute.nodes())
@@ -361,10 +414,7 @@ public class CommandHandler {
         if (F.isEmpty(nodes))
             throw new GridClientDisconnectedException("Connectable node not found", null);
 
-        GridClientNode node = compute.balancer().balancedNode(nodes);
-
-        return compute.projection(node).execute(taskCls.getName(),
-            new VisorTaskArgument<>(node.nodeId(), taskArgs, false));
+        return compute.balancer().balancedNode(nodes);
     }
 
     /**
@@ -393,8 +443,9 @@ public class CommandHandler {
                 baselineVersion(client, baselineArgs);
                 break;
 
-            default:
+            case BASELINE_COLLECT:
                 baselinePrint(client);
+                break;
         }
     }
 
@@ -410,13 +461,7 @@ public class CommandHandler {
             case ADD:
             case REMOVE:
             case SET:
-                if(F.isEmpty(s))
-                    throw new IllegalArgumentException("Empty list of consistent IDs");
-
-                List<String> consistentIds = new ArrayList<>();
-
-                for (String consistentId : s.split(","))
-                    consistentIds.add(consistentId.trim());
+                List<String> consistentIds = getConsistentIds(s);
 
                 return new VisorBaselineTaskArg(op, -1, consistentIds);
 
@@ -436,6 +481,22 @@ public class CommandHandler {
     }
 
     /**
+     * @param s String of consisted ids delimited by comma.
+     * @return List of consistent ids.
+     */
+    private List<String> getConsistentIds(String s) {
+        if (F.isEmpty(s))
+            throw new IllegalArgumentException("Empty list of consistent IDs");
+
+        List<String> consistentIds = new ArrayList<>();
+
+        for (String consistentId : s.split(","))
+            consistentIds.add(consistentId.trim());
+
+        return consistentIds;
+    }
+
+    /**
      * Print baseline topology.
      *
      * @param res Task result with baseline topology.
@@ -446,6 +507,7 @@ public class CommandHandler {
         nl();
 
         Map<String, VisorBaselineNode> baseline = res.getBaseline();
+
         Map<String, VisorBaselineNode> servers = res.getServers();
 
         if (F.isEmpty(baseline))
@@ -574,6 +636,57 @@ public class CommandHandler {
     }
 
     /**
+     * Dump transactions information.
+     *
+     * @param client Client.
+     * @param arg Transaction search arguments
+     */
+    private void transactions(GridClient client, VisorTxTaskArg arg) throws GridClientException {
+        try {
+            Map<ClusterNode, VisorTxTaskResult> res = executeTask(client, VisorTxTask.class, arg);
+
+            lastOperationResult = res;
+
+            if (res.isEmpty())
+                log("Nothing found.");
+            else if (arg.getOperation() == VisorTxOperation.KILL)
+                log("Killed transactions:");
+            else
+                log("Matching transactions:");
+
+            for (Map.Entry<ClusterNode, VisorTxTaskResult> entry : res.entrySet()) {
+                if (entry.getValue().getInfos().isEmpty())
+                    continue;
+
+                ClusterNode key = entry.getKey();
+
+                log(key.toString());
+
+                for (VisorTxInfo info : entry.getValue().getInfos())
+                    log("    Tx: [xid=" + info.getXid() +
+                        ", label=" + info.getLabel() +
+                        ", state=" + info.getState() +
+                        ", duration=" + info.getDuration() / 1000 +
+                        ", isolation=" + info.getIsolation() +
+                        ", concurrency=" + info.getConcurrency() +
+                        ", timeout=" + info.getTimeout() +
+                        ", size=" + info.getSize() +
+                        ", dhtNodes=" + F.transform(info.getPrimaryNodes(), new IgniteClosure<UUID, String>() {
+                        @Override public String apply(UUID id) {
+                            return U.id8(id);
+                        }
+                    }) +
+                        ']');
+            }
+        }
+        catch (Throwable e) {
+            log("Failed to perform operation.");
+
+            throw e;
+        }
+    }
+
+    /**
      * @param e Exception to check.
      * @return {@code true} if specified exception is {@link GridClientAuthenticationException}.
      */
@@ -597,12 +710,345 @@ public class CommandHandler {
      * Print command usage.
      *
      * @param desc Command description.
-     * @param cmd Command.
+     * @param args Arguments.
      */
-    private void usage(String desc, String cmd) {
+    private void usage(String desc, Command cmd, String... args) {
         log(desc);
-        log("    control.sh [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] " + cmd);
+        log("    control.sh [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] " +
+                " [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] " + cmd.text() + String.join("", args));
         nl();
+    }
+
+    /**
+     * Extract next argument.
+     *
+     * @param err Error message.
+     * @return Next argument value.
+     */
+    private String nextArg(String err) {
+        if (peekedArg != null) {
+            String res = peekedArg;
+
+            peekedArg = null;
+
+            return res;
+        }
+
+        if (argsIt.hasNext())
+            return argsIt.next();
+
+        throw new IllegalArgumentException(err);
+    }
+
+    /**
+     * Returns the next argument in the iteration, without advancing the iteration.
+     *
+     * @return Next argument value or {@code null} if no next argument.
+     */
+    private String peekNextArg() {
+        if (peekedArg == null && argsIt.hasNext())
+            peekedArg = argsIt.next();
+
+        return peekedArg;
+    }
+
+    /**
+     * Parses and validates arguments.
+     *
+     * @param rawArgs Array of arguments.
+     * @return Arguments bean.
+     * @throws IllegalArgumentException In case arguments aren't valid.
+     */
+    Arguments parseAndValidate(List<String> rawArgs) {
+        String host = DFLT_HOST;
+
+        String port = DFLT_PORT;
+
+        String user = null;
+
+        String pwd = null;
+
+        String baselineAct = "";
+
+        String baselineArgs = "";
+
+        Long pingInterval = DFLT_PING_INTERVAL;
+
+        Long pingTimeout = DFLT_PING_TIMEOUT;
+
+        boolean force = false;
+
+        List<Command> commands = new ArrayList<>();
+
+        initArgIterator(rawArgs);
+
+        VisorTxTaskArg txArgs = null;
+
+        while (hasNextArg()) {
+            String str = nextArg("").toLowerCase();
+
+            Command cmd = Command.of(str);
+
+            if (cmd != null) {
+                switch (cmd) {
+                    case ACTIVATE:
+                    case DEACTIVATE:
+                    case STATE:
+                        commands.add(cmd);
+                        break;
+
+                    case TX:
+                        commands.add(TX);
+
+                        txArgs = parseTransactionArguments();
+
+                        break;
+
+                    case BASELINE:
+                        commands.add(BASELINE);
+
+                        baselineAct = BASELINE_COLLECT; //default baseline action
+
+                        str = peekNextArg();
+
+                        if (str != null) {
+                            str = str.toLowerCase();
+
+                            if (BASELINE_ADD.equals(str) || BASELINE_REMOVE.equals(str) ||
+                                BASELINE_SET.equals(str) || BASELINE_SET_VERSION.equals(str)) {
+                                baselineAct = nextArg("Expected baseline action");
+
+                                baselineArgs = nextArg("Expected baseline arguments");
+                            }
+                        }
+
+                        break;
+
+                    default:
+                        throw new IllegalArgumentException("Unexpected command: " + str);
+                }
+            }
+            else {
+                switch (str) {
+                    case CMD_HOST:
+                        host = nextArg("Expected host name");
+
+                        break;
+
+                    case CMD_PORT:
+                        port = nextArg("Expected port number");
+
+                        try {
+                            int p = Integer.parseInt(port);
+
+                            if (p <= 0 || p > 65535)
+                                throw new IllegalArgumentException("Invalid value for port: " + port);
+                        }
+                        catch (NumberFormatException ignored) {
+                            throw new IllegalArgumentException("Invalid value for port: " + port);
+                        }
+
+                        break;
+
+                    case CMD_PING_INTERVAL:
+                        pingInterval = getPingParam("Expected ping interval", "Invalid value for ping interval");
+
+                        break;
+
+                    case CMD_PING_TIMEOUT:
+                        pingTimeout = getPingParam("Expected ping timeout", "Invalid value for ping timeout");
+
+                        break;
+
+                    case CMD_USER:
+                        user = nextArg("Expected user name");
+                        break;
+
+                    case CMD_PASSWORD:
+                        pwd = nextArg("Expected password");
+                        break;
+
+                    case CMD_FORCE:
+                        force = true;
+                        break;
+
+                    default:
+                        throw new IllegalArgumentException("Unexpected argument: " + str);
+                }
+            }
+        }
+
+        int sz = commands.size();
+
+        if (sz < 1)
+            throw new IllegalArgumentException("No action was specified");
+
+        if (sz > 1)
+            throw new IllegalArgumentException("Only one action can be specified, but found: " + sz);
+
+        Command cmd = commands.get(0);
+
+        boolean hasUsr = F.isEmpty(user);
+        boolean hasPwd = F.isEmpty(pwd);
+
+        if (hasUsr != hasPwd)
+            throw new IllegalArgumentException("Both user and password should be specified");
+
+        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs,
+            pingTimeout, pingInterval, txArgs, force);
+    }
+
+    /**
+     * Get ping param for grid client.
+     *
+     * @param nextArgErr Argument extraction error message.
+     * @param invalidErr Param validation error message.
+     */
+    private Long getPingParam(String nextArgErr, String invalidErr) {
+        String raw = nextArg(nextArgErr);
+
+        try {
+            long val = Long.valueOf(raw);
+
+            if (val <= 0)
+                throw new IllegalArgumentException(invalidErr + ": " + val);
+            else
+                return val;
+        }
+        catch (NumberFormatException ignored) {
+            throw new IllegalArgumentException(invalidErr + ": " + raw);
+        }
+    }
+
+    /**
+     * @return Transaction arguments.
+     */
+    private VisorTxTaskArg parseTransactionArguments() {
+        VisorTxProjection proj = null;
+
+        Integer limit = null;
+
+        VisorTxSortOrder sortOrder = null;
+
+        Long duration = null;
+
+        Integer size = null;
+
+        String lbRegex = null;
+
+        List<String> consistentIds = null;
+
+        VisorTxOperation op = VisorTxOperation.LIST;
+
+        String xid = null;
+
+        boolean end = false;
+
+        do {
+            String str = peekNextArg();
+
+            if (str == null)
+                break;
+
+            switch (str) {
+                case TX_LIMIT:
+                    nextArg("");
+
+                    limit = (int) nextLongArg(TX_LIMIT);
+                    break;
+
+                case TX_ORDER:
+                    nextArg("");
+
+                    sortOrder = VisorTxSortOrder.fromString(nextArg(TX_ORDER));
+
+                    break;
+
+                case TX_SERVERS:
+                    nextArg("");
+
+                    proj = VisorTxProjection.SERVER;
+                    break;
+
+                case TX_CLIENTS:
+                    nextArg("");
+
+                    proj = VisorTxProjection.CLIENT;
+                    break;
+
+                case TX_NODES:
+                    nextArg("");
+
+                    consistentIds = getConsistentIds(nextArg(TX_NODES));
+                    break;
+
+                case TX_DURATION:
+                    nextArg("");
+
+                    duration = nextLongArg(TX_DURATION) * 1000L;
+                    break;
+
+                case TX_SIZE:
+                    nextArg("");
+
+                    size = (int) nextLongArg(TX_SIZE);
+                    break;
+
+                case TX_LABEL:
+                    nextArg("");
+
+                    lbRegex = nextArg(TX_LABEL);
+
+                    try {
+                        Pattern.compile(lbRegex);
+                    }
+                    catch (PatternSyntaxException e) {
+                        throw new IllegalArgumentException("Illegal regex syntax");
+                    }
+
+                    break;
+
+                case TX_XID:
+                    nextArg("");
+
+                    xid = nextArg(TX_XID);
+                    break;
+
+                case TX_KILL:
+                    nextArg("");
+
+                    op = VisorTxOperation.KILL;
+                    break;
+
+                default:
+                    end = true;
+            }
+        }
+        while (!end);
+
+        if (proj != null && consistentIds != null)
+            throw new IllegalArgumentException("Projection can't be used together with list of consistent ids.");
+
+        return new VisorTxTaskArg(op, limit, duration, size, null, proj, consistentIds, xid, lbRegex, sortOrder);
+    }
+
+    /**
+     * @return Numeric value.
+     */
+    private long nextLongArg(String lb) {
+        String str = nextArg("Expecting " + lb);
+
+        try {
+            long val = Long.parseLong(str);
+
+            if (val < 0)
+                throw new IllegalArgumentException("Invalid value for " + lb + ": " + val);
+
+            return val;
+        }
+        catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid value for " + lb + ": " + str);
+        }
     }
 
     /**
@@ -611,28 +1057,37 @@ public class CommandHandler {
      * @param rawArgs Arguments to parse and execute.
      * @return Exit code.
      */
-    public int execute(String... rawArgs) {
+    public int execute(List<String> rawArgs) {
         log("Control utility [ver. " + ACK_VER_STR + "]");
         log(COPYRIGHT);
         log("User: " + System.getProperty("user.name"));
         log(DELIM);
 
         try {
-            if (F.isEmpty(rawArgs) || (rawArgs.length == 1 && CMD_HELP.equalsIgnoreCase(rawArgs[0]))) {
+            if (F.isEmpty(rawArgs) || (rawArgs.size() == 1 && CMD_HELP.equalsIgnoreCase(rawArgs.get(0)))) {
                 log("This utility can do the following commands:");
 
-                usage("  Activate cluster:", CMD_ACTIVATE);
-                usage("  Deactivate cluster:", CMD_DEACTIVATE);
-                usage("  Print current cluster state:", CMD_STATE);
-                usage("  Print cluster baseline topology:", CMD_BASE_LINE);
-                usage("  Add nodes into baseline topology:", CMD_BASE_LINE + " add consistentId1[,consistentId2,....,consistentIdN]");
-                usage("  Remove nodes from baseline topology:", CMD_BASE_LINE + " remove consistentId1[,consistentId2,....,consistentIdN]");
-                usage("  Set baseline topology:", CMD_BASE_LINE + " set consistentId1[,consistentId2,....,consistentIdN]");
-                usage("  Set baseline topology based on version:", CMD_BASE_LINE + " version topologyVersion");
+                usage("  Activate cluster:", ACTIVATE);
+                usage("  Deactivate cluster:", DEACTIVATE, " [--force]");
+                usage("  Print current cluster state:", STATE);
+                usage("  Print cluster baseline topology:", BASELINE);
+                usage("  Add nodes into baseline topology:", BASELINE, " add consistentId1[,consistentId2,....,consistentIdN] [--force]");
+                usage("  Remove nodes from baseline topology:", BASELINE, " remove consistentId1[,consistentId2,....,consistentIdN] [--force]");
+                usage("  Set baseline topology:", BASELINE, " set consistentId1[,consistentId2,....,consistentIdN] [--force]");
+                usage("  Set baseline topology based on version:", BASELINE, " version topologyVersion [--force]");
+                usage("  List or kill transactions:", TX, " [xid XID] [minDuration SECONDS] " +
+                    "[minSize SIZE] [label PATTERN_REGEX] [servers|clients] " +
+                    "[nodes consistentId1[,consistentId2,....,consistentIdN] [limit NUMBER] [order DURATION|SIZE] [kill] [--force]");
+
+                log("By default commands affecting the cluster require interactive confirmation. ");
+                log("  --force option can be used to execute commands without prompting for confirmation.");
+                nl();
 
                 log("Default values:");
                 log("    HOST_OR_IP=" + DFLT_HOST);
                 log("    PORT=" + DFLT_PORT);
+                log("    PING_INTERVAL=" + DFLT_PING_INTERVAL);
+                log("    PING_TIMEOUT=" + DFLT_PING_TIMEOUT);
                 nl();
 
                 log("Exit codes:");
@@ -647,7 +1102,17 @@ public class CommandHandler {
 
             Arguments args = parseAndValidate(rawArgs);
 
+            if (!confirm(args)) {
+                log("Operation cancelled.");
+
+                return EXIT_CODE_OK;
+            }
+
             GridClientConfiguration cfg = new GridClientConfiguration();
+
+            cfg.setPingInterval(args.pingInterval());
+
+            cfg.setPingTimeout(args.pingTimeout());
 
             cfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
 
@@ -659,20 +1124,24 @@ public class CommandHandler {
             try (GridClient client = GridClientFactory.start(cfg)) {
 
                 switch (args.command()) {
-                    case CMD_ACTIVATE:
+                    case ACTIVATE:
                         activate(client);
                         break;
 
-                    case CMD_DEACTIVATE:
+                    case DEACTIVATE:
                         deactivate(client);
                         break;
 
-                    case CMD_STATE:
+                    case STATE:
                         state(client);
                         break;
 
-                    case CMD_BASE_LINE:
+                    case BASELINE:
                         baseline(client, args.baselineAction(), args.baselineArguments());
+                        break;
+
+                    case TX:
+                        transactions(client, args.transactionArguments());
                         break;
                 }
             }
@@ -699,7 +1168,16 @@ public class CommandHandler {
     public static void main(String[] args) {
         CommandHandler hnd = new CommandHandler();
 
-        System.exit(hnd.execute(args));
+        System.exit(hnd.execute(Arrays.asList(args)));
+    }
+
+    /**
+     * Used for tests.
+     * @return Last operation result;
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T getLastOperationResult() {
+        return (T)lastOperationResult;
     }
 }
 

@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Transactions;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
 
@@ -438,7 +439,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(TransactionState.MarkedRollback, tx.State);
 
             var ex = Assert.Throws<TransactionRollbackException>(() => tx.Commit());
-            Assert.IsTrue(ex.Message.StartsWith("Invalid transaction state for prepare [state=MARKED_ROLLBACK"));
 
             tx.Dispose();
 
@@ -563,8 +563,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             var aex = Assert.Throws<AggregateException>(() =>
                 Task.WaitAll(new[]
                     {
-                        Task.Factory.StartNew(() => increment(keys0)),
-                        Task.Factory.StartNew(() => increment(keys0.Reverse().ToArray()))
+                        TaskRunner.Run(() => increment(keys0)),
+                        TaskRunner.Run(() => increment(keys0.Reverse().ToArray()))
                     },
                     TimeSpan.FromSeconds(40)));
 
@@ -611,7 +611,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/> 
+        /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/>
         /// with multiple participating caches.
         /// </summary>
         [Test]
@@ -667,7 +667,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/> 
+        /// Test Ignite transaction enlistment in ambient <see cref="TransactionScope"/>
         /// when Ignite tx is started manually.
         /// </summary>
         [Test]
@@ -679,7 +679,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             cache[1] = 1;
 
             // When Ignite tx is started manually, it won't be enlisted in TransactionScope.
-            using (var tx = transactions.TxStart())            
+            using (var tx = transactions.TxStart())
             {
                 using (new TransactionScope())
                 {
@@ -746,7 +746,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                     cache[1] = 5;
                 }
-                
+
                 // In case with Required option there is a single tx
                 // that gets aborted, second put executes outside the tx.
                 Assert.AreEqual(option == TransactionScopeOption.Required ? 5 : 3, cache[1], option.ToString());
