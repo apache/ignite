@@ -163,7 +163,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** Set if partition must be cleared in MOVING state. */
     private volatile boolean clear;
 
-    /** Set if topology update sequence should be update on partition destroy. */
+    /** Set if topology update sequence should be updated on partition destroy. */
     private boolean updateSeqOnDestroy;
 
     /**
@@ -658,6 +658,23 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         // Clearing process is already running at the moment. No needs to run it again.
         if (!reinitialized)
             return;
+
+        // Try fast eviction
+        if (isEmpty() && getSize(state) == 0 && !grp.queriesEnabled()
+                && getReservations(state) == 0 && !groupReserved()) {
+
+            if (partState == RENTING && casState(state, EVICTED) || clearingRequested) {
+                clearFuture.finish();
+
+                if (state() == EVICTED && markForDestroy()) {
+                    updateSeqOnDestroy = updateSeq;
+
+                    destroy();
+                }
+
+                return;
+            }
+        }
 
         grp.evictor().evictPartitionAsync(this);
     }
