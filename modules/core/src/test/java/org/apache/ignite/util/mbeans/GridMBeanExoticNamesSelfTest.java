@@ -34,7 +34,7 @@ public class GridMBeanExoticNamesSelfTest extends GridCommonAbstractTest {
 
     /** Test registration of a bean with special characters in name. */
     public void testNameWithSpecialSymbols() throws Exception {
-        checkMBeanRegistration("dummygrp", "dum!@#$^&*()?\\my");
+        checkMBeanRegistration("dummygrp", "dum=,:!@#$^&*()?\\my");
     }
 
     /** Test checks that asterisk symbol will be escaped */
@@ -57,9 +57,24 @@ public class GridMBeanExoticNamesSelfTest extends GridCommonAbstractTest {
         checkMBeanNamesAfterRegistration("dummy\\grp", "dum\\my", "\"dummy\\\\grp\"", "\"dum\\\\my\"");
     }
 
-    /** Test checks that name without special symbols but with whitespaces will bot be escaped */
-    public void testWhitespaceNotEscaped() throws Exception {
+    /** Test checks that name without special symbols but with whitespaces will not be quoted */
+    public void testWhitespaceNotQuoted() throws Exception {
         checkMBeanNamesAfterRegistration("dummy grp", "dum my", "dummy grp", "dum my");
+    }
+
+    /** Test checks that name with comma symbol will be quoted */
+    public void testCommaQuoted() throws Exception {
+        checkMBeanNamesAfterRegistration("dummy,grp", "dum,my", "\"dummy,grp\"", "\"dum,my\"");
+    }
+
+    /** Test checks that name with colon symbol will be quoted */
+    public void testColonQuoted() throws Exception {
+        checkMBeanNamesAfterRegistration("dummy:grp", "dum:my", "\"dummy:grp\"", "\"dum:my\"");
+    }
+
+    /** Test checks that name with equal symbol will be quoted */
+    public void testEqualQuoted() throws Exception {
+        checkMBeanNamesAfterRegistration("dummy=grp", "dum=my", "\"dummy=grp\"", "\"dum=my\"");
     }
 
     /** Test MBean registration. */
@@ -71,6 +86,7 @@ public class GridMBeanExoticNamesSelfTest extends GridCommonAbstractTest {
             U.registerMBean(srv, ignite.name(), grp, name, new DummyMBeanImpl(), DummyMBean.class);
 
             ObjectName objName = U.makeMBeanName(ignite.name(), grp, name + '2');
+
             U.registerMBean(srv, objName, new DummyMBeanImpl(), DummyMBean.class);
         }
     }
@@ -85,21 +101,18 @@ public class GridMBeanExoticNamesSelfTest extends GridCommonAbstractTest {
             ObjectName resultObjName = U.registerMBean(srv, ignite.name(), grp, name, new DummyMBeanImpl(), DummyMBean.class);
 
             assertTrue(resultObjName.getCanonicalName().contains("name=" + expectedName));
+
             assertTrue(resultObjName.getCanonicalName().contains("group=" + expectedGrp));
         }
     }
 
-    /**
-     * MBean dummy interface.
-     */
+    /** MBean dummy interface. */
     public interface DummyMBean {
         /** */
         void noop();
     }
 
-    /**
-     * MBean stub.
-     */
+    /** MBean stub. */
     private static class DummyMBeanImpl implements DummyMBean {
         /** {@inheritDoc} */
         @Override public void noop() {

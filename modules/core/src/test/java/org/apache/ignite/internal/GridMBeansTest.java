@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.lang.management.ManagementFactory;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -28,7 +26,6 @@ import javax.management.ObjectName;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MBEAN_APPEND_CLASS_LOADER_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MBEAN_APPEND_JVM_ID;
-import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.util.IgniteUtils.JMX_DOMAIN;
 
 /**
@@ -99,7 +96,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
 
     /** Check that kernal bean is available */
     public void testExecutorBeans() throws Exception {
-        // standard executors
+        // Standard executors.
         checkBean("Thread Pools", "GridExecutionExecutor", "Terminated", false);
         checkBean("Thread Pools", "GridSystemExecutor", "Terminated", false);
         checkBean("Thread Pools", "GridManagementExecutor", "Terminated", false);
@@ -108,14 +105,14 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         checkBean("Thread Pools", "GridSchemaExecutor", "Terminated", false);
         checkBean("Thread Pools", "StripedExecutor", "Terminated", false);
 
-        // custom executors
+        // Custom executors.
         checkBean("Thread Pools", CUSTOM_EXECUTOR_0, "Terminated", false);
         checkBean("Thread Pools", CUSTOM_EXECUTOR_1, "Terminated", false);
     }
 
     /** Check that kernal beans have expected names */
     public void testIgniteKernalBeansNames() throws Exception {
-        // standard executors
+        // Standard executors.
         checkBeanName("Thread Pools", "GridExecutionExecutor");
         checkBeanName("Thread Pools", "GridSystemExecutor");
         checkBeanName("Thread Pools", "GridManagementExecutor");
@@ -124,7 +121,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         checkBeanName("Thread Pools", "GridSchemaExecutor");
         checkBeanName("Thread Pools", "StripedExecutor");
 
-        // kernal beans
+        // Kernal beans.
         checkBeanName("Kernal", "IgniteKernal");
         checkBeanName("Kernal", "ClusterLocalNodeMetricsMXBeanImpl");
         checkBeanName("Kernal", "ClusterMetricsMXBeanImpl");
@@ -132,7 +129,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
 
     /** Check that kernal beans were successfully registered by their expected names */
     public void testIgniteKernalBeansRegistration() throws Exception {
-        // standard executors
+        // Standard executors.
         checkBeanRegistrationByName("Thread Pools", "GridExecutionExecutor");
         checkBeanRegistrationByName("Thread Pools", "GridSystemExecutor");
         checkBeanRegistrationByName("Thread Pools", "GridManagementExecutor");
@@ -141,7 +138,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         checkBeanRegistrationByName("Thread Pools", "GridSchemaExecutor");
         checkBeanRegistrationByName("Thread Pools", "StripedExecutor");
 
-        // kernal beans
+        // Kernal beans.
         checkBeanRegistrationByName("Kernal", "IgniteKernal");
         checkBeanRegistrationByName("Kernal", "ClusterLocalNodeMetricsMXBeanImpl");
         checkBeanRegistrationByName("Kernal", "ClusterMetricsMXBeanImpl");
@@ -172,6 +169,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         assertTrue(grid().configuration().getMBeanServer().isRegistered(new ObjectName(EXPECTED_BEAN_NAME)));
     }
 
+    /** Generates MBean name that is expected by user */
     private String getExpectedBeanName(String domain, String instanceName, String grp, String name) {
         StringBuffer sb = new StringBuffer();
 
