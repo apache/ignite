@@ -95,10 +95,12 @@ public class GridDhtPartitionsEvictor {
                                     boolean success = part.tryClear();
 
                                     if (success) {
-                                        evictionQueue.remove(part.id());
-
-                                        if (part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy())
+                                        if (part.state() == GridDhtPartitionState.MOVING)
+                                            evictionQueue.remove(part.id());
+                                        else if (part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy()) {
+                                            evictionQueue.remove(part.id());
                                             part.destroy();
+                                        }
                                     }
                                 }
                                 catch (Throwable ex) {
