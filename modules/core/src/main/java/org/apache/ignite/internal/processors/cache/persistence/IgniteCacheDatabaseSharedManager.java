@@ -1092,7 +1092,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /**
      * Warns on first eviction.
      */
-    private void warnFirstEvict(MemoryPolicyConfiguration plcCfg) {
+    private void warnFirstEvict(DataRegionConfiguration plcCfg) {
         if (firstEvictWarn)
             return;
 
