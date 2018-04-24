@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -51,10 +52,12 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -281,6 +284,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         IgniteCheckedException ex = shutdown(old, /*clean files if destroy*/destroy, null);
 
+        if (destroy)
+            removeCacheGroupConfigurationData(grp);
+
         if (ex != null)
             throw ex;
     }
@@ -405,13 +411,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         File cacheWorkDir = cacheWorkDir(ccfg);
 
-        AllocatedPageTracker allocatedTracker =
-            cctx.database().dataRegion(grpDesc.config().getDataRegionName()).memoryMetrics();
+        String dataRegionName = grpDesc.config().getDataRegionName();
 
-        return initDir(cacheWorkDir,
+        DataRegionMetricsImpl regionMetrics = cctx.database().dataRegion(dataRegionName).memoryMetrics();
+
+        int grpId = CU.cacheId(grpDesc.cacheOrGroupName());
+
+        AllocatedPageTracker allocatedTracker = regionMetrics.getOrAllocateGroupPageAllocationTracker(grpId);
+
+        return initDir(
+            cacheWorkDir,
             grpDesc.groupId(),
             grpDesc.config().getAffinity().partitions(),
-            allocatedTracker);
+            allocatedTracker
+        );
     }
 
     /**
@@ -746,6 +759,49 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /**
+     * Delete caches' configuration data files of cache group.
+     *
+     * @param ctx Cache group context.
+     * @throws IgniteCheckedException If fails.
+     */
+    private void removeCacheGroupConfigurationData(CacheGroupContext ctx) throws IgniteCheckedException {
+        File cacheGrpDir = cacheWorkDir(ctx.sharedGroup(), ctx.cacheOrGroupName());
+
+        if (cacheGrpDir != null && cacheGrpDir.exists()) {
+            DirectoryStream.Filter<Path> cacheCfgFileFilter = new DirectoryStream.Filter<Path>() {
+                @Override public boolean accept(Path path) {
+                    return Files.isRegularFile(path) && path.getFileName().toString().endsWith(CACHE_DATA_FILENAME);
+                }
+            };
+
+            try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(cacheGrpDir.toPath(), cacheCfgFileFilter)) {
+                for(Path path: dirStream)
+                    Files.deleteIfExists(path);
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Failed to delete cache configurations of group: " + ctx.toString(), e);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeCacheData(StoredCacheData cacheData) throws IgniteCheckedException {
+        CacheConfiguration cacheCfg = cacheData.config();
+        File cacheWorkDir = cacheWorkDir(cacheCfg);
+        File file;
+
+        if (cacheData.config().getGroupName() != null)
+            file = new File(cacheWorkDir, cacheCfg.getName() + CACHE_DATA_FILENAME);
+        else
+            file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
+
+        if (file.exists()) {
+            if (!file.delete())
+                throw new IgniteCheckedException("Failed to delete cache configuration:" + cacheCfg.getName());
+        }
+    }
+
+    /**
      * @param store Store to shutdown.
      * @param cleanFile {@code True} if files should be cleaned.
      * @param aggr Aggregating exception.
@@ -798,16 +854,22 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void beforeCacheGroupStart(CacheGroupDescriptor grpDesc) {
-        if (grpDesc.persistenceEnabled() && !cctx.database().walEnabled(grpDesc.groupId())) {
-            File dir = cacheWorkDir(grpDesc.config());
+        if (grpDesc.persistenceEnabled()) {
+            boolean localEnabled = cctx.database().walEnabled(grpDesc.groupId(), true);
+            boolean globalEnabled = cctx.database().walEnabled(grpDesc.groupId(), false);
 
-            assert dir.exists();
+            if (!localEnabled || !globalEnabled) {
+                File dir = cacheWorkDir(grpDesc.config());
 
-            boolean res = IgniteUtils.delete(dir);
+                assert dir.exists();
 
-            assert res;
+                boolean res = IgniteUtils.delete(dir);
 
-            grpDesc.walEnabled(false);
+                assert res;
+
+                if (!globalEnabled)
+                    grpDesc.walEnabled(false);
+            }
         }
     }
 

@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Client
             BinaryProcessor = cfg.BinaryProcessor;
             SslStreamFactory = cfg.SslStreamFactory;
 
-            Username = cfg.Username;
+            UserName = cfg.UserName;
             Password = cfg.Password;
         }
 
@@ -151,7 +151,7 @@ namespace Apache.Ignite.Core.Client
         /// <summary>
         /// Username to be used to connect to secured cluster.
         /// </summary>
-        public string Username { get; set; }
+        public string UserName { get; set; }
 
         /// <summary>
         /// Password to be used to connect to secured cluster.
