@@ -734,16 +734,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void ensureClientCachesStarted() {
         GridCacheProcessor cacheProcessor = cctx.cache();
+
+        Set<String> cacheNames = new HashSet<>(cacheProcessor.cacheNames());
+
         List<CacheConfiguration> notStartedCacheConfigs = new ArrayList<>();
+
         for (CacheConfiguration cCfg : cctx.gridConfig().getCacheConfiguration()) {
-            if (!cacheProcessor.cacheNames().contains(cCfg.getName())) {
+            if (!cacheNames.contains(cCfg.getName())) {
                 notStartedCacheConfigs.add(cCfg);
             }
         }
 
-        if (!notStartedCacheConfigs.isEmpty()) {
+        if (!notStartedCacheConfigs.isEmpty())
             cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false);
-        }
     }
 
     /**
