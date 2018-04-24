@@ -44,7 +44,10 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTest {
 
+    /** Server id. */
     private static final int SERVER_ID = 0;
+
+    /** Client id. */
     private static final int CLIENT_ID = 1;
 
     /** Cache params. */
