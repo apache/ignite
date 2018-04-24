@@ -952,9 +952,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
             return
                 f1 == other.f1 &&
-                    f2 == other.f2 &&
-                    f3 == other.f3 &&
-                    f4 == other.f4;
+                f2 == other.f2 &&
+                f3 == other.f3 &&
+                f4 == other.f4;
 
         }
 
@@ -1017,7 +1017,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void removeNode(UUID nodeId) {
-            delegate.removeNode(nodeId);        
+            delegate.removeNode(nodeId);
         }
     }
 }

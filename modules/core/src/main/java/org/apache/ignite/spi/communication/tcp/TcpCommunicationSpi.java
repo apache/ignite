@@ -3425,7 +3425,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             timeoutHelper.remainingTime(U.currentTimeMillis()) / (reconCnt - attempt) :
                             connTimeout0 - (U.currentTimeMillis() - start);
 
-                        // Reconnect for the second time if connection was not established within current timeout chunk.
+                        // Reconnect again if connection was not established within current timeout chunk.
                         attempt++;
 
                         if (delay > 0 && delay < 200) delay = 200;
@@ -3494,9 +3494,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
             }
 
-            if (!X.hasCause(errs, SocketTimeoutException.class, HandshakeTimeoutException.class,
-                IgniteSpiOperationTimeoutException.class))
-                throw errs;
+            throw errs;
         }
 
         return client;
