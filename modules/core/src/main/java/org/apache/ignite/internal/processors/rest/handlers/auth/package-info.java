@@ -15,19 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client;
-
 /**
- * Indicates user name or password is invalid.
+ * <!-- Package description. -->
+ * REST authentication command.
  */
-public class ClientAuthenticationException extends ClientException {
-    /** Serial version uid. */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * Default constructor.
-     */
-    public ClientAuthenticationException(String msg) {
-        super(msg);
-    }
-}
+package org.apache.ignite.internal.processors.rest.handlers.auth;

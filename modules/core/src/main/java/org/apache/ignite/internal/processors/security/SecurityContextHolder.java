@@ -15,34 +15,39 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.cache;
+package org.apache.ignite.internal.processors.security;
 
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.plugin.security.SecurityPermission;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * Cache put request.
+ * Thread-local security context.
  */
-public class ClientCachePutRequest extends ClientCacheKeyValueRequest {
+public class SecurityContextHolder {
+    /** Context. */
+    private static final ThreadLocal<SecurityContext> CTX = new ThreadLocal<>();
+
     /**
-     * Ctor.
+     * Get security context.
      *
-     * @param reader Reader.
+     * @return Security context.
      */
-    public ClientCachePutRequest(BinaryRawReaderEx reader) {
-        super(reader);
+    @Nullable public static SecurityContext get() {
+        return CTX.get();
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_PUT);
+    /**
+     * Set security context.
+     *
+     * @param ctx Context.
+     */
+    public static void set(@Nullable SecurityContext ctx) {
+        CTX.set(ctx);
+    }
 
-        cache(ctx).put(key(), val());
-
-        return super.process(ctx);
+    /**
+     * Clear security context.
+     */
+    public static void clear() {
+        set(null);
     }
 }
-

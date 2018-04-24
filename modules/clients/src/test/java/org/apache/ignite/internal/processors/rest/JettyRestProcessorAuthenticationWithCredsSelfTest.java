@@ -15,34 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client.cache;
-
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
-import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
-import org.apache.ignite.internal.processors.platform.client.ClientResponse;
-import org.apache.ignite.plugin.security.SecurityPermission;
+package org.apache.ignite.internal.processors.rest;
 
 /**
- * Cache put request.
+ * Test REST with enabled authentication and credentials in each request.
  */
-public class ClientCachePutRequest extends ClientCacheKeyValueRequest {
-    /**
-     * Ctor.
-     *
-     * @param reader Reader.
-     */
-    public ClientCachePutRequest(BinaryRawReaderEx reader) {
-        super(reader);
-    }
-
+public class JettyRestProcessorAuthenticationWithCredsSelfTest extends JettyRestProcessorAuthenticationSelfTest {
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_PUT);
+    @Override protected String restUrl() {
+        String url = super.restUrl();
 
-        cache(ctx).put(key(), val());
+        url += "ignite.login=" + DFLT_USER + "&ignite.password=" + DFLT_PWD + "&";
 
-        return super.process(ctx);
+        return url;
     }
 }
-
