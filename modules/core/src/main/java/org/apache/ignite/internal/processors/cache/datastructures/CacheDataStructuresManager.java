@@ -72,6 +72,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 
 /**
@@ -236,7 +237,10 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     {
         waitInitialization();
 
-        return queue0(name, cap, colloc, create);
+        // Non collocated mode enabled only for PARTITIONED cache.
+        final boolean colloc0 = create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
+
+        return queue0(name, cap, colloc0, create);
     }
 
     /**
@@ -397,8 +401,13 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         boolean colloc,
         final boolean create,
         final boolean distinct)
-        throws IgniteCheckedException {
-        return set0(name, colloc, create, distinct);
+        throws IgniteCheckedException
+    {
+        // Non collocated mode enabled only for PARTITIONED cache.
+        final boolean colloc0 =
+            create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
+
+        return set0(name, colloc0, create, distinct);
     }
 
     /**

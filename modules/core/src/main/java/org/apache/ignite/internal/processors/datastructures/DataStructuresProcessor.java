@@ -65,13 +65,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
-import org.apache.ignite.internal.util.lang.GridClosure3X;
+import org.apache.ignite.internal.util.lang.IgniteClosure2X;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
-import org.apache.ignite.internal.util.typedef.CX3;
+import org.apache.ignite.internal.util.typedef.CX2;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -848,10 +848,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final boolean create = cfg != null;
 
-        return getCollection(new CX3<GridCacheContext, Boolean, Boolean, IgniteQueue<T>>() {
-            @Override public IgniteQueue<T> applyx(GridCacheContext ctx,
-                Boolean collocated, Boolean ignore) throws IgniteCheckedException {
-                return ctx.dataStructures().queue(name, cap0, collocated, create);
+        return getCollection(new CX2<GridCacheContext, Boolean, IgniteQueue<T>>() {
+            @Override public IgniteQueue<T> applyx(GridCacheContext ctx, Boolean ignore) throws IgniteCheckedException {
+                return ctx.dataStructures().queue(name, cap0, create && cfg.isCollocated(), create);
             }
         }, cfg, name, grpName, QUEUE, create);
     }
@@ -1012,7 +1011,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @return Collection instance.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private <T> T getCollection(final GridClosure3X<GridCacheContext, Boolean, Boolean, T> c,
+    @Nullable private <T> T getCollection(final IgniteClosure2X<GridCacheContext, Boolean, T> c,
         @Nullable CollectionConfiguration cfg,
         String name,
         @Nullable String grpName,
@@ -1120,13 +1119,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final boolean distinctCache = !sharedMode;
 
-        // Non collocated mode enabled only for PARTITIONED cache.
-        final boolean collocated = create &&
-            (cache.context().cache().configuration().getCacheMode() != PARTITIONED || cfg.isCollocated());
-
         return retryTopologySafe(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
-                return c.applyx(cache.context(), collocated, distinctCache);
+                return c.applyx(cache.context(), distinctCache);
             }
         });
     }
@@ -1569,11 +1564,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final boolean create = cfg != null;
 
-        return getCollection(new CX3<GridCacheContext, Boolean, Boolean, IgniteSet<T>>() {
-            @Override public IgniteSet<T> applyx(GridCacheContext cctx, Boolean collocated,
-                Boolean distinct) throws IgniteCheckedException {
-
-                return cctx.dataStructures().set(name, collocated, create, distinct);
+        return getCollection(new CX2<GridCacheContext, Boolean, IgniteSet<T>>() {
+            @Override public IgniteSet<T> applyx(GridCacheContext cctx, Boolean distinct)
+                throws IgniteCheckedException {
+                return cctx.dataStructures().set(name, create && cfg.isCollocated(), create, distinct);
             }
         }, cfg, name, grpName, SET, create);
     }
