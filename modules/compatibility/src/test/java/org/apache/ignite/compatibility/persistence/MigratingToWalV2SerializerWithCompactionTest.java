@@ -52,13 +52,6 @@ public class MigratingToWalV2SerializerWithCompactionTest extends IgnitePersiste
     private static final int PAYLOAD_SIZE = 20000;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

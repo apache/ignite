@@ -56,19 +56,6 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
     private static final String KEY_OBJ = "ObjectFromPrevVersion";
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        // No-op. super.afterTest();
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
