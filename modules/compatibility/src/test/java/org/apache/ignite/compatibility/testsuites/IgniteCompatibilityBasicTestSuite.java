@@ -35,7 +35,7 @@ public class IgniteCompatibilityBasicTestSuite {
         TestSuite suite = new TestSuite("Ignite Compatibility Basic Test Suite");
 
         suite.addTestSuite(DummyPersistenceCompatibilityTest.class);
-        
+
         suite.addTestSuite(PersistenceBasicCompatibilityTest.class);
 
         suite.addTestSuite(FoldersReuseCompatibilityTest.class);
