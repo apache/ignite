@@ -43,6 +43,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -1243,11 +1244,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         long nextDumpTime = 0;
 
-        long futTimeout = 2 * cctx.gridConfig().getNetworkTimeout();
+        IgniteConfiguration cfg = cctx.gridConfig();
+
+        boolean rollbackEnabled = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange() > 0;
+
+        long waitTimeout = 2 * cfg.getNetworkTimeout();
 
         while (true) {
             try {
-                partReleaseFut.get(futTimeout, TimeUnit.MILLISECONDS);
+                partReleaseFut.get(rollbackEnabled ?
+                    cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange() :
+                    waitTimeout, TimeUnit.MILLISECONDS);
 
                 break;
             }
@@ -1256,7 +1263,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (nextDumpTime <= U.currentTimeMillis()) {
                     dumpPendingObjects(partReleaseFut);
 
-                    nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, futTimeout);
+                    nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, waitTimeout);
+                }
+
+                if (rollbackEnabled) {
+                    rollbackEnabled = false;
+
+                    cctx.tm().rollbackOnTopologyChange(initialVersion());
                 }
             }
             catch (IgniteCheckedException e) {
@@ -1286,7 +1299,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         while (true) {
             try {
-                locksFut.get(futTimeout, TimeUnit.MILLISECONDS);
+                locksFut.get(waitTimeout, TimeUnit.MILLISECONDS);
 
                 break;
             }
@@ -1309,7 +1322,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     for (Map.Entry<IgniteTxKey, Collection<GridCacheMvccCandidate>> e : locks.entrySet())
                         U.warn(log, "Awaited locked entry [key=" + e.getKey() + ", mvcc=" + e.getValue() + ']');
 
-                    nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, futTimeout);
+                    nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, waitTimeout);
 
                     if (getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
                         U.dumpThreads(log);
@@ -1326,7 +1339,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             try {
                 while (true) {
                     try {
-                        releaseLatch.await(futTimeout, TimeUnit.MILLISECONDS);
+                        releaseLatch.await(waitTimeout, TimeUnit.MILLISECONDS);
 
                         if (log.isInfoEnabled())
                             log.info("Finished waiting for partitions release latch: " + releaseLatch);
