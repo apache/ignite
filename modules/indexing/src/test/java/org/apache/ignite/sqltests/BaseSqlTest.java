@@ -75,7 +75,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /** Node name of first server. */
     private final String SRV1_NAME = "server1";
 
-    protected static final String[] ALL_FIELDS = new String[] {"ID", "DEPID", "FIRSTNAME", "LASTNAME", "AGE"};
+    protected static final String[] ALL_FIELDS = new String[] {"ID", "DEPID", "FIRSTNAME", "LASTNAME", "AGE", "SALARY"};
 
     @InjectTestSuite.Parameter
     private Configuration cfg = new Configuration();
@@ -95,7 +95,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * Fills tables with data.
      */
     protected void fillCommonData() {
-        SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?, ?)");
+        SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?, ?, ?)");
 
         final long depId = 42;
 
@@ -105,8 +105,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             String firstName = UUID.randomUUID().toString();
             String lastName = UUID.randomUUID().toString();
             Integer age = rnd.nextInt(50) + 18;
+            Integer salary = rnd.nextInt(50) + 50;
 
-            execute(qry.setArgs(id, depId, firstName, lastName, age));
+            execute(qry.setArgs(id, depId, firstName, lastName, age, salary));
         }
     }
 
@@ -121,7 +122,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             "depId LONG, " +
             "firstName VARCHAR, " +
             "lastName VARCHAR, " +
-            "age INT) " +
+            "age INT, " +
+            "salary INT)" +
             (F.isEmpty(withStr) ? "" : " WITH \"" + withStr + '"') +
             ";");
 
@@ -547,12 +549,12 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     public void testWhereGreater() {
         testAllNodes(node -> {
             Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age > 30", node);
-            Result noidxActual = executeFrom("SELECT firstName FROM Employee WHERE id > 742", node);
+            Result noidxActual = executeFrom("SELECT firstName FROM Employee WHERE salary > 75", node);
 
             IgniteCache<Object, Object> cache = node.cache(EMP_CACHE_NAME);
 
             List<List<Object>> idxExp = select(cache, row -> (Integer)row.get("AGE") > 30, "firstName");
-            List<List<Object>> noidxExp = select(cache, row -> (Long)row.get("ID") > 742, "firstName");
+            List<List<Object>> noidxExp = select(cache, row -> (Integer)row.get("SALARY") > 75, "firstName");
 
             assertContainsEq(idxActual.values(), idxExp);
             assertContainsEq(noidxActual.values(), noidxExp);
@@ -562,12 +564,12 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     public void testWhereLess() {
         testAllNodes(node -> {
             Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age < 30", node);
-            Result noidxActual = executeFrom("SELECT firstName FROM Employee WHERE id < 142", node);
+            Result noidxActual = executeFrom("SELECT firstName FROM Employee WHERE salary < 75", node);
 
             IgniteCache<Object, Object> cache = node.cache(EMP_CACHE_NAME);
 
             List<List<Object>> idxExp = select(cache, row -> (Integer)row.get("AGE") < 30, "firstName");
-            List<List<Object>> noidxExp = select(cache, row -> (Long)row.get("ID") < 142, "firstName");
+            List<List<Object>> noidxExp = select(cache, row -> (Integer)row.get("SALARY") < 75, "firstName");
 
             assertContainsEq(idxActual.values(), idxExp);
             assertContainsEq(noidxActual.values(), noidxExp);
@@ -577,12 +579,12 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     public void testWhereEq() {
         testAllNodes(node -> {
             Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age = 30", node);
-            Result noidxActual = executeFrom("SELECT firstName FROM Employee WHERE id = 142", node);
+            Result noidxActual = executeFrom("SELECT firstName FROM Employee WHERE salary = 75", node);
 
             IgniteCache<Object, Object> cache = node.cache(EMP_CACHE_NAME);
 
             List<List<Object>> idxExp = select(cache, row -> (Integer)row.get("AGE") == 30, "firstName");
-            List<List<Object>> noidxExp = select(cache, row -> (Long)row.get("ID") == 142, "firstName");
+            List<List<Object>> noidxExp = select(cache, row -> (Integer)row.get("SALARY") == 75, "firstName");
 
             assertContainsEq(idxActual.values(), idxExp);
             assertContainsEq(noidxActual.values(), noidxExp);
