@@ -1126,8 +1126,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        // It is necessary to run database callback before all topology callbacks, so partition states could be
-        // correctly restored from the persistent store.
+        /* It is necessary to run database callback before all topology callbacks.
+           In case of persistent store is enabled we first restore partitions presented on disk.
+           We need to guarantee that there are no partition state changes logged to WAL before this callback
+           to make sure that we correctly restored last actual states. */
         cctx.database().beforeExchange(this);
 
         if (!exchCtx.mergeExchanges()) {
