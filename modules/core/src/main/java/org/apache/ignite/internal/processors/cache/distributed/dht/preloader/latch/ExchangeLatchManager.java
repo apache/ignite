@@ -64,21 +64,26 @@ public class ExchangeLatchManager {
     private final GridKernalContext ctx;
 
     /** Discovery manager. */
+    @GridToStringExclude
     private final GridDiscoveryManager discovery;
 
     /** IO manager. */
+    @GridToStringExclude
     private final GridIoManager io;
 
     /** Current coordinator. */
-    private volatile ClusterNode coordinator;
+    @GridToStringExclude
+    private volatile ClusterNode crd;
 
     /** Pending acks collection. */
     private final ConcurrentMap<T2<String, AffinityTopologyVersion>, Set<UUID>> pendingAcks = new ConcurrentHashMap<>();
 
     /** Server latches collection. */
+    @GridToStringInclude
     private final ConcurrentMap<T2<String, AffinityTopologyVersion>, ServerLatch> serverLatches = new ConcurrentHashMap<>();
 
     /** Client latches collection. */
+    @GridToStringInclude
     private final ConcurrentMap<T2<String, AffinityTopologyVersion>, ClientLatch> clientLatches = new ConcurrentHashMap<>();
 
     /** Lock. */
@@ -97,15 +102,14 @@ public class ExchangeLatchManager {
 
         if (!ctx.clientNode()) {
             ctx.io().addMessageListener(GridTopic.TOPIC_EXCHANGE, (nodeId, msg, plc) -> {
-                if (msg instanceof LatchAckMessage) {
+                if (msg instanceof LatchAckMessage)
                     processAck(nodeId, (LatchAckMessage) msg);
-                }
             });
 
             // First coordinator initialization.
             ctx.discovery().localJoinFuture().listen(f -> {
                 if (f.error() == null)
-                    this.coordinator = getLatchCoordinator(AffinityTopologyVersion.NONE);
+                    this.crd = getLatchCoordinator(AffinityTopologyVersion.NONE);
             });
 
             ctx.event().addDiscoveryEventListener((e, cache) -> {
@@ -288,6 +292,8 @@ public class ExchangeLatchManager {
                     pendingAcks.computeIfAbsent(latchId, (id) -> new GridConcurrentHashSet<>());
                     pendingAcks.get(latchId).add(from);
                 }
+                else if (coordinator.isLocal())
+                    serverLatches.remove(latchId);
             } else {
                 if (log.isDebugEnabled())
                     log.debug("Process ack [latch=" + latchId + ", from=" + from + "]");
@@ -319,7 +325,7 @@ public class ExchangeLatchManager {
      */
     private void becomeNewCoordinator() {
         if (log.isInfoEnabled())
-            log.info("Become new coordinator " + coordinator.id());
+            log.info("Become new coordinator " + crd.id());
 
         List<T2<String, AffinityTopologyVersion>> latchesToRestore = new ArrayList<>();
         latchesToRestore.addAll(pendingAcks.keySet());
@@ -347,7 +353,7 @@ public class ExchangeLatchManager {
      * @param left Left node.
      */
     private void processNodeLeft(ClusterNode left) {
-        assert this.coordinator != null : "Coordinator is not initialized";
+        assert this.crd != null : "Coordinator is not initialized";
 
         lock.lock();
 
@@ -402,8 +408,8 @@ public class ExchangeLatchManager {
             }
 
             // Coordinator is changed.
-            if (coordinator.isLocal() && this.coordinator.id() != coordinator.id()) {
-                this.coordinator = coordinator;
+            if (coordinator.isLocal() && this.crd.id() != coordinator.id()) {
+                this.crd = coordinator;
 
                 becomeNewCoordinator();
             }
@@ -692,5 +698,10 @@ public class ExchangeLatchManager {
         @Override public String toString() {
             return S.toString(CompletableLatch.class, this);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ExchangeLatchManager.class, this);
     }
 }

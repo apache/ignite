@@ -37,17 +37,13 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
     /** */
     private final boolean commit;
 
-    /** */
-    private final boolean onTimeout;
-
     /**
      * @param tx Transaction.
      * @param commit Commit flag.
      */
-    GridNearTxFastFinishFuture(GridNearTxLocal tx, boolean commit, boolean onTimeout) {
+    GridNearTxFastFinishFuture(GridNearTxLocal tx, boolean commit) {
         this.tx = tx;
         this.commit = commit;
-        this.onTimeout = onTimeout;
     }
 
     /** {@inheritDoc} */
@@ -56,9 +52,9 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
     }
 
     /**
-     *
+     * @param clearThreadMap {@code True} if need remove tx from thread map.
      */
-    public void finish() {
+    public void finish(boolean clearThreadMap) {
         try {
             if (commit) {
                 tx.state(PREPARING);
@@ -74,7 +70,7 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
                 tx.state(PREPARED);
                 tx.state(ROLLING_BACK);
 
-                tx.context().tm().fastFinishTx(tx, false, !onTimeout);
+                tx.context().tm().fastFinishTx(tx, false, clearThreadMap);
 
                 tx.state(ROLLED_BACK);
             }

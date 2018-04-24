@@ -155,10 +155,14 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     /** {@inheritDoc} */
     @Override public void prepare() {
         if (!tx.state(PREPARING)) {
-            if ((tx.isRollbackOnly() || tx.setRollbackOnly()) && tx.remainingTime() == -1)
-                onDone(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " + tx));
+            if (tx.isRollbackOnly() || tx.setRollbackOnly()) {
+                if (tx.remainingTime() == -1)
+                    onDone(tx.timeoutException());
+                else
+                    onDone(tx.rollbackException());
+            }
             else
-                onDone(new IgniteTxRollbackCheckedException("Invalid transaction state for prepare " +
+                onDone(new IgniteCheckedException("Invalid transaction state for prepare " +
                     "[state=" + tx.state() + ", tx=" + this + ']'));
 
             return;
