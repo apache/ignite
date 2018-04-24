@@ -25,12 +25,14 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -299,7 +301,15 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
         if (!actual.containsAll(expected))
             throw new AssertionError(msg + " Collections differ:" +
-                " [actual=" + actual + ", expected=" + expected + "].");
+                " [actual=" + actual + ", expected=" + expected + "].\n" +
+                "[uniqActual=]" + removeFromCopy(actual, expected) +
+                ", uniqExpected=" + removeFromCopy(expected, actual) + "]");
+    }
+
+    private static Collection removeFromCopy(Collection<?> from, Collection<?> toRemove){
+        Set<?> copy = new HashSet<>(from);
+        copy.removeAll(toRemove);
+        return copy;
     }
 
     /**
@@ -314,16 +324,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         @Nullable IgnitePredicate<Map<String, Object>> filter,
         String... fields) {
 
-        Collection<QueryEntity> entities = cache.getConfiguration(CacheConfiguration.class).getQueryEntities();
-
-        assert entities.size() == 1 : "Cache should contain exactly one table";
-
-        final QueryEntity meta = entities.iterator().next();
-
-        IgniteClosure<Cache.Entry<K, V>, List<Object>> transformer = entry -> {
+        IgniteClosure<Map<String, Object>, List<Object>> fieldsExtractor = row -> {
             List<Object> res = new ArrayList<>();
-
-            Map<String, Object> row = entryToMap(meta, entry.getKey(), entry.getValue());
 
             for (String field : fields) {
                 String normField = field.toUpperCase();
@@ -332,18 +334,38 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
                 if (val == null)
                     throw new RuntimeException("Field with name " + normField +
-                        " not found in the table. Avaliable fields: " + meta.getFields());
+                        " not found in the table. Avaliable fields: " + row.keySet());
 
                 res.add(val);
             }
             return res;
         };
 
+        return select(cache, filter, fieldsExtractor);
+    }
+
+    protected static <K, V> List<List<Object>> select(
+        IgniteCache<K, V> cache,
+        @Nullable IgnitePredicate<Map<String, Object>> filter,
+        IgniteClosure<Map<String, Object>, List<Object>> transformer) {
+
+        Collection<QueryEntity> entities = cache.getConfiguration(CacheConfiguration.class).getQueryEntities();
+
+        assert entities.size() == 1 : "Cache should contain exactly one table";
+
+        final QueryEntity meta = entities.iterator().next();
+
+        IgniteClosure<Cache.Entry<K, V>, List<Object>> transformerAdapter = entry -> {
+            Map<String, Object> row = entryToMap(meta, entry.getKey(), entry.getValue());
+
+            return transformer.apply(row);
+        };
+
         IgniteBiPredicate<K, V> filterAdapter = (filter == null) ? null :
             (key, val) -> filter.apply(entryToMap(meta, key, val));
 
         QueryCursor<List<Object>> cursor = cache.withKeepBinary()
-            .query(new ScanQuery<>(filterAdapter), transformer);
+            .query(new ScanQuery<>(filterAdapter), transformerAdapter);
 
         return cursor.getAll();
     }
@@ -356,7 +378,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param val Value of the cache entry.
      */
     private static Map<String, Object> entryToMap(QueryEntity meta, Object key, Object val) {
-        Map<String, Object> row = new HashMap<>();
+        Map<String, Object> row = new LinkedHashMap<>();
 
         // Look up for the field in the key
         if (key instanceof BinaryObject) {
@@ -544,8 +566,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-    public void testWhereEq(){
-        testAllNodes(node ->{
+    public void testWhereEq() {
+        testAllNodes(node -> {
             Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age = 30", node);
             Result noidxActual = executeFrom("SELECT firstName FROM Employee WHERE id = 142", node);
 
@@ -559,6 +581,30 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    public void testGroupBy(){
+        testAllNodes(node -> {
+            Result result = executeFrom("SELECT age, COUNT(*) FROM Employee GROUP BY age HAVING COUNT(*) > 8", node);
+
+            List<List<Object>> all = select(node.cache(EMP_CACHE_NAME), null, "age");
+
+            Map<Integer, Long> cntGroups = new HashMap<>();
+
+            for(List<Object> entry : all) {
+                Integer age = (Integer) entry.get(0);
+
+                long cnt = cntGroups.getOrDefault(age, 0L);
+
+                cntGroups.put(age, cnt + 1L);
+            }
+
+            List<List<Object>> expected = cntGroups.entrySet().stream()
+                .filter(ent -> ent.getKey() > 8)
+                .map(ent -> Arrays.<Object>asList(ent.getKey(), ent.getValue()))
+                .collect(Collectors.toList());
+
+            assertContainsEq(result.values(), expected);
+        });
+    }
 
     public void testCfg() {
         // false by default, injected as true
