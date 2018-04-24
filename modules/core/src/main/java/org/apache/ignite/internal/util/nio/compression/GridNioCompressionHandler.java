@@ -22,35 +22,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.nio.GridNioException;
-import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.BUFFER_OVERFLOW;
-import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.OK;
-
 /**
- * Class that encapsulate the compression state, compress and decompress logic.
+ * Thread safe compression handler.
  */
-public final class GridNioCompressionHandler {
-    /** Size of a net buffers. */
-    private static final int NET_BUF_SIZE = 1 << 15;
-
-    /** Logger. */
-    private final IgniteLogger log;
-
-    /** Compression engine. */
-    private final CompressionEngine compressionEngine;
-
-    /** Output buffer into which compressed data will be written. */
-    private ByteBuffer outNetBuf;
-
-    /** Input buffer from which compression engine will decompress data. */
-    private ByteBuffer inNetBuf;
-
-    /** Application buffer. */
-    private ByteBuffer appBuf;
-
+public final class GridNioCompressionHandler extends BlockingCompressionHandler {
     /** Lock. */
     private final ReentrantLock lock = new ReentrantLock();
 
@@ -58,136 +35,14 @@ public final class GridNioCompressionHandler {
      * Creates handler.
      *
      * @param engine Compression engine instance for this handler.
-     * @param log Logger to use.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
+     * @param log Logger to use.
      * @param encBuf Encoded buffer to be used.
      */
-    public GridNioCompressionHandler(
-        CompressionEngine engine,
-        boolean directBuf,
-        ByteOrder order,
-        IgniteLogger log,
-        @Nullable ByteBuffer encBuf) {
-        assert engine != null;
-        assert order != null;
-        assert log != null;
-
-        this.log = log;
-
-        compressionEngine = engine;
-
-        outNetBuf = directBuf ? ByteBuffer.allocateDirect(NET_BUF_SIZE) : ByteBuffer.allocate(NET_BUF_SIZE);
-        outNetBuf.order(order);
-
-        inNetBuf = directBuf ? ByteBuffer.allocateDirect(NET_BUF_SIZE) : ByteBuffer.allocate(NET_BUF_SIZE);
-        inNetBuf.order(order);
-
-        if (encBuf != null) {
-            encBuf.flip();
-
-            // Buffer contains bytes read but not handled by compressionEngine at BlockingCompressionHandler.
-            inNetBuf.put(encBuf);
-        }
-
-        // Initially buffer is empty.
-        outNetBuf.position(0);
-        outNetBuf.limit(0);
-
-        int appBufSize = NET_BUF_SIZE * 2;
-
-        appBuf = directBuf ? ByteBuffer.allocateDirect(appBufSize) : ByteBuffer.allocate(appBufSize);
-        appBuf.order(order);
-
-        if (log.isDebugEnabled())
-            log.debug("Started compression handler [netBufSize=" + NET_BUF_SIZE + ", appBufSize=" + appBufSize + ']');
-    }
-
-    /**
-     * Compress data.
-     *
-     * @param buf Byte buffer to compress.
-     * @return Output buffer with compressed data.
-     * @throws IOException If failed to compress data.
-     */
-    public ByteBuffer compress(ByteBuffer buf) throws IOException {
-        assert buf != null;
-        assert lock.isHeldByCurrentThread();
-
-        // The data buffer is (must be) empty, we can reuse the entire buffer.
-        outNetBuf.clear();
-
-        // Loop until there is no more data in buffer.
-        while (buf.hasRemaining()) {
-            CompressionEngineResult res = compressionEngine.compress(buf, outNetBuf);
-
-            if (res == BUFFER_OVERFLOW) {
-                assert outNetBuf.capacity() <= Integer.MAX_VALUE / 2;
-
-                outNetBuf = expandBuffer(outNetBuf, outNetBuf.capacity() * 2);
-
-                if (log.isDebugEnabled())
-                    log.debug("Expanded output net buffer [outNetBufCapacity=" + outNetBuf.capacity() + ']');
-            }
-        }
-
-        outNetBuf.flip();
-
-        return outNetBuf;
-    }
-
-    /**
-     * Decompress data.
-     *
-     * @param buf Byte buffer to decomress.
-     * @return Application buffer with decompressed data.
-     * @throws IOException If failed to decompress data.
-     */
-    public ByteBuffer decompress(ByteBuffer buf) throws IOException {
-        assert buf != null;
-
-        if (buf.limit() > inNetBuf.remaining()) {
-            assert inNetBuf.capacity() <= Integer.MAX_VALUE / 2;
-
-            inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() * 2);
-
-            if (log.isDebugEnabled())
-                log.debug("Expanded buffer [inNetBufCapacity=" + inNetBuf.capacity() + ']');
-        }
-
-        inNetBuf.put(buf);
-
-        unwrapData();
-
-        appBuf.flip();
-
-        return appBuf;
-    }
-
-    /**
-     * Unwraps user data to the application buffer.
-     *
-     * @throws IOException On error.
-     */
-    private void unwrapData() throws IOException {
-        // Flip buffer so we can read it.
-        inNetBuf.flip();
-
-        CompressionEngineResult res;
-
-        do {
-            res = compressionEngine.decompress(inNetBuf, appBuf);
-
-            if (res == BUFFER_OVERFLOW) {
-                assert appBuf.capacity() <= Integer.MAX_VALUE / 2;
-
-                appBuf = expandBuffer(appBuf, appBuf.capacity() * 2);
-            }
-        }
-        while (res == OK || res == BUFFER_OVERFLOW);
-
-        // Prepare to be written again.
-        inNetBuf.compact();
+    public GridNioCompressionHandler(CompressionEngine engine, boolean directBuf, ByteOrder order,
+        IgniteLogger log, @Nullable ByteBuffer encBuf) {
+        super(engine, directBuf, order, log, encBuf);
     }
 
     /**
@@ -204,43 +59,24 @@ public final class GridNioCompressionHandler {
         lock.unlock();
     }
 
-    /**
-     * @return Application buffer with decompressed data.
-     */
-    public ByteBuffer getApplicationBuffer() {
-        return appBuf;
+    /** {@inheritDoc} */
+    @Override public ByteBuffer compress(ByteBuffer buf) throws IOException {
+        assert lock.isHeldByCurrentThread();
+
+        return super.compress(buf);
     }
 
-    /**
-     * @return Input buffer.
-     */
-    public ByteBuffer getInputBuffer() {
-        return inNetBuf;
+    /** {@inheritDoc} */
+    @Override public ByteBuffer decompress(ByteBuffer buf) throws IOException {
+        assert lock.isHeldByCurrentThread();
+
+        return super.decompress(buf);
     }
 
-    /**
-     * @return Output buffer.
-     */
-    public ByteBuffer getOutputBuffer() {
-        return outNetBuf;
-    }
+    /** {@inheritDoc} */
+    @Override public ByteBuffer getOutputBuffer() {
+        assert lock.isHeldByCurrentThread();
 
-    /**
-     * Expands the given byte buffer to the requested capacity.
-     *
-     * @param original Original byte buffer.
-     * @param cap Requested capacity.
-     * @return Expanded byte buffer.
-     */
-    private static ByteBuffer expandBuffer(ByteBuffer original, int cap) {
-        ByteBuffer res = original.isDirect() ? ByteBuffer.allocateDirect(cap) : ByteBuffer.allocate(cap);
-
-        res.order(original.order());
-
-        original.flip();
-
-        res.put(original);
-
-        return res;
+        return super.getOutputBuffer();
     }
 }
