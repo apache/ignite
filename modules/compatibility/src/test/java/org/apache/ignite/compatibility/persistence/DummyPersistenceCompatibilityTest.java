@@ -44,9 +44,12 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        DataStorageConfiguration memCfg = new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setPersistenceEnabled(true));
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
+
+        memCfg.setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration()
+                .setPersistenceEnabled(true)
+        );
 
         cfg.setDataStorageConfiguration(memCfg);
 
