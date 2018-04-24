@@ -393,28 +393,28 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param name Set name.
      * @param colloc Collocated flag.
      * @param create Create flag.
-     * @param distinct Separated cache mode flag.
+     * @param sharedCacheMode Shared cache mode flag.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public <T> IgniteSet<T> set(final String name,
         boolean colloc,
         final boolean create,
-        final boolean distinct)
+        final boolean sharedCacheMode)
         throws IgniteCheckedException
     {
         // Non collocated mode enabled only for PARTITIONED cache.
         final boolean colloc0 =
             create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
 
-        return set0(name, colloc0, create, distinct);
+        return set0(name, colloc0, create, sharedCacheMode);
     }
 
     /**
      * @param name Name of set.
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
-     * @param distinct Separated cache mode flag.
+     * @param sharedCacheMode Shared cache mode flag.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
@@ -422,7 +422,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable private <T> IgniteSet<T> set0(String name,
         boolean collocated,
         boolean create,
-        boolean distinct)
+        boolean sharedCacheMode)
         throws IgniteCheckedException
     {
         cctx.gate().enter();
@@ -434,7 +434,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
-            if (distinct) {
+            // If we should use separate cache.
+            if (!sharedCacheMode) {
                 // For backward compatibility try to find an old header.
                 hdr = (GridCacheSetHeader)cache.get(key);
 

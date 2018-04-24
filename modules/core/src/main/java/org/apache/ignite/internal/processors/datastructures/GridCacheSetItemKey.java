@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Objects;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -85,10 +86,7 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
 
         GridCacheSetItemKey that = (GridCacheSetItemKey)o;
 
-        if ((setId == null && that.setId != null) || (setId != null && that.setId == null))
-            return false;
-
-        return (setId == null || setId.equals(that.setId)) && item.equals(that.item);
+        return Objects.equals(this.setId, that.setId);
     }
 
     /** {@inheritDoc} */

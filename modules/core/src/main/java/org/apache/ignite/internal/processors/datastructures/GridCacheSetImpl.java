@@ -200,13 +200,12 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @Override public boolean isEmpty() {
         onAccess();
 
-        if (sharedCacheMode) {
-            GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
-
-            return (set == null || set.isEmpty()) && size() == 0;
-        }
-        else
+        if (!sharedCacheMode)
             return size() == 0;
+
+        GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
+
+        return (set == null || set.isEmpty()) && size() == 0;
     }
 
     /** {@inheritDoc} */
@@ -488,8 +487,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
             return ctx.itHolder().iterator(iter, new CacheIteratorConverter<T, Map.Entry<T, Object>>() {
                 @Override protected T convert(Map.Entry<T, Object> e) {
-                    // Actually Scan Query returns Iterator<CacheQueryEntry> by default,
-                    // CacheQueryEntry implements both Map.Entry and Cache.Entry interfaces.
                     return (T)((SetItemKey)e.getKey()).item();
                 }
 

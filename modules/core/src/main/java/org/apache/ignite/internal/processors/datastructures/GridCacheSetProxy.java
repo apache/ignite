@@ -356,8 +356,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     @Override public void close() {
         IgniteFuture<Boolean> destroyFut = null;
 
-        if (!gate.enterIfNotStopped())
-            return;
+        gate.enter();
 
         try {
             delegate.close();

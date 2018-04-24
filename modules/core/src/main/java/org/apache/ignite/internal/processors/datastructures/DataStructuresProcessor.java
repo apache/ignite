@@ -117,7 +117,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
 
     /** Non collocated IgniteSet version will use spearate cache. */
-    private static final IgniteProductVersion SEPARATE_CACHE_SET_SINCE = IgniteProductVersion.fromString("2.6.0");
+    private static final IgniteProductVersion SEPARATE_CACHE_SET_SINCE = IgniteProductVersion.fromString("2.5.0");
 
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
@@ -919,23 +919,23 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      *
      * @param cfg Collection configuration.
      * @param grpName Group name.
-     * @param shared Shared mode (single cache for multiple data structure instances).
+     * @param separateCacheSet {@code True} to create separate cache (for non-collocated IgniteSet instance).
      * @param dsName Data structure name.
      * @return Data strcuture cache.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private IgniteInternalCache compatibleCache(CollectionConfiguration cfg, String grpName,
-        boolean shared, String dsName)
+        boolean separateCacheSet, String dsName)
         throws IgniteCheckedException {
 
-        // At first step we need to search shared compatible with current configuration data structure cache.
+        // At first step we need to search compatible shared data structure cache.
         String cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
             cfg.getBackups() + "@" + grpName;
 
         IgniteInternalCache cache = ctx.cache().cache(cacheName);
 
         // If it was not found or collection header does not exists in shared cache we can create separate cache.
-        if (!shared && (cache == null || cache.get(new GridCacheSetHeaderKey(dsName)) == null)) {
+        if (separateCacheSet && (cache == null || cache.get(new GridCacheSetHeaderKey(dsName)) == null)) {
             cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
                 cfg.getBackups() + "_" + dsName + "@" + grpName;
 
@@ -1068,12 +1068,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final IgniteInternalCache cache;
 
-        boolean sharedMode = !separateCacheSetEnabled() || type != DataStructureType.SET;
+        boolean sharedCacheMode;
 
         if (create) {
-            sharedMode = sharedMode || cfg.isCollocated() || cfg.getCacheMode() != PARTITIONED;
+            // For non-collocated IgniteSet we should create separate cache.
+            sharedCacheMode = type != DataStructureType.SET || cfg.isCollocated() ||
+                cfg.getCacheMode() != PARTITIONED || !separateCacheSetEnabled();
 
-            cache = compatibleCache(cfg, grpName, sharedMode, name);
+            cache = compatibleCache(cfg, grpName, !sharedCacheMode, name);
 
             DistributedCollectionMetadata newVal = new DistributedCollectionMetadata(type, cfg, cache.name());
 
@@ -1097,7 +1099,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
             CollectionConfiguration oldCfg = ((DistributedCollectionMetadata)oldVal).configuration();
 
-            sharedMode = sharedMode || oldCfg.isCollocated() || oldCfg.getCacheMode() != PARTITIONED;
+            sharedCacheMode = type != DataStructureType.SET || oldCfg.isCollocated() ||
+                oldCfg.getCacheMode() != PARTITIONED || !separateCacheSetEnabled();
         }
 
         if (oldVal != null) {
@@ -1117,11 +1120,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             }
         }
 
-        final boolean distinctCache = !sharedMode;
-
         return retryTopologySafe(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
-                return c.applyx(cache.context(), distinctCache);
+                return c.applyx(cache.context(), sharedCacheMode);
             }
         });
     }
@@ -1565,9 +1566,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final boolean create = cfg != null;
 
         return getCollection(new CX2<GridCacheContext, Boolean, IgniteSet<T>>() {
-            @Override public IgniteSet<T> applyx(GridCacheContext cctx, Boolean distinct)
+            @Override public IgniteSet<T> applyx(GridCacheContext cctx, Boolean sharedCacheMode)
                 throws IgniteCheckedException {
-                return cctx.dataStructures().set(name, create && cfg.isCollocated(), create, distinct);
+                return cctx.dataStructures().set(name, create && cfg.isCollocated(), create, sharedCacheMode);
             }
         }, cfg, name, grpName, SET, create);
     }

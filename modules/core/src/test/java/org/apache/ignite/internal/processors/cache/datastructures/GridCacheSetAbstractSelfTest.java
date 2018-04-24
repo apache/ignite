@@ -806,10 +806,12 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         GridCacheContext cctx = GridTestUtils.getFieldValue(set0, "cctx");
 
+        boolean separateCacheMode = !shared(set0);
+
         for (int i = 0; i < gridCount(); i++) {
             GridCacheAdapter cache = grid(i).context().cache().internalCache(cctx.name());
 
-            if (!shared(set0)) {
+            if (separateCacheMode) {
                 assertNull("Internal cache should be destroyed in non-shared cache mode: " + cctx.name(), cache);
 
                 continue;
