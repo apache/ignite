@@ -3644,7 +3644,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             boolean isCompressed = compressionMeta != null;
 
             if (isCompressed) {
-                compressHnd = new GridNioCompressionHandler(compressionMeta.compressionEngine(), directBuf, ByteOrder.nativeOrder(), log, null);
+                compressHnd = new GridNioCompressionHandler(compressionMeta.compressionEngine(), directBuf,
+                    ByteOrder.nativeOrder(), log, null);
 
                 assert compressHnd.getApplicationBuffer().flip().remaining() == 0;
             }
