@@ -70,6 +70,38 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     }
 
     /**
+     * Test {@link IgniteInternalCache#invoke(Object, EntryProcessor, Object...)} works consistent with
+     * {@link IgniteInternalCache#invokeAsync(Object, EntryProcessor, Object...)}.
+     * @throws Exception If failed.
+     */
+    public void testInternalInvokeNullable() throws Exception {
+        IgniteInternalCache<Integer, Integer> cache = grid(0).cachex(DEFAULT_CACHE_NAME);
+
+        invokeNullable(cache);
+    }
+
+    /**
+     * @param cache Cache.
+     * @throws Exception If failed.
+     */
+    private void invokeNullable(final IgniteInternalCache<Integer, Integer> cache) throws Exception {
+        EntryProcessor<Integer, Integer, Void> processor = new NullableProcessor();
+
+        for (final Integer key : keys()) {
+            log.info("Test invoke with a nullable result [key=" + key + ']');
+
+            EntryProcessorResult<Void> result = cache.invoke(key, processor);
+            EntryProcessorResult<Void> resultAsync = cache.invokeAsync(key, processor).get();
+
+            assertNotNull(result);
+            assertNotNull(resultAsync);
+
+            assertNull(result.get());
+            assertNull(resultAsync.get());
+        }
+    }
+
+    /**
      * @param cache Cache.
      * @param txMode Not null transaction concurrency mode if explicit transaction should be started.
      * @throws Exception If failed.
@@ -765,6 +797,17 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ExceptionProcessor.class, this);
+        }
+    }
+
+    /**
+     * EntryProcessor which always returns {@code null}.
+     */
+    private static class NullableProcessor implements EntryProcessor<Integer, Integer, Void> {
+        /** {@inheritDoc} */
+        @Override public Void process(MutableEntry<Integer, Integer> e,
+            Object... arguments) throws EntryProcessorException {
+            return null;
         }
     }
 
