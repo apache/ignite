@@ -136,6 +136,7 @@ import connectedClusters from './components/connected-clusters';
 import pageSignIn from './components/page-signin';
 import pageLanding from './components/page-landing';
 import passwordVisibility from './components/password-visibility';
+import progressLine from './components/progress-line';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
@@ -233,6 +234,7 @@ angular.module('ignite-console', [
     pagePasswordChanged.name,
     pagePasswordReset.name,
     passwordVisibility.name,
+    progressLine.name,
     // Ignite modules.
     IgniteModules.name
 ])
