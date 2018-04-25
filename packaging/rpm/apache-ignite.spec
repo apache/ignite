@@ -1,5 +1,8 @@
 %define __jar_repack %{nil}
 %define user ignite
+%define _libdir /usr/lib
+%define _log %{_var}/log
+%define _sharedstatedir /var/lib
 
 
 #-------------------------------------------------------------------------------
@@ -8,13 +11,13 @@
 #
 
 Name:             apache-ignite
-Version:          2.4.0
-Release:          1%{?dist}
-Summary:          Apache Ignite In-Memory Computing Platform
+Version:          2.5.0
+Release:          1
+Summary:          Apache Ignite In-Memory Computing, Database and Caching Platform
 Group:            Development/System
 License:          ASL 2.0
 URL:              https://ignite.apache.org/
-Source:           %{name}.zip
+Source:           %{name}-fabric-%{version}-bin.zip
 Requires:         java-1.8.0, chkconfig
 Requires(pre):    shadow-utils
 Provides:         %{name}
@@ -22,19 +25,21 @@ AutoReq:          no
 AutoProv:         no
 BuildArch:        noarch
 %description
-Apache Ignite™ is the in-memory computing platform composed of a strongly
-consistent distributed database with powerful SQL, key-value and processing APIs
+Ignite™ is a memory-centric distributed database, caching, and processing
+platform for transactional, analytical, and streaming workloads, delivering
+in-memory speeds at petabyte scale
 
 
+%prep
 #-------------------------------------------------------------------------------
 #
 # Prepare step: unpack sources
 #
 
-%prep
-%setup -q -c -n %{name}
+%setup -q -n %{name}-fabric-%{version}-bin
 
 
+#%pre
 #-------------------------------------------------------------------------------
 #
 # Preinstall scripts
@@ -44,6 +49,7 @@ consistent distributed database with powerful SQL, key-value and processing APIs
 #
 
 
+%post
 #-------------------------------------------------------------------------------
 #
 # Postinstall scripts
@@ -52,13 +58,25 @@ consistent distributed database with powerful SQL, key-value and processing APIs
 #     2 - Upgrade
 #
 
-%post
+echoUpgradeMessage () {
+    echo "======================================================================================================="
+    echo "  WARNING: Updating Apache Ignite's cluster version requires updating every node before starting grid  "
+    echo "======================================================================================================="
+}
+
 case $1 in
-    1)
+    1|configure)
+        # DEB postinst upgrade
+        if [ ! -z "${2}" ]; then
+            echoUpgradeMessage
+        fi
+
         # Add user for service operation
         useradd -r -d %{_datadir}/%{name} -s /usr/sbin/nologin %{user}
+
         # Change ownership for work and log directories
-        chown -vR %{user}:%{user} %{_sharedstatedir}/%{name} %{_var}/log/%{name}
+        chown -vR %{user}:%{user} %{_sharedstatedir}/%{name} %{_log}/%{name}
+
         # Install alternatives
         # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
         #update-alternatives --install %{_bindir}/ignitevisorcmd ignitevisorcmd %{_datadir}/%{name}/bin/ignitevisorcmd.sh 0
@@ -69,11 +87,13 @@ case $1 in
         #update-alternatives --display ignitesqlline
         ;;
     2)
-        :
+        # RPM postinst upgrade
+        echoUpgradeMessage
         ;;
 esac
 
 
+%preun
 #-------------------------------------------------------------------------------
 #
 # Pre-uninstall scripts
@@ -82,9 +102,11 @@ esac
 #     1 - Upgrade
 #
 
-%preun
 case $1 in
-    0)
+    0|remove)
+        # Stop all nodes
+        systemctl stop 'apache-ignite@*'
+
         # Remove alternatives
         # Commented out until ignitevisorcmd / ignitesqlline is ready to work from any user
         #update-alternatives --remove ignitevisorcmd /usr/share/%{name}/bin/ignitevisorcmd.sh
@@ -92,12 +114,16 @@ case $1 in
         #update-alternatives --remove ignitesqlline /usr/share/%{name}/bin/sqlline.sh
         #update-alternatives --display ignitesqlline || true
         ;;
-    1)
-        :
+    1|upgrade)
+        echo "=================================================================================="
+        echo "  WARNING: All running Apache Ignite's nodes will be stopped upon package update  "
+        echo "=================================================================================="
+        systemctl stop 'apache-ignite@*'
         ;;
 esac
 
 
+%postun
 #-------------------------------------------------------------------------------
 #
 # Post-uninstall scripts
@@ -106,13 +132,14 @@ esac
 #     1 - Upgrade
 #
 
-%postun
 case $1 in
-    0)
+    0|remove)
         # Remove user
         userdel %{user}
+
         # Remove service PID directory
         rm -rfv /var/run/%{name}
+
         # Remove firewalld rules if firewalld is installed and running
         if [[ "$(type firewall-cmd &>/dev/null; echo $?)" -eq 0 && "$(systemctl is-active firewalld)" == "active" ]]
         then
@@ -125,25 +152,23 @@ case $1 in
             systemctl restart firewalld
         fi
         ;;
-    1)
+    1|upgrade)
         :
         ;;
 esac
 
 
+%install
 #-------------------------------------------------------------------------------
 #
 # Prepare packages' layout
 #
 
-%install
-cd $(ls)
-
 # Create base directory structure
 mkdir -p %{buildroot}%{_datadir}/%{name}
 mkdir -p %{buildroot}%{_libdir}/%{name}
 mkdir -p %{buildroot}%{_datadir}/doc/%{name}-%{version}/bin
-mkdir -p %{buildroot}%{_var}/log/%{name}
+mkdir -p %{buildroot}%{_log}/%{name}
 mkdir -p %{buildroot}%{_sharedstatedir}/%{name}
 mkdir -p %{buildroot}%{_sysconfdir}/systemd/system
 mkdir -p %{buildroot}%{_bindir}
@@ -175,18 +200,19 @@ done
 
 # Map work and log directories
 ln -sf %{_sharedstatedir}/%{name} %{buildroot}%{_datadir}/%{name}/work
-ln -sf %{_var}/log/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
+ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 
 
+%files
 #-------------------------------------------------------------------------------
 #
 # Package file list check
 #
-%files
+
 %dir %{_datadir}/%{name}
 %dir %{_sysconfdir}/%{name}
 %dir %{_sharedstatedir}/%{name}
-%dir %{_var}/log/%{name}
+%dir %{_log}/%{name}
 
 %{_datadir}/%{name}/benchmarks
 %{_datadir}/%{name}/bin
@@ -200,15 +226,20 @@ ln -sf %{_var}/log/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 
 %config(noreplace) %{_sysconfdir}/%{name}/*
 
-%doc %{name}-*/README.txt
-%doc %{name}-*/NOTICE
-%doc %{name}-*/RELEASE_NOTES.txt
-%license %{name}-*/LICENSE
+%doc README.txt
+%doc NOTICE
+%doc RELEASE_NOTES.txt
+%license LICENSE
 
+
+%changelog
 #-------------------------------------------------------------------------------
 #
 # Changelog
 #
-%changelog
-* Wed Jan 17 2018 GridGain Systems <ggs@gridgain.com> - 2.4.0-1
+
+* Tue Apr 17 2018 Peter Ivanov <mr.weider@gmail.com> - 2.5.0-1
+- Updated Apache Ignite to version 2.5.0
+
+* Wed Jan 17 2018 Peter Ivanov <mr.weider@gmail.com> - 2.4.0-1
 - Initial package release
