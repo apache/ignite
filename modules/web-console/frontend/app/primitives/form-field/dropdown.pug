@@ -17,6 +17,7 @@
 mixin form-field__dropdown({ label, model, name, disabled, required, multiple, placeholder, placeholderEmpty, options, tip })
     mixin __form-field__input()
         button.select-toggle(
+            type='button'
             id=`{{ ${name} }}Input`
             name=`{{ ${name} }}`
 

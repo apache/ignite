@@ -15,24 +15,22 @@
  * limitations under the License.
  */
 
-import {dropTestDB, resolveUrl, insertTestUser} from 'envtools';
-import {createRegularUser} from '../../roles';
-import {userMenu} from '../../components/userMenu';
-import {pageSignin} from '../../page-models/pageSignin1';
+export interface ISignupData {
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    phone?: string,
+    company: string,
+    country: string
+}
 
-const user = createRegularUser();
-
-fixture('Logout')
-    .before(async() => {
-        await dropTestDB();
-        await insertTestUser();
-    })
-    .after(async() => {
-        await dropTestDB();
-    });
-
-test('Successful logout', async(t) => {
-    await t.useRole(user).navigateTo(resolveUrl('/settings/profile'));
-    await userMenu.clickOption('Log out');
-    await t.expect(pageSignin.selector.exists).ok('Goes to sign in page after logout');
-});
+export interface ISignupFormController extends ng.IFormController {
+    email: ng.INgModelController,
+    password: ng.INgModelController,
+    firstName: ng.INgModelController,
+    lastName: ng.INgModelController,
+    phone: ng.INgModelController,
+    company: ng.INgModelController,
+    country: ng.INgModelController
+}

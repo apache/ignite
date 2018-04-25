@@ -15,42 +15,46 @@
  * limitations under the License.
  */
 
-export default class {
-    /** @type {import('./types').ISiginData} */
+export default class PageSignup {
+    /** @type {import('./types').ISignupFormController} */
+    form;
+    /** @type {import('./types').ISignupData} */
     data = {
         email: null,
-        password: null
+        password: null,
+        firstName: null,
+        lastName: null,
+        company: null,
+        country: null
     };
-    /** @type {import('./types').ISigninFormController} */
-    form;
     /** @type {string} */
     serverError = null;
 
-    static $inject = ['Auth', 'IgniteMessages'];
+    static $inject = ['IgniteCountries', 'Auth', 'IgniteMessages'];
 
     /**
      * @param {import('app/modules/user/Auth.service').default} Auth
      */
-    constructor(Auth, IgniteMessages) {
+    constructor(Countries, Auth, IgniteMessages) {
         this.Auth = Auth;
         this.IgniteMessages = IgniteMessages;
+        this.countries = Countries.getAll();
     }
 
-    /** @param {import('./types').ISigninFormController} form */
+    /** @param {import('./types').ISignupFormController} form */
     canSubmitForm(form) {
         return form.$error.server ? true : !form.$invalid;
     }
 
     $postLink() {
-        this.form.password.$validators.server = () => !this.serverError;
+        this.form.email.$validators.server = () => !this.serverError;
     }
 
-    signin() {
-        return this.Auth.signin(this.data.email, this.data.password).catch((res) => {
+    signup() {
+        return this.Auth.signnup(this.data).catch((res) => {
             this.IgniteMessages.showError(null, res.data);
             this.serverError = res.data;
             this.form.email.$validate();
-            this.form.password.$validate();
         });
     }
 }
