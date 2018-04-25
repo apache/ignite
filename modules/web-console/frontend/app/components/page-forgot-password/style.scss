@@ -15,24 +15,40 @@
  * limitations under the License.
  */
 
-import {dropTestDB, resolveUrl, insertTestUser} from 'envtools';
-import {createRegularUser} from '../../roles';
-import {userMenu} from '../../components/userMenu';
-import {pageSignin} from '../../page-models/pageSignin1';
+page-forgot-password {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
 
-const user = createRegularUser();
+    section {
+        margin-left: auto;
+        margin-right: auto;
+        width: 530px;
 
-fixture('Logout')
-    .before(async() => {
-        await dropTestDB();
-        await insertTestUser();
-    })
-    .after(async() => {
-        await dropTestDB();
-    });
+        h3 {
+            font-size: 38px;
+            font-weight: 300;
+            margin: 30px 0 30px;
+        }
 
-test('Successful logout', async(t) => {
-    await t.useRole(user).navigateTo(resolveUrl('/settings/profile'));
-    await userMenu.clickOption('Log out');
-    await t.expect(pageSignin.selector.exists).ok('Goes to sign in page after logout');
-});
+        p {
+            margin-bottom: 20px;
+        }
+
+        .form-field {
+            margin: 10px 0;
+        }
+
+        .form-footer {
+            padding: 15px 0;
+            text-align: right;
+            border-top: 1px solid #e5e5e5;
+            display: flex;
+            align-items: center;
+
+            .btn-ignite {
+                margin-left: auto;
+            }
+        }
+    }
+}
