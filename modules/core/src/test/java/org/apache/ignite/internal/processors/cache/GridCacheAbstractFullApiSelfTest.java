@@ -313,7 +313,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         IgniteCache<String, Integer> cache = jcache(0);
 
         try (final Transaction transaction = grid(0).transactions().txStart()) {
-
             // retrieve market type from the grid
             Integer old = cache.withSkipStore().get(key);
 
