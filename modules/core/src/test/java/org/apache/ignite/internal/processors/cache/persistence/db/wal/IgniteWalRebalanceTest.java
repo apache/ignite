@@ -48,6 +48,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setConsistentId(gridName);
+
         CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
@@ -87,9 +89,11 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test simple WAL historical rebalance.
+     *
      * @throws Exception if failed.
      */
-    public void test() throws Exception {
+    public void testSimple() throws Exception {
         IgniteEx ig0 = startGrid(0);
         IgniteEx ig1 = startGrid(1);
         final int entryCnt = 10_000;
@@ -112,12 +116,65 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         ig1 = startGrid(1);
 
+        awaitPartitionMapExchange();
+
         IgniteCache<Object, Object> cache1 = ig1.cache(CACHE_NAME);
 
-        cache1.rebalance().get(2, TimeUnit.MINUTES);
+        for (int k = 0; k < entryCnt; k++)
+            assertEquals(new IndexedObject(k + 1), cache1.get(k));
+    }
+
+    /**
+     * Test that cache entry removes are rebalanced properly using WAL.
+     *
+     * @throws Exception If failed.
+     */
+    public void testRebalanceRemoves() throws Exception {
+        IgniteEx ig0 = startGrid(0);
+        IgniteEx ig1 = startGrid(1);
+        final int entryCnt = 10_000;
+
+        ig0.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ig0.cache(CACHE_NAME);
 
         for (int k = 0; k < entryCnt; k++)
-            assertEquals(new IndexedObject(k + 1), cache.get(k));
+            cache.put(k, new IndexedObject(k));
+
+        forceCheckpoint();
+
+        stopGrid(1, false);
+
+        for (int k = 0; k < entryCnt; k++) {
+            if (k % 3 != 2)
+                cache.put(k, new IndexedObject(k + 1));
+            else // Spread removes across all partitions.
+                cache.remove(k);
+        }
+
+        forceCheckpoint();
+
+        ig1 = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        IgniteCache<Object, Object> cache1 = ig1.cache(CACHE_NAME);
+
+        for (int k = 0; k < entryCnt; k++) {
+            if (k % 3 != 2)
+                assertEquals(new IndexedObject(k + 1), cache1.get(k));
+            else
+                assertNull(cache1.get(k));
+        }
+
+        IgniteCache<Object, Object> cache0 = ig0.cache(CACHE_NAME);
+
+        for (int k = 0; k < entryCnt; k++) {
+            if (k % 3 != 2)
+                assertEquals(new IndexedObject(k + 1), cache0.get(k));
+            else
+                assertNull(cache0.get(k));
+        }
     }
 
     /**
