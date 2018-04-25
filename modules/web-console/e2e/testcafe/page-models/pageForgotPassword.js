@@ -15,24 +15,10 @@
  * limitations under the License.
  */
 
-import {dropTestDB, resolveUrl, insertTestUser} from 'envtools';
-import {createRegularUser} from '../../roles';
-import {userMenu} from '../../components/userMenu';
-import {pageSignin} from '../../page-models/pageSignin1';
+import {Selector} from 'testcafe';
+import {CustomFormField} from '../components/FormField';
 
-const user = createRegularUser();
-
-fixture('Logout')
-    .before(async() => {
-        await dropTestDB();
-        await insertTestUser();
-    })
-    .after(async() => {
-        await dropTestDB();
-    });
-
-test('Successful logout', async(t) => {
-    await t.useRole(user).navigateTo(resolveUrl('/settings/profile'));
-    await userMenu.clickOption('Log out');
-    await t.expect(pageSignin.selector.exists).ok('Goes to sign in page after logout');
-});
+export const pageForgotPassword = {
+    email: new CustomFormField({model: '$ctrl.data.email'}),
+    remindPasswordButton: Selector('button').withText('Send it to me')
+};
