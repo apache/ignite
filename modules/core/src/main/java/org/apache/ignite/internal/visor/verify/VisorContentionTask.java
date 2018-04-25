@@ -17,7 +17,6 @@
 package org.apache.ignite.internal.visor.verify;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +75,11 @@ public class VisorContentionTask extends VisorMultiNodeTask<VisorContentionTaskA
         /** {@inheritDoc} */
         @Override protected VisorContentionJobResult run(@Nullable VisorContentionTaskArg arg) throws IgniteException {
             try {
-                ContentionInfo info = new ContentionClosure(arg.minQueueSize(), arg.maxPrint()).call();
+                ContentionClosure clo = new ContentionClosure(arg.minQueueSize(), arg.maxPrint());
+
+                ignite.context().resource().injectGeneric(clo);
+
+                ContentionInfo info = clo.call();
 
                 return new VisorContentionJobResult(info);
             }

@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import java.util.regex.Pattern;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
@@ -17,7 +15,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
@@ -34,12 +31,10 @@ import org.apache.ignite.internal.processors.datastructures.DataStructuresProces
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicSequenceValue;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKey;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.resources.TaskSessionResource;
 
 /**
  * View cache closure.
@@ -62,9 +57,6 @@ public class ViewCacheClosure implements IgniteCallable<Collection<CacheInfo>> {
 
     @LoggerResource
     private IgniteLogger logger;
-
-    @TaskSessionResource
-    private ComputeTaskSession ses;
 
     /**
      * @param regex Regex name for stopping caches.
@@ -245,9 +237,6 @@ public class ViewCacheClosure implements IgniteCallable<Collection<CacheInfo>> {
             if (compiled.matcher(ci.getCacheName()).find())
                 cacheInfo.add(ci);
         }
-
-        logger.info("Caches cleaning utility is started from node: [" + ses.getTaskNodeId() +
-            ", cmd=" + cmd + ", resultSize=" + cacheInfo.size() + ']');
 
         if (cmd == CacheCommand.DESTROY) {
             ignite.destroyCaches(F.transform(cacheInfo, new IgniteClosure<CacheInfo, String>() {

@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.client.GridClientConfiguration;
-import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.commandline.cache.CacheArguments;
+import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 
 /**
  * Bean with all parsed and validated arguments.
@@ -81,11 +81,9 @@ public class Arguments {
      * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
      * @param cacheArgs --cache subcommand arguments.
      */
-    public Arguments(Command cmd, String host, String port, String user, String pwd,
-        String baselineAct, String baselineArgs,
-       long pingTimeout,
-                     long pingInterval, VisorTxTaskArg txArg, boolean force
-    , CacheArguments cacheArgs) {
+    public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
+        String baselineArgs, long pingTimeout, long pingInterval, VisorTxTaskArg txArg, boolean force,
+        CacheArguments cacheArgs) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;

@@ -6,9 +6,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalState;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
@@ -57,9 +57,9 @@ public class ContentionClosure implements IgniteCallable<ContentionInfo> {
             if (ci.getEntries().size() == maxPrint)
                 break;
 
-            // Show only primary dht txs.
-            if (tx.dht() && tx.local()) {
-                GridDhtTxLocal tx0 = (GridDhtTxLocal)tx;
+            // Show only primary txs.
+            if (tx.local()) {
+                IgniteTxLocalAdapter tx0 = (IgniteTxLocalAdapter)tx;
 
                 final IgniteTxLocalState state0 = tx0.txState();
 
@@ -136,7 +136,6 @@ public class ContentionClosure implements IgniteCallable<ContentionInfo> {
                     b.append("]]");
 
                     ci.getEntries().add(b.toString());
-
                 }
             }
         }

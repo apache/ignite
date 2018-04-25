@@ -55,7 +55,11 @@ public class VisorViewCacheTask extends VisorOneNodeTask<VisorViewCacheTaskArg, 
             String newSeqVal = arg.command() == CacheCommand.UPDATE_SEQ ? arg.newUpdateSequenceValue() : null;
 
             try {
-                return new VisorViewCacheTaskResult(new ViewCacheClosure(arg.regex(), arg.command(), newSeqVal).call());
+                ViewCacheClosure clo = new ViewCacheClosure(arg.regex(), arg.command(), newSeqVal);
+
+                ignite.context().resource().injectGeneric(clo);
+
+                return new VisorViewCacheTaskResult(clo.call());
             }
             catch (Exception e) {
                 throw new IgniteException(e);
