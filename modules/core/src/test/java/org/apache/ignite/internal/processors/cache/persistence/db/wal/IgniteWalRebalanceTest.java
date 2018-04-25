@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -118,10 +119,12 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Object, Object> cache1 = ig1.cache(CACHE_NAME);
+        for (Ignite ig : G.allGrids()) {
+            IgniteCache<Object, Object> cache1 = ig.cache(CACHE_NAME);
 
-        for (int k = 0; k < entryCnt; k++)
-            assertEquals(new IndexedObject(k + 1), cache1.get(k));
+            for (int k = 0; k < entryCnt; k++)
+                assertEquals(new IndexedObject(k + 1), cache1.get(k));
+        }
     }
 
     /**
@@ -158,22 +161,15 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        IgniteCache<Object, Object> cache1 = ig1.cache(CACHE_NAME);
+        for (Ignite ig : G.allGrids()) {
+            IgniteCache<Object, Object> cache1 = ig.cache(CACHE_NAME);
 
-        for (int k = 0; k < entryCnt; k++) {
-            if (k % 3 != 2)
-                assertEquals(new IndexedObject(k + 1), cache1.get(k));
-            else
-                assertNull(cache1.get(k));
-        }
-
-        IgniteCache<Object, Object> cache0 = ig0.cache(CACHE_NAME);
-
-        for (int k = 0; k < entryCnt; k++) {
-            if (k % 3 != 2)
-                assertEquals(new IndexedObject(k + 1), cache0.get(k));
-            else
-                assertNull(cache0.get(k));
+            for (int k = 0; k < entryCnt; k++) {
+                if (k % 3 != 2)
+                    assertEquals(new IndexedObject(k + 1), cache1.get(k));
+                else
+                    assertNull(cache1.get(k));
+            }
         }
     }
 
