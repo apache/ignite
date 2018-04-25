@@ -63,6 +63,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /** Size of Department test table. */
     private final static long DEP_CNT = 50L;
 
+    /** Number of possible age values (width of ages values range). */
+    private final static int AGES_CNT = 50;
+
     /** Name of client node. */
     private static final String CLIENT_NODE_NAME = "clientNode";
 
@@ -116,7 +119,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             String firstName = UUID.randomUUID().toString();
             String lastName = UUID.randomUUID().toString();
 
-            Integer age = rnd.nextInt(50) + 18;
+            Integer age = rnd.nextInt(AGES_CNT) + 18;
             Integer salary = rnd.nextInt(50) + 50;
 
             execute(insEmp.setArgs(id, depId, firstName, lastName, age, salary));
@@ -293,7 +296,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @return Result of query.
      */
     protected final Result executeFrom(SqlFieldsQuery qry, Ignite node) {
-        log.info("Executing query from " + node.name() + " : " + qry);
+        log.trace("Executing query from " + node.name() + " : " + qry);
 
         FieldsQueryCursor<List<?>> cursor = ((IgniteEx)node).context().query().querySqlFields(qry, false);
 
@@ -320,7 +323,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
         if (actual.size() != expected.size())
             throw new AssertionError(msg + " Collections contain different number of elements:" +
-                " [actual=" + actual + ", expected=" + expected + "].");
+                " [actual=" + actual + ", expected=" + expected + "].\n" +
+                "[uniqActual=]" + removeFromCopy(actual, expected) +
+                ", uniqExpected=" + removeFromCopy(expected, actual) + "]");
 
         if (!actual.containsAll(expected))
             throw new AssertionError(msg + " Collections differ:" +
@@ -615,7 +620,11 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     public void testGroupBy() {
         testAllNodes(node -> {
-            Result result = executeFrom("SELECT age, COUNT(*) FROM Employee GROUP BY age HAVING COUNT(*) > 8", node);
+            // Need to filter out only part of records (each one is a count of employees
+            // of particular age) in HAVING clause.
+            final int avgAge = (int) (EMP_CNT / AGES_CNT);
+
+            Result result = executeFrom("SELECT age, COUNT(*) FROM Employee GROUP BY age HAVING COUNT(*) > " + avgAge, node);
 
             List<List<Object>> all = select(node.cache(EMP_CACHE_NAME), null, "age");
 
@@ -630,7 +639,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             }
 
             List<List<Object>> expected = cntGroups.entrySet().stream()
-                .filter(ent -> ent.getKey() > 8)
+                .filter(ent -> ent.getValue() > avgAge)
                 .map(ent -> Arrays.<Object>asList(ent.getKey(), ent.getValue()))
                 .collect(Collectors.toList());
 
