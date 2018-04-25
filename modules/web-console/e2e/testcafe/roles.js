@@ -17,7 +17,7 @@
 
 const { Role, t } = require('testcafe');
 import { resolveUrl } from './envtools';
-import {pageSignin as page} from './page-models/pageSignin1';
+import {pageSignin as page} from './page-models/pageSignin';
 
 export const createRegularUser = () => {
     return new Role(resolveUrl('/signin'), async() => {

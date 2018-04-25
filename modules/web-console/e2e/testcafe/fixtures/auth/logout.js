@@ -18,7 +18,7 @@
 import {dropTestDB, resolveUrl, insertTestUser} from 'envtools';
 import {createRegularUser} from '../../roles';
 import {userMenu} from '../../components/userMenu';
-import {pageSignin} from '../../page-models/pageSignin1';
+import {pageSignin} from '../../page-models/pageSignin';
 
 const user = createRegularUser();
 
