@@ -236,11 +236,4 @@ namespace Apache.Ignite.Core.Transactions
         /// <returns>Value of removed metadata or default value for <c>V</c> type.</returns>
         TV RemoveMeta<TV>(string name);
     }
-
-    /// <summary>
-    /// Disposable readonly collection of <see cref="ITransaction"/>
-    /// </summary>
-    public interface ITransactionCollection : ICollection<ITransaction>, IDisposable
-    {
-    }
 }

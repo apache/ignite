@@ -555,6 +555,7 @@
     <Compile Include="Services\ServiceDeploymentException.cs" />
     <Compile Include="Services\ServiceInvocationException.cs" />
     <Compile Include="Transactions\ITransaction.cs" />
+    <Compile Include="Transactions\ITransactionCollection.cs" />
     <Compile Include="Transactions\ITransactionMetrics.cs" />
     <Compile Include="Transactions\ITransactions.cs" />
     <Compile Include="Transactions\Package-Info.cs" />
