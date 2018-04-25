@@ -452,7 +452,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
                 .setPartitionLossPolicy(READ_ONLY_SAFE)
         );
 
-        manualCacheRebalace(ignite, CACHE_NAME);
+        manualCacheRebalance(ignite, CACHE_NAME);
 
         int key = -1;
 
@@ -574,7 +574,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         IgniteEx primary = null;
         IgniteEx backup = null;
 
-        manualCacheRebalace(ig, CACHE_NAME);
+        manualCacheRebalance(ig, CACHE_NAME);
 
         for (int i = 0; i < NODE_COUNT; i++) {
             if (grid(i).localNode().equals(affNodes.get(0))) {
@@ -616,7 +616,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assertEquals(backup.localNode(), ig.affinity(CACHE_NAME).mapKeyToNode(key));
 
-        manualCacheRebalace(ig, CACHE_NAME);
+        manualCacheRebalance(ig, CACHE_NAME);
 
         awaitPartitionMapExchange();
 
@@ -660,7 +660,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         IgniteEx primary = null;
         IgniteEx backup = null;
 
-        manualCacheRebalace(ig, CACHE_NAME);
+        manualCacheRebalance(ig, CACHE_NAME);
 
         for (int i = 0; i < NODE_COUNT; i++) {
             if (grid(i).localNode().equals(affNodes.get(0))) {
@@ -724,7 +724,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         assertEquals(val2, primary.cache(CACHE_NAME).get(key));
         assertEquals(val2, backup.cache(CACHE_NAME).get(key));
 
-        manualCacheRebalace(ig, CACHE_NAME);
+        manualCacheRebalance(ig, CACHE_NAME);
 
         awaitPartitionMapExchange();
 

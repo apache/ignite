@@ -1909,7 +1909,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter set to {@code -1} value.
      * @throws IgniteCheckedException If fails.
      */
-    protected void manualCacheRebalace(Ignite ignite,
+    protected void manualCacheRebalance(Ignite ignite,
         final String cacheName) throws IgniteCheckedException {
         if (ignite.configuration().isClientMode())
             return;
@@ -1922,11 +1922,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
                 /** */
                 @IgniteInstanceResource
-                private Ignite g;
+                private Ignite ignite;
 
                 /** {@inheritDoc} */
                 @Override public void run() {
-                    IgniteCache<?, ?> cache = g.cache(cacheName);
+                    IgniteCache<?, ?> cache = ignite.cache(cacheName);
 
                     assertNotNull(cache);
 
@@ -1944,7 +1944,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     }
 
                     if (log.isInfoEnabled())
-                        log.info("Manual rebalance finished [node=" + g.name() + ", cache=" + cacheName + "]");
+                        log.info("Manual rebalance finished [node=" + ignite.name() + ", cache=" + cacheName + "]");
                 }
             });
 
