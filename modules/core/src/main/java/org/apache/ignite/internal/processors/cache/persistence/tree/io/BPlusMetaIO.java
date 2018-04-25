@@ -73,11 +73,19 @@ public class BPlusMetaIO extends PageIO {
     }
 
     /**
+     * @param var Input byte
+     * @return Unsigned int.
+    */
+    static int byteToUnsignedInt(byte var) {
+        return var & 255;
+    }
+
+    /**
      * @param pageAddr Page address.
      * @return Number of levels in this tree.
      */
     public int getLevelsCount(long pageAddr) {
-        return Byte.toUnsignedInt(PageUtils.getByte(pageAddr, LVLS_OFF));
+        return byteToUnsignedInt(PageUtils.getByte(pageAddr, LVLS_OFF));
     }
 
     /**

@@ -736,7 +736,8 @@ public class CommandHandler {
     private void usage(String desc, Command cmd, String... args) {
         log(desc);
         log("    control.sh [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] " +
-                " [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] " + cmd.text() + String.join("", args));
+                " [--ping-interval PING_INTERVAL] [--ping-timeout PING_TIMEOUT] " + cmd.text() + stringJoin(" ",
+                args));
         nl();
     }
 
