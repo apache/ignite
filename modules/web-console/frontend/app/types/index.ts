@@ -14,35 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.spi.discovery.zk.internal;
 
-/**
- * Zookeeper discovery statistics.
- */
-public class ZookeeperDiscoveryStatistics {
-    /** */
-    private int joinedNodesCnt;
+import {Ng1StateDeclaration} from '@uirouter/angularjs';
 
-    /** */
-    private int failedNodesCnt;
+interface ITfMetatagsConfig {
+    title: string
+}
 
-    /** */
-    public int joinedNodesCnt() {
-        return joinedNodesCnt;
-    }
-
-    /** */
-    public int failedNodesCnt() {
-        return failedNodesCnt;
-    }
-
-    /** */
-    public void onNodeJoined() {
-        joinedNodesCnt++;
-    }
-
-    /** */
-    public void onNodeFailed() {
-        failedNodesCnt++;
-    }
+export interface IIgniteNg1StateDeclaration extends Ng1StateDeclaration {
+    /**
+     * Whether to store state as last visited in local storage or not.
+     * true - will be saved
+     * false (default) - won't be saved
+     * @type {boolean}
+     */
+    unsaved?: boolean,
+    tfMetaTags: ITfMetatagsConfig
 }

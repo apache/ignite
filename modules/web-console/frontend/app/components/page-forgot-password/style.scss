@@ -14,35 +14,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.spi.discovery.zk.internal;
 
-/**
- * Zookeeper discovery statistics.
- */
-public class ZookeeperDiscoveryStatistics {
-    /** */
-    private int joinedNodesCnt;
+page-forgot-password {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
 
-    /** */
-    private int failedNodesCnt;
+    section {
+        margin-left: auto;
+        margin-right: auto;
+        width: 530px;
 
-    /** */
-    public int joinedNodesCnt() {
-        return joinedNodesCnt;
-    }
+        h3 {
+            font-size: 38px;
+            font-weight: 300;
+            margin: 30px 0 30px;
+        }
 
-    /** */
-    public int failedNodesCnt() {
-        return failedNodesCnt;
-    }
+        p {
+            margin-bottom: 20px;
+        }
 
-    /** */
-    public void onNodeJoined() {
-        joinedNodesCnt++;
-    }
+        .form-field {
+            margin: 10px 0;
+        }
 
-    /** */
-    public void onNodeFailed() {
-        failedNodesCnt++;
+        .form-footer {
+            padding: 15px 0;
+            text-align: right;
+            border-top: 1px solid #e5e5e5;
+            display: flex;
+            align-items: center;
+
+            .btn-ignite {
+                margin-left: auto;
+            }
+        }
     }
 }

@@ -14,35 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.spi.discovery.zk.internal;
 
 /**
- * Zookeeper discovery statistics.
+ * @param {import("@uirouter/angularjs").UIRouter} $uiRouter
  */
-public class ZookeeperDiscoveryStatistics {
-    /** */
-    private int joinedNodesCnt;
-
-    /** */
-    private int failedNodesCnt;
-
-    /** */
-    public int joinedNodesCnt() {
-        return joinedNodesCnt;
-    }
-
-    /** */
-    public int failedNodesCnt() {
-        return failedNodesCnt;
-    }
-
-    /** */
-    public void onNodeJoined() {
-        joinedNodesCnt++;
-    }
-
-    /** */
-    public void onNodeFailed() {
-        failedNodesCnt++;
-    }
+export function registerState($uiRouter) {
+    /** @type {import("app/types").IIgniteNg1StateDeclaration} */
+    const state = {
+        name: 'signup',
+        url: '/signup',
+        component: 'pageSignup',
+        unsaved: true,
+        tfMetaTags: {
+            title: 'Sign Up'
+        }
+    };
+    $uiRouter.stateRegistry.register(state);
 }
+
+registerState.$inject = ['$uiRouter'];

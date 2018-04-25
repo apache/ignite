@@ -136,13 +136,16 @@ import breadcrumbs from './components/breadcrumbs';
 import panelCollapsible from './components/panel-collapsible';
 import clusterSelector from './components/cluster-selector';
 import connectedClusters from './components/connected-clusters';
-import pageSignIn from './components/page-signin';
 import pageLanding from './components/page-landing';
 import passwordVisibility from './components/password-visibility';
+import progressLine from './components/progress-line';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
 import pagePasswordReset from './components/page-password-reset';
+import pageSignup from './components/page-signup';
+import pageSignin from './components/page-signin';
+import pageForgotPassword from './components/page-forgot-password';
 
 import igniteServices from './services';
 
@@ -233,14 +236,17 @@ angular.module('ignite-console', [
     igniteListOfRegisteredUsers.name,
     pageProfile.name,
     exposeInput.name,
-    pageSignIn.name,
     pageLanding.name,
     pagePasswordChanged.name,
     pagePasswordReset.name,
+    pageSignup.name,
+    pageSignin.name,
+    pageForgotPassword.name,
     uiAceJava.name,
     uiAceSpring.name,
     breadcrumbs.name,
     passwordVisibility.name,
+    progressLine.name,
     // Ignite modules.
     IgniteModules.name
 ])

@@ -15,14 +15,13 @@
  * limitations under the License.
  */
 
-export default class {
-    /** @type {import('./types').ISiginData} */
-    data = {
-        email: null,
-        password: null
-    };
-    /** @type {import('./types').ISigninFormController} */
+export default class PageForgotPassword {
+    /** @type {string} Optional email to populate form with */
+    email;
+    /** @type {import('./types').IForgotPasswordFormController} */
     form;
+    /** @type {import('./types').IForgotPasswordData} */
+    data = {email: null};
     /** @type {string} */
     serverError = null;
 
@@ -35,22 +34,24 @@ export default class {
         this.Auth = Auth;
         this.IgniteMessages = IgniteMessages;
     }
-
-    /** @param {import('./types').ISigninFormController} form */
+    /** @param {import('./types').IForgotPasswordFormController} form */
     canSubmitForm(form) {
         return form.$error.server ? true : !form.$invalid;
     }
-
     $postLink() {
-        this.form.password.$validators.server = () => !this.serverError;
+        this.form.email.$validators.server = () => !this.serverError;
     }
-
-    signin() {
-        return this.Auth.signin(this.data.email, this.data.password).catch((res) => {
+    /**
+     * @param {{email: ng.IChangesObject<string>}} changes
+     */
+    $onChanges(changes) {
+        if ('email' in changes) this.data.email = changes.email.currentValue;
+    }
+    remindPassword() {
+        return this.Auth.remindPassword(this.data.email).catch((res) => {
             this.IgniteMessages.showError(null, res.data);
             this.serverError = res.data;
             this.form.email.$validate();
-            this.form.password.$validate();
         });
     }
 }

@@ -14,35 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.spi.discovery.zk.internal;
 
-/**
- * Zookeeper discovery statistics.
- */
-public class ZookeeperDiscoveryStatistics {
-    /** */
-    private int joinedNodesCnt;
+import angular from 'angular';
+import component from './component';
 
-    /** */
-    private int failedNodesCnt;
-
-    /** */
-    public int joinedNodesCnt() {
-        return joinedNodesCnt;
-    }
-
-    /** */
-    public int failedNodesCnt() {
-        return failedNodesCnt;
-    }
-
-    /** */
-    public void onNodeJoined() {
-        joinedNodesCnt++;
-    }
-
-    /** */
-    public void onNodeFailed() {
-        failedNodesCnt++;
-    }
-}
+export default angular
+    .module('ignite-console.progress-line', [])
+    .component('progressLine', component);

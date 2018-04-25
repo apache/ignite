@@ -14,35 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.spi.discovery.zk.internal;
 
-/**
- * Zookeeper discovery statistics.
- */
-public class ZookeeperDiscoveryStatistics {
-    /** */
-    private int joinedNodesCnt;
+import './style.scss';
+import controller from './controller';
+import template from './template.pug';
 
-    /** */
-    private int failedNodesCnt;
-
-    /** */
-    public int joinedNodesCnt() {
-        return joinedNodesCnt;
+export default {
+    controller,
+    template,
+    bindings: {
+        value: '<?'
     }
-
-    /** */
-    public int failedNodesCnt() {
-        return failedNodesCnt;
-    }
-
-    /** */
-    public void onNodeJoined() {
-        joinedNodesCnt++;
-    }
-
-    /** */
-    public void onNodeFailed() {
-        failedNodesCnt++;
-    }
-}
+};

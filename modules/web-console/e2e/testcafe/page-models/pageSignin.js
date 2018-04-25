@@ -14,35 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.spi.discovery.zk.internal;
 
-/**
- * Zookeeper discovery statistics.
- */
-public class ZookeeperDiscoveryStatistics {
-    /** */
-    private int joinedNodesCnt;
+import {Selector, t} from 'testcafe';
+import {CustomFormField} from '../components/FormField';
 
-    /** */
-    private int failedNodesCnt;
-
-    /** */
-    public int joinedNodesCnt() {
-        return joinedNodesCnt;
+export const pageSignin = {
+    email: new CustomFormField({model: '$ctrl.data.email'}),
+    password: new CustomFormField({model: '$ctrl.data.password'}),
+    signinButton: Selector('button').withText('Sign In'),
+    selector: Selector('page-signin'),
+    async login(email, password) {
+        return await t
+            .typeText(this.email.control, email)
+            .typeText(this.password.control, password)
+            .click(this.signinButton);
     }
-
-    /** */
-    public int failedNodesCnt() {
-        return failedNodesCnt;
-    }
-
-    /** */
-    public void onNodeJoined() {
-        joinedNodesCnt++;
-    }
-
-    /** */
-    public void onNodeFailed() {
-        failedNodesCnt++;
-    }
-}
+};

@@ -14,35 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.spi.discovery.zk.internal;
 
-/**
- * Zookeeper discovery statistics.
- */
-public class ZookeeperDiscoveryStatistics {
-    /** */
-    private int joinedNodesCnt;
+export interface ISignupData {
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    phone?: string,
+    company: string,
+    country: string
+}
 
-    /** */
-    private int failedNodesCnt;
-
-    /** */
-    public int joinedNodesCnt() {
-        return joinedNodesCnt;
-    }
-
-    /** */
-    public int failedNodesCnt() {
-        return failedNodesCnt;
-    }
-
-    /** */
-    public void onNodeJoined() {
-        joinedNodesCnt++;
-    }
-
-    /** */
-    public void onNodeFailed() {
-        failedNodesCnt++;
-    }
+export interface ISignupFormController extends ng.IFormController {
+    email: ng.INgModelController,
+    password: ng.INgModelController,
+    firstName: ng.INgModelController,
+    lastName: ng.INgModelController,
+    phone: ng.INgModelController,
+    company: ng.INgModelController,
+    country: ng.INgModelController
 }
