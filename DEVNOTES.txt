@@ -84,7 +84,7 @@ Apache Ignite RPM Package Build Instructions
    Packages will be available in packaging/ directory
 
 
-Apache Ignite RPM Package Build Instructions
+Apache Ignite DEB Package Build Instructions
 ============================================
 1) Build Apache Ignite binary archive (instructions above)
 
