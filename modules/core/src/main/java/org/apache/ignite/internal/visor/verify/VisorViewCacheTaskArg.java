@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
@@ -89,5 +90,10 @@ public class VisorViewCacheTaskArg extends VisorDataTransferObject {
         regex = U.readString(in);
         cmd = CacheCommand.fromOrdinal(in.readByte());
         newUpdateSeqVal = U.readString(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorViewCacheTaskArg.class, this);
     }
 }

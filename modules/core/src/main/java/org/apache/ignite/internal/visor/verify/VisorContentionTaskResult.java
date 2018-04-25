@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
@@ -88,5 +89,10 @@ public class VisorContentionTaskResult extends VisorDataTransferObject {
     ) throws IOException, ClassNotFoundException {
         clusterInfos = U.readCollection(in);
         exceptions = U.readMap(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorContentionTaskResult.class, this);
     }
 }

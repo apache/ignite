@@ -16,36 +16,40 @@
 */
 package org.apache.ignite.internal.visor.verify;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  *
  */
-public class ValidateIndexesPartitionResult implements Serializable {
+public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Update counter. */
-    private final long updateCntr;
+    private long updateCntr;
 
     /** Size. */
-    private final long size;
+    private long size;
 
     /** Is primary. */
-    private final boolean isPrimary;
+    private boolean isPrimary;
 
     /** Consistent id. */
     @GridToStringInclude
-    private final Object consistentId;
+    private Object consistentId;
 
     /** Issues. */
     @GridToStringExclude
-    private final List<Issue> issues = new ArrayList<>(10);
+    private List<Issue> issues = new ArrayList<>(10);
 
     /**
      * @param updateCntr Update counter.
@@ -109,6 +113,24 @@ public class ValidateIndexesPartitionResult implements Serializable {
     }
 
     /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeLong(updateCntr);
+        out.writeLong(size);
+        out.writeBoolean(isPrimary);
+        out.writeObject(consistentId);
+        U.writeCollection(out, issues);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        updateCntr = in.readLong();
+        size = in.readLong();
+        isPrimary = in.readBoolean();
+        consistentId = in.readObject();
+        issues = U.readList(in);
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ValidateIndexesPartitionResult.class, this);
     }
@@ -116,19 +138,22 @@ public class ValidateIndexesPartitionResult implements Serializable {
     /**
      *
      */
-    public static class Issue {
+    public static class Issue extends VisorDataTransferObject {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Key. */
-        private final String key;
+        private String key;
 
         /** Cache name. */
-        private final String cacheName;
+        private String cacheName;
 
         /** Index name. */
-        private final String idxName;
+        private String idxName;
 
         /** T. */
         @GridToStringExclude
-        private final Throwable t;
+        private Throwable t;
 
         /**
          * @param key Key.
@@ -141,6 +166,22 @@ public class ValidateIndexesPartitionResult implements Serializable {
             this.cacheName = cacheName;
             this.idxName = idxName;
             this.t = t;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+            U.writeString(out, key);
+            U.writeString(out, cacheName);
+            U.writeString(out, idxName);
+            out.writeObject(t);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+            key = U.readString(in);
+            cacheName = U.readString(in);
+            idxName = U.readString(in);
+            t = (Throwable)in.readObject();
         }
 
         /** {@inheritDoc} */

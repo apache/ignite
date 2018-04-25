@@ -22,6 +22,7 @@ import java.io.ObjectOutput;
 import java.util.Collection;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
@@ -69,5 +70,10 @@ public class VisorContentionJobResult extends VisorDataTransferObject {
         info = new ContentionInfo();
         info.setNode((ClusterNode)node);
         info.setEntries(entries);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorContentionJobResult.class, this);
     }
 }

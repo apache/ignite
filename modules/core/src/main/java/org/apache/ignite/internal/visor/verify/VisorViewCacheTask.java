@@ -19,6 +19,7 @@ package org.apache.ignite.internal.visor.verify;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.processors.cache.verify.ViewCacheClosure;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorOneNodeTask;
 import org.jetbrains.annotations.Nullable;
@@ -64,6 +65,11 @@ public class VisorViewCacheTask extends VisorOneNodeTask<VisorViewCacheTaskArg, 
             catch (Exception e) {
                 throw new IgniteException(e);
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(VisorViewCacheJob.class, this);
         }
     }
 }

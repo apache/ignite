@@ -1,6 +1,8 @@
 package org.apache.ignite.internal.processors.cache.verify;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -10,13 +12,15 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.lang.IgniteClosure;
 
 /**
  *
  */
-public class CacheInfo implements Serializable {
+public class CacheInfo extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     private String seqName;
@@ -307,5 +311,60 @@ public class CacheInfo implements Serializable {
                 System.out.println(b.toString());
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeString(out, seqName);
+        out.writeLong(seqVal);
+        U.writeString(out, cacheName);
+        out.writeInt(cacheId);
+        U.writeString(out, grpName);
+        out.writeInt(grpId);
+        out.writeInt(partitions);
+        out.writeInt(mapped);
+        U.writeMap(out, primary);
+        U.writeMap(out, backups);
+        U.writeCollection(out, assignment);
+        U.writeCollection(out, idealAssignment);
+        out.writeObject(topologyVersion);
+        U.writeMap(out, primaryMap);
+        U.writeMap(out, backupMap);
+        U.writeEnum(out, mode);
+        out.writeInt(backupsCnt);
+        U.writeString(out, affinityClsName);
+        U.writeString(out, zone);
+        U.writeString(out, cell);
+        U.writeString(out, dc);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        seqName = U.readString(in);
+        seqVal = in.readLong();
+        cacheName = U.readString(in);
+        cacheId = in.readInt();
+        grpName = U.readString(in);
+        grpId = in.readInt();
+        partitions = in.readInt();
+        mapped = in.readInt();
+        primary = U.readMap(in);
+        backups = U.readMap(in);
+        assignment = U.readList(in);
+        idealAssignment = U.readList(in);
+        topologyVersion = (AffinityTopologyVersion)in.readObject();
+        primaryMap = U.readMap(in);
+        backupMap = U.readMap(in);
+        mode = CacheMode.fromOrdinal(in.readByte());
+        backupsCnt = in.readInt();
+        affinityClsName = U.readString(in);
+        zone = U.readString(in);
+        cell = U.readString(in);
+        dc = U.readString(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheInfo.class, this);
     }
 }
