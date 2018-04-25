@@ -964,8 +964,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * for rebalancing cache will lead to flaky test cases.
      *
      * @param ignite Ignite server instance for getting {@code compute} facade over all cluster nodes.
-     * @param cacheName Cache name for manual rebalancing on cluster. Usually used when used when
-     * {@link CacheConfiguration#getRebalanceDelay()} configuration parameter set to {@code -1} value.
+     * @param cacheName Cache name for manual rebalancing on cluster. Usually used when
+     *  {@link CacheConfiguration#getRebalanceDelay()} configuration parameter set to {@code -1}.
      * @throws IgniteCheckedException If fails.
      */
     protected void manualCacheRebalance(Ignite ignite,
