@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.GridDebug;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests leaks.
+ * Tests leaks on node restart with enabled persistence.
  */
 public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
     /** Heap dump file name. */
@@ -40,11 +40,6 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
 
     /** Allow 5Mb leaks on node restart. */
     private static final int ALLOW_LEAK_ON_RESTART_IN_MB = 1;
-
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 1 * 3600 * 1000;
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -68,6 +63,15 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        cleanPersistenceDir();
+
+        super.afterTestsStopped();
+    }
+
     /**
      * @throws Exception On failed.
      */
@@ -85,11 +89,12 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
 
         GridDebug.dumpHeap(HEAP_DUMP_FILE_NAME, true);
 
-        final long size0 = new File(HEAP_DUMP_FILE_NAME).length();
+        File dumpFile = new File(HEAP_DUMP_FILE_NAME);
+
+        final long size0 = dumpFile.length();
 
         // Restarts
         for (int i = 0; i < RESTARTS; ++i) {
-//        while (true) {
             startGrids(NODES);
 
             Thread.sleep(500);
@@ -101,14 +106,13 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
 
         GridDebug.dumpHeap(HEAP_DUMP_FILE_NAME, true);
 
-        final long size1 = new File(HEAP_DUMP_FILE_NAME).length();
-
-        final float leakSize = (float)(size1 - size0) / 1024 / 1024 / NODES / RESTARTS;
+        final float leakSize = (float)(dumpFile.length() - size0) / 1024 / 1024 / NODES / RESTARTS;
 
         assertTrue("Possible leaks detected. The " + leakSize + "M leaks per node restart after " + RESTARTS
-                + " restarts. See the '" + new File(HEAP_DUMP_FILE_NAME).getAbsolutePath() + "'",
+                + " restarts. See the '" + dumpFile.getAbsolutePath() + "'",
             leakSize < ALLOW_LEAK_ON_RESTART_IN_MB);
 
-        log.info("Detected leak: " + leakSize + "M");
+        // Remove dump if successful.
+        dumpFile.delete();
    }
 }
