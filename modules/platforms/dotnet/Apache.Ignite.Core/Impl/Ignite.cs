@@ -523,7 +523,7 @@ namespace Apache.Ignite.Core.Impl
         /// </returns>
         public static ICache<TK, TV> GetCache<TK, TV>(IPlatformTargetInternal nativeCache, bool keepBinary = false)
         {
-            return new CacheImpl<TK, TV>(nativeCache, false, keepBinary, false, false);
+            return new CacheImpl<TK, TV>(nativeCache, false, keepBinary, false, false, false);
         }
 
         /** <inheritdoc /> */
