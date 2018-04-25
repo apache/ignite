@@ -19,7 +19,7 @@ package org.apache.ignite.internal.visor.verify;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -65,7 +65,7 @@ public class VisorContentionJobResult extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         Object node = in.readObject();
-        Collection<String> entries = U.readCollection(in);
+        List<String> entries = U.readList(in);
 
         info = new ContentionInfo();
         info.setNode((ClusterNode)node);

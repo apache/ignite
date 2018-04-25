@@ -1,7 +1,7 @@
 package org.apache.ignite.internal.processors.cache.verify;
 
 import java.io.Serializable;
-import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.cluster.ClusterNode;
 
 /**
@@ -14,7 +14,7 @@ public class ContentionInfo implements Serializable {
     private ClusterNode node;
 
     /** */
-    private Collection<String> entries;
+    private List<String> entries;
 
     public ClusterNode getNode() {
         return node;
@@ -24,11 +24,11 @@ public class ContentionInfo implements Serializable {
         this.node = node;
     }
 
-    public Collection<String> getEntries() {
+    public List<String> getEntries() {
         return entries;
     }
 
-    public void setEntries(Collection<String> entries) {
+    public void setEntries(List<String> entries) {
         this.entries = entries;
     }
 

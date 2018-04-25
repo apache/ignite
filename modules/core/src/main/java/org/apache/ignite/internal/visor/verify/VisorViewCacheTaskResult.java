@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,12 +34,12 @@ public class VisorViewCacheTaskResult extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cache infos. */
-    private Collection<CacheInfo> cacheInfos;
+    private List<CacheInfo> cacheInfos;
 
     /**
      * @param cacheInfos Cache infos.
      */
-    public VisorViewCacheTaskResult(Collection<CacheInfo> cacheInfos) {
+    public VisorViewCacheTaskResult(List<CacheInfo> cacheInfos) {
         this.cacheInfos = cacheInfos;
     }
 
@@ -62,7 +63,7 @@ public class VisorViewCacheTaskResult extends VisorDataTransferObject {
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-        cacheInfos = U.readCollection(in);
+        cacheInfos = U.readList(in);
     }
 
     /** {@inheritDoc} */

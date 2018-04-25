@@ -39,7 +39,7 @@ import org.apache.ignite.resources.LoggerResource;
 /**
  * View cache closure.
  */
-public class ViewCacheClosure implements IgniteCallable<Collection<CacheInfo>> {
+public class ViewCacheClosure implements IgniteCallable<List<CacheInfo>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -69,7 +69,7 @@ public class ViewCacheClosure implements IgniteCallable<Collection<CacheInfo>> {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<CacheInfo> call() throws Exception {
+    @Override public List<CacheInfo> call() throws Exception {
         Pattern compiled = Pattern.compile(regex);
 
         List<CacheInfo> cacheInfo = new ArrayList<>();

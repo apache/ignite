@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -36,7 +37,7 @@ public class VisorContentionTaskResult extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** Cluster infos. */
-    private Collection<VisorContentionJobResult> clusterInfos;
+    private List<VisorContentionJobResult> clusterInfos;
 
     /** Exceptions. */
     private Map<UUID, Exception> exceptions;
@@ -45,7 +46,7 @@ public class VisorContentionTaskResult extends VisorDataTransferObject {
      * @param clusterInfos Cluster infos.
      * @param exceptions Exceptions.
      */
-    public VisorContentionTaskResult(Collection<VisorContentionJobResult> clusterInfos,
+    public VisorContentionTaskResult(List<VisorContentionJobResult> clusterInfos,
         Map<UUID, Exception> exceptions) {
         this.clusterInfos = clusterInfos;
         this.exceptions = exceptions;
@@ -87,7 +88,7 @@ public class VisorContentionTaskResult extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in
     ) throws IOException, ClassNotFoundException {
-        clusterInfos = U.readCollection(in);
+        clusterInfos = U.readList(in);
         exceptions = U.readMap(in);
     }
 
