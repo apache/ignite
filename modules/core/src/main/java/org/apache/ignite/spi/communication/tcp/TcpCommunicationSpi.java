@@ -557,9 +557,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     log.debug("Received handshake message [locNodeId=" + locNode.id() + ", rmtNodeId=" + sndId +
                         ", msg=" + msg0 + ']');
 
-                if (isNetCompressionEnabled() && isSesCompressed(locNode, rmtNode))
-                    ses.setCompressed(true);
-
                 if (usePairedConnections(rmtNode)) {
                     final GridNioRecoveryDescriptor recoveryDesc = inRecoveryDescriptor(rmtNode, connKey);
 
@@ -852,7 +849,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 try {
                     if (sndRes)
-                        nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recovery.received()));
+                        nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recovery.received()), new IgniteInClosure<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> future) {
+                                if (isNetCompressionEnabled() && isSesCompressed(getLocalNode(), node))
+                                    ses.setCompressed(true);
+                            }
+                        });
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send message: " + e, e);
@@ -3638,18 +3640,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         try {
             BlockingSslHandler sslHnd = null;
-            BlockingCompressionHandler compressHnd = null;
 
             ByteBuffer buf;
-
-            boolean isCompressed = compressionMeta != null;
-
-            if (isCompressed) {
-                compressHnd = new BlockingCompressionHandler(compressionMeta.compressionEngine(), directBuf,
-                    ByteOrder.nativeOrder(), log, null);
-
-                assert compressHnd.getApplicationBuffer().flip().remaining() == 0;
-            }
 
             if (isSslEnabled()) {
                 assert sslMeta != null;
@@ -3766,7 +3758,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (log.isDebugEnabled())
                     log.debug("Waiting for handshake [rmtNode=" + rmtNodeId + ']');
 
-                if (isSslEnabled() || isCompressed) {
+                if (isSslEnabled()) {
+                    assert sslHnd != null;
+
                     buf = ByteBuffer.allocate(1000);
                     buf.order(ByteOrder.nativeOrder());
 
@@ -3782,23 +3776,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         buf.flip();
 
-                        ByteBuffer decode0 = null;
-
-                        if (isSslEnabled()) {
-                            assert sslHnd != null;
-
-                            decode0 = sslHnd.decode(buf);
-                        }
-
-                        if (isCompressed) {
-                            assert compressHnd != null;
-
-                            compressHnd.getApplicationBuffer().clear();
-
-                            decode0 = compressHnd.decompress(decode0 == null ? buf : decode0);
-                        }
-
-                        assert decode0 != null;
+                        ByteBuffer decode0 = sslHnd.decode(buf);
 
                         i += decode0.remaining();
 
@@ -3814,25 +3792,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (decode.limit() > RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE) {
                         decode.position(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);
 
-                        if (isCompressed)
-                            compressionMeta.decodedBuffer(decode);
-                        else if (isSslEnabled())
-                            sslMeta.decodedBuffer(decode);
+                        sslMeta.decodedBuffer(decode);
                     }
 
-                    if (isSslEnabled()) {
-                        ByteBuffer inBuf = sslHnd.inputBuffer();
+                    ByteBuffer inBuf = sslHnd.inputBuffer();
 
-                        if (inBuf.position() > 0)
-                            sslMeta.encodedBuffer(inBuf);
-                    }
-
-                    if (isCompressed) {
-                        ByteBuffer inBuf = compressHnd.getInputBuffer();
-
-                        if (inBuf.position() > 0)
-                            compressionMeta.encodedBuffer(inBuf);
-                    }
+                    if (inBuf.position() > 0)
+                        sslMeta.encodedBuffer(inBuf);
                 }
                 else {
                     buf = ByteBuffer.allocate(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);
