@@ -25,19 +25,10 @@ namespace Apache.Ignite.Core.Impl.Transactions
     /// <summary>
     /// Internal transaction read only disposable collection.
     /// </summary>
-    internal class TransactionCollectionImpl : ITransactionCollection
+    internal sealed class TransactionCollectionImpl : ITransactionCollection
     {
         /** */
         private readonly ICollection<ITransaction> _col;
-        
-        /** <inheritdoc /> */
-        public void Dispose()
-        {
-            foreach (ITransaction tx in _col)
-            {
-                tx.Dispose();
-            }
-        }
         
         ///<summary>
         /// Initialize <see cref="TransactionCollectionImpl"/> by wrapping.
@@ -107,6 +98,27 @@ namespace Apache.Ignite.Core.Impl.Transactions
         private static Exception GetReadOnlyException()
         {
             return new NotSupportedException("Collection is read-only.");
+        }
+        
+        /** <inheritdoc /> */
+        public void Dispose()
+        {
+            Exception last = null;
+            
+            foreach (var tx in _col)
+            {
+                try
+                {
+                    tx.Dispose();
+                }
+                catch (Exception e)
+                {
+                    last = last ?? e;
+                }
+            }
+
+            if (last != null)
+                throw last;
         }
     }
 }

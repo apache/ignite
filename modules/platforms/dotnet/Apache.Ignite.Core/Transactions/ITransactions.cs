@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Transactions
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
