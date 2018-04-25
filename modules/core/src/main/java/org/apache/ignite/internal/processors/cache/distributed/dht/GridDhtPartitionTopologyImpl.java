@@ -241,11 +241,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         try {
             AffinityTopologyVersion exchTopVer = exchFut.initialVersion();
 
-            // Update is correct if topology version is newer or in case of newer discovery caches.
-            boolean isCorrectUpdate = exchTopVer.compareTo(readyTopVer) > 0
-                    || (exchTopVer.compareTo(readyTopVer) == 0 && this.discoCache != null && discoCache.version().compareTo(this.discoCache.version()) > 0);
-
-            assert isCorrectUpdate : "Invalid topology version [grp=" + grp.cacheOrGroupName() +
+            assert exchTopVer.compareTo(readyTopVer) > 0 : "Invalid topology version [grp=" + grp.cacheOrGroupName() +
                 ", topVer=" + readyTopVer +
                 ", exchTopVer=" + exchTopVer +
                 ", discoCacheVer=" + (this.discoCache != null ? this.discoCache.version() : "None") +
@@ -489,6 +485,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             ", evtsVer=" + evts.topologyVersion() + ']';
 
                         lastTopChangeVer = readyTopVer = evts.topologyVersion();
+
+                        discoCache = evts.discoveryCache();
                     }
 
                     if (log.isDebugEnabled()) {
@@ -1821,7 +1819,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExchangeDone(GridDhtPartitionsExchangeFuture fut, AffinityAssignment assignment, boolean updateRebalanceVer) {
+    @Override public void onExchangeDone(@Nullable GridDhtPartitionsExchangeFuture fut,
+                                         AffinityAssignment assignment,
+                                         boolean updateRebalanceVer) {
         lock.writeLock().lock();
 
         try {
@@ -1829,6 +1829,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 assignment.topologyVersion().equals(((GridDhtPartitionsExchangeFuture)topReadyFut).context().events().topologyVersion());
 
             readyTopVer = lastTopChangeVer = assignment.topologyVersion();
+
+            if (fut != null)
+                discoCache = fut.events().discoveryCache();
 
             if (!grp.isReplicated()) {
                 boolean rebuildDiff = fut == null || fut.localJoinExchange() || fut.serverNodeDiscoveryEvent() ||
