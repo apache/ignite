@@ -1190,6 +1190,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
+        checkTopologiesConsistency();
+
         checkCaches0();
     }
 
@@ -1203,6 +1205,42 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
         for (Ignite node : nodes)
             checkNodeCaches(node);
+    }
+
+    /**
+     * Checks that after exchange all nodes have consistent state about partition owners.
+     *
+     * @throws Exception If failed.
+     */
+    private void checkTopologiesConsistency() throws Exception {
+        List<Ignite> nodes = G.allGrids();
+
+        IgniteEx crdNode = null;
+
+        for (Ignite node : nodes) {
+            ClusterNode locNode = node.cluster().localNode();
+
+            if (crdNode == null || locNode.order() < crdNode.localNode().order())
+                crdNode = (IgniteEx) node;
+        }
+
+        for (Ignite node : nodes) {
+            IgniteEx node0 = (IgniteEx) node;
+
+            if (node0.localNode().id().equals(crdNode.localNode().id()))
+                continue;
+
+            for (IgniteInternalCache cache : node0.context().cache().caches()) {
+                int partitions = cache.context().affinity().partitions();
+                for (int p = 0; p < partitions; p++) {
+                    List<ClusterNode> crdOwners = crdNode.cachex(cache.name()).cache().context().topology().owners(p);
+
+                    List<ClusterNode> owners = cache.context().topology().owners(p);
+
+                    assertEquals(crdOwners, owners);
+                }
+            }
+        }
     }
 
     /**
