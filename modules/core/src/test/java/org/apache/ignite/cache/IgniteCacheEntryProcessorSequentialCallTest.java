@@ -205,11 +205,11 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
      * optimistic conflict exception.
      */
     public void testTxInvokeSequentialOptimisticConflict() throws Exception {
-        TestKey key = new TestKey(1L);
+        final TestKey key = new TestKey(1L);
 
-        IgniteCache<TestKey, TestValue> cache = ignite(0).cache("cache");
+        final IgniteCache<TestKey, TestValue> cache = ignite(0).cache("cache");
 
-        CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch latch = new CountDownLatch(1);
 
         cache.put(key, new TestValue("1"));
 
@@ -226,7 +226,8 @@ public class IgniteCacheEntryProcessorSequentialCallTest extends GridCommonAbstr
             }
         }, 1);
 
-        Transaction tx = ignite(0).transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE);
+        final Transaction tx = ignite(0).transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation
+                .SERIALIZABLE);
 
         cache.invoke(key, new NotNullCacheEntryProcessor());
 
