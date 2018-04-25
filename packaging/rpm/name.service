@@ -11,7 +11,7 @@ ExecStartPre=-/usr/bin/mkdir /var/run/#name#
 ExecStartPre=-/usr/bin/chown #user#:#user# /var/run/#name#
 ExecStartPre=-/usr/bin/env bash /usr/share/#name#/bin/service.sh set-firewall
 ExecStart=/usr/share/#name#/bin/service.sh start %i
-PIDFile=/var/run/#name#/#name#.%i.pid
+PIDFile=/var/run/#name#/%i.pid
 
 [Install]
 WantedBy=multi-user.target
