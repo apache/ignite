@@ -1948,12 +1948,10 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                 }
             });
 
-        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return fut.isDone();
             }
-        }, 5_000);
-
-        assertTrue(wait);
+        }, 5_000));
     }
 }
