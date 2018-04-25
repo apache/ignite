@@ -15,24 +15,16 @@
  * limitations under the License.
  */
 
-import {dropTestDB, resolveUrl, insertTestUser} from 'envtools';
-import {createRegularUser} from '../../roles';
-import {userMenu} from '../../components/userMenu';
-import {pageSignin} from '../../page-models/pageSignin1';
+import template from './template.pug';
+import controller from './controller';
 
-const user = createRegularUser();
+import './style.scss';
 
-fixture('Logout')
-    .before(async() => {
-        await dropTestDB();
-        await insertTestUser();
-    })
-    .after(async() => {
-        await dropTestDB();
-    });
-
-test('Successful logout', async(t) => {
-    await t.useRole(user).navigateTo(resolveUrl('/settings/profile'));
-    await userMenu.clickOption('Log out');
-    await t.expect(pageSignin.selector.exists).ok('Goes to sign in page after logout');
-});
+/** @type {ng.IComponentOptions} */
+export default {
+    controller,
+    template,
+    bindings: {
+        email: '<?'
+    }
+};

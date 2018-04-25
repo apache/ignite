@@ -15,24 +15,19 @@
  * limitations under the License.
  */
 
-import {dropTestDB, resolveUrl, insertTestUser} from 'envtools';
-import {createRegularUser} from '../../roles';
-import {userMenu} from '../../components/userMenu';
-import {pageSignin} from '../../page-models/pageSignin1';
+import {Ng1StateDeclaration} from '@uirouter/angularjs';
 
-const user = createRegularUser();
+interface ITfMetatagsConfig {
+    title: string
+}
 
-fixture('Logout')
-    .before(async() => {
-        await dropTestDB();
-        await insertTestUser();
-    })
-    .after(async() => {
-        await dropTestDB();
-    });
-
-test('Successful logout', async(t) => {
-    await t.useRole(user).navigateTo(resolveUrl('/settings/profile'));
-    await userMenu.clickOption('Log out');
-    await t.expect(pageSignin.selector.exists).ok('Goes to sign in page after logout');
-});
+export interface IIgniteNg1StateDeclaration extends Ng1StateDeclaration {
+    /**
+     * Whether to store state as last visited in local storage or not.
+     * true - will be saved
+     * false (default) - won't be saved
+     * @type {boolean}
+     */
+    unsaved?: boolean,
+    tfMetaTags: ITfMetatagsConfig
+}

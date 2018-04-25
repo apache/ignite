@@ -16,41 +16,13 @@
  */
 
 import angular from 'angular';
-
-import template from './template.pug';
-import controller from './controller';
-import './style.scss';
+import component from './component';
+import {registerState} from './run';
 
 export default angular
-    .module('ignite-console.sign-in', [
+    .module('ignite-console.page-signin', [
         'ui.router',
         'ignite-console.user'
     ])
-    .component('pageSignIn', {
-        controller,
-        template
-    })
-    .config(['$stateProvider', function($stateProvider) {
-        // set up the states
-        $stateProvider
-        .state('signin', {
-            url: '/signin',
-            template: '<page-sign-in></page-sign-in>',
-            redirectTo: (trans) => {
-                return trans.injector().get('User').read()
-                    .then(() => {
-                        try {
-                            const {name, params} = JSON.parse(localStorage.getItem('lastStateChangeSuccess'));
-
-                            const restored = trans.router.stateService.target(name, params);
-
-                            return restored.valid() ? restored : 'default-state';
-                        } catch (ignored) {
-                            return 'default-state';
-                        }
-                    })
-                    .catch(() => true);
-            },
-            unsaved: true
-        });
-    }]);
+    .component('pageSignin', component)
+    .run(registerState);
