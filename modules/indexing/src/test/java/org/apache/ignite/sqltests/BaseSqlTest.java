@@ -58,30 +58,33 @@ import org.jetbrains.annotations.Nullable;
  */
 public class BaseSqlTest extends GridCommonAbstractTest {
     /** Size of Employee test table. */
-    private final static long EMP_CNT = 1000L;
+    public final static long EMP_CNT = 1000L;
 
     /** Size of Department test table. */
-    private final static long DEP_CNT = 50L;
+    public final static long DEP_CNT = 50L;
 
     /** Number of possible age values (width of ages values range). */
-    private final static int AGES_CNT = 50;
+    public final static int AGES_CNT = 50;
 
     /** Name of client node. */
-    private static final String CLIENT_NODE_NAME = "clientNode";
+    public static final String CLIENT_NODE_NAME = "clientNode";
 
-    /** Name of the test table cache. */
-    private static final String EMP_CACHE_NAME = "SQL_PUBLIC_EMPLOYEE";
+    /** Name of the Employee table cache. */
+    public static final String EMP_CACHE_NAME = "SQL_PUBLIC_EMPLOYEE";
+
+    /** Name of the Department table cache. */
+    public static final String DEP_CACHE_NAME = "SQL_PUBLIC_DEPARTMENT";
 
     /** Client node instance. */
-    private static IgniteEx client;
+    protected static IgniteEx client;
 
     /** Node name of second server. */
-    private final String SRV2_NAME = "server2";
+    public final String SRV2_NAME = "server2";
 
     /** Node name of first server. */
-    private final String SRV1_NAME = "server1";
+    public final String SRV1_NAME = "server1";
 
-    protected static final String[] ALL_EMP_FIELDS = new String[] {"ID", "DEPID", "FIRSTNAME", "LASTNAME", "AGE", "SALARY"};
+    public static final String[] ALL_EMP_FIELDS = new String[] {"ID", "DEPID", "FIRSTNAME", "LASTNAME", "AGE", "SALARY"};
 
     @InjectTestSuite.Parameter
     private Configuration cfg = new Configuration();
@@ -296,7 +299,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @return Result of query.
      */
     protected final Result executeFrom(SqlFieldsQuery qry, Ignite node) {
-        log.trace("Executing query from " + node.name() + " : " + qry);
+        //log.trace("Executing query from " + node.name() + " : " + qry);
 
         FieldsQueryCursor<List<?>> cursor = ((IgniteEx)node).context().query().querySqlFields(qry, false);
 
@@ -646,6 +649,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             assertContainsEq(result.values(), expected);
         });
     }
+
+
 
     public void testCfg() {
         // false by default, injected as true

@@ -17,10 +17,39 @@
 
 package org.apache.ignite.sqltests;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class ReplicatedSqlTest extends BaseSqlTest {
     @Override protected void setupData() {
         createTables("template=replicated");
 
         fillCommonData();
+    }
+
+    public void testCrossJoin() {
+        testAllNodes(node -> {
+            Result act1 = executeFrom("SELECT e.id, d.id FROM Employee e, Department d", node);
+
+            Result act2 = executeFrom("SELECT e.id, d.id FROM Employee e CROSS JOIN Department d", node);
+
+            assertContainsEq(act1.values(), act2.values());
+
+            List<List<Object>> empIds = select(node.cache(EMP_CACHE_NAME), null, "id");
+            List<List<Object>> depIds = select(node.cache(DEP_CACHE_NAME), null, "id");
+
+            List<List<Object>> expected = empIds.stream()
+                .map(list -> list.get(0))
+                .flatMap(empId -> depIds.stream()
+                    .map(list -> list.get(0))
+                    .map(depId -> Arrays.asList(empId, depId)))
+                .collect(Collectors.toList());
+
+            assertContainsEq(act1.values(), expected);
+
+            assertEquals("Result size of the cross join is unexpected",
+                DEP_CNT * EMP_CNT, act1.values().size());
+        });
     }
 }
