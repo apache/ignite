@@ -3389,6 +3389,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * Authorize creating cache.
+     * @param cfg Cache configuration.
+     * @param secCtx Optional security context.
      */
     private void authorizeCacheCreate(CacheConfiguration cfg, SecurityContext secCtx) {
         ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, secCtx);
@@ -3400,6 +3402,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * Authorize dynamic cache management for this node.
+     * @param req start/stop cache request.
      */
     private void authorizeCacheChange(DynamicCacheChangeRequest req) {
         // Null security context means authorize this node.
