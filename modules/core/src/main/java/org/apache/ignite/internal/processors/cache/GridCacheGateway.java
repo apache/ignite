@@ -311,6 +311,8 @@ public class GridCacheGateway<K, V> {
             try {
                 if (rwLock.writeLock().tryLock(200, TimeUnit.MILLISECONDS))
                     break;
+                else if (state.get() == State.STOPPED)
+                    return;
                 else
                     U.sleep(200);
             }

@@ -706,6 +706,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Colocated cache.
      */
     public GridDhtColocatedCache<K, V> colocated() {
+        ensureCacheNotStopped();
+
         return (GridDhtColocatedCache<K, V>)cache;
     }
 
@@ -877,10 +879,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return DHT cache.
      */
     public GridDhtCacheAdapter dhtCache() {
-        GridCacheAdapter<K, V> cache = this.cache;
-
-        if (cache == null)
-            throw new IllegalStateException("Cache stopped: " + cacheName);
+        ensureCacheNotStopped();
 
         return isNear() ? ((GridNearCacheAdapter<K, V>)cache).dht() : dht();
     }
@@ -889,10 +888,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Topology version future.
      */
     public GridDhtTopologyFuture topologyVersionFuture() {
-        GridCacheAdapter<K, V> cache = this.cache;
-
-        if (cache == null)
-            throw new IllegalStateException("Cache stopped: " + cacheName);
+        ensureCacheNotStopped();
 
         assert cache.isNear() || cache.isDht() || cache.isColocated() || cache.isDhtAtomic() : cache;
 
@@ -1084,6 +1080,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Eviction manager.
      */
     public CacheEvictionManager evicts() {
+        ensureCacheNotStopped();
+
         return evictMgr;
     }
 
@@ -1807,7 +1805,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache key object.
      */
     public KeyCacheObject toCacheKeyObject(Object obj) {
-        assert validObjectForCache(obj) : obj;
+        ensureCacheNotStopped();
 
         return cacheObjects().toCacheKeyObject(cacheObjCtx, this, obj, true);
     }
@@ -2307,6 +2305,16 @@ public class GridCacheContext<K, V> implements Externalizable {
         finally {
             stash.remove();
         }
+    }
+
+    /**
+     * Check that cache is not stopped.
+     *
+     * @throws IllegalStateException If cache is stopped.
+     */
+    private void ensureCacheNotStopped() throws IllegalStateException {
+        if (cache == null)
+            throw new IllegalStateException("Cache stopped: " + cacheName);
     }
 
     /** {@inheritDoc} */

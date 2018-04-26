@@ -29,4 +29,9 @@ public class IgniteStartCacheInTransactionAtomicSelfTest extends IgniteStartCach
     @Override public CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testPutDestroyCacheGroup() throws Exception {
+        super.testPutDestroyCacheGroup();
+    }
 }

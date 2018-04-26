@@ -17,14 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -46,6 +51,9 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /** */
     private static final String EXPECTED_MSG = "Cannot start/stop cache within lock or transaction.";
 
+    /** Cache group. */
+    private String grpName;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
@@ -56,6 +64,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
 
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setBackups(1);
+        ccfg.setGroupName(grpName);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -73,10 +82,12 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    public CacheConfiguration cacheConfiguration(String cacheName) {
-        CacheConfiguration cfg = new CacheConfiguration();
+    private <K, V> CacheConfiguration<K, V> cacheConfiguration(String cacheName) {
+        CacheConfiguration<K, V> cfg = new CacheConfiguration<>();
 
         cfg.setName(cacheName);
+        cfg.setGroupName(grpName);
+        cfg.setAtomicityMode(atomicityMode());
 
         return cfg;
     }
@@ -259,5 +270,61 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         }, IgniteException.class, EXPECTED_MSG);
 
         lock.unlock();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutDestroyCacheGroup() throws Exception {
+        final Ignite ignite = grid(0);
+
+        grpName = "testGroup";
+
+        IgniteCache additionalCache = ignite.createCache(cacheConfiguration("cache1"));
+
+        try {
+            IgniteCache<Integer, Boolean> cache = ignite.getOrCreateCache(cacheConfiguration("cache2"));
+
+            AtomicInteger cntr = new AtomicInteger();
+
+            GridTestUtils.runMultiThreadedAsync(() -> {
+                try {
+                    int key;
+
+                    while ((key = cntr.getAndIncrement()) < 2_000) {
+                        if (key == 1_000)
+                            cache.destroy();
+
+                        cache.put(key, true);
+                    }
+                }
+                catch (Exception e) {
+                    boolean rightErrMsg = false;
+
+                    for (Throwable t : X.getThrowableList(e)) {
+                        if (t.getClass() == IgniteCheckedException.class ||
+                            t.getClass() == CacheStoppedException.class ||
+                            t.getClass() == IllegalStateException.class) {
+                            String errMsg = t.getMessage().toLowerCase();
+
+                            if (errMsg.contains("cache") && errMsg.contains("stopped")) {
+                                rightErrMsg = true;
+
+                                break;
+                            }
+                        }
+                    }
+
+                    assertTrue(X.getFullStackTrace(e), rightErrMsg);
+                }
+
+                return null;
+            }, 6, "put-thread").get();
+        }
+        finally {
+            grpName = null;
+
+            additionalCache.destroy();
+        }
     }
 }
