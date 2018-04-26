@@ -497,6 +497,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     sndId = ((HandshakeMessage)msg).nodeId();
                     connKey = new ConnectionKey(sndId, msg0.connectionIndex(), msg0.connectCount());
+
+                    if (msg0.compressionFlag())
+                        ses.setCompressed(true);
                 }
 
                 if (log.isDebugEnabled())
@@ -556,6 +559,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (log.isDebugEnabled())
                     log.debug("Received handshake message [locNodeId=" + locNode.id() + ", rmtNodeId=" + sndId +
                         ", msg=" + msg0 + ']');
+
+                if (isNetCompressionEnabled() && isSesCompressed(locNode, rmtNode))
+                    ses.setCompressed(true);
 
                 if (usePairedConnections(rmtNode)) {
                     final GridNioRecoveryDescriptor recoveryDesc = inRecoveryDescriptor(rmtNode, connKey);
@@ -720,6 +726,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         if (log.isDebugEnabled())
                             log.debug("Close incoming connection, failed to enter gateway.");
 
+                        if (msg instanceof HandshakeMessage && ((HandshakeMessage)msg).compressionFlag())
+                            ses.setCompressed(true);
+
                         ses.send(new RecoveryLastReceivedMessage(NODE_STOPPING)).listen(new CI1<IgniteInternalFuture<?>>() {
                             @Override public void apply(IgniteInternalFuture<?> fut) {
                                 ses.close();
@@ -849,12 +858,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 try {
                     if (sndRes)
-                        nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recovery.received()), new IgniteInClosure<IgniteInternalFuture<?>>() {
-                            @Override public void apply(IgniteInternalFuture<?> future) {
-                                if (isNetCompressionEnabled() && isSesCompressed(getLocalNode(), node))
-                                    ses.setCompressed(true);
-                            }
-                        });
+                        nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recovery.received()));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send message: " + e, e);
@@ -3640,8 +3644,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         try {
             BlockingSslHandler sslHnd = null;
+            BlockingCompressionHandler compressHnd = null;
 
             ByteBuffer buf;
+
+            boolean isCompressed = compressionMeta != null;
+
+            if (isCompressed) {
+                compressHnd = new BlockingCompressionHandler(compressionMeta.compressionEngine(), directBuf,
+                    ByteOrder.nativeOrder(), log, null);
+
+                assert compressHnd.getApplicationBuffer().flip().remaining() == 0;
+            }
 
             if (isSslEnabled()) {
                 assert sslMeta != null;
@@ -3706,20 +3720,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (recovery != null) {
                 HandshakeMessage msg;
 
-                int msgSize = HandshakeMessage.MESSAGE_FULL_SIZE;
+                int msgSize = HandshakeMessage.MESSAGE_FULL_SIZE + 1 /** Compression flag.*/;
 
                 if (handshakeConnIdx != null) {
                     msg = new HandshakeMessage2(locNode.id(),
                         recovery.incrementConnectCount(),
                         recovery.received(),
-                        handshakeConnIdx);
+                        handshakeConnIdx,
+                        isCompressed);
 
                     msgSize += 4;
                 }
                 else {
                     msg = new HandshakeMessage(locNode.id(),
                         recovery.incrementConnectCount(),
-                        recovery.received());
+                        recovery.received(),
+                        isCompressed);
                 }
 
                 if (log.isDebugEnabled())
@@ -3758,9 +3774,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (log.isDebugEnabled())
                     log.debug("Waiting for handshake [rmtNode=" + rmtNodeId + ']');
 
-                if (isSslEnabled()) {
-                    assert sslHnd != null;
-
+                if (isSslEnabled() || isCompressed) {
                     buf = ByteBuffer.allocate(1000);
                     buf.order(ByteOrder.nativeOrder());
 
@@ -3776,7 +3790,23 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         buf.flip();
 
-                        ByteBuffer decode0 = sslHnd.decode(buf);
+                        ByteBuffer decode0 = null;
+
+                        if (isSslEnabled()) {
+                            assert sslHnd != null;
+
+                            decode0 = sslHnd.decode(buf);
+                        }
+
+                        if (isCompressed) {
+                            assert compressHnd != null;
+
+                            compressHnd.getApplicationBuffer().clear();
+
+                            decode0 = compressHnd.decompress(decode0 == null ? buf : decode0);
+                        }
+
+                        assert decode0 != null;
 
                         i += decode0.remaining();
 
@@ -3792,13 +3822,25 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (decode.limit() > RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE) {
                         decode.position(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);
 
-                        sslMeta.decodedBuffer(decode);
+                        if (isCompressed)
+                            compressionMeta.decodedBuffer(decode);
+                        else if (isSslEnabled())
+                            sslMeta.decodedBuffer(decode);
                     }
 
-                    ByteBuffer inBuf = sslHnd.inputBuffer();
+                    if (isSslEnabled()) {
+                        ByteBuffer inBuf = sslHnd.inputBuffer();
 
-                    if (inBuf.position() > 0)
-                        sslMeta.encodedBuffer(inBuf);
+                        if (inBuf.position() > 0)
+                            sslMeta.encodedBuffer(inBuf);
+                    }
+
+                    if (isCompressed) {
+                        ByteBuffer inBuf = compressHnd.getInputBuffer();
+
+                        if (inBuf.position() > 0)
+                            compressionMeta.encodedBuffer(inBuf);
+                    }
                 }
                 else {
                     buf = ByteBuffer.allocate(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);
