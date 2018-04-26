@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains various logistic regressions.
+ * ML logistic regression examples.
  */
-package org.apache.ignite.ml.regressions.logistic.multinomial;
+package org.apache.ignite.examples.ml.regression.logistic;

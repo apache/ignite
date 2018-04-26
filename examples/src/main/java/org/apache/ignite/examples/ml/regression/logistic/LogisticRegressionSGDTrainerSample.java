@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.regression;
+package org.apache.ignite.examples.ml.regression.logistic;
 
 import java.util.Arrays;
 import java.util.UUID;
@@ -31,28 +31,25 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionModel;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run linear regression model over distributed matrix.
+ * Run logistic regression model over distributed cache.
  *
- * @see LinearRegressionSGDTrainer
+ * @see LogisticRegressionSGDTrainer
  */
-public class LogRegSample {
+public class LogisticRegressionSGDTrainerSample {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
         System.out.println();
-        System.out.println(">>> Linear regression model over sparse distributed matrix API usage example started.");
+        System.out.println(">>> Logistic regression model over partitioned dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
-            // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread
-            // because we create ignite cache internally.
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                LogRegSample.class.getSimpleName(), () -> {
+                LogisticRegressionSGDTrainerSample.class.getSimpleName(), () -> {
 
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 

@@ -38,7 +38,7 @@ import java.util.Arrays;
 import java.util.UUID;
 
 /**
- * Run linear regression model over distributed matrix.
+ * Run linear regression model over cached dataset.
  *
  * @see LinearRegressionLSQRTrainer
  * @see NormalizationTrainer
@@ -105,15 +105,13 @@ public class LinearRegressionLSQRTrainerWithNormalizationExample {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
         System.out.println();
-        System.out.println(">>> Linear regression model over sparse distributed matrix API usage example started.");
+        System.out.println(">>> Linear regression model over cached dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
-            // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread
-            // because we create ignite cache internally.
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                SparseDistributedMatrixExample.class.getSimpleName(), () -> {
+                LinearRegressionLSQRTrainerWithNormalizationExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
                 System.out.println(">>> Create new normalization trainer object.");

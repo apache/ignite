@@ -133,6 +133,7 @@ public class LogisticRegressionModel implements Model<Vector, Double>, Exportabl
     /** {@inheritDoc} */
     @Override public Double apply(Vector input) {
         final double res = sigmoid(input.dot(weights) + intercept);
+
         if (isKeepingRawLabels)
             return res;
         else
