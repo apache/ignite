@@ -186,11 +186,11 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
 
         assertNull(ignite.set(name, null));
 
-        IgniteSet<Integer> set = ignite.set(name, config(false));
+        IgniteSet<Integer> set = ignite.set(name, config(true));
 
         assertNotNull(set);
 
-        assertSame(set, ignite.set(name, config(false)));
+        assertSame(set, ignite.set(name, config(true)));
 
         assertSame(set, ignite.set(name, null));
 
