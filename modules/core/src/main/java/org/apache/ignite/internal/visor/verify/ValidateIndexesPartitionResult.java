@@ -53,6 +53,13 @@ public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
     private List<IndexValidationIssue> issues = new ArrayList<>(10);
 
     /**
+     *
+     */
+    public ValidateIndexesPartitionResult() {
+        // Empty constructor required for Externalizable.
+    }
+
+    /**
      * @param updateCntr Update counter.
      * @param size Size.
      * @param isPrimary Is primary.
