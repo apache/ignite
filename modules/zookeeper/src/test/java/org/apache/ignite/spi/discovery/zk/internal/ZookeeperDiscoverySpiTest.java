@@ -2076,7 +2076,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRandomTopologyChanges_RestartZk() throws Exception {
+    public void _testRandomTopologyChanges_RestartZk() throws Exception {
         randomTopologyChanges(true, false);
     }
 
