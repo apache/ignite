@@ -134,14 +134,14 @@ public class IgnitePutAllBenchmark extends IgniteCacheAbstractBenchmark<Integer,
 
         IgniteCache<Integer, Object> cache = cacheForOperation();
 
-        BenchmarkUtils.println("Vals size = " + String.valueOf(vals.size()));
-
-        for(Integer i : vals.keySet())
-            BenchmarkUtils.println(String.format("%d : %d", i, vals.get(i)));
-
-        BenchmarkUtils.println("**************************************************");
-
-        Thread.sleep(500L);
+//        BenchmarkUtils.println("Vals size = " + String.valueOf(vals.size()));
+//
+//        for(Integer i : vals.keySet())
+//            BenchmarkUtils.println(String.format("%d : %d", i, vals.get(i)));
+//
+//        BenchmarkUtils.println("**************************************************");
+//
+//        Thread.sleep(500L);
 
 
         cache.putAll(vals);
