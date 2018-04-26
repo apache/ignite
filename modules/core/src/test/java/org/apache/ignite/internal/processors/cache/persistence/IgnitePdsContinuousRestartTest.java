@@ -250,11 +250,11 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
                 while (!done.get()) {
                     Map<Integer, Person> map = new TreeMap<>();
 
-                        for (int i = 0; i < batch; i++) {
-                            int key = rnd.nextInt(ENTRIES_COUNT);
+                    for (int i = 0; i < batch; i++) {
+                        int key = rnd.nextInt(ENTRIES_COUNT);
 
                         map.put(key, new Person("fn" + key, "ln" + key));
-                        }
+                    }
 
                     cache.putAll(map);
                 }
@@ -283,7 +283,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
         busyFut.get();
     }
-
 
     /**
      *
