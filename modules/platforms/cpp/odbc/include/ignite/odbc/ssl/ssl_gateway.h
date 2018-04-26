@@ -59,10 +59,7 @@ namespace ignite
                 void *fpOPENSSL_config;
                 void *fpX509_free;
                 void *fpBIO_new_ssl_connect;
-                void *fpBIO_write;
-                void *fpBIO_read;
                 void *fpBIO_free_all;
-                void *fpBIO_test_flags;
                 void *fpBIO_ctrl;
                 void *fpERR_get_error;
                 void *fpERR_error_string_n;

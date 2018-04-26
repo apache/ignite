@@ -294,24 +294,6 @@ namespace ignite
                 return fp(ctx);
             }
 
-            inline int BIO_write(BIO *b, const void *data, int len)
-            {
-                typedef int(FuncType)(BIO*, const void*, int);
-
-                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpBIO_write);
-
-                return fp(b, data, len);
-            }
-
-            inline int BIO_read(BIO *b, void *data, int len)
-            {
-                typedef int(FuncType)(BIO*, const void*, int);
-
-                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpBIO_read);
-
-                return fp(b, data, len);
-            }
-
             inline void BIO_free_all(BIO *a)
             {
                 typedef void(FuncType)(BIO*);
@@ -319,20 +301,6 @@ namespace ignite
                 FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpBIO_free_all);
 
                 fp(a);
-            }
-
-            inline int BIO_test_flags(const BIO *b, int flags)
-            {
-                typedef int(FuncType)(const BIO*, int);
-
-                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpBIO_test_flags);
-
-                return fp(b, flags);
-            }
-
-            inline int BIO_should_retry_(const BIO *b)
-            {
-                return ssl::BIO_test_flags(b, BIO_FLAGS_SHOULD_RETRY);
             }
 
             inline long BIO_ctrl(BIO *bp, int cmd, long larg, void *parg)
@@ -349,16 +317,6 @@ namespace ignite
                 return ssl::BIO_ctrl(bp, BIO_C_GET_FD, 0, reinterpret_cast<void*>(fd));
             }
 
-            inline long BIO_do_handshake_(BIO *bp)
-            {
-                return ssl::BIO_ctrl(bp, BIO_C_DO_STATE_MACHINE, 0, NULL);
-            }
-
-            inline long BIO_do_connect_(BIO *bp)
-            {
-                return ssl::BIO_do_handshake_(bp);
-            }
-
             inline long BIO_get_ssl_(BIO *bp, SSL** ssl)
             {
                 return ssl::BIO_ctrl(bp, BIO_C_GET_SSL, 0, reinterpret_cast<void*>(ssl));
@@ -372,11 +330,6 @@ namespace ignite
             inline long BIO_set_conn_hostname_(BIO *bp, const char *name)
             {
                 return ssl::BIO_ctrl(bp, BIO_C_SET_CONNECT, 0, const_cast<char*>(name));
-            }
-
-            inline long BIO_pending_(BIO *bp)
-            {
-                return ssl::BIO_ctrl(bp, BIO_CTRL_PENDING, 0, NULL);
             }
 
             inline unsigned long ERR_get_error_()

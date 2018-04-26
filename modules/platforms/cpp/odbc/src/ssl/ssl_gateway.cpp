@@ -160,10 +160,7 @@ namespace ignite
                 functions.fpOPENSSL_config = LoadSslMethod("OPENSSL_config");
                 functions.fpX509_free = LoadSslMethod("X509_free");
 
-                functions.fpBIO_write = LoadSslMethod("BIO_write");
-                functions.fpBIO_read = LoadSslMethod("BIO_read");
                 functions.fpBIO_free_all = LoadSslMethod("BIO_free_all");
-                functions.fpBIO_test_flags = LoadSslMethod("BIO_test_flags");
                 functions.fpBIO_ctrl = LoadSslMethod("BIO_ctrl");
 
                 functions.fpERR_get_error = LoadSslMethod("ERR_get_error");
@@ -197,10 +194,7 @@ namespace ignite
                     functions.fpBIO_new_ssl_connect != 0 &&
                     functions.fpOPENSSL_config != 0 &&
                     functions.fpX509_free != 0 &&
-                    functions.fpBIO_write != 0 &&
-                    functions.fpBIO_read != 0 &&
                     functions.fpBIO_free_all != 0 &&
-                    functions.fpBIO_test_flags != 0 &&
                     functions.fpBIO_ctrl != 0 &&
                     functions.fpERR_get_error != 0 &&
                     functions.fpERR_error_string_n != 0;
