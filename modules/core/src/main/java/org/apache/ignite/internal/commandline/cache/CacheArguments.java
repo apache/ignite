@@ -18,6 +18,8 @@ package org.apache.ignite.internal.commandline.cache;
 
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -28,9 +30,6 @@ public class CacheArguments {
 
     /** Caches. */
     private Set<String> caches;
-
-    /** Group id. */
-    private int grpId;
 
     /** Partition id. */
     private int partId;
@@ -47,14 +46,28 @@ public class CacheArguments {
     /** Max print. */
     private int maxPrint;
 
-    /** New update sequence value. */
-    private String newUpdateSeqVal;
+    /** Cache view command. */
+    private @Nullable VisorViewCacheCmd cacheCmd;
 
     /**
      * @return Command.
      */
     public CacheCommand command() {
         return cmd;
+    }
+
+    /**
+     * @return Cache view command.
+     */
+    @Nullable public VisorViewCacheCmd cacheCommand() {
+        return cacheCmd;
+    }
+
+    /**
+     * @param cmd Cache view command.
+     */
+    public void cacheCommand(VisorViewCacheCmd cmd) {
+        this.cacheCmd = cmd;
     }
 
     /**
@@ -76,20 +89,6 @@ public class CacheArguments {
      */
     public void caches(Set<String> caches) {
         this.caches = caches;
-    }
-
-    /**
-     * @return Group id.
-     */
-    public int groupId() {
-        return grpId;
-    }
-
-    /**
-     * @param grpId New group id.
-     */
-    public void groupId(int grpId) {
-        this.grpId = grpId;
     }
 
     /**
@@ -160,19 +159,5 @@ public class CacheArguments {
      */
     public void maxPrint(int maxPrint) {
         this.maxPrint = maxPrint;
-    }
-
-    /**
-     * @return New update sequence value.
-     */
-    public String newUpdateSequenceValue() {
-        return newUpdateSeqVal;
-    }
-
-    /**
-     * @param newUpdateSeqVal New new update sequence value.
-     */
-    public void newUpdateSequenceValue(String newUpdateSeqVal) {
-        this.newUpdateSeqVal = newUpdateSeqVal;
     }
 }

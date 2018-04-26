@@ -49,7 +49,6 @@ import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.tx.VisorTxInfo;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
@@ -609,37 +608,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testCacheIdleAnalyze() throws Exception {
-        Ignite ignite = startGrids(2);
-
-        ignite.cluster().active(true);
-
-        IgniteCache<Object, Object> cache = ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setBackups(1)
-            .setName("cacheIA"));
-
-        for (int i = 0; i < 100; i++)
-            cache.put(i, i);
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_analyze", String.valueOf(CU.cacheId("cacheIA")), "1"));
-
-        assertTrue(testOut.toString().contains("no coflicts have been found in partition"));
-
-        HashSet<Integer> clearKeys = new HashSet<>(Arrays.asList(1, 2, 3, 4, 5, 6));
-
-        ((IgniteEx)ignite).context().cache().cache("cacheIA").clearLocallyAll(clearKeys, true, true, true);
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "idle_analyze", String.valueOf(CU.cacheId("cacheIA")), "1"));
-
-        assertTrue(testOut.toString().contains("conflict keys"));
-    }
-
-    /**
      *
      */
     public void testCacheContention() throws Exception {
@@ -696,7 +664,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             injectTestSystemOut();
 
-            assertEquals(EXIT_CODE_OK, execute("--cache", "cont", "5"));
+            assertEquals(EXIT_CODE_OK, execute("--cache", "contention", "5"));
 
             l2.countDown();
 
@@ -730,44 +698,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "seq", "testSeq.*"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", "testSeq.*", "seq"));
 
         assertTrue(testOut.toString().contains("testSeq"));
         assertTrue(testOut.toString().contains("testSeq2"));
-    }
-
-    /**
-     *
-     */
-    public void testCacheUpdateAndDestroySequence() throws Exception {
-        Ignite ignite = startGrid();
-
-        ignite.cluster().active(true);
-
-        Ignite client = startGrid("client");
-
-        IgniteAtomicSequence seq1 = client.atomicSequence("testSeq", 1, true);
-        seq1.get();
-
-        IgniteAtomicSequence seq2 = client.atomicSequence("testSeq2", 10, true);
-        seq2.get();
-
-        injectTestSystemOut();
-
-        long newVal = 5000000000000L;
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "update_seq", ".*", String.valueOf(newVal)));
-
-        stopGrid("client");
-        client = startGrid("client");
-
-        seq2 = client.atomicSequence("testSeq2", 10, false);
-        assertEquals(newVal, seq2.get());
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "destroy_seq", ".*"));
-
-        assertNull(client.atomicSequence("testSeq", 1, false));
-        assertNull(client.atomicSequence("testSeq2", 10, false));
     }
 
     /**
@@ -798,7 +732,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "groups", ".*"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*", "groups"));
 
         assertTrue(testOut.toString().contains("G100"));
     }
@@ -821,36 +755,12 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         injectTestSystemOut();
 
-        assertEquals(EXIT_CODE_OK, execute("--cache", "affinity", ".*"));
+        assertEquals(EXIT_CODE_OK, execute("--cache", "list", ".*"));
 
         assertTrue(testOut.toString().contains("cacheName=cacheAf"));
         assertTrue(testOut.toString().contains("prim=32"));
         assertTrue(testOut.toString().contains("mapped=32"));
         assertTrue(testOut.toString().contains("affCls=RendezvousAffinityFunction"));
-    }
-
-    /**
-     *
-     */
-    public void testCacheDestroy() throws Exception {
-        Ignite ignite = startGrid();
-
-        ignite.cluster().active(true);
-
-        IgniteCache<Object, Object> cache1 = ignite.createCache(new CacheConfiguration<>()
-            .setAffinity(new RendezvousAffinityFunction(false, 32))
-            .setBackups(1)
-            .setName("cacheDe"));
-
-        for (int i = 0; i < 100; i++)
-            cache1.put(i, i);
-
-        injectTestSystemOut();
-
-        assertEquals(EXIT_CODE_OK, execute("--cache", "destroy", "cacheDe"));
-
-        assertTrue(testOut.toString().contains("Destroyed caches count: 1"));
-        assertNull(ignite.cache("cacheDe"));
     }
 
     /**

@@ -14,6 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 package org.apache.ignite.internal.commandline.cache;
 
 import org.jetbrains.annotations.Nullable;
@@ -31,39 +32,21 @@ public enum CacheCommand {
      * Checks consistency of primary and backup partitions assuming no concurrent updates are happening in the cluster.
      */
     IDLE_VERIFY("idle_verify"),
-    IDLE_ANALYZE("idle_analyze"),
 
     /**
-     * Get ignite sequence info.
+     * Prints info regarding caches, groups or sequences.
      */
-    SEQ("seq"),
+    LIST("list"),
 
     /**
-     * Update ignite sequence.
-     */
-    UPDATE_SEQ("update_seq"),
-    DESTROY_SEQ("destroy_seq"),
-
-    /**
-     * Print info regarding cache groups.
-     */
-    GROUPS("groups"),
-
-    /**
-     * Print info regarding cache affinity.
-     */
-    AFFINITY("affinity"),
-    DESTROY("destroy"),
-
-    /**
-     * Validate indexes attempting to read each indexed entry.
+     * Validates indexes attempting to read each indexed entry.
      */
     VALIDATE_INDEXES("validate_indexes"),
 
     /**
-     * Print info about contented keys.
+     * Prints info about contended keys (the keys concurrently locked from multiple transactions).
      */
-    CONT("cont");
+    CONTENTION("contention");
 
     /** Enumerated values. */
     private static final CacheCommand[] VALS = values();

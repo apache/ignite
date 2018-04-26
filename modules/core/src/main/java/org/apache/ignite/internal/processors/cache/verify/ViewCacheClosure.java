@@ -18,41 +18,29 @@
 package org.apache.ignite.internal.processors.cache.verify;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.commandline.cache.CacheCommand;
-import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.datastructures.AtomicDataStructureValue;
 import org.apache.ignite.internal.processors.datastructures.DataStructureType;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicSequenceValue;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKey;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
 
 /**
  * View cache closure.
@@ -61,29 +49,22 @@ public class ViewCacheClosure implements IgniteCallable<List<CacheInfo>> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private final String[] args;
-
     /** Regex. */
     private String regex;
 
     /** {@code true} to skip cache destroying. */
-    private CacheCommand cmd;
+    private VisorViewCacheCmd cmd;
 
     @IgniteInstanceResource
     private Ignite ignite;
-
-    @LoggerResource
-    private IgniteLogger logger;
 
     /**
      * @param regex Regex name for stopping caches.
      * @param cmd Command.
      */
-    public ViewCacheClosure(String regex, CacheCommand cmd, String... args) {
+    public ViewCacheClosure(String regex, VisorViewCacheCmd cmd) {
         this.regex = regex;
         this.cmd = cmd;
-        this.args = args;
     }
 
     /** {@inheritDoc} */
@@ -94,179 +75,80 @@ public class ViewCacheClosure implements IgniteCallable<List<CacheInfo>> {
 
         IgniteKernal k = (IgniteKernal)ignite;
 
-        if (cmd == CacheCommand.SEQ) {
-            collectSequences(k.context(), compiled, cacheInfo);
+        if (cmd == null)
+            cmd = VisorViewCacheCmd.CACHES;
 
-            return cacheInfo;
-        }
+        switch (cmd) {
+            case SEQ:
+                collectSequences(k.context(), compiled, cacheInfo);
 
-        if (cmd == CacheCommand.UPDATE_SEQ) {
-            if (args == null || args.length == 0) {
-                logger.error("Illegal new sequence value: " + Arrays.toString(args));
+                return cacheInfo;
 
-                return new ArrayList<>(0);
-            }
+            case GROUPS:
+                Collection<CacheGroupContext> contexts = k.context().cache().cacheGroups();
 
-            collectSequences(k.context(), compiled, cacheInfo);
+                for (CacheGroupContext context : contexts) {
+                    if (!compiled.matcher(context.cacheOrGroupName()).find())
+                        continue;
 
-            long newVal = Long.parseLong(args[0]);
+                    CacheInfo ci = new CacheInfo();
+                    ci.setGrpName(context.cacheOrGroupName());
+                    ci.setGrpId(context.groupId());
+                    ci.setCachesCnt(context.caches().size());
+                    ci.setPartitions(context.config().getAffinity().partitions());
+                    ci.setBackupsCnt(context.config().getBackups());
+                    ci.setAffinityClsName(context.config().getAffinity().getClass().getSimpleName());
+                    ci.setMode(context.config().getCacheMode());
+                    ci.setMapped(mapped(context.caches().iterator().next().name()));
 
-            if (newVal < 0) {
-                logger.error("Only positive values are supported");
-
-                return new ArrayList<>(0);
-            }
-
-            for (CacheInfo info : cacheInfo) {
-                final String name = info.getSeqName();
-
-                logger.info("Start processing sequence " + name);
-
-                final IgniteAtomicSequence seq = ignite.atomicSequence(name, 0, false);
-                long v1 = seq.get();
-
-                if (v1 >= newVal) {
-                    logger.info("Skipping sequence because new value is smaller than current: [seqName=" + name +
-                        ", curVal=" + v1 + ", newVal=" + newVal + ']');
-
-                    continue;
+                    cacheInfo.add(ci);
                 }
 
-                long l0 = -1;
-                long l = 0;
+                return cacheInfo;
 
-                try {
-                    final long l1 = 500_000_000_000L;
+            default:
+                Map<String, DynamicCacheDescriptor> descMap = k.context().cache().cacheDescriptors();
 
-                    if (v1 < -l1) {
-                        // Hack for prom.
-                        seq.addAndGet(l1);
+                for (Map.Entry<String, DynamicCacheDescriptor> entry : descMap.entrySet()) {
 
-                        v1 = v1 + l1;
+                    DynamicCacheDescriptor desc = entry.getValue();
 
-                        l0 = seq.addAndGet(0 - v1);
+                    if (!compiled.matcher(desc.cacheName()).find())
+                        continue;
 
-                        l = seq.addAndGet(Math.max(0, newVal - seq.batchSize()));
-                    }
-                    else if (v1 < 0) {
-                        // Adjust to 0 to avoid overflow.
-                        l0 = seq.addAndGet(0 - v1);
+                    CacheInfo ci = new CacheInfo();
 
-                        l = seq.addAndGet(Math.max(0, newVal - seq.batchSize()));
-                    }
-                    else
-                        l = seq.addAndGet(Math.max(0, newVal - v1 - seq.batchSize()));
+                    ci.setCacheName(desc.cacheName());
+                    ci.setCacheId(desc.cacheId());
+                    ci.setGrpName(desc.groupDescriptor().groupName());
+                    ci.setGrpId(desc.groupDescriptor().groupId());
+                    ci.setPartitions(desc.cacheConfiguration().getAffinity().partitions());
+                    ci.setBackupsCnt(desc.cacheConfiguration().getBackups());
+                    ci.setAffinityClsName(desc.cacheConfiguration().getAffinity().getClass().getSimpleName());
+                    ci.setMode(desc.cacheConfiguration().getCacheMode());
+                    ci.setMapped(mapped(desc.cacheName()));
 
-                    info.setSeqVal(l);
-                }
-                catch (Throwable e) {
-                    throw new IgniteException("Cannot handle sequence: " + name + ", curVal=" + v1 + ", newVal=" + newVal +
-                        ", batchSize=" + seq.batchSize() + ", l0=" + l0, e);
+                    cacheInfo.add(ci);
                 }
 
-                logger.info("[seqName=" + name + ", curVal=" + l + ']');
-            }
-
-            return cacheInfo;
+                return cacheInfo;
         }
+    }
 
-        if (cmd == CacheCommand.DESTROY_SEQ) {
-            collectSequences(k.context(), compiled, cacheInfo);
+    /**
+     * @param cacheName Cache name.
+     */
+    private int mapped(String cacheName) {
+        int mapped = 0;
 
-            for (CacheInfo info : cacheInfo) {
-                final String name = info.getSeqName();
+        ClusterGroup srvs = ignite.cluster().forServers();
 
-                final IgniteAtomicSequence seq = ignite.atomicSequence(name, 0, false);
+        Collection<ClusterNode> nodes = srvs.forDataNodes(cacheName).nodes();
 
-                seq.close();
+        for (ClusterNode node : nodes)
+            mapped += ignite.affinity(cacheName).primaryPartitions(node).length;
 
-                logger.info("Destroying sequence: [seqName=" + name + ']');
-            }
-
-            return cacheInfo;
-        }
-
-        if (cmd == CacheCommand.GROUPS) {
-            Collection<CacheGroupContext> contexts = k.context().cache().cacheGroups();
-
-            for (CacheGroupContext context : contexts) {
-                CacheInfo ci = new CacheInfo();
-                ci.setGrpName(context.name());
-                ci.setGrpId(context.groupId());
-
-                cacheInfo.add(ci);
-            }
-
-            return cacheInfo;
-        }
-
-        Map<String, DynamicCacheDescriptor> descMap = k.context().cache().cacheDescriptors();
-
-        for (Map.Entry<String, DynamicCacheDescriptor> entry : descMap.entrySet()) {
-            CacheInfo ci = new CacheInfo();
-            ci.setCacheName(entry.getValue().cacheName());
-            ci.setCacheId(entry.getValue().cacheId());
-            ci.setGrpName(entry.getValue().groupDescriptor().groupName());
-            ci.setGrpId(entry.getValue().groupDescriptor().groupId());
-            ci.setPartitions(entry.getValue().cacheConfiguration().getAffinity().partitions());
-            ci.setBackupsCnt(entry.getValue().cacheConfiguration().getBackups());
-            ci.setAffinityClsName(entry.getValue().cacheConfiguration().getAffinity().getClass().getSimpleName());
-            ci.setMode(entry.getValue().cacheConfiguration().getCacheMode());
-
-            int mapped = 0;
-
-            ClusterGroup servers = ignite.cluster().forServers();
-
-            Collection<ClusterNode> nodes = servers.forDataNodes(ci.getCacheName()).nodes();
-
-            ci.setPrimary(new HashMap<ClusterNode, int[]>());
-            ci.setBackups(new HashMap<ClusterNode, int[]>());
-
-            for (ClusterNode node : nodes) {
-                int[] ints = ignite.affinity(ci.getCacheName()).primaryPartitions(node);
-
-                mapped += ints.length;
-
-                if (cmd == CacheCommand.AFFINITY) {
-                    ci.getPrimary().put(node, ints);
-
-                    ci.getBackups().put(node, ignite.affinity(ci.getCacheName()).backupPartitions(node));
-
-                    GridCacheAdapter<Object, Object> cache = k.context().cache().internalCache(entry.getValue().cacheName());
-
-                    GridCacheContext<Object, Object> cctx = cache.context();
-
-                    final AffinityTopologyVersion readyTopVer = k.context().cache().context().exchange().readyAffinityVersion();
-
-                    AffinityAssignment assign0 = cctx.affinity().assignment(readyTopVer);
-
-                    ci.setTopologyVersion(readyTopVer);
-
-//                    ci.setAssignment(assign0.assignment());
-//
-//                    ci.setIdealAssignment(assign0.idealAssignment());
-//
-//                    ci.setPrimaryMap((Map<UUID, Set<Integer>>)U.field(assign0, "primary"));
-                }
-            }
-
-            ci.setMapped(mapped);
-
-            if (compiled.matcher(ci.getCacheName()).find())
-                cacheInfo.add(ci);
-        }
-
-        if (cmd == CacheCommand.DESTROY) {
-            ignite.destroyCaches(F.transform(cacheInfo, new IgniteClosure<CacheInfo, String>() {
-                @Override public String apply(CacheInfo info) {
-                    return info.getCacheName();
-                }
-            }));
-
-            logger.info("Destroyed caches count: " + cacheInfo.size());
-        }
-
-        return cacheInfo;
+        return mapped;
     }
 
     /**

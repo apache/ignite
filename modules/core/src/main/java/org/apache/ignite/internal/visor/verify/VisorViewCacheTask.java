@@ -54,10 +54,8 @@ public class VisorViewCacheTask extends VisorOneNodeTask<VisorViewCacheTaskArg, 
 
         /** {@inheritDoc} */
         @Override protected VisorViewCacheTaskResult run(@Nullable VisorViewCacheTaskArg arg) throws IgniteException {
-            String newSeqVal = arg.command() == CacheCommand.UPDATE_SEQ ? arg.newUpdateSequenceValue() : null;
-
             try {
-                ViewCacheClosure clo = new ViewCacheClosure(arg.regex(), arg.command(), newSeqVal);
+                ViewCacheClosure clo = new ViewCacheClosure(arg.regex(), arg.command());
 
                 ignite.context().resource().injectGeneric(clo);
 

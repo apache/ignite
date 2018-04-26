@@ -50,7 +50,6 @@ import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.processors.cache.verify.CacheInfo;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
-import org.apache.ignite.internal.processors.cache.verify.PartitionEntryHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.util.typedef.F;
@@ -74,9 +73,6 @@ import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
 import org.apache.ignite.internal.visor.verify.VisorContentionTask;
 import org.apache.ignite.internal.visor.verify.VisorContentionTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorContentionTaskResult;
-import org.apache.ignite.internal.visor.verify.VisorIdleAnalyzeTask;
-import org.apache.ignite.internal.visor.verify.VisorIdleAnalyzeTaskArg;
-import org.apache.ignite.internal.visor.verify.VisorIdleAnalyzeTaskResult;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTask;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskArg;
 import org.apache.ignite.internal.visor.verify.VisorIdleVerifyTaskResult;
@@ -103,6 +99,8 @@ import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.C
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.SET;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.VERSION;
+import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.GROUPS;
+import static org.apache.ignite.internal.visor.verify.VisorViewCacheCmd.SEQ;
 
 /**
  * Class that execute several commands passed via command line.
@@ -340,14 +338,6 @@ public class CommandHandler {
 
                 break;
 
-            case CACHE:
-                if (args.cacheArgs().command() == CacheCommand.DESTROY) {
-                    str = "Warning: the command will destroy all caches that match " +
-                        args.cacheArgs().regex() + " pattern.";
-                }
-
-                break;
-
             default:
                 break;
         }
@@ -531,36 +521,20 @@ public class CommandHandler {
 
                 break;
 
-            case IDLE_ANALYZE:
-                cacheIdleAnalyze(client, cacheArgs);
-
-                break;
-
-            case SEQ:
-            case UPDATE_SEQ:
-            case DESTROY_SEQ:
-            case GROUPS:
-            case AFFINITY:
-            case DESTROY: {
-                cacheView(client, cacheArgs);
-
-                break;
-            }
-
-            case VALIDATE_INDEXES: {
+            case VALIDATE_INDEXES:
                 cacheValidateIndexes(client, cacheArgs);
 
                 break;
-            }
 
-            case CONT: {
+            case CONTENTION:
                 cacheContention(client, cacheArgs);
 
                 break;
-            }
 
             default:
-                throw new IllegalArgumentException("Unexpected cache command: " + cacheArgs.command());
+                cacheView(client, cacheArgs);
+
+                break;
         }
     }
 
@@ -570,16 +544,10 @@ public class CommandHandler {
     private void printCacheHelp() {
         log("--cache subcommand allows to do the following operations:");
 
+        usage("  Show information about caches, groups or sequences that match a regex:", CACHE, " list regexPattern [groups|seq] [nodeId]");
+        usage("  Show hot keys that are point of contention for multiple transactions:", CACHE, " contention minQueueSize [nodeId] [maxPrint]");
         usage("  Verify partition counters and hashes between primary and backups on idle cluster:", CACHE, " idle_verify [cache1,...,cacheN]");
-        usage("  If idle_verify found conflicts, find exact keys that differ between primary and backups on idle cluster:", CACHE, " idle_analyze groupId partitionId");
-        usage("  Show existing atomic sequences that match regex:", CACHE, " seq regexPattern [nodeId]");
-        usage("  Update atomic sequences that match regex:", CACHE, " update_seq regexPattern newValue");
-        usage("  Destroy atomic sequences that match regex:", CACHE, " destroy_seq regexPattern [nodeId]");
-        usage("  Show cache groups info for caches that match regex:", CACHE, " groups regexPattern [nodeId]");
-        usage("  Show affinity distribution info for caches that match regex:", CACHE, " affinity regexPattern [nodeId]");
-        usage("  Destroy caches that match regex:", CACHE, " destroy regexPattern [nodeId] [--force]");
         usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId]");
-        usage("  Show hot keys that are point of contention for multiple transactions:", CACHE, " cont minQueueSize [nodeId] [maxPrint]");
 
         log("  If [nodeId] is not specified, cont and validate_indexes commands will be broadcasted to all server nodes.");
         log("  Another commands where [nodeId] is optional will run on a random server node.");
@@ -669,46 +637,13 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheView(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-        VisorViewCacheTaskArg taskArg = new VisorViewCacheTaskArg(
-            cacheArgs.regex(), cacheArgs.command(), cacheArgs.newUpdateSequenceValue());
+        VisorViewCacheTaskArg taskArg = new VisorViewCacheTaskArg(cacheArgs.regex(), cacheArgs.cacheCommand());
 
         VisorViewCacheTaskResult res = executeTaskByNameOnNode(
             client, VisorViewCacheTask.class.getName(), taskArg, cacheArgs.nodeId());
 
         for (CacheInfo info : res.cacheInfos())
-            info.print();
-
-        if (cacheArgs.command() == CacheCommand.DESTROY)
-            log("Destroyed caches count: " + res.cacheInfos().size());
-    }
-
-    /**
-     * @param client Client.
-     * @param cacheArgs Cache args.
-     */
-    private void cacheIdleAnalyze(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-        VisorIdleAnalyzeTaskResult res = executeTask(client, VisorIdleAnalyzeTask.class,
-            new VisorIdleAnalyzeTaskArg(new PartitionKey(cacheArgs.groupId(), cacheArgs.partitionId(), null)));
-
-        Map<PartitionHashRecord, List<PartitionEntryHashRecord>> div = res.getDivergedEntries();
-
-        if (div.isEmpty()) {
-            log("idle_analyze check has finished, no coflicts have been found in partition.");
-            nl();
-        }
-        else {
-            log("idle_analyze check has finished, found " + div.size() + " conflict keys.");
-            nl();
-
-            for (Map.Entry<PartitionHashRecord, List<PartitionEntryHashRecord>> e : div.entrySet()) {
-                log("Differences at node " + e.getKey().consistentId() + ":");
-
-                for (PartitionEntryHashRecord rec : e.getValue())
-                    log(rec.toString());
-
-                nl();
-            }
-        }
+            info.print(cacheArgs.cacheCommand());
     }
 
     /**
@@ -731,6 +666,7 @@ public class CommandHandler {
 
             for (Map.Entry<PartitionKey, List<PartitionHashRecord>> entry : conflicts.entrySet()) {
                 log("Conflict partition: " + entry.getKey());
+
                 log("Partition instances: " + entry.getValue());
             }
         }
@@ -1247,7 +1183,7 @@ public class CommandHandler {
         CacheCommand cmd = CacheCommand.of(str);
 
         if (cmd == null)
-            throw new IllegalArgumentException("Unxepected --cache command: " + cmd);
+            cmd = CacheCommand.HELP;
 
         cacheArgs.command(cmd);
 
@@ -1260,33 +1196,7 @@ public class CommandHandler {
 
                 break;
 
-            case IDLE_ANALYZE:
-                cacheArgs.groupId(Integer.valueOf(nextArg("Expected cache or group ID")));
-                cacheArgs.partitionId(Integer.valueOf(nextArg("Expected partition ID")));
-
-                break;
-
-            case SEQ:
-            case UPDATE_SEQ:
-            case DESTROY_SEQ:
-            case GROUPS:
-            case AFFINITY:
-            case DESTROY:
-                cacheArgs.regex(nextArg("Regex is expected"));
-
-                if (cmd == CacheCommand.UPDATE_SEQ) {
-                    Long seqVal = Long.parseLong(nextArg("New sequence value expected"));
-
-                    cacheArgs.newUpdateSequenceValue(String.valueOf(seqVal));
-                }
-                else {
-                    if (hasNextCacheArg())
-                        cacheArgs.nodeId(UUID.fromString(nextArg("")));
-                }
-
-                break;
-
-            case CONT:
+            case CONTENTION:
                 cacheArgs.minQueueSize(Integer.parseInt(nextArg("Min queue size expected")));
 
                 if (hasNextCacheArg())
@@ -1304,6 +1214,30 @@ public class CommandHandler {
 
                 if (hasNextCacheArg())
                     cacheArgs.nodeId(UUID.fromString(nextArg("")));
+
+                break;
+
+            default:
+                cacheArgs.regex(nextArg("Regex is expected"));
+
+                if (hasNextCacheArg()) {
+                    String tmp = nextArg("");
+
+                    switch (tmp) {
+                        case "groups":
+                            cacheArgs.cacheCommand(GROUPS);
+
+                            break;
+
+                        case "seq":
+                            cacheArgs.cacheCommand(SEQ);
+
+                            break;
+
+                        default:
+                            cacheArgs.nodeId(UUID.fromString(tmp));
+                    }
+                }
 
                 break;
         }

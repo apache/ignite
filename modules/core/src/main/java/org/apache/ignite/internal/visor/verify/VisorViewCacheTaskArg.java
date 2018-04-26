@@ -20,10 +20,10 @@ package org.apache.ignite.internal.visor.verify;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.commandline.cache.CacheCommand;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -35,21 +35,16 @@ public class VisorViewCacheTaskArg extends VisorDataTransferObject {
     /** Regex. */
     private String regex;
 
-    /** Cache command. */
-    private CacheCommand cmd;
-
-    /** New update sequence value - only for {@link CacheCommand#UPDATE_SEQ}. */
-    private String newUpdateSeqVal;
+    /** Type. */
+    private @Nullable VisorViewCacheCmd cmd;
 
     /**
      * @param regex Regex.
      * @param cmd Command.
-     * @param newUpdateSeqVal New update sequence value.
      */
-    public VisorViewCacheTaskArg(String regex, CacheCommand cmd, String newUpdateSeqVal) {
+    public VisorViewCacheTaskArg(String regex, @Nullable VisorViewCacheCmd cmd) {
         this.regex = regex;
         this.cmd = cmd;
-        this.newUpdateSeqVal = newUpdateSeqVal;
     }
 
     /**
@@ -66,31 +61,22 @@ public class VisorViewCacheTaskArg extends VisorDataTransferObject {
     }
 
     /**
-     * @return Cache command.
+     * @return Command.
      */
-    public CacheCommand command() {
+    public VisorViewCacheCmd command() {
         return cmd;
-    }
-
-    /**
-     * @return New update sequence value.
-     */
-    public String newUpdateSequenceValue() {
-        return newUpdateSeqVal;
     }
 
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, regex);
         U.writeEnum(out, cmd);
-        U.writeString(out, newUpdateSeqVal);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         regex = U.readString(in);
-        cmd = CacheCommand.fromOrdinal(in.readByte());
-        newUpdateSeqVal = U.readString(in);
+        cmd = VisorViewCacheCmd.fromOrdinal(in.readByte());
     }
 
     /** {@inheritDoc} */

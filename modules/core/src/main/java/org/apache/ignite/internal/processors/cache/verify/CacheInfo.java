@@ -20,313 +20,264 @@ package org.apache.ignite.internal.processors.cache.verify;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.UUID;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.internal.visor.verify.VisorViewCacheCmd;
 
 /**
- *
+ * Cache info DTO.
  */
 public class CacheInfo extends VisorDataTransferObject {
+    /** */
     private static final long serialVersionUID = 0L;
 
+    /** Sequence name. */
     private String seqName;
 
+    /** Sequence value. */
     private long seqVal;
 
+    /** Cache name. */
     private String cacheName;
 
+    /** Cache id. */
     private int cacheId;
 
+    /** Group name. */
     private String grpName;
 
+    /** Group id. */
     private int grpId;
 
+    /** Caches count. */
+    private int cachesCnt;
+
+    /** Partitions. */
     private int partitions;
 
+    /** Mapped. */
     private int mapped;
 
-    private Map<ClusterNode, int[]> primary;
+    /** Topology version. */
+    public AffinityTopologyVersion topVer;
 
-    private Map<ClusterNode, int[]> backups;
-
-    public List<List<ClusterNode>> assignment;
-
-    public List<List<ClusterNode>> idealAssignment;
-
-    public AffinityTopologyVersion topologyVersion;
-
-    private Map<UUID, Set<Integer>> primaryMap;
-
-    private Map<UUID, Set<Integer>> backupMap;
-
+    /** Mode. */
     private CacheMode mode;
 
+    /** Backups count. */
     private int backupsCnt;
 
+    /** Affinity class name. */
     private String affinityClsName;
 
-    private String zone;
-
-    private String cell;
-
-    private String dc;
-
+    /** */
     public String getSeqName() {
         return seqName;
     }
 
+    /**
+     * @param seqName Sequence name.
+     */
     public void setSeqName(String seqName) {
         this.seqName = seqName;
     }
 
+    /**
+     *
+     */
     public String getCacheName() {
         return cacheName;
     }
 
+    /**
+     * @param cacheName Cache name.
+     */
     public void setCacheName(String cacheName) {
         this.cacheName = cacheName;
     }
 
+    /**
+     *
+     */
     public int getCacheId() {
         return cacheId;
     }
 
+    /**
+     * @param cacheId Cache id.
+     */
     public void setCacheId(int cacheId) {
         this.cacheId = cacheId;
     }
 
+    /**
+     *
+     */
     public String getGrpName() {
         return grpName;
     }
 
+    /**
+     * @param grpName Group name.
+     */
     public void setGrpName(String grpName) {
         this.grpName = grpName;
     }
 
+    /**
+     *
+     */
     public int getGrpId() {
         return grpId;
     }
 
+    /**
+     * @param grpId Group id.
+     */
     public void setGrpId(int grpId) {
         this.grpId = grpId;
     }
 
+    /**
+     *
+     */
+    public int getCachesCnt() {
+        return cachesCnt;
+    }
+
+    /**
+     * @param cachesCnt Caches count.
+     */
+    public void setCachesCnt(int cachesCnt) {
+        this.cachesCnt = cachesCnt;
+    }
+
+    /**
+     *
+     */
     public int getPartitions() {
         return partitions;
     }
 
+    /**
+     * @param partitions Partitions.
+     */
     public void setPartitions(int partitions) {
         this.partitions = partitions;
     }
 
+    /**
+     *
+     */
     public int getMapped() {
         return mapped;
     }
 
+    /**
+     * @param mapped Mapped.
+     */
     public void setMapped(int mapped) {
         this.mapped = mapped;
     }
 
-    public Map<ClusterNode, int[]> getPrimary() {
-        return primary;
-    }
-
-    public void setPrimary(Map<ClusterNode, int[]> primary) {
-        this.primary = primary;
-    }
-
-    public Map<ClusterNode, int[]> getBackups() {
-        return backups;
-    }
-
-    public void setBackups(Map<ClusterNode, int[]> backups) {
-        this.backups = backups;
-    }
-
-    public List<List<ClusterNode>> getAssignment() {
-        return assignment;
-    }
-
-    public void setAssignment(List<List<ClusterNode>> assignment) {
-        this.assignment = assignment;
-    }
-
-    public List<List<ClusterNode>> getIdealAssignment() {
-        return idealAssignment;
-    }
-
-    public void setIdealAssignment(List<List<ClusterNode>> idealAssignment) {
-        this.idealAssignment = idealAssignment;
-    }
-
+    /**
+     *
+     */
     public AffinityTopologyVersion getTopologyVersion() {
-        return topologyVersion;
+        return topVer;
     }
 
+    /**
+     * @param topologyVersion Topology version.
+     */
     public void setTopologyVersion(AffinityTopologyVersion topologyVersion) {
-        this.topologyVersion = topologyVersion;
+        this.topVer = topologyVersion;
     }
 
-    public void setPrimaryMap(Map<UUID, Set<Integer>> primaryMap) {
-        this.primaryMap = primaryMap;
-    }
-
-    public Map<UUID, Set<Integer>> getPrimaryMap() {
-        return primaryMap;
-    }
-
-    public Map<UUID, Set<Integer>> getBackupMap() {
-        return backupMap;
-    }
-
-    public void setBackupMap(Map<UUID, Set<Integer>> backupMap) {
-        this.backupMap = backupMap;
-    }
-
+    /**
+     * @param seqVal Sequence value.
+     */
     public void setSeqVal(long seqVal) {
         this.seqVal = seqVal;
     }
 
+    /**
+     *
+     */
     public long getSeqVal() {
         return seqVal;
     }
 
-    public String getZone() {
-        return zone;
-    }
-
-    public void setZone(String zone) {
-        this.zone = zone;
-    }
-
-    public String getCell() {
-        return cell;
-    }
-
-    public void setCell(String cell) {
-        this.cell = cell;
-    }
-
-    public String getDc() {
-        return dc;
-    }
-
-    public void setDc(String dc) {
-        this.dc = dc;
-    }
-
+    /**
+     *
+     */
     public CacheMode getMode() {
         return mode;
     }
 
+    /**
+     * @param mode Mode.
+     */
     public void setMode(CacheMode mode) {
         this.mode = mode;
     }
 
+    /**
+     *
+     */
     public int getBackupsCnt() {
         return backupsCnt;
     }
 
+    /**
+     * @param backupsCnt Backups count.
+     */
     public void setBackupsCnt(int backupsCnt) {
         this.backupsCnt = backupsCnt;
     }
 
+    /**
+     *
+     */
     public String getAffinityClsName() {
         return affinityClsName;
     }
 
+    /**
+     * @param affinityClsName Affinity class name.
+     */
     public void setAffinityClsName(String affinityClsName) {
         this.affinityClsName = affinityClsName;
     }
 
-    public void print() {
-        if (seqName != null) {
-            System.out.println("[seqName=" + getSeqName() + ", curVal=" + seqVal + ']');
+    /**
+     * @param cmd Command.
+     */
+    public void print(VisorViewCacheCmd cmd) {
+        if (cmd == null)
+            cmd = VisorViewCacheCmd.CACHES;
 
-            return;
-        }
+        switch (cmd) {
+            case SEQ:
+                System.out.println("[seqName=" + getSeqName() + ", curVal=" + seqVal + ']');
 
-        System.out.println("[cacheName=" + getCacheName() + ", id=" + getCacheId() +
-            ", grpName=" + getGrpName() + ", grpId=" + getGrpId() + ", prim=" + getPartitions() +
-            ", mapped=" + getMapped() + ", mode=" + getMode() +
-            ", backups=" + getBackupsCnt() + ", affCls=" + getAffinityClsName() + ']');
+                break;
 
-        Map<ClusterNode, int[]> prim = getPrimary();
+            case GROUPS:
+                System.out.println("[grpName=" + getGrpName() + ", grpId=" + getGrpId() + ", cachesCnt=" + getCachesCnt() +
+                    ", prim=" + getPartitions() + ", mapped=" + getMapped() + ", mode=" + getMode() +
+                    ", backups=" + getBackupsCnt() + ", affCls=" + getAffinityClsName() + ']');
 
-        if (prim != null) {
-            StringBuilder b = new StringBuilder();
+                break;
 
-            for (Map.Entry<ClusterNode, int[]> entry : prim.entrySet()) {
-                b.setLength(0);
-
-                Set<Integer> s = new TreeSet<>();
-                for (int e = 0; e < entry.getValue().length; e++)
-                    s.add(entry.getValue()[e]);
-
-                b.append("    [node=" + entry.getKey() + ", primary=").append(s);
-
-                final int[] backupParts = getBackups().get(entry.getKey());
-
-                s = new TreeSet<>();
-                for (int p : backupParts)
-                    s.add(p);
-
-                b.append(", backups=").append(s);
-
-                mapped += entry.getValue().length;
-
-                b.append(System.lineSeparator());
-
-                if (topologyVersion != null && assignment != null) {
-                    b.append("    [assignment: size=").append(assignment.size()).append(", topVer=").append(topologyVersion).append(" ");
-
-                    for (int i = 0; i < assignment.size(); i++) {
-                        b.append(i).append('=');
-
-                        b.append(F.transform(assignment.get(i), new IgniteClosure<ClusterNode, String>() {
-                            @Override public String apply(ClusterNode node) {
-                                return U.id8(node.id());
-                            }
-                        }));
-
-                        if (i != assignment.size() - 1)
-                            b.append(", ");
-                    }
-
-                    b.append(']').append(System.lineSeparator());
-
-                    b.append("    [idealAssignment: size=").append(idealAssignment.size()).append(", topVer=").append(topologyVersion).append(" ");
-                    for (int i = 0; i < idealAssignment.size(); i++) {
-                        b.append(i).append('=');
-
-                        b.append(F.transform(idealAssignment.get(i), new IgniteClosure<ClusterNode, String>() {
-                            @Override public String apply(ClusterNode node) {
-                                return U.id8(node.id());
-                            }
-                        }));
-
-                        if (i != idealAssignment.size() - 1)
-                            b.append(", ");
-                    }
-
-                    b.append("    [primary=" + primary);
-
-                    b.append(']').append(System.lineSeparator());
-                }
-
-                System.out.println(b.toString());
-            }
+            default:
+                System.out.println("[cacheName=" + getCacheName() + ", cacheId=" + getCacheId() +
+                    ", grpName=" + getGrpName() + ", grpId=" + getGrpId() + ", prim=" + getPartitions() +
+                    ", mapped=" + getMapped() + ", mode=" + getMode() +
+                    ", backups=" + getBackupsCnt() + ", affCls=" + getAffinityClsName() + ']');
         }
     }
 
@@ -340,19 +291,11 @@ public class CacheInfo extends VisorDataTransferObject {
         out.writeInt(grpId);
         out.writeInt(partitions);
         out.writeInt(mapped);
-        U.writeMap(out, primary);
-        U.writeMap(out, backups);
-        U.writeCollection(out, assignment);
-        U.writeCollection(out, idealAssignment);
-        out.writeObject(topologyVersion);
-        U.writeMap(out, primaryMap);
-        U.writeMap(out, backupMap);
+        out.writeObject(topVer);
         U.writeEnum(out, mode);
         out.writeInt(backupsCnt);
         U.writeString(out, affinityClsName);
-        U.writeString(out, zone);
-        U.writeString(out, cell);
-        U.writeString(out, dc);
+        out.writeInt(cachesCnt);
     }
 
     /** {@inheritDoc} */
@@ -365,19 +308,11 @@ public class CacheInfo extends VisorDataTransferObject {
         grpId = in.readInt();
         partitions = in.readInt();
         mapped = in.readInt();
-        primary = U.readMap(in);
-        backups = U.readMap(in);
-        assignment = U.readList(in);
-        idealAssignment = U.readList(in);
-        topologyVersion = (AffinityTopologyVersion)in.readObject();
-        primaryMap = U.readMap(in);
-        backupMap = U.readMap(in);
+        topVer = (AffinityTopologyVersion)in.readObject();
         mode = CacheMode.fromOrdinal(in.readByte());
         backupsCnt = in.readInt();
         affinityClsName = U.readString(in);
-        zone = U.readString(in);
-        cell = U.readString(in);
-        dc = U.readString(in);
+        cachesCnt = in.readInt();
     }
 
     /** {@inheritDoc} */
