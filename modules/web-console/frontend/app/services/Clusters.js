@@ -275,12 +275,12 @@ export default class Clusters {
                 return maxPoolSize;
             }
         },
-        subIntervals: {
+        metricsSubIntervalCount: {
             default: 5,
             min: 1,
             step: 1
         },
-        rateTimeInterval: {
+        metricsRateTimeInterval: {
             min: 1000,
             default: 60000,
             step: 1000
