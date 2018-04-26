@@ -69,6 +69,7 @@ import org.apache.ignite.internal.visor.tx.VisorTxSortOrder;
 import org.apache.ignite.internal.visor.tx.VisorTxTask;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskResult;
+import org.apache.ignite.internal.visor.verify.IndexValidationIssue;
 import org.apache.ignite.internal.visor.verify.ValidateIndexesPartitionResult;
 import org.apache.ignite.internal.visor.verify.VisorContentionTask;
 import org.apache.ignite.internal.visor.verify.VisorContentionTaskArg;
@@ -651,7 +652,7 @@ public class CommandHandler {
 
                     log(e.getKey().toString() + " " + e.getValue().toString());
 
-                    for (ValidateIndexesPartitionResult.Issue is : res.issues())
+                    for (IndexValidationIssue is : res.issues())
                         log(is.toString());
                 }
             }

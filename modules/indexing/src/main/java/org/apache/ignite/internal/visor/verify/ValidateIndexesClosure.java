@@ -304,24 +304,24 @@ public class ValidateIndexesClosure implements IgniteCallable<Map<PartitionKey, 
                             Object o = CacheObjectUtils.unwrapBinaryIfNeeded(
                                 grpCtx.cacheObjectContext(), row.key(), true, true);
 
-                            ValidateIndexesPartitionResult.Issue is = new ValidateIndexesPartitionResult.Issue(
+                            IndexValidationIssue is = new IndexValidationIssue(
                                 o.toString(), cacheCtx.name(), idx.getName(), t);
 
-                            log.error("Can't lookup key: " + is.toString());
+                            log.error("Failed to lookup key: " + is.toString());
 
                             enoughIssues |= partRes.reportIssue(is);
                         }
                     }
                 }
                 catch (IllegalAccessException | NoSuchMethodException e) {
-                    log.error("Can't invoke typeByValue", e);
+                    log.error("Failed to invoke typeByValue", e);
 
                     throw new IgniteException(e);
                 }
                 catch (InvocationTargetException e) {
                     Throwable target = e.getTargetException();
 
-                    log.error("Can't invoke typeByValue", target);
+                    log.error("Failed to invoke typeByValue", target);
 
                     throw new IgniteException(target);
                 }
@@ -338,7 +338,7 @@ public class ValidateIndexesClosure implements IgniteCallable<Map<PartitionKey, 
             }
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Can't process partition [grpId=" + grpCtx.groupId() +
+            U.error(log, "Failed to process partition [grpId=" + grpCtx.groupId() +
                 ", partId=" + part.id() + "]", e);
 
             return Collections.emptyMap();

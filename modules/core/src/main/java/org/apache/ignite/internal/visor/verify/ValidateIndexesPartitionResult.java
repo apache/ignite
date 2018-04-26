@@ -14,6 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 package org.apache.ignite.internal.visor.verify;
 
 import java.io.IOException;
@@ -49,7 +50,7 @@ public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
 
     /** Issues. */
     @GridToStringExclude
-    private List<Issue> issues = new ArrayList<>(10);
+    private List<IndexValidationIssue> issues = new ArrayList<>(10);
 
     /**
      * @param updateCntr Update counter.
@@ -95,7 +96,7 @@ public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
     /**
      *
      */
-    public List<Issue> issues() {
+    public List<IndexValidationIssue> issues() {
         return issues;
     }
 
@@ -103,7 +104,7 @@ public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
      * @param t Issue.
      * @return True if there are already enough issues.
      */
-    public boolean reportIssue(Issue t) {
+    public boolean reportIssue(IndexValidationIssue t) {
         if (issues.size() >= 10)
             return true;
 
@@ -133,60 +134,5 @@ public class ValidateIndexesPartitionResult extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(ValidateIndexesPartitionResult.class, this);
-    }
-
-    /**
-     *
-     */
-    public static class Issue extends VisorDataTransferObject {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Key. */
-        private String key;
-
-        /** Cache name. */
-        private String cacheName;
-
-        /** Index name. */
-        private String idxName;
-
-        /** T. */
-        @GridToStringExclude
-        private Throwable t;
-
-        /**
-         * @param key Key.
-         * @param cacheName Cache name.
-         * @param idxName Index name.
-         * @param t T.
-         */
-        public Issue(String key, String cacheName, String idxName, Throwable t) {
-            this.key = key;
-            this.cacheName = cacheName;
-            this.idxName = idxName;
-            this.t = t;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void writeExternalData(ObjectOutput out) throws IOException {
-            U.writeString(out, key);
-            U.writeString(out, cacheName);
-            U.writeString(out, idxName);
-            out.writeObject(t);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
-            key = U.readString(in);
-            cacheName = U.readString(in);
-            idxName = U.readString(in);
-            t = (Throwable)in.readObject();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(Issue.class, this) + ", " + t.getClass() + ": " + t.getMessage();
-        }
     }
 }

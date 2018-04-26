@@ -22,16 +22,47 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public enum CacheCommand {
+    /**
+     * Prints out help for the cache command.
+     */
     HELP("help"),
+
+    /**
+     * Checks consistency of primary and backup partitions assuming no concurrent updates are happening in the cluster.
+     */
     IDLE_VERIFY("idle_verify"),
     IDLE_ANALYZE("idle_analyze"),
+
+    /**
+     * Get ignite sequence info.
+     */
     SEQ("seq"),
+
+    /**
+     * Update ignite sequence.
+     */
     UPDATE_SEQ("update_seq"),
     DESTROY_SEQ("destroy_seq"),
+
+    /**
+     * Print info regarding cache groups.
+     */
     GROUPS("groups"),
+
+    /**
+     * Print info regarding cache affinity.
+     */
     AFFINITY("affinity"),
     DESTROY("destroy"),
+
+    /**
+     * Validate indexes attempting to read each indexed entry.
+     */
     VALIDATE_INDEXES("validate_indexes"),
+
+    /**
+     * Print info about contented keys.
+     */
     CONT("cont");
 
     /** Enumerated values. */
