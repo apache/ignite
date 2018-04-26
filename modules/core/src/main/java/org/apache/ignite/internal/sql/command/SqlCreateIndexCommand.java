@@ -275,6 +275,8 @@ public class SqlCreateIndexCommand implements SqlCommand {
                         return;
                 }
             }
+            else
+                throw error(lex, "Unexpected token: " + token.token());
         }
 
     }
