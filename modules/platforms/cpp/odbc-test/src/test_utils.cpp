@@ -78,7 +78,7 @@ namespace ignite_test
         cfg.jvmOpts.push_back("-DIGNITE_UPDATE_NOTIFIER=false");
         cfg.jvmOpts.push_back("-Duser.language=en");
         // Un-comment to debug SSL
-        cfg.jvmOpts.push_back("-Djavax.net.debug=ssl");
+        //cfg.jvmOpts.push_back("-Djavax.net.debug=ssl");
 
         cfg.igniteHome = jni::ResolveIgniteHome();
         cfg.jvmClassPath = jni::CreateIgniteHomeClasspath(cfg.igniteHome, true);

@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-#include <windows.h>
-
 #include <sstream>
 #include <cstdio>
 
@@ -380,15 +378,24 @@ namespace ignite
             {
                 SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
-                int ssl_error = ssl::SSL_get_error_(ssl0, ret);
+                int sslError = ssl::SSL_get_error_(ssl0, ret);
 
-                if (ssl_error == SSL_ERROR_WANT_WRITE)
-                    return std::string("SSL_connect wants write");
+                LOG_MSG("ssl_error: " << sslError);
 
-                if (ssl_error == SSL_ERROR_WANT_READ)
-                    return std::string("SSL_connect wants read");
+                switch (sslError)
+                {
+                    case SSL_ERROR_NONE:
+                        break;
 
-                LOG_MSG("ssl_error: " << ssl_error);
+                    case SSL_ERROR_WANT_WRITE:
+                        return std::string("SSL_connect wants write");
+                        
+                    case SSL_ERROR_WANT_READ:
+                        return std::string("SSL_connect wants read");
+
+                    default:
+                        return std::string("SSL error: ") + common::LexicalCast<std::string>(sslError);
+                }
 
                 long error = ssl::ERR_get_error_();
 
