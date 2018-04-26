@@ -28,6 +28,7 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.yardstickframework.BenchmarkConfiguration;
+import org.yardstickframework.BenchmarkUtils;
 
 /**
  * Ignite benchmark that performs putAll operations.
@@ -132,6 +133,16 @@ public class IgnitePutAllBenchmark extends IgniteCacheAbstractBenchmark<Integer,
         }
 
         IgniteCache<Integer, Object> cache = cacheForOperation();
+
+        BenchmarkUtils.println("Vals size = " + String.valueOf(vals.size()));
+
+        for(Integer i : vals.keySet())
+            BenchmarkUtils.println(String.format("%d : %d", i, vals.get(i)));
+
+        BenchmarkUtils.println("**************************************************");
+
+        Thread.sleep(500L);
+
 
         cache.putAll(vals);
 

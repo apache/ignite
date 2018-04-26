@@ -17,20 +17,15 @@
 
 package org.apache.ignite.yardstick;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteState;
-import org.apache.ignite.Ignition;
+import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.yardstick.thin.cache.IgniteThinBenchmarkUtils;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkDriverAdapter;
 import org.yardstickframework.BenchmarkUtils;
 
-import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.yardstickframework.BenchmarkUtils.jcommander;
 import static org.yardstickframework.BenchmarkUtils.println;
 
@@ -41,10 +36,7 @@ public abstract class IgniteThinAbstractBenchmark extends BenchmarkDriverAdapter
     /** Arguments. */
     protected final IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
 
-    /** Logger */
-    private PreloadLogger lgr;
-
-    /** Node. */
+    /** Client. */
     private IgniteClient client;
 
     /** {@inheritDoc} */
@@ -53,43 +45,57 @@ public abstract class IgniteThinAbstractBenchmark extends BenchmarkDriverAdapter
 
         jcommander(cfg.commandLineArguments(), args, "<ignite-driver>");
 
+        String locIp = IgniteThinBenchmarkUtils.getLocalIp(cfg);
+
         client = new IgniteThinClient().start(cfg);
 
-        for (String key : cfg.customProperties().keySet())
-            System.out.println(key);
+        System.out.println("localIp = " + locIp);
+
+        ClientCache<String, String> utilCache = client.getOrCreateCache("start-util-cache");
+
+        System.out.println("utilCache = " + utilCache);
+
+        System.out.println("before = " + utilCache.get(locIp));
+
+        utilCache.put(locIp, "started");
+
+        List<String> hostList = IgniteThinBenchmarkUtils.drvHostList(cfg);
+
+        int cnt = 0;
+
+        while(!checkIfAllClientsStarted(hostList) && cnt++ < 600)
+            Thread.sleep(500L);
     }
 
     /**
-     * Prints non-system caches sizes during preload.
      *
-     * @param logInterval time interval between printing preload log. Required to be positive.
+     * @param hostList
+     * @return
      */
-//    protected void startPreloadLogging(long logInterval) {
-//        try {
-//            if (node != null && cfg != null && logInterval >= 0)
-//                lgr = IgniteBenchmarkUtils.startPreloadLogger(node, cfg, logInterval);
-//            else
-//                BenchmarkUtils.println("Failed to start preload logger [node=" + node + ", cfg = " + cfg +
-//                    ", logInterval = " + logInterval + "]");
-//        }
-//        catch (Exception e) {
-//            BenchmarkUtils.error("Failed to start preload logger [node=" + node + ", cfg = " + cfg +
-//                ", logInterval = " + logInterval + "]", e);
-//        }
-//    }
+    private boolean checkIfAllClientsStarted(List<String> hostList){
+        ClientCache<String, String> utilCache = client.getOrCreateCache("start-util-cache");
 
-//    /**
-//     * Terminates printing preload log.
-//     */
-//    protected void stopPreloadLogging() {
-//        if (lgr != null)
-//            lgr.stopAndPrintStatistics();
-//    }
+        for(String host : hostList){
+            System.out.println("host = " + host);
+
+            if(host.equals("localhost"))
+                host = "127.0.0.1";
+
+            String res = utilCache.get(host);
+
+            System.out.println(res);
+
+            if (res == null || !res.equals("started"))
+                return false;
+        }
+
+        return true;
+    }
 
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
-//        if (node != null)
-//            node.stop();
+        if (client != null)
+            client.close();
     }
 
     /** {@inheritDoc} */
@@ -100,46 +106,16 @@ public abstract class IgniteThinAbstractBenchmark extends BenchmarkDriverAdapter
             getClass().getSimpleName() + args.description() + cfg.defaultDescription() : desc;
     }
 
-    /** {@inheritDoc} */
-    @Override public String usage() {
-        return BenchmarkUtils.usage(args);
-    }
-
     /**
-     * @return Grid.
+     * @return Client.
      */
     protected IgniteClient client() {
         return client;
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    private void waitForNodes() throws Exception {
-//        final CountDownLatch nodesStartedLatch = new CountDownLatch(1);
-//
-//        ignite().events().localListen(new IgnitePredicate<Event>() {
-//            @Override public boolean apply(Event gridEvt) {
-//                if (nodesStarted())
-//                    nodesStartedLatch.countDown();
-//
-//                return true;
-//            }
-//        }, EVT_NODE_JOINED);
-//
-//        if (!nodesStarted()) {
-//            println(cfg, "Waiting for " + (args.nodes() - 1) + " nodes to start...");
-//
-//            nodesStartedLatch.await();
-//        }
-//    }
 
-//    /**
-//     * @return {@code True} if all nodes are started, {@code false} otherwise.
-//     */
-//    private boolean nodesStarted() {
-//        return ignite().cluster().nodes().size() >= args.nodes();
-//    }
+
+
 
     /**
      * @param max Key range.

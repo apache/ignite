@@ -15,33 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.thin;
+package org.apache.ignite.yardstick.thin.cache;
 
 import java.util.Map;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.yardstick.IgniteThinAbstractBenchmark;
-import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
-import org.apache.ignite.yardstick.thin.cache.IgniteCacheThinAbstractBenchmark;
+import org.yardstickframework.BenchmarkConfiguration;
+
+import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Ignite benchmark that performs put operations.
+ * Ignite benchmark that performs get operations.
  */
-public class IgniteThinPutBenchmark extends IgniteCacheThinAbstractBenchmark<Integer, Object> {
+public class IgniteThinGetTxBenchmark extends IgniteThinGetBenchmark {
     /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int key = nextRandom(args.range());
-
-        ClientCache<Integer, Object> cache = client().cache("atomic");
-
-        cache.put(key, new SampleValue(key));
-
-        return true;
+    @Override protected ClientCache<Integer, Object> cache() {
+        return client().cache("tx");
     }
-
-//    /** {@inheritDoc} */
-//    @Override protected IgniteCache<Integer, Object> cache() {
-//        return ignite().cache("atomic");
-//    }
 }

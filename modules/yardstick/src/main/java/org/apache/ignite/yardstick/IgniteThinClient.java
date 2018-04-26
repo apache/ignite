@@ -46,6 +46,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.yardstick.io.FileUtils;
+import org.apache.ignite.yardstick.thin.cache.IgniteThinBenchmarkUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.ApplicationContext;
@@ -91,139 +92,51 @@ public class IgniteThinClient {
         if (args.cleanWorkDirectory())
             FileUtils.cleanDirectory(U.workDirectory(c.getWorkDirectory(), c.getIgniteHome()));
 
-        ApplicationContext appCtx = tup.get2();
-
-        assert appCtx != null;
-
-        CacheConfiguration[] ccfgs = c.getCacheConfiguration();
-
         ClientConfiguration clCfg = new ClientConfiguration();
 
-        TcpDiscoverySpi spi = (TcpDiscoverySpi)c.getDiscoverySpi();
+        String[] servHostArr = IgniteThinBenchmarkUtils.servHostArr(cfg);
 
-        TcpDiscoveryIpFinder finder = spi.getIpFinder();
+        String hostPort;
 
-        Collection<InetSocketAddress> addrs = finder.getRegisteredAddresses();
+        String locIp = IgniteThinBenchmarkUtils.getLocalIp(cfg);
 
-        List<String> addrList = new ArrayList<>();
+        int num = getNum(cfg, locIp);
 
-        for(InetSocketAddress addr : addrs){
-            String a = addr.toString();
+        if(servHostArr.length == 1)
+            hostPort = servHostArr[0] + ":10800";
+        else{
+            int idx = num % servHostArr.length;
 
-            System.out.println(a);
-
-            String hostPort = a.substring(1, a.length() - 6) + ":10800";
-
-            System.out.println(hostPort);
-            addrList.add(hostPort);
+            hostPort = servHostArr[idx] + ":10800";
         }
 
-        String[] adrArr  = new String[addrList.size()];
+        BenchmarkUtils.println(String.format("Using for connection address + %s", hostPort));
 
-        for(int i = 0; i < addrList.size(); i++)
-            adrArr[i] = addrList.get(i);
+        clCfg.setAddresses(hostPort);
 
-        clCfg.setAddresses(adrArr);
-//        clCfg.setAddresses("127.0.0.1:10800");
-
-//        if (ccfgs != null) {
-//            for (CacheConfiguration cc : ccfgs) {
-//
-//                ClientCacheConfiguration clCacheCfg = new ClientCacheConfiguration();
-//
-//                clCacheCfg.setName(cc.getName());
-//
-//                clCacheCfg.setBackups(args.backups());
-//
-//                clCfg.
-
-
-//                // IgniteNode can not run in CLIENT_ONLY mode,
-//                // except the case when it's used inside IgniteAbstractBenchmark.
-//                boolean cl = args.isClientOnly() && (args.isNearCache());
-//
-//                if (cl)
-//                    c.setClientMode(true);
-//
-//                if (args.isNearCache()) {
-//                    NearCacheConfiguration nearCfg = new NearCacheConfiguration();
-//
-//                    int nearCacheSize = args.getNearCacheSize();
-//
-//                    if (nearCacheSize != 0)
-//                        nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(nearCacheSize));
-//
-//                    cc.setNearConfiguration(nearCfg);
-//                }
-//
-//                if (args.cacheGroup() != null)
-//                    cc.setGroupName(args.cacheGroup());
-//
-//                cc.setWriteSynchronizationMode(args.syncMode());
-//
-//                cc.setBackups(args.backups());
-//
-//                if (args.restTcpPort() != 0) {
-//                    ConnectorConfiguration ccc = new ConnectorConfiguration();
-//
-//                    ccc.setPort(args.restTcpPort());
-//
-//                    if (args.restTcpHost() != null)
-//                        ccc.setHost(args.restTcpHost());
-//
-//                    c.setConnectorConfiguration(ccc);
-//                }
-//
-//                cc.setReadThrough(args.isStoreEnabled());
-//
-//                cc.setWriteThrough(args.isStoreEnabled());
-//
-//                cc.setWriteBehindEnabled(args.isWriteBehind());
-//
-//                BenchmarkUtils.println(cfg, "Cache configured with the following parameters: " + cc);
-//            }
-//        }
-//        else
-//            BenchmarkUtils.println(cfg, "There are no caches configured");
-//
-//        TransactionConfiguration tc = c.getTransactionConfiguration();
-//
-//        tc.setDefaultTxConcurrency(args.txConcurrency());
-//        tc.setDefaultTxIsolation(args.txIsolation());
-//
-//        TcpCommunicationSpi commSpi = (TcpCommunicationSpi)c.getCommunicationSpi();
-//
-//        if (commSpi == null)
-//            commSpi = new TcpCommunicationSpi();
-//
-//        c.setCommunicationSpi(commSpi);
-//
-//        if (args.getPageSize() != DataStorageConfiguration.DFLT_PAGE_SIZE) {
-//            DataStorageConfiguration memCfg = c.getDataStorageConfiguration();
-//
-//            if (memCfg == null) {
-//                memCfg = new DataStorageConfiguration();
-//
-//                c.setDataStorageConfiguration(memCfg);
-//            }
-//
-//            memCfg.setPageSize(args.getPageSize());
-//        }
-//
-//        if (args.persistentStoreEnabled()) {
-//            DataStorageConfiguration pcCfg = new DataStorageConfiguration();
-//
-//            c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
-//
-//            c.setDataStorageConfiguration(pcCfg);
-//        }
-//
         client = Ignition.startClient(clCfg);
 
         return client;
-
-//        BenchmarkUtils.println("Configured marshaller: " + ignite.cluster().localNode().attribute(ATTR_MARSHALLER));
     }
+
+    /**
+     *
+     * @param cfg
+     * @param locIp
+     * @return
+     */
+    private static int getNum(BenchmarkConfiguration cfg, String locIp){
+        List<String> drvHosts = IgniteThinBenchmarkUtils.drvHostList(cfg);
+
+        for(int i = 0; i<drvHosts.size(); i++){
+            if(drvHosts.get(i).equals(locIp))
+                return i;
+        }
+
+        return 0;
+    }
+
+
 
     /**
      * @param springCfgPath Spring configuration file path.
