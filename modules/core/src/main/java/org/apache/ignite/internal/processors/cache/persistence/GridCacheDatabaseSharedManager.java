@@ -4332,7 +4332,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param grpId Group ID.
      * @return Key.
      */
-    private static String walGroupIdToKey(int grpId, boolean local) {
+    public static String walGroupIdToKey(int grpId, boolean local) {
         if (local)
             return WAL_LOCAL_KEY_PREFIX + grpId;
         else
@@ -4354,9 +4354,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * Convert WAL state key to cache group ID.
      *
      * @param key Key.
-     * @return Group ID.
+     * @return Group ID or {@code null} if key is not WAL state key.
      */
-    private static T2<Integer, Boolean> walKeyToGroupIdAndLocalFlag(String key) {
+    @Nullable  public static T2<Integer, Boolean> walKeyToGroupIdAndLocalFlag(String key) {
         if (key.startsWith(WAL_LOCAL_KEY_PREFIX))
             return new T2<>(Integer.parseInt(key.substring(WAL_LOCAL_KEY_PREFIX.length())), true);
         else if (key.startsWith(WAL_GLOBAL_KEY_PREFIX))
