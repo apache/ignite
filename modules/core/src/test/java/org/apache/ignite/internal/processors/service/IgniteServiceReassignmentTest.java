@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -51,6 +52,9 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
         if (srvcCfg != null)
             cfg.setServiceConfiguration(srvcCfg);
 
+        if (gridName.endsWith("2"))
+            cfg.setClientMode(true);
+
         return cfg;
     }
 
@@ -75,15 +79,15 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
 
         Ignite node2 = startGrid(2);
 
-        node1.close();
-
-        waitForService(node2);
-
         assertEquals(42, serviceProxy(node2).foo());
+
+        node1.close();
 
         srvcCfg = serviceConfiguration();
 
         Ignite node3 = startGrid(3);
+
+        waitForService(node3);
 
         assertEquals(42, serviceProxy(node3).foo());
 
@@ -92,7 +96,15 @@ public class IgniteServiceReassignmentTest extends GridCommonAbstractTest {
         node1 = startGrid(1);
 
         assertEquals(42, serviceProxy(node1).foo());
-        assertEquals(42, serviceProxy(node2).foo());
+
+        try {
+            assertEquals(42, serviceProxy(node2).foo());
+        } catch (IgniteClientDisconnectedException e) {
+            e.reconnectFuture().get();
+
+            assertEquals(42, serviceProxy(node2).foo());
+        }
+
         assertEquals(42, serviceProxy(node3).foo());
 
         node2.close();

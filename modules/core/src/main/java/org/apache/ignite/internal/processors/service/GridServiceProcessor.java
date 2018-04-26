@@ -111,6 +111,8 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICE_AVOID_CLIENT_REASSIGN;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
@@ -127,6 +129,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class GridServiceProcessor extends GridProcessorAdapter {
     /** */
     public static final IgniteProductVersion LAZY_SERVICES_CFG_SINCE = IgniteProductVersion.fromString("1.5.22");
+
+    private static final boolean AVOID_CLIENT_REASSIGN = getBoolean(IGNITE_SERVICE_AVOID_CLIENT_REASSIGN);
 
     /** Versions that only compatible with each other, and from 1.5.33. */
     private static final Set<IgniteProductVersion> SERVICE_TOP_CALLABLE_VER1;
@@ -1930,6 +1934,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                                 "assignments calculation (will abort current iteration and " +
                                                 "re-calculate on the newer version): " +
                                                 "[topVer=" + topVer + ", newTopVer=" + currTopVer0 + ']');
+
+                                        return;
+                                    }
+
+                                    if (AVOID_CLIENT_REASSIGN && evt.eventNode().isClient()) {
+                                        if (log.isInfoEnabled())
+                                            log.info("Skipping assignments calculation on client node join: " +
+                                                evt.eventNode().id());
 
                                         return;
                                     }
