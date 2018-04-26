@@ -205,26 +205,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             if (!F.isEmpty(getSchema()))
                 sbUrl.append('/').append(getSchema());
 
-            boolean first = true;
-
-            for (ConnectionProperty prop : propsArray) {
-                String strProp = prop.valueObject();
-
-                if (strProp != null && !String.valueOf(prop.getDfltVal()).equals(strProp)) {
-                    if (first)
-                        sbUrl.append('?');
-                    else
-                        sbUrl.append('&');
-
-                    if (strProp.contains("&"))
-                        sbUrl.append(prop.name).append("={").append(strProp).append('}');
-                    else
-                        sbUrl.append(prop.name).append('=').append(strProp);
-
-                    first = false;
-                }
-            }
-
             return sbUrl.toString();
         }
     }
