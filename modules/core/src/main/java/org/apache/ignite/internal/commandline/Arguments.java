@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.commandline;
 
 import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 
 /**
@@ -62,6 +63,11 @@ public class Arguments {
     private final VisorTxTaskArg txArg;
 
     /**
+     * Arguments for --cache subcommand.
+     */
+    private CacheArguments cacheArgs;
+
+    /**
      * @param cmd Command.
      * @param host Host.
      * @param port Port.
@@ -73,10 +79,11 @@ public class Arguments {
      * @param force Force flag.
      * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
      * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
+     * @param cacheArgs --cache subcommand arguments.
      */
-    public Arguments(Command cmd, String host, String port, String user, String pwd,
-                     String baselineAct, String baselineArgs, long pingTimeout,
-                     long pingInterval, VisorTxTaskArg txArg, boolean force) {
+    public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
+        String baselineArgs, long pingTimeout, long pingInterval, VisorTxTaskArg txArg, boolean force,
+        CacheArguments cacheArgs) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -88,6 +95,7 @@ public class Arguments {
         this.pingInterval = pingInterval;
         this.force = force;
         this.txArg = txArg;
+        this.cacheArgs = cacheArgs;
     }
 
     /**
@@ -169,5 +177,12 @@ public class Arguments {
      */
     public boolean force() {
         return force;
+    }
+
+    /**
+     * @return Arguments for --cache subcommand.
+     */
+    public CacheArguments cacheArgs() {
+        return cacheArgs;
     }
 }
