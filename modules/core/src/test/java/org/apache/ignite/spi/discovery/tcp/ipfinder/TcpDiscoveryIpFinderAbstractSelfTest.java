@@ -54,6 +54,13 @@ public abstract class TcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscover
         injectLogger(finder);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception If any error occurs.
      */

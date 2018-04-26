@@ -35,16 +35,14 @@ public class GridDhtColocatedOffHeapCacheEntry extends GridDhtColocatedCacheEntr
      * @param topVer Topology version at the time of creation (if negative, then latest topology is assumed).
      * @param key    Cache key.
      * @param hash   Key hash value.
-     * @param val    Entry value.
      */
     public GridDhtColocatedOffHeapCacheEntry(
         GridCacheContext ctx,
         AffinityTopologyVersion topVer,
         KeyCacheObject key,
-        int hash,
-        CacheObject val
+        int hash
     ) {
-        super(ctx, topVer, key, hash, val);
+        super(ctx, topVer, key, hash);
     }
 
     /** {@inheritDoc} */

@@ -25,18 +25,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexType;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
+import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
+import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
@@ -47,6 +53,9 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase
  * Sorted index.
  */
 public final class GridMergeIndexSorted extends GridMergeIndex {
+    /** */
+    private static final IndexType TYPE = IndexType.createNonUnique(false);
+
     /** */
     private final Comparator<RowStream> streamCmp = new Comparator<RowStream>() {
         @Override public int compare(RowStream o1, RowStream o2) {
@@ -62,26 +71,33 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     };
 
     /** */
-    private Map<UUID,RowStream> streamsMap;
+    private Map<UUID,RowStream[]> streamsMap;
 
     /** */
-    private RowStream[] streams;
+    private final Lock lock = new ReentrantLock();
+
+    /** */
+    private final Condition notEmpty = lock.newCondition();
+
+    /** */
+    private GridResultPage failPage;
+
+    /** */
+    private MergeStreamIterator it;
 
     /**
      * @param ctx Kernal context.
      * @param tbl Table.
      * @param name Index name,
-     * @param type Index type.
      * @param cols Columns.
      */
     public GridMergeIndexSorted(
         GridKernalContext ctx,
         GridMergeTable tbl,
         String name,
-        IndexType type,
         IndexColumn[] cols
     ) {
-        super(ctx, tbl, name, type, cols);
+        super(ctx, tbl, name, TYPE, cols);
     }
 
     /** {@inheritDoc} */
@@ -89,33 +105,48 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
         super.setSources(nodes, segmentsCnt);
 
         streamsMap = U.newHashMap(nodes.size());
-        streams = new RowStream[nodes.size()];
+        RowStream[] streams = new RowStream[nodes.size() * segmentsCnt];
 
         int i = 0;
 
         for (ClusterNode node : nodes) {
-            RowStream stream = new RowStream(node.id());
+            RowStream[] segments = new RowStream[segmentsCnt];
 
-            streams[i] = stream;
+            for (int s = 0; s < segmentsCnt; s++)
+                streams[i++] = segments[s] = new RowStream();
 
-            if (streamsMap.put(stream.src, stream) != null)
+            if (streamsMap.put(node.id(), segments) != null)
                 throw new IllegalStateException();
         }
+
+        it = new MergeStreamIterator(streams);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean fetchedAll() {
+        return it.fetchedAll();
     }
 
     /** {@inheritDoc} */
     @Override protected void addPage0(GridResultPage page) {
-        if (page.isLast() || page.isFail()) {
-            // Finish all the streams.
-            for (RowStream stream : streams)
-                stream.addPage(page);
+        if (page.isFail()) {
+            lock.lock();
+
+            try {
+                if (failPage == null) {
+                    failPage = page;
+
+                    notEmpty.signalAll();
+                }
+            }
+            finally {
+                lock.unlock();
+            }
         }
         else {
-            assert page.rowsInPage() > 0;
-
             UUID src = page.source();
 
-            streamsMap.get(src).addPage(page);
+            streamsMap.get(src)[page.segmentId()].addPage(page);
         }
     }
 
@@ -153,8 +184,13 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
+        return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, false);
+    }
+
+    /** {@inheritDoc} */
     @Override protected Cursor findInStream(@Nullable SearchRow first, @Nullable SearchRow last) {
-        return new FetchingCursor(first, last, new MergeStreamIterator());
+        return new FetchingCursor(first, last, it);
     }
 
     /**
@@ -165,17 +201,42 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
         private boolean first = true;
 
         /** */
-        private int off;
+        private volatile int off;
 
         /** */
         private boolean hasNext;
+
+        /** */
+        private final RowStream[] streams;
+
+        /**
+         * @param streams Streams.
+         */
+        MergeStreamIterator(RowStream[] streams) {
+            assert !F.isEmpty(streams);
+
+            this.streams = streams;
+        }
+
+        /**
+         * @return {@code true} If fetched all.
+         */
+        private boolean fetchedAll() {
+            return off == streams.length;
+        }
 
         /**
          *
          */
         private void goFirst() {
+            assert first;
+
+            first = false;
+
             for (int i = 0; i < streams.length; i++) {
-                if (!streams[i].next()) {
+                RowStream s = streams[i];
+
+                if (!s.next()) {
                     streams[i] = null;
                     off++; // Move left bound.
                 }
@@ -183,14 +244,15 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
 
             if (off < streams.length)
                 Arrays.sort(streams, streamCmp);
-
-            first = false;
         }
 
         /**
          *
          */
         private void goNext() {
+            if (off == streams.length)
+                return; // All streams are done.
+
             if (streams[off].next())
                 bubbleUp(streams, off, streamCmp);
             else
@@ -229,31 +291,68 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     /**
      * Row stream.
      */
-    private final class RowStream {
-        /** */
-        final UUID src;
-
-        /** */
-        final BlockingQueue<GridResultPage> queue = new ArrayBlockingQueue<>(8);
-
+    private final class RowStream implements Pollable<GridResultPage> {
         /** */
         Iterator<Value[]> iter = emptyIterator();
 
         /** */
         Row cur;
 
-        /**
-         * @param src Source.
-         */
-        private RowStream(UUID src) {
-            this.src = src;
-        }
+        /** */
+        GridResultPage nextPage;
 
         /**
          * @param page Page.
          */
         private void addPage(GridResultPage page) {
-            queue.offer(page);
+            assert !page.isFail();
+
+            if (page.isLast() && page.rowsInPage() == 0)
+                page = createDummyLastPage(page); // Terminate.
+
+            lock.lock();
+
+            try {
+                // We can fetch the next page only when we have polled the previous one.
+                assert nextPage == null;
+
+                nextPage = page;
+
+                notEmpty.signalAll();
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridResultPage poll(long timeout, TimeUnit unit) throws InterruptedException {
+            long nanos = unit.toNanos(timeout);
+
+            lock.lock();
+
+            try {
+                for (;;) {
+                    if (failPage != null)
+                        return failPage;
+
+                    GridResultPage page = nextPage;
+
+                    if (page != null) {
+                        // isLast && !isDummyLast
+                        nextPage = page.isLast() && page.response() != null
+                            ? createDummyLastPage(page) : null; // Terminate with empty iterator.
+
+                        return page;
+                    }
+
+                    if ((nanos = notEmpty.awaitNanos(nanos)) <= 0)
+                        return null;
+                }
+            }
+            finally {
+                lock.unlock();
+            }
         }
 
         /**
@@ -262,7 +361,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
         private boolean next() {
             cur = null;
 
-            iter = pollNextIterator(queue, iter);
+            iter = pollNextIterator(this, iter);
 
             if (!iter.hasNext())
                 return false;

@@ -88,6 +88,8 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
 
                     blockedMsgs.add(new T2<>(node, ioMsg));
 
+                    this.notifyAll();
+
                     return;
                 }
             }
@@ -134,6 +136,33 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
         synchronized (this) {
             return !blockedMsgs.isEmpty();
         }
+    }
+
+    /**
+     * @param cls Message class.
+     * @param nodeName Node name.
+     * @throws InterruptedException If interrupted.
+     */
+    public void waitForBlocked(Class<?> cls, String nodeName) throws InterruptedException {
+        synchronized (this) {
+            while (!hasMessage(cls, nodeName))
+                wait();
+        }
+    }
+
+    /**
+     * @param cls Message class.
+     * @param nodeName Node name.
+     * @return {@code True} if has blocked message.
+     */
+    private boolean hasMessage(Class<?> cls, String nodeName) {
+        for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
+            if (msg.get2().message().getClass() == cls &&
+                nodeName.equals(msg.get1().attribute(ATTR_GRID_NAME)))
+                return true;
+        }
+
+        return false;
     }
 
     /**

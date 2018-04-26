@@ -120,6 +120,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param taskNameHash Task name hash code.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param storeUsed Cache store configured flag.
      * @param keepBinary Keep binary flag.
      * @param addDepInfo Deployment info flag.
      */
@@ -144,6 +145,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         int taskNameHash,
         long accessTtl,
         boolean skipStore,
+        boolean storeUsed,
         boolean keepBinary,
         boolean addDepInfo
     ) {
@@ -165,6 +167,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             addDepInfo);
 
         this.topVer = topVer;
+
+        storeUsed(storeUsed);
 
         nearKeys = nearCnt == 0 ? Collections.<KeyCacheObject>emptyList() : new ArrayList<KeyCacheObject>(nearCnt);
         invalidateEntries = new BitSet(dhtCnt == 0 ? nearCnt : dhtCnt);

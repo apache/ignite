@@ -21,6 +21,8 @@ import org.apache.ignite.IgniteLogger;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 
@@ -77,46 +79,76 @@ public class Slf4jLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public void trace(String msg) {
+        trace(null, msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void trace(@Nullable String marker, String msg) {
         if (!impl.isTraceEnabled())
             warning("Logging at TRACE level without checking if TRACE level is enabled: " + msg);
 
-        impl.trace(msg);
+        impl.trace(getMarkerOrNull(marker), msg);
     }
 
     /** {@inheritDoc} */
     @Override public void debug(String msg) {
+        debug(null, msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void debug(@Nullable String marker, String msg) {
         if (!impl.isDebugEnabled())
             warning("Logging at DEBUG level without checking if DEBUG level is enabled: " + msg);
 
-        impl.debug(msg);
+        impl.debug(getMarkerOrNull(marker), msg);
     }
 
     /** {@inheritDoc} */
     @Override public void info(String msg) {
+        info(null, msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void info(@Nullable String marker, String msg) {
         if (!impl.isInfoEnabled())
             warning("Logging at INFO level without checking if INFO level is enabled: " + msg);
 
-        impl.info(msg);
+        impl.info(getMarkerOrNull(marker), msg);
     }
 
     /** {@inheritDoc} */
     @Override public void warning(String msg) {
-        impl.warn(msg);
+        warning(null, msg, null);
     }
 
     /** {@inheritDoc} */
     @Override public void warning(String msg, @Nullable Throwable e) {
-        impl.warn(msg, e);
+        warning(null, msg, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void warning(@Nullable String marker, String msg, @Nullable Throwable e) {
+        impl.warn(getMarkerOrNull(marker), msg, e);
     }
 
     /** {@inheritDoc} */
     @Override public void error(String msg) {
-        impl.error(msg);
+        warning(null, msg, null);
     }
 
     /** {@inheritDoc} */
     @Override public void error(String msg, @Nullable Throwable e) {
-        impl.error(msg, e);
+        error(null, msg, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(@Nullable String marker, String msg, @Nullable Throwable e) {
+        impl.error(getMarkerOrNull(marker), msg, e);
+    }
+
+    /** Returns Marker object for the specified name, or null if the name is null */
+    private Marker getMarkerOrNull(@Nullable String marker) {
+        return marker != null ? MarkerFactory.getMarker(marker) : null;
     }
 
     /** {@inheritDoc} */

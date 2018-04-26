@@ -47,6 +47,9 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
     /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private static final int EVENTS_COUNT = 40;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -76,38 +79,41 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
      * @throws Exception if failed.
      */
     public void testUnloadEvents() throws Exception {
-        final Ignite g1 = startGrid("g1");
+        try {
+            final Ignite g1 = startGrid("g1");
 
-        Collection<Integer> allKeys = new ArrayList<>(100);
+            Collection<Integer> allKeys = new ArrayList<>(EVENTS_COUNT);
 
-        IgniteCache<Integer, String> cache = g1.cache(null);
+            IgniteCache<Integer, String> cache = g1.cache(null);
 
-        for (int i = 0; i < 100; i++) {
-            cache.put(i, "val");
-            allKeys.add(i);
+            for (int i = 0; i < EVENTS_COUNT; i++) {
+                cache.put(i, "val");
+                allKeys.add(i);
+            }
+
+            Ignite g2 = startGrid("g2");
+
+            awaitPartitionMapExchange();
+
+            Map<ClusterNode, Collection<Object>> keysMap = g1.affinity(null).mapKeysToNodes(allKeys);
+            Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());
+
+            assertNotNull(g2Keys);
+            assertFalse("There are no keys assigned to g2", g2Keys.isEmpty());
+
+            Collection<Event> objEvts =
+                g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
+
+            checkObjectUnloadEvents(objEvts, g1, g2Keys);
+
+            Collection<Event> partEvts =
+                g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_PART_UNLOADED);
+
+            checkPartitionUnloadEvents(partEvts, g1, dht(g2.cache(null)).topology().localPartitions());
         }
-
-        Ignite g2 = startGrid("g2");
-
-        awaitPartitionMapExchange();
-
-        Map<ClusterNode, Collection<Object>> keysMap = g1.affinity(null).mapKeysToNodes(allKeys);
-        Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());
-
-        assertNotNull(g2Keys);
-        assertFalse("There are no keys assigned to g2", g2Keys.isEmpty());
-
-        Thread.sleep(5000);
-
-        Collection<Event> objEvts =
-            g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
-
-        checkObjectUnloadEvents(objEvts, g1, g2Keys);
-
-        Collection <Event> partEvts =
-            g1.events().localQuery(F.<Event>alwaysTrue(), EVT_CACHE_REBALANCE_PART_UNLOADED);
-
-        checkPartitionUnloadEvents(partEvts, g1, dht(g2.cache(null)).topology().localPartitions());
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**

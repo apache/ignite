@@ -19,12 +19,15 @@ package org.apache.ignite.internal.jdbc2;
 
 import java.sql.Statement;
 
+/**
+ *
+ */
 public abstract class JdbcAbstractUpdateStatementSelfTest extends JdbcAbstractDmlStatementSelfTest {
     /** SQL query to populate cache. */
-    private static final String ITEMS_SQL = "insert into Person(_key, id, firstName, lastName, age) values " +
-        "('p1', 1, 'John', 'White', 25), " +
-        "('p2', 2, 'Joe', 'Black', 35), " +
-        "('p3', 3, 'Mike', 'Green', 40)";
+    private static final String ITEMS_SQL = "insert into Person(_key, id, firstName, lastName, age, data) values " +
+        "('p1', 1, 'John', 'White', 25, RAWTOHEX('White')), " +
+        "('p2', 2, 'Joe', 'Black', 35, RAWTOHEX('Black')), " +
+        "('p3', 3, 'Mike', 'Green', 40, RAWTOHEX('Green'))";
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

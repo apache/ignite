@@ -22,20 +22,22 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.RandomAccess;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
@@ -44,13 +46,10 @@ import org.h2.index.IndexType;
 import org.h2.message.DbException;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
-import org.h2.result.SortOrder;
 import org.h2.table.IndexColumn;
-import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Collections.emptyIterator;
 import static java.util.Objects.requireNonNull;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_MERGE_TABLE_MAX_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE;
@@ -65,6 +64,22 @@ public abstract class GridMergeIndex extends BaseIndex {
 
     /** */
     private static final int PREFETCH_SIZE = getInteger(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE, 1024);
+
+    /** */
+    private static final AtomicReferenceFieldUpdater<GridMergeIndex, ConcurrentMap> lastPagesUpdater =
+        AtomicReferenceFieldUpdater.newUpdater(GridMergeIndex.class, ConcurrentMap.class, "lastPages");
+
+    static {
+        if (!U.isPow2(PREFETCH_SIZE)) {
+            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
+                ") must be positive and a power of 2.");
+        }
+
+        if (PREFETCH_SIZE >= MAX_FETCH_SIZE) {
+            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
+                ") must be less than " + IGNITE_SQL_MERGE_TABLE_MAX_SIZE + " (" + MAX_FETCH_SIZE + ").");
+        }
+    }
 
     /** */
     protected final Comparator<SearchRow> firstRowCmp = new Comparator<SearchRow>() {
@@ -84,14 +99,11 @@ public abstract class GridMergeIndex extends BaseIndex {
         }
     };
 
-    /** All rows number. */
-    private final AtomicInteger expRowsCnt = new AtomicInteger(0);
-
-    /** Remaining rows per source node ID. */
-    private Map<UUID, Counter[]> remainingRows;
+    /** Row source nodes. */
+    private Set<UUID> sources;
 
     /** */
-    private final AtomicBoolean lastSubmitted = new AtomicBoolean();
+    private int pageSize;
 
     /**
      * Will be r/w from query execution thread only, does not need to be threadsafe.
@@ -106,6 +118,9 @@ public abstract class GridMergeIndex extends BaseIndex {
 
     /** */
     private final GridKernalContext ctx;
+
+    /** */
+    private volatile ConcurrentMap<SourceKey, Integer> lastPages;
 
     /**
      * @param ctx Context.
@@ -129,16 +144,6 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param ctx Context.
      */
     protected GridMergeIndex(GridKernalContext ctx) {
-        if (!U.isPow2(PREFETCH_SIZE)) {
-            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
-                ") must be positive and a power of 2.");
-        }
-
-        if (PREFETCH_SIZE >= MAX_FETCH_SIZE) {
-            throw new IllegalArgumentException(IGNITE_SQL_MERGE_TABLE_PREFETCH_SIZE + " (" + PREFETCH_SIZE +
-                ") must be less than " + IGNITE_SQL_MERGE_TABLE_MAX_SIZE + " (" + MAX_FETCH_SIZE + ").");
-        }
-
         this.ctx = ctx;
 
         fetched = new BlockList<>(PREFETCH_SIZE);
@@ -148,7 +153,7 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @return Return source nodes for this merge index.
      */
     public Set<UUID> sources() {
-        return remainingRows.keySet();
+        return sources;
     }
 
     /**
@@ -169,17 +174,24 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @return {@code true} If this index needs data from the given source node.
      */
     public boolean hasSource(UUID nodeId) {
-        return remainingRows.containsKey(nodeId);
+        return sources.contains(nodeId);
     }
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
-        return expRowsCnt.get();
+        Cursor c = find(ses, null, null);
+
+        long cnt = 0;
+
+        while (c.next())
+            cnt++;
+
+        return cnt;
     }
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-        return getRowCount(null);
+        return 10_000;
     }
 
     /**
@@ -189,27 +201,28 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param segmentsCnt Index segments per table.
      */
     public void setSources(Collection<ClusterNode> nodes, int segmentsCnt) {
-        assert remainingRows == null;
+        assert sources == null;
 
-        remainingRows = U.newHashMap(nodes.size());
+        sources = new HashSet<>();
 
         for (ClusterNode node : nodes) {
-            Counter[] counters = new Counter[segmentsCnt];
-
-            for (int i = 0; i < segmentsCnt; i++)
-                counters[i] = new Counter();
-
-            if (remainingRows.put(node.id(), counters) != null)
-                throw new IllegalStateException("Duplicate node id: " + node.id());
-
+            if (!sources.add(node.id()))
+                throw new IllegalStateException();
         }
+    }
+
+    /**
+     * @param pageSize Page size.
+     */
+    public void setPageSize(int pageSize) {
+        this.pageSize = pageSize;
     }
 
     /**
      * @param queue Queue to poll.
      * @return Next page.
      */
-    private GridResultPage takeNextPage(BlockingQueue<GridResultPage> queue) {
+    private GridResultPage takeNextPage(Pollable<GridResultPage> queue) {
         GridResultPage page;
 
         for (;;) {
@@ -234,16 +247,17 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param iter Current iterator.
      * @return The same or new iterator.
      */
-    protected final Iterator<Value[]> pollNextIterator(BlockingQueue<GridResultPage> queue, Iterator<Value[]> iter) {
-        while (!iter.hasNext()) {
+    protected final Iterator<Value[]> pollNextIterator(Pollable<GridResultPage> queue, Iterator<Value[]> iter) {
+        if (!iter.hasNext()) {
             GridResultPage page = takeNextPage(queue);
 
-            if (page.isLast())
-                return emptyIterator(); // We are done.
-
-            fetchNextPage(page);
+            if (!page.isLast())
+                page.fetchNextPage(); // Failed will throw an exception here.
 
             iter = page.rows();
+
+            // The received iterator must be empty in the dummy last page or on failure.
+            assert iter.hasNext() || page.isDummyLast() || page.isFail();
         }
 
         return iter;
@@ -253,23 +267,18 @@ public abstract class GridMergeIndex extends BaseIndex {
      * @param e Error.
      */
     public void fail(final CacheException e) {
-        for (UUID nodeId0 : remainingRows.keySet()) {
-            addPage0(new GridResultPage(null, nodeId0, null) {
-                @Override public boolean isFail() {
-                    return true;
-                }
-
-                @Override public void fetchNextPage() {
-                    throw e;
-                }
-            });
-        }
+        for (UUID nodeId : sources)
+            fail(nodeId, e);
     }
 
     /**
      * @param nodeId Node ID.
+     * @param e Exception.
      */
     public void fail(UUID nodeId, final CacheException e) {
+        if (nodeId == null)
+            nodeId = F.first(sources);
+
         addPage0(new GridResultPage(null, nodeId, null) {
             @Override public boolean isFail() {
                 return true;
@@ -285,90 +294,87 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /**
+     * @param nodeId Node ID.
+     * @param res Response.
+     */
+    private void initLastPages(UUID nodeId, GridQueryNextPageResponse res) {
+        int allRows = res.allRows();
+
+        // If the old protocol we send all rows number in the page 0, other pages have -1.
+        // In the new protocol we do not know it and always have -1, except terminating page,
+        // which has -2. Thus we have to init page counters only when we receive positive value
+        // in the first page.
+        if (allRows < 0 || res.page() != 0)
+            return;
+
+        ConcurrentMap<SourceKey,Integer> lp = lastPages;
+
+        if (lp == null && !lastPagesUpdater.compareAndSet(this, null, lp = new ConcurrentHashMap<>()))
+            lp = lastPages;
+
+        assert pageSize > 0: pageSize;
+
+        int lastPage = allRows == 0 ? 0 : (allRows - 1) / pageSize;
+
+        assert lastPage >= 0: lastPage;
+
+        if (lp.put(new SourceKey(nodeId, res.segmentId()), lastPage) != null)
+            throw new IllegalStateException();
+    }
+
+    /**
+     * @param page Page.
+     */
+    private void markLastPage(GridResultPage page) {
+        GridQueryNextPageResponse res = page.response();
+
+        if (res.allRows() != -2) { // -2 means the last page.
+            UUID nodeId = page.source();
+
+            initLastPages(nodeId, res);
+
+            ConcurrentMap<SourceKey,Integer> lp = lastPages;
+
+            if (lp == null)
+                return; // It was not initialized --> wait for -2.
+
+            Integer lastPage = lp.get(new SourceKey(nodeId, res.segmentId()));
+
+            if (lastPage == null)
+                return; // This node may use the new protocol --> wait for -2.
+
+            if (lastPage != res.page()) {
+                assert lastPage > res.page();
+
+                return; // This is not the last page.
+            }
+        }
+
+        page.setLast(true);
+    }
+
+    /**
      * @param page Page.
      */
     public final void addPage(GridResultPage page) {
-        int pageRowsCnt = page.rowsInPage();
+        markLastPage(page);
+        addPage0(page);
+    }
 
-        Counter cnt = remainingRows.get(page.source())[page.res.segmentId()];
+    /**
+     * @param lastPage Real last page.
+     * @return Created dummy page.
+     */
+    protected final GridResultPage createDummyLastPage(GridResultPage lastPage) {
+        assert !lastPage.isDummyLast(); // It must be a real last page.
 
-        // RemainingRowsCount should be updated before page adding to avoid race
-        // in GridMergeIndexUnsorted cursor iterator
-        int remainingRowsCount;
-
-        int allRows = page.response().allRows();
-
-        if (allRows != -1) { // Only the first page contains allRows count and is allowed to init counter.
-            assert cnt.state == State.UNINITIALIZED : "Counter is already initialized.";
-
-            remainingRowsCount = cnt.addAndGet(allRows - pageRowsCnt);
-
-            expRowsCnt.addAndGet(allRows);
-
-            // Add page before setting initialized flag to avoid race condition with adding last page
-            if (pageRowsCnt > 0)
-                addPage0(page);
-
-            // We need this separate flag to handle case when the first source contains only one page
-            // and it will signal that all remaining counters are zero and fetch is finished.
-            cnt.state = State.INITIALIZED;
-        }
-        else {
-            remainingRowsCount = cnt.addAndGet(-pageRowsCnt);
-
-            if (pageRowsCnt > 0)
-                addPage0(page);
-        }
-
-        if (remainingRowsCount == 0) { // Result can be negative in case of race between messages, it is ok.
-            if (cnt.state == State.UNINITIALIZED)
-                return;
-
-            // Guarantee that finished state possible only if counter is zero and all pages was added
-            cnt.state = State.FINISHED;
-
-            for (Counter[] cntrs : remainingRows.values()) { // Check all the sources.
-                for(int i = 0; i < cntrs.length; i++) {
-                    if (cntrs[i].state != State.FINISHED)
-                        return;
-                }
-            }
-
-            if (lastSubmitted.compareAndSet(false, true)) {
-                addPage0(new GridResultPage(null, page.source(), null) {
-                    @Override public boolean isLast() {
-                        return true;
-                    }
-                });
-            }
-        }
+        return new GridResultPage(ctx, lastPage.source(), null).setLast(true);
     }
 
     /**
      * @param page Page.
      */
     protected abstract void addPage0(GridResultPage page);
-
-    /**
-     * @param page Page.
-     */
-    protected void fetchNextPage(GridResultPage page) {
-        assert !page.isLast();
-
-        if(page.isFail())
-            page.fetchNextPage(); //rethrow exceptions
-
-        assert page.res != null;
-
-        Counter[] counters = remainingRows.get(page.source());
-
-        int segId = page.res.segmentId();
-
-        Counter counter = counters[segId];
-
-        if (counter.get() != 0)
-            page.fetchNextPage();
-    }
 
     /** {@inheritDoc} */
     @Override public final Cursor find(Session ses, SearchRow first, SearchRow last) {
@@ -381,11 +387,9 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /**
-     * @return {@code true} If we have fetched all the remote rows.
+     * @return {@code true} If we have fetched all the remote rows into a fetched list.
      */
-    public boolean fetchedAll() {
-        return fetchedCnt == expRowsCnt.get();
-    }
+    public abstract boolean fetchedAll();
 
     /**
      * @param lastEvictedRow Last evicted fetched row.
@@ -430,11 +434,6 @@ public abstract class GridMergeIndex extends BaseIndex {
     /** {@inheritDoc} */
     @Override public void remove(Session ses, Row row) {
         throw DbException.getUnsupportedException("remove row");
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
-        return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, true);
     }
 
     /** {@inheritDoc} */
@@ -683,14 +682,6 @@ public abstract class GridMergeIndex extends BaseIndex {
     }
 
     /**
-     * Counter with initialization flag.
-     */
-    private static class Counter extends AtomicInteger {
-        /** */
-        volatile State state = State.UNINITIALIZED;
-    }
-
-    /**
      */
     private static final class BlockList<Z> extends AbstractList<Z> implements RandomAccess {
         /** */
@@ -764,6 +755,55 @@ public abstract class GridMergeIndex extends BaseIndex {
             size -= res.size();
 
             return res;
+        }
+    }
+
+    /**
+     * Pollable.
+     */
+    protected static interface Pollable<E> {
+        /**
+         * @param timeout Timeout.
+         * @param unit Time unit.
+         * @return Polled value or {@code null} if none.
+         * @throws InterruptedException If interrupted.
+         */
+        E poll(long timeout, TimeUnit unit) throws InterruptedException;
+    }
+
+    /**
+     */
+    private static class SourceKey {
+        final UUID nodeId;
+
+        /** */
+        final int segment;
+
+        /**
+         * @param nodeId Node ID.
+         * @param segment Segment.
+         */
+        SourceKey(UUID nodeId, int segment) {
+            this.nodeId = nodeId;
+            this.segment = segment;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            SourceKey sourceKey = (SourceKey)o;
+
+            if (segment != sourceKey.segment) return false;
+            return nodeId.equals(sourceKey.nodeId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int result = nodeId.hashCode();
+            result = 31 * result + segment;
+            return result;
         }
     }
 }

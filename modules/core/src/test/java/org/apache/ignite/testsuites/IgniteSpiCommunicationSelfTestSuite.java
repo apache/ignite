@@ -38,6 +38,8 @@ import org.apache.ignite.spi.communication.tcp.GridTcpCommunicationSpiTcpSelfTes
 import org.apache.ignite.spi.communication.tcp.IgniteTcpCommunicationRecoveryAckClosureSelfTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiDropNodesTest;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiFaultyClientTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiHalfOpenedConnectionTest;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiSkipMessageSendTest;
 
 /**
  * Test suite for all communication SPIs.
@@ -76,8 +78,11 @@ public class IgniteSpiCommunicationSelfTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(GridTcpCommunicationSpiConfigSelfTest.class));
 
+        suite.addTest(new TestSuite(TcpCommunicationSpiSkipMessageSendTest.class));
+
         suite.addTest(new TestSuite(TcpCommunicationSpiFaultyClientTest.class));
         suite.addTest(new TestSuite(TcpCommunicationSpiDropNodesTest.class));
+        suite.addTest(new TestSuite(TcpCommunicationSpiHalfOpenedConnectionTest.class));
 
         return suite;
     }
