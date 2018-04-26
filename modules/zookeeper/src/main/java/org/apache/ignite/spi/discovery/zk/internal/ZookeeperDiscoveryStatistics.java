@@ -17,7 +17,7 @@
 package org.apache.ignite.spi.discovery.zk.internal;
 
 /**
- *
+ * Zookeeper discovery statistics.
  */
 public class ZookeeperDiscoveryStatistics {
     /** */

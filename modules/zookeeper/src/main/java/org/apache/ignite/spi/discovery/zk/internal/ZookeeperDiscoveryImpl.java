@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -50,7 +51,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -89,7 +89,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.data.Stat;
-import org.jboss.netty.util.internal.ConcurrentHashMap;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
@@ -2955,8 +2954,6 @@ public class ZookeeperDiscoveryImpl {
                 if (node.order() >= locNode.order())
                     break;
 
-                node.setMetrics(new ClusterMetricsSnapshot());
-
                 rtState.top.addNode(node);
             }
 
@@ -3447,8 +3444,6 @@ public class ZookeeperDiscoveryImpl {
 
         joinedNode.order(joinedEvtData.topVer);
         joinedNode.internalId(joinedEvtData.joinedInternalId);
-
-        joinedNode.setMetrics(new ClusterMetricsSnapshot());
 
         rtState.top.addNode(joinedNode);
 
