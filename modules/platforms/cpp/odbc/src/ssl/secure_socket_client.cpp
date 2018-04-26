@@ -343,30 +343,36 @@ namespace ignite
                     if (res == OPERATION_SUCCESS)
                         return true;
 
-                    int want = ssl::SSL_want_(ssl0);
+                    int sslError = ssl::SSL_get_error_(ssl0, res);
 
-                    if (want == SSL_NOTHING)
+                    LOG_MSG("wait res=" << res << ", sslError=" << sslError);
+
+                    if (IsActualError(sslError))
                     {
-                        diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
+                        diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT,
                             "Can not establish secure connection: " + GetSslError(ssl0, res));
 
                         return false;
                     }
 
+                    int want = ssl::SSL_want_(ssl0);
+
                     res = WaitOnSocket(ssl, timeout, want == SSL_READING);
+
+                    LOG_MSG("wait res=" << res << ", want=" << want);
 
                     if (res == WaitResult::TIMEOUT)
                     {
-                        diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
-                            "Can not establish secure connection: Timeout exceeded (" +
-                                common::LexicalCast<std::string>(timeout) + ")");
+                        diag.AddStatusRecord(SqlState::SHYT01_CONNECTION_TIMEOUT,
+                            "Can not establish secure connection: Timeout expired (" +
+                                common::LexicalCast<std::string>(timeout) + " seconds)");
 
                         return false;
                     }
 
                     if (res != WaitResult::SUCCESS)
                     {
-                        diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
+                        diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT,
                             "Can not establish secure connection due to internal error");
 
                         return false;
@@ -404,6 +410,23 @@ namespace ignite
                 ssl::ERR_error_string_n_(error, errBuf, sizeof(errBuf));
 
                 return std::string(errBuf);
+            }
+
+            bool SecureSocketClient::IsActualError(int err)
+            {
+                switch (err)
+                {
+                    case SSL_ERROR_NONE:
+                    case SSL_ERROR_WANT_WRITE:
+                    case SSL_ERROR_WANT_READ:
+                    case SSL_ERROR_WANT_CONNECT:
+                    case SSL_ERROR_WANT_ACCEPT:
+                    case SSL_ERROR_WANT_X509_LOOKUP:
+                        return false;
+
+                    default:
+                        return true;
+                }
             }
 
             void SecureSocketClient::CloseInteral()

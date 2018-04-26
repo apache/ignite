@@ -157,6 +157,14 @@ namespace ignite
                  * @return Error string.
                  */
                 static std::string GetSslError(void* ssl, int ret);
+                
+                /**
+                 * Check if a actual error occured.
+                 *
+                 * @param err SSL error code.
+                 * @return @true if a actual error occured
+                 */
+                static bool IsActualError(int err);
 
                 /** Certificate file path. */
                 std::string certPath;
