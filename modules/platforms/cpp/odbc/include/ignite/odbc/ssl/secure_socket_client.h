@@ -55,7 +55,7 @@ namespace ignite
                  *
                  * @param hostname Host name or address.
                  * @param port TCP port.
-                 * @param timeout Timeout.
+                 * @param timeout Timeout in seconds.
                  * @param diag Diagnostics collector to use for error-reporting.
                  * @return @c true on success and @c false on fail.
                  */
@@ -71,7 +71,7 @@ namespace ignite
                  * Send data using connection.
                  * @param data Data to send.
                  * @param size Number of bytes to send.
-                 * @param timeout Timeout.
+                 * @param timeout Timeout in seconds.
                  * @return Number of bytes that have been sent on success, 
                  *     WaitResult::TIMEOUT on timeout and -errno on failure.
                  */
@@ -82,7 +82,7 @@ namespace ignite
                  *
                  * @param buffer Pointer to data buffer.
                  * @param size Size of the buffer in bytes.
-                 * @param timeout Timeout.
+                 * @param timeout Timeout in seconds.
                  * @return Number of bytes that have been received on success,
                  *     WaitResult::TIMEOUT on timeout and -errno on failure.
                  */
@@ -106,7 +106,7 @@ namespace ignite
                  * This function uses poll to achive timeout functionality
                  * for every separate socket operation.
                  *
-                 * @param timeout Timeout.
+                 * @param timeout Timeout in seconds.
                  * @param rd Wait for read if @c true, or for write if @c false.
                  * @return -errno on error, WaitResult::TIMEOUT on timeout and
                  *     WaitResult::SUCCESS on success.
@@ -124,6 +124,14 @@ namespace ignite
                  */
                 static void* MakeContext(const std::string& certPath, const std::string& keyPath,
                     const std::string& caPath, diagnostic::Diagnosable& diag);
+
+                /**
+                 * Complete async connect.
+                 *
+                 * @param timeout Timeout in seconds.
+                 * @return Connection result.
+                 */
+                int AsyncConnectInternal(int timeout);
 
                 /**
                  * Get SSL error.

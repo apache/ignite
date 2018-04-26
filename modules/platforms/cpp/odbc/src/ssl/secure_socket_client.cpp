@@ -123,20 +123,25 @@ namespace ignite
                 res = ssl::SSL_set_tlsext_host_name_(ssl0, hostname);
                 if (res != OPERATION_SUCCESS)
                 {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not set host name for secure connection");
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
+                        "Can not set host name for secure connection: " + GetSslError(ssl0, res));
 
                     ssl::BIO_free_all(bio);
 
                     return false;
                 }
 
-                res = ssl::SSL_connect_(ssl0);
-                LOG_MSG("RES = " << res);
+                ssl::SSL_set_connect_state_(ssl0);
+
+                sslBio = reinterpret_cast<void*>(bio);
+                ssl = reinterpret_cast<void*>(ssl0);
+
+                res = AsyncConnectInternal(DEFALT_CONNECT_TIMEOUT);
 
                 if (res != OPERATION_SUCCESS)
                 {
-                    diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT,
-                        "Failed to establish secure connection with the host: " + GetSslError(ssl0, res));
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
+                        "Can not establish secure connection: " + GetSslError(ssl0, res));
 
                     ssl::BIO_free_all(bio);
 
@@ -170,8 +175,6 @@ namespace ignite
                     return false;
                 }
 
-                sslBio = reinterpret_cast<void*>(bio);
-
                 return true;
             }
 
@@ -191,15 +194,9 @@ namespace ignite
                     return -1;
                 }
 
-                BIO* sslBio0 = reinterpret_cast<BIO*>(sslBio);
+                SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
-                int res = 0;
-
-                do
-                {
-                    res = ssl::BIO_write(sslBio0, data, static_cast<int>(size));
-                }
-                while (ssl::BIO_should_retry_(sslBio0));
+                int res = ssl::SSL_write_(ssl0, data, static_cast<int>(size));
 
                 return res;
             }
@@ -267,7 +264,7 @@ namespace ignite
                     }
                 }
 
-                const SSL_METHOD* method = ssl::SSLv23_method();
+                const SSL_METHOD* method = ssl::SSLv23_client_method_();
                 if (!method)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not get SSL method.");
@@ -340,20 +337,39 @@ namespace ignite
                 return ctx;
             }
 
-            std::string SecureSocketClient::GetSslError(void* ssl0, int ret)
+            int SecureSocketClient::AsyncConnectInternal(int timeout)
             {
-                SSL* ssl1 = reinterpret_cast<SSL*>(ssl0);
+                SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
-                if (ret < 0)
+                while (true)
                 {
-                    int ssl_error = ssl::SSL_get_error_(ssl1, ret);
+                    int res = ssl::SSL_connect_(ssl0);
 
-                    if (ssl_error == SSL_ERROR_WANT_WRITE)
-                        return std::string("SSL_connect wants write");
+                    if (res == OPERATION_SUCCESS)
+                        return res;
 
-                    if (ssl_error == SSL_ERROR_WANT_READ)
-                        return std::string("SSL_connect wants read");
+                    int want = ssl::SSL_want_(ssl0);
+
+                    if (want == SSL_NOTHING)
+                        return res;
+
+                    res = WaitOnSocket(timeout, want == SSL_READING);
                 }
+            }
+
+            std::string SecureSocketClient::GetSslError(void* ssl, int ret)
+            {
+                SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
+
+                int ssl_error = ssl::SSL_get_error_(ssl0, ret);
+
+                if (ssl_error == SSL_ERROR_WANT_WRITE)
+                    return std::string("SSL_connect wants write");
+
+                if (ssl_error == SSL_ERROR_WANT_READ)
+                    return std::string("SSL_connect wants read");
+
+                LOG_MSG("ssl_error: " << ssl_error);
 
                 long error = ssl::ERR_get_error_();
 

@@ -174,6 +174,16 @@ namespace ignite
                     TLSEXT_NAMETYPE_host_name, const_cast<char*>(name));
             }
 
+            inline void SSL_set_connect_state_(SSL* s)
+            {
+                typedef void(FuncType)(SSL*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(
+                    SslGateway::GetInstance().GetFunctions().fpSSL_set_connect_state);
+
+                return fp(s);
+            }
+
             inline int SSL_connect_(SSL* s)
             {
                 typedef int(FuncType)(SSL*);
@@ -192,11 +202,30 @@ namespace ignite
                 return fp(s, ret);
             }
 
-            inline const SSL_METHOD *SSLv23_method()
+            inline int SSL_want_(const SSL *s)
+            {
+                typedef int(FuncType)(const SSL*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_want);
+
+                return fp(s);
+            }
+
+            inline int SSL_write_(SSL *s, const void *buf, int num)
+            {
+                typedef int(FuncType)(SSL*, const void *, int);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_write);
+
+                return fp(s, buf, num);
+            }
+
+            inline const SSL_METHOD *SSLv23_client_method_()
             {
                 typedef const SSL_METHOD*(FuncType)();
 
-                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSLv23_method);
+                FuncType* fp = reinterpret_cast<FuncType*>(
+                    SslGateway::GetInstance().GetFunctions().fpSSLv23_client_method);
 
                 return fp();
             }

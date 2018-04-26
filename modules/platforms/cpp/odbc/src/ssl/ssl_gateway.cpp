@@ -145,9 +145,12 @@ namespace ignite
                 functions.fpSSL_ctrl = LoadSslMethod("SSL_ctrl");
                 functions.fpSSL_CTX_ctrl = LoadSslMethod("SSL_CTX_ctrl");
 
-                functions.fpSSLv23_method = LoadSslMethod("SSLv23_method");
+                functions.fpSSLv23_client_method = LoadSslMethod("SSLv23_client_method");
+                functions.fpSSL_set_connect_state = LoadSslMethod("SSL_set_connect_state");
                 functions.fpSSL_connect = LoadSslMethod("SSL_connect");
                 functions.fpSSL_get_error = LoadSslMethod("SSL_get_error");
+                functions.fpSSL_want = LoadSslMethod("SSL_want");
+                functions.fpSSL_write = LoadSslMethod("SSL_write");
                 functions.fpBIO_new_ssl_connect = LoadSslMethod("BIO_new_ssl_connect");
 
                 functions.fpOPENSSL_config = LoadSslMethod("OPENSSL_config");
@@ -177,9 +180,12 @@ namespace ignite
                     functions.fpSSL_get_peer_certificate != 0 &&
                     functions.fpSSL_ctrl != 0 &&
                     functions.fpSSL_CTX_ctrl != 0 &&
-                    functions.fpSSLv23_method != 0 &&
+                    functions.fpSSLv23_client_method != 0 &&
+                    functions.fpSSL_set_connect_state != 0 &&
                     functions.fpSSL_connect != 0 &&
                     functions.fpSSL_get_error != 0 &&
+                    functions.fpSSL_want != 0 &&
+                    functions.fpSSL_write != 0 &&
                     functions.fpBIO_new_ssl_connect != 0 &&
                     functions.fpOPENSSL_config != 0 &&
                     functions.fpX509_free != 0 &&
