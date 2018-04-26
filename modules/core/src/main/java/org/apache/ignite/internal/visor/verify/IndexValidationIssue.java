@@ -46,6 +46,13 @@ public class IndexValidationIssue extends VisorDataTransferObject {
     private Throwable t;
 
     /**
+     *
+     */
+    public IndexValidationIssue() {
+        // Default constructor required for Externalizable.
+    }
+
+    /**
      * @param key Key.
      * @param cacheName Cache name.
      * @param idxName Index name.
