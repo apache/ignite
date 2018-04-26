@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Cache
         bool IsKeepBinary { get; }
 
         /// <summary>
-        /// Gets a value indicating whether to allow use atomic cache in transactions.
+        /// Gets a value indicating whether to allow use atomic operations in transactions.
         /// </summary>
         bool IsAllowAtomicOpsInTx { get; }
 
@@ -117,7 +117,7 @@ namespace Apache.Ignite.Core.Cache
         ICache<TK1, TV1> WithKeepBinary<TK1, TV1>();
 
         /// <summary>
-        /// Get another cache instance allowed to use in transactions.
+        /// Get another cache instance with operations allowed in transactions.
         /// Only atomic caches need this. Transactional caches already available for transactions.
         /// </summary>
         /// <returns>Cache allowed to use in transactions.</returns>

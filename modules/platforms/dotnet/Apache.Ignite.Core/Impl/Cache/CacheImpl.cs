@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Flag: keep binary. */
         private readonly bool _flagKeepBinary;
 
-        /** Flag: keep binary. */
+        /** Flag: allow atomic operations in transactions. */
         private readonly bool _flagAllowAtomicOpsInTx;
 
         /** Flag: no-retries.*/
