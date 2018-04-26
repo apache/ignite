@@ -15,57 +15,58 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.commandline;
+package org.apache.ignite.internal.processors.cache.verify;
+
+import java.io.Serializable;
+import java.util.List;
+import org.apache.ignite.cluster.ClusterNode;
 
 /**
- * Command.
  */
-public enum Command {
+public class ContentionInfo implements Serializable {
     /** */
-    ACTIVATE("--activate"),
+    private static final long serialVersionUID = 0L;
 
     /** */
-    DEACTIVATE("--deactivate"),
+    private ClusterNode node;
 
     /** */
-    STATE("--state"),
-
-    /** */
-    BASELINE("--baseline"),
-
-    /** */
-    TX("--tx"),
-
-    /** */
-    CACHE("--cache");
-
-    /** */
-    private final String text;
+    private List<String> entries;
 
     /**
-     * @param text Text.
+     * @return Node.
      */
-    Command(String text) {
-        this.text = text;
+    public ClusterNode getNode() {
+        return node;
     }
 
     /**
-     * @param text Command text.
-     * @return Command for the text.
+     * @param node Node.
      */
-    public static Command of(String text) {
-        for (Command cmd : Command.values()) {
-            if (cmd.text().equalsIgnoreCase(text))
-                return cmd;
-        }
-
-        return null;
+    public void setNode(ClusterNode node) {
+        this.node = node;
     }
 
     /**
-     * @return Command text.
+     * @return Entries.
      */
-    public String text() {
-        return text;
+    public List<String> getEntries() {
+        return entries;
+    }
+
+    /**
+     * @param entries Entries.
+     */
+    public void setEntries(List<String> entries) {
+        this.entries = entries;
+    }
+
+    /** */
+    public void print() {
+        System.out.println("[node=" + node + ']');
+
+        for (String entry : entries)
+            System.out.println("    " + entry);
     }
 }
+
