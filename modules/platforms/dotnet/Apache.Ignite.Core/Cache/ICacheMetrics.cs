@@ -257,6 +257,14 @@ namespace Apache.Ignite.Core.Cache
         int Size { get; }
 
         /// <summary>
+        /// Gets number of non-null values in the cache.
+        /// </summary>
+        /// <returns>
+        /// Number of non-null values in the cache.
+        /// </returns>
+        long CacheSize { get; }
+
+        /// <summary>
         /// Gets number of keys in the cache, possibly with null values.
         /// </summary>
         /// <returns>
