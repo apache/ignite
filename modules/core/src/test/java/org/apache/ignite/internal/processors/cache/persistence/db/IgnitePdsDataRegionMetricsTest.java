@@ -101,7 +101,7 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        //cleanPersistenceDir();
+        cleanPersistenceDir();
 
         super.afterTest();
     }
