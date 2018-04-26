@@ -27,13 +27,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.NodeInvalidator;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
@@ -187,7 +189,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             freeList.saveMetadata();
 
             long updCntr = store.updateCounter();
-            int size = store.fullSize();
+            long size = store.fullSize();
             long rmvId = globalRemoveId().get();
 
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
@@ -271,7 +273,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         if (needSnapshot) {
                             pageCnt = this.ctx.pageStore().pages(grpId, store.partId());
-                            io.setCandidatePageCount(partMetaPageAddr, pageCnt);
+
+                            io.setCandidatePageCount(partMetaPageAddr, size == 0 ? 0: pageCnt);
 
                             if (saveMeta) {
                                 saveMeta(ctx);
@@ -315,7 +318,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                 partMetaId,
                                 updCntr,
                                 rmvId,
-                                size,
+                                (int)size, // TODO: Partition size may be long
                                 cntrsPageId,
                                 state == null ? -1 : (byte)state.ordinal(),
                                 pageCnt
@@ -531,22 +534,22 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /**
-     * @param part
+     * @param part Local partition.
      * @param map Map to add values to.
      * @param metaPageAddr Meta page address
      * @param io Page Meta IO
-     * @param cacheId Cache ID.
-     * @param currAllocatedPageCnt total number of pages allocated for partition <code>[partition, cacheId]</code>
+     * @param grpId Cache Group ID.
+     * @param currAllocatedPageCnt total number of pages allocated for partition <code>[partition, grpId]</code>
      */
     private static boolean addPartition(
             GridDhtLocalPartition part,
             final PartitionAllocationMap map,
             final long metaPageAddr,
             final PageMetaIO io,
-            final int cacheId,
+            final int grpId,
             final int partId,
             final int currAllocatedPageCnt,
-            final int partSize
+            final long partSize
     ) {
         if (part != null) {
             boolean reserved = part.reserve();
@@ -561,10 +564,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         int lastAllocatedPageCnt = io.getLastAllocatedPageCount(metaPageAddr);
 
-        int curPageCnt = lastAllocatedPageCnt == 0 && partSize == 0 ? 0 : currAllocatedPageCnt;
+        int curPageCnt = partSize == 0 ? 0 : currAllocatedPageCnt;
 
         map.put(
-            new GroupPartitionId(cacheId, partId),
+            new GroupPartitionId(grpId, partId),
             new PagesAllocationRange(lastAllocatedPageCnt, curPageCnt));
 
         return true;
@@ -752,8 +755,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable protected IgniteHistoricalIterator historicalIterator(
-        CachePartitionPartialCountersMap partCntrs) throws IgniteCheckedException {
+    @Override @Nullable protected WALHistoricalIterator historicalIterator(
+        CachePartitionPartialCountersMap partCntrs, Set<Integer> missing) throws IgniteCheckedException {
         if (partCntrs == null || partCntrs.isEmpty())
             return null;
 
@@ -770,13 +773,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (startPtr == null)
                 throw new IgniteCheckedException("Could not find start pointer for partition [part=" + p + ", partCntrSince=" + initCntr + "]");
 
-            if (minPtr == null || startPtr.compareTo(minPtr) == -1)
+            if (minPtr == null || startPtr.compareTo(minPtr) < 0)
                 minPtr = startPtr;
         }
 
         WALIterator it = grp.shared().wal().replay(minPtr);
 
-        return new WALIteratorAdapter(grp, partCntrs, it);
+        WALHistoricalIterator iterator = new WALHistoricalIterator(grp, partCntrs, it);
+
+        // Add historical partitions which are unabled to reserve to missing set.
+        missing.addAll(iterator.missingParts);
+
+        return iterator;
     }
 
     /**
@@ -804,7 +812,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      *
      */
-    private static class WALIteratorAdapter implements IgniteHistoricalIterator {
+    private static class WALHistoricalIterator implements IgniteHistoricalIterator {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -813,6 +821,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** Partition counters map. */
         private final CachePartitionPartialCountersMap partMap;
+
+        /** Partitions marked as missing (unable to reserve or partition is not in OWNING state). */
+        private final Set<Integer> missingParts = new HashSet<>();
 
         /** Partitions marked as done. */
         private final Set<Integer> doneParts = new HashSet<>();
@@ -827,18 +838,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private Iterator<DataEntry> entryIt;
 
         /** */
-        private CacheDataRow next;
+        private DataEntry next;
+
+        /** Flag indicates that partition belongs to current {@link #next} is finished and no longer needs to rebalance. */
+        private boolean reachedPartitionEnd;
 
         /**
          * @param grp Cache context.
          * @param walIt WAL iterator.
          */
-        private WALIteratorAdapter(CacheGroupContext grp, CachePartitionPartialCountersMap partMap, WALIterator walIt) {
+        private WALHistoricalIterator(CacheGroupContext grp, CachePartitionPartialCountersMap partMap, WALIterator walIt) {
             this.grp = grp;
             this.partMap = partMap;
             this.walIt = walIt;
 
             cacheIds = grp.cacheIds();
+
+            reservePartitions();
 
             advance();
         }
@@ -856,6 +872,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void close() throws IgniteCheckedException {
             walIt.close();
+            releasePartitions();
         }
 
         /** {@inheritDoc} */
@@ -893,7 +910,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (next == null)
                 throw new NoSuchElementException();
 
-            CacheDataRow val = next;
+            CacheDataRow val = new DataEntryRow(next);
+
+            if (reachedPartitionEnd) {
+                doneParts.add(next.partitionId());
+
+                reachedPartitionEnd = false;
+            }
 
             advance();
 
@@ -903,6 +926,46 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void remove() {
             throw new UnsupportedOperationException();
+        }
+
+        /**
+         * Reserve historical partitions.
+         * If partition is unable to reserve, id of that partition is placed to {@link #missingParts} set.
+         */
+        private void reservePartitions() {
+            for (int i = 0; i < partMap.size(); i++) {
+                int p = partMap.partitionAt(i);
+                GridDhtLocalPartition part = grp.topology().localPartition(p);
+
+                if (part == null || !part.reserve()) {
+                    missingParts.add(p);
+                    continue;
+                }
+
+                if (part.state() != OWNING) {
+                    part.release();
+                    missingParts.add(p);
+                }
+            }
+        }
+
+        /**
+         * Release historical partitions.
+         */
+        private void releasePartitions() {
+            for (int i = 0; i < partMap.size(); i++) {
+                int p = partMap.partitionAt(i);
+
+                if (missingParts.contains(p))
+                    continue;
+
+                GridDhtLocalPartition part = grp.topology().localPartition(p);
+
+                assert part != null && part.state() == OWNING && part.reservations() > 0
+                    : "Partition should in OWNING state and has at least 1 reservation";
+
+                part.release();
+            }
         }
 
         /**
@@ -919,7 +982,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         if (cacheIds.contains(entry.cacheId())) {
                             int idx = partMap.partitionIndex(entry.partitionId());
 
-                            if (idx < 0)
+                            if (idx < 0 || missingParts.contains(idx))
                                 continue;
 
                             long from = partMap.initialUpdateCounterAt(idx);
@@ -927,9 +990,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                             if (entry.partitionCounter() >= from && entry.partitionCounter() <= to) {
                                 if (entry.partitionCounter() == to)
-                                    doneParts.add(entry.partitionId());
+                                    reachedPartitionEnd = true;
 
-                                next = new DataEntryRow(entry);
+                                next = entry;
 
                                 return;
                             }
@@ -1184,7 +1247,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     U.error(log, "Unhandled exception during page store initialization. All further operations will " +
                         "be failed and local node will be stopped.", ex);
 
-                    NodeInvalidator.INSTANCE.invalidate(ctx.kernalContext(), ex);
+                    ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, ex));
 
                     throw ex;
                 }
@@ -1258,10 +1321,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         treeRoot = io.getTreeRoot(pageAddr);
                         reuseListRoot = io.getReuseListRoot(pageAddr);
 
-                        assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA :
-                            U.hexLong(treeRoot) + ", part=" + partId + ", grpId=" + grpId;
-                        assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA :
-                            U.hexLong(reuseListRoot) + ", part=" + partId + ", grpId=" + grpId;
+                        if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_DATA)
+                            throw new StorageException("Wrong tree root page id flag: treeRoot="
+                                + U.hexLong(treeRoot) + ", part=" + partId + ", grpId=" + grpId);
+
+                        if (PageIdUtils.flag(reuseListRoot) != PageMemory.FLAG_DATA)
+                            throw new StorageException("Wrong reuse list root page id flag: reuseListRoot="
+                                + U.hexLong(reuseListRoot) + ", part=" + partId + ", grpId=" + grpId);
                     }
 
                     return new Metas(
@@ -1295,7 +1361,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public int fullSize() {
+        @Override public long fullSize() {
             try {
                 CacheDataStore delegate0 = init0(true);
 
@@ -1307,7 +1373,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public int cacheSize(int cacheId) {
+        @Override public long cacheSize(int cacheId) {
             try {
                 CacheDataStore delegate0 = init0(true);
 

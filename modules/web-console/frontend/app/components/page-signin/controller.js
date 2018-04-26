@@ -15,16 +15,42 @@
  * limitations under the License.
  */
 
-// Sign in controller.
 export default class {
-    static $inject = ['$scope', '$uiRouterGlobals', 'IgniteFocus', 'IgniteCountries', 'Auth'];
+    /** @type {import('./types').ISiginData} */
+    data = {
+        email: null,
+        password: null
+    };
+    /** @type {import('./types').ISigninFormController} */
+    form;
+    /** @type {string} */
+    serverError = null;
 
-    constructor($scope, $uiRouterGlobals, Focus, Countries, Auth) {
-        this.auth = Auth.auth;
-        this.forgotPassword = Auth.forgotPassword;
-        this.action = 'signin';
-        this.countries = Countries.getAll();
+    static $inject = ['Auth', 'IgniteMessages'];
 
-        Focus.move('user_email');
+    /**
+     * @param {import('app/modules/user/Auth.service').default} Auth
+     */
+    constructor(Auth, IgniteMessages) {
+        this.Auth = Auth;
+        this.IgniteMessages = IgniteMessages;
+    }
+
+    /** @param {import('./types').ISigninFormController} form */
+    canSubmitForm(form) {
+        return form.$error.server ? true : !form.$invalid;
+    }
+
+    $postLink() {
+        this.form.password.$validators.server = () => !this.serverError;
+    }
+
+    signin() {
+        return this.Auth.signin(this.data.email, this.data.password).catch((res) => {
+            this.IgniteMessages.showError(null, res.data);
+            this.serverError = res.data;
+            this.form.email.$validate();
+            this.form.password.$validate();
+        });
     }
 }

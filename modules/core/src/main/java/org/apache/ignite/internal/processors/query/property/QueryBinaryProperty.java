@@ -74,6 +74,12 @@ public class QueryBinaryProperty implements GridQueryProperty {
     /** */
     private final Object defaultValue;
 
+    /** */
+    private final int precision;
+
+    /** */
+    private final int scale;
+
     /**
      * Constructor.
      *
@@ -86,9 +92,12 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param notNull {@code true} if null value is not allowed.
      * @param caseInsensitive {@code true} if field is case insensitive.
      * @param defaultValue Default value.
+     * @param precision Precision.
+     * @param scale Scale.
      */
     public QueryBinaryProperty(GridKernalContext ctx, String propName, QueryBinaryProperty parent,
-        Class<?> type, @Nullable Boolean key, String alias, boolean notNull, boolean caseInsensitive, Object defaultValue) {
+                               Class<?> type, @Nullable Boolean key, String alias, boolean notNull, boolean caseInsensitive,
+                               Object defaultValue, int precision, int scale) {
         this.ctx = ctx;
 
         log = ctx.log(QueryBinaryProperty.class);
@@ -104,6 +113,8 @@ public class QueryBinaryProperty implements GridQueryProperty {
             this.isKeyProp = key ? 1 : -1;
 
         this.defaultValue = defaultValue;
+        this.precision = precision;
+        this.scale = scale;
     }
 
     /** {@inheritDoc} */
@@ -118,7 +129,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
 
             if (!ctx.cacheObjects().isBinaryObject(obj))
                 throw new IgniteCheckedException("Non-binary object received as a result of property extraction " +
-                    "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
+                        "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
         }
         else {
             int isKeyProp0 = isKeyProp;
@@ -133,7 +144,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
                 else {
                     if (!warned) {
                         U.warn(log, "Neither key nor value have property \"" + propName + "\" " +
-                            "(is cache indexing configured correctly?)");
+                                "(is cache indexing configured correctly?)");
 
                         warned = true;
                     }
@@ -272,7 +283,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
 
         if (isKeyProp0 == 0)
             throw new IllegalStateException("Ownership flag not set for binary property. Have you set 'keyFields'" +
-                " property of QueryEntity in programmatic or XML configuration?");
+                    " property of QueryEntity in programmatic or XML configuration?");
 
         return isKeyProp0 == 1;
     }
@@ -295,5 +306,15 @@ public class QueryBinaryProperty implements GridQueryProperty {
     /** {@inheritDoc} */
     @Override public Object defaultValue() {
         return defaultValue;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int precision() {
+        return precision;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int scale() {
+        return scale;
     }
 }

@@ -61,10 +61,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.NodeInvalidator;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
@@ -94,6 +94,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
+import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -109,6 +110,8 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 
 /**
  * File WAL manager.
@@ -318,14 +321,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             checkWalConfiguration();
 
-            walWorkDir = initDirectory(
+            final File walWorkDir0 = walWorkDir = initDirectory(
                 dsCfg.getWalPath(),
                 DataStorageConfiguration.DFLT_WAL_PATH,
                 resolveFolders.folderName(),
                 "write ahead log work directory"
             );
 
-            walArchiveDir = initDirectory(
+            final File walArchiveDir0 = walArchiveDir = initDirectory(
                 dsCfg.getWalArchivePath(),
                 DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH,
                 resolveFolders.folderName(),
@@ -339,6 +342,20 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             metrics = dbMgr.persistentStoreMetricsImpl();
 
             checkOrPrepareFiles();
+
+            metrics.setWalSizeProvider(new CO<Long>() {
+                @Override public Long apply() {
+                    long size = 0;
+
+                    for (File f : walWorkDir0.listFiles())
+                        size += f.length();
+
+                    for (File f : walArchiveDir0.listFiles())
+                        size += f.length();
+
+                    return size;
+                }
+            });
 
             IgniteBiTuple<Long, Long> tup = scanMinMaxArchiveIndices();
 
@@ -599,7 +616,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         catch (IgniteCheckedException e) {
             U.error(log, "Unable to perform segment rollover: " + e.getMessage(), e);
 
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
         }
     }
 
@@ -648,7 +665,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public void fsync(WALPointer ptr) throws IgniteCheckedException, StorageException {
+    @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
         if (serializer == null || mode == WALMode.NONE)
             return;
 
@@ -942,6 +959,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             return hnd;
 
         if (hnd.close(true)) {
+            if (metrics.metricsEnabled())
+                metrics.onWallRollOver();
+
             FileWriteHandle next = initNextWriteHandle(cur.idx);
 
             boolean swapped = currentHndUpd.compareAndSet(this, hnd, next);
@@ -1056,7 +1076,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         catch (IOException e) {
             StorageException se = new StorageException("Unable to initialize WAL segment", e);
 
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), se);
+            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 
             throw se;
         }
@@ -1196,7 +1216,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * @throws StorageException If node is no longer valid and we missed a WAL operation.
      */
     private void checkNode() throws StorageException {
-        if (cctx.kernalContext().invalidated())
+        if (cctx.kernalContext().invalid())
             throw new StorageException("Failed to perform WAL operation (environment was invalidated by a " +
                     "previous error)");
     }
@@ -1337,6 +1357,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 }
             }
 
+            Throwable err = null;
+
             try {
                 synchronized (this) {
                     while (curAbsWalIdx == -1 && !stopped)
@@ -1397,6 +1419,18 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             }
             catch (InterruptedException ignore) {
                 Thread.currentThread().interrupt();
+            }
+            catch (Throwable t) {
+                err = t;
+            }
+            finally {
+                if (err == null && !stopped)
+                    err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
+
+                if (err instanceof OutOfMemoryError)
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
 
@@ -1650,6 +1684,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             long segmentToCompress = lastCompressedIdx + 1;
 
             synchronized (this) {
+                if (stopped)
+                    return -1;
+
                 while (segmentToCompress > Math.min(lastAllowedToCompressIdx, archiver.lastArchivedAbsoluteIndex())) {
                     wait();
 
@@ -1720,8 +1757,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 }
                 catch (IgniteCheckedException | IOException e) {
                     U.error(log, "Unexpected error during WAL compression", e);
-
-                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -1813,6 +1848,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /** {@inheritDoc} */
         @Override public void run() {
+            Throwable err = null;
+
             while (!Thread.currentThread().isInterrupted() && !stopped) {
                 try {
                     long segmentToDecompress = segmentsQueue.take();
@@ -1839,13 +1876,20 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         decompressionFutures.remove(segmentToDecompress).onDone();
                     }
                 }
-                catch (InterruptedException e){
+                catch (InterruptedException ignore) {
                     Thread.currentThread().interrupt();
                 }
-                catch (IOException e) {
-                    U.error(log, "Unexpected error during WAL decompression", e);
+                catch (Throwable t) {
+                    err = t;
+                }
+                finally {
+                    if (err == null && !stopped)
+                        err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
 
-                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+                    if (err instanceof OutOfMemoryError)
+                        cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                    else if (err != null)
+                        cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
                 }
             }
         }
@@ -2563,7 +2607,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             catch (Throwable e) {
                 StorageException se = new StorageException("Unable to write", new IOException(e));
 
-                NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), se);
+                cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 
                 // All workers waiting for a next segment must be woken up and stopped
                 signalNextAvailable();
@@ -2877,7 +2921,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 catch (IOException e) {
                     StorageException se = new StorageException("Unable to write", e);
 
-                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), se);
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 
                     throw se;
                 }

@@ -34,6 +34,8 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.authentication.UserManagementOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -56,14 +58,21 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
+import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAlterColumn;
 import org.h2.command.ddl.CreateIndex;
@@ -109,7 +118,7 @@ public class DdlStatementsProcessor {
      */
     @SuppressWarnings("unchecked")
     public FieldsQueryCursor<List<?>> runDdlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException {
-        IgniteInternalFuture fut;
+        IgniteInternalFuture fut = null;
 
         try {
             if (cmd instanceof SqlCreateIndexCommand) {
@@ -148,7 +157,7 @@ public class DdlStatementsProcessor {
                 newIdx.setInlineSize(cmd0.inlineSize());
 
                 fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
-                    newIdx, cmd0.ifNotExists(), cmd0.parallel());
+                        newIdx, cmd0.ifNotExists(), cmd0.parallel());
             }
             else if (cmd instanceof SqlDropIndexCommand) {
                 SqlDropIndexCommand cmd0 = (SqlDropIndexCommand)cmd;
@@ -159,14 +168,14 @@ public class DdlStatementsProcessor {
                     isDdlSupported(tbl);
 
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd0.schemaName(), cmd0.indexName(),
-                        cmd0.ifExists());
+                            cmd0.ifExists());
                 }
                 else {
                     if (cmd0.ifExists())
                         fut = new GridFinishedFuture();
                     else
                         throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND,
-                            cmd0.indexName());
+                                cmd0.indexName());
                 }
             }
             else if (cmd instanceof SqlAlterTableCommand) {
@@ -182,7 +191,7 @@ public class DdlStatementsProcessor {
 
                 if (tbl == null) {
                     throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
-                        cmd0.tableName());
+                            cmd0.tableName());
                 }
 
                 Boolean logging = cmd0.logging();
@@ -206,9 +215,24 @@ public class DdlStatementsProcessor {
 
                 fut = new GridFinishedFuture();
             }
+            else if (cmd instanceof SqlCreateUserCommand) {
+                SqlCreateUserCommand addCmd = (SqlCreateUserCommand)cmd;
+
+                ctx.authentication().addUser(addCmd.userName(), addCmd.password());
+            }
+            else if (cmd instanceof SqlAlterUserCommand) {
+                SqlAlterUserCommand altCmd = (SqlAlterUserCommand)cmd;
+
+                ctx.authentication().updateUser(altCmd.userName(), altCmd.password());
+            }
+            else if (cmd instanceof SqlDropUserCommand) {
+                SqlDropUserCommand dropCmd = (SqlDropUserCommand)cmd;
+
+                ctx.authentication().removeUser(dropCmd.userName());
+            }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
             if (fut != null)
                 fut.get();
@@ -236,7 +260,7 @@ public class DdlStatementsProcessor {
      */
     @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
     public FieldsQueryCursor<List<?>> runDdlStatement(String sql, Prepared prepared)
-        throws IgniteCheckedException {
+            throws IgniteCheckedException {
         IgniteInternalFuture fut = null;
 
         try {
@@ -277,7 +301,7 @@ public class DdlStatementsProcessor {
                 newIdx.setFields(flds);
 
                 fut = ctx.query().dynamicIndexCreate(tbl.cacheName(), cmd.schemaName(), typeDesc.tableName(),
-                    newIdx, cmd.ifNotExists(), 0);
+                        newIdx, cmd.ifNotExists(), 0);
             }
             else if (stmt0 instanceof GridSqlDropIndex) {
                 GridSqlDropIndex cmd = (GridSqlDropIndex) stmt0;
@@ -288,29 +312,31 @@ public class DdlStatementsProcessor {
                     isDdlSupported(tbl);
 
                     fut = ctx.query().dynamicIndexDrop(tbl.cacheName(), cmd.schemaName(), cmd.indexName(),
-                        cmd.ifExists());
+                            cmd.ifExists());
                 }
                 else {
                     if (cmd.ifExists())
                         fut = new GridFinishedFuture();
                     else
                         throw new SchemaOperationException(SchemaOperationException.CODE_INDEX_NOT_FOUND,
-                            cmd.indexName());
+                                cmd.indexName());
                 }
             }
             else if (stmt0 instanceof GridSqlCreateTable) {
+                ctx.security().authorize(null, SecurityPermission.CACHE_CREATE, SecurityContextHolder.get());
+
                 GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
 
                 if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
                     throw new SchemaOperationException("CREATE TABLE can only be executed on " +
-                        QueryUtils.DFLT_SCHEMA + " schema.");
+                            QueryUtils.DFLT_SCHEMA + " schema.");
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl != null) {
                     if (!cmd.ifNotExists())
                         throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,
-                            cmd.tableName());
+                                cmd.tableName());
                 }
                 else {
                     QueryEntity e = toQueryEntity(cmd);
@@ -321,22 +347,24 @@ public class DdlStatementsProcessor {
                     ccfg.setSqlSchema(cmd.schemaName());
 
                     SchemaOperationException err =
-                        QueryUtils.checkQueryEntityConflicts(ccfg, ctx.cache().cacheDescriptors().values());
+                            QueryUtils.checkQueryEntityConflicts(ccfg, ctx.cache().cacheDescriptors().values());
 
                     if (err != null)
                         throw err;
 
                     ctx.query().dynamicTableCreate(cmd.schemaName(), e, cmd.templateName(), cmd.cacheName(),
-                        cmd.cacheGroup(), cmd.dataRegionName(), cmd.affinityKey(), cmd.atomicityMode(),
-                        cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists());
+                            cmd.cacheGroup(), cmd.dataRegionName(), cmd.affinityKey(), cmd.atomicityMode(),
+                            cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists());
                 }
             }
             else if (stmt0 instanceof GridSqlDropTable) {
+                ctx.security().authorize(null, SecurityPermission.CACHE_DESTROY, SecurityContextHolder.get());
+
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;
 
                 if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
                     throw new SchemaOperationException("DROP TABLE can only be executed on " +
-                        QueryUtils.DFLT_SCHEMA + " schema.");
+                            QueryUtils.DFLT_SCHEMA + " schema.");
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
@@ -349,7 +377,7 @@ public class DdlStatementsProcessor {
                 if (tbl == null) {
                     if (!cmd.ifExists())
                         throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
-                            cmd.tableName());
+                                cmd.tableName());
                 }
                 else
                     ctx.query().dynamicTableDrop(tbl.cacheName(), cmd.tableName(), cmd.ifExists());
@@ -368,12 +396,12 @@ public class DdlStatementsProcessor {
                 if (tbl == null) {
                     if (!cmd.ifTableExists())
                         throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
-                            cmd.tableName());
+                                cmd.tableName());
                 }
                 else {
                     if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
                         throw new SchemaOperationException("Cannot add column(s) because table was created " +
-                            "with " + PARAM_WRAP_VALUE + "=false option.");
+                                "with " + PARAM_WRAP_VALUE + "=false option.");
 
                     List<QueryField> cols = new ArrayList<>(cmd.columns().length);
 
@@ -383,7 +411,7 @@ public class DdlStatementsProcessor {
                         if (tbl.doesColumnExist(col.columnName())) {
                             if ((!cmd.ifNotExists() || cmd.columns().length != 1)) {
                                 throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_EXISTS,
-                                    col.columnName());
+                                        col.columnName());
                             }
                             else {
                                 cols = null;
@@ -393,9 +421,9 @@ public class DdlStatementsProcessor {
                         }
 
                         QueryField field = new QueryField(col.columnName(),
-                            DataType.getTypeClassName(col.column().getType()),
-                            col.column().isNullable(), col.column().getType() == Value.STRING_IGNORECASE,
-                            col.defaultValue());
+                                DataType.getTypeClassName(col.column().getType()),
+                                col.column().isNullable(), col.column().getType() == Value.STRING_IGNORECASE,
+                                col.defaultValue(), col.precision(), col.scale());
 
                         cols.add(field);
 
@@ -409,7 +437,7 @@ public class DdlStatementsProcessor {
                             QueryUtils.checkNotNullAllowed(tbl.cache().config());
 
                         fut = ctx.query().dynamicColumnAdd(tbl.cacheName(), cmd.schemaName(),
-                            tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifNotExists());
+                                tbl.rowDescriptor().type().tableName(), cols, cmd.ifTableExists(), cmd.ifNotExists());
                     }
                 }
             }
@@ -427,14 +455,14 @@ public class DdlStatementsProcessor {
                 if (tbl == null) {
                     if (!cmd.ifTableExists())
                         throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
-                            cmd.tableName());
+                                cmd.tableName());
                 }
                 else {
                     assert tbl.rowDescriptor() != null;
 
                     if (QueryUtils.isSqlType(tbl.rowDescriptor().type().valueClass()))
                         throw new SchemaOperationException("Cannot drop column(s) because table was created " +
-                            "with " + PARAM_WRAP_VALUE + "=false option.");
+                                "with " + PARAM_WRAP_VALUE + "=false option.");
 
                     List<String> cols = new ArrayList<>(cmd.columns().length);
 
@@ -444,7 +472,7 @@ public class DdlStatementsProcessor {
                         if (!tbl.doesColumnExist(colName)) {
                             if ((!cmd.ifExists() || cmd.columns().length != 1)) {
                                 throw new SchemaOperationException(SchemaOperationException.CODE_COLUMN_NOT_FOUND,
-                                    colName);
+                                        colName);
                             }
                             else {
                                 cols = null;
@@ -463,19 +491,19 @@ public class DdlStatementsProcessor {
 
                     if (cols != null) {
                         fut = ctx.query().dynamicColumnRemove(tbl.cacheName(), cmd.schemaName(),
-                            type.tableName(), cols, cmd.ifTableExists(), cmd.ifExists());
+                                type.tableName(), cols, cmd.ifTableExists(), cmd.ifExists());
                     }
                 }
             }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
             if (fut != null)
                 fut.get();
 
             QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-                (Collections.singletonList(0L)), null, false);
+                    (Collections.singletonList(0L)), null, false);
 
             resCur.fieldsMeta(UPDATE_RESULT_META);
 
@@ -505,7 +533,7 @@ public class DdlStatementsProcessor {
 
         if (cctx.isLocal())
             throw new IgniteSQLException("DDL statements are not supported on LOCAL caches",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
@@ -572,6 +600,8 @@ public class DdlStatementsProcessor {
 
         HashMap<String, Object> dfltValues = new HashMap<>();
 
+        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
+
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
             GridSqlColumn gridCol = e.getValue();
 
@@ -597,10 +627,16 @@ public class DdlStatementsProcessor {
 
             if (dfltVal != null)
                 dfltValues.put(e.getKey(), dfltVal);
+
+            if (col.getType() == Value.DECIMAL)
+                decimalInfo.put(e.getKey(), F.t((int)col.getPrecision(), col.getScale()));
         }
 
         if (!F.isEmpty(dfltValues))
             res.setDefaultFieldValues(dfltValues);
+
+        if (!F.isEmpty(decimalInfo))
+            res.setDecimalInfo(decimalInfo);
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);
@@ -664,6 +700,6 @@ public class DdlStatementsProcessor {
      */
     public static boolean isDdlStatement(Prepared cmd) {
         return cmd instanceof CreateIndex || cmd instanceof DropIndex || cmd instanceof CreateTable ||
-            cmd instanceof DropTable || cmd instanceof AlterTableAlterColumn;
+                cmd instanceof DropTable || cmd instanceof AlterTableAlterColumn;
     }
 }

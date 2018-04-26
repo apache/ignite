@@ -124,10 +124,14 @@ import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
+import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
+import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -192,8 +196,9 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  */
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class IgniteH2Indexing implements GridQueryIndexing {
+    /** A pattern for commands having internal implementation in Ignite. */
     public static final Pattern INTERNAL_CMD_RE = Pattern.compile(
-        "^(create|drop)\\s+index|^alter\\s+table|^copy|^set", Pattern.CASE_INSENSITIVE);
+        "^(create|drop)\\s+index|^alter\\s+table|^copy|^set|^(create|alter|drop)\\s+user", Pattern.CASE_INSENSITIVE);
 
     /*
      * Register IO for indexes.
@@ -1512,9 +1517,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // COPY
             // ALTER TABLE
             // SET STREAMING
-            if (!(cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand ||
-                cmd instanceof SqlAlterTableCommand || cmd instanceof SqlBulkLoadCommand ||
-                cmd instanceof SqlSetStreamingCommand))
+            // CREATE/ALTER/DROP USER
+            if (!(cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand
+                || cmd instanceof SqlAlterTableCommand || cmd instanceof SqlBulkLoadCommand
+                || cmd instanceof SqlSetStreamingCommand
+                || cmd instanceof SqlCreateUserCommand || cmd instanceof SqlAlterUserCommand
+                || cmd instanceof SqlDropUserCommand))
                 return null;
         }
         catch (Exception e) {

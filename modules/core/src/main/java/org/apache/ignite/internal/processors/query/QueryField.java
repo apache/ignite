@@ -43,13 +43,19 @@ public class QueryField implements Serializable {
     /** Default value. */
     private final Object dfltValue;
 
+    /** Precision. */
+    private final int precision;
+
+    /** Scale. */
+    private final int scale;
+
     /**
      * @param name Field name.
      * @param typeName Class name for this field's values.
      * @param nullable Nullable flag.
      */
     public QueryField(String name, String typeName, boolean nullable) {
-        this(name, typeName, nullable, false, null);
+        this(name, typeName, nullable, false, null, -1, -1);
     }
 
     /**
@@ -60,11 +66,24 @@ public class QueryField implements Serializable {
      * @param dfltValue Default value.
      */
     public QueryField(String name, String typeName, boolean nullable, boolean caseInsensitive, Object dfltValue) {
+        this(name, typeName, nullable, caseInsensitive, dfltValue, -1, -1);
+    }
+
+    /**
+     * @param name Field name.
+     * @param typeName Class name for this field's values.
+     * @param nullable Nullable flag.
+     * @param caseInsensitive Case insensitive flag.
+     * @param dfltValue Default value.
+     */
+    public QueryField(String name, String typeName, boolean nullable, boolean caseInsensitive, Object dfltValue, int precision, int scale) {
         this.name = name;
         this.typeName = typeName;
         this.nullable = nullable;
         this.caseInsensitive = caseInsensitive;
         this.dfltValue = dfltValue;
+        this.precision = precision;
+        this.scale = scale;
     }
 
     /**
@@ -100,6 +119,20 @@ public class QueryField implements Serializable {
      */
     public Object defaultValue() {
         return dfltValue;
+    }
+
+    /**
+     * @return Precision.
+     */
+    public int precision() {
+        return precision;
+    }
+
+    /**
+     * @return Scale.
+     */
+    public int scale() {
+        return scale;
     }
 
     /** {@inheritDoc} */

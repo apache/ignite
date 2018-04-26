@@ -66,8 +66,14 @@ class IgniteSparkSession private(ic: IgniteContext, proxy: SparkSession) extends
         new IgniteSharedState(ic, sparkContext)
 
     /** @inheritdoc */
-    @transient override lazy val sessionState: SessionState =
-        new SessionStateBuilder(self, None).build()
+    @transient override lazy val sessionState: SessionState = {
+        val sessionState = new SessionStateBuilder(self, None).build()
+
+        sessionState.experimentalMethods.extraOptimizations =
+            sessionState.experimentalMethods.extraOptimizations :+ IgniteOptimization
+
+        sessionState
+    }
 
     /** @inheritdoc */
     @transient override lazy val conf: RuntimeConfig = proxy.conf

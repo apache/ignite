@@ -38,6 +38,7 @@ import java.util.logging.Logger;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.client.GridClientClosedException;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
@@ -654,6 +655,11 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
                     }
                 }
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onFailure(FailureType failureType, Throwable failure) {
+            // No-op.
         }
 
         /**

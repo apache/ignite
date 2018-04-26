@@ -29,6 +29,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
@@ -160,7 +161,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Serializable> readForPredicate(IgnitePredicate<String> keyPred)
+    @Override public Map<String, ? extends Serializable> readForPredicate(IgnitePredicate<String> keyPred)
         throws IgniteCheckedException {
         Map<String, Serializable> res = null;
 
@@ -234,7 +235,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         if (!readOnly) {
             WALPointer ptr = wal.log(new MetastoreDataRecord(key, data));
 
-            wal.fsync(ptr);
+            wal.flush(ptr, false);
 
             synchronized (this) {
                 MetastorageDataRow oldRow = tree.findOne(new MetastorageDataRow(key, null));
@@ -278,7 +279,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         if (!readOnly) {
             WALPointer ptr = wal.log(new MetastoreDataRecord(key, null));
 
-            wal.fsync(ptr);
+            wal.flush(ptr, false);
 
             synchronized (this) {
                 MetastorageDataRow row = new MetastorageDataRow(key, null);
@@ -290,6 +291,17 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                 }
             }
         }
+    }
+
+    /** */
+    private void checkRootsPageIdFlag(long treeRoot, long reuseListRoot) throws StorageException {
+        if (PageIdUtils.flag(treeRoot) != PageMemory.FLAG_DATA)
+            throw new StorageException("Wrong tree root page id flag: treeRoot="
+                + U.hexLong(treeRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
+
+        if (PageIdUtils.flag(reuseListRoot) != PageMemory.FLAG_DATA)
+            throw new StorageException("Wrong reuse list root page id flag: reuseListRoot="
+                + U.hexLong(reuseListRoot) + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID);
     }
 
     /** */
@@ -313,8 +325,13 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
                     PagePartitionMetaIO io = PageIO.getPageIO(pageAddr);
 
-                    treeRoot = new RootPage(new FullPageId(io.getTreeRoot(pageAddr), METASTORAGE_CACHE_ID), false);
-                    reuseListRoot = new RootPage(new FullPageId(io.getReuseListRoot(pageAddr), METASTORAGE_CACHE_ID), false);
+                    long treeRoot = io.getTreeRoot(pageAddr);
+                    long reuseListRoot = io.getReuseListRoot(pageAddr);
+
+                    checkRootsPageIdFlag(treeRoot, reuseListRoot);
+
+                    this.treeRoot = new RootPage(new FullPageId(treeRoot, METASTORAGE_CACHE_ID), false);
+                    this.reuseListRoot = new RootPage(new FullPageId(reuseListRoot, METASTORAGE_CACHE_ID), false);
 
                     rmvId.set(io.getGlobalRemoveId(pageAddr));
                 }
@@ -364,10 +381,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
 
                         rmvId.set(io.getGlobalRemoveId(pageAddr));
 
-                        assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA :
-                            U.hexLong(treeRoot) + ", part=" + partId + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID;
-                        assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA :
-                            U.hexLong(reuseListRoot) + ", part=" + partId + ", METASTORAGE_CACHE_ID=" + METASTORAGE_CACHE_ID;
+                        checkRootsPageIdFlag(treeRoot, reuseListRoot);
                     }
 
                     this.treeRoot = new RootPage(new FullPageId(treeRoot, METASTORAGE_CACHE_ID), allocated);
