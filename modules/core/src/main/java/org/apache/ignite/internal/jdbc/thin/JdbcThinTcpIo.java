@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
@@ -149,9 +148,9 @@ public class JdbcThinTcpIo {
     public void start(int timeout) throws SQLException, IOException {
         synchronized (mux) {
             if (ownThread != null) {
-                throw new IgniteException("Concurrent access to JDBC connection is not allowed"
+                throw new SQLException("Concurrent access to JDBC connection is not allowed"
                     + " [ownThread=" + ownThread.getName()
-                    + ", curThread=" + Thread.currentThread().getName());
+                    + ", curThread=" + Thread.currentThread().getName(), SqlStateCode.CLIENT_CONNECTION_FAILED);
             }
 
             ownThread = Thread.currentThread();
@@ -422,14 +421,15 @@ public class JdbcThinTcpIo {
      * @param req Request.
      * @return Server response.
      * @throws IOException In case of IO error.
+     * @throws SQLException On concurrent access to JDBC connection.
      */
     @SuppressWarnings("unchecked")
-    JdbcResponse sendRequest(JdbcRequest req) throws IOException {
+    JdbcResponse sendRequest(JdbcRequest req) throws SQLException, IOException {
         synchronized (mux) {
             if (ownThread != null) {
-                throw new IgniteException("Concurrent access to JDBC connection is not allowed"
+                throw new SQLException("Concurrent access to JDBC connection is not allowed"
                     + " [ownThread=" + ownThread.getName()
-                    + ", curThread=" + Thread.currentThread().getName());
+                    + ", curThread=" + Thread.currentThread().getName(), SqlStateCode.CONNECTION_FAILURE);
             }
 
             ownThread = Thread.currentThread();

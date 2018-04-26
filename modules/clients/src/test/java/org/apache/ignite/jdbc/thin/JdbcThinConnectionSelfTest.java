@@ -1971,8 +1971,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             boolean exceptionFound = false;
 
             for (SQLException e : exs) {
-                if (e != null && e.getCause() != null && e.getCause() instanceof IgniteException
-                    && e.getCause().getMessage().contains("Concurrent access to JDBC connection is not allowed"))
+                if (e != null && e.getMessage().contains("Concurrent access to JDBC connection is not allowed"))
                     exceptionFound = true;
             }
 
