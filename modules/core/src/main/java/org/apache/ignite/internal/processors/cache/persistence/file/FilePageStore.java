@@ -260,6 +260,8 @@ public class FilePageStore implements PageStore {
     public void truncate(int tag) throws PersistentStorageIOException {
         lock.writeLock().lock();
 
+        long pages = this.pages();
+
         try {
             if (!inited)
                 return;
@@ -277,6 +279,8 @@ public class FilePageStore implements PageStore {
             inited = false;
 
             allocated.set(0);
+
+            allocatedTracker.updateTotalAllocatedPages(-1L * pages);
 
             lock.writeLock().unlock();
         }
