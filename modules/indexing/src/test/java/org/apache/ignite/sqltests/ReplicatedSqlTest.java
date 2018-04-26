@@ -19,7 +19,6 @@ package org.apache.ignite.sqltests;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ReplicatedSqlTest extends BaseSqlTest {
     @Override protected void setupData() {
@@ -35,15 +34,9 @@ public class ReplicatedSqlTest extends BaseSqlTest {
 
             assertContainsEq(act1.values(), act2.values());
 
-            List<List<Object>> empIds = select(node.cache(EMP_CACHE_NAME), null, "id");
-            List<List<Object>> depIds = select(node.cache(DEP_CACHE_NAME), null, "id");
-
-            List<List<Object>> expected = empIds.stream()
-                .map(list -> list.get(0))
-                .flatMap(empId -> depIds.stream()
-                    .map(list -> list.get(0))
-                    .map(depId -> Arrays.asList(empId, depId)))
-                .collect(Collectors.toList());
+            List<List<Object>> expected = doCrossJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
+                (emp, dep) -> !emp.isEmpty() && !dep.isEmpty(),
+                (emp, dep) -> Arrays.asList(emp.get("ID"), dep.get("ID")));
 
             assertContainsEq(act1.values(), expected);
 

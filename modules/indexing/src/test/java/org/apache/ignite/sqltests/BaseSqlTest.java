@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,7 +48,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -59,10 +60,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class BaseSqlTest extends GridCommonAbstractTest {
     /** Size of Employee test table. */
-    public final static long EMP_CNT = 10L;
+    public final static long EMP_CNT = 1000L;
 
     /** Size of Department test table. */
-    public final static long DEP_CNT = 5L;
+    public final static long DEP_CNT = 50L;
 
     /** Number of possible age values (width of ages values range). */
     public final static int AGES_CNT = 50;
@@ -652,20 +653,145 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Performs generic join operation of two tables.
+     * If either outerLeft or outerRight is true, empty map will be passed to transformer argument for rows that
+     * don't have matches in the other table.
+     *
+     * @param left Cache of left table.
+     * @param right Cache of the right table.
+     * @param filter Filter, corresponds to ON sql clause.
+     * @param transformer Transformer (mapper) to make sql projection (select fields for example).
+     * @param outerLeft Preserve every row from the left table even if there is no matches in the right table.
+     * @param outerRight Same as outerLeft for right table.
+     */
+    protected static<R> List<R> doCommonJoin(
+        IgniteCache<?, ?> left,
+        IgniteCache<?, ?> right,
+        IgniteBiPredicate<Map<String, Object>, Map<String, Object>> filter,
+        IgniteBiClosure<Map<String, Object>, Map<String, Object>, R> transformer,
+        boolean outerLeft,
+        boolean outerRight) {
+
+        List<Map<String, Object>> leftTab = select(left, null, x -> x);
+        List<Map<String, Object>> rightTab = select(right, null, x -> x);
+
+        final Map<String, Object> nullRow = Collections.emptyMap();
+
+        List<R> join = new ArrayList<>();
+
+        Set<Map<String, Object>> notFoundRight = Collections.newSetFromMap(new IdentityHashMap<>());
+
+        notFoundRight.addAll(rightTab);
+
+
+        for (Map<String, Object> lRow : leftTab) {
+            boolean foundLeft = false;
+
+            for (Map<String, Object> rRow : rightTab) {
+                if (filter.apply(lRow, rRow)) {
+                    foundLeft = true;
+                    notFoundRight.remove(rRow);
+
+                    join.add(transformer.apply(lRow, rRow));
+                }
+            }
+
+            if (!foundLeft && outerLeft)
+                join.add(transformer.apply(lRow, nullRow)); // todo: or some other null object.
+
+        }
+
+        if (outerRight) {
+            for (Map<String, Object> rRow : notFoundRight)
+                join.add(transformer.apply(nullRow, rRow));
+        }
+
+        return join;
+    }
+
+    protected static<R> List<R> doRightJoin(
+        IgniteCache<?, ?> left,
+        IgniteCache<?, ?> right,
+        IgniteBiPredicate<Map<String, Object>, Map<String, Object>> filter,
+        IgniteBiClosure<Map<String, Object>, Map<String, Object>, R> transformer) {
+
+        return doCommonJoin(left, right, filter, transformer, false, true);
+    }
+
+    protected static<R> List<R> doLeftJoin(
+        IgniteCache<?, ?> left,
+        IgniteCache<?, ?> right,
+        IgniteBiPredicate<Map<String, Object>, Map<String, Object>> filter,
+        IgniteBiClosure<Map<String, Object>, Map<String, Object>, R> transformer) {
+
+        return doCommonJoin(left, right, filter, transformer, true, false);
+    }
+
+    protected static<R> List<R> doInnerJoin(
+        IgniteCache<?, ?> left,
+        IgniteCache<?, ?> right,
+        IgniteBiPredicate<Map<String, Object>, Map<String, Object>> filter,
+        IgniteBiClosure<Map<String, Object>, Map<String, Object>, R> transformer) {
+
+        return doCommonJoin(left, right, filter, transformer, false, false);
+    }
+
+    protected static<R> List<R> doOuterJoin(
+        IgniteCache<?, ?> left,
+        IgniteCache<?, ?> right,
+        IgniteBiPredicate<Map<String, Object>, Map<String, Object>> filter,
+        IgniteBiClosure<Map<String, Object>, Map<String, Object>, R> transformer) {
+
+        return doCommonJoin(left, right, filter, transformer, true, true);
+    }
+
+    protected static<R> List<R> doCrossJoin(
+        IgniteCache<?, ?> left,
+        IgniteCache<?, ?> right,
+        IgniteBiPredicate<Map<String, Object>, Map<String, Object>> filter,
+        IgniteBiClosure<Map<String, Object>, Map<String, Object>, R> transformer) {
+
+        return doCommonJoin(left, right, filter, transformer, false, false);
+    }
+
     public void testInnerJoin() {
         testAllNodes(node -> {
             Result act = executeFrom("SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
                 "FROM Employee e INNER JOIN Department d " +
                 "ON e.depId = d.id", node);
 
-            List<Map<String, Object>> emps = select(node.cache(EMP_CACHE_NAME), null, x -> x);
-            List<Map<String, Object>> deps = select(node.cache(DEP_CACHE_NAME), null, x -> x);
+            List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
+                (emp, dep) -> dep.get("ID") != null && dep.get("ID").equals(emp.get("DEPID")),
+                (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
-            List<List<Object>> expected = emps.stream()
-                .flatMap(emp -> deps.stream()
-                    .filter(dep -> dep.get("ID") != null && dep.get("ID") == emp.get("DEPID"))
-                    .map(dep -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME"))))
-                .collect(Collectors.toList());
+            assertContainsEq(act.values(), expected);
+        });
+    }
+
+    public void testLeftJoin() {
+        testAllNodes(node -> {
+            Result act = executeFrom("SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+                "FROM Employee e LEFT JOIN Department d " +
+                "ON e.depId = d.id", node);
+
+            List<List<Object>> expected = doLeftJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
+                (emp, dep) -> emp.get("DEPID").equals(dep.get("ID")),
+                (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
+
+            assertContainsEq(act.values(), expected);
+        });
+    }
+
+    public void testRightJoin() {
+        testAllNodes(node -> {
+            Result act = executeFrom("SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+                "FROM Employee e RIGHT JOIN Department d " +
+                "ON e.depId = d.id", node);
+
+            List<List<Object>> expected = doRightJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
+                (emp, dep) -> emp.get("DEPID").equals(dep.get("ID")),
+                (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
             assertContainsEq(act.values(), expected);
         });
