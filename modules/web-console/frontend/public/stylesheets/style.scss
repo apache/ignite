@@ -241,29 +241,6 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 2em;
 }
 
-.login-footer {
-    padding: 15px 0;
-    text-align: right;
-    border-top: 1px solid #e5e5e5;
-
-    label {
-        float: left;
-        margin: 0;
-    }
-
-    .btn:last-child {
-        margin-right: 0;
-    }
-
-    .checkbox {
-        margin: 0;
-    }
-
-    .btn {
-        margin-right: 0;
-    }
-}
-
 body {
     overflow-x: hidden;
     display: flex;
