@@ -19,12 +19,15 @@ package org.apache.ignite.util;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
+
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Grid utils tests.
@@ -142,6 +145,27 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
         GridPartitionStateMap cp2 = new GridPartitionStateMap(map2, true);
 
         assertEquals(1, cp2.size());
+    }
+
+    /**
+     *
+     */
+    public void testIteratorNext() {
+        GridPartitionStateMap map = new GridPartitionStateMap();
+
+        initMap(map);
+
+        Iterator<Map.Entry<Integer, GridDhtPartitionState>> iter = map.entrySet().iterator();
+
+        Map.Entry<Integer, GridDhtPartitionState> entry1 = iter.next();
+        Map.Entry<Integer, GridDhtPartitionState> entry2 = iter.next();
+
+        iter.remove();
+
+        assertNotNull(entry1.getValue());
+        assertNotNull(entry2.getValue());
+        assertNotEquals(entry1.getKey(), entry2.getKey());
+        assertNotEquals(entry1.getValue(), entry2.getValue());
     }
 
     /** */

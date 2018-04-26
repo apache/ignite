@@ -52,35 +52,43 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
     @Override public Set<Entry<Integer, GridDhtPartitionState>> entrySet() {
         return new AbstractSet<Entry<Integer, GridDhtPartitionState>>() {
             @Override public Iterator<Entry<Integer, GridDhtPartitionState>> iterator() {
-                final int size = states.isEmpty() ? 0 : (states.length() - 1) / BITS + 1;
-
                 return new Iterator<Entry<Integer, GridDhtPartitionState>>() {
-                    private int next;
+                    private int idx;
                     private int cur;
 
                     @Override public boolean hasNext() {
-                        while(state(next) == null && next < size)
-                            next++;
+                        idx = states.nextSetBit(idx);
 
-                        return next < size;
+                        return idx != -1;
                     }
 
                     @Override public Entry<Integer, GridDhtPartitionState> next() {
                         if (!hasNext())
                             throw new NoSuchElementException();
 
-                        cur = next;
-                        next++;
+                        cur = idx / BITS;
+
+                        int bitN = idx % BITS;
+
+                        int st = 1 << bitN;
+
+                        for (int i = 1; i < BITS - bitN; i++)
+                            st |= (states.get(idx + i) ? 1 : 0) << i + bitN;
+
+                        final int ordinal = st - 1;
+
+                        idx += (BITS - bitN);
 
                         return new Entry<Integer, GridDhtPartitionState>() {
                             int p = cur;
+                            int state = ordinal;
 
                             @Override public Integer getKey() {
                                 return p;
                             }
 
                             @Override public GridDhtPartitionState getValue() {
-                                return state(p);
+                                return GridDhtPartitionState.fromOrdinal(state);
                             }
 
                             @Override public GridDhtPartitionState setValue(GridDhtPartitionState val) {
