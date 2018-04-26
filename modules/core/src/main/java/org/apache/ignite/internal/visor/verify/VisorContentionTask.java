@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.cache.verify.ContentionClosure;
 import org.apache.ignite.internal.processors.cache.verify.ContentionInfo;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.VisorMultiNodeTask;
@@ -34,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
+@GridInternal
 public class VisorContentionTask extends VisorMultiNodeTask<VisorContentionTaskArg,
     VisorContentionTaskResult, VisorContentionJobResult> {
     /** */
