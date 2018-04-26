@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
                 }
                 catch
                 {
-                    // no-op.
+                    // No-op.
                 }
             }
         }
