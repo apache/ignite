@@ -103,22 +103,21 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /** <inheritdoc /> */
         public void Dispose()
         {
-            Exception last = null;
+            var tmp = new List<ITransaction>(_col);
             
-            foreach (var tx in _col)
+            _col.Clear();
+            
+            foreach (var tx in tmp)
             {
                 try
                 {
                     tx.Dispose();
                 }
-                catch (Exception e)
+                catch
                 {
-                    last = last ?? e;
+                    // no-op.
                 }
             }
-
-            if (last != null)
-                throw last;
         }
     }
 }
