@@ -186,7 +186,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration cfg1 = new DataStorageConfiguration();
 
-        cfg1.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(150 * 1024 * 1024L));
+        cfg1.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(512 * 1024 * 1024L));
 
         cfg.setDataStorageConfiguration(cfg1);
 
@@ -217,11 +217,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     protected AffinityFunction affinityFunction(@Nullable Integer parts) {
         return new RendezvousAffinityFunction(false,
             parts == null ? RendezvousAffinityFunction.DFLT_PARTITION_COUNT : parts);
-    }
-
-    @Override
-    protected void beforeTest() throws Exception {
-        super.beforeTest();
     }
 
     /** {@inheritDoc} */
