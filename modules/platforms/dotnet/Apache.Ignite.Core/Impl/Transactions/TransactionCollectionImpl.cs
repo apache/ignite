@@ -109,14 +109,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
             
             foreach (var tx in tmp)
             {
-                try
-                {
-                    tx.Dispose();
-                }
-                catch
-                {
-                    // No-op.
-                }
+                tx.Dispose();
             }
         }
     }
