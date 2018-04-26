@@ -584,7 +584,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         try (IgniteDataStreamer ds = ig.dataStreamer(cacheName)) {
             ds.allowOverwrite(true);
 
-            for (int k0 = k; k < k0 + 50_000; k++)
+            for (int k0 = k; k < k0 + 10_000; k++)
                 ds.addData(k, k);
         }
 
@@ -631,7 +631,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                     for (;k < k0 + 3; k++)
                         ds.addData(k, k);
 
-                    U.sleep(1);
+                    U.sleep(10);
                 }
             }
             catch (Exception e) {
