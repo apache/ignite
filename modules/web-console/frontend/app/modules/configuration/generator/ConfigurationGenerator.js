@@ -1423,8 +1423,10 @@ export default class IgniteConfigurationGenerator {
             .intProperty('metricsSubIntervalCount')
             .longProperty('metricsRateTimeInterval')
             .longProperty('checkpointPageBufferSize')
-            .boolProperty('metricsEnabled')
-            .boolProperty('persistenceEnabled');
+            .boolProperty('metricsEnabled');
+
+        if (!plcBean.valueOf('swapPath'))
+            plcBean.boolProperty('persistenceEnabled');
 
         return plcBean;
     }

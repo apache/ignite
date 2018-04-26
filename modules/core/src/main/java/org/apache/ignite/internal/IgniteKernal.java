@@ -2024,7 +2024,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             log.info(str);
         }
 
-        if (!cluster().active()) {
+        if (!ctx.state().clusterState().active()) {
             U.quietAndInfo(log, ">>> Ignite cluster is not active (limited functionality available). " +
                 "Use control.(sh|bat) script or IgniteCluster interface to activate.");
         }
@@ -4332,6 +4332,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     ) {
         ctx.io().runIoTest(warmup, duration, threads, maxLatency, rangesCnt, payLoadSize, procFromNioThread,
             new ArrayList(ctx.cluster().get().forServers().forRemotes().nodes()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearNodeLocalMap() {
+        ctx.cluster().get().clearNodeMap();
     }
 
     /** {@inheritDoc} */
