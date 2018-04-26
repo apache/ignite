@@ -31,7 +31,6 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     public void testCrossJoin() {
         testAllNodes(node -> {
             Result act1 = executeFrom("SELECT e.id, d.id FROM Employee e, Department d", node);
-
             Result act2 = executeFrom("SELECT e.id, d.id FROM Employee e CROSS JOIN Department d", node);
 
             assertContainsEq(act1.values(), act2.values());

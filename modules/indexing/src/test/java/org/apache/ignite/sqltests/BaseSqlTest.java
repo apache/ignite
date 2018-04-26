@@ -47,6 +47,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -58,10 +59,10 @@ import org.jetbrains.annotations.Nullable;
  */
 public class BaseSqlTest extends GridCommonAbstractTest {
     /** Size of Employee test table. */
-    public final static long EMP_CNT = 1000L;
+    public final static long EMP_CNT = 10L;
 
     /** Size of Department test table. */
-    public final static long DEP_CNT = 50L;
+    public final static long DEP_CNT = 5L;
 
     /** Number of possible age values (width of ages values range). */
     public final static int AGES_CNT = 50;
@@ -84,7 +85,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /** Node name of first server. */
     public final String SRV1_NAME = "server1";
 
-    public static final String[] ALL_EMP_FIELDS = new String[] {"ID", "DEPID", "FIRSTNAME", "LASTNAME", "AGE", "SALARY"};
+    public static final String[] ALL_EMP_FIELDS = new String[] {"ID", "DEPID", "DEPIDNOIDX", "FIRSTNAME", "LASTNAME", "AGE", "SALARY"};
 
     @InjectTestSuite.Parameter
     private Configuration cfg = new Configuration();
@@ -106,7 +107,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     protected void fillCommonData() {
         SqlFieldsQuery insDep = new SqlFieldsQuery("INSERT INTO Department VALUES (?, ?)");
 
-        SqlFieldsQuery insEmp = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?, ?, ?)");
+        SqlFieldsQuery insEmp = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?, ?, ?, ?)");
 
         Random rnd = new Random();
 
@@ -125,7 +126,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             Integer age = rnd.nextInt(AGES_CNT) + 18;
             Integer salary = rnd.nextInt(50) + 50;
 
-            execute(insEmp.setArgs(id, depId, firstName, lastName, age, salary));
+            execute(insEmp.setArgs(id, depId, depId, firstName, lastName, age, salary));
         }
     }
 
@@ -138,6 +139,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         execute("CREATE TABLE Employee (" +
             "id LONG, " +
             "depId LONG, " +
+            "depIdNoidx LONG," +
             "firstName VARCHAR, " +
             "lastName VARCHAR, " +
             "age INT, " +
@@ -382,10 +384,10 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param filter filter for rows.
      * @param transformer result mapper.
      */
-    protected static <K, V> List<List<Object>> select(
+    protected static <K, V, R> List<R> select(
         IgniteCache<K, V> cache,
         @Nullable IgnitePredicate<Map<String, Object>> filter,
-        IgniteClosure<Map<String, Object>, List<Object>> transformer) {
+        IgniteClosure<Map<String, Object>, R> transformer) {
 
         Collection<QueryEntity> entities = cache.getConfiguration(CacheConfiguration.class).getQueryEntities();
 
@@ -393,7 +395,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
         final QueryEntity meta = entities.iterator().next();
 
-        IgniteClosure<Cache.Entry<K, V>, List<Object>> transformerAdapter = entry -> {
+        IgniteClosure<Cache.Entry<K, V>, R> transformerAdapter = entry -> {
             Map<String, Object> row = entryToMap(meta, entry.getKey(), entry.getValue());
 
             return transformer.apply(row);
@@ -402,7 +404,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         IgniteBiPredicate<K, V> filterAdapter = (filter == null) ? null :
             (key, val) -> filter.apply(entryToMap(meta, key, val));
 
-        QueryCursor<List<Object>> cursor = cache.withKeepBinary()
+        QueryCursor<R> cursor = cache.withKeepBinary()
             .query(new ScanQuery<>(filterAdapter), transformerAdapter);
 
         return cursor.getAll();
@@ -650,7 +652,24 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    public void testInnerJoin() {
+        testAllNodes(node -> {
+            Result act = executeFrom("SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+                "FROM Employee e INNER JOIN Department d " +
+                "ON e.depId = d.id", node);
 
+            List<Map<String, Object>> emps = select(node.cache(EMP_CACHE_NAME), null, x -> x);
+            List<Map<String, Object>> deps = select(node.cache(DEP_CACHE_NAME), null, x -> x);
+
+            List<List<Object>> expected = emps.stream()
+                .flatMap(emp -> deps.stream()
+                    .filter(dep -> dep.get("ID") != null && dep.get("ID") == emp.get("DEPID"))
+                    .map(dep -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME"))))
+                .collect(Collectors.toList());
+
+            assertContainsEq(act.values(), expected);
+        });
+    }
 
     public void testCfg() {
         // false by default, injected as true
