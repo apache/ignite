@@ -147,7 +147,7 @@ namespace ignite
                  * @param diag Diagnostics collector to use for error-reporting.
                  * @return @c true on success.
                  */
-                static bool AsyncConnectInternal(void* ssl, int timeout, diagnostic::Diagnosable& diag);
+                static bool CompleteConnectInternal(void* ssl, int timeout, diagnostic::Diagnosable& diag);
 
                 /**
                  * Get SSL error.

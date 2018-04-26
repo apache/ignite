@@ -90,10 +90,14 @@ namespace ignite
 
                 ssl::SSL_set_connect_state_(ssl0);
 
-                bool connected = AsyncConnectInternal(ssl0, DEFALT_CONNECT_TIMEOUT, diag);
+                bool connected = CompleteConnectInternal(ssl0, DEFALT_CONNECT_TIMEOUT, diag);
 
                 if (!connected)
+                {
+                    ssl::SSL_free_(ssl0);
+
                     return false;
+                }
 
                 // Verify a server certificate was presented during the negotiation
                 X509* cert = ssl::SSL_get_peer_certificate(ssl0);
@@ -332,7 +336,7 @@ namespace ignite
                 return ssl;
             }
 
-            bool SecureSocketClient::AsyncConnectInternal(void* ssl, int timeout, diagnostic::Diagnosable& diag)
+            bool SecureSocketClient::CompleteConnectInternal(void* ssl, int timeout, diagnostic::Diagnosable& diag)
             {
                 SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
