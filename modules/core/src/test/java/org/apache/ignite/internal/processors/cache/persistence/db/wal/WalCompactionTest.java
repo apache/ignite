@@ -70,7 +70,6 @@ public class WalCompactionTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
-        walMode = WALMode.LOG_ONLY;
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
