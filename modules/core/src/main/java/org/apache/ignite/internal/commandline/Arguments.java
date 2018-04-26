@@ -73,7 +73,6 @@ public class Arguments {
      * @param force Force flag.
      * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
      * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
-     * @param force Force flag.
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd,
                      String baselineAct, String baselineArgs, long pingTimeout,

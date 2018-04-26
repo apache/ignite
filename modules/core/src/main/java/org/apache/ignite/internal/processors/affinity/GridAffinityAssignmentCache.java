@@ -49,6 +49,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -223,6 +224,12 @@ public class GridAffinityAssignmentCache {
         }
 
         onHistoryAdded(assignment);
+
+        if (log.isTraceEnabled()) {
+            log.trace("New affinity assignment [grp=" + cacheOrGrpName
+                + ", topVer=" + topVer
+                + ", aff=" + fold(affAssignment) + "]");
+        }
     }
 
     /**
@@ -814,6 +821,36 @@ public class GridAffinityAssignmentCache {
      */
     public Collection<AffinityTopologyVersion> cachedVersions() {
         return affCache.keySet();
+    }
+
+    /**
+     * @param affAssignment Affinity assignment.
+     * @return String representation of given {@code affAssignment}.
+     */
+    private static String fold(List<List<ClusterNode>> affAssignment) {
+        SB sb = new SB();
+
+        for (int p = 0; p < affAssignment.size(); p++) {
+            sb.a("Part [");
+            sb.a("id=" + p + ", ");
+
+            SB partOwners = new SB();
+
+            List<ClusterNode> affOwners = affAssignment.get(p);
+
+            for (ClusterNode node : affOwners) {
+                partOwners.a(node.consistentId());
+                partOwners.a(' ');
+            }
+
+            sb.a("owners=[");
+            sb.a(partOwners);
+            sb.a(']');
+
+            sb.a("] ");
+        }
+
+        return sb.toString();
     }
 
     /**

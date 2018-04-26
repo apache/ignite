@@ -1127,6 +1127,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
+        /* It is necessary to run database callback before all topology callbacks.
+           In case of persistent store is enabled we first restore partitions presented on disk.
+           We need to guarantee that there are no partition state changes logged to WAL before this callback
+           to make sure that we correctly restored last actual states. */
+        cctx.database().beforeExchange(this);
+
         if (!exchCtx.mergeExchanges()) {
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (grp.isLocal() || cacheGroupStopping(grp.groupId()))
@@ -1137,10 +1143,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grp.topology().beforeExchange(this, !centralizedAff && !forceAffReassignment, false);
             }
         }
-
-        // It is necessary to run database callback after all topology callbacks, so partition states could be
-        // correctly restored from the persistent store.
-        cctx.database().beforeExchange(this);
 
         changeWalModeIfNeeded();
 
@@ -1917,18 +1919,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
-     * Checks that some futures were merged to the current.
-     * Future without merges has only one DiscoveryEvent.
-     * If we merge futures to the current (see {@link GridCachePartitionExchangeManager#mergeExchanges(GridDhtPartitionsExchangeFuture, GridDhtPartitionsFullMessage)})
-     * we add new discovery event from merged future.
-     *
-     * @return {@code True} If some futures were merged to current, false in other case.
-     */
-    private boolean hasMergedExchanges() {
-        return context().events().events().size() > 1;
-    }
-
-    /**
      * @param fut Current future.
      * @return Pending join request if any.
      */
@@ -2472,12 +2462,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     log.info("Coordinator received all messages, try merge [ver=" + initialVersion() + ']');
 
                 boolean finish = cctx.exchange().mergeExchangesOnCoordinator(this);
-
-                // Synchronize in case of changed coordinator (thread switched to sys-*)
-                synchronized (mux) {
-                    if (hasMergedExchanges())
-                        updateTopologies(true);
-                }
 
                 if (!finish)
                     return;
@@ -3113,9 +3097,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         return; // Node is stopping, no need to further process exchange.
                     }
-
-                    if (hasMergedExchanges())
-                        updateTopologies(false);
 
                     assert resTopVer.equals(exchCtx.events().topologyVersion()) :  "Unexpected result version [" +
                         "msgVer=" + resTopVer +
