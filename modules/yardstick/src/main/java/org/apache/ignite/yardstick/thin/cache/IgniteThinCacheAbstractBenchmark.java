@@ -30,6 +30,8 @@ public abstract class IgniteThinCacheAbstractBenchmark<K, V> extends IgniteThinA
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
+
+        cache = cache();
     }
 
     /**

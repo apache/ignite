@@ -3,6 +3,7 @@ package org.apache.ignite.yardstick.thin.cache;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
@@ -49,7 +50,16 @@ public class IgniteThinBenchmarkUtils {
 
         String[] hostArr = driverHosts.split(",");
 
-        return Arrays.asList(hostArr);
+        List<String> res = new ArrayList<>(hostArr.length);
+
+        for(String host : hostArr){
+            if(host.equals("localhost"))
+                res.add("127.0.0.1");
+            else
+                res.add(host);
+        }
+
+        return res;
     }
 
     public static String[] servHostArr(BenchmarkConfiguration cfg){
