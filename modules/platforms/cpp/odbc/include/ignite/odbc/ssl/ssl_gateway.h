@@ -47,6 +47,8 @@ namespace ignite
                 void *fpSSL_get_peer_certificate;
                 void *fpSSL_ctrl;
                 void *fpSSLv23_method;
+                void *fpSSL_connect;
+                void *fpSSL_get_error;
                 void *fpOPENSSL_config;
                 void *fpX509_free;
                 void *fpBIO_new_ssl_connect;
@@ -55,6 +57,8 @@ namespace ignite
                 void *fpBIO_free_all;
                 void *fpBIO_test_flags;
                 void *fpBIO_ctrl;
+                void *fpERR_get_error;
+                void *fpERR_error_string_n;
             };
 
             /**

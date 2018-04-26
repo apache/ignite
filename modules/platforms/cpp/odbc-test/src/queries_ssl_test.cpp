@@ -19,6 +19,7 @@
 
 #include <vector>
 #include <string>
+#include <sstream>
 
 #ifndef _MSC_VER
 #   define BOOST_TEST_DYN_LINK
@@ -55,7 +56,7 @@ struct SslQueriesTestSuiteFixture : odbc::OdbcTestSuite
     SslQueriesTestSuiteFixture() :
         OdbcTestSuite()
     {
-        grid = StartAdditionalNode("NodeMain");
+//        grid = StartAdditionalNode("NodeMain");
     }
 
     /**
@@ -75,15 +76,18 @@ struct SslQueriesTestSuiteFixture : odbc::OdbcTestSuite
         std::string cfgDirPath = GetTestConfigDir();
 
         std::stringstream connectString;
-
+//
+//            "ADDRESS=54.241.144.187:9921;"
         connectString <<
             "DRIVER={Apache Ignite};"
-            "ADDRESS=127.0.0.1:11110;"
+            "ADDRESS=54.241.144.187:9921;"
             "SCHEMA=cache;"
             "SSL_MODE=require;"
-            "SSL_KEY_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "client_full.pem;"
-            "SSL_CERT_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "client_full.pem;"
-            "SSL_CA_FILE=" << cfgDirPath << Fs << "ssl" << Fs << "ca.pem;";
+            "SSL_KEY_FILE=" << cfgDirPath << Fs << "ssl1" << Fs << "client.pem;"
+            "SSL_CERT_FILE=" << cfgDirPath << Fs << "ssl1" << Fs << "client.pem;"
+            "SSL_CA_FILE=" << cfgDirPath << Fs << "ssl1" << Fs << "ca.pem;"
+            "USER=ignite;"
+            "PASSWORD=rY9GSE14jq";
 
         return connectString.str();
     }
@@ -97,9 +101,9 @@ BOOST_FIXTURE_TEST_SUITE(SslQueriesTestSuite, SslQueriesTestSuiteFixture)
 BOOST_AUTO_TEST_CASE(TestConnectionSslSuccess)
 {
     Connect(MakeDefaultConnectionString());
-
-    InsertTestStrings(10, false);
-    InsertTestBatch(11, 2000, 1989);
+//
+//    InsertTestStrings(10, false);
+//    InsertTestBatch(11, 2000, 1989);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectionSslReject)

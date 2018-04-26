@@ -61,8 +61,6 @@ namespace ignite
 
                 std::string home = GetEnv(ADDITIONAL_OPENSSL_HOME_ENV);
 
-                std::cout << ADDITIONAL_OPENSSL_HOME_ENV << std::endl;
-
                 if (home.empty())
                     home = GetEnv("OPENSSL_HOME");
 
@@ -148,6 +146,8 @@ namespace ignite
                 functions.fpSSL_CTX_ctrl = LoadSslMethod("SSL_CTX_ctrl");
 
                 functions.fpSSLv23_method = LoadSslMethod("SSLv23_method");
+                functions.fpSSL_connect = LoadSslMethod("SSL_connect");
+                functions.fpSSL_get_error = LoadSslMethod("SSL_get_error");
                 functions.fpBIO_new_ssl_connect = LoadSslMethod("BIO_new_ssl_connect");
 
                 functions.fpOPENSSL_config = LoadSslMethod("OPENSSL_config");
@@ -158,6 +158,9 @@ namespace ignite
                 functions.fpBIO_free_all = LoadSslMethod("BIO_free_all");
                 functions.fpBIO_test_flags = LoadSslMethod("BIO_test_flags");
                 functions.fpBIO_ctrl = LoadSslMethod("BIO_ctrl");
+
+                functions.fpERR_get_error = LoadSslMethod("ERR_get_error");
+                functions.fpERR_error_string_n = LoadSslMethod("ERR_error_string_n");
 
                 bool allLoaded =
                     functions.fpSSL_CTX_new != 0 &&
@@ -175,6 +178,8 @@ namespace ignite
                     functions.fpSSL_ctrl != 0 &&
                     functions.fpSSL_CTX_ctrl != 0 &&
                     functions.fpSSLv23_method != 0 &&
+                    functions.fpSSL_connect != 0 &&
+                    functions.fpSSL_get_error != 0 &&
                     functions.fpBIO_new_ssl_connect != 0 &&
                     functions.fpOPENSSL_config != 0 &&
                     functions.fpX509_free != 0 &&
@@ -182,7 +187,9 @@ namespace ignite
                     functions.fpBIO_read != 0 &&
                     functions.fpBIO_free_all != 0 &&
                     functions.fpBIO_test_flags != 0 &&
-                    functions.fpBIO_ctrl != 0;
+                    functions.fpBIO_ctrl != 0 &&
+                    functions.fpERR_get_error != 0 &&
+                    functions.fpERR_error_string_n != 0;
 
                 if (!allLoaded)
                 {

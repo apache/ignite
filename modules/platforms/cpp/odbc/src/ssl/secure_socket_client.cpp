@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <windows.h>
 
 #include <sstream>
 #include <cstdio>
@@ -41,6 +42,7 @@ namespace ignite
                 caPath(caPath),
                 context(0),
                 sslBio(0),
+                ssl(0),
                 blocking(true)
             {
                 // No-op.
@@ -90,6 +92,8 @@ namespace ignite
                         "Can not set up non-blocking mode. Timeouts are not available.");
                 }
 
+                LOG_MSG("Connecting to host " << hostname << ", port: " << port);
+
                 std::stringstream stream;
                 stream << hostname << ":" << port;
 
@@ -105,9 +109,9 @@ namespace ignite
                     return false;
                 }
 
-                SSL* ssl = 0;
-                ssl::BIO_get_ssl_(bio, &ssl);
-                if (!ssl)
+                SSL* ssl0 = 0;
+                ssl::BIO_get_ssl_(bio, &ssl0);
+                if (!ssl0)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not get SSL instance from BIO.");
 
@@ -116,7 +120,7 @@ namespace ignite
                     return false;
                 }
 
-                res = ssl::SSL_set_tlsext_host_name_(ssl, hostname);
+                res = ssl::SSL_set_tlsext_host_name_(ssl0, hostname);
                 if (res != OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not set host name for secure connection");
@@ -126,29 +130,13 @@ namespace ignite
                     return false;
                 }
 
-                do
-                {
-                    res = ssl::BIO_do_connect_(bio);
-                } while (ssl::BIO_should_retry_(bio));
+                res = ssl::SSL_connect_(ssl0);
+                LOG_MSG("RES = " << res);
 
                 if (res != OPERATION_SUCCESS)
                 {
                     diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT,
-                        "Failed to establish secure connection with the host.");
-
-                    ssl::BIO_free_all(bio);
-
-                    return false;
-                }
-
-                do
-                {
-                    res = ssl::BIO_do_handshake_(bio);
-                } while (ssl::BIO_should_retry_(bio));
-
-                if (res != OPERATION_SUCCESS)
-                {
-                    diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, "SSL handshake failed.");
+                        "Failed to establish secure connection with the host: " + GetSslError(ssl0, res));
 
                     ssl::BIO_free_all(bio);
 
@@ -156,12 +144,13 @@ namespace ignite
                 }
 
                 // Verify a server certificate was presented during the negotiation
-                X509* cert = ssl::SSL_get_peer_certificate(ssl);
+                X509* cert = ssl::SSL_get_peer_certificate(ssl0);
                 if (cert)
                     ssl::X509_free(cert);
                 else
                 {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Remote host did not provide certificate.");
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
+                        "Remote host did not provide certificate: " + GetSslError(ssl0, res));
 
                     ssl::BIO_free_all(bio);
 
@@ -170,10 +159,11 @@ namespace ignite
 
                 // Verify the result of chain verification
                 // Verification performed according to RFC 4158
-                res = ssl::SSL_get_verify_result(ssl);
+                res = ssl::SSL_get_verify_result(ssl0);
                 if (X509_V_OK != res)
                 {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Certificate chain verification failed.");
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
+                        "Certificate chain verification failed: " + GetSslError(ssl0, res));
 
                     ssl::BIO_free_all(bio);
 
@@ -277,10 +267,10 @@ namespace ignite
                     }
                 }
 
-                const SSL_METHOD* method = SSLv23_method();
+                const SSL_METHOD* method = ssl::SSLv23_method();
                 if (!method)
                 {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not create new SSL method.");
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not get SSL method.");
 
                     return 0;
                 }
@@ -348,6 +338,30 @@ namespace ignite
                 }
 
                 return ctx;
+            }
+
+            std::string SecureSocketClient::GetSslError(void* ssl0, int ret)
+            {
+                SSL* ssl1 = reinterpret_cast<SSL*>(ssl0);
+
+                if (ret < 0)
+                {
+                    int ssl_error = ssl::SSL_get_error_(ssl1, ret);
+
+                    if (ssl_error == SSL_ERROR_WANT_WRITE)
+                        return std::string("SSL_connect wants write");
+
+                    if (ssl_error == SSL_ERROR_WANT_READ)
+                        return std::string("SSL_connect wants read");
+                }
+
+                long error = ssl::ERR_get_error_();
+
+                char errBuf[1024] = { 0 };
+
+                ssl::ERR_error_string_n_(error, errBuf, sizeof(errBuf));
+
+                return std::string(errBuf);
             }
 
             void SecureSocketClient::CloseInteral()

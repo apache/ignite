@@ -125,6 +125,15 @@ namespace ignite
                 static void* MakeContext(const std::string& certPath, const std::string& keyPath,
                     const std::string& caPath, diagnostic::Diagnosable& diag);
 
+                /**
+                 * Get SSL error.
+                 *
+                 * @param ssl SSL instance.
+                 * @param ret Return value of the pervious operation.
+                 * @return Error string.
+                 */
+                static std::string GetSslError(void* ssl, int ret);
+
                 /** Certificate file path. */
                 std::string certPath;
 
@@ -139,6 +148,9 @@ namespace ignite
 
                 /** OpenSSL I/O stream abstraction */
                 void* sslBio;
+
+                /** OpenSSL instance */
+                void* ssl;
 
                 /** Blocking flag. */
                 bool blocking;

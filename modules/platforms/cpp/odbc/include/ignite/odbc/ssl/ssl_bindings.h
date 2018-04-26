@@ -20,6 +20,7 @@
 
 #include <openssl/ssl.h>
 #include <openssl/conf.h>
+#include <openssl/err.h>
 
 #include "ignite/odbc/ssl/ssl_gateway.h"
 
@@ -173,7 +174,23 @@ namespace ignite
                     TLSEXT_NAMETYPE_host_name, const_cast<char*>(name));
             }
 
+            inline int SSL_connect_(SSL* s)
+            {
+                typedef int(FuncType)(SSL*);
 
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_connect);
+
+                return fp(s);
+            }
+
+            inline int SSL_get_error_(const SSL *s, int ret)
+            {
+                typedef int(FuncType)(const SSL*, int);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_get_error);
+
+                return fp(s, ret);
+            }
 
             inline const SSL_METHOD *SSLv23_method()
             {
@@ -295,6 +312,25 @@ namespace ignite
             inline long BIO_pending_(BIO *bp)
             {
                 return ssl::BIO_ctrl(bp, BIO_CTRL_PENDING, 0, NULL);
+            }
+
+            inline unsigned long ERR_get_error_()
+            {
+                typedef unsigned long(FuncType)();
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpERR_get_error);
+
+                return fp();
+            }
+
+            inline void ERR_error_string_n_(unsigned long e, char *buf, size_t len)
+            {
+                typedef void(FuncType)(unsigned long, char*, size_t);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(
+                    SslGateway::GetInstance().GetFunctions().fpERR_error_string_n);
+
+                fp(e, buf, len);
             }
         }
     }
