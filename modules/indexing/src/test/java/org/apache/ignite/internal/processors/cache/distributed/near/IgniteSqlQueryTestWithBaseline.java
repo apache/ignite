@@ -30,7 +30,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import javax.cache.Cache;
@@ -38,9 +37,9 @@ import javax.cache.Cache;
 /**
  *
  */
-public class IgniteChangingBaselineCacheQueryAdditionalNodeSelfTest extends GridCommonAbstractTest {
+public class IgniteSqlQueryTestWithBaseline extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -57,7 +56,7 @@ public class IgniteChangingBaselineCacheQueryAdditionalNodeSelfTest extends Grid
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setIpFinder(ipFinder);
+        disco.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(disco);
 
@@ -108,42 +107,42 @@ public class IgniteChangingBaselineCacheQueryAdditionalNodeSelfTest extends Grid
         protected Integer id;
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testQueryWithNodeNotInBLT() throws Exception {
         startGrids(2);
 
         grid(0).cluster().active(true);
-
-        awaitPartitionMapExchange();
 
         startGrid(2); //Start extra node.
 
         doQuery();
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testQueryWithoutBLTNode() throws Exception {
         startGrids(2);
 
         grid(0).cluster().active(true);
 
-        awaitPartitionMapExchange();
-
-        startGrid(2); //start extra node
+        startGrid(2); //Start extra node.
         stopGrid(1);
 
         doQuery();
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testQueryFromNotBLTNode() throws Exception {
         startGrid(1);
 
         grid(1).cluster().active(true);
 
-        awaitPartitionMapExchange();
-
-        startGrid(0); //start extra node
+        startGrid(0); //Start extra node.
 
         doQuery();
     }

@@ -3150,7 +3150,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "CacheGroupAffinity [name=" + name + ']';
+            return S.toString(CacheGroupAffinity.class, this);
         }
     }
 
@@ -3297,7 +3297,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 Integer grpId = e.getKey();
 
                 if (CU.affinityNode(node, grpAff.cacheFilter)) {
-                    if (grpAff.persistentCacheGrp && bltNodes != null && !bltNodes.contains(node.id())) //Filter out.
+                    if (grpAff.persistentCacheGrp && bltNodes != null && !bltNodes.contains(node.id())) // Filter out.
                         continue;
                     
                     List<ClusterNode> nodes = cacheGrpAffNodes.get(grpId);
