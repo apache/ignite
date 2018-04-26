@@ -780,6 +780,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             WALPointer restore = restoreMemory(status);
 
+            if (restore == null && status.endPtr != CheckpointStatus.NULL_PTR)
+                throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " + status.endPtr + ".");
+
             // First, bring memory to the last consistent checkpoint state if needed.
             // This method should return a pointer to the last valid record in the WAL.
 
@@ -800,7 +803,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         catch (StorageException | PersistentStorageIOException e) {
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
-            throw new IgniteCheckedException(e);
+            throw e;
         }
         finally {
             checkpointReadUnlock();
@@ -1954,7 +1957,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If failed.
      * @throws StorageException In case I/O error occurred during operations with storage.
      */
-    private WALPointer restoreMemory(CheckpointStatus status) throws IgniteCheckedException {
+    private @Nullable WALPointer restoreMemory(CheckpointStatus status) throws IgniteCheckedException {
         return restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory());
     }
 
@@ -1965,7 +1968,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If failed.
      * @throws StorageException In case I/O error occurred during operations with storage.
      */
-    private WALPointer restoreMemory(CheckpointStatus status, boolean storeOnly,
+    private @Nullable WALPointer restoreMemory(CheckpointStatus status, boolean storeOnly,
         PageMemoryEx storePageMem) throws IgniteCheckedException {
         assert !storeOnly || storePageMem != null;
 
@@ -2118,7 +2121,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         if (status.needRestoreMemory()) {
             if (apply)
-                throw new IgniteCheckedException("Failed to restore memory state (checkpoint marker is present " +
+                throw new StorageException("Failed to restore memory state (checkpoint marker is present " +
                     "on disk, but checkpoint record is missed in WAL) " +
                     "[cpStatus=" + status + ", lastRead=" + lastRead + "]");
 
