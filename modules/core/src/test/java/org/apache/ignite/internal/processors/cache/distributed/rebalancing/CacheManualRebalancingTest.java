@@ -155,7 +155,7 @@ public class CacheManualRebalancingTest extends GridCommonAbstractTest {
                 log.info("Start rebalancing cache: " + cacheName + ", size: " + cache.localSize());
 
                 do {
-                    IgniteFuture<?> rebalance = cache.rebalance();
+                    IgniteFuture<Boolean> rebalance = cache.rebalance();
 
                     log.info("Wait rebalancing cache: " + cacheName + " - " + rebalance);
 
