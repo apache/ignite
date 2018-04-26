@@ -3720,7 +3720,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (recovery != null) {
                 HandshakeMessage msg;
 
-                int msgSize = HandshakeMessage.MESSAGE_FULL_SIZE + 1 /** Compression flag.*/;
+                int msgSize = HandshakeMessage.MESSAGE_FULL_SIZE;
 
                 if (handshakeConnIdx != null) {
                     msg = new HandshakeMessage2(locNode.id(),
