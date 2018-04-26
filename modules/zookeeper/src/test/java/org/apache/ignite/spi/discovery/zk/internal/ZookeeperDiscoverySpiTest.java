@@ -3909,7 +3909,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 while (!stop.get() && System.currentTimeMillis() < stopTime) {
-                    U.sleep(rnd.nextLong(500) + 500);
+                    U.sleep(rnd.nextLong(2500) + 2500);
 
                     int idx = rnd.nextInt(ZK_SRVS);
 
