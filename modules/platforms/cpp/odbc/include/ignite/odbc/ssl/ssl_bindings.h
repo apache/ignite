@@ -213,11 +213,47 @@ namespace ignite
 
             inline int SSL_write_(SSL *s, const void *buf, int num)
             {
-                typedef int(FuncType)(SSL*, const void *, int);
+                typedef int(FuncType)(SSL*, const void*, int);
 
                 FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_write);
 
                 return fp(s, buf, num);
+            }
+
+            inline int SSL_read_(SSL *s, void *buf, int num)
+            {
+                typedef int(FuncType)(SSL*, void*, int);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_read);
+
+                return fp(s, buf, num);
+            }
+
+            inline int SSL_pending_(const SSL *ssl)
+            {
+                typedef int(FuncType)(const SSL*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_pending);
+
+                return fp(ssl);
+            }
+
+            inline int SSL_get_fd_(const SSL *ssl)
+            {
+                typedef int(FuncType)(const SSL*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_get_fd);
+
+                return fp(ssl);
+            }
+
+            inline void SSL_free_(SSL *ssl)
+            {
+                typedef void(FuncType)(SSL*);
+
+                FuncType* fp = reinterpret_cast<FuncType*>(SslGateway::GetInstance().GetFunctions().fpSSL_free);
+
+                fp(ssl);
             }
 
             inline const SSL_METHOD *SSLv23_client_method_()

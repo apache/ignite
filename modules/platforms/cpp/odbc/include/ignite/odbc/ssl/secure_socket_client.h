@@ -106,12 +106,13 @@ namespace ignite
                  * This function uses poll to achive timeout functionality
                  * for every separate socket operation.
                  *
+                 * @param ssl SSL instance.
                  * @param timeout Timeout in seconds.
                  * @param rd Wait for read if @c true, or for write if @c false.
                  * @return -errno on error, WaitResult::TIMEOUT on timeout and
                  *     WaitResult::SUCCESS on success.
                  */
-                int WaitOnSocket(int32_t timeout, bool rd);
+                static int WaitOnSocket(void* ssl, int32_t timeout, bool rd);
 
                 /**
                  * Make new context instance.
@@ -120,18 +121,33 @@ namespace ignite
                  * @param keyPath Private key file path.
                  * @param caPath Certificate authority file path.
                  * @param diag Diagnostics collector to use for error-reporting.
-                 * @return New context instance on success and null-opinter on fail.
+                 * @return New context instance on success and null-pointer on fail.
                  */
                 static void* MakeContext(const std::string& certPath, const std::string& keyPath,
                     const std::string& caPath, diagnostic::Diagnosable& diag);
 
                 /**
+                 * Make new SSL instance.
+                 *
+                 * @param context SSL context.
+                 * @param hostname Host name or address.
+                 * @param port TCP port.
+                 * @param blocking Indicates if the resulted SSL is blocking or not.
+                 * @param diag Diagnostics collector to use for error-reporting.
+                 * @return New SSL instance on success and null-pointer on fail.
+                 */
+                static void* MakeSsl(void* context, const char* hostname, uint16_t port,
+                    bool& blocking, diagnostic::Diagnosable& diag);
+
+                /**
                  * Complete async connect.
                  *
+                 * @param ssl SSL instance.
                  * @param timeout Timeout in seconds.
-                 * @return Connection result.
+                 * @param diag Diagnostics collector to use for error-reporting.
+                 * @return @c true on success.
                  */
-                int AsyncConnectInternal(int timeout);
+                static bool AsyncConnectInternal(void* ssl, int timeout, diagnostic::Diagnosable& diag);
 
                 /**
                  * Get SSL error.
@@ -153,9 +169,6 @@ namespace ignite
 
                 /** SSL context. */
                 void* context;
-
-                /** OpenSSL I/O stream abstraction */
-                void* sslBio;
 
                 /** OpenSSL instance */
                 void* ssl;

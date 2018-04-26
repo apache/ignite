@@ -52,6 +52,10 @@ namespace ignite
                 void *fpSSL_get_error;
                 void *fpSSL_want;
                 void *fpSSL_write;
+                void *fpSSL_read;
+                void *fpSSL_pending;
+                void *fpSSL_get_fd;
+                void *fpSSL_free;
                 void *fpOPENSSL_config;
                 void *fpX509_free;
                 void *fpBIO_new_ssl_connect;
