@@ -102,12 +102,8 @@ namespace Apache.Ignite.Core.Impl.Transactions
         
         /** <inheritdoc /> */
         public void Dispose()
-        {
-            var tmp = new List<ITransaction>(_col);
-            
-            _col.Clear();
-            
-            foreach (var tx in tmp)
+        {  
+            foreach (var tx in _col)
             {
                 tx.Dispose();
             }
