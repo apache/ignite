@@ -332,7 +332,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param actual collection.
      * @param expected collection.
      */
-    protected void assertContainsEq(String msg, Collection actual, Collection expected) {
+    protected void assertContainsEq(String msg, Collection<?> actual, Collection<?> expected) {
         if (F.isEmpty(msg))
             msg = "Assertion failed.";
 
@@ -349,10 +349,21 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                 ", uniqExpected=" + removeFromCopy(expected, actual) + "]");
     }
 
+    /**
+     * Subtracts from the copy of one collection another collection.
+     * Number of "from" collection duplicates that will be removed, is equal to number of
+     * duplicates in "toRemove" collection.
+     *
+     * @param from Collection which copy is left argument of subtraction.
+     * @param toRemove Right argument of subtraction.
+     */
     private static Collection removeFromCopy(Collection<?> from, Collection<?> toRemove) {
-        Set<?> copy = new HashSet<>(from);
-        copy.removeAll(toRemove);
-        return copy;
+        List<?> fromCp = new ArrayList<>(from);
+
+        for(Object e : toRemove)
+            fromCp.remove(e);
+
+        return fromCp;
     }
 
     /**
