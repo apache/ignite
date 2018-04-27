@@ -220,13 +220,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 try {
                     long partMetaPageAddr = pageMem.writeLock(grpId, partMetaId, partMetaPage);
 
-                        if (partMetaPageAddr == 0L) {
-                            U.warn(log, "Failed to acquire write lock for meta page [metaPage=" + partMetaPage +
-                                ", saveMeta=" + saveMeta + ", beforeDestroy=" + beforeDestroy + ", size=" + size +
-                                ", updCntr=" + updCntr + ", state=" + state + ']');
+                    if (partMetaPageAddr == 0L) {
+                        U.warn(log, "Failed to acquire write lock for meta page [metaPage=" + partMetaPage +
+                            ", saveMeta=" + saveMeta + ", beforeDestroy=" + beforeDestroy + ", size=" + size +
+                            ", updCntr=" + updCntr + ", state=" + state + ']');
 
-                            return false;
-                        }
+                        return false;
+                    }
 
                     boolean changed = false;
 
@@ -271,7 +271,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         if (needSnapshot) {
                             pageCnt = this.ctx.pageStore().pages(grpId, store.partId());
 
-                            io.setCandidatePageCount(partMetaPageAddr, size == 0 ? 0: pageCnt);
+                            io.setCandidatePageCount(partMetaPageAddr, size == 0 ? 0 : pageCnt);
 
                             if (saveMeta) {
                                 saveMeta(ctx);
@@ -282,7 +282,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             if (state == OWNING) {
                                 assert part != null;
 
-                                if(!addPartition(
+                                if (!addPartition(
                                     part,
                                     ctx.partitionStatMap(),
                                     partMetaPageAddr,
@@ -292,7 +292,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                                     this.ctx.pageStore().pages(grpId, store.partId()),
                                     store.fullSize()
                                 ))
-                                    U.warn(log,"Partition was concurrently evicted grpId=" +  grpId +
+                                    U.warn(log, "Partition was concurrently evicted grpId=" + grpId +
                                         ", partitionId=" + part.id());
                             }
                             else if (state == MOVING || state == RENTING) {
@@ -382,7 +382,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         long nextId = cntrsPageId;
 
-        while (true){
+        while (true) {
             final long curId = nextId;
             final long curPage = pageMem.acquirePage(grpId, curId);
 
@@ -551,7 +551,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (part != null) {
             boolean reserved = part.reserve();
 
-            if(!reserved)
+            if (!reserved)
                 return false;
         }
         else
@@ -1714,7 +1714,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             GridDhtLocalPartition part = cctx.topology().localPartition(partId, AffinityTopologyVersion.NONE, false, false);
 
             // Skip non-owned partitions.
-            if (part == null || part.state() != OWNING || pendingTree.size() == 0 || part.isEmpty())
+            if (part == null || part.state() != OWNING || pendingTree.size() == 0)
                 return 0;
 
             cctx.shared().database().checkpointReadLock();

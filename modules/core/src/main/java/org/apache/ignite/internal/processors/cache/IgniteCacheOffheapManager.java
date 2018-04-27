@@ -48,7 +48,9 @@ public interface IgniteCacheOffheapManager {
      * @param grp Cache group.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(GridCacheSharedContext ctx, CacheGroupContext grp) throws IgniteCheckedException;;
+    public void start(GridCacheSharedContext ctx, CacheGroupContext grp) throws IgniteCheckedException;
+
+    ;
 
     /**
      * @param cctx Cache context.
@@ -170,9 +172,9 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * @param cctx Cache context.
-     * @param key  Key.
-     * @param val  Value.
-     * @param ver  Version.
+     * @param key Key.
+     * @param val Value.
+     * @param ver Version.
      * @param expireTime Expire time.
      * @param oldRow Old row if available.
      * @param part Partition.

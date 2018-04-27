@@ -92,7 +92,6 @@ public class GridDhtPartitionsStateValidator {
             if (node != null && node.version().compareTo(SIZES_VALIDATION_AVAILABLE_SINCE) < 0)
                 ignoringNodes.add(id);
         }
-
     }
 
     /**

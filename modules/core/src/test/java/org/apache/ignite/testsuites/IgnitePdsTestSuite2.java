@@ -110,7 +110,6 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgnitePdsWholeClusterRestartTest.class);
 
-
         // Rebalancing test
         suite.addTestSuite(IgniteWalHistoryReservationsTest.class);
 

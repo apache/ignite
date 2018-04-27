@@ -24,8 +24,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
- *  IO for partition metadata pages.
- *  Persistent partition contains it's own PendingTree.
+ * IO for partition metadata pages.
+ * Persistent partition contains it's own PendingTree.
  */
 public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
     /** */
@@ -77,6 +77,7 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
 
     /**
      * Upgrade page to PagePartitionMetaIOV2
+     *
      * @param pageAddr Page address.
      */
     public void upgradePage(long pageAddr) {
@@ -84,6 +85,6 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
         assert PageIO.getVersion(pageAddr) < 2;
 
         PageIO.setVersion(pageAddr, getVersion());
-        setPendingTreeRoot(pageAddr,0);
+        setPendingTreeRoot(pageAddr, 0);
     }
 }

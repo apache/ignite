@@ -623,18 +623,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     long expireTime = expireTimeExtras();
 
                     if (expireTime > 0 && (expireTime - U.currentTimeMillis() <= 0)) {
-                            if (onExpired((CacheObject)cctx.unwrapTemporary(val), null)) {
-                                val = null;
-                                evt = false;
+                        if (onExpired((CacheObject)cctx.unwrapTemporary(val), null)) {
+                            val = null;
+                            evt = false;
 
-                                if (cctx.deferredDelete()) {
-                                    deferred = true;
-                                    ver0 = ver;
-                                }
-                                else
-                                    obsolete = true;
+                            if (cctx.deferredDelete()) {
+                                deferred = true;
+                                ver0 = ver;
                             }
+                            else
+                                obsolete = true;
                         }
+                    }
                 }
             }
             else
@@ -676,7 +676,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (ret != null && expiryPlc != null)
-                    updateTtl(expiryPlc);
+                updateTtl(expiryPlc);
 
             if (retVer) {
                 resVer = (isNear() && cctx.transactional()) ? ((GridNearCacheEntry)this).dhtVersion() : this.ver;
@@ -2582,7 +2582,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     CacheObject val = this.val;
 
                     if (val != null && expiryPlc != null)
-                            updateTtl(expiryPlc);
+                        updateTtl(expiryPlc);
 
                     return val;
                 }
@@ -3115,7 +3115,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             GridCacheMvcc mvcc = mvccExtras();
 
             return mvcc != null && mvcc.isLocallyOwnedByIdOrThread(lockVer, threadId);
-        } finally {
+        }
+        finally {
             unlockEntry();
         }
     }
@@ -3603,8 +3604,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param ver New entry version.
      * @param oldRow Old row if available.
      * @param predicate Optional predicate.
-     * @throws IgniteCheckedException If update failed.
+     *
      * @return {@code True} if storage was modified.
+     * @throws IgniteCheckedException If update failed.
      */
     protected boolean storeValue(
         @Nullable CacheObject val,
@@ -3616,7 +3618,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         UpdateClosure closure = new UpdateClosure(this, val, ver, expireTime, predicate);
 
-        cctx.offheap().invoke(cctx, key,  localPartition(), closure);
+        cctx.offheap().invoke(cctx, key, localPartition(), closure);
 
         return closure.treeOp != IgniteTree.OperationType.NOOP;
     }
@@ -4068,7 +4070,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     *  Increments public size of map.
+     * Increments public size of map.
      */
     protected void incrementMapPublicSize() {
         GridDhtLocalPartition locPart = localPartition();
@@ -4799,7 +4801,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 needUpdate = true;
             }
-            else if (updateExpireTime && expiryPlc != null && entry.val != null){
+            else if (updateExpireTime && expiryPlc != null && entry.val != null) {
                 long ttl = expiryPlc.forAccess();
 
                 if (ttl != CU.TTL_NOT_CHANGED) {
@@ -4946,7 +4948,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (entry.val == null) {
                 boolean new0 = entry.isStartVersion();
 
-                assert entry.deletedUnlocked() || new0 || entry.isInternal(): "Invalid entry [entry=" + entry +
+                assert entry.deletedUnlocked() || new0 || entry.isInternal() : "Invalid entry [entry=" + entry +
                     ", locNodeId=" + cctx.localNodeId() + ']';
 
                 if (!new0 && !entry.isInternal())

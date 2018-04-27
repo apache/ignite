@@ -200,13 +200,11 @@ public class PagePartitionMetaIO extends PageMetaIO {
 
         byte state = getPartitionState(pageAddr);
 
-        sb
-            .a(",\nPagePartitionMeta[\n\tsize=").a(getSize(pageAddr))
+        sb.a(",\nPagePartitionMeta[\n\tsize=").a(getSize(pageAddr))
             .a(",\n\tupdateCounter=").a(getUpdateCounter(pageAddr))
             .a(",\n\tglobalRemoveId=").a(getGlobalRemoveId(pageAddr))
             .a(",\n\tpartitionState=").a(state).a("(").a(GridDhtPartitionState.fromOrdinal(state)).a(")")
             .a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr))
-            .a("\n]")
-            ;
+            .a("\n]");
     }
 }
