@@ -760,43 +760,53 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     public void testInnerJoin() {
         testAllNodes(node -> {
-            Result act = executeFrom("SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+            String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
                 "FROM Employee e INNER JOIN Department d " +
-                "ON e.depId = d.id", node);
+                "ON e.%s = d.id";
+            Result act = executeFrom(String.format(qryTpl, "depId"), node);
+            Result actNoidx = executeFrom(String.format(qryTpl, "depIdNoidx"), node);
 
             List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
                 (emp, dep) ->  sqlEq(dep.get("ID"), emp.get("DEPID")),
                 (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
             assertContainsEq(act.values(), expected);
+            assertContainsEq("Join on not indexed field is incorrect.", actNoidx.values(), expected);
         });
     }
 
     public void testLeftJoin() {
         testAllNodes(node -> {
-            Result act = executeFrom("SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+            String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
                 "FROM Employee e LEFT JOIN Department d " +
-                "ON e.depId = d.id", node);
+                "ON e.%s = d.id";
+            Result act = executeFrom(String.format(qryTpl, "depId"), node);
+            Result actNoidx = executeFrom(String.format(qryTpl, "depIdNoidx"), node);
 
             List<List<Object>> expected = doLeftJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
                 (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
                 (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
             assertContainsEq(act.values(), expected);
+            assertContainsEq("Join on not indexed field is incorrect.", actNoidx.values(), expected);
         });
     }
 
     public void testRightJoin() {
         testAllNodes(node -> {
-            Result act = executeFrom("SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+            String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
                 "FROM Employee e RIGHT JOIN Department d " +
-                "ON e.depId = d.id", node);
+                "ON e.%s = d.id";
+
+            Result act = executeFrom(String.format(qryTpl, "depId"), node);
+            Result actNoidx = executeFrom(String.format(qryTpl, "depIdNoidx"), node);
 
             List<List<Object>> expected = doRightJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
                 (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
                 (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
             assertContainsEq(act.values(), expected);
+            assertContainsEq("Join on not indexed field is incorrect.", actNoidx.values(), expected);
         });
     }
 
