@@ -17,7 +17,7 @@
 
 const { Role, t } = require('testcafe');
 import { resolveUrl } from './envtools';
-const { PageSignIn } = require('./page-models/PageSignIn');
+import {pageSignin as page} from './page-models/pageSignin';
 
 export const createRegularUser = () => {
     return new Role(resolveUrl('/signin'), async() => {
@@ -25,8 +25,6 @@ export const createRegularUser = () => {
 
         // Disable "Getting started" modal.
         await t.eval(() => window.localStorage.showGettingStarted = 'false');
-
-        const page = new PageSignIn();
         await page.login('a@a', 'a');
     });
 };
