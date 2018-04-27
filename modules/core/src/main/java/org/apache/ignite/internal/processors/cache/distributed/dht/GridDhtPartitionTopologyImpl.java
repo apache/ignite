@@ -2120,10 +2120,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (!haveHistory)
                             result.add(ctx.localNodeId());
 
-                        if (log.isDebugEnabled())
-                            log.debug("Partition has been scheduled for rebalancing due to outdated update counter " +
-                                "[nodeId=" + ctx.localNodeId() + ", grp=" + grp.cacheOrGroupName() +
-                                ", partId=" + p + ", haveHistory=" + haveHistory + "]");
+                        U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
+                            "[nodeId=" + ctx.localNodeId() + ", grp=" + grp.cacheOrGroupName() +
+                            ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                     }
                 }
 
@@ -2145,10 +2144,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (partMap.nodeId().equals(ctx.localNodeId()))
                             this.updateSeq.setIfGreater(partMap.updateSequence());
 
-                        if (log.isDebugEnabled())
-                            log.debug("Partition has been scheduled for rebalancing due to outdated update counter " +
-                                "[nodeId=" + remoteNodeId + ", grp=" + grp.cacheOrGroupName() +
-                                ", partId=" + p + ", haveHistory=" + haveHistory + "]");
+                        U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
+                            "[nodeId=" + remoteNodeId + ", grp=" + grp.cacheOrGroupName() +
+                            ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                     }
                 }
 
