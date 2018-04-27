@@ -545,7 +545,7 @@ export default class IgniteAgentManager {
      * @param {Boolean} enforceJoinOrder Flag whether enforce join order is enabled.
      * @param {Boolean} replicatedOnly Flag whether query contains only replicated tables.
      * @param {Boolean} local Flag whether to execute query locally.
-     * @param {int} pageSz
+     * @param {int} pageSz Page size.
      * @param {Boolean} lazy query flag.
      * @returns {Promise}
      */

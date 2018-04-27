@@ -44,11 +44,7 @@ export default class Notebook {
     }
 
     create(name) {
-        return this.NotebookData.save({name})
-            .then((data) => {
-                this._list$.next(this.NotebookData.notebooks);
-                return data;
-            });
+        return this.save({name});
     }
 
     save(notebook) {
