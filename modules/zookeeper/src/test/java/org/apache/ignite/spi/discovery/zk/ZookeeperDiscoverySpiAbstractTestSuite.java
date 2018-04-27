@@ -78,10 +78,15 @@ public abstract class ZookeeperDiscoverySpiAbstractTestSuite extends TestSuite {
     public static TestingCluster createTestingCluster(int instances) {
         String tmpDir;
 
-        if (System.getProperty("TMPFS_ROOT") != null)
+        if (System.getProperty("TMPFS_ROOT") != null) {
+            System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " tmpfs root is found");
+
             tmpDir = System.getProperty("TMPFS_ROOT");
-        else
+        } else {
+            System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " tmpfs root not found; checking env variable: " + System.getenv("TMPFS_ROOT"));
+
             tmpDir = System.getProperty("java.io.tmpdir");
+        }
 
         List<InstanceSpec> specs = new ArrayList<>();
 
