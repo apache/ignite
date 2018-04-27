@@ -1234,6 +1234,13 @@
                                 <xs:documentation>Delay after which pessimistic recovery entries will be cleaned up for failed node.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="defaultTimeoutOnPartitionMapExchange" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Transaction timeout for partition map synchronization. TimeSpan.Zero for infinite timeout.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="logger" minOccurs="0">
