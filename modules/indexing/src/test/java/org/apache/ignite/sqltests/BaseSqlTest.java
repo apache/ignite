@@ -674,6 +674,41 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    public void testGroupByIdxField() {
+        testAllNodes(node -> {
+            // Need to filter out only part of records (each one is a count of employees
+            // associated with particular department id) in HAVING clause.
+            final int avgDep = (int)((EMP_CNT - FREE_EMP_CNT) / (DEP_CNT - FREE_DEP_CNT));
+
+            assert FREE_EMP_CNT > avgDep : "Test constants error: group with depId = null should be in result.";
+
+            Result result = executeFrom(
+                "SELECT depId, COUNT(*) " +
+                "FROM Employee " +
+                "GROUP BY depId " +
+                "HAVING COUNT(*) > " + avgDep, node);
+
+            List<List<Object>> all = select(node.cache(EMP_CACHE_NAME), null, "depId");
+
+            Map<Long, Long> cntGroups = new HashMap<>();
+
+            for (List<Object> entry : all) {
+                Long depId = (Long)entry.get(0);
+
+                long cnt = cntGroups.getOrDefault(depId, 0L);
+
+                cntGroups.put(depId, cnt + 1L);
+            }
+
+            List<List<Object>> expected = cntGroups.entrySet().stream()
+                .filter(ent -> ent.getValue() > avgDep)
+                .map(ent -> Arrays.<Object>asList(ent.getKey(), ent.getValue()))
+                .collect(Collectors.toList());
+
+            assertContainsEq(result.values(), expected);
+        });
+    }
+
     /**
      * Performs generic join operation of two tables.
      * If either outerLeft or outerRight is true, empty map will be passed to transformer argument for rows that
