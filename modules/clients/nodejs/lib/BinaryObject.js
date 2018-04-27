@@ -23,15 +23,25 @@ const ComplexObjectType = require('./ObjectType').ComplexObjectType;
 const Errors = require('./Errors');
 const BinaryUtils = require('./internal/BinaryUtils');
 const BinaryType = require('./internal/BinaryType');
-const BinaryField = require('./internal/BinaryField');
-const BinarySchema = require('./internal/BinarySchema');
+const BinaryField = require('./internal/BinaryType').BinaryField;
+const BinaryTypeBuilder = require('./internal/BinaryType').BinaryTypeBuilder;
+const BinaryWriter = require('./internal/BinaryWriter');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 const Logger = require('./internal/Logger');
 
 const HEADER_LENGTH = 24;
 const VERSION = 1;
-const FLAG_USER_TYPE = 1;
-const FLAG_HAS_SCHEMA = 2;
+
+// user type
+const FLAG_USER_TYPE = 0x01;
+// schema exists
+const FLAG_HAS_SCHEMA = 0x02;
+// compact footer, no field IDs
+const FLAG_COMPACT_FOOTER = 0x20;
+// offsets take 1 byte
+const FLAG_OFFSET_ONE_BYTE = 0x0008;
+// offsets take 2 bytes
+const FLAG_OFFSET_TWO_BYTES = 0x0010;
 
 /**
  * Class representing a complex Ignite object in the binary form.
@@ -53,17 +63,17 @@ class BinaryObject {
      *
      * Fields may be added later using setField() method.
      *
-     * @param {string | number} typeNameOrId - name of the complex type to generate the type Id
-     *   or the type Id itself.
+     * @param {string} typeName - name of the complex type to generate the type Id.
      *
      * @return {BinaryObject} - new BinaryObject instance.
      */
     constructor(typeName) {
         this._buffer = null;
         this._fields = new Map();
-        this._setType(new BinaryType(typeName));
+        this._typeBuilder = BinaryTypeBuilder.fromTypeName(typeName);
         this._modified = false;
         this._schemaOffset = null;
+        this._compactFooter = false;
     }
 
     /**
@@ -75,6 +85,8 @@ class BinaryObject {
      * If complexObjectType parameter is specified, then the type Id is taken from it.
      * Otherwise, the type Id is generated from the name of the JavaScript Object.
      *
+     * @async
+     *
      * @param {object} jsObject - instance of JavaScript Object
      *   which adds and initializes the fields of the BinaryObject instance.
      * @param {ComplexObjectType} [complexObjectType] - instance of complex type definition
@@ -83,14 +95,22 @@ class BinaryObject {
      *
      * @return {BinaryObject} - new BinaryObject instance.
      */
-    static fromObject(jsObject, complexObjectType = null) {
+    static async fromObject(jsObject, complexObjectType = null) {
         ArgumentChecker.hasType(complexObjectType, 'complexObjectType', false, ComplexObjectType);
         const result = new BinaryObject(null);
-        const binaryType = BinaryType._fromObjectType(complexObjectType, jsObject);
-        result._setType(binaryType);
-        for (let field of binaryType.fields) {
-            if (jsObject && jsObject[field.name] !== undefined) {
-                result.setField(field.name, jsObject[field.name], field.type);
+        result._typeBuilder = BinaryTypeBuilder.fromObject(jsObject, complexObjectType);
+        let fieldName;
+        for (let field of result._typeBuilder.getFields()) {
+            fieldName = field.name;
+            if (jsObject && jsObject[fieldName] !== undefined) {
+                result.setField(
+                    fieldName,
+                    jsObject[fieldName],
+                    complexObjectType ? complexObjectType._getFieldType(fieldName) : null);
+            }
+            else {
+                throw Errors.IgniteClientError.serializationError(
+                    true, Util.format('field "%s" is undefined', fieldName));
             }
         }
         return result;
@@ -116,14 +136,15 @@ class BinaryObject {
      */
     setField(fieldName, fieldValue, fieldType = null) {
         this._modified = true;
-        const field = new BinaryObjectField(fieldName, fieldValue);
+        const field = new BinaryObjectField(fieldName, fieldValue, fieldType);
         this._fields.set(field.id, field);
-        this._type._addField(this._schema, fieldName, fieldType);
+        this._typeBuilder.setField(fieldName, field.typeCode);
         return this;
     }
 
     /**
      * Removes the specified field.
+     * ??? if the field does not exist.
      *
      * @param {string} fieldName - name of the field.
      *
@@ -132,6 +153,8 @@ class BinaryObject {
     removeField(fieldName) {
         this._modified = true;
         this._fields.delete(BinaryField._calculateId(fieldName));
+        this._typeBuilder.removeField(fieldName);
+        return this;
     }
 
     /**
@@ -141,6 +164,7 @@ class BinaryObject {
      */
     clone() {
         // TODO
+        return this;
     }
 
     /**
@@ -162,49 +186,74 @@ class BinaryObject {
      * will try to make automatic mapping between JavaScript types and Ignite object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
+     * @async
+     *
      * @param {string} fieldName - name of the field.
      * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [fieldType] - type of the field:
      *   - either a type code of primitive (simple) type
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified.
      *
-     * @return {*} - value of the field or {@link undefined} if the field does not exist.
+     * @return {*} - value of the field or JavaScript undefined if the field does not exist.
      */
-    getField(fieldName, fieldType = null) {
+    async getField(fieldName, fieldType = null) {
         const field = this._fields.get(BinaryField._calculateId(fieldName));
-        return field ? field.getValue(fieldType) : field;
+        return field ? await field.getValue(fieldType) : undefined;
     }
 
     /**
      * Deserializes this BinaryObject instance into an instance of the specified complex object type.
+     *
+     * @async
      *
      * @param {ComplexObjectType} complexObjectType - instance of class representing complex object type.
      *
      * @return {object} - instance of the JavaScript object
      *   which corresponds to the specified complex object type.
      */
-    toObject(complexObjectType) {
+    async toObject(complexObjectType) {
+        ArgumentChecker.notNull(complexObjectType, 'complexObjectType');
         ArgumentChecker.hasType(complexObjectType, 'complexObjectType', false, ComplexObjectType);
-        this._setType(BinaryType._fromObjectType(complexObjectType));
-        const result = new (this._type._objectConstructor);
+        const result = new (complexObjectType._objectConstructor);
+        let binaryField;
+        let fieldName;
         for (let field of this._fields.values()) {
-            const binaryField = this._type.getField(field.id);
+            binaryField = this._typeBuilder.getField(field.id);
             if (!binaryField) {
-                throw new Errors.IgniteClientError(
-                    Util.format('Complex object field with id "%d" can not be deserialized', field.id));
+                throw Errors.IgniteClientError.serializationError(
+                    false, Util.format('field with id "%s" can not be deserialized', field.id));
             }
-            result[binaryField.name] = field.getValue(binaryField.type);
+            fieldName = binaryField.name;
+            result[fieldName] = await field.getValue(complexObjectType._getFieldType(fieldName));
         }
         return result;
     }
 
     /**
-     * Returns type Id of this BinaryObject instance.
+     * Returns type name of this BinaryObject instance.
      *
-     * @return {integer} - type Id.
+     * @return {string} - type name.
      */
-    getTypeId() {
-        return this._type.id;
+    getTypeName() {
+        return this._typeBuilder.getTypeName();
+    }
+
+    /**
+     * ???.
+     *
+     * @return {Array<string>} - ???.
+     */
+    getFieldNames() {
+        return this._typeBuilder._schema.fieldIds.map(fieldId => {
+            const field = this._typeBuilder.getField(fieldId);
+            if (field) {
+                return field.name;
+            }
+            else {
+                throw Errors.IgniteClientError.internalError(
+                    Util.format('Field "%s" is absent in binary type fields', fieldId));
+            }
+        });
     }
 
     /** Private methods */
@@ -212,42 +261,40 @@ class BinaryObject {
     /**
      * @ignore
      */
-    static _fromBuffer(buffer) {
+    static _isFlagSet(flags, flag) {
+        return (flags & flag) === flag;
+    }
+
+    /**
+     * @ignore
+     */
+    static async _fromBuffer(buffer) {
         const result = new BinaryObject(null);
         result._buffer = buffer;
         result._startPos = buffer.position;
-        result._read();
+        await result._read();
         return result;
     }
 
     /**
      * @ignore
      */
-    _setType(binaryType) {
-        this._type = binaryType;
-        this._schema = binaryType._getSchemas()[0];
-    }
-
-    /**
-     * @ignore
-     */
-    _write(buffer) {
+    async _write(buffer) {
         if (this._buffer && !this._modified) {
             buffer._writeBuffer(this._buffer.getSlice(this._startPos, this._startPos + this._length));
         }
         else {
+            await this._typeBuilder.finalize();
             this._startPos = buffer.position;
             buffer.position = this._startPos + HEADER_LENGTH;
             // write fields
-            let binaryField;
             for (let field of this._fields.values()) {
-                binaryField = this._type.getField(field.id);
-                field._writeValue(buffer, binaryField.type);
+                await field._writeValue(buffer, this._typeBuilder.getField(field.id).typeCode);
             }
             this._schemaOffset = buffer.position - this._startPos;
             // write schema
             for (let field of this._fields.values()) {
-                field._writeSchema(buffer, this._startPos);
+                field._writeOffset(buffer, this._startPos);
             }
             this._length = buffer.position - this._startPos;
             this._buffer = buffer;
@@ -272,16 +319,16 @@ class BinaryObject {
         // version
         this._buffer.writeByte(VERSION);
         // flags
-        this._buffer.writeShort(FLAG_HAS_SCHEMA | FLAG_USER_TYPE);
+        this._buffer.writeShort(FLAG_USER_TYPE | FLAG_HAS_SCHEMA | FLAG_COMPACT_FOOTER);
         // type id
-        this._buffer.writeInteger(this._type.id);
+        this._buffer.writeInteger(this._typeBuilder.getTypeId());
         // hash code
         this._buffer.writeInteger(BinaryUtils.contentHashCode(
             this._buffer, this._startPos + HEADER_LENGTH, this._schemaOffset - 1));
         // length
         this._buffer.writeInteger(this._length);
         // schema id
-        this._buffer.writeInteger(this._schema.id);
+        this._buffer.writeInteger(this._typeBuilder.getSchemaId());
         // schema offset
         this._buffer.writeInteger(this._schemaOffset);
     }
@@ -289,15 +336,27 @@ class BinaryObject {
     /**
      * @ignore
      */
-    _read() {
-        this._readHeader();
+    async _read() {
+        await this._readHeader();
         this._buffer.position = this._startPos + this._schemaOffset;
         const fieldOffsets = new Array();
+        const fieldIds = this._typeBuilder._schema.fieldIds;
+        let index = 0;
         let fieldId;
         while (this._buffer.position < this._startPos + this._length) {
-            fieldId = this._buffer.readInteger();
-            this._schema._addFieldId(fieldId);
-            fieldOffsets.push([fieldId, this._buffer.readInteger()]);
+            if (!this._compactFooter) {
+                fieldId = this._buffer.readInteger();
+                this._typeBuilder._schema.addField(fieldId);
+            }
+            else {
+                if (index >= fieldIds.length) {
+                    throw Errors.IgniteClientError.serializationError(
+                        false, 'wrong number of fields in schema');
+                }
+                fieldId = fieldIds[index];
+                index++;
+            }
+            fieldOffsets.push([fieldId, this._buffer.readNumber(this._offsetType)]);
         }
         fieldOffsets.sort((val1, val2) => val1[1] - val2[1]);
         let offset;
@@ -317,7 +376,7 @@ class BinaryObject {
     /**
      * @ignore
      */
-    _readHeader() {
+    async _readHeader() {
         // type code
         this._buffer.readByte();
         // version
@@ -326,17 +385,30 @@ class BinaryObject {
             throw Errors.IgniteClientError.internalError();
         }
         // flags
-        this._buffer.readShort();
+        const flags = this._buffer.readShort();
         // type id
-        this._type._id = this._buffer.readInteger();
+        const typeId = this._buffer.readInteger();
         // hash code
         this._buffer.readInteger();
         // length
         this._length = this._buffer.readInteger();
         // schema id
-        this._schema._id = this._buffer.readInteger();
+        const schemaId = this._buffer.readInteger();
         // schema offset
         this._schemaOffset = this._buffer.readInteger();
+        const hasSchema = BinaryObject._isFlagSet(flags, FLAG_HAS_SCHEMA);
+        this._compactFooter = BinaryObject._isFlagSet(flags, FLAG_COMPACT_FOOTER);
+        this._offsetType = BinaryObject._isFlagSet(flags, FLAG_OFFSET_ONE_BYTE) ?
+            BinaryUtils.TYPE_CODE.BYTE :
+            BinaryObject._isFlagSet(flags, FLAG_OFFSET_TWO_BYTES) ?
+                BinaryUtils.TYPE_CODE.SHORT :
+                BinaryUtils.TYPE_CODE.INTEGER;
+
+        if (this._compactFooter && !hasSchema) {
+            throw Errors.IgniteClientError.serializationError(
+                false, 'schema is absent for object with compact footer');
+        }
+        this._typeBuilder = await BinaryTypeBuilder.fromTypeId(typeId, schemaId, hasSchema);
     }
 }
 
@@ -344,21 +416,34 @@ class BinaryObject {
  * @ignore
  */
 class BinaryObjectField {
-    constructor(name, value = undefined) {
+    constructor(name, value = undefined, type = null) {
         this._name = name;
         this._id = BinaryField._calculateId(name);
         this._value = value;
+        this._type = type;
+        if (!type && value !== undefined && value !== null) {
+            this._type = BinaryUtils.calcObjectType(value);
+        }
+        this._typeCode = null;
+        if (this._type) {
+            this._typeCode = BinaryUtils.getTypeCode(this._type);
+        }
     }
 
     get id() {
         return this._id;
     }
 
-    getValue(type = null) {
-        if (this._value === undefined) {
+    get typeCode() {
+        return this._typeCode;
+    }
+
+    async getValue(type = null) {
+        if (this._value === undefined || this._buffer && this._type !== type) {
             this._buffer.position = this._offset;
             const BinaryReader = require('./internal/BinaryReader');
-            this._value = BinaryReader.readObject(this._buffer, type);
+            this._value = await BinaryReader.readObject(this._buffer, type);
+            this._type = type;
         }
         return this._value;
     }
@@ -372,22 +457,21 @@ class BinaryObjectField {
         return result;
     }
 
-    _writeValue(buffer, type = null) {
+    async _writeValue(buffer, expectedTypeCode) {
         const offset = buffer.position;
         if (this._buffer) {
             buffer._writeBuffer(this._buffer.getSlice(this._offset, this._offset + this._length));
         }
         else {
-            const BinaryWriter = require('./internal/BinaryWriter');
-            BinaryWriter.writeObject(buffer, this._value, type);
+            BinaryUtils.checkCompatibility(this._value, expectedTypeCode);
+            await BinaryWriter.writeObject(buffer, this._value, this._type);
         }
         this._buffer = buffer;
         this._length = buffer.position - offset;
         this._offset = offset;
     }
 
-    _writeSchema(buffer, headerStartPos) {
-        buffer.writeInteger(this._id);
+    _writeOffset(buffer, headerStartPos) {
         buffer.writeInteger(this._offset - headerStartPos);
     }
 }

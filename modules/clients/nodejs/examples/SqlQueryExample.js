@@ -69,10 +69,10 @@ class SqlQueryExample {
                         setKeyTypeName('INT').
                         setValueTypeName('Person').
                         setFields([
-                            new QueryField('id', 'INT'),
-                            new QueryField('firstName', 'VARCHAR'),
-                            new QueryField('lastName', 'VARCHAR'),
-                            new QueryField('salary', 'DOUBLE')
+                            new QueryField('id', 'java.lang.Integer'),
+                            new QueryField('firstName', 'java.lang.String'),
+                            new QueryField('lastName', 'java.lang.String'),
+                            new QueryField('salary', 'java.lang.Double')
                         ]));
             this._cache = (await igniteClient.getOrCreateCache(PERSON_CACHE_NAME, cacheCfg)).
                 setKeyType(ObjectType.PRIMITIVE_TYPE.INTEGER).

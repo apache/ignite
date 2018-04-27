@@ -23,6 +23,7 @@ const CacheConfiguration = require('./CacheConfiguration');
 const BinaryUtils = require('./internal/BinaryUtils');
 const BinaryWriter = require('./internal/BinaryWriter');
 const BinaryReader = require('./internal/BinaryReader');
+const BinaryTypeStorage = require('./internal/BinaryTypeStorage');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 const Logger = require('./internal/Logger');
 
@@ -69,6 +70,7 @@ class IgniteClient {
     constructor(onStateChanged = null) {
         const ClientFailoverSocket = require('./internal/ClientFailoverSocket');
         this._socket = new ClientFailoverSocket(onStateChanged);
+        BinaryTypeStorage.createEntity(this._socket);
     }
 
     static get STATE() {
@@ -135,8 +137,8 @@ class IgniteClient {
             cacheConfig ?
                 BinaryUtils.OPERATION.CACHE_CREATE_WITH_CONFIGURATION :
                 BinaryUtils.OPERATION.CACHE_CREATE_WITH_NAME,
-            (payload) => {
-                this._writeCacheNameOrConfig(payload, name, cacheConfig);
+            async (payload) => {
+                await this._writeCacheNameOrConfig(payload, name, cacheConfig);
             });
         return this._getCache(name, cacheConfig);
     }
@@ -163,8 +165,8 @@ class IgniteClient {
             cacheConfig ?
                 BinaryUtils.OPERATION.CACHE_GET_OR_CREATE_WITH_CONFIGURATION :
                 BinaryUtils.OPERATION.CACHE_GET_OR_CREATE_WITH_NAME,
-            (payload) => {
-                this._writeCacheNameOrConfig(payload, name, cacheConfig);
+            async (payload) => {
+                await this._writeCacheNameOrConfig(payload, name, cacheConfig);
             });
         return this._getCache(name, cacheConfig);
     }
@@ -199,7 +201,7 @@ class IgniteClient {
         ArgumentChecker.notEmpty(name, 'name');
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_DESTROY,
-            (payload) => {
+            async (payload) => {
                 payload.writeInteger(CacheClient._calculateId(name));
             });
     }
@@ -222,13 +224,13 @@ class IgniteClient {
         let config;
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_GET_CONFIGURATION,
-            (payload) => {
+            async (payload) => {
                 payload.writeInteger(CacheClient._calculateId(name));
                 payload.writeByte(0);
             },
-            (payload) => {
+            async (payload) => {
                 config = new CacheConfiguration();
-                config._read(payload);
+                await config._read(payload);
             });
         return config;
     }
@@ -249,8 +251,8 @@ class IgniteClient {
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_GET_NAMES,
             null,
-            (payload) => {
-                names = BinaryReader.readStringArray(payload);
+            async (payload) => {
+                names = await BinaryReader.readStringArray(payload);
             });
         return names;
     }
@@ -277,12 +279,12 @@ class IgniteClient {
     /**
      * @ignore
      */
-    _writeCacheNameOrConfig(buffer, name, cacheConfig) {
+    async _writeCacheNameOrConfig(buffer, name, cacheConfig) {
         if (cacheConfig) {
-            cacheConfig._write(buffer, name);
+            await cacheConfig._write(buffer, name);
         }
         else {
-            BinaryWriter.writeString(buffer, name);
+            await BinaryWriter.writeString(buffer, name);
         }
     }
 }

@@ -82,7 +82,7 @@ const defaultComparator = (value1, value2) => {
     return result;
 };
 
-function compare(value1, value2) {
+async function compare(value1, value2) {
     TestingHelper.logDebug(Util.format('compare: %s, %s', JSON.stringify(value1), JSON.stringify(value2)));
     if (value1 === undefined || value2 === undefined) {
         TestingHelper.logDebug(Util.format('compare: unexpected "undefined" value'));
@@ -90,6 +90,9 @@ function compare(value1, value2) {
     }
     if (value1 === null && value2 === null) {
         return true;
+    }
+    if (value1 === null && value2 !== null || value1 !== null && value2 === null) {
+        return false;
     }
     if (typeof value1 !== typeof value2) {
         TestingHelper.logDebug(Util.format('compare: value types are different'));
@@ -117,21 +120,35 @@ function compare(value1, value2) {
             return false;
         }
         for (var [key, val] of value1) {
-            if (!compare(val, value2.get(key))) {
+            if (!(await compare(val, value2.get(key)))) {
+                TestingHelper.logDebug(Util.format('compare: map values are different: %s, %s',
+                    JSON.stringify(val), JSON.stringify(value2.get(key))));
                 return false;
             }
         }
         return true;
     }
     else if (value2 instanceof BinaryObject) {
-        return Object.keys(value1).every((key) => {
-            return compare(value1[key], value2.getField(key));
-        });
+        let value;
+        for (let key of Object.keys(value1)) {
+            value = await value2.getField(key);
+            if (!(await compare(value1[key], value))) {
+                TestingHelper.logDebug(Util.format('compare: binary object values are different: %s, %s',
+                    JSON.stringify(value1[key]), JSON.stringify(value)));
+                return false;
+            }
+        }
+        return true;
     }
     else {
-        return Object.keys(value1).every((key) => {
-            return compare(value1[key], value2[key]);
-        });
+        for (let key of Object.keys(value1)) {
+            if (!(await compare(value1[key], value2[key]))) {
+                TestingHelper.logDebug(Util.format('compare: object values are different: %s, %s',
+                    JSON.stringify(value1[key]), JSON.stringify(value2[key])));
+                return false;
+            }
+        }
+        return true;
     }
 }
 
@@ -171,7 +188,7 @@ describe('complex object test suite >', () => {
 
                 const valueType1 = new ComplexObjectType(new Class1()).
                     setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.BYTE).
-                    setFieldType('field_1_2', new ComplexObjectType(new Class2()).
+                    setFieldType('field_1_2', new ComplexObjectType(new Class2(), 'Class2ShortInteger').
                         setFieldType('field_2_1', ObjectType.PRIMITIVE_TYPE.SHORT).
                         setFieldType('field_2_2', ObjectType.PRIMITIVE_TYPE.INTEGER)).
                     setFieldType('field_1_3', ObjectType.PRIMITIVE_TYPE.LONG);
@@ -188,7 +205,7 @@ describe('complex object test suite >', () => {
 
                 const valueType2 = new ComplexObjectType(new SubClass1()).
                     setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.FLOAT).
-                    setFieldType('field_1_2', new ComplexObjectType(new Class2()).
+                    setFieldType('field_1_2', new ComplexObjectType(new Class2(), 'Class2DoubleChar').
                         setFieldType('field_2_1', ObjectType.PRIMITIVE_TYPE.DOUBLE).
                         setFieldType('field_2_2', ObjectType.PRIMITIVE_TYPE.CHAR)).
                     setFieldType('field_1_3', ObjectType.PRIMITIVE_TYPE.BOOLEAN).
@@ -215,9 +232,9 @@ describe('complex object test suite >', () => {
                 value1.field_1_2.field_2_2 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.INTEGER);
                 value1.field_1_3 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.LONG);
 
-                const valueType1 = new ComplexObjectType(value1).
+                const valueType1 = new ComplexObjectType(value1, 'ObjectWithByteObjLong').
                     setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.BYTE).
-                    setFieldType('field_1_2', new ComplexObjectType(value1.field_1_2).
+                    setFieldType('field_1_2', new ComplexObjectType(value1.field_1_2, 'ObjectWithShortInteger').
                         setFieldType('field_2_1', ObjectType.PRIMITIVE_TYPE.SHORT).
                         setFieldType('field_2_2', ObjectType.PRIMITIVE_TYPE.INTEGER)).
                     setFieldType('field_1_3', ObjectType.PRIMITIVE_TYPE.LONG);
@@ -232,11 +249,11 @@ describe('complex object test suite >', () => {
                 value2.field_1_3 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.STRING);
                 value2.field_1_4 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.DATE);
 
-                const valueType2 = new ComplexObjectType(value2).
+                const valueType2 = new ComplexObjectType(value2, 'ObjectWithFloatObjStringDate').
                     setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.FLOAT).
-                    setFieldType('field_1_2', new ComplexObjectType(value2.field_1_2).
+                    setFieldType('field_1_2', new ComplexObjectType(value2.field_1_2, 'ObjectWithDoubleObj').
                         setFieldType('field_2_1', ObjectType.PRIMITIVE_TYPE.DOUBLE).
-                        setFieldType('field_2_2', new ComplexObjectType(value2.field_1_2.field_2_2).
+                        setFieldType('field_2_2', new ComplexObjectType(value2.field_1_2.field_2_2, 'ObjectWithCharBoolean').
                             setFieldType('field_3_1', ObjectType.PRIMITIVE_TYPE.CHAR).
                             setFieldType('field_3_2', ObjectType.PRIMITIVE_TYPE.BOOLEAN))).
                     setFieldType('field_1_3', ObjectType.PRIMITIVE_TYPE.STRING).
@@ -245,19 +262,16 @@ describe('complex object test suite >', () => {
                 await putGetComplexObjects(value1, value2,
                     valueType1, valueType2, value2);
 
-                await putGetComplexObjects(value1, value2,
-                    new ComplexObjectType(value1), new ComplexObjectType(value2), value2);
-
                 await putGetComplexObjects({}, {},
                     new ComplexObjectType(), new ComplexObjectType(), {});
 
-                let binaryKey = BinaryObject.fromObject(value1, valueType1);
-                let binaryValue = BinaryObject.fromObject(value2, valueType2);
+                let binaryKey = await BinaryObject.fromObject(value1, valueType1);
+                let binaryValue = await BinaryObject.fromObject(value2, valueType2);
                 await putGetComplexObjects(binaryKey, binaryValue,
                     null, null, value2);
 
-                binaryKey = BinaryObject.fromObject({});
-                binaryValue = BinaryObject.fromObject({});
+                binaryKey = await BinaryObject.fromObject({});
+                binaryValue = await BinaryObject.fromObject({});
                 await putGetComplexObjects(binaryKey, binaryValue,
                     null, null, {});
             }).
@@ -274,9 +288,9 @@ describe('complex object test suite >', () => {
                 value1.field_1_2.field_2_2 = getArrayValues(ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY);
                 value1.field_1_3 = getArrayValues(ObjectType.PRIMITIVE_TYPE.LONG_ARRAY);
 
-                const valueType1 = new ComplexObjectType(new Class1()).
+                const valueType1 = new ComplexObjectType(new Class1(), 'Class1WithArrays').
                     setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.BYTE_ARRAY).
-                    setFieldType('field_1_2', new ComplexObjectType(new Class2()).
+                    setFieldType('field_1_2', new ComplexObjectType(new Class2(), 'Class2WithShortIntegerArrays').
                         setFieldType('field_2_1', ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY).
                         setFieldType('field_2_2', ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY)).
                     setFieldType('field_1_3', ObjectType.PRIMITIVE_TYPE.LONG_ARRAY);
@@ -291,14 +305,14 @@ describe('complex object test suite >', () => {
                 value2.field_1_5.field_3_2 = getArrayValues(ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY);
                 value2.field_1_6 = getArrayValues(ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY);
 
-                const valueType2 = new ComplexObjectType(new SubClass1()).
+                const valueType2 = new ComplexObjectType(new SubClass1(), 'SubClass1WithArrays').
                     setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.FLOAT_ARRAY).
-                    setFieldType('field_1_2', new ComplexObjectType(new Class2()).
+                    setFieldType('field_1_2', new ComplexObjectType(new Class2(), 'Class2WithDoubleCharArrays').
                         setFieldType('field_2_1', ObjectType.PRIMITIVE_TYPE.DOUBLE_ARRAY).
                         setFieldType('field_2_2', ObjectType.PRIMITIVE_TYPE.CHAR_ARRAY)).
                     setFieldType('field_1_3', ObjectType.PRIMITIVE_TYPE.BOOLEAN_ARRAY).
                     setFieldType('field_1_4', ObjectType.PRIMITIVE_TYPE.STRING_ARRAY).
-                    setFieldType('field_1_5', new ComplexObjectType(new Class3()).
+                    setFieldType('field_1_5', new ComplexObjectType(new Class3(), 'Class3WithArrays').
                         setFieldType('field_3_1', ObjectType.PRIMITIVE_TYPE.DATE_ARRAY).
                         setFieldType('field_3_2', ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY)).
                     setFieldType('field_1_6', ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY);
@@ -319,10 +333,10 @@ describe('complex object test suite >', () => {
                 value1.field_1_2.field_2_2 = getMapValue(ObjectType.PRIMITIVE_TYPE.INTEGER);
                 value1.field_1_3 = getMapValue(ObjectType.PRIMITIVE_TYPE.LONG);
 
-                const valueType1 = new ComplexObjectType(new Class1()).
+                const valueType1 = new ComplexObjectType(new Class1(), 'Class1WithMaps').
                     setFieldType('field_1_1', new MapObjectType(
                         MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.BYTE, ObjectType.PRIMITIVE_TYPE.BYTE)).
-                    setFieldType('field_1_2', new ComplexObjectType(new Class2()).
+                    setFieldType('field_1_2', new ComplexObjectType(new Class2(), 'Class2WithShortIntegerMaps').
                         setFieldType('field_2_1', new MapObjectType(
                             MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.SHORT, ObjectType.PRIMITIVE_TYPE.SHORT)).
                         setFieldType('field_2_2', new MapObjectType(
@@ -340,10 +354,10 @@ describe('complex object test suite >', () => {
                 value2.field_1_5.field_3_2 = getMapValue(ObjectType.PRIMITIVE_TYPE.SHORT);
                 value2.field_1_6 = getMapValue(ObjectType.PRIMITIVE_TYPE.INTEGER);
 
-                const valueType2 = new ComplexObjectType(new SubClass1()).
+                const valueType2 = new ComplexObjectType(new SubClass1(), 'SubClass1WithMaps').
                     setFieldType('field_1_1', new MapObjectType(
                         MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.LONG, ObjectType.PRIMITIVE_TYPE.FLOAT)).
-                    setFieldType('field_1_2', new ComplexObjectType(new Class2()).
+                    setFieldType('field_1_2', new ComplexObjectType(new Class2(), 'Class2WithDoubleCharMaps').
                         setFieldType('field_2_1', new MapObjectType(
                             MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.LONG, ObjectType.PRIMITIVE_TYPE.DOUBLE)).
                         setFieldType('field_2_2', new MapObjectType(
@@ -352,7 +366,7 @@ describe('complex object test suite >', () => {
                         MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.BOOLEAN, ObjectType.PRIMITIVE_TYPE.BOOLEAN)).
                     setFieldType('field_1_4', new MapObjectType(
                         MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.STRING, ObjectType.PRIMITIVE_TYPE.STRING)).
-                    setFieldType('field_1_5', new ComplexObjectType(new Class3()).
+                    setFieldType('field_1_5', new ComplexObjectType(new Class3(), 'Class3WithMaps').
                         setFieldType('field_3_1', new MapObjectType(
                             MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.LONG, ObjectType.PRIMITIVE_TYPE.DATE)).
                         setFieldType('field_3_2', new MapObjectType(
@@ -367,17 +381,19 @@ describe('complex object test suite >', () => {
             catch(error => done.fail(error));
     });
 
-    it('put get binary objects', (done) => {
+    it('put get binary objects from objects', (done) => {
         Promise.resolve().
             then(async () => {
-                const valueType = new ComplexObjectType(new Class1()).
+                const valueType = new ComplexObjectType(new Class1(), 'Class1WithStringObjStringArray').
                     setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.STRING).
-                    setFieldType('field_1_2', new ComplexObjectType(new Class2()).
+                    setFieldType('field_1_2', new ComplexObjectType(new Class2(), 'Class2WithShortBoolean').
                         setFieldType('field_2_1', ObjectType.PRIMITIVE_TYPE.SHORT).
                         setFieldType('field_2_2', ObjectType.PRIMITIVE_TYPE.BOOLEAN)).
                     setFieldType('field_1_3', ObjectType.PRIMITIVE_TYPE.STRING_ARRAY);
                 await putGetBinaryObjects(valueType);
-                await putGetBinaryObjects(null);
+                const defaultValueType = new ComplexObjectType(new Class1(), 'Class1Default').
+                    setFieldType('field_1_2', new ComplexObjectType(new Class2(), 'Class2Default'));
+                await putGetBinaryObjects(defaultValueType);
             }).
             then(done).
             catch(error => done.fail(error));
@@ -445,7 +461,7 @@ describe('complex object test suite >', () => {
         try {
             await cache.put(key, value);
             const result = await cache.get(key);
-            expect(compare(valuePattern, result)).toBe(true,
+            expect(await compare(valuePattern, result)).toBe(true,
                 `values are not equal: put value=${JSON.stringify(valuePattern)}, get value=${JSON.stringify(result)}`);
         }
         finally {
@@ -453,58 +469,40 @@ describe('complex object test suite >', () => {
         }
     }
 
-    function binaryObjectEquals(binaryObj, valuePattern, valueType) {
-        expect(compare(valuePattern, binaryObj)).toBe(true,
+    async function binaryObjectEquals(binaryObj, valuePattern, valueType) {
+        expect(await compare(valuePattern, binaryObj)).toBe(true,
             `binary values are not equal: put value=${JSON.stringify(valuePattern)}, get value=${JSON.stringify(binaryObj)}`);
 
         let value1, value2;
         for (let key of Object.keys(valuePattern)) {
             value1 = valuePattern[key];
-            value2 = binaryObj.getField(key, valueType ? valueType._getFieldType(key) : null);
-            expect(compare(value1, value2)).toBe(true,
+            value2 = await binaryObj.getField(key, valueType ? valueType._getFieldType(key) : null);
+            expect(await compare(value1, value2)).toBe(true,
                 `values for key ${key} are not equal: put value=${value1}, get value=${value2}`);
         }
 
         if (valueType) {
-            const toObject = binaryObj.toObject(valueType);
-            expect(compare(valuePattern, toObject)).toBe(true,
+            const toObject = await binaryObj.toObject(valueType);
+            expect(await compare(valuePattern, toObject)).toBe(true,
                 `values are not equal: put value=${JSON.stringify(valuePattern)}, get value=${JSON.stringify(toObject)}`);
         }
     }
 
     async function putGetComplexObjectsWithDifferentTypes(
         key, value, keyType, valueType, keyClass, valueClass, isNullable = false) {
-        await putGetComplexObjects(key, value,
-            new ComplexObjectType(new keyClass()), new ComplexObjectType(new valueClass()), value);
-        await putGetComplexObjects(key, value,
-           new ComplexObjectType(key), new ComplexObjectType(value), value);
         await putGetComplexObjects(key, value, keyType, valueType, value);
 
-        await putGetComplexObjects(new keyClass(), new valueClass(),
-            new ComplexObjectType(new keyClass()), new ComplexObjectType(new valueClass()), new valueClass());
         if (isNullable) {
             await putGetComplexObjects(new keyClass(), new valueClass(), keyType, valueType, new valueClass());
         }
 
-        let binaryKey = BinaryObject.fromObject(key);
-        let binaryValue = BinaryObject.fromObject(value);
-        await putGetComplexObjects(binaryKey, binaryValue, null, null, value);
-
-        binaryKey = BinaryObject.fromObject(key, new ComplexObjectType(new keyClass()));
-        binaryValue = BinaryObject.fromObject(value, new ComplexObjectType(new valueClass()));
-        await putGetComplexObjects(binaryKey, binaryValue, null, null, value);
-
-        binaryKey = BinaryObject.fromObject(key, new ComplexObjectType(key));
-        binaryValue = BinaryObject.fromObject(value, new ComplexObjectType(value));
-        await putGetComplexObjects(binaryKey, binaryValue, null, null, value);
-
-        binaryKey = BinaryObject.fromObject(key, keyType);
-        binaryValue = BinaryObject.fromObject(value, valueType);
+        let binaryKey = await BinaryObject.fromObject(key, keyType);
+        let binaryValue = await BinaryObject.fromObject(value, valueType);
         await putGetComplexObjects(binaryKey, binaryValue, null, null, value);
 
         if (isNullable) {
-            binaryKey = BinaryObject.fromObject(new keyClass());
-            binaryValue = BinaryObject.fromObject(new valueClass());
+            binaryKey = await BinaryObject.fromObject(new keyClass(), keyType);
+            binaryValue = await BinaryObject.fromObject(new valueClass(), valueType);
             await putGetComplexObjects(binaryKey, binaryValue, null, null, new valueClass());
         }
     }
@@ -528,41 +526,43 @@ describe('complex object test suite >', () => {
         value3.field_1_2.field_2_2 = false;
         value3.field_1_3 = ['a', 'bb', 'ccc', 'dddd', 'eeeee'];
 
-        const binaryValue1 = BinaryObject.fromObject(value1, valueType);
-        const binaryValue2 = BinaryObject.fromObject(value2, valueType);
-        const binaryValue3 = BinaryObject.fromObject(value3);
+        const field_1_2_Type = valueType ? valueType._getFieldType('field_1_2') : null;
+
+        const binaryValue1 = await BinaryObject.fromObject(value1, valueType);
+        const binaryValue2 = await BinaryObject.fromObject(value2, valueType);
+        const binaryValue3 = await BinaryObject.fromObject(value3, valueType);
 
         const cache = igniteClient.getCache(CACHE_NAME);
         try {
             await cache.put(binaryValue1, binaryValue2);
             let result = await cache.get(binaryValue1);
-            binaryObjectEquals(result, value2, valueType);
+            await binaryObjectEquals(result, value2, valueType);
 
             binaryValue1.setField('field_1_1', 'abcde');
             result = await cache.get(binaryValue1);
             expect(result === null).toBe(true);
 
             binaryValue2.setField('field_1_1', value3.field_1_1);
-            binaryValue2.setField('field_1_2', value3.field_1_2);
+            binaryValue2.setField('field_1_2', value3.field_1_2, field_1_2_Type);
             binaryValue2.setField('field_1_3', value3.field_1_3);
             await cache.put(binaryValue1, binaryValue2);
             result = await cache.get(binaryValue1);
-            binaryObjectEquals(result, value3, valueType);
+            await binaryObjectEquals(result, value3, valueType);
 
             binaryValue1.setField('field_1_1', 'abc');
-            binaryValue1.setField('field_1_3', binaryValue1.getField('field_1_3'));
+            binaryValue1.setField('field_1_3', await binaryValue1.getField('field_1_3'));
             result = await cache.get(binaryValue1);
-            binaryObjectEquals(result, value2, valueType);
+            await binaryObjectEquals(result, value2, valueType);
 
             result = await cache.get(binaryValue1);
-            binaryObjectEquals(result, value2, valueType);
+            await binaryObjectEquals(result, value2, valueType);
 
-            binaryValue3.setField('field_1_1', result.getField('field_1_1'));
-            binaryValue3.setField('field_1_2', result.getField('field_1_2'));
-            binaryValue3.setField('field_1_3', result.getField('field_1_3'));
+            binaryValue3.setField('field_1_1', await result.getField('field_1_1'));
+            binaryValue3.setField('field_1_2', await result.getField('field_1_2', field_1_2_Type), field_1_2_Type);
+            binaryValue3.setField('field_1_3', await result.getField('field_1_3'));
             await cache.put(binaryValue1, binaryValue3);
             result = await cache.get(binaryValue1);
-            binaryObjectEquals(result, value2, valueType);
+            await binaryObjectEquals(result, value2, valueType);
         }
         finally {
             await cache.removeAll();

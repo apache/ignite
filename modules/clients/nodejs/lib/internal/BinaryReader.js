@@ -23,17 +23,17 @@ const BinaryUtils = require('./BinaryUtils');
 
 class BinaryReader {
 
-    static readObject(buffer, expectedType = null) {
+    static async readObject(buffer, expectedType = null) {
         const typeCode = buffer.readByte();
         BinaryUtils.checkTypesComatibility(expectedType, typeCode);
-        return BinaryReader._readTypedObject(buffer, typeCode, expectedType);
+        return await BinaryReader._readTypedObject(buffer, typeCode, expectedType);
     }
 
-    static readStringArray(buffer) {
-        return BinaryReader._readTypedObject(buffer, BinaryUtils.TYPE_CODE.STRING_ARRAY);
+    static async readStringArray(buffer) {
+        return await BinaryReader._readTypedObject(buffer, BinaryUtils.TYPE_CODE.STRING_ARRAY);
     }
 
-    static _readTypedObject(buffer, objectTypeCode, expectedType = null) {
+    static async _readTypedObject(buffer, objectTypeCode, expectedType = null) {
         switch (objectTypeCode) {
             case BinaryUtils.TYPE_CODE.BYTE:
             case BinaryUtils.TYPE_CODE.SHORT:
@@ -62,21 +62,21 @@ class BinaryReader {
             case BinaryUtils.TYPE_CODE.STRING_ARRAY:
             case BinaryUtils.TYPE_CODE.DATE_ARRAY:
             case BinaryUtils.TYPE_CODE.OBJECT_ARRAY:
-                return BinaryReader._readArray(buffer, objectTypeCode, expectedType);
+                return await BinaryReader._readArray(buffer, objectTypeCode, expectedType);
             case BinaryUtils.TYPE_CODE.MAP:
-                return BinaryReader._readMap(buffer, expectedType);
+                return await BinaryReader._readMap(buffer, expectedType);
             case BinaryUtils.TYPE_CODE.BINARY_OBJECT:
-                return BinaryReader._readBinaryObject(buffer, expectedType);
+                return await BinaryReader._readBinaryObject(buffer, expectedType);
             case BinaryUtils.TYPE_CODE.NULL:
                 return null;
             case BinaryUtils.TYPE_CODE.COMPLEX_OBJECT:
-                return BinaryReader._readComplexObject(buffer, expectedType);
+                return await BinaryReader._readComplexObject(buffer, expectedType);
             default:
                 throw Errors.IgniteClientError.unsupportedTypeError(objectTypeCode);
         }
     }
 
-    static _readArray(buffer, arrayTypeCode, arrayType) {
+    static async _readArray(buffer, arrayTypeCode, arrayType) {
         if (arrayTypeCode === BinaryUtils.TYPE_CODE.OBJECT_ARRAY) {
             buffer.readInteger();
         }
@@ -86,42 +86,42 @@ class BinaryReader {
         const result = new Array(length);
         for (let i = 0; i < length; i++) {
             result[i] = keepElementType ?
-                BinaryReader.readObject(buffer, elementType) :
-                BinaryReader._readTypedObject(buffer, elementType);
+                await BinaryReader.readObject(buffer, elementType) :
+                await BinaryReader._readTypedObject(buffer, elementType);
         }
         return result;
     }
 
-    static _readMap(buffer, expectedMapType) {
+    static async _readMap(buffer, expectedMapType) {
         const result = new Map();
         const size = buffer.readInteger();
         const mapType = buffer.readByte();
         let key, value;
         for (let i = 0; i < size; i++) {
-            key = BinaryReader.readObject(buffer, expectedMapType ? expectedMapType._keyType : null);
-            value = BinaryReader.readObject(buffer, expectedMapType ? expectedMapType._valueType : null);
+            key = await BinaryReader.readObject(buffer, expectedMapType ? expectedMapType._keyType : null);
+            value = await BinaryReader.readObject(buffer, expectedMapType ? expectedMapType._valueType : null);
             result.set(key, value);
         }
         return result;
     }
 
-    static _readBinaryObject(buffer, expectedType) {
+    static async _readBinaryObject(buffer, expectedType) {
         const size = buffer.readInteger();
         const startPos = buffer.position;
         buffer.position = startPos + size;
         const offset = buffer.readInteger();
         const endPos = buffer.position;
         buffer.position = startPos + offset;
-        const result = BinaryReader.readObject(buffer, expectedType);
+        const result = await BinaryReader.readObject(buffer, expectedType);
         buffer.position = endPos;
         return result;
     }
 
-    static _readComplexObject(buffer, expectedType) {
+    static async _readComplexObject(buffer, expectedType) {
         buffer.position = buffer.position - 1;
-        const binaryObject = BinaryObject._fromBuffer(buffer);
+        const binaryObject = await BinaryObject._fromBuffer(buffer);
         return expectedType ?
-            binaryObject.toObject(expectedType) : binaryObject;
+            await binaryObject.toObject(expectedType) : binaryObject;
     }
 }
 

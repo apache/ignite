@@ -128,10 +128,10 @@ class ClientSocket {
 
     async sendRequest(opCode, payloadWriter, payloadReader = null) {
         if (this._state === STATE.CONNECTED) {
-            return new Promise((resolve, reject) => {
+            return new Promise(async (resolve, reject) => {
                 const request = new Request(this.requestId, opCode, payloadWriter, payloadReader, resolve, reject);
                 this._addRequest(request);
-                this._sendRequest(request);
+                await this._sendRequest(request);
             });
         }
         else {
@@ -140,10 +140,10 @@ class ClientSocket {
     }
 
     _connectSocket(handshakeRequest) {
-        const onConnected = () => {
+        const onConnected = async () => {
             this._state = STATE.HANDSHAKE;
             // send handshake
-            this._sendRequest(handshakeRequest);
+            await this._sendRequest(handshakeRequest);
         };
 
         const options = { host : this._host, port : this._port, version : this._version };
@@ -164,7 +164,15 @@ class ClientSocket {
         this._socket.setNoDelay(this._config._tcpNoDelay);
         this._socket.setTimeout(this._config._timeout);
 
-        this._socket.on('data', this._processResponse.bind(this));
+        this._socket.on('data', async (data) => {
+            try {
+                await this._processResponse(data);
+            }
+            catch (err) {
+                this._error = err.message;
+                this._disconnect();
+            }
+        });
         this._socket.on('close', () => {
             this._disconnect(false);
         });
@@ -179,17 +187,22 @@ class ClientSocket {
         this._requests.set(request.id.toString(), request);
     }
 
-    _sendRequest(request) {
-        const message = request.message;
-        this._logMessage(request.id.toString(), true, message);
+    async _sendRequest(request) {
+        try {
+            const message = await request.getMessage();
+            this._logMessage(request.id.toString(), true, message);
 
-        if (!this._socket.write(message)) {
-            this._error = 'Request sending failed';
-            this._disconnect();
+            if (!this._socket.write(message)) {
+                throw Errors.IgniteClientError.internalError('Request sending failed');
+            }
+        }
+        catch (err) {
+            this._requests.delete(request.id);
+            request.reject(err);
         }
     }
 
-    _processResponse(message) {
+    async _processResponse(message) {
         if (this._state === STATE.DISCONNECTED) {
             return;
         }
@@ -217,10 +230,10 @@ class ClientSocket {
             const request = this._requests.get(requestId);
             this._requests.delete(requestId);
             if (isHandshake) {
-                this._finalizeHandshake(buffer, request, isSuccess);
+                await this._finalizeHandshake(buffer, request, isSuccess);
             }
             else {
-                this._finalizeResponse(buffer, request, isSuccess);
+                await this._finalizeResponse(buffer, request, isSuccess);
             }
         }
         else {
@@ -228,13 +241,13 @@ class ClientSocket {
         }
     }
 
-    _finalizeHandshake(buffer, request, isSuccess) {
+    async _finalizeHandshake(buffer, request, isSuccess) {
         if (!isSuccess) {
             // Server protocol version
             const serverVersion = new ProtocolVersion();
             serverVersion.read(buffer);
             // Error message
-            const errMessage = BinaryReader.readObject(buffer);
+            const errMessage = await BinaryReader.readObject(buffer);
 
             if (!this._protocolVersion.equals(serverVersion)) {
                 if (!this._isSupportedVersion(serverVersion) ||
@@ -247,7 +260,7 @@ class ClientSocket {
                 else {
                     // retry handshake with server version
                     const handshakeRequest = this._getHandshake(serverVersion, request.resolve, request.reject);
-                    this._sendRequest(handshakeRequest);
+                    await this._sendRequest(handshakeRequest);
                 }
             }
             else {
@@ -262,16 +275,16 @@ class ClientSocket {
         }
     }
 
-    _finalizeResponse(buffer, request, isSuccess) {
+    async _finalizeResponse(buffer, request, isSuccess) {
         if (!isSuccess) {
             // Error message
-            const errMessage = BinaryReader.readObject(buffer);
+            const errMessage = await BinaryReader.readObject(buffer);
             request.reject(new Errors.OperationError(errMessage));
         }
         else {
             try {
                 if (request.payloadReader) {
-                    request.payloadReader(buffer);
+                    await request.payloadReader(buffer);
                 }
                 request.resolve();
             }
@@ -281,7 +294,7 @@ class ClientSocket {
         }
     }
 
-    _handshakePayloadWriter(payload) {
+    async _handshakePayloadWriter(payload) {
         // Handshake code
         payload.writeByte(1);
         // Protocol version
@@ -289,8 +302,8 @@ class ClientSocket {
         // Client code
         payload.writeByte(2);
         if (this._config._userName) {
-            BinaryWriter.writeString(payload, this._config._userName);
-            BinaryWriter.writeString(payload, this._config._password);
+            await BinaryWriter.writeString(payload, this._config._userName);
+            await BinaryWriter.writeString(payload, this._config._password);
         }
     }
 
@@ -403,7 +416,7 @@ class Request {
         return this._reject;
     }
 
-    get message() {
+    async getMessage() {
         const message = new MessageBuffer();
         // Skip message length
         const messageStartPos = BinaryUtils.getSize(BinaryUtils.TYPE_CODE.INTEGER);
@@ -416,7 +429,7 @@ class Request {
         }
         if (this._payloadWriter) {
             // Payload
-            this._payloadWriter(message);
+            await this._payloadWriter(message);
         }
         // Message length
         message.position = 0;

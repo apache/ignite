@@ -157,17 +157,17 @@ class CacheClient {
         let result = null;
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_GET_ALL,
-            (payload) => {
+            async (payload) => {
                 this._writeCacheInfo(payload);
-                this._writeKeys(payload, keys);
+                await this._writeKeys(payload, keys);
             },
-            (payload) => {
+            async (payload) => {
                 const resultCount = payload.readInteger();
                 result = new Array(resultCount);
                 for (let i = 0; i < resultCount; i++) {
                     result[i] = new CacheEntry(
-                        BinaryReader.readObject(payload, this._getKeyType()),
-                        BinaryReader.readObject(payload, this._getValueType()));
+                        await BinaryReader.readObject(payload, this._getKeyType()),
+                        await BinaryReader.readObject(payload, this._getValueType()));
                 }
             });
         return result;
@@ -207,11 +207,11 @@ class CacheClient {
         ArgumentChecker.hasType(entries, 'entries', true, CacheEntry);
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_PUT_ALL,
-            (payload) => {
+            async (payload) => {
                 this._writeCacheInfo(payload);
                 payload.writeInteger(entries.length);
                 for (let entry of entries) {
-                    this._writeKeyValue(payload, entry.getKey(), entry.getValue());
+                    await this._writeKeyValue(payload, entry.getKey(), entry.getValue());
                 }
             });
     }
@@ -375,12 +375,12 @@ class CacheClient {
         let result;
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_REPLACE_IF_EQUALS,
-            (payload) => {
+            async (payload) => {
                 this._writeCacheInfo(payload);
-                this._writeKeyValue(payload, key, value);
-                BinaryWriter.writeObject(payload, newValue, this._getValueType());
+                await this._writeKeyValue(payload, key, value);
+                await BinaryWriter.writeObject(payload, newValue, this._getValueType());
             },
-            (payload) => {
+            async (payload) => {
                 result = payload.readBoolean();
             });
         return result;
@@ -396,7 +396,7 @@ class CacheClient {
     async clear() {
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_CLEAR,
-            (payload) => {
+            async (payload) => {
                 this._writeCacheInfo(payload);
             });
     }
@@ -482,7 +482,7 @@ class CacheClient {
     async removeAll() {
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_REMOVE_ALL,
-            (payload) => {
+            async (payload) => {
                 this._writeCacheInfo(payload);
             });
     }
@@ -503,14 +503,14 @@ class CacheClient {
         let result;
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_GET_SIZE,
-            (payload) => {
+            async (payload) => {
                 this._writeCacheInfo(payload);
                 payload.writeInteger(peekModes.length);
                 for (let mode of peekModes) {
                     payload.writeByte(mode);
                 }
             },
-            (payload) => {
+            async (payload) => {
                 result = payload.readLong().toNumber();
             });
         return result;
@@ -538,12 +538,12 @@ class CacheClient {
         let value = null;
         await this._socket.send(
             query._operation,
-            (payload) => {
+            async (payload) => {
                 this._writeCacheInfo(payload);
-                query._write(payload);
+                await query._write(payload);
             },
-            (payload) => {
-                value = query._getCursor(this._socket, payload, this._keyType, this._valueType);
+            async (payload) => {
+                value = await query._getCursor(this._socket, payload, this._keyType, this._valueType);
             });
         return value;
     }
@@ -580,18 +580,18 @@ class CacheClient {
     /**
      * @ignore
      */
-    _writeKeyValue(payload, key, value) {
-        BinaryWriter.writeObject(payload, key, this._getKeyType());
-        BinaryWriter.writeObject(payload, value, this._getValueType());
+    async _writeKeyValue(payload, key, value) {
+        await BinaryWriter.writeObject(payload, key, this._getKeyType());
+        await BinaryWriter.writeObject(payload, value, this._getValueType());
     }
 
     /**
      * @ignore
      */
-    _writeKeys(payload, keys) {
+    async _writeKeys(payload, keys) {
         payload.writeInteger(keys.length);
         for (let key of keys) {
-            BinaryWriter.writeObject(payload, key, this._getKeyType());
+            await BinaryWriter.writeObject(payload, key, this._getKeyType());
         }
     }
 
@@ -617,9 +617,9 @@ class CacheClient {
         ArgumentChecker.notNull(value, 'value');
         await this._socket.send(
             operation,
-            (payload) => {
+            async (payload) => {
                 this._writeCacheInfo(payload);
-                this._writeKeyValue(payload, key, value);
+                await this._writeKeyValue(payload, key, value);
             },
             payloadReader);
     }
@@ -631,8 +631,8 @@ class CacheClient {
         let result = null;
         await this._writeKeyValueOp(
             operation, key, value,
-            (payload) => {
-                result = BinaryReader.readObject(payload, this._getValueType());
+            async (payload) => {
+                result = await BinaryReader.readObject(payload, this._getValueType());
             });
         return result;
     }
@@ -644,7 +644,7 @@ class CacheClient {
         let result = false;
         await this._writeKeyValueOp(
             operation, key, value,
-            (payload) => {
+            async (payload) => {
                 result = payload.readBoolean();
             });
         return result;
@@ -657,9 +657,9 @@ class CacheClient {
         ArgumentChecker.notNull(key, 'key');
         await this._socket.send(
             operation,
-            (payload) => {
+            async (payload) => {
                 this._writeCacheInfo(payload);
-                BinaryWriter.writeObject(payload, key, this._getKeyType());
+                await BinaryWriter.writeObject(payload, key, this._getKeyType());
             },
             payloadReader);
     }
@@ -671,8 +671,8 @@ class CacheClient {
         let value = null;
         await this._writeKeyOp(
             operation, key,
-            (payload) => {
-                value = BinaryReader.readObject(payload, this._getValueType());
+            async (payload) => {
+                value = await BinaryReader.readObject(payload, this._getValueType());
             });
         return value;
     }
@@ -684,7 +684,7 @@ class CacheClient {
         let result = false;
         await this._writeKeyOp(
             operation, key,
-            (payload) => {
+            async (payload) => {
                 result = payload.readBoolean();
             });
         return result;
@@ -698,9 +698,9 @@ class CacheClient {
         ArgumentChecker.hasType(keys, 'keys', false, Array);
         await this._socket.send(
             operation,
-            (payload) => {
+            async (payload) => {
                 this._writeCacheInfo(payload);
-                this._writeKeys(payload, keys);
+                await this._writeKeys(payload, keys);
             },
             payloadReader);
     }
@@ -712,7 +712,7 @@ class CacheClient {
         let result = false;
         await this._writeKeysOp(
             operation, keys,
-            (payload) => {
+            async (payload) => {
                 result = payload.readBoolean();
             });
         return result;

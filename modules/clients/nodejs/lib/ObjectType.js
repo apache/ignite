@@ -17,6 +17,8 @@
 
 'use strict';
 
+const Util = require('util');
+const Errors = require('./Errors');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 
 /**
@@ -268,6 +270,10 @@ class ComplexObjectType extends CompositeType {
         }
         this._typeName = typeName;
         this._fields = new Map();
+        const BinaryUtils = require('./internal/BinaryUtils');
+        for (let fieldName of BinaryUtils.getJsObjectFieldNames(this._template)) {
+            this._fields.set(fieldName, null);
+        }
     }
 
     /**
@@ -288,6 +294,10 @@ class ComplexObjectType extends CompositeType {
      * @throws {IgniteClientError} if error.
      */
     setFieldType(fieldName, fieldType) {
+        if (!this._fields.has(fieldName)) {
+            throw Errors.IgniteClientError.illegalArgumentError(
+                Util.format('Field "%s" is absent in the complex object type', fieldName));
+        }
         const BinaryUtils = require('./internal/BinaryUtils');
         BinaryUtils.checkObjectType(fieldType, 'fieldType');
         this._fields.set(fieldName, fieldType);
@@ -295,13 +305,6 @@ class ComplexObjectType extends CompositeType {
     }
 
     /** Private methods */
-
-    /**
-     * @ignore
-     */
-    _getFields() {
-        return this._fields ? this._fields.entries() : null;
-    }
 
     /**
      * @ignore

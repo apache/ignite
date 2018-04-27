@@ -18,7 +18,6 @@
 'use strict';
 
 const Errors = require('./Errors');
-const CacheEntry = require('./CacheClient').CacheEntry;
 const BinaryUtils = require('./internal/BinaryUtils');
 const BinaryObject = require('./BinaryObject');
 const BinaryReader = require('./internal/BinaryReader');
@@ -97,8 +96,8 @@ class Cursor {
         if (this._id && this._hasNext) {
             await this._socket.send(
                 BinaryUtils.OPERATION.RESOURCE_CLOSE,
-                (payload) => {
-                    this._write(payload);
+                async (payload) => {
+                    await this._write(payload);
                 });
         }
     }
@@ -126,18 +125,18 @@ class Cursor {
         this._values = null;
         await this._socket.send(
             this._operation,
-            (payload) => {
-                this._write(payload);
+            async (payload) => {
+                await this._write(payload);
             },
-            (payload) => {
-                this._read(payload);
+            async (payload) => {
+                await this._read(payload);
             });
     }
 
     /**
      * @ignore
      */
-    _write(buffer) {
+    async _write(buffer) {
         buffer.writeLong(this._id);
     }
 
@@ -145,7 +144,7 @@ class Cursor {
     /**
      * @ignore
      */
-    _read(buffer) {
+    async _read(buffer) {
         const id = buffer.readLong();
         if (this._id) {
             if (!this._id.equals(id)) {
@@ -155,12 +154,13 @@ class Cursor {
         else {
             this._id = id;
         }
+        const CacheEntry = require('./CacheClient').CacheEntry;
         const rowCount = buffer.readInteger();
         this._values = new Array(rowCount);
         for (let i = 0; i < rowCount; i++) {
             this._values[i] = new CacheEntry(
-                BinaryReader.readObject(buffer, this._keyType),
-                BinaryReader.readObject(buffer, this._valueType));
+                await BinaryReader.readObject(buffer, this._keyType),
+                await BinaryReader.readObject(buffer, this._valueType));
         }
         this._hasNext = buffer.readBoolean();
     }
@@ -195,7 +195,7 @@ class SqlFieldsCursor extends Cursor {
             for (let i = 0; i < value.length; i++) {
                 const fieldType = this._fieldTypes && i < this._fieldTypes.length ? this._fieldTypes[i] : null;
                 if (value[i] instanceof BinaryObject) {
-                    value[i] = value[i]._toObject(fieldType);
+                    value[i] = await value[i].toObject(fieldType);
                 }
             }
         }
@@ -264,13 +264,13 @@ class SqlFieldsCursor extends Cursor {
     /**
      * @ignore
      */
-    _read(buffer, initial = false, includeFieldNames = false) {
+    async _read(buffer, initial = false, includeFieldNames = false) {
         if (initial) {
             this._id = buffer.readLong();
             this._fieldCount = buffer.readInteger();
             if (includeFieldNames) {
                 for (let i = 0; i < this._fieldCount; i++) {
-                    this._fieldNames[i] = BinaryReader.readObject(buffer);
+                    this._fieldNames[i] = await BinaryReader.readObject(buffer);
                 }
             }
         }
@@ -280,7 +280,7 @@ class SqlFieldsCursor extends Cursor {
         for (let i = 0; i < rowCount; i++) {
             values = new Array(this._fieldCount);
             for (let j = 0; j < this._fieldCount; j++) {
-                values[j] = BinaryReader.readObject(buffer);
+                values[j] = await BinaryReader.readObject(buffer);
             }
             this._values[i] = values;
         }

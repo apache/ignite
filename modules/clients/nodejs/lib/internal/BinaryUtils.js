@@ -64,7 +64,10 @@ const OPERATION = Object.freeze({
     QUERY_SQL_CURSOR_GET_PAGE : 2003,
     QUERY_SQL_FIELDS : 2004,
     QUERY_SQL_FIELDS_CURSOR_GET_PAGE : 2005,
-    RESOURCE_CLOSE : 0    
+    RESOURCE_CLOSE : 0,
+    // Binary Types
+    GET_BINARY_TYPE : 3002,
+    PUT_BINARY_TYPE : 3003
 });
 
 const TYPE_CODE = Object.assign({
@@ -221,7 +224,7 @@ class BinaryUtils {
             return type;
         }
         const typeCode = BinaryUtils.getTypeCode(type);
-        return TYPE_INFO[typeCode] ? TYPE_INFO[typeCode].NAME : 'code ' + typeCode;
+        return TYPE_INFO[typeCode] ? TYPE_INFO[typeCode].NAME : ' type code ' + typeCode;
     }
 
     static isNullable(type) {
@@ -279,8 +282,11 @@ class BinaryUtils {
             return;
         }
         const typeCode = BinaryUtils.getTypeCode(type);
-        if (value === null && !BinaryUtils.isNullable(typeCode)) {
-            throw Errors.IgniteClientError.typeCastError(BinaryUtils.TYPE_CODE.NULL, typeCode);
+        if (value === null) {
+            if (!BinaryUtils.isNullable(typeCode)) {
+                throw Errors.IgniteClientError.typeCastError(BinaryUtils.TYPE_CODE.NULL, typeCode);
+            }
+            return;
         }
         else if (BinaryUtils.isStandardType(typeCode)) {
             BinaryUtils.checkStandardTypeCompatibility(value, typeCode);
@@ -301,7 +307,42 @@ class BinaryUtils {
     }
 
     static checkStandardTypeCompatibility(value, typeCode) {
+        const valueType = typeof value;
         switch (typeCode) {
+            case BinaryUtils.TYPE_CODE.BYTE:
+            case BinaryUtils.TYPE_CODE.SHORT:
+            case BinaryUtils.TYPE_CODE.INTEGER:
+            case BinaryUtils.TYPE_CODE.LONG:
+                if (!Number.isInteger(value)) {
+                    throw Errors.IgniteClientError.valueCastError(value, typeCode);
+                }
+                return;
+            case BinaryUtils.TYPE_CODE.FLOAT:
+            case BinaryUtils.TYPE_CODE.DOUBLE:
+                if (valueType !== 'number') {
+                    throw Errors.IgniteClientError.valueCastError(value, typeCode);
+                }
+                return;
+            case BinaryUtils.TYPE_CODE.CHAR:
+                if (valueType !== 'string' || value.length !== 1) {
+                    throw Errors.IgniteClientError.valueCastError(value, typeCode);
+                }
+                return;
+            case BinaryUtils.TYPE_CODE.BOOLEAN:
+                if (valueType !== 'boolean') {
+                    throw Errors.IgniteClientError.valueCastError(value, typeCode);
+                }
+                return;
+            case BinaryUtils.TYPE_CODE.STRING:
+                if (valueType !== 'string') {
+                    throw Errors.IgniteClientError.valueCastError(value, typeCode);
+                }
+                return;
+            case BinaryUtils.TYPE_CODE.DATE:
+                if (!value instanceof Date) {
+                    throw Errors.IgniteClientError.valueCastError(value, typeCode);
+                }
+                return;
             case BinaryUtils.TYPE_CODE.BYTE_ARRAY:
             case BinaryUtils.TYPE_CODE.SHORT_ARRAY:
             case BinaryUtils.TYPE_CODE.INTEGER_ARRAY:
@@ -314,12 +355,12 @@ class BinaryUtils {
             case BinaryUtils.TYPE_CODE.DATE_ARRAY:
             case BinaryUtils.TYPE_CODE.OBJECT_ARRAY:
                 if (!value instanceof Array) {
-                    throw Errors.IgniteClientError.typeCastError('not Array', typeCode);
+                    throw Errors.IgniteClientError.typeCastError(valueType, typeCode);
                 }
                 return;
             case BinaryUtils.TYPE_CODE.MAP:
                 if (!value instanceof Map) {
-                    throw Errors.IgniteClientError.typeCastError('not Map', typeCode);
+                    throw Errors.IgniteClientError.typeCastError(valueType, typeCode);
                 }
                 return;
             case BinaryUtils.TYPE_CODE.NULL:
@@ -405,6 +446,16 @@ class BinaryUtils {
         return TYPE_INFO[arrayTypeCode].KEEP_ELEMENT_TYPE === true;
     }
 
+    static getJsObjectFieldNames(jsObject) {
+        var fields = new Array();
+        for (let field in jsObject) {
+            if (typeof jsObject[field] !== 'function') {
+                fields.push(field);
+            }
+        }
+        return fields;
+    }
+
     static hashCode(str) {
         let hash = 0, char;
         if (str && str.length > 0) {
@@ -415,6 +466,10 @@ class BinaryUtils {
             }
         }
         return hash;
+    }
+
+    static hashCodeLowerCase(str) {
+        return BinaryUtils.hashCode(str ? str.toLowerCase() : str);
     }
 
     static contentHashCode(buffer, startPos, endPos) {

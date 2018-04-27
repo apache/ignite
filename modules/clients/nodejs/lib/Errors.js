@@ -47,6 +47,16 @@ class IgniteClientError extends Error {
     }
 
     /**
+     * The real value can not be cast to the specified type.
+     * @ignore
+     */
+    static valueCastError(value, toType) {
+        const BinaryUtils = require('./internal/BinaryUtils');
+        return new IgniteClientError(Util.format('Value "%s" can not be cast to %s',
+            value, BinaryUtils.getTypeName(toType)));
+    }
+
+    /**
      * An illegal or inappropriate argument has been passed to the API method.
      * @ignore
      */
@@ -60,6 +70,18 @@ class IgniteClientError extends Error {
      */
     static internalError(message = null) {
         return new IgniteClientError(message || 'Internal library error');
+    }
+
+    /**
+     * Serialization/deserialization errors.
+     * @ignore
+     */
+    static serializationError(serialize, message = null) {
+        let msg = serialize ? 'Complex object can not be serialized' : 'Complex object can not be deserialized';
+        if (message) {
+            msg = msg + ': ' + message;
+        }
+        return new IgniteClientError(msg);
     }
 }
 

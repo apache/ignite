@@ -74,8 +74,13 @@ class MessageBuffer {
     }
 
     writeLong(value) {
-        if (!Long.isLong(value)) {
-            value = Long.fromValue(value);
+        try {
+            if (!Long.isLong(value)) {
+                value = Long.fromValue(value);
+            }
+        }
+        catch (err) {
+            throw Errors.IgniteClientError.valueCastError(value, BinaryUtils.TYPE_CODE.LONG);
         }
         const buffer = Buffer.from(value.toBytesLE());
         this._writeBuffer(buffer);
@@ -92,24 +97,29 @@ class MessageBuffer {
     writeNumber(value, type) {
         const size = BinaryUtils.getSize(type);
         this._ensureCapacity(size);
-        switch (type) {
-            case BinaryUtils.TYPE_CODE.BYTE:
-                this._buffer.writeInt8(value, this._position);
-                break;
-            case BinaryUtils.TYPE_CODE.SHORT:
-                this._buffer.writeInt16LE(value, this._position);
-                break;
-            case BinaryUtils.TYPE_CODE.INTEGER:
-                this._buffer.writeInt32LE(value, this._position);
-                break;
-            case BinaryUtils.TYPE_CODE.FLOAT:
-                this._buffer.writeFloatLE(value, this._position);
-                break;
-            case BinaryUtils.TYPE_CODE.DOUBLE:
-                this._buffer.writeDoubleLE(value, this._position);
-                break;
-            default:
-                throw Errors.IgniteClientError.internalError();
+        try {
+            switch (type) {
+                case BinaryUtils.TYPE_CODE.BYTE:
+                    this._buffer.writeInt8(value, this._position);
+                    break;
+                case BinaryUtils.TYPE_CODE.SHORT:
+                    this._buffer.writeInt16LE(value, this._position);
+                    break;
+                case BinaryUtils.TYPE_CODE.INTEGER:
+                    this._buffer.writeInt32LE(value, this._position);
+                    break;
+                case BinaryUtils.TYPE_CODE.FLOAT:
+                    this._buffer.writeFloatLE(value, this._position);
+                    break;
+                case BinaryUtils.TYPE_CODE.DOUBLE:
+                    this._buffer.writeDoubleLE(value, this._position);
+                    break;
+                default:
+                    throw Errors.IgniteClientError.internalError();
+            }
+        }
+        catch (err) {
+            throw Errors.IgniteClientError.valueCastError(value, type);
         }
         this._position += size;
     }
@@ -149,6 +159,7 @@ class MessageBuffer {
 
     readLong() {
         const size = BinaryUtils.getSize(BinaryUtils.TYPE_CODE.LONG)
+        this._ensureSize(size);
         const value = Long.fromBytesLE([...this._buffer.slice(this._position, this._position + size)]);
         this._position += size;
         return value;
@@ -163,6 +174,8 @@ class MessageBuffer {
     }
 
     readNumber(type) {
+        const size = BinaryUtils.getSize(type);
+        this._ensureSize(size);
         let value;
         switch (type) {
             case BinaryUtils.TYPE_CODE.BYTE:
@@ -183,7 +196,7 @@ class MessageBuffer {
             default:
                 throw Errors.IgniteClientError.internalError();
         }
-        this._position += BinaryUtils.getSize(type);
+        this._position += size;
         return value;
     }
 
@@ -197,6 +210,7 @@ class MessageBuffer {
 
     readString() {
         const bytesCount = this.readInteger();
+        this._ensureSize(bytesCount);
         const result = this._buffer.toString(BinaryUtils.ENCODING, this._position, this._position + bytesCount);
         this._position += bytesCount;
         return result;
@@ -212,13 +226,22 @@ class MessageBuffer {
         this._position += buffer.length;
     }
 
+    _ensureSize(size) {
+        if (this._position + size > this._length) {
+            throw Errors.IgniteClientError.internalError('Unexpected format of response');
+        }
+    }
+
     _ensureCapacity(valueSize) {
         if (valueSize <= 0) {
             throw Errors.IgniteClientError.internalError();
         }
-        if (this._position + valueSize > this._capacity) {
-            const newCapacity = this._capacity * 2;
-            this._buffer = Buffer.concat([this._buffer, Buffer.allocUnsafe(this._capacity)], newCapacity);
+        let newCapacity = this._capacity;
+        while (this._position + valueSize > newCapacity) {
+            newCapacity = newCapacity * 2;
+        }
+        if (this._capacity < newCapacity) {
+            this._buffer = Buffer.concat([this._buffer, Buffer.allocUnsafe(newCapacity - this._capacity)], newCapacity);
             this._capacity = newCapacity;
         }
         if (this._position + valueSize > this._length) {

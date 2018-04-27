@@ -219,10 +219,10 @@ class SqlQuery extends Query {
     /**
      * @ignore
      */
-    _write(buffer) {
-        BinaryWriter.writeString(buffer, this._type);
-        BinaryWriter.writeString(buffer, this._sql);
-        this._writeArgs(buffer);
+    async _write(buffer) {
+        await BinaryWriter.writeString(buffer, this._type);
+        await BinaryWriter.writeString(buffer, this._sql);
+        await this._writeArgs(buffer);
         buffer.writeBoolean(this._distributedJoins);
         buffer.writeBoolean(this._local);
         buffer.writeBoolean(this._replicatedOnly);
@@ -233,14 +233,14 @@ class SqlQuery extends Query {
     /**
      * @ignore
      */
-    _writeArgs(buffer) {
+    async _writeArgs(buffer) {
         const argsLength = this._args ? this._args.length : 0;
         buffer.writeInteger(argsLength);
         if (argsLength > 0) {
             let argType;
             for (let i = 0; i < argsLength; i++) {
                 argType = this._argTypes && i < this._argTypes.length ? this._argTypes[i] : null;
-                BinaryWriter.writeObject(buffer, this._args[i], argType);
+                await BinaryWriter.writeObject(buffer, this._args[i], argType);
             }
         }
     }
@@ -248,9 +248,9 @@ class SqlQuery extends Query {
     /**
      * @ignore
      */
-    _getCursor(socket, payload, keyType = null, valueType = null) {
+    async _getCursor(socket, payload, keyType = null, valueType = null) {
         const cursor = new Cursor(socket, BinaryUtils.OPERATION.QUERY_SQL_CURSOR_GET_PAGE, keyType, valueType);
-        cursor._read(payload);
+        await cursor._read(payload);
         return cursor;
     }
 }
@@ -408,12 +408,12 @@ class SqlFieldsQuery extends SqlQuery {
     /**
      * @ignore
      */
-    _write(buffer) {
-        BinaryWriter.writeString(buffer, this._schema);
+    async _write(buffer) {
+        await BinaryWriter.writeString(buffer, this._schema);
         buffer.writeInteger(this._pageSize);
         buffer.writeInteger(this._maxRows);
-        BinaryWriter.writeString(buffer, this._sql);
-        this._writeArgs(buffer)
+        await BinaryWriter.writeString(buffer, this._sql);
+        await this._writeArgs(buffer)
         buffer.writeByte(this._statementType);
         buffer.writeBoolean(this._distributedJoins);
         buffer.writeBoolean(this._local);
@@ -428,9 +428,9 @@ class SqlFieldsQuery extends SqlQuery {
     /**
      * @ignore
      */
-    _getCursor(socket, payload, keyType = null, valueType = null) {
+    async _getCursor(socket, payload, keyType = null, valueType = null) {
         const cursor = new SqlFieldsCursor(socket);
-        cursor._read(payload, true, this._includeFieldNames);
+        await cursor._read(payload, true, this._includeFieldNames);
         return cursor;
     }
 }

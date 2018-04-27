@@ -17,7 +17,6 @@
 
 'use strict';
 
-const BinaryObject = require('../BinaryObject');
 const Errors = require('../Errors');
 const ComplexObjectType = require('../ObjectType').ComplexObjectType;
 const BinaryUtils = require('./BinaryUtils');
@@ -25,11 +24,11 @@ const BinaryType = require('./BinaryType');
 
 class BinaryWriter {
 
-    static writeString(buffer, value) {
-        BinaryWriter.writeObject(buffer, value, BinaryUtils.TYPE_CODE.STRING);
+    static async writeString(buffer, value) {
+        await BinaryWriter.writeObject(buffer, value, BinaryUtils.TYPE_CODE.STRING);
     }
 
-    static writeObject(buffer, object, objectType = null, writeObjectType = true) {
+    static async writeObject(buffer, object, objectType = null, writeObjectType = true) {
         BinaryUtils.checkCompatibility(object, objectType);
         if (object === null) {
             buffer.writeByte(BinaryUtils.TYPE_CODE.NULL);
@@ -76,23 +75,23 @@ class BinaryWriter {
             case BinaryUtils.TYPE_CODE.STRING_ARRAY:
             case BinaryUtils.TYPE_CODE.DATE_ARRAY:
             case BinaryUtils.TYPE_CODE.OBJECT_ARRAY:
-                BinaryWriter._writeArray(buffer, object, objectType, objectTypeCode);
+                await BinaryWriter._writeArray(buffer, object, objectType, objectTypeCode);
                 break;
             case BinaryUtils.TYPE_CODE.MAP:
-                BinaryWriter._writeMap(buffer, object, objectType);
+                await BinaryWriter._writeMap(buffer, object, objectType);
                 break;
             case BinaryUtils.TYPE_CODE.BINARY_OBJECT:
-                BinaryWriter._writeBinaryObject(buffer, object, objectType);
+                await BinaryWriter._writeBinaryObject(buffer, object, objectType);
                 break;
             case BinaryUtils.TYPE_CODE.COMPLEX_OBJECT:
-                BinaryWriter._writeComplexObject(buffer, object, objectType);
+                await BinaryWriter._writeComplexObject(buffer, object, objectType);
                 break;
             default:
                 throw Errors.IgniteClientError.unsupportedTypeError(objectType);
         }
     }
 
-    static _writeArray(buffer, array, arrayType, arrayTypeCode) {
+    static async _writeArray(buffer, array, arrayType, arrayTypeCode) {
         const elementType = BinaryUtils.getArrayElementType(arrayType);
         const keepElementType = BinaryUtils.keepArrayElementType(arrayTypeCode);
         if (arrayTypeCode === BinaryUtils.TYPE_CODE.OBJECT_ARRAY && 
@@ -101,26 +100,27 @@ class BinaryWriter {
         }
         buffer.writeInteger(array.length);
         for (let elem of array) {
-            BinaryWriter.writeObject(buffer, elem, elementType, keepElementType);
+            await BinaryWriter.writeObject(buffer, elem, elementType, keepElementType);
         }
     }
 
-    static _writeMap(buffer, map, mapType) {
+    static async _writeMap(buffer, map, mapType) {
         buffer.writeInteger(map.size);
         buffer.writeByte(mapType.mapType);
-        map.forEach((value, key) => {
-            BinaryWriter.writeObject(buffer, key, mapType._keyType);
-            BinaryWriter.writeObject(buffer, value, mapType._valueType);
-        });
+        for (let [key, value] of map.entries()) {
+            await BinaryWriter.writeObject(buffer, key, mapType._keyType);
+            await BinaryWriter.writeObject(buffer, value, mapType._valueType);
+        }
     }
 
-    static _writeBinaryObject(buffer, binaryObject) {
+    static async _writeBinaryObject(buffer, binaryObject) {
         buffer.position = buffer.position - 1;
-        binaryObject._write(buffer);
+        await binaryObject._write(buffer);
     }
 
-    static _writeComplexObject(buffer, object, objectType) {
-        BinaryWriter._writeBinaryObject(buffer, BinaryObject.fromObject(object, objectType));
+    static async _writeComplexObject(buffer, object, objectType) {
+        const BinaryObject = require('../BinaryObject');
+        await BinaryWriter._writeBinaryObject(buffer, await BinaryObject.fromObject(object, objectType));
     }
 }
 
