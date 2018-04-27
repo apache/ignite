@@ -1477,8 +1477,9 @@ export class NotebookCtrl {
 
             $scope.queryAvailable(paragraph) && _chooseNode(paragraph.cacheName, local)
                 .then((nid) => {
-                    Notebook.save($scope.notebook)
-                        .catch(Messages.showError);
+                    // If we are executing only selected part of query then Notebook shouldn't be saved.
+                    if (!paragraph.partialQuery)
+                        Notebook.save($scope.notebook).catch(Messages.showError);
 
                     paragraph.localQueryMode = local;
                     paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
@@ -1487,10 +1488,12 @@ export class NotebookCtrl {
 
                     return _closeOldQuery(paragraph)
                         .then(() => {
+                            const query = paragraph.partialQuery || paragraph.query;
+
                             const args = paragraph.queryArgs = {
                                 type: 'QUERY',
                                 cacheName: $scope.cacheNameForSql(paragraph),
-                                query: paragraph.query,
+                                query,
                                 pageSize: paragraph.pageSize,
                                 maxPages: paragraph.maxPages,
                                 nonCollocatedJoins,
@@ -1499,9 +1502,9 @@ export class NotebookCtrl {
                                 lazy
                             };
 
-                            const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : paragraph.query;
-
                             ActivitiesData.post({ action: '/queries/execute' });
+
+                            const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : query;
 
                             return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize, lazy);
                         })
