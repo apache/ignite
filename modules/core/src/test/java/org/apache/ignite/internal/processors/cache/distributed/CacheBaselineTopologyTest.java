@@ -46,17 +46,12 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.TestDelayingCommunicationSpi;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -78,9 +73,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
     /** */
     private static final int NODE_COUNT = 4;
-
-    /** */
-    private boolean delayRebalance;
 
     /** */
     private boolean disableAutoActivation;
@@ -151,16 +143,13 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         if (client)
             cfg.setClientMode(true);
 
-        if (delayRebalance)
-            cfg.setCommunicationSpi(new DelayRebalanceCommunicationSpi());
-
         return cfg;
     }
 
     /**
      * Verifies that rebalance on cache with Node Filter happens when BaselineTopology changes.
      *
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testRebalanceForCacheWithNodeFilter() throws Exception {
         try {
@@ -463,8 +452,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
                 .setPartitionLossPolicy(READ_ONLY_SAFE)
         );
 
-        for (int i = 0; i < NODE_COUNT; i++)
-            grid(i).cache(CACHE_NAME).rebalance().get();
+        manualCacheRebalancing(ignite, CACHE_NAME);
 
         int key = -1;
 
@@ -586,9 +574,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         IgniteEx primary = null;
         IgniteEx backup = null;
 
-        for (int i = 0; i < NODE_COUNT; i++) {
-            grid(i).cache(CACHE_NAME).rebalance().get();
+        manualCacheRebalancing(ig, CACHE_NAME);
 
+        for (int i = 0; i < NODE_COUNT; i++) {
             if (grid(i).localNode().equals(affNodes.get(0))) {
                 primaryIdx = i;
                 primary = grid(i);
@@ -628,7 +616,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         assertEquals(backup.localNode(), ig.affinity(CACHE_NAME).mapKeyToNode(key));
 
-        primary.cache(CACHE_NAME).rebalance().get();
+        manualCacheRebalancing(ig, CACHE_NAME);
 
         awaitPartitionMapExchange();
 
@@ -672,9 +660,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         IgniteEx primary = null;
         IgniteEx backup = null;
 
-        for (int i = 0; i < NODE_COUNT; i++) {
-            grid(i).cache(CACHE_NAME).rebalance().get();
+        manualCacheRebalancing(ig, CACHE_NAME);
 
+        for (int i = 0; i < NODE_COUNT; i++) {
             if (grid(i).localNode().equals(affNodes.get(0))) {
                 primaryIdx = i;
                 primary = grid(i);
@@ -736,8 +724,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         assertEquals(val2, primary.cache(CACHE_NAME).get(key));
         assertEquals(val2, backup.cache(CACHE_NAME).get(key));
 
-        for (int i = 0; i < NODE_COUNT; i++)
-            grid(i).cache(CACHE_NAME).rebalance().get();
+        manualCacheRebalancing(ig, CACHE_NAME);
 
         awaitPartitionMapExchange();
 
@@ -846,8 +833,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testAffinityAssignmentChangedAfterRestart() throws Exception {
-        delayRebalance = false;
-
         int parts = 32;
 
         final List<Integer> partMapping = new ArrayList<>();
@@ -889,8 +874,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         Collections.shuffle(TestAffinityFunction.partsAffMapping, new Random(1));
-
-        delayRebalance = true;
 
         /* There is a problem with handling simultaneous auto activation after restart and manual activation.
            To properly catch the moment when cluster activation has finished we temporary disable auto activation. */
@@ -1033,24 +1016,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void removeNode(UUID nodeId) {
             delegate.removeNode(nodeId);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class DelayRebalanceCommunicationSpi extends TestDelayingCommunicationSpi {
-        /** {@inheritDoc} */
-        @Override protected boolean delayMessage(Message msg, GridIoMessage ioMsg) {
-            if (msg != null && (msg instanceof GridDhtPartitionDemandMessage || msg instanceof GridDhtPartitionSupplyMessage))
-                return true;
-
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected int delayMillis() {
-            return 1_000_000;
         }
     }
 }
