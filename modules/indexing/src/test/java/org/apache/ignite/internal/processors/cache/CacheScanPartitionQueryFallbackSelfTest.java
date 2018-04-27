@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -57,6 +58,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -170,11 +172,13 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
             doTestScanQuery(qry, part);
 
-            part = remotePartition(cache.context()).getKey();
+            GridTestUtils.assertThrows(log, (Callable<Void>)() -> {
+                int remPart = remotePartition(cache.context()).getKey();
 
-            qry = cache.query(new ScanQuery<Integer, Integer>().setPartition(part).setLocal(true));
+                cache.query(new ScanQuery<Integer, Integer>().setPartition(remPart).setLocal(true));
 
-            assertTrue(qry.getAll().isEmpty());
+                return null;
+            }, IgniteCheckedException.class, null);
         }
         finally {
             stopAllGrids();

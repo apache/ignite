@@ -115,6 +115,9 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     private volatile boolean incBackups;
 
+    /** Local query. */
+    private volatile boolean forceLocal;
+
     /** */
     private volatile boolean dedup;
 
@@ -136,13 +139,15 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param filter Scan filter.
      * @param part Partition.
      * @param keepBinary Keep binary flag.
+     * @param forceLocal Flag to force local query.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
         @Nullable IgniteBiPredicate<Object, Object> filter,
         @Nullable IgniteClosure<Map.Entry, Object> transform,
         @Nullable Integer part,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean forceLocal) {
         assert cctx != null;
         assert type != null;
         assert part == null || part >= 0;
@@ -153,6 +158,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.transform = transform;
         this.part = part;
         this.keepBinary = keepBinary;
+        this.forceLocal = forceLocal;
 
         log = cctx.logger(getClass());
 
@@ -296,6 +302,22 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      */
     public void keepBinary(boolean keepBinary) {
         this.keepBinary = keepBinary;
+    }
+
+    /**
+     * @return {@code True} if the query is forced local.
+     */
+    public boolean forceLocal() {
+        return forceLocal;
+    }
+
+    /**
+     * Forces to a local query.
+     *
+     * @param forceLocal flag.
+     */
+    public void forceLocal(boolean forceLocal) {
+        this.forceLocal = forceLocal;
     }
 
     /**
@@ -524,7 +546,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         cctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (nodes.isEmpty()) {
-            U.warn(log, "No queryable nodes for [query=" + this + "]");
+            if (part != null && forceLocal)
+                throw new IgniteCheckedException("No queryable nodes for partition " + part
+                    + " [forced local query=" + this + "]");
+
             return new GridEmptyCloseableIterator();
         }
 
