@@ -15,25 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.regressions;
-
-import org.apache.ignite.ml.regressions.linear.*;
-import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModelTest;
-import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainerTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 /**
- * Test suite for all tests located in org.apache.ignite.ml.regressions.* package.
+ * <!-- Package description. -->
+ * ML logistic regression examples.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    LinearRegressionModelTest.class,
-    LinearRegressionLSQRTrainerTest.class,
-    LinearRegressionSGDTrainerTest.class,
-    LogisticRegressionModelTest.class,
-    LogisticRegressionSGDTrainerTest.class
-})
-public class RegressionsTestSuite {
-    // No-op.
-}
+package org.apache.ignite.examples.ml.regression.logistic;
