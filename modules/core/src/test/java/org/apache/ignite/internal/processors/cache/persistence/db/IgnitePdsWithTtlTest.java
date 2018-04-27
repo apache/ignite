@@ -127,7 +127,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         if (restartGrid) {
             stopGrid(0);
             srv = startGrid(0);
-            srv.active(true);
+            srv.cluster().active(true);
         }
 
         final IgniteCache<Integer, String> cache = srv.cache(CACHE);

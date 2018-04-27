@@ -182,15 +182,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** {@inheritDoc} */
     @Override public void stopCache(int cacheId, final boolean destroy) {
-        if (destroy && grp.affinityNode()) {
-            ctx.database().checkpointReadLock();
-            try {
-                removeCacheData(cacheId);
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
-            }
-        }
+        if (destroy && grp.affinityNode())
+            removeCacheData(cacheId);
     }
 
     /** {@inheritDoc} */
@@ -221,11 +214,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         try {
             if (grp.sharedGroup()) {
                 assert cacheId != CU.UNDEFINED_CACHE_ID;
-                assert ctx.database().checkpointLockIsHeldByThread();
 
                 for (CacheDataStore store : cacheDataStores())
                     store.clear(cacheId);
 
+                // Clear non-persistent pending tree if needed.
                 if (pendingEntries != null) {
                     PendingRow row = new PendingRow(cacheId);
 
@@ -1573,7 +1566,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         /** {@inheritDoc} */
         @Override public void clear(int cacheId) throws IgniteCheckedException {
             assert cacheId != CU.UNDEFINED_CACHE_ID;
-            assert ctx.database().checkpointLockIsHeldByThread();
 
             if (cacheSize(cacheId) == 0)
                 return;

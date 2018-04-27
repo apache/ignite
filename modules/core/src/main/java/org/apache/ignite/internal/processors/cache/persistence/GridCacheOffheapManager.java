@@ -138,7 +138,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /**
-     * Get internal IndexStorage. See {@link UpgradePendingTreeToPerPartitionTask} for details.
+     * Get internal IndexStorage.
+     * See {@link UpgradePendingTreeToPerPartitionTask} for details.
      */
     public IndexStorage getIndexStorage() {
         return indexStorage;
@@ -1662,26 +1663,30 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (delegate0 == null)
                 return;
 
-            assert ctx.database().checkpointLockIsHeldByThread();
+            ctx.database().checkpointReadLock();
+            try {
+                // Clear persistent pendingTree
+                if (pendingTree != null) {
+                    PendingRow row = new PendingRow(cacheId);
 
-            // Clear pendingTree
-            if (pendingTree != null) {
-                PendingRow row = new PendingRow(cacheId);
+                    GridCursor<PendingRow> cursor = pendingTree.find(row, row, PendingEntriesTree.WITHOUT_KEY);
 
-                GridCursor<PendingRow> cursor = pendingTree.find(row, row, PendingEntriesTree.WITHOUT_KEY);
+                    while (cursor.next()) {
+                        PendingRow row0 = cursor.get();
 
-                while (cursor.next()) {
-                    PendingRow row0 = cursor.get();
+                        assert row0.link != 0 : row;
 
-                    assert row0.link != 0 : row;
+                        boolean res = pendingTree.removex(row0);
 
-                    boolean res = pendingTree.removex(row0);
-
-                    assert res;
+                        assert res;
+                    }
                 }
-            }
 
-            delegate0.clear(cacheId);
+                delegate0.clear(cacheId);
+            }
+            finally {
+                ctx.database().checkpointReadUnlock();
+            }
         }
 
         /**
