@@ -118,7 +118,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
         Random rnd = new Random();
 
-        for(long id = 0; id < DEP_CNT; id++) {
+        for (long id = 0; id < DEP_CNT; id++) {
             String name = UUID.randomUUID().toString();
 
             execute(insDep.setArgs(id, name));
@@ -360,7 +360,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     private static Collection removeFromCopy(Collection<?> from, Collection<?> toRemove) {
         List<?> fromCp = new ArrayList<>(from);
 
-        for(Object e : toRemove)
+        for (Object e : toRemove)
             fromCp.remove(e);
 
         return fromCp;
@@ -383,7 +383,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
             for (String field : fields) {
                 String normField = field.toUpperCase();
-
 
                 if (!row.containsKey(normField)) {
                     throw new RuntimeException("Field with name " + normField +
@@ -650,7 +649,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         testAllNodes(node -> {
             // Need to filter out only part of records (each one is a count of employees
             // of particular age) in HAVING clause.
-            final int avgAge = (int) (EMP_CNT / AGES_CNT);
+            final int avgAge = (int)(EMP_CNT / AGES_CNT);
 
             Result result = executeFrom("SELECT age, COUNT(*) FROM Employee GROUP BY age HAVING COUNT(*) > " + avgAge, node);
 
@@ -687,7 +686,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param outerLeft Preserve every row from the left table even if there is no matches in the right table.
      * @param outerRight Same as outerLeft for right table.
      */
-    protected static<R> List<R> doCommonJoin(
+    public static <R> List<R> doCommonJoin(
         IgniteCache<?, ?> left,
         IgniteCache<?, ?> right,
         IgniteBiPredicate<Map<String, Object>, Map<String, Object>> filter,
@@ -705,7 +704,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         Set<Map<String, Object>> notFoundRight = Collections.newSetFromMap(new IdentityHashMap<>());
 
         notFoundRight.addAll(rightTab);
-
 
         for (Map<String, Object> lRow : leftTab) {
             boolean foundLeft = false;
@@ -732,7 +730,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return join;
     }
 
-    protected static<R> List<R> doRightJoin(
+    protected static <R> List<R> doRightJoin(
         IgniteCache<?, ?> left,
         IgniteCache<?, ?> right,
         IgniteBiPredicate<Map<String, Object>, Map<String, Object>> filter,
@@ -741,7 +739,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return doCommonJoin(left, right, filter, transformer, false, true);
     }
 
-    protected static<R> List<R> doLeftJoin(
+    protected static <R> List<R> doLeftJoin(
         IgniteCache<?, ?> left,
         IgniteCache<?, ?> right,
         IgniteBiPredicate<Map<String, Object>, Map<String, Object>> filter,
@@ -750,7 +748,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return doCommonJoin(left, right, filter, transformer, true, false);
     }
 
-    protected static<R> List<R> doInnerJoin(
+    protected static <R> List<R> doInnerJoin(
         IgniteCache<?, ?> left,
         IgniteCache<?, ?> right,
         IgniteBiPredicate<Map<String, Object>, Map<String, Object>> filter,
@@ -759,7 +757,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return doCommonJoin(left, right, filter, transformer, false, false);
     }
 
-    protected static<R> List<R> doOuterJoin(
+    protected static <R> List<R> doOuterJoin(
         IgniteCache<?, ?> left,
         IgniteCache<?, ?> right,
         IgniteBiPredicate<Map<String, Object>, Map<String, Object>> filter,
@@ -767,7 +765,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
         return doCommonJoin(left, right, filter, transformer, true, true);
     }
-
 
     public void testInnerJoin() {
         testAllNodes(node -> {
@@ -778,7 +775,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             Result actNoidx = executeFrom(String.format(qryTpl, "depIdNoidx"), node);
 
             List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
-                (emp, dep) ->  sqlEq(dep.get("ID"), emp.get("DEPID")),
+                (emp, dep) -> sqlEq(dep.get("ID"), emp.get("DEPID")),
                 (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
             assertContainsEq(act.values(), expected);
@@ -821,6 +818,10 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Returns true if arguments are equal in terms of sql: if both arguments are not null and content is equal.
+     * Note that null is not equal to null.
+     */
     public static boolean sqlEq(Object a, Object b) {
         if (a == null || b == null)
             return false;
