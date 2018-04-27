@@ -65,6 +65,12 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /** Size of Department test table. */
     public final static long DEP_CNT = 50L;
 
+    /** Number of employees that aren't associated with any department. */
+    public final static long FREE_EMP_CNT = 50;
+
+    /** Number of departments that doesn't have employees. */
+    public final static long FREE_DEP_CNT = 5;
+
     /** Number of possible age values (width of ages values range). */
     public final static int AGES_CNT = 50;
 
@@ -119,7 +125,10 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         }
 
         for (long id = 0; id < EMP_CNT; id++) {
-            Long depId = (long)rnd.nextInt((int)DEP_CNT);
+            Long depId = (long)rnd.nextInt((int)(DEP_CNT - FREE_DEP_CNT));
+
+            if (id < FREE_EMP_CNT)
+                depId = null;
 
             String firstName = UUID.randomUUID().toString();
             String lastName = UUID.randomUUID().toString();
@@ -364,11 +373,13 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             for (String field : fields) {
                 String normField = field.toUpperCase();
 
-                Object val = row.get(normField);
 
-                if (val == null)
+                if (!row.containsKey(normField)) {
                     throw new RuntimeException("Field with name " + normField +
                         " not found in the table. Avaliable fields: " + row.keySet());
+                }
+
+                Object val = row.get(normField);
 
                 res.add(val);
             }
@@ -746,14 +757,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return doCommonJoin(left, right, filter, transformer, true, true);
     }
 
-    protected static<R> List<R> doCrossJoin(
-        IgniteCache<?, ?> left,
-        IgniteCache<?, ?> right,
-        IgniteBiPredicate<Map<String, Object>, Map<String, Object>> filter,
-        IgniteBiClosure<Map<String, Object>, Map<String, Object>, R> transformer) {
-
-        return doCommonJoin(left, right, filter, transformer, false, false);
-    }
 
     public void testInnerJoin() {
         testAllNodes(node -> {
@@ -762,7 +765,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                 "ON e.depId = d.id", node);
 
             List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
-                (emp, dep) -> dep.get("ID") != null && dep.get("ID").equals(emp.get("DEPID")),
+                (emp, dep) ->  sqlEq(dep.get("ID"), emp.get("DEPID")),
                 (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
             assertContainsEq(act.values(), expected);
@@ -776,7 +779,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                 "ON e.depId = d.id", node);
 
             List<List<Object>> expected = doLeftJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
-                (emp, dep) -> emp.get("DEPID").equals(dep.get("ID")),
+                (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
                 (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
             assertContainsEq(act.values(), expected);
@@ -790,11 +793,18 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                 "ON e.depId = d.id", node);
 
             List<List<Object>> expected = doRightJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
-                (emp, dep) -> emp.get("DEPID").equals(dep.get("ID")),
+                (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
                 (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
             assertContainsEq(act.values(), expected);
         });
+    }
+
+    public static boolean sqlEq(Object a, Object b) {
+        if (a == null || b == null)
+            return false;
+
+        return a.equals(b);
     }
 
     public void testCfg() {

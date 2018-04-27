@@ -34,8 +34,8 @@ public class ReplicatedSqlTest extends BaseSqlTest {
 
             assertContainsEq(act1.values(), act2.values());
 
-            List<List<Object>> expected = doCrossJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
-                (emp, dep) -> !emp.isEmpty() && !dep.isEmpty(),
+            List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
+                (emp, dep) -> true,
                 (emp, dep) -> Arrays.asList(emp.get("ID"), dep.get("ID")));
 
             assertContainsEq(act1.values(), expected);
