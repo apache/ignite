@@ -61,11 +61,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 @Measurement(iterations = 11)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
-@Threads(7)
+@Threads(1)
 @Warmup(iterations = 21)
 public class JmhStreamerAddDataBenchmark {
     /** Data amount. */
-    private static final int DATA_AMOUNT = 3072;
+    private static final int DATA_AMOUNT = 512;
 
     /** Ignite client instance. */
     private static final String IGNITE_CLIENT_INSTANCE_NAME = "client";

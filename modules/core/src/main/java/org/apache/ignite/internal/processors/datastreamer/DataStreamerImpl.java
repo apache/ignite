@@ -426,16 +426,16 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /**
      * Acquires read or write lock.
-     * @param readLock {@code True} if acquires read lock.
+     * @param writeLock {@code True} if acquires write lock.
      */
-    private void lock(boolean readLock) {
-        if (readLock)
-            spinLock.readLock();
-        else
+    private void lock(boolean writeLock) {
+        if (writeLock)
             spinLock.writeLock();
+        else
+            spinLock.readLock();
 
         if (closed.get() || cancelled) {
-            unlock(readLock);
+            unlock(writeLock);
 
             if (disconnectErr != null)
                 throw disconnectErr;
@@ -445,28 +445,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /**
-     * Acquires write lock.
-     */
-    private void lock(){
-        lock(false);
-    }
-
-    /**
      * Read or write unlock.
-     * @param readLock {@code True} if read unlock.
+     * @param writeLock {@code True} if write unlock.
      */
-    private void unlock(boolean readLock) {
-        if (readLock)
-            spinLock.readUnlock();
-        else
+    private void unlock(boolean writeLock) {
+        if (writeLock)
             spinLock.writeUnlock();
-    }
-
-    /**
-     * Write unlock.
-     */
-    private void unlock(){
-        unlock(false);
+        else
+            spinLock.readUnlock();
     }
 
     /** {@inheritDoc} */
@@ -645,7 +631,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         List entriesList;
 
-        lock(true);
+        lock(false);
 
         try {
             long threadId = Thread.currentThread().getId();
@@ -694,7 +680,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             return fut;
         }
         finally {
-            unlock(true);
+            unlock(false);
         }
     }
 
@@ -1209,7 +1195,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void flush() throws CacheException {
-        lock();
+        lock(true);
 
         try {
             doFlush();
@@ -1218,7 +1204,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             throw CU.convertToCacheException(e);
         }
         finally {
-            unlock();
+            unlock(true);
         }
     }
 
@@ -1245,7 +1231,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             throw GridCacheUtils.convertToCacheException(e);
         }
         finally {
-            unlock();
+            unlock(true);
         }
     }
 
