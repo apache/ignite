@@ -130,10 +130,10 @@ esac
 # start-up. For production use you may wish to adjust this for your
 # environment. MAX_HEAP_SIZE is the total amount of memory dedicated
 # to the Java heap. HEAP_NEWSIZE refers to the size of the young
-# generation. Both MAX_HEAP_SIZE and HEAP_NEWSIZE should be either set
+# sesGeneration. Both MAX_HEAP_SIZE and HEAP_NEWSIZE should be either set
 # or not (if you set one, set the other).
 #
-# The main trade-off for the young generation is that the larger it
+# The main trade-off for the young sesGeneration is that the larger it
 # is, the longer GC pause times will be. The shorter it is, the more
 # expensive GC will be (usually).
 #
