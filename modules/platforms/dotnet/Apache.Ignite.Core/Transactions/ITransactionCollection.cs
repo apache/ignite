@@ -15,30 +15,15 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.ApiParity
+namespace Apache.Ignite.Core.Transactions
 {
-    using Apache.Ignite.Core.Transactions;
-    using NUnit.Framework;
+    using System;
+    using System.Collections.Generic;
 
     /// <summary>
-    /// Tests that <see cref="ITransactions"/> has all APIs from Java Ignite interface.
+    /// Disposable readonly collection of <see cref="ITransaction"/>
     /// </summary>
-    public class TransactionsParityTest
+    public interface ITransactionCollection : ICollection<ITransaction>, IDisposable
     {
-        /** Members that are missing on .NET side and should be added in future. */
-        private static readonly string[] MissingMembers = {};
-
-        /// <summary>
-        /// Tests the API parity.
-        /// </summary>
-        [Test]
-        public void TestTransactions()
-        {
-            ParityTest.CheckInterfaceParity(
-                @"modules\core\src\main\java\org\apache\ignite\IgniteTransactions.java",
-                typeof(ITransactions),
-                null,
-                MissingMembers);
-        }
     }
 }
