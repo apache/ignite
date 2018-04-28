@@ -38,6 +38,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -258,9 +259,7 @@ public class ExchangeLatchManager {
      * @return Collection of alive server nodes with latch functionality.
      */
     private Collection<ClusterNode> getLatchParticipants(AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> aliveNodes = topVer == AffinityTopologyVersion.NONE
-                ? discovery.aliveServerNodes()
-                : discovery.discoCache(topVer).aliveServerNodes();
+        Collection<ClusterNode> aliveNodes = aliveNodesForTopologyVer(topVer);
 
         return aliveNodes
                 .stream()
@@ -273,9 +272,7 @@ public class ExchangeLatchManager {
      * @return Oldest alive server node with latch functionality.
      */
     @Nullable private ClusterNode getLatchCoordinator(AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> aliveNodes = topVer == AffinityTopologyVersion.NONE
-                ? discovery.aliveServerNodes()
-                : discovery.discoCache(topVer).aliveServerNodes();
+        Collection<ClusterNode> aliveNodes = aliveNodesForTopologyVer(topVer);
 
         return aliveNodes
                 .stream()
