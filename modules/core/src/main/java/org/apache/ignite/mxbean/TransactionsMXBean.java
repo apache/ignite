@@ -88,7 +88,6 @@ public interface TransactionsMXBean {
             "limit",
             "order",
             "detailed",
-            "kill"
         }
     )
     @MXBeanParametersDescriptions(
