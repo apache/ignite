@@ -217,6 +217,8 @@ public abstract class AbstractWalRecordsIterator
             return new IgniteBiTuple<>((WALPointer)actualFilePtr, postProcessRecord(rec));
         }
         catch (IOException | IgniteCheckedException e) {
+            log.error("Advance WAL record failed " + actualFilePtr, e);
+
             if (e instanceof WalSegmentTailReachedException)
                 throw (WalSegmentTailReachedException)e;
 
