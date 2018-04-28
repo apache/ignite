@@ -47,11 +47,13 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -855,14 +857,17 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     public void testNegativeFullOuterJoin() {
         testAllNodes(node -> {
-            String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+            String fullOuterJoinQry = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
                 "FROM Employee e FULL OUTER JOIN Department d " +
-                "ON e.%s = d.id";
+                "ON e.depId = d.id";
 
-            Result act = executeFrom(String.format(qryTpl, "depId"), node);
-            Result actNoidx = executeFrom(String.format(qryTpl, "depIdNoidx"), node);
+            GridTestUtils.assertThrows(log, () -> executeFrom(fullOuterJoinQry, node),
+                IgniteSQLException.class, "Failed to parse query.");
 
-            // todo: assert that exception message make sense.
+            String fullOuterJoinSubquery = "SELECT EmpId from (" + fullOuterJoinQry + ")";
+
+            GridTestUtils.assertThrows(log, () -> executeFrom(fullOuterJoinSubquery, node),
+                IgniteSQLException.class, "Failed to parse query.");
         });
     }
 
