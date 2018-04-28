@@ -31,7 +31,8 @@ public class ReplicatedSqlTest extends BaseSqlTest {
         testAllNodes(node -> {
             Result act1 = executeFrom("SELECT e.id, d.id FROM Employee e, Department d", node);
             Result act2 = executeFrom("SELECT e.id, d.id FROM Employee e CROSS JOIN Department d", node);
-
+            // todo : add no idx join.
+            // todo : compare with expected.
             assertContainsEq(act1.values(), act2.values());
 
             List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),

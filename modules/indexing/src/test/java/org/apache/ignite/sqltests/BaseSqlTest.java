@@ -853,6 +853,19 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    public void testNegativeFullOuterJoin() {
+        testAllNodes(node -> {
+            String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+                "FROM Employee e FULL OUTER JOIN Department d " +
+                "ON e.%s = d.id";
+
+            Result act = executeFrom(String.format(qryTpl, "depId"), node);
+            Result actNoidx = executeFrom(String.format(qryTpl, "depIdNoidx"), node);
+
+            // todo: assert that exception message make sense.
+        });
+    }
+
     /**
      * Returns true if arguments are equal in terms of sql: if both arguments are not null and content is equal.
      * Note that null is not equal to null.
