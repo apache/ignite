@@ -726,6 +726,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param reuseList Reuse list.
      * @param innerIos Inner IO versions.
      * @param leafIos Leaf IO versions.
+     * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
      */
     protected BPlusTree(
@@ -738,7 +739,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
         IOVersions<? extends BPlusLeafIO<L>> leafIos,
-        FailureProcessor failureProcessor
+        @Nullable FailureProcessor failureProcessor
     ) throws IgniteCheckedException {
         this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
         setIos(innerIos, leafIos);
@@ -752,6 +753,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param globalRmvId Remove ID.
      * @param metaPageId Meta page ID.
      * @param reuseList Reuse list.
+     * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
      */
     protected BPlusTree(
@@ -762,7 +764,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         AtomicLong globalRmvId,
         long metaPageId,
         ReuseList reuseList,
-        FailureProcessor failureProcessor
+        @Nullable FailureProcessor failureProcessor
     ) throws IgniteCheckedException {
         super(cacheId, pageMem, wal);
 
@@ -2571,7 +2573,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         final void checkLockRetry() throws IgniteCheckedException {
             if (lockRetriesCnt == 0) {
-                IgniteCheckedException e = new IgniteCheckedException("Maximum of retries " + getLockRetries() + " reached.");
+                IgniteCheckedException e = new IgniteCheckedException("Maximum of retries " + getLockRetries() + " reached. Tree may be corrupted. Node will be stopped.");
 
                 if (failureProcessor != null)
                     failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, e));

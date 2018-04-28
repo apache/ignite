@@ -75,9 +75,6 @@ public class H2TreeIndex extends GridH2IndexBase {
     /** */
     private final List<InlineIndexHelper> inlineIdxs;
 
-    /** */
-    private final IgniteLogger log;
-
     /** Cache context. */
     private final GridCacheContext<?, ?> cctx;
 
@@ -103,8 +100,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         assert segmentsCnt > 0 : segmentsCnt;
 
         this.cctx = cctx;
-
-        log = cctx.kernalContext().log(getClass());
 
         IndexColumn[] cols = colsList.toArray(new IndexColumn[colsList.size()]);
 

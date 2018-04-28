@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Metadata storage.
@@ -166,6 +167,7 @@ public class IndexStorageImpl implements IndexStorage {
          * @param reuseList Reuse list.
          * @param innerIos Inner IOs.
          * @param leafIos Leaf IOs.
+         * @param failureProcessor if the tree is corrupted.
          * @throws IgniteCheckedException If failed.
          */
         private MetaTree(
@@ -180,7 +182,7 @@ public class IndexStorageImpl implements IndexStorage {
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos,
             final boolean initNew,
-            FailureProcessor failureProcessor
+            @Nullable FailureProcessor failureProcessor
         ) throws IgniteCheckedException {
             super(treeName("meta", "Meta"), cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos, failureProcessor);
 

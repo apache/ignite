@@ -82,6 +82,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
      * @param rowCache Row cache.
+     * @param failureProcessor if the tree is corrupted.
      * @throws IgniteCheckedException If failed.
      */
     protected H2Tree(
@@ -98,7 +99,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         List<InlineIndexHelper> inlineIdxs,
         int inlineSize,
         @Nullable H2RowCache rowCache,
-        FailureProcessor failureProcessor
+        @Nullable FailureProcessor failureProcessor
     ) throws IgniteCheckedException {
         super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, failureProcessor);
 
