@@ -3195,6 +3195,67 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         GridCommunicationClient client = null;
         IgniteCheckedException errs = null;
 
+        try {
+            client = createTcpClient0(node, connIdx, addrs);
+        }
+        catch (IgniteCheckedException e) {
+            errs = e;
+        }
+
+        if (client == null) {
+            assert errs != null;
+
+            if (X.hasCause(errs, ConnectException.class))
+                LT.warn(log, "Failed to connect to a remote node " +
+                    "(make sure that destination node is alive and " +
+                    "operating system firewall is disabled on local and remote hosts) " +
+                    "[addrs=" + addrs + ']');
+
+            boolean commErrResolve = false;
+
+            IgniteSpiContext ctx = getSpiContext();
+
+            if (connectionError(errs) && ctx.communicationFailureResolveSupported()) {
+                commErrResolve = true;
+
+                ctx.resolveCommunicationFailure(node, errs);
+            }
+
+            if (!commErrResolve && enableForcibleNodeKill) {
+                if (ctx.node(node.id()) != null
+                    && (CU.clientNode(node) ||  !CU.clientNode(getLocalNode())) &&
+                    connectionError(errs)) {
+                    String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
+                        "cluster [" + "rmtNode=" + node + ']';
+
+                    if (enableTroubleshootingLog)
+                        U.error(log, msg, errs);
+                    else
+                        U.warn(log, msg);
+
+                    ctx.failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
+                        "rmtNode=" + node +
+                        ", errs=" + errs +
+                        ", connectErrs=" + X.getSuppressedList(errs) + ']');
+                }
+            }
+
+            if (!X.hasCause(errs, SocketTimeoutException.class, HandshakeTimeoutException.class,
+                IgniteSpiOperationTimeoutException.class))
+                throw errs;
+        }
+
+        return client;
+    }
+
+    protected GridCommunicationClient createTcpClient0(
+        ClusterNode node,
+        int connIdx,
+        Collection<InetSocketAddress> addrs
+    ) throws IgniteCheckedException {
+        GridCommunicationClient client = null;
+        IgniteCheckedException errs = null;
+
         int connectAttempts = 1;
 
         for (InetSocketAddress addr : addrs) {
@@ -3442,48 +3503,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 break;
         }
 
-        if (client == null) {
-            assert errs != null;
-
-            if (X.hasCause(errs, ConnectException.class))
-                LT.warn(log, "Failed to connect to a remote node " +
-                    "(make sure that destination node is alive and " +
-                    "operating system firewall is disabled on local and remote hosts) " +
-                    "[addrs=" + addrs + ']');
-
-            boolean commErrResolve = false;
-
-            IgniteSpiContext ctx = getSpiContext();
-
-            if (connectionError(errs) && ctx.communicationFailureResolveSupported()) {
-                commErrResolve = true;
-
-                ctx.resolveCommunicationFailure(node, errs);
-            }
-
-            if (!commErrResolve && enableForcibleNodeKill) {
-                if (ctx.node(node.id()) != null
-                    && (CU.clientNode(node) ||  !CU.clientNode(getLocalNode())) &&
-                    connectionError(errs)) {
-                    String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
-                        "cluster [" + "rmtNode=" + node + ']';
-
-                    if (enableTroubleshootingLog)
-                        U.error(log, msg, errs);
-                    else
-                        U.warn(log, msg);
-
-                    ctx.failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
-                        "rmtNode=" + node +
-                        ", errs=" + errs +
-                        ", connectErrs=" + X.getSuppressedList(errs) + ']');
-                }
-            }
-
-            if (!X.hasCause(errs, SocketTimeoutException.class, HandshakeTimeoutException.class,
-                IgniteSpiOperationTimeoutException.class))
-                throw errs;
-        }
+        if (errs != null)
+            throw errs;
 
         return client;
     }
