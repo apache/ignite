@@ -1355,6 +1355,28 @@ public class QueryUtils {
         // No-op.
     }
 
+    /**
+     * Checks whether string matches SQL pattern.
+     *
+     * {@code null} string does not match anything.
+     * Any non null (even empty) string matches empty and null pattern.
+     *
+     * @param str String.
+     * @param sqlPtrn Pattern in sql format.
+     * @return Whether string matches pattern.
+     */
+    public static boolean matches(@Nullable String str, @Nullable String sqlPtrn) {
+        if (str == null)
+            return false;
+
+        if (F.isEmpty(sqlPtrn))
+            return true;
+
+        String regexPtrn = sqlPtrn.replace("%", ".*").replace("_", ".");
+
+        return str.matches(regexPtrn);
+    }
+
     /** Property used for keyFieldName or valueFieldName */
     public static class KeyOrValProperty implements GridQueryProperty {
         /** */

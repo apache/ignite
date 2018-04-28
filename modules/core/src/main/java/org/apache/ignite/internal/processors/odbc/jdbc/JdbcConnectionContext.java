@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -30,6 +29,8 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
+
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 
 /**
  * JDBC Connection Context.
@@ -47,7 +48,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.4.0: adds default values for columns feature. */
     static final ClientListenerProtocolVersion VER_2_4_0 = ClientListenerProtocolVersion.create(2, 4, 0);
 
-    /** Version 2.5.0: adds precision and scale for columns feature. */
+    /** Version 2.5.0: adds precision and scale for columns feature; added auth and schema validation. */
     static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
 
     /** Current version. */
@@ -123,6 +124,12 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
 
+
+        String schemaName = DFLT_SCHEMA;
+
+        if (ver.compareTo(VER_2_5_0) >= 0)
+            schemaName = reader.readString();
+
         AuthorizationContext actx = null;
 
         try {
@@ -146,6 +153,12 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         catch (Exception e) {
             throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
         }
+
+        if (F.isEmpty(schemaName))
+            throw new IgniteCheckedException("Schema cannot be empty.");
+
+        if (!ctx.query().hasUserSchema(schemaName))
+             throw new IgniteCheckedException("Schema with name " + schemaName + " not found.");
 
         handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, actx, ver);

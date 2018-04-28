@@ -29,6 +29,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
@@ -80,6 +81,7 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_CL
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_FETCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.QRY_META;
+import static org.apache.ignite.internal.processors.query.QueryUtils.matches;
 
 /**
  * JDBC request handler.
@@ -905,14 +907,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         try {
             String schemaPtrn = req.schemaName();
 
-            Set<String> schemas = new HashSet<>();
-
-            for (String cacheName : ctx.cache().publicCacheNames()) {
-                for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                    if (matches(table.schemaName(), schemaPtrn))
-                        schemas.add(table.schemaName());
-                }
-            }
+            Set<String> schemas = ctx.query().getUserSchemasBy(schemaPtrn);
 
             return new JdbcResponse(new JdbcMetaSchemasResult(schemas));
         }
@@ -921,18 +916,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             return exceptionToResult(e);
         }
-    }
-
-    /**
-     * Checks whether string matches SQL pattern.
-     *
-     * @param str String.
-     * @param ptrn Pattern.
-     * @return Whether string matches pattern.
-     */
-    private static boolean matches(String str, String ptrn) {
-        return str != null && (F.isEmpty(ptrn) ||
-            str.matches(ptrn.replace("%", ".*").replace("_", ".")));
     }
 
     /**
