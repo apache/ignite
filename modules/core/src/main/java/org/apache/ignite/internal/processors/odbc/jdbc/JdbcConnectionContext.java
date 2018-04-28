@@ -48,8 +48,8 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.4.0: adds default values for columns feature. */
     static final ClientListenerProtocolVersion VER_2_4_0 = ClientListenerProtocolVersion.create(2, 4, 0);
 
-    /** Version 2.5.0. : added auth and schema validation. */
-    private static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
+    /** Version 2.5.0: adds precision and scale for columns feature; added auth and schema validation. */
+    static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
 
     /** Current version. */
     private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_0;

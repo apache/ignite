@@ -720,8 +720,8 @@ export default class IgniteConfigurationGenerator {
                         .intProperty('connectionTimeout')
                         .intProperty('requestTimeout')
                         .stringProperty('signerOverride')
-                        .intProperty('connectionTTL')
-                        .intProperty('connectionMaxIdleMillis')
+                        .longProperty('connectionTTL')
+                        .longProperty('connectionMaxIdleMillis')
                         .emptyBeanProperty('dnsResolver')
                         .intProperty('responseMetadataCacheSize')
                         .emptyBeanProperty('secureRandom')
@@ -790,7 +790,7 @@ export default class IgniteConfigurationGenerator {
         if (!available('2.3.0'))
             return cfg;
 
-        cfg.intProperty('longQueryWarningTimeout');
+        cfg.longProperty('longQueryWarningTimeout');
 
         if (_.get(cluster, 'clientConnectorConfiguration.enabled') !== true)
             return cfg;
@@ -837,7 +837,7 @@ export default class IgniteConfigurationGenerator {
 
                 colSpi.intProperty('activeJobsThreshold')
                     .intProperty('waitJobsThreshold')
-                    .intProperty('messageExpireTime')
+                    .longProperty('messageExpireTime')
                     .intProperty('maximumStealingAttempts')
                     .boolProperty('stealingEnabled')
                     .emptyBeanProperty('externalCollisionListener')
@@ -892,9 +892,9 @@ export default class IgniteConfigurationGenerator {
             .intProperty('sharedMemoryPort')
             .intProperty('directBuffer')
             .intProperty('directSendBuffer')
-            .intProperty('idleConnectionTimeout')
-            .intProperty('connectTimeout')
-            .intProperty('maxConnectTimeout')
+            .longProperty('idleConnectionTimeout')
+            .longProperty('connectTimeout')
+            .longProperty('maxConnectTimeout')
             .intProperty('reconnectCount')
             .intProperty('socketSendBuffer')
             .intProperty('socketReceiveBuffer')
@@ -903,19 +903,19 @@ export default class IgniteConfigurationGenerator {
             .intProperty('tcpNoDelay')
             .intProperty('ackSendThreshold')
             .intProperty('unacknowledgedMessagesBufferSize')
-            .intProperty('socketWriteTimeout')
+            .longProperty('socketWriteTimeout')
             .intProperty('selectorsCount')
             .emptyBeanProperty('addressResolver');
 
         if (commSpi.nonEmpty())
             cfg.beanProperty('communicationSpi', commSpi);
 
-        cfg.intProperty('networkTimeout')
-            .intProperty('networkSendRetryDelay')
+        cfg.longProperty('networkTimeout')
+            .longProperty('networkSendRetryDelay')
             .intProperty('networkSendRetryCount');
 
         if (available(['1.0.0', '2.3.0']))
-            cfg.intProperty('discoveryStartupDelay');
+            cfg.longProperty('discoveryStartupDelay');
 
         return cfg;
     }
@@ -930,9 +930,9 @@ export default class IgniteConfigurationGenerator {
                 .stringProperty('host')
                 .intProperty('port')
                 .intProperty('portRange')
-                .intProperty('idleTimeout')
-                .intProperty('idleQueryCursorTimeout')
-                .intProperty('idleQueryCursorCheckFrequency')
+                .longProperty('idleTimeout')
+                .longProperty('idleQueryCursorTimeout')
+                .longProperty('idleQueryCursorCheckFrequency')
                 .intProperty('receiveBufferSize')
                 .intProperty('sendBufferSize')
                 .intProperty('sendQueueLimit')
@@ -1020,11 +1020,11 @@ export default class IgniteConfigurationGenerator {
             .intProperty('localPort')
             .intProperty('localPortRange')
             .emptyBeanProperty('addressResolver')
-            .intProperty('socketTimeout')
-            .intProperty('ackTimeout')
-            .intProperty('maxAckTimeout')
-            .intProperty('networkTimeout')
-            .intProperty('joinTimeout')
+            .longProperty('socketTimeout')
+            .longProperty('ackTimeout')
+            .longProperty('maxAckTimeout')
+            .longProperty('networkTimeout')
+            .longProperty('joinTimeout')
             .intProperty('threadPriority');
 
         // Removed in ignite 2.0
@@ -1034,13 +1034,13 @@ export default class IgniteConfigurationGenerator {
                 .intProperty('maxMissedClientHeartbeats');
         }
 
-        discoSpi.intProperty('topHistorySize')
+        discoSpi.longProperty('topHistorySize')
             .emptyBeanProperty('listener')
             .emptyBeanProperty('dataExchange')
             .emptyBeanProperty('metricsProvider')
             .intProperty('reconnectCount')
-            .intProperty('statisticsPrintFrequency')
-            .intProperty('ipFinderCleanFrequency')
+            .longProperty('statisticsPrintFrequency')
+            .longProperty('ipFinderCleanFrequency')
             .emptyBeanProperty('authenticator')
             .intProperty('forceServerMode')
             .intProperty('clientReconnectDisabled');
@@ -1090,8 +1090,8 @@ export default class IgniteConfigurationGenerator {
             case 'Memory':
                 eventStorageBean = new Bean('org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi', 'eventStorage', eventStorage.Memory, clusterDflts.eventStorage.Memory);
 
-                eventStorageBean.intProperty('expireAgeMs')
-                    .intProperty('expireCount')
+                eventStorageBean.longProperty('expireAgeMs')
+                    .longProperty('expireCount')
                     .emptyBeanProperty('filter');
 
                 break;
@@ -1128,8 +1128,8 @@ export default class IgniteConfigurationGenerator {
 
         // Since ignite 2.0
         if (available('2.0.0')) {
-            cfg.intProperty('failureDetectionTimeout')
-                .intProperty('clientFailureDetectionTimeout');
+            cfg.longProperty('failureDetectionTimeout')
+                .longProperty('clientFailureDetectionTimeout');
         }
 
         _.forEach(cluster.failoverSpi, (spi) => {
@@ -1210,7 +1210,7 @@ export default class IgniteConfigurationGenerator {
         if (plannerBean)
             hadoopBean.beanProperty('mapReducePlanner', plannerBean);
 
-        hadoopBean.intProperty('finishedJobInfoTtl')
+        hadoopBean.longProperty('finishedJobInfoTtl')
             .intProperty('maxParallelTasks')
             .intProperty('maxTaskQueueSize')
             .arrayProperty('nativeLibraryNames', 'nativeLibraryNames', _.get(hadoop, 'nativeLibraryNames'));
@@ -1368,12 +1368,12 @@ export default class IgniteConfigurationGenerator {
 
         memoryBean.intProperty('pageSize')
             .intProperty('concurrencyLevel')
-            .intProperty('systemCacheInitialSize')
-            .intProperty('systemCacheMaxSize')
+            .longProperty('systemCacheInitialSize')
+            .longProperty('systemCacheMaxSize')
             .stringProperty('defaultMemoryPolicyName');
 
         if (memoryBean.valueOf('defaultMemoryPolicyName') === 'default')
-            memoryBean.intProperty('defaultMemoryPolicySize');
+            memoryBean.longProperty('defaultMemoryPolicySize');
 
         const policies = [];
 
@@ -1423,8 +1423,10 @@ export default class IgniteConfigurationGenerator {
             .intProperty('metricsSubIntervalCount')
             .longProperty('metricsRateTimeInterval')
             .longProperty('checkpointPageBufferSize')
-            .boolProperty('metricsEnabled')
-            .boolProperty('persistenceEnabled');
+            .boolProperty('metricsEnabled');
+
+        if (!plcBean.valueOf('swapPath'))
+            plcBean.boolProperty('persistenceEnabled');
 
         return plcBean;
     }
@@ -1438,8 +1440,8 @@ export default class IgniteConfigurationGenerator {
 
         storageBean.intProperty('pageSize')
             .intProperty('concurrencyLevel')
-            .intProperty('systemRegionInitialSize')
-            .intProperty('systemRegionMaxSize');
+            .longProperty('systemRegionInitialSize')
+            .longProperty('systemRegionMaxSize');
 
         const dfltDataRegionCfg = this.dataRegionConfiguration(_.get(dataStorageCfg, 'defaultDataRegionConfiguration'));
 
@@ -1461,7 +1463,7 @@ export default class IgniteConfigurationGenerator {
             storageBean.varArgProperty('dataRegionConfigurations', 'dataRegionConfigurations', dataRegionCfgs, 'org.apache.ignite.configuration.DataRegionConfiguration');
 
         storageBean.stringProperty('storagePath')
-            .intProperty('checkpointFrequency')
+            .longProperty('checkpointFrequency')
             .intProperty('checkpointThreads')
             .enumProperty('checkpointWriteOrder')
             .enumProperty('walMode')
@@ -1480,7 +1482,7 @@ export default class IgniteConfigurationGenerator {
             .longProperty('lockWaitTime')
             .intProperty('walThreadLocalBufferSize')
             .intProperty('metricsSubIntervalCount')
-            .intProperty('metricsRateTimeInterval')
+            .longProperty('metricsRateTimeInterval')
             .longProperty('walAutoArchiveAfterInactivity')
             .boolProperty('metricsEnabled')
             .boolProperty('alwaysWriteFullPages')
@@ -1594,13 +1596,13 @@ export default class IgniteConfigurationGenerator {
 
     // Generate metrics group.
     static clusterMetrics(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
-        cfg.intProperty('metricsExpireTime')
+        cfg.longProperty('metricsExpireTime')
             .intProperty('metricsHistorySize')
-            .intProperty('metricsLogFrequency');
+            .longProperty('metricsLogFrequency');
 
         // Since ignite 2.0
         if (available('2.0.0'))
-            cfg.intProperty('metricsUpdateFrequency');
+            cfg.longProperty('metricsUpdateFrequency');
 
         return cfg;
     }
@@ -1630,7 +1632,7 @@ export default class IgniteConfigurationGenerator {
         if (!available('2.1.0'))
             return cfg;
 
-        cfg.intProperty('longQueryWarningTimeout');
+        cfg.longProperty('longQueryWarningTimeout');
 
         if (_.get(cluster, 'sqlConnectorConfiguration.enabled') !== true)
             return cfg;
@@ -1663,7 +1665,7 @@ export default class IgniteConfigurationGenerator {
         bean.stringProperty('persistentStorePath')
             .boolProperty('metricsEnabled')
             .boolProperty('alwaysWriteFullPages')
-            .intProperty('checkpointingFrequency')
+            .longProperty('checkpointingFrequency')
             .longProperty('checkpointingPageBufferSize')
             .intProperty('checkpointingThreads')
             .stringProperty('walStorePath')
@@ -1675,7 +1677,7 @@ export default class IgniteConfigurationGenerator {
             .longProperty('walFsyncDelayNanos')
             .intProperty('walRecordIteratorBufferSize')
             .longProperty('lockWaitTime')
-            .intProperty('rateTimeInterval')
+            .longProperty('rateTimeInterval')
             .intProperty('tlbSize')
             .intProperty('subIntervals');
 
@@ -1782,7 +1784,7 @@ export default class IgniteConfigurationGenerator {
             .intProperty('igfsThreadPoolSize')
             .intProperty('rebalanceThreadPoolSize')
             .intProperty('utilityCacheThreadPoolSize', 'utilityCachePoolSize')
-            .intProperty('utilityCacheKeepAliveTime')
+            .longProperty('utilityCacheKeepAliveTime')
             .intProperty('asyncCallbackPoolSize')
             .intProperty('stripedPoolSize');
 
@@ -1817,7 +1819,7 @@ export default class IgniteConfigurationGenerator {
 
         bean.enumProperty('defaultTxConcurrency')
             .enumProperty('defaultTxIsolation')
-            .intProperty('defaultTxTimeout')
+            .longProperty('defaultTxTimeout')
             .intProperty('pessimisticTxLogLinger')
             .intProperty('pessimisticTxLogSize')
             .boolProperty('txSerializableEnabled')
@@ -2070,7 +2072,7 @@ export default class IgniteConfigurationGenerator {
             ccfg.enumProperty('memoryMode');
 
             if (ccfg.valueOf('memoryMode') !== 'OFFHEAP_VALUES')
-                ccfg.intProperty('offHeapMaxMemory');
+                ccfg.longProperty('offHeapMaxMemory');
         }
 
         // Since ignite 2.0
@@ -2105,7 +2107,7 @@ export default class IgniteConfigurationGenerator {
         if (available(['1.0.0', '2.0.0']))
             ccfg.intProperty('sqlOnheapRowCacheSize');
 
-        ccfg.intProperty('longQueryWarningTimeout')
+        ccfg.longProperty('longQueryWarningTimeout')
             .arrayProperty('indexedTypes', 'indexedTypes', indexedTypes, 'java.lang.Class')
             .intProperty('queryDetailMetricsSize')
             .arrayProperty('sqlFunctionClasses', 'sqlFunctionClasses', cache.sqlFunctionClasses, 'java.lang.Class');
@@ -2225,7 +2227,7 @@ export default class IgniteConfigurationGenerator {
             ccfg.boolProperty('writeBehindEnabled')
                 .intProperty('writeBehindBatchSize')
                 .intProperty('writeBehindFlushSize')
-                .intProperty('writeBehindFlushFrequency')
+                .longProperty('writeBehindFlushFrequency')
                 .intProperty('writeBehindFlushThreadCount');
 
             // Since ignite 2.0
@@ -2239,7 +2241,7 @@ export default class IgniteConfigurationGenerator {
     // Generate cache concurrency control group.
     static cacheConcurrency(cache, available, ccfg = this.cacheConfigurationBean(cache)) {
         ccfg.intProperty('maxConcurrentAsyncOperations')
-            .intProperty('defaultLockTimeout');
+            .longProperty('defaultLockTimeout');
 
         // Removed in ignite 2.0
         if (available(['1.0.0', '2.0.0']))
@@ -2297,11 +2299,11 @@ export default class IgniteConfigurationGenerator {
             ccfg.enumProperty('rebalanceMode')
                 .intProperty('rebalanceThreadPoolSize')
                 .intProperty('rebalanceBatchSize')
-                .intProperty('rebalanceBatchesPrefetchCount')
+                .longProperty('rebalanceBatchesPrefetchCount')
                 .intProperty('rebalanceOrder')
-                .intProperty('rebalanceDelay')
-                .intProperty('rebalanceTimeout')
-                .intProperty('rebalanceThrottle');
+                .longProperty('rebalanceDelay')
+                .longProperty('rebalanceTimeout')
+                .longProperty('rebalanceThrottle');
         }
 
         if (ccfg.includes('igfsAffinnityGroupSize')) {
@@ -2456,8 +2458,8 @@ export default class IgniteConfigurationGenerator {
     static igfsFragmentizer(igfs, cfg = this.igfsConfigurationBean(igfs)) {
         if (igfs.fragmentizerEnabled) {
             cfg.intProperty('fragmentizerConcurrentFiles')
-                .intProperty('fragmentizerThrottlingBlockLength')
-                .intProperty('fragmentizerThrottlingDelay');
+                .longProperty('fragmentizerThrottlingBlockLength')
+                .longProperty('fragmentizerThrottlingDelay');
         }
         else
             cfg.boolProperty('fragmentizerEnabled');
@@ -2490,7 +2492,7 @@ export default class IgniteConfigurationGenerator {
         if (available(['1.0.0', '2.0.0']))
             cfg.intProperty('maxSpaceSize');
 
-        cfg.intProperty('maximumTaskRangeLength')
+        cfg.longProperty('maximumTaskRangeLength')
             .intProperty('managementPort')
             .intProperty('perNodeBatchSize')
             .intProperty('perNodeParallelBatchCount')

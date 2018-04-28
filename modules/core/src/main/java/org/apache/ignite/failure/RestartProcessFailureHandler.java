@@ -20,6 +20,7 @@ package org.apache.ignite.failure;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -41,5 +42,10 @@ public class RestartProcessFailureHandler implements FailureHandler {
         ).start();
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(RestartProcessFailureHandler.class, this);
     }
 }

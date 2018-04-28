@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -395,13 +396,13 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             else
                 fut.prepare(req);
         }
-        catch (IgniteTxTimeoutCheckedException | IgniteTxOptimisticCheckedException e) {
+        catch (IgniteTxTimeoutCheckedException | IgniteTxRollbackCheckedException | IgniteTxOptimisticCheckedException e) {
             fut.onError(e);
         }
         catch (IgniteCheckedException e) {
             setRollbackOnly();
 
-            fut.onError(new IgniteTxRollbackCheckedException("Failed to prepare transaction: " + this, e));
+            fut.onError(new IgniteTxRollbackCheckedException("Failed to prepare transaction: " + CU.txString(this), e));
         }
 
         return chainOnePhasePrepare(fut);
@@ -418,6 +419,30 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         boolean primarySync = syncMode() == PRIMARY_SYNC;
 
         IgniteCheckedException err = null;
+
+        if (!commit) {
+            final IgniteInternalFuture<?> lockFut = tryRollbackAsync();
+
+            if (lockFut != null) {
+                if (lockFut instanceof GridDhtLockFuture)
+                    ((GridDhtLockFuture)lockFut).onError(rollbackException());
+                else {
+                    /**
+                     * Prevents race with {@link GridDhtTransactionalCacheAdapter#lockAllAsync
+                     * (GridCacheContext, ClusterNode, GridNearLockRequest, CacheEntryPredicate[])}
+                     */
+                    final IgniteInternalFuture finalPrepFut = prepFut;
+
+                    lockFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                        @Override public void apply(IgniteInternalFuture<?> ignored) {
+                            finishTx(false, finalPrepFut, fut);
+                        }
+                    });
+
+                    return;
+                }
+            }
+        }
 
         if (!commit && prepFut != null) {
             try {
@@ -446,6 +471,11 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             U.error(log, "Failed to finish transaction [commit=" + commit + ", tx=" + this + ']', e);
 
             err = e;
+        }
+        catch (Throwable t) {
+            fut.onDone(t);
+
+            throw t;
         }
 
         if (primarySync)

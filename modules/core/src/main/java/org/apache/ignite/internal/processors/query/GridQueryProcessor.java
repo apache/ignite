@@ -1487,10 +1487,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     public void dynamicTableCreate(String schemaName, QueryEntity entity, String templateName, String cacheName,
         String cacheGroup, @Nullable String dataRegion, String affinityKey, @Nullable CacheAtomicityMode atomicityMode,
-        @Nullable CacheWriteSynchronizationMode writeSyncMode, int backups, boolean ifNotExists)
+        @Nullable CacheWriteSynchronizationMode writeSyncMode, @Nullable Integer backups, boolean ifNotExists)
         throws IgniteCheckedException {
         assert !F.isEmpty(templateName);
-        assert backups >= 0;
+        assert backups == null || backups >= 0;
 
         CacheConfiguration<?, ?> ccfg = ctx.cache().getConfigFromTemplate(templateName);
 
@@ -1529,7 +1529,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (writeSyncMode != null)
             ccfg.setWriteSynchronizationMode(writeSyncMode);
 
-        ccfg.setBackups(backups);
+        if (backups != null)
+            ccfg.setBackups(backups);
 
         ccfg.setSqlSchema(schemaName);
         ccfg.setSqlEscapeAll(true);
@@ -2403,7 +2404,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         for (QueryField col : cols) {
             try {
                 props.add(new QueryBinaryProperty(ctx, col.name(), null, Class.forName(col.typeName()),
-                    false, null, !col.isNullable(), null));
+                    false, null, !col.isNullable(), null, -1, -1));
             }
             catch (ClassNotFoundException e) {
                 throw new SchemaOperationException("Class not found for new property: " + col.typeName());

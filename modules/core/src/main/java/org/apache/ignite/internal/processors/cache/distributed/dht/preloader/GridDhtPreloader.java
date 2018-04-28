@@ -187,7 +187,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
-        CachePartitionFullCountersMap cntrMap = top.fullUpdateCounters();
+        CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
         for (int p = 0; p < partCnt; p++) {
             if (ctx.exchange().hasPendingExchange()) {
@@ -202,7 +202,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             // If partition belongs to local node.
             if (aff.get(p).contains(ctx.localNode())) {
-                GridDhtLocalPartition part = top.localPartition(p, topVer, true, true);
+                GridDhtLocalPartition part = top.localPartition(p);
 
                 assert part != null;
                 assert part.id() == p;
@@ -226,7 +226,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     part = top.localPartition(p, topVer, true);
                 }
 
-                assert part != null && part.state() == MOVING : "Partition has invalid state for rebalance " + part;
+                assert part.state() == MOVING : "Partition has invalid state for rebalance " + aff.topologyVersion() + " " + part;
 
                 ClusterNode histSupplier = null;
 
@@ -251,7 +251,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                         );
                     }
 
-                    msg.partitions().addHistorical(p, cntrMap.initialUpdateCounter(p), cntrMap.updateCounter(p), partCnt);
+                    msg.partitions().addHistorical(p, part.initialUpdateCounter(), countersMap.updateCounter(p), partCnt);
                 }
                 else {
                     Collection<ClusterNode> picked = pickOwners(p, topVer);

@@ -17,11 +17,6 @@
 
 package org.apache.ignite.ml.nn;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import org.apache.ignite.ml.trainers.MultiLabelDatasetTrainer;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
@@ -37,8 +32,13 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
-import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
+import org.apache.ignite.ml.trainers.MultiLabelDatasetTrainer;
 import org.apache.ignite.ml.util.Utils;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 /**
  * Multilayer perceptron trainer based on partition based {@link Dataset}.
@@ -46,8 +46,8 @@ import org.apache.ignite.ml.util.Utils;
  * @param <P> Type of model update used in this trainer.
  */
 public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrainer<MultilayerPerceptron> {
-    /** Multilayer perceptron architecture that defines layers and activators. */
-    private final MLPArchitecture arch;
+    /** Multilayer perceptron architecture supplier that defines layers and activators. */
+    private final IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier;
 
     /** Loss function to be minimized during the training. */
     private final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
@@ -81,7 +81,25 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
     public MLPTrainer(MLPArchitecture arch, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
         UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy, int maxIterations, int batchSize,
         int locIterations, long seed) {
-        this.arch = arch;
+        this(dataset -> arch, loss, updatesStgy, maxIterations, batchSize, locIterations, seed);
+    }
+
+    /**
+     * Constructs a new instance of multilayer perceptron trainer.
+     *
+     * @param archSupplier Multilayer perceptron architecture supplier that defines layers and activators.
+     * @param loss Loss function to be minimized during the training.
+     * @param updatesStgy Update strategy that defines how to update model parameters during the training.
+     * @param maxIterations Maximal number of iterations before the training will be stopped.
+     * @param batchSize Batch size (per every partition).
+     * @param locIterations Maximal number of local iterations before synchronization.
+     * @param seed Random initializer seed.
+     */
+    public MLPTrainer(IgniteFunction<Dataset<EmptyContext, SimpleLabeledDatasetData>, MLPArchitecture> archSupplier,
+        IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
+        UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy, int maxIterations, int batchSize,
+        int locIterations, long seed) {
+        this.archSupplier = archSupplier;
         this.loss = loss;
         this.updatesStgy = updatesStgy;
         this.maxIterations = maxIterations;
@@ -94,13 +112,14 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
     public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
 
-        MultilayerPerceptron mdl = new MultilayerPerceptron(arch, new RandomInitializer(seed));
-        ParameterUpdateCalculator<? super MultilayerPerceptron, P> updater = updatesStgy.getUpdatesCalculator();
-
         try (Dataset<EmptyContext, SimpleLabeledDatasetData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
             new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor)
         )) {
+            MLPArchitecture arch = archSupplier.apply(dataset);
+            MultilayerPerceptron mdl = new MultilayerPerceptron(arch, new RandomInitializer(seed));
+            ParameterUpdateCalculator<? super MultilayerPerceptron, P> updater = updatesStgy.getUpdatesCalculator();
+
             for (int i = 0; i < maxIterations; i += locIterations) {
 
                 MultilayerPerceptron finalMdl = mdl;
@@ -163,12 +182,12 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
                 P update = updatesStgy.allUpdatesReducer().apply(totUp);
                 mdl = updater.update(mdl, update);
             }
+
+            return mdl;
         }
         catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        return mdl;
     }
 
     /**

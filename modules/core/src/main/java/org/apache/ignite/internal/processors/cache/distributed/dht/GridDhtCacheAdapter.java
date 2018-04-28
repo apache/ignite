@@ -970,6 +970,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 try {
                     ctx.io().send(nodeId, res, ctx.ioPolicy());
                 }
+                catch (ClusterTopologyCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to send get response to node, node failed: " + nodeId);
+                }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
                         ",req=" + req + ", res=" + res + ']', e);
