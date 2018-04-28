@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -56,7 +55,19 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public String getActiveTransactions(Long minDuration, Integer minSize, String prj, String consistentIds,
+    @Override public String listActiveTransactions(Long minDuration, Integer minSize, String prj, String consistentIds,
+        String xid, String lbRegex, Integer limit, String order, boolean detailed) {
+        return listOrKillActiveTransactions(minDuration, minSize, prj, consistentIds, xid, lbRegex, limit, order, detailed, false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String killActiveTransactions(Long minDuration, Integer minSize, String prj, String consistentIds,
+        String xid, String lbRegex, Integer limit, String order, boolean detailed) {
+        return listOrKillActiveTransactions(minDuration, minSize, prj, consistentIds, xid, lbRegex, limit, order, detailed, true);
+    }
+
+    /** {@inheritDoc} */
+    private String listOrKillActiveTransactions(Long minDuration, Integer minSize, String prj, String consistentIds,
         String xid, String lbRegex, Integer limit, String order, boolean detailed, boolean kill) {
         try {
             IgniteCompute compute = ctx.cluster().get().compute();
