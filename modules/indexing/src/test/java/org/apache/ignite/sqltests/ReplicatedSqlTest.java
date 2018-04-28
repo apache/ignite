@@ -29,17 +29,19 @@ public class ReplicatedSqlTest extends BaseSqlTest {
 
     public void testCrossJoin() {
         testAllNodes(node -> {
-            Result act1 = executeFrom("SELECT e.id, d.id FROM Employee e, Department d", node);
-            Result act2 = executeFrom("SELECT e.id, d.id FROM Employee e CROSS JOIN Department d", node);
-            // todo : add no idx join.
-            // todo : compare with expected.
-            assertContainsEq(act1.values(), act2.values());
+            Result act1 = executeFrom("SELECT e.id, e.depIdNoidx, d.id FROM Employee e, Department d", node);
+            Result act2 = executeFrom("SELECT e.id, e.depIdNoidx, d.id FROM Employee e CROSS JOIN Department d", node);
+            // todo : verify metadata (field names)
 
             List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
                 (emp, dep) -> true,
-                (emp, dep) -> Arrays.asList(emp.get("ID"), dep.get("ID")));
+                (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("DEPIDNOIDX"), dep.get("ID")));
 
-            assertContainsEq(act1.values(), expected);
+            assertContainsEq("Implicit (comma sign) version of CROSS JOIN returned unexpected result",
+                act1.values(), expected);
+
+            assertContainsEq("Explicit version of CROSS JOIN returned unexpected result",
+                act2.values(), expected);
 
             assertEquals("Result size of the cross join is unexpected",
                 DEP_CNT * EMP_CNT, act1.values().size());
