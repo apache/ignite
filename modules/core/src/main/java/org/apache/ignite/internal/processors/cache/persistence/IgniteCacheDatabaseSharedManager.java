@@ -464,31 +464,31 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (regCfg.getInitialSize() < MIN_PAGE_MEMORY_SIZE || regCfg.getMaxSize() < MIN_PAGE_MEMORY_SIZE)
             throw new IgniteCheckedException("DataRegion must have size more than 10MB (use " +
                 "DataRegionConfiguration.initialSize and .maxSize properties to set correct size in bytes) " +
-                "[name=" + regCfg.getName() + ", initialSize=" + U.readableSize(regCfg.getInitialSize(), true) +
-                ", maxSize=" + U.readableSize(regCfg.getMaxSize(), true) + "]"
+                "[name=" + regCfg.getName() + ", initialSize=" + U.readableSize(regCfg.getInitialSize(), false) +
+                ", maxSize=" + U.readableSize(regCfg.getMaxSize(), false) + "]"
             );
 
         if (regCfg.getMaxSize() < regCfg.getInitialSize()) {
             if (regCfg.getInitialSize() != Math.min(DataStorageConfiguration.DFLT_DATA_REGION_MAX_SIZE,
                 DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE)) {
                 throw new IgniteCheckedException("DataRegion maxSize must not be smaller than initialSize" +
-                    "[name=" + regCfg.getName() + ", initialSize=" + U.readableSize(regCfg.getInitialSize(), true) +
-                    ", maxSize=" + U.readableSize(regCfg.getMaxSize(), true) + "]");
+                    "[name=" + regCfg.getName() + ", initialSize=" + U.readableSize(regCfg.getInitialSize(), false) +
+                    ", maxSize=" + U.readableSize(regCfg.getMaxSize(), false) + "]");
             }
 
             regCfg.setInitialSize(regCfg.getMaxSize());
 
-            LT.warn(log, "DataRegion maxSize=" + U.readableSize(regCfg.getMaxSize(), true) +
+            LT.warn(log, "DataRegion maxSize=" + U.readableSize(regCfg.getMaxSize(), false) +
                 " is smaller than defaultInitialSize=" +
                 U.readableSize(DataStorageConfiguration.DFLT_DATA_REGION_INITIAL_SIZE, true) +
-                ", setting initialSize to " + U.readableSize(regCfg.getMaxSize(), true));
+                ", setting initialSize to " + U.readableSize(regCfg.getMaxSize(), false));
         }
 
         if (U.jvm32Bit() && regCfg.getInitialSize() > MAX_PAGE_MEMORY_INIT_SIZE_32_BIT)
             throw new IgniteCheckedException("DataRegion initialSize exceeds 2GB on 32-bit JVM (use " +
                 "DataRegionConfiguration.initialSize property to set correct size in bytes or use 64-bit JVM) " +
                 "[name=" + regCfg.getName() +
-                ", size=" + U.readableSize(regCfg.getInitialSize(), true) + "]");
+                ", size=" + U.readableSize(regCfg.getInitialSize(), false) + "]");
     }
 
     /**
