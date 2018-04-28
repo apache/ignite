@@ -109,19 +109,25 @@ public abstract class PageIO {
     public static final int PAGE_ID_OFF = CRC_OFF + 4;
 
     /** */
-    private static final int RESERVED_1_OFF = PAGE_ID_OFF + 8;
+    public static final int ROTATED_ID_PART_OFF = PAGE_ID_OFF + 8;
 
     /** */
-    private static final int RESERVED_2_OFF = RESERVED_1_OFF + 8;
+    private static final int RESERVED_BYTE_OFF = ROTATED_ID_PART_OFF + 1;
+
+    /** */
+    private static final int RESERVED_SHORT_OFF = RESERVED_BYTE_OFF + 1;
+
+    /** */
+    private static final int RESERVED_INT_OFF = RESERVED_SHORT_OFF + 2;
+
+    /** */
+    private static final int RESERVED_2_OFF = RESERVED_INT_OFF + 4;
 
     /** */
     private static final int RESERVED_3_OFF = RESERVED_2_OFF + 8;
 
     /** */
-    public static final int ROTATED_ID_PART_OFF = RESERVED_1_OFF;
-
-    /** */
-    public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8; // 40=type(2)+ver(2)+crc(4)+pageId(8)+reserved(3*8)
+    public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8; // 40=type(2)+ver(2)+crc(4)+pageId(8)+rotatedIdPart(1)+reserved(1+2+4+2*8)
 
     /* All the page types. */
 
@@ -437,7 +443,7 @@ public abstract class PageIO {
         setPageId(pageAddr, pageId);
         setCrc(pageAddr, 0);
 
-        PageUtils.putLong(pageAddr, RESERVED_1_OFF, 0L);
+        PageUtils.putLong(pageAddr, ROTATED_ID_PART_OFF, 0L); // 1 + reserved(1+2+4)
         PageUtils.putLong(pageAddr, RESERVED_2_OFF, 0L);
         PageUtils.putLong(pageAddr, RESERVED_3_OFF, 0L);
     }

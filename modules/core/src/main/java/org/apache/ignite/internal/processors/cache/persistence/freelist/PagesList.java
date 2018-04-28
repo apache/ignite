@@ -35,6 +35,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListInitNewPageR
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListRemovePageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetNextRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetPreviousRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
@@ -1115,14 +1116,20 @@ public abstract class PagesList extends DataStructure {
 
                             initIo.initNewPage(tailAddr, dataPageId, pageSize());
 
-                            int itemId = PageIdUtils.itemId(tailId);
+                            boolean needWalDeltaRecord = needWalDeltaRecord(tailId, tailPage, null);
 
-                            if (itemId != 0)
-                                PageIO.setRotatedIdPart(tailAddr, itemId);
-
-                            if (needWalDeltaRecord(tailId, tailPage, null)) {
+                            if (needWalDeltaRecord) {
                                 wal.log(new InitNewPageRecord(grpId, tailId, initIo.getType(),
                                     initIo.getVersion(), dataPageId));
+                            }
+
+                            int itemId = PageIdUtils.itemId(tailId);
+
+                            if (itemId != 0) {
+                                PageIO.setRotatedIdPart(tailAddr, itemId);
+
+                                if (needWalDeltaRecord)
+                                    wal.log(new RotatedIdPartRecord(grpId, tailId, itemId));
                             }
                         }
                         else

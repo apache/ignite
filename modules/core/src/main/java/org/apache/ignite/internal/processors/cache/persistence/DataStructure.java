@@ -25,6 +25,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -356,6 +357,8 @@ public abstract class DataStructure implements PageLockListener {
         Boolean walPlc) throws IgniteCheckedException {
         long recycled = 0;
 
+        boolean needWalDeltaRecord = needWalDeltaRecord(pageId, page, walPlc);
+
         if (PageIdUtils.tag(pageId) == FLAG_DATA) {
             int rotatedIdPart = PageIO.getRotatedIdPart(pageAddr);
 
@@ -363,6 +366,9 @@ public abstract class DataStructure implements PageLockListener {
                 recycled = PageIdUtils.link(pageId, rotatedIdPart);
 
                 PageIO.setRotatedIdPart(pageAddr, 0);
+
+                if (needWalDeltaRecord)
+                    wal.log(new RotatedIdPartRecord(grpId, pageId, 0));
             }
         }
 
@@ -371,7 +377,7 @@ public abstract class DataStructure implements PageLockListener {
 
         PageIO.setPageId(pageAddr, recycled);
 
-        if (needWalDeltaRecord(pageId, page, walPlc))
+        if (needWalDeltaRecord)
             wal.log(new RecycleRecord(grpId, pageId, recycled));
 
         return recycled;

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
@@ -475,11 +476,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             if (written != 0)
                 memMetrics.incrementLargeEntriesPages();
 
-            int freeSpace = rowSize - written;
+            int remaining = rowSize - written;
 
             long pageId = 0L;
 
-            for (int b = freeSpace < MIN_SIZE_FOR_DATA_PAGE ? bucket(freeSpace, false) + 1 : REUSE_BUCKET; b < BUCKETS; b++) {
+            for (int b = remaining < MIN_SIZE_FOR_DATA_PAGE ? bucket(remaining, false) + 1 : REUSE_BUCKET; b < BUCKETS; b++) {
                 pageId = takeEmptyPage(b, ioVersions());
 
                 if (pageId != 0L)
@@ -491,36 +492,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             if (pageId == 0L)
                 pageId = allocateDataPage(row.partition());
             else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) {
-                long reusedPageId = pageId;
-
-                pageId = PageIdUtils.pageId(row.partition(), PageIdAllocator.FLAG_DATA, PageIdUtils.pageIndex(reusedPageId));
-
-                long reusedPage = acquirePage(reusedPageId);
-                try {
-                    long reusedPageAddr = writeLock(reusedPageId, reusedPage);
-
-                    assert reusedPageAddr != 0;
-
-                    try {
-                        initIo.initNewPage(reusedPageAddr, pageId, pageSize());
-
-                        int itemId = PageIdUtils.itemId(reusedPageId);
-
-                        if (itemId != 0)
-                            PageIO.setRotatedIdPart(reusedPageAddr, itemId);
-
-                        if (needWalDeltaRecord(reusedPageId, reusedPage, null)) {
-                            wal.log(new InitNewPageRecord(grpId, reusedPageId, initIo.getType(),
-                                initIo.getVersion(), pageId));
-                        }
-                    }
-                    finally {
-                        writeUnlock(reusedPageId, reusedPage, reusedPageAddr, true);
-                    }
-                }
-                finally {
-                    releasePage(reusedPageId, reusedPage);
-                }
+                pageId = preparePageForReuse(pageId, row, initIo);
 
                 initIo = null;
             }
@@ -535,6 +507,56 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             assert written != FAIL_I; // We can't fail here.
         }
         while (written != COMPLETE);
+    }
+
+    /**
+     * Reused non-data page must obtain data page id, then initialized by {@code initIo}
+     * and non-zero {@code itemId} of reused page id must be saved into special place.
+     *
+     * @param pageId Page id.
+     * @param row Row.
+     * @param initIo Initial io.
+     * @return Prepared page id.
+     */
+    private long preparePageForReuse(long pageId, T row, AbstractDataPageIO<T> initIo) throws IgniteCheckedException {
+        long reusedPageId = pageId;
+
+        pageId = PageIdUtils.pageId(row.partition(), PageIdAllocator.FLAG_DATA, PageIdUtils.pageIndex(reusedPageId));
+
+        long reusedPage = acquirePage(reusedPageId);
+        try {
+            long reusedPageAddr = writeLock(reusedPageId, reusedPage);
+
+            assert reusedPageAddr != 0;
+
+            try {
+                initIo.initNewPage(reusedPageAddr, pageId, pageSize());
+
+                boolean needWalDeltaRecord = needWalDeltaRecord(reusedPageId, reusedPage, null);
+
+                if (needWalDeltaRecord) {
+                    wal.log(new InitNewPageRecord(grpId, reusedPageId, initIo.getType(),
+                        initIo.getVersion(), pageId));
+                }
+
+                int itemId = PageIdUtils.itemId(reusedPageId);
+
+                if (itemId != 0) {
+                    PageIO.setRotatedIdPart(reusedPageAddr, itemId);
+
+                    if (needWalDeltaRecord)
+                        wal.log(new RotatedIdPartRecord(grpId, reusedPageId, itemId));
+                }
+            }
+            finally {
+                writeUnlock(reusedPageId, reusedPage, reusedPageAddr, true);
+            }
+        }
+        finally {
+            releasePage(reusedPageId, reusedPage);
+        }
+
+        return pageId;
     }
 
     /** {@inheritDoc} */
