@@ -132,7 +132,7 @@ class BinaryType {
         // is Enum
         buffer.writeBoolean(this._isEnum);
         if (this._isEnum) {
-            // TODO
+            buffer.writeInteger(0);
         }
     }
 
@@ -169,7 +169,11 @@ class BinaryType {
         // is Enum
         this._isEnum = buffer.readBoolean();
         if (this._isEnum) {
-            // TODO
+            const fieldsCount = buffer.readInteger();
+            for (let i = 0; i < fieldsCount; i++) {
+                await BinaryReader.readObject(buffer);
+                buffer.readInteger();
+            }
         }
     }
 }

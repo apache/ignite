@@ -281,7 +281,7 @@ class BinaryObject {
      */
     async _write(buffer) {
         if (this._buffer && !this._modified) {
-            buffer._writeBuffer(this._buffer.getSlice(this._startPos, this._startPos + this._length));
+            buffer.writeBuffer(this._buffer.buffer, this._startPos, this._startPos + this._length);
         }
         else {
             await this._typeBuilder.finalize();
@@ -460,7 +460,7 @@ class BinaryObjectField {
     async _writeValue(buffer, expectedTypeCode) {
         const offset = buffer.position;
         if (this._buffer) {
-            buffer._writeBuffer(this._buffer.getSlice(this._offset, this._offset + this._length));
+            buffer.writeBuffer(this._buffer.buffer, this._offset, this._offset + this._length);
         }
         else {
             BinaryUtils.checkCompatibility(this._value, expectedTypeCode);

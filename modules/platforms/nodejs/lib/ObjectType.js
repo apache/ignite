@@ -35,6 +35,7 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
  * @property CHAR 7
  * @property BOOLEAN 8
  * @property STRING 9
+ * @property UUID 10
  * @property DATE 11
  * @property BYTE_ARRAY 12
  * @property SHORT_ARRAY 13
@@ -45,7 +46,16 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
  * @property CHAR_ARRAY 18
  * @property BOOLEAN_ARRAY 19
  * @property STRING_ARRAY 20
+ * @property UUID_ARRAY 21
  * @property DATE_ARRAY 22
+ * @property ENUM 28
+ * @property ENUM_ARRAY 29
+ * @property DECIMAL 30
+ * @property DECIMAL_ARRAY 31
+ * @property TIMESTAMP 33
+ * @property TIMESTAMP_ARRAY 34
+ * @property TIME 36
+ * @property TIME_ARRAY 37
  */
 const PRIMITIVE_TYPE = Object.freeze({
     BYTE : 1,
@@ -57,6 +67,7 @@ const PRIMITIVE_TYPE = Object.freeze({
     CHAR : 7,
     BOOLEAN : 8,
     STRING : 9,
+    UUID : 10,
     DATE : 11,
     BYTE_ARRAY : 12,
     SHORT_ARRAY : 13,
@@ -67,7 +78,16 @@ const PRIMITIVE_TYPE = Object.freeze({
     CHAR_ARRAY : 18,
     BOOLEAN_ARRAY : 19,
     STRING_ARRAY : 20,
-    DATE_ARRAY : 22
+    UUID_ARRAY : 21,
+    DATE_ARRAY : 22,
+    ENUM : 28,
+    ENUM_ARRAY : 29,
+    DECIMAL : 30,
+    DECIMAL_ARRAY : 31,
+    TIMESTAMP : 33,
+    TIMESTAMP_ARRAY : 34,
+    TIME : 36,
+    TIME_ARRAY : 37
 });
 
 /**
@@ -76,12 +96,14 @@ const PRIMITIVE_TYPE = Object.freeze({
  * @enum
  * @readonly
  * @property OBJECT_ARRAY 23
+ * @property COLLECTION 24
  * @property MAP 25
  * @property NULL 101
  * @property COMPLEX_OBJECT 103
  */
 const COMPOSITE_TYPE = Object.freeze({
     OBJECT_ARRAY : 23,
+    COLLECTION : 24,
     MAP : 25,
     NULL : 101,
     COMPLEX_OBJECT : 103
@@ -196,7 +218,8 @@ class MapObjectType extends CompositeType {
      * will try to make automatic mapping between JavaScript types and Ignite object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      * 
-     * @param {integer} [mapSubType=MAP_SUBTYPE.HASH_MAP] - map subtype, one of the {@link MapObjectType.MAP_SUBTYPE} constants.
+     * @param {MapObjectType.MAP_SUBTYPE} [mapSubType=MAP_SUBTYPE.HASH_MAP] - map subtype, one of the 
+     *   {@link MapObjectType.MAP_SUBTYPE} constants.
      * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [keyType=null] - type of the keys in the map:
      *   - either a type code of primitive (simple) type
      *   - or an instance of class representing non-primitive (composite) type
@@ -214,11 +237,82 @@ class MapObjectType extends CompositeType {
         super(COMPOSITE_TYPE.MAP);
         const BinaryUtils = require('./internal/BinaryUtils');
         ArgumentChecker.hasValueFrom(mapSubType, 'mapSubType', false, MapObjectType.MAP_SUBTYPE);
-        this._mapSubType = mapSubType;
+        this._subType = mapSubType;
         BinaryUtils.checkObjectType(keyType, 'keyType');
         BinaryUtils.checkObjectType(valueType, 'valueType');
         this._keyType = keyType;
         this._valueType = valueType;
+    }
+}
+
+/**
+ * Supported kinds of collections.
+ * @typedef CollectionObjectType.COLLECTION_SUBTYPE
+ * @enum
+ * @readonly
+ * @property USER_SET -1
+ * @property USER_COL 0
+ * @property ARRAY_LIST 1
+ * @property LINKED_LIST 2
+ * @property HASH_SET 3
+ * @property LINKED_HASH_SET 4
+ * @property SINGLETON_LIST 5
+ */
+const COLLECTION_SUBTYPE = Object.freeze({
+    USER_SET : -1,
+    USER_COL : 0,
+    ARRAY_LIST : 1,
+    LINKED_LIST : 2,
+    HASH_SET : 3,
+    LINKED_HASH_SET : 4,
+    SINGLETON_LIST : 5
+});
+
+/**
+ * ???
+ *
+ * @extends CompositeType
+ */
+class CollectionObjectType extends CompositeType {
+    static get COLLECTION_SUBTYPE() {
+        return COLLECTION_SUBTYPE;
+    }
+
+    /**
+     * Public constructor.
+     *
+     * ???
+     * 
+     * @param {CollectionObjectType.COLLECTION_SUBTYPE} collectionSubType - collection subtype, one of the 
+     *  {@link CollectionObjectType.COLLECTION_SUBTYPE} constants.
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [elementType=null] - type of the elements in the collection:
+     *   - either a type code of primitive (simple) type
+     *   - or an instance of class representing non-primitive (composite) type
+     *   - or null (or not specified) that means the type is not specified
+     *
+     * @return {CollectionObjectType} - new CollectionObjectType instance
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    constructor(collectionSubType, elementType = null) {
+        super(COMPOSITE_TYPE.COLLECTION);
+        const BinaryUtils = require('./internal/BinaryUtils');
+        ArgumentChecker.hasValueFrom(
+            collectionSubType, 'collectionSubType', false, CollectionObjectType.COLLECTION_SUBTYPE);
+        this._subType = collectionSubType;
+        BinaryUtils.checkObjectType(elementType, 'elementType');
+        this._elementType = elementType;
+    }
+
+    /** Private methods */
+
+    /**
+     * @ignore
+     */
+    _isSet() {
+        return this._subType === CollectionObjectType.COLLECTION_SUBTYPE.USER_SET ||
+            this._subType === CollectionObjectType.COLLECTION_SUBTYPE.HASH_SET ||
+            this._subType === CollectionObjectType.COLLECTION_SUBTYPE.LINKED_HASH_SET;
     }
 }
 
@@ -343,5 +437,6 @@ class ObjectArrayType extends CompositeType {
 module.exports.ObjectType = ObjectType;
 module.exports.CompositeType = CompositeType;
 module.exports.MapObjectType = MapObjectType;
+module.exports.CollectionObjectType = CollectionObjectType;
 module.exports.ComplexObjectType = ComplexObjectType;
 module.exports.ObjectArrayType = ObjectArrayType;

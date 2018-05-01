@@ -66,6 +66,12 @@ class ArgumentChecker {
         }
     }
 
+    static isInteger(arg, argName) {
+        if (arg === null || arg === undefined || !Number.isInteger(arg)) {
+            throw Errors.IgniteClientError.illegalArgumentError(Util.format('"%s" argument should be integer', argName));
+        }
+    }
+
     static invalidArgument(arg, argName, type) {
         if (arg !== null && arg !== undefined) {
             throw Errors.IgniteClientError.illegalArgumentError(

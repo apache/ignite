@@ -20,9 +20,13 @@
 module.exports = require('./lib/IgniteClient');
 module.exports.ObjectType = require('./lib/ObjectType').ObjectType;
 module.exports.MapObjectType = require('./lib/ObjectType').MapObjectType;
+module.exports.CollectionObjectType = require('./lib/ObjectType').CollectionObjectType;
 module.exports.ComplexObjectType = require('./lib/ObjectType').ComplexObjectType;
 module.exports.ObjectArrayType = require('./lib/ObjectType').ObjectArrayType;
 module.exports.BinaryObject = require('./lib/BinaryObject');
+module.exports.Timestamp = require('./lib/Timestamp');
+module.exports.Enum = require('./lib/Enum');
+module.exports.Decimal = require('decimal.js');
 module.exports.Errors = require('./lib/Errors');
 module.exports.IgniteClientConfiguration = require('./lib/IgniteClientConfiguration');
 module.exports.TlsConfiguration = require('./lib/IgniteClientConfiguration').TlsConfiguration;

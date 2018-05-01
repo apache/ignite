@@ -57,6 +57,10 @@ class MessageBuffer {
         return this.getSlice(0, this.length);
     }
 
+    get buffer() {
+        return this._buffer;
+    }
+
     getSlice(start, end) {
         return this._buffer.slice(start, end);
     }
@@ -83,7 +87,7 @@ class MessageBuffer {
             throw Errors.IgniteClientError.valueCastError(value, BinaryUtils.TYPE_CODE.LONG);
         }
         const buffer = Buffer.from(value.toBytesLE());
-        this._writeBuffer(buffer);
+        this.writeBuffer(buffer);
     }
 
     writeFloat(value) {
@@ -137,7 +141,7 @@ class MessageBuffer {
         const length = buffer.length;
         this.writeInteger(length);
         if (length > 0) {
-            this._writeBuffer(buffer);
+            this.writeBuffer(buffer);
         }
     }
 
@@ -216,14 +220,28 @@ class MessageBuffer {
         return result;
     }
 
+    readBuffer(length) {
+        this._ensureSize(length);
+        const result = this._buffer.slice(this._position, this._position + length);
+        this._position += length;
+        return result;
+    }
+
     readDate() {
         return new Date(this.readLong().toNumber());
     }
 
-    _writeBuffer(buffer) {
-        this._ensureCapacity(buffer.length);
-        buffer.copy(this._buffer, this._position);
-        this._position += buffer.length;
+    writeBuffer(buffer, start = undefined, end = undefined) {
+        if (start === undefined) {
+            start = 0;
+        }
+        if (end === undefined) {
+            end = buffer.length;
+        }
+        const size = end - start; 
+        this._ensureCapacity(size);
+        buffer.copy(this._buffer, this._position, start, end);
+        this._position += size;
     }
 
     _ensureSize(size) {

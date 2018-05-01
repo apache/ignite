@@ -23,6 +23,9 @@ const TestingHelper = require('../TestingHelper');
 const IgniteClient = require('apache-ignite-client');
 const ObjectType = IgniteClient.ObjectType;
 const MapObjectType = IgniteClient.MapObjectType;
+const Enum = IgniteClient.Enum;
+const Timestamp = IgniteClient.Timestamp;
+const Decimal = IgniteClient.Decimal;
 
 const CACHE_NAME = '__test_cache';
 
@@ -193,12 +196,38 @@ describe('cache put get test suite >', () => {
     const dateComparator = (date1, date2) => { return !date1 && !date2 || date1.value === date2.value; };
     const floatComparator = (date1, date2) => { return Math.abs(date1 - date2) < 0.00001; };
     const defaultComparator = (value1, value2) => { return value1 === value2; };
+    const UUIDComparator = (value1, value2) => {
+        if (value1 === null && value2 === null) {
+            return true;
+        }
+        if (value1 === null && value2 !== null || value1 !== null && value2 === null) {
+            return false;
+        }
+        return value1 instanceof Array && value2 instanceof Array &&
+            value1.length === value2.length &&
+            value1.every((elem1, index) => defaultComparator(elem1, value2[index]));
+    };
+    const enumComparator = (value1, value2) => {
+        return value1.getTypeId() === value2.getTypeId() &&
+            value1.getOrdinal() === value2.getOrdinal(); };
+    const decimalComparator = (value1, value2) => {
+        return value1 === null && value2 === null ||
+            value1.equals(value2);
+    };
+    const timestampComparator = (value1, value2) => {
+        return value1 === null && value2 === null ||
+            dateComparator(value1.getDate(), value2.getDate()) &&
+            value1.getNanos() === value2.getNanos(); };
 
     const numericValueModificator = (data) => { return data > 0 ? data - 10 : data + 10; };
     const charValueModificator = (data) => { return String.fromCharCode(data.charCodeAt(0) + 5); };
     const booleanValueModificator = (data) => { return !data; };
     const stringValueModificator = (data) => { return data + 'xxx'; };
     const dateValueModificator = (data) => { return new Date(data.value + 12345); };
+    const UUIDValueModificator = (data) => { return data.reverse(); };
+    const enumValueModificator = (data) => { return new Enum(data.getTypeId() + 1, data.getOrdinal() + 1); };
+    const decimalValueModificator = (data) => { return data.add(12345); };
+    const timestampValueModificator = (data) => { return new Timestamp(new Date(data.getDate() + 12345), data.getNanos() + 123); };
 
     const primitiveValues = {
         [ObjectType.PRIMITIVE_TYPE.BYTE] : { 
@@ -242,9 +271,40 @@ describe('cache put get test suite >', () => {
             typeOptional : true,
             modificator : stringValueModificator
         },
+        [ObjectType.PRIMITIVE_TYPE.UUID] : {
+            values : [
+                [ 18, 70, 2, 119, 154, 254, 198, 254, 195, 146, 33, 60, 116, 230, 0, 146 ],
+                [ 141, 77, 31, 194, 127, 36, 184, 255, 192, 4, 118, 57, 253, 209, 111, 147 ]
+            ],
+            comparator : UUIDComparator,
+            modificator : UUIDValueModificator
+        },
         [ObjectType.PRIMITIVE_TYPE.DATE] : {
             values : [new Date(), new Date('1995-12-17'), new Date(0)],
             typeOptional : true,
+            comparator : dateComparator,
+            modificator : dateValueModificator
+        },
+        // [ObjectType.PRIMITIVE_TYPE.ENUM] : {
+        //     values : [new Enum(12345, 7), new Enum(0, 0)],
+        //     typeOptional : true,
+        //     comparator : enumComparator,
+        //     modificator : enumValueModificator
+        // },
+        [ObjectType.PRIMITIVE_TYPE.DECIMAL] : {
+            values : [new Decimal('123456789.6789345'), new Decimal(0), new Decimal('-98765.4321e15')],
+            typeOptional : true,
+            comparator : decimalComparator,
+            modificator : decimalValueModificator
+        },
+        [ObjectType.PRIMITIVE_TYPE.TIMESTAMP] : {
+            values : [new Timestamp(new Date(), 12345), new Timestamp(new Date('1995-12-17'), 543), new Timestamp(new Date(0), 0)],
+            typeOptional : true,
+            comparator : timestampComparator,
+            modificator : timestampValueModificator
+        },
+        [ObjectType.PRIMITIVE_TYPE.TIME] : {
+            values : [new Date(), new Date('1995-12-17'), new Date(0)],
             comparator : dateComparator,
             modificator : dateValueModificator
         }
@@ -284,7 +344,12 @@ describe('cache put get test suite >', () => {
         [ObjectType.PRIMITIVE_TYPE.CHAR_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.CHAR },
         [ObjectType.PRIMITIVE_TYPE.BOOLEAN_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.BOOLEAN, typeOptional : true },
         [ObjectType.PRIMITIVE_TYPE.STRING_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.STRING, typeOptional : true },
-        [ObjectType.PRIMITIVE_TYPE.DATE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DATE, typeOptional : true }
+        [ObjectType.PRIMITIVE_TYPE.UUID_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.UUID },
+        [ObjectType.PRIMITIVE_TYPE.DATE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DATE, typeOptional : true },
+        //[ObjectType.PRIMITIVE_TYPE.ENUM_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.ENUM, typeOptional : true },
+        [ObjectType.PRIMITIVE_TYPE.DECIMAL_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DECIMAL, typeOptional : true },
+        [ObjectType.PRIMITIVE_TYPE.TIMESTAMP_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.TIMESTAMP, typeOptional : true },
+        [ObjectType.PRIMITIVE_TYPE.TIME_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.TIME }
     };
 
     async function putGetArrays(keyType, valueType, key, value, comparator = null) {
@@ -297,6 +362,7 @@ describe('cache put get test suite >', () => {
             if (!comparator) {
                 comparator = defaultComparator;
             }
+            await cache.clearKey(key);
             expect(result instanceof Array).toBe(true,
                 `result is not Array: arrayType=${valueType}, result=${result}`);
             expect(result.length).toBe(value.length,
@@ -309,27 +375,27 @@ describe('cache put get test suite >', () => {
         }
     }
 
-    async function putGetMaps(valueType, value, comparator = null) {
+    async function putGetMaps(mapType, value, comparator = null) {
         const key = new Date();
         const cache = await igniteClient.getCache(CACHE_NAME).
-            setValueType(valueType);
+            setValueType(mapType);
         await cache.put(key, value);
         let result = await cache.get(key);
         if (!comparator) {
             comparator = defaultComparator;
         }
         expect(result instanceof Map).toBe(true,
-            `result is not Map: valueType=${valueType}, result=${result}`);
+            `result is not Map: mapType=${mapType}, result=${result}`);
         expect(result.size).toBe(value.size,
-            `unexpected Map size: mapType=${valueType}, put value=${value}, get value=${result}`);
+            `unexpected Map size: mapType=${mapType}, put value=${value}, get value=${result}`);
         result.forEach((val, key) => {
-            if (val instanceof Array) {
+            if (val instanceof Array && mapType._valueType !== ObjectType.PRIMITIVE_TYPE.UUID) {
                 expect(val.every((elem, i) => { return comparator(elem, value.get(key)[i]); })).toBe(true,
-                    `Maps are not equal: valueType=${valueType.mapValueType}, put value=${val}, get value=${value.get(key)}`);
+                    `Maps are not equal: valueType=${mapType._valueType}, put value=${val}, get value=${value.get(key)}`);
             }
             else {
                 expect(comparator(val, value.get(key))).toBe(true,
-                    `Maps are not equal: valueType=${valueType.mapValueType}, put value=${value}, get value=${result}`);
+                    `Maps are not equal: valueType=${mapType._valueType}, put value=${value}, get value=${result}`);
             }
         });
     }

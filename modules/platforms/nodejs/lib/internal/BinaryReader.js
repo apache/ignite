@@ -17,8 +17,11 @@
 
 'use strict';
 
+const Decimal = require('decimal.js');
 const BinaryObject = require('../BinaryObject');
 const Errors = require('../Errors');
+const Timestamp = require('../Timestamp');
+const Enum = require('../Enum');
 const BinaryUtils = require('./BinaryUtils');
 
 class BinaryReader {
@@ -49,7 +52,17 @@ class BinaryReader {
                 return buffer.readBoolean();
             case BinaryUtils.TYPE_CODE.STRING:
                 return buffer.readString();
+            case BinaryUtils.TYPE_CODE.UUID:
+                return BinaryReader._readUUID(buffer);
             case BinaryUtils.TYPE_CODE.DATE:
+                return buffer.readDate();
+            case BinaryUtils.TYPE_CODE.ENUM:
+                return BinaryReader._readEnum(buffer);
+            case BinaryUtils.TYPE_CODE.DECIMAL:
+                return BinaryReader._readDecimal(buffer);
+            case BinaryUtils.TYPE_CODE.TIMESTAMP:
+                return BinaryReader._readTimestamp(buffer);
+            case BinaryUtils.TYPE_CODE.TIME:
                 return buffer.readDate();
             case BinaryUtils.TYPE_CODE.BYTE_ARRAY:
             case BinaryUtils.TYPE_CODE.SHORT_ARRAY:
@@ -60,9 +73,16 @@ class BinaryReader {
             case BinaryUtils.TYPE_CODE.CHAR_ARRAY:
             case BinaryUtils.TYPE_CODE.BOOLEAN_ARRAY:
             case BinaryUtils.TYPE_CODE.STRING_ARRAY:
+            case BinaryUtils.TYPE_CODE.UUID_ARRAY:
             case BinaryUtils.TYPE_CODE.DATE_ARRAY:
             case BinaryUtils.TYPE_CODE.OBJECT_ARRAY:
+            case BinaryUtils.TYPE_CODE.ENUM_ARRAY:
+            case BinaryUtils.TYPE_CODE.DECIMAL_ARRAY:
+            case BinaryUtils.TYPE_CODE.TIMESTAMP_ARRAY:
+            case BinaryUtils.TYPE_CODE.TIME_ARRAY:
                 return await BinaryReader._readArray(buffer, objectTypeCode, expectedType);
+            case BinaryUtils.TYPE_CODE.COLLECTION:
+                return await BinaryReader._readCollection(buffer, expectedType);
             case BinaryUtils.TYPE_CODE.MAP:
                 return await BinaryReader._readMap(buffer, expectedType);
             case BinaryUtils.TYPE_CODE.BINARY_OBJECT:
@@ -74,6 +94,33 @@ class BinaryReader {
             default:
                 throw Errors.IgniteClientError.unsupportedTypeError(objectTypeCode);
         }
+    }
+
+    static _readUUID(buffer) {
+        return [...buffer.readBuffer(BinaryUtils.getSize(BinaryUtils.TYPE_CODE.UUID))];
+    }
+
+    static _readEnum(buffer) {
+        return new Enum(buffer.readInteger(), buffer.readInteger());
+    }
+
+    static _readDecimal(buffer) {
+        const scale = buffer.readInteger();
+        const dataLength = buffer.readInteger();
+        const data = buffer.readBuffer(dataLength);
+        const isNegative = (data[0] & 0x80) !== 0;
+        if (isNegative) {
+            data[0] &= 0x7F;
+        }
+        let result = new Decimal('0x' + data.toString('hex'));
+        if (isNegative) {
+            result = result.negated();
+        }
+        return result.mul(Decimal.pow(10, -scale));
+    }
+
+    static _readTimestamp(buffer) {
+        return new Timestamp(buffer.readDate(), buffer.readInteger());
     }
 
     static async _readArray(buffer, arrayTypeCode, arrayType) {
@@ -95,12 +142,30 @@ class BinaryReader {
     static async _readMap(buffer, expectedMapType) {
         const result = new Map();
         const size = buffer.readInteger();
-        const mapType = buffer.readByte();
+        const subType = buffer.readByte();
         let key, value;
         for (let i = 0; i < size; i++) {
             key = await BinaryReader.readObject(buffer, expectedMapType ? expectedMapType._keyType : null);
             value = await BinaryReader.readObject(buffer, expectedMapType ? expectedMapType._valueType : null);
             result.set(key, value);
+        }
+        return result;
+    }
+
+    static async _readCollection(buffer, expectedColType) {
+        const size = buffer.readInteger();
+        const subType = buffer.readByte();
+        const isSet = expectedColType && expectedColType._isSet();
+        const result = isSet ? new Set() : new Array(size);
+        let element;
+        for (let i = 0; i < size; i++) {
+            element = await BinaryReader.readObject(buffer, expectedColType ? expectedColType._elementType : null);
+            if (isSet) {
+                result.add(element);
+            }
+            else {
+                result[i] = element;
+            }
         }
         return result;
     }

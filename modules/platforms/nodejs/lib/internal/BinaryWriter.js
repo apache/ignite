@@ -17,6 +17,7 @@
 
 'use strict';
 
+const Decimal = require('decimal.js');
 const Errors = require('../Errors');
 const ComplexObjectType = require('../ObjectType').ComplexObjectType;
 const BinaryUtils = require('./BinaryUtils');
@@ -61,8 +62,23 @@ class BinaryWriter {
             case BinaryUtils.TYPE_CODE.STRING:
                 buffer.writeString(object);
                 break;
+            case BinaryUtils.TYPE_CODE.UUID:
+                BinaryWriter._writeUUID(buffer, object);
+                break;
             case BinaryUtils.TYPE_CODE.DATE:
                 buffer.writeDate(object);
+                break;
+            case BinaryUtils.TYPE_CODE.ENUM:
+                BinaryWriter._writeEnum(buffer, object);
+                break;
+            case BinaryUtils.TYPE_CODE.DECIMAL:
+                BinaryWriter._writeDecimal(buffer, object);
+                break;
+            case BinaryUtils.TYPE_CODE.TIMESTAMP:
+                BinaryWriter._writeTimestamp(buffer, object);
+                break;
+            case BinaryUtils.TYPE_CODE.TIME:
+                BinaryWriter._writeTime(buffer, object);
                 break;
             case BinaryUtils.TYPE_CODE.BYTE_ARRAY:
             case BinaryUtils.TYPE_CODE.SHORT_ARRAY:
@@ -73,9 +89,17 @@ class BinaryWriter {
             case BinaryUtils.TYPE_CODE.CHAR_ARRAY:
             case BinaryUtils.TYPE_CODE.BOOLEAN_ARRAY:
             case BinaryUtils.TYPE_CODE.STRING_ARRAY:
+            case BinaryUtils.TYPE_CODE.UUID_ARRAY:
             case BinaryUtils.TYPE_CODE.DATE_ARRAY:
             case BinaryUtils.TYPE_CODE.OBJECT_ARRAY:
+            case BinaryUtils.TYPE_CODE.ENUM_ARRAY:
+            case BinaryUtils.TYPE_CODE.DECIMAL_ARRAY:
+            case BinaryUtils.TYPE_CODE.TIMESTAMP_ARRAY:
+            case BinaryUtils.TYPE_CODE.TIME_ARRAY:
                 await BinaryWriter._writeArray(buffer, object, objectType, objectTypeCode);
+                break;
+            case BinaryUtils.TYPE_CODE.COLLECTION:
+                await BinaryWriter._writeCollection(buffer, object, objectType);
                 break;
             case BinaryUtils.TYPE_CODE.MAP:
                 await BinaryWriter._writeMap(buffer, object, objectType);
@@ -91,6 +115,58 @@ class BinaryWriter {
         }
     }
 
+    static _writeUUID(buffer, value) {
+        buffer.writeBuffer(Buffer.from(value));
+    }
+
+    static _writeEnum(buffer, enumValue) {
+        buffer.writeInteger(enumValue.getTypeId());
+        buffer.writeInteger(enumValue.getOrdinal());
+    }
+
+    static _writeDecimal(buffer, decimal) {
+        let strValue = decimal.toExponential();
+        let expIndex = strValue.indexOf('e');
+        if (expIndex < 0) {
+            expIndex = strValue.indexOf('E');
+        }
+        let scale = 0;
+        if (expIndex >= 0) {
+            scale = parseInt(strValue.substring(expIndex + 1));
+            strValue = strValue.substring(0, expIndex);
+        }
+        const isNegative = strValue.startsWith('-');
+        if (isNegative) {
+            strValue = strValue.substring(1);
+        }
+        const dotIndex = strValue.indexOf('.');
+        if (dotIndex >= 0) {
+            scale -= strValue.length - dotIndex - 1;
+            strValue = strValue.substring(0, dotIndex) + strValue.substring(dotIndex + 1);
+        }
+        scale = -scale;
+        let hexValue = new Decimal(strValue).toHexadecimal().substring(2);
+        hexValue = ((hexValue.length % 2 !== 0) ? '000' : '00') + hexValue;
+        const valueBuffer = Buffer.from(hexValue, 'hex');
+        if (isNegative) {
+            valueBuffer[0] |= 0x80;
+        }
+        buffer.writeInteger(scale);
+        buffer.writeInteger(valueBuffer.length);
+        buffer.writeBuffer(valueBuffer);
+    }
+
+    static _writeTimestamp(buffer, timestamp) {
+        buffer.writeDate(timestamp.getDate());
+        buffer.writeInteger(timestamp.getNanos());
+    }
+
+    static _writeTime(buffer, time) {
+        const midnight = new Date(time);
+        midnight.setHours(0, 0, 0, 0);
+        buffer.writeLong(time.getTime() - midnight.getTime());
+    }
+
     static async _writeArray(buffer, array, arrayType, arrayTypeCode) {
         const elementType = BinaryUtils.getArrayElementType(arrayType);
         const keepElementType = BinaryUtils.keepArrayElementType(arrayTypeCode);
@@ -104,9 +180,18 @@ class BinaryWriter {
         }
     }
 
+    static async _writeCollection(buffer, collection, collectionType) {
+        const isSet = collectionType._isSet();
+        buffer.writeInteger(isSet ? collection.size : collection.length);
+        buffer.writeByte(collectionType._subType);
+        for (let element of collection) {
+            await BinaryWriter.writeObject(buffer, element, collectionType._elementType);
+        }
+    }
+
     static async _writeMap(buffer, map, mapType) {
         buffer.writeInteger(map.size);
-        buffer.writeByte(mapType.mapType);
+        buffer.writeByte(mapType._subType);
         for (let [key, value] of map.entries()) {
             await BinaryWriter.writeObject(buffer, key, mapType._keyType);
             await BinaryWriter.writeObject(buffer, value, mapType._valueType);

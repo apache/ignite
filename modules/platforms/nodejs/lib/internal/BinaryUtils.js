@@ -17,11 +17,15 @@
 
 'use strict';
 
+const Decimal = require('decimal.js');
 const ObjectType = require('../ObjectType').ObjectType;
 const CompositeType = require('../ObjectType').CompositeType;
 const MapObjectType = require('../ObjectType').MapObjectType;
+const CollectionObjectType = require('../ObjectType').CollectionObjectType;
 const ComplexObjectType = require('../ObjectType').ComplexObjectType;
 const ObjectArrayType = require('../ObjectType').ObjectArrayType;
+const Timestamp = require('../Timestamp');
+const Enum = require('../Enum');
 const Errors = require('../Errors');
 const ArgumentChecker = require('./ArgumentChecker');
 
@@ -114,6 +118,11 @@ const TYPE_INFO = Object.freeze({
         NAME : 'string',
         NULLABLE : true
     },
+    [TYPE_CODE.UUID] : {
+        NAME : 'UUID',
+        SIZE : 16,
+        NULLABLE : true
+    },
     [TYPE_CODE.DATE] : {
         NAME : 'date',
         SIZE : 8,
@@ -171,10 +180,20 @@ const TYPE_INFO = Object.freeze({
         KEEP_ELEMENT_TYPE : true,
         NULLABLE : true
     },
+    [TYPE_CODE.UUID_ARRAY] :  {
+        NAME : 'UUID array',
+        ELEMENT_TYPE : TYPE_CODE.UUID,
+        KEEP_ELEMENT_TYPE : true,
+        NULLABLE : true
+    },
     [TYPE_CODE.OBJECT_ARRAY] : {
         NAME : 'object array',
         ELEMENT_TYPE : TYPE_CODE.COMPLEX_OBJECT,
         KEEP_ELEMENT_TYPE : true,
+        NULLABLE : true
+    },
+    [TYPE_CODE.COLLECTION] : {
+        NAME : 'collection',
         NULLABLE : true
     },
     [TYPE_CODE.MAP] : {
@@ -183,6 +202,46 @@ const TYPE_INFO = Object.freeze({
     },
     [TYPE_CODE.BINARY_OBJECT] : {
         NAME : 'BinaryObject',
+        NULLABLE : true
+    },
+    [TYPE_CODE.ENUM] : {
+        NAME : 'enum',
+        NULLABLE : true
+    },
+    [TYPE_CODE.ENUM_ARRAY] :  {
+        NAME : 'enum array',
+        ELEMENT_TYPE : TYPE_CODE.ENUM,
+        KEEP_ELEMENT_TYPE : true,
+        NULLABLE : true
+    },
+    [TYPE_CODE.DECIMAL] : {
+        NAME : 'decimal',
+        NULLABLE : true
+    },
+    [TYPE_CODE.DECIMAL_ARRAY] :  {
+        NAME : 'decimal array',
+        ELEMENT_TYPE : TYPE_CODE.DECIMAL,
+        KEEP_ELEMENT_TYPE : true,
+        NULLABLE : true
+    },
+    [TYPE_CODE.TIMESTAMP] : {
+        NAME : 'timestamp',
+        NULLABLE : true
+    },
+    [TYPE_CODE.TIMESTAMP_ARRAY] :  {
+        NAME : 'timestamp array',
+        ELEMENT_TYPE : TYPE_CODE.TIMESTAMP,
+        KEEP_ELEMENT_TYPE : true,
+        NULLABLE : true
+    },
+    [TYPE_CODE.TIME] : {
+        NAME : 'time',
+        NULLABLE : true
+    },
+    [TYPE_CODE.TIME_ARRAY] :  {
+        NAME : 'time array',
+        ELEMENT_TYPE : TYPE_CODE.TIME,
+        KEEP_ELEMENT_TYPE : true,
         NULLABLE : true
     },
     [TYPE_CODE.NULL] : {
@@ -260,10 +319,22 @@ class BinaryUtils {
         else if (object instanceof Date) {
             return BinaryUtils.TYPE_CODE.DATE;
         }
+        else if (object instanceof Enum) {
+            return BinaryUtils.TYPE_CODE.ENUM;
+        }
+        else if (object instanceof Decimal) {
+            return BinaryUtils.TYPE_CODE.DECIMAL;
+        }
+        else if (object instanceof Timestamp) {
+            return BinaryUtils.TYPE_CODE.TIMESTAMP;
+        }
         else if (object instanceof Array) {
             if (object.length > 0 && object[0] !== null) {
                 return BinaryUtils.getArrayType(BinaryUtils.calcObjectType(object[0]));
             }
+        }
+        else if (object instanceof Set) {
+            return new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.HASH_SET);
         }
         else if (object instanceof Map) {
             return new MapObjectType();
@@ -289,7 +360,7 @@ class BinaryUtils {
             return;
         }
         else if (BinaryUtils.isStandardType(typeCode)) {
-            BinaryUtils.checkStandardTypeCompatibility(value, typeCode);
+            BinaryUtils.checkStandardTypeCompatibility(value, typeCode, type);
             return;
         }
         const valueTypeCode = BinaryUtils.getTypeCode(BinaryUtils.calcObjectType(value));
@@ -306,7 +377,7 @@ class BinaryUtils {
             typeCode !== BinaryUtils.TYPE_CODE.COMPLEX_OBJECT;
     }
 
-    static checkStandardTypeCompatibility(value, typeCode) {
+    static checkStandardTypeCompatibility(value, typeCode, type = null) {
         const valueType = typeof value;
         switch (typeCode) {
             case BinaryUtils.TYPE_CODE.BYTE:
@@ -338,7 +409,35 @@ class BinaryUtils {
                     throw Errors.IgniteClientError.valueCastError(value, typeCode);
                 }
                 return;
+            case BinaryUtils.TYPE_CODE.UUID:
+                if (!value instanceof Array ||
+                    value.length !== BinaryUtils.getSize(BinaryUtils.TYPE_CODE.UUID)) {
+                    throw Errors.IgniteClientError.valueCastError(value, typeCode);
+                }
+                value.forEach(element =>
+                    BinaryUtils.checkStandardTypeCompatibility(element, BinaryUtils.TYPE_CODE.BYTE));
+                return;
             case BinaryUtils.TYPE_CODE.DATE:
+                if (!value instanceof Date) {
+                    throw Errors.IgniteClientError.valueCastError(value, typeCode);
+                }
+                return;
+            case BinaryUtils.TYPE_CODE.ENUM:
+                if (!value instanceof Enum) {
+                    throw Errors.IgniteClientError.valueCastError(value, typeCode);
+                }
+                return;
+            case BinaryUtils.TYPE_CODE.DECIMAL:
+                if (!value instanceof Decimal) {
+                    throw Errors.IgniteClientError.valueCastError(value, typeCode);
+                }
+                return;
+            case BinaryUtils.TYPE_CODE.TIMESTAMP:
+                if (!value instanceof Timestamp) {
+                    throw Errors.IgniteClientError.valueCastError(value, typeCode);
+                }
+                return;
+            case BinaryUtils.TYPE_CODE.TIME:
                 if (!value instanceof Date) {
                     throw Errors.IgniteClientError.valueCastError(value, typeCode);
                 }
@@ -352,8 +451,13 @@ class BinaryUtils {
             case BinaryUtils.TYPE_CODE.CHAR_ARRAY:
             case BinaryUtils.TYPE_CODE.BOOLEAN_ARRAY:
             case BinaryUtils.TYPE_CODE.STRING_ARRAY:
+            case BinaryUtils.TYPE_CODE.UUID_ARRAY:
             case BinaryUtils.TYPE_CODE.DATE_ARRAY:
             case BinaryUtils.TYPE_CODE.OBJECT_ARRAY:
+            case BinaryUtils.TYPE_CODE.ENUM_ARRAY:
+            case BinaryUtils.TYPE_CODE.DECIMAL_ARRAY:
+            case BinaryUtils.TYPE_CODE.TIMESTAMP_ARRAY:
+            case BinaryUtils.TYPE_CODE.TIME_ARRAY:
                 if (!value instanceof Array) {
                     throw Errors.IgniteClientError.typeCastError(valueType, typeCode);
                 }
@@ -361,6 +465,13 @@ class BinaryUtils {
             case BinaryUtils.TYPE_CODE.MAP:
                 if (!value instanceof Map) {
                     throw Errors.IgniteClientError.typeCastError(valueType, typeCode);
+                }
+                return;
+            case BinaryUtils.TYPE_CODE.COLLECTION:
+                if (!type || !type instanceof CollectionObjectType ||
+                    type._isSet() && !value instanceof Set ||
+                    !value instanceof Array) {
+                    throw Errors.IgniteClientError.typeCastError(valueType, type._isSet() ? 'set' : typeCode);
                 }
                 return;
             case BinaryUtils.TYPE_CODE.NULL:
@@ -413,9 +524,6 @@ class BinaryUtils {
         if (elementType instanceof ComplexObjectType) {
             return new ObjectArrayType(elementType);
         }
-        else if (elementType instanceof CompositeType) {
-            throw Errors.IgniteClientError.unsupportedTypeError('array of ' + BinaryUtils.getTypeName(elementType));
-        }
         switch (BinaryUtils.getTypeCode(elementType)) {
             case BinaryUtils.TYPE_CODE.BYTE:
                 return BinaryUtils.TYPE_CODE.BYTE_ARRAY;
@@ -435,10 +543,21 @@ class BinaryUtils {
                 return BinaryUtils.TYPE_CODE.BOOLEAN_ARRAY;
             case BinaryUtils.TYPE_CODE.STRING:
                 return BinaryUtils.TYPE_CODE.STRING_ARRAY;
+            case BinaryUtils.TYPE_CODE.UUID:
+                return BinaryUtils.TYPE_CODE.UUID_ARRAY;
             case BinaryUtils.TYPE_CODE.DATE:
                 return BinaryUtils.TYPE_CODE.DATE_ARRAY;
+            case BinaryUtils.TYPE_CODE.ENUM:
+                return BinaryUtils.TYPE_CODE.ENUM_ARRAY;
+            case BinaryUtils.TYPE_CODE.DECIMAL:
+                return BinaryUtils.TYPE_CODE.DECIMAL_ARRAY;
+            case BinaryUtils.TYPE_CODE.TIMESTAMP:
+                return BinaryUtils.TYPE_CODE.TIMESTAMP_ARRAY;
+            case BinaryUtils.TYPE_CODE.TIME:
+                return BinaryUtils.TYPE_CODE.TIME_ARRAY;
             default:
-                throw Errors.IgniteClientError.internalError();
+                throw Errors.IgniteClientError.unsupportedTypeError(
+                    'array of ' + BinaryUtils.getTypeName(elementType));
         }
     }
 
