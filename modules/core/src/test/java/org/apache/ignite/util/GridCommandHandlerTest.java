@@ -38,7 +38,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -59,6 +58,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -74,6 +74,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     /** System out. */
     protected PrintStream sysOut;
 
+    /** System err. */
+    protected PrintStream sysErr;
+
     /** Test out - can be injected via {@link #injectTestSystemOut()} instead of System.out and analyzed in test. */
     protected ByteArrayOutputStream testOut;
 
@@ -87,6 +90,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
+
         cleanPersistenceDir();
 
         stopAllGrids();
@@ -101,6 +106,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
         System.setOut(sysOut);
 
@@ -805,6 +812,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         for (ClusterNode node: ignite.cluster().forServers().nodes())
             nodes.add(node.consistentId().toString());
 
+        injectTestSystemOut();
+
         assertEquals(EXIT_CODE_OK, execute("--wal", "print"));
 
         for(String id: nodes)
@@ -835,6 +844,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         for (ClusterNode node: ignite.cluster().forServers().nodes())
             nodes.add(node.consistentId().toString());
+
+        injectTestSystemOut();
 
         assertEquals(EXIT_CODE_OK, execute("--wal", "delete"));
 
