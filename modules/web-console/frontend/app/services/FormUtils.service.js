@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import _ from 'lodash';
 
 export default ['IgniteFormUtils', ['$window', 'IgniteFocus', ($window, Focus) => {
     function ensureActivePanel(ui, pnl, focusId) {
@@ -41,7 +42,7 @@ export default ['IgniteFormUtils', ['$window', 'IgniteFocus', ($window, Focus) =
                 if (!activePanels || activePanels.length < 1)
                     ui.activePanels = [idx];
                 else if (!_.includes(activePanels, idx)) {
-                    const newActivePanels = angular.copy(activePanels);
+                    const newActivePanels = _.cloneDeep(activePanels);
 
                     newActivePanels.push(idx);
 

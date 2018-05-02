@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskResultBean;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.auth.AuthenticationCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
@@ -81,6 +82,7 @@ import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.AUTHENTICATE;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SECURITY_CHECK_FAILED;
@@ -230,10 +232,11 @@ public class GridRestProcessor extends GridProcessorAdapter {
             try {
                 ses = session(req);
             }
+            catch (IgniteAuthenticationException e) {
+                return new GridFinishedFuture<>(new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
+            }
             catch (IgniteCheckedException e) {
-                GridRestResponse res = new GridRestResponse(STATUS_FAILED, e.getMessage());
-
-                return new GridFinishedFuture<>(res);
+                return new GridFinishedFuture<>(new GridRestResponse(STATUS_FAILED, e.getMessage()));
             }
 
             assert ses != null;
@@ -284,9 +287,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
                             throw new IgniteAuthenticationException("The user name or password is incorrect");
 
                         ses.authCtx = ctx.authentication().authenticate(login, pwd);
-
-                        req.authorizationContext(ses.authCtx);
                     }
+
+                    req.authorizationContext(ses.authCtx);
                 }
                 catch (IgniteCheckedException e) {
                     return new GridFinishedFuture<>(new GridRestResponse(STATUS_AUTH_FAILED, e.getMessage()));
@@ -341,7 +344,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 assert res != null;
 
-                if (ctx.security().enabled() && !failed)
+                if ((authenticationEnabled || securityEnabled) && !failed)
                     res.sessionTokenBytes(req.sessionToken());
 
                 interceptResponse(res, req);
@@ -362,6 +365,10 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         while (true) {
             if (F.isEmpty(sesTok) && clientId == null) {
+                // TODO: In IGNITE 3.0 we should check credentials only for AUTHENTICATE command.
+                if (ctx.authentication().enabled() && req.command() != AUTHENTICATE && req.credentials() == null)
+                    throw new IgniteAuthenticationException("Failed to handle request - session token not found or invalid");
+
                 Session ses = Session.random();
 
                 UUID oldSesId = clientId2SesId.put(ses.clientId, ses.sesId);
@@ -451,10 +458,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
         try {
             sesExpTime = System.getProperty(IgniteSystemProperties.IGNITE_REST_SESSION_TIMEOUT);
 
-            if (sesExpTime != null)
-                sesExpTime0 = Long.valueOf(sesExpTime) * 1000;
-            else
-                sesExpTime0 = DEFAULT_SES_TIMEOUT;
+            sesExpTime0 = sesExpTime != null ? Long.valueOf(sesExpTime) * 1000 : DEFAULT_SES_TIMEOUT;
         }
         catch (NumberFormatException ignore) {
             U.warn(log, "Failed parsing IGNITE_REST_SESSION_TIMEOUT system variable [IGNITE_REST_SESSION_TIMEOUT="
@@ -504,6 +508,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new QueryCommandHandler(ctx));
             addHandler(new GridLogCommandHandler(ctx));
             addHandler(new GridChangeStateCommandHandler(ctx));
+            addHandler(new AuthenticationCommandHandler(ctx));
             addHandler(new UserActionCommandHandler(ctx));
 
             // Start protocols.
@@ -860,6 +865,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case CLUSTER_CURRENT_STATE:
             case CLUSTER_ACTIVE:
             case CLUSTER_INACTIVE:
+            case AUTHENTICATE:
             case ADD_USER:
             case REMOVE_USER:
             case UPDATE_USER:

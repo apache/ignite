@@ -28,6 +28,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
@@ -158,6 +160,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
     /** */
     private final boolean trackAcquiredPages;
 
+    /** Shared context. */
+    private final GridCacheSharedContext<?, ?> ctx;
+
     /**
      * @param log Logger.
      * @param directMemoryProvider Memory allocator to use.
@@ -184,6 +189,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         this.trackAcquiredPages = trackAcquiredPages;
         this.memMetrics = memMetrics;
         this.dataRegionCfg = dataRegionCfg;
+        this.ctx = sharedCtx;
 
         sysPageSize = pageSize + PAGE_OVERHEAD;
 
@@ -288,8 +294,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
             }
         }
 
-        if (relPtr == INVALID_REL_PTR)
-            throw new IgniteOutOfMemoryException("Out of memory in data region [" +
+        if (relPtr == INVALID_REL_PTR) {
+            IgniteOutOfMemoryException oom = new IgniteOutOfMemoryException("Out of memory in data region [" +
                 "name=" + dataRegionCfg.getName() +
                 ", initSize=" + U.readableSize(dataRegionCfg.getInitialSize(), false) +
                 ", maxSize=" + U.readableSize(dataRegionCfg.getMaxSize(), false) +
@@ -298,6 +304,13 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
                 "  ^-- Enable eviction or expiration policies"
             );
+
+            if (ctx != null)
+                ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, oom));
+
+            throw oom;
+        }
+
 
         assert (relPtr & ~PageIdUtils.PAGE_IDX_MASK) == 0 : U.hexLong(relPtr & ~PageIdUtils.PAGE_IDX_MASK);
 

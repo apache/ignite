@@ -63,7 +63,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "ClassLoader",
             "CacheStoreSessionListenerFactories",
             "PlatformConfiguration",
-            "ExecutorConfiguration"
+            "ExecutorConfiguration",
+            "CommunicationFailureResolver"
         };
 
         /** Properties that are missing on .NET side. */

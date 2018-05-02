@@ -34,6 +34,12 @@ public enum Command {
     BASELINE("--baseline"),
 
     /** */
+    TX("--tx"),
+
+    /** */
+    CACHE("--cache"),
+
+    /** */
     WAL("--wal");
 
     /** */

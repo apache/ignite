@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -345,10 +346,22 @@ public interface GridDhtPartitionTopology {
     public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros);
 
     /**
+     * @return Partition cache sizes.
+     */
+    public Map<Integer, Long> partitionSizes();
+
+    /**
      * @param part Partition to own.
      * @return {@code True} if owned.
      */
     public boolean own(GridDhtLocalPartition part);
+
+    /**
+     * Owns all moving partitions for the given topology version.
+     *
+     * @param topVer Topology version.
+     */
+    public void ownMoving(AffinityTopologyVersion topVer);
 
     /**
      * @param part Evicted partition.
@@ -380,8 +393,9 @@ public interface GridDhtPartitionTopology {
      * State of all current owners that aren't contained in the set will be reset to MOVING.
      *
      * @param p Partition ID.
-     * @param updateSeq If should increment sequence when updated.
      * @param owners Set of new owners.
+     * @param haveHistory {@code True} if there is WAL history to rebalance given partition.
+     * @param updateSeq If should increment sequence when updated.
      * @return Set of node IDs that should reload partitions.
      */
     public Set<UUID> setOwners(int p, Set<UUID> owners, boolean haveHistory, boolean updateSeq);

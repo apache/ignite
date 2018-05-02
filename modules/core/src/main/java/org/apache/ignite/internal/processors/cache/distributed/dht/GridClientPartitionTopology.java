@@ -207,11 +207,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         try {
             AffinityTopologyVersion exchTopVer = exchFut.initialVersion();
 
-            // Update is correct if topology version is newer or in case of newer discovery caches.
-            boolean isCorrectUpdate = exchTopVer.compareTo(topVer) > 0
-                    || (exchTopVer.compareTo(topVer) == 0 && this.discoCache != null && discoCache.version().compareTo(this.discoCache.version()) > 0);
-
-            assert isCorrectUpdate : "Invalid topology version [grp=" + grpId +
+            assert exchTopVer.compareTo(topVer) > 0 : "Invalid topology version [grp=" + grpId +
                 ", topVer=" + topVer +
                 ", exchVer=" + exchTopVer +
                 ", discoCacheVer=" + (this.discoCache != null ? this.discoCache.version() : "None") +
@@ -1104,6 +1100,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public void ownMoving(AffinityTopologyVersion topVer) {
+        // No-op
+    }
+
+    /** {@inheritDoc} */
     @Override public void onEvicted(GridDhtLocalPartition part, boolean updateSeq) {
         assert updateSeq || lock.isWriteLockedByCurrentThread();
 
@@ -1193,6 +1194,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @Override public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros) {
         return CachePartitionPartialCountersMap.EMPTY;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Integer, Long> partitionSizes() {
+        return Collections.emptyMap();
     }
 
     /** {@inheritDoc} */

@@ -416,6 +416,7 @@ namespace Apache.Ignite.Core
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
                 writer.WriteInt((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
+                writer.WriteLong((long) TransactionConfiguration.DefaultDefaultTimeoutOnPartitionMapExchange.TotalMilliseconds);
             }
             else
                 writer.WriteBoolean(false);
@@ -681,7 +682,8 @@ namespace Apache.Ignite.Core
                     DefaultTransactionConcurrency = (TransactionConcurrency) r.ReadInt(),
                     DefaultTransactionIsolation = (TransactionIsolation) r.ReadInt(),
                     DefaultTimeout = TimeSpan.FromMilliseconds(r.ReadLong()),
-                    PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt())
+                    PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt()),
+                    DefaultTimeoutOnPartitionMapExchange = TimeSpan.FromMilliseconds(r.ReadLong())
                 };
             }
 
