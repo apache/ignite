@@ -23,7 +23,7 @@ const TestingHelper = require('../TestingHelper');
 const IgniteClient = require('apache-ignite-client');
 const ObjectType = IgniteClient.ObjectType;
 const MapObjectType = IgniteClient.MapObjectType;
-const Enum = IgniteClient.Enum;
+const EnumItem = IgniteClient.EnumItem;
 const Timestamp = IgniteClient.Timestamp;
 const Decimal = IgniteClient.Decimal;
 
@@ -225,7 +225,7 @@ describe('cache put get test suite >', () => {
     const stringValueModificator = (data) => { return data + 'xxx'; };
     const dateValueModificator = (data) => { return new Date(data.value + 12345); };
     const UUIDValueModificator = (data) => { return data.reverse(); };
-    const enumValueModificator = (data) => { return new Enum(data.getTypeId() + 1, data.getOrdinal() + 1); };
+    const enumValueModificator = (data) => { return new EnumItem(data.getTypeId(), data.getOrdinal() + 1); };
     const decimalValueModificator = (data) => { return data.add(12345); };
     const timestampValueModificator = (data) => { return new Timestamp(new Date(data.getDate() + 12345), data.getNanos() + 123); };
 
@@ -286,7 +286,7 @@ describe('cache put get test suite >', () => {
             modificator : dateValueModificator
         },
         // [ObjectType.PRIMITIVE_TYPE.ENUM] : {
-        //     values : [new Enum(12345, 7), new Enum(0, 0)],
+        //     values : [new EnumItem(12345, 7), new EnumItem(0, 0)],
         //     typeOptional : true,
         //     comparator : enumComparator,
         //     modificator : enumValueModificator

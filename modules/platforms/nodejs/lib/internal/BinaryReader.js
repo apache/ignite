@@ -21,7 +21,7 @@ const Decimal = require('decimal.js');
 const BinaryObject = require('../BinaryObject');
 const Errors = require('../Errors');
 const Timestamp = require('../Timestamp');
-const Enum = require('../Enum');
+const EnumItem = require('../EnumItem');
 const BinaryUtils = require('./BinaryUtils');
 
 class BinaryReader {
@@ -101,7 +101,7 @@ class BinaryReader {
     }
 
     static _readEnum(buffer) {
-        return new Enum(buffer.readInteger(), buffer.readInteger());
+        return new EnumItem(buffer.readInteger(), buffer.readInteger());
     }
 
     static _readDecimal(buffer) {

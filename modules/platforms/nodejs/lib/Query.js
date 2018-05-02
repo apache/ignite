@@ -249,9 +249,7 @@ class SqlQuery extends Query {
      * @ignore
      */
     async _getCursor(socket, payload, keyType = null, valueType = null) {
-        const cursor = new Cursor(socket, BinaryUtils.OPERATION.QUERY_SQL_CURSOR_GET_PAGE, keyType, valueType);
-        await cursor._read(payload);
-        return cursor;
+        return new Cursor(socket, BinaryUtils.OPERATION.QUERY_SQL_CURSOR_GET_PAGE, payload, keyType, valueType);
     }
 }
 
@@ -429,8 +427,8 @@ class SqlFieldsQuery extends SqlQuery {
      * @ignore
      */
     async _getCursor(socket, payload, keyType = null, valueType = null) {
-        const cursor = new SqlFieldsCursor(socket);
-        await cursor._read(payload, true, this._includeFieldNames);
+        const cursor = new SqlFieldsCursor(socket, payload);
+        await cursor._readFieldNames(payload, this._includeFieldNames);
         return cursor;
     }
 }

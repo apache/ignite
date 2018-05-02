@@ -22,19 +22,20 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
 /**
  * ???
  */
-class Enum {
+class EnumItem {
 
     /**
      * Public constructor.
      *
      * @param {number} typeId - ???.
-     * @param {number} ordinal - ???.
      *
-     * @return {Enum} - new Enum instance
+     * @return {EnumItem} - new EnumItem instance
      */
-    constructor(typeId, ordinal) {
+    constructor(typeId) {
         this.setTypeId(typeId);
-        this.setOrdinal(ordinal);
+        this._ordinal = null;
+        this._name = null;
+        this._value = null;
     }
 
     /**
@@ -74,6 +75,44 @@ class Enum {
         ArgumentChecker.isInteger(ordinal, 'ordinal');
         this._ordinal = ordinal;
     }
+
+    /**
+     * ???
+     *
+     * @return {string} - ???.
+     */
+    getName() {
+        return this._name;
+    }
+
+    /**
+     * ???
+     *
+     * @param {string} name - ???.
+     */
+    setName(name) {
+        ArgumentChecker.notEmpty(name, 'name');
+        this._name = name;
+    }
+
+    /**
+     * ???
+     *
+     * @return {number} - ???.
+     */
+    getValue() {
+        return this._value;
+    }
+
+    /**
+     * ???
+     *
+     * @param {number} value - ???.
+     */
+    setValue(value) {
+        ArgumentChecker.isInteger(value, 'value');
+        this._value = value;
+    }
 }
 
-module.exports = Enum;
+module.exports = EnumItem;

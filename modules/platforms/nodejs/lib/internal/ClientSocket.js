@@ -146,23 +146,16 @@ class ClientSocket {
             await this._sendRequest(handshakeRequest);
         };
 
-        const options = { host : this._host, port : this._port, version : this._version };
-        if (this._config._tlsConfiguration) {
-            const tlsConfig = this._config._tlsConfiguration;
-            options.key = tlsConfig._key;
-            options.cert = tlsConfig._cert;
-            options.ca = tlsConfig._ca;
-            options.passphrase = tlsConfig._keyPassword;
-            options.rejectUnauthorized = !tlsConfig._trustAll;
-            options.secureProtocol = tlsConfig._protocol + '_client_method';
+        const options = Object.assign({},
+            this._config._options,
+            { host : this._host, port : this._port, version : this._version });
+        if (this._config._useTLS) {
             this._socket = tls.connect(options, onConnected);
         }
         else {
             this._socket = new net.Socket();
             this._socket.connect(options, onConnected);
         }
-        this._socket.setNoDelay(this._config._tcpNoDelay);
-        this._socket.setTimeout(this._config._timeout);
 
         this._socket.on('data', async (data) => {
             try {

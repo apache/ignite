@@ -129,7 +129,6 @@ class BinaryType {
     }
 
     async _writeEnum(buffer) {
-        // is Enum
         buffer.writeBoolean(this._isEnum);
         if (this._isEnum) {
             buffer.writeInteger(0);
@@ -166,7 +165,6 @@ class BinaryType {
     }
 
     async _readEnum(buffer) {
-        // is Enum
         this._isEnum = buffer.readBoolean();
         if (this._isEnum) {
             const fieldsCount = buffer.readInteger();

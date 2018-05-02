@@ -158,16 +158,6 @@ class BinaryObject {
     }
 
     /**
-     * Clones this BinaryObject instance.
-     *
-     * @return {BinaryObject} - new BinaryObject instance with the same type Id and the fields as the current one has.
-     */
-    clone() {
-        // TODO
-        return this;
-    }
-
-    /**
      * Checks if the specified field exists in this BinaryObject instance.
      *
      * @param {string} fieldName - name of the field.

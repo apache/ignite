@@ -57,9 +57,9 @@ class SqlFieldsQueryExample {
                     setPageSize(1));
 
             console.log('Query results:');
-            console.log(await sqlFieldsCursor.getValues());
+            console.log(await sqlFieldsCursor.getValue());
             while (sqlFieldsCursor.hasMore()) {
-                console.log(await sqlFieldsCursor.getValues());
+                console.log(await sqlFieldsCursor.getValue());
             }
 
             (await this._cache.query(new SqlFieldsQuery("DROP TABLE Person"))).getAll();

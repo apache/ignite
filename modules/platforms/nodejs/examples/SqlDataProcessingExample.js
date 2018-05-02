@@ -177,10 +177,10 @@ class SqlDataProcessing {
 
         console.log(">>> 10 Most Populated Cities:");
 
+        let row;
         do {
-            for (let row of await cursor.getValues()) {
-                console.log("    >>> " + row[1] + " people live in " + row[0]);
-            }
+            row = await cursor.getValue();
+            console.log("    >>> " + row[1] + " people live in " + row[0]);
         } while (cursor.hasMore());
     }
 

@@ -25,7 +25,7 @@ const CollectionObjectType = require('../ObjectType').CollectionObjectType;
 const ComplexObjectType = require('../ObjectType').ComplexObjectType;
 const ObjectArrayType = require('../ObjectType').ObjectArrayType;
 const Timestamp = require('../Timestamp');
-const Enum = require('../Enum');
+const EnumItem = require('../EnumItem');
 const Errors = require('../Errors');
 const ArgumentChecker = require('./ArgumentChecker');
 
@@ -283,7 +283,7 @@ class BinaryUtils {
             return type;
         }
         const typeCode = BinaryUtils.getTypeCode(type);
-        return TYPE_INFO[typeCode] ? TYPE_INFO[typeCode].NAME : ' type code ' + typeCode;
+        return TYPE_INFO[typeCode] ? TYPE_INFO[typeCode].NAME : 'type code ' + typeCode;
     }
 
     static isNullable(type) {
@@ -319,7 +319,7 @@ class BinaryUtils {
         else if (object instanceof Date) {
             return BinaryUtils.TYPE_CODE.DATE;
         }
-        else if (object instanceof Enum) {
+        else if (object instanceof EnumItem) {
             return BinaryUtils.TYPE_CODE.ENUM;
         }
         else if (object instanceof Decimal) {
@@ -423,7 +423,7 @@ class BinaryUtils {
                 }
                 return;
             case BinaryUtils.TYPE_CODE.ENUM:
-                if (!value instanceof Enum) {
+                if (!value instanceof EnumItem) {
                     throw Errors.IgniteClientError.valueCastError(value, typeCode);
                 }
                 return;

@@ -35,24 +35,28 @@ const BinaryWriter = require('./internal/BinaryWriter');
 class Cursor {
 
     /**
+     * ???
      * Returns a portion of results - cache entries (key-value pairs) returned by the query.
      *
      * Every new call returns the next portion of results.
-     * If the method returns empty array, no more results are available.
+     * If the method returns null, no more results are available.
      *
      * @async
      *
-     * @return {Promise<Array<CacheEntry>>} - a portion of cache entries (key-value pairs)
+     * @return {Promise<CacheEntry>} - a portion of cache entries (key-value pairs)
      *   returned by SQL or Scan query.
      */
-    async getValues() {
-        let values = null;
-        if (!this._values && this._hasNext) {
-            await this._getNext();
+    async getValue() {
+        if (!this._values || this._valueIndex >= this._values.length) {
+            await this._getValues();
+            this._valueIndex = 0;
         }
-        values = this._values;
-        this._values = null;
-        return values === null ? [] : values;
+        if (this._values) {
+            const value = this._values[this._valueIndex];
+            this._valueIndex++;
+            return value;
+        }
+        return null;
     }
 
     /**
@@ -61,13 +65,14 @@ class Cursor {
      * @return {boolean} - true if more results are available, false otherwise.
      */
     hasMore() {
-        return this._hasNext;
+        return this._hasNext ||
+            this._values && this._valueIndex < this._values.length;
     }
 
     /**
      * Returns all results - cache entries (key-value pairs) returned by the query.
      *
-     * May be used instead of getValues() method if the number of returned elements
+     * May be used instead of getValue() method if the number of returned elements
      * is relatively small and will not cause memory utilization issues.
      *
      * @async
@@ -76,10 +81,14 @@ class Cursor {
      *   returned by SQL or Scan query.
      */
     async getAll() {
-        let result = await this.getValues();
-        while (this.hasMore()) {
-            result = result.concat(await this.getValues());
-        }
+        let result = new Array();
+        let values;
+        do {
+            values = await this._getValues();
+            if (values) {
+                result = result.concat(values);
+            }
+        } while (this._hasNext);
         return result;
     }
 
@@ -107,14 +116,16 @@ class Cursor {
     /**
      * @ignore
      */
-    constructor(socket, operation, keyType = null, valueType = null) {
+    constructor(socket, operation, buffer, keyType = null, valueType = null) {
         this._socket = socket;
         this._operation = operation;
+        this._buffer = buffer;
         this._keyType = keyType;
         this._valueType = valueType;
         this._id = null;
         this._hasNext = false;
         this._values = null;
+        this._valueIndex = 0;
     }
 
     /**
@@ -123,14 +134,27 @@ class Cursor {
     async _getNext() {
         this._hasNext = false;
         this._values = null;
+        this._buffer = null;
         await this._socket.send(
             this._operation,
             async (payload) => {
                 await this._write(payload);
             },
             async (payload) => {
-                await this._read(payload);
+                this._buffer = payload;
             });
+    }
+
+    /**
+     * @ignore
+     */
+    async _getValues() {
+        if (!this._buffer && this._hasNext) {
+            await this._getNext();
+        }
+        await this._read(this._buffer)
+        this._buffer = null;
+        return this._values;
     }
 
     /**
@@ -178,34 +202,26 @@ class Cursor {
 class SqlFieldsCursor extends Cursor {
 
     /**
+     * ???
      * Returns a portion of results - field values returned by the query.
      *
      * Every new call returns the next portion of results.
-     * If the method returns empty array, no more results are available.
+     * If the method returns null, no more results are available.
      *
      * @async
      *
-     * @return {Promise<Array<Array<*>>>} - a portion of results returned by SQL Fields query.
+     * @return {Promise<Array<*>>} - a portion of results returned by SQL Fields query.
      *   Every element of the array is an array with values of the fields requested by the query.
      *
      */
-    async getValues() {
-        const values = await super.getValues();
-        for (let value of values) {
-            for (let i = 0; i < value.length; i++) {
-                const fieldType = this._fieldTypes && i < this._fieldTypes.length ? this._fieldTypes[i] : null;
-                if (value[i] instanceof BinaryObject) {
-                    value[i] = await value[i].toObject(fieldType);
-                }
-            }
-        }
-        return values;
+    async getValue() {
+        return await super.getValue();
     }
 
     /**
      * Returns all results - field values returned by the query.
      *
-     * May be used instead of getValues() method if the number of returned elements
+     * May be used instead of getValue() method if the number of returned elements
      * is relatively small and will not cause memory utilization issues.
      *
      * @async
@@ -256,30 +272,36 @@ class SqlFieldsCursor extends Cursor {
     /**
      * @ignore
      */
-    constructor(socket) {
-        super(socket, BinaryUtils.OPERATION.QUERY_SQL_FIELDS_CURSOR_GET_PAGE);
+    constructor(socket, buffer) {
+        super(socket, BinaryUtils.OPERATION.QUERY_SQL_FIELDS_CURSOR_GET_PAGE, buffer);
         this._fieldNames = [];
     }
 
     /**
      * @ignore
      */
-    async _read(buffer, initial = false, includeFieldNames = false) {
-        if (initial) {
-            this._id = buffer.readLong();
-            this._fieldCount = buffer.readInteger();
-            if (includeFieldNames) {
-                for (let i = 0; i < this._fieldCount; i++) {
-                    this._fieldNames[i] = await BinaryReader.readObject(buffer);
-                }
+    async _readFieldNames(buffer, includeFieldNames) {
+        this._id = buffer.readLong();
+        this._fieldCount = buffer.readInteger();
+        if (includeFieldNames) {
+            for (let i = 0; i < this._fieldCount; i++) {
+                this._fieldNames[i] = await BinaryReader.readObject(buffer);
             }
         }
+    }
+
+    /**
+     * @ignore
+     */
+    async _read(buffer) {
         const rowCount = buffer.readInteger();
         this._values = new Array(rowCount);
         let values;
+        let fieldType;
         for (let i = 0; i < rowCount; i++) {
             values = new Array(this._fieldCount);
             for (let j = 0; j < this._fieldCount; j++) {
+                fieldType = this._fieldTypes && j < this._fieldTypes.length ? this._fieldTypes[j] : null;
                 values[j] = await BinaryReader.readObject(buffer);
             }
             this._values[i] = values;

@@ -42,7 +42,7 @@ class IgniteClientError extends Error {
      */
     static typeCastError(fromType, toType) {
         const BinaryUtils = require('./internal/BinaryUtils');
-        return new IgniteClientError(Util.format('Type %s can not be cast to %s',
+        return new IgniteClientError(Util.format('Type "%s" can not be cast to %s',
             BinaryUtils.getTypeName(fromType), BinaryUtils.getTypeName(toType)));
     }
 

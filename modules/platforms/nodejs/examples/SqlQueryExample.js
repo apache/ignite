@@ -86,10 +86,12 @@ class SqlQueryExample {
                     setArgs(900, 1600));
 
             console.log('Query results:');
-            console.log(await sqlCursor.getValues());
-            while (sqlCursor.hasMore()) {
-                console.log(await sqlCursor.getValues());
-            }
+            let person;
+            do {
+                person = (await sqlCursor.getValue()).getValue();
+                console.log(Util.format('name: %s %s, salary: %d',
+                    person.firstName, person.lastName, person.salary));
+            } while (sqlCursor.hasMore());
 
             await igniteClient.destroyCache(PERSON_CACHE_NAME);
         }
