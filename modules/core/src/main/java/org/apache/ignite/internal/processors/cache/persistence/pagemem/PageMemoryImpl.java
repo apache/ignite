@@ -395,9 +395,6 @@ public class PageMemoryImpl implements PageMemoryEx {
                 seg.close();
         }
 
-        if (delayedPageReplacementTracker != null)
-            delayedPageReplacementTracker.close();
-
         directMemoryProvider.shutdown();
     }
 
