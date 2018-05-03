@@ -51,7 +51,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CommunicationFailureResolver;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -2955,8 +2954,6 @@ public class ZookeeperDiscoveryImpl {
                 if (node.order() >= locNode.order())
                     break;
 
-                node.setMetrics(new ClusterMetricsSnapshot());
-
                 rtState.top.addNode(node);
             }
 
@@ -3447,8 +3444,6 @@ public class ZookeeperDiscoveryImpl {
 
         joinedNode.order(joinedEvtData.topVer);
         joinedNode.internalId(joinedEvtData.joinedInternalId);
-
-        joinedNode.setMetrics(new ClusterMetricsSnapshot());
 
         rtState.top.addNode(joinedNode);
 

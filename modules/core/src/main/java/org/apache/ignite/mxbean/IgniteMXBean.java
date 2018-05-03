@@ -475,4 +475,10 @@ public interface IgniteMXBean {
         int payLoadSize,
         boolean procFromNioThread
     );
+
+    /**
+     * Clears node local map.
+     */
+    @MXBeanDescription("Clears local node map.")
+    void clearNodeLocalMap();
 }
