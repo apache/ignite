@@ -26,7 +26,11 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
 const Errors = require('./Errors');
 
 /**
+ * Class representing Cache Key part of Ignite {@link CacheConfiguration}.
  *
+ * All configuration settings are optional and have defaults which are defined on a server side.
+ *
+ * See Apache Ignite documentation for details of every configuration setting. 
  */
 class CacheKeyConfiguration {
     constructor(typeName = null, affinityKeyFieldName = null) {
@@ -84,7 +88,11 @@ class CacheKeyConfiguration {
 }
 
 /**
+ * Class representing one Query Entity element of Ignite {@link CacheConfiguration}.
  *
+ * All configuration settings are optional and have defaults which are defined on a server side.
+ *
+ * See Apache Ignite documentation for details of every configuration setting. 
  */
 class QueryEntity {
 
@@ -324,7 +332,11 @@ class QueryEntity {
 }
 
 /**
+ * Class representing one Query Field element of {@link QueryEntity} of Ignite {@link CacheConfiguration}.
  *
+ * All configuration settings are optional and have defaults which are defined on a server side.
+ *
+ * See Apache Ignite documentation for details of every configuration setting. 
  */
 class QueryField {
 
@@ -447,7 +459,11 @@ const INDEX_TYPE = Object.freeze({
 });
 
 /**
+ * Class representing one Query Index element of {@link QueryEntity} of Ignite {@link CacheConfiguration}.
  *
+ * All configuration settings are optional and have defaults which are defined on a server side.
+ *
+ * See Apache Ignite documentation for details of every configuration setting. 
  */
 class QueryIndex {
     
