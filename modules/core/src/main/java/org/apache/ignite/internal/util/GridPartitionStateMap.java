@@ -82,14 +82,13 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
 
                         return new Entry<Integer, GridDhtPartitionState>() {
                             int p = cur;
-                            int state = ordinal;
 
                             @Override public Integer getKey() {
                                 return p;
                             }
 
                             @Override public GridDhtPartitionState getValue() {
-                                return GridDhtPartitionState.fromOrdinal(state);
+                                return GridDhtPartitionState.fromOrdinal(ordinal);
                             }
 
                             @Override public GridDhtPartitionState setValue(GridDhtPartitionState val) {
