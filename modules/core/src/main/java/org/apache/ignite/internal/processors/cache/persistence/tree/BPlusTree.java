@@ -1176,7 +1176,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         try {
             if (c == null) {
-                GetOne g = new GetOne(null, null, true);
+                GetOne g = new GetOne(null, null, null, true);
                 doFind(g);
 
                 return (T)g.row;
@@ -1200,15 +1200,25 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     /**
      * @param row Lookup row for exact match.
      * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+     * @return Found result or {@code null}
+     * @throws IgniteCheckedException If failed.
+     */
+    public final <R> R findOne(L row, Object x) throws IgniteCheckedException {
+        return findOne(row, null, x);
+    }
+
+    /**
+     * @param row Lookup row for exact match.
+     * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
      * @return Found result or {@code null}.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public final <R> R findOne(L row, Object x) throws IgniteCheckedException {
+    public final <R> R findOne(L row, TreeRowClosure<L, T> c, Object x) throws IgniteCheckedException {
         checkDestroyed();
 
         try {
-            GetOne g = new GetOne(row, x, false);
+            GetOne g = new GetOne(row, c, x, false);
 
             doFind(g);
 
@@ -1235,7 +1245,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     @SuppressWarnings("unchecked")
     @Override public final T findOne(L row) throws IgniteCheckedException {
-        return findOne(row, null);
+        return findOne(row, null, null);
     }
 
     /**
@@ -2799,15 +2809,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** */
         Object x;
 
+        /** */
+        TreeRowClosure<L, T> c;
+
         /**
          * @param row Row.
+         * @param c Closure filter.
          * @param x Implementation specific argument.
          * @param findLast Ignore row passed, find last row
          */
-        private GetOne(L row, Object x, boolean findLast) {
+        private GetOne(L row, TreeRowClosure<L,T> c, Object x, boolean findLast) {
             super(row, findLast);
 
             this.x = x;
+            this.c = c;
         }
 
         /** {@inheritDoc} */
@@ -2817,7 +2832,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (lvl != 0 && !canGetRowFromInner)
                 return false;
 
-            row = getRow(io, pageAddr, idx, x);
+            row = c == null || c.apply(BPlusTree.this, io,pageAddr, idx) ? getRow(io, pageAddr, idx, x) : null;
 
             return true;
         }
