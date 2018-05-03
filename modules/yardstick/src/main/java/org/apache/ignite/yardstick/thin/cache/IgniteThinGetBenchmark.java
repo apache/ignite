@@ -18,16 +18,14 @@
 package org.apache.ignite.yardstick.thin.cache;
 
 import java.util.Map;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
 import org.yardstickframework.BenchmarkConfiguration;
 
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Ignite benchmark that performs get operations.
+ * Thin client benchmark that performs get operations.
  */
 public class IgniteThinGetBenchmark extends IgniteThinCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
@@ -45,7 +43,7 @@ public class IgniteThinGetBenchmark extends IgniteThinCacheAbstractBenchmark<Int
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
 
-        cache().get(key);
+        cache.get(key);
 
         return true;
     }
@@ -59,7 +57,7 @@ public class IgniteThinGetBenchmark extends IgniteThinCacheAbstractBenchmark<Int
      * @param cacheName Cache name.
      * @param cnt Number of entries to load.
      */
-    protected final void loadSampleValues(String cacheName, int cnt) {
+    private void loadSampleValues(String cacheName, int cnt) {
         for (int i = 0; i < cnt; i++) {
             cache.put(i, new SampleValue(i));
 
@@ -70,7 +68,6 @@ public class IgniteThinGetBenchmark extends IgniteThinCacheAbstractBenchmark<Int
                 println("Loaded entries [cache=" + cacheName + ", cnt=" + i + ']');
             }
         }
-
 
         println("Load entries done [cache=" + cacheName + ", cnt=" + cnt + ']');
     }

@@ -4,19 +4,19 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import org.yardstickframework.BenchmarkConfiguration;
 
 /**
- *
+ * Thin client benchmark utils.
  */
 public class IgniteThinBenchmarkUtils {
     /**
+     * Compute local IP address.
      *
-     * @param cfg
-     * @return
+     * @param cfg Configuration.
+     * @return local IP address.
      * @throws SocketException
      */
     public static String getLocalIp(BenchmarkConfiguration cfg) throws SocketException {
@@ -41,9 +41,10 @@ public class IgniteThinBenchmarkUtils {
     }
 
     /**
+     * Creates list of driver host addresses.
      *
-     * @param cfg
-     * @return
+     * @param cfg Configuration.
+     * @return List of driver host addresses.
      */
     public static List<String> drvHostList(BenchmarkConfiguration cfg){
         String driverHosts = cfg.customProperties().get("DRIVER_HOSTS");
@@ -62,6 +63,12 @@ public class IgniteThinBenchmarkUtils {
         return res;
     }
 
+    /**
+     * Creates array of server host addresses.
+     *
+     * @param cfg Configuration.
+     * @return {@code Array} of server host addresses.
+     */
     public static String[] servHostArr(BenchmarkConfiguration cfg){
         String servHosts = cfg.customProperties().get("SERVER_HOSTS");
 

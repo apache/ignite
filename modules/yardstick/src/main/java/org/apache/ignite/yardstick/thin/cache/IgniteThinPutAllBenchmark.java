@@ -17,44 +17,22 @@
 
 package org.apache.ignite.yardstick.thin.cache;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
-import org.yardstickframework.BenchmarkConfiguration;
 
 /**
- * Ignite benchmark that performs putAll operations.
+ * Thin client benchmark that performs putAll operations.
  */
 public class IgniteThinPutAllBenchmark extends IgniteThinCacheAbstractBenchmark<Integer, Object> {
-    /** */
-    private static final Integer PUT_MAPS_KEY = 2048;
-
-    /** */
-    private static final Integer PUT_MAPS_CNT = 256;
-
-    /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-    }
-
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         Map<Integer, Integer> vals = new HashMap<>();
 
         for (int i = 0; i < 500; i++ )
-            vals.put(i, i);
+            vals.put(i, nextRandom(1000));
 
-        cache().putAll(vals);
+        cache.putAll(vals);
 
         return true;
     }

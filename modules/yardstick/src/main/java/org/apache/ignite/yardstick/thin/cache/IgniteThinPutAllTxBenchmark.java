@@ -17,13 +17,10 @@
 
 package org.apache.ignite.yardstick.thin.cache;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.client.ClientCache;
-import org.yardstickframework.BenchmarkConfiguration;
 
 /**
- * Ignite benchmark that performs putAll operations.
+ * Thin client benchmark that performs putAll operations.
  */
 public class IgniteThinPutAllTxBenchmark extends IgniteThinPutAllBenchmark {
     /** {@inheritDoc} */

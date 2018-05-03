@@ -17,15 +17,10 @@
 
 package org.apache.ignite.yardstick.thin.cache;
 
-import java.util.Map;
 import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.yardstick.cache.model.SampleValue;
-import org.yardstickframework.BenchmarkConfiguration;
-
-import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Ignite benchmark that performs get operations.
+ * Thin client benchmark that performs get operations.
  */
 public class IgniteThinGetTxBenchmark extends IgniteThinGetBenchmark {
     /** {@inheritDoc} */

@@ -17,34 +17,18 @@
 
 package org.apache.ignite.yardstick;
 
-import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
-import org.apache.ignite.client.ClientCacheConfiguration;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.yardstick.io.FileUtils;
 import org.apache.ignite.yardstick.thin.cache.IgniteThinBenchmarkUtils;
 import org.springframework.beans.BeansException;
@@ -53,16 +37,13 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.UrlResource;
 import org.yardstickframework.BenchmarkConfiguration;
-import org.yardstickframework.BenchmarkServer;
 import org.yardstickframework.BenchmarkUtils;
 
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
-
 /**
- * Standalone Ignite node.
+ * Thin client.
  */
 public class IgniteThinClient {
-    /** Grid client. */
+    /** Thin client. */
     private IgniteClient client;
 
     /** */
@@ -71,10 +52,10 @@ public class IgniteThinClient {
     }
 
     /**
-     * @param ignite Use exist ignite client.
+     * @param client Use exist ignite client.
      */
-    public IgniteThinClient(IgniteClient ignite) {
-        this.client = ignite;
+    public IgniteThinClient(IgniteClient client) {
+        this.client = client;
     }
 
     /** {@inheritDoc} */
@@ -100,8 +81,10 @@ public class IgniteThinClient {
 
         String locIp = IgniteThinBenchmarkUtils.getLocalIp(cfg);
 
+        // Number of local IP address in driver host addresses list.
         int num = getNum(cfg, locIp);
 
+        // Compute server host address to connect. Trying to avoid unequal number of connections for server nodes.
         if(servHostArr.length == 1)
             hostPort = servHostArr[0] + ":10800";
         else{
@@ -120,10 +103,11 @@ public class IgniteThinClient {
     }
 
     /**
+     * Get number of local IP in driver host list.
      *
-     * @param cfg
-     * @param locIp
-     * @return
+     * @param cfg Configuration.
+     * @param locIp Local Ip address.
+     * @return Number of local IP in driver host list.
      */
     private static int getNum(BenchmarkConfiguration cfg, String locIp){
         List<String> drvHosts = IgniteThinBenchmarkUtils.drvHostList(cfg);
@@ -136,14 +120,12 @@ public class IgniteThinClient {
         return 0;
     }
 
-
-
     /**
      * @param springCfgPath Spring configuration file path.
      * @return Tuple with grid configuration and Spring application context.
      * @throws Exception If failed.
      */
-    public static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath)
+    private static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath)
         throws Exception {
         URL url;
 
@@ -189,18 +171,8 @@ public class IgniteThinClient {
         return new IgniteBiTuple<>(cfgMap.values().iterator().next(), springCtx);
     }
 
-//    /** {@inheritDoc} */
-//    @Override public void stop() throws Exception {
-//        Ignition.stopAll(true);
-//    }
-//
-//    /** {@inheritDoc} */
-//    @Override public String usage() {
-//        return BenchmarkUtils.usage(new IgniteBenchmarkArguments());
-//    }
-
     /**
-     * @return Ignite.
+     * @return Thin client.
      */
     public IgniteClient client() {
         return client;

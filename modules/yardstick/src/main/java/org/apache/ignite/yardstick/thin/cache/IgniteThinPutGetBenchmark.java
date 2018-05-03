@@ -18,13 +18,11 @@
 package org.apache.ignite.yardstick.thin.cache;
 
 import java.util.Map;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
 
 /**
- * Ignite benchmark that performs put and get operations.
+ * Thin client benchmark that performs put and get operations.
  */
 public class IgniteThinPutGetBenchmark extends IgniteThinCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
@@ -36,7 +34,7 @@ public class IgniteThinPutGetBenchmark extends IgniteThinCacheAbstractBenchmark<
         if (val != null)
             key = nextRandom(args.range());
 
-        cache().put(key, new SampleValue(key));
+        cache.put(key, new SampleValue(key));
 
         return true;
     }

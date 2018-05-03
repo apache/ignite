@@ -17,12 +17,10 @@
 
 package org.apache.ignite.yardstick.thin.cache;
 
-import java.util.Map;
 import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.yardstick.cache.model.SampleValue;
 
 /**
- * Ignite benchmark that performs put operations.
+ * Thin client benchmark that performs put operations.
  */
 public class IgniteThinPutTxBenchmark extends IgniteThinPutBenchmark {
     /** {@inheritDoc} */

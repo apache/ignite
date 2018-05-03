@@ -22,14 +22,12 @@ import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
 
 /**
- * Ignite benchmark that performs put operations.
+ * Thin client benchmark that performs put operations.
  */
 public class IgniteThinPutBenchmark extends IgniteThinCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
-
-        ClientCache<Integer, Object> cache = client().cache("atomic");
 
         cache.put(key, new SampleValue(key));
 

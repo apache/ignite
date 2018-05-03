@@ -30,7 +30,7 @@ import static org.yardstickframework.BenchmarkUtils.jcommander;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Abstract class for Ignite benchmarks.
+ * Abstract class for Thin client benchmarks.
  */
 public abstract class IgniteThinAbstractBenchmark extends BenchmarkDriverAdapter {
     /** Arguments. */
@@ -49,41 +49,35 @@ public abstract class IgniteThinAbstractBenchmark extends BenchmarkDriverAdapter
 
         client = new IgniteThinClient().start(cfg);
 
-        System.out.println("localIp = " + locIp);
-
+        // Create util cache for checking if all driver processes had been started.
         ClientCache<String, String> utilCache = client.getOrCreateCache("start-util-cache");
 
-        System.out.println("utilCache = " + utilCache);
-
-        System.out.println("before = " + utilCache.get(locIp));
-
+        // Put 'started' message in util cache.
         utilCache.put(locIp, "started");
 
         List<String> hostList = IgniteThinBenchmarkUtils.drvHostList(cfg);
 
         int cnt = 0;
 
+        // Wait for all driver processes to start.
         while(!checkIfAllClientsStarted(hostList) && cnt++ < 600)
             Thread.sleep(500L);
     }
 
     /**
+     * Check if all driver processes had been started.
      *
-     * @param hostList
-     * @return
+     * @param hostList List of driver host addresses.
+     * @return {@code true} if all driver processes had been started or {@code false} if not.
      */
     private boolean checkIfAllClientsStarted(List<String> hostList){
         ClientCache<String, String> utilCache = client.getOrCreateCache("start-util-cache");
 
         for(String host : hostList){
-            System.out.println("host = " + host);
-
             if(host.equals("localhost"))
                 host = "127.0.0.1";
 
             String res = utilCache.get(host);
-
-            System.out.println(res);
 
             if (res == null || !res.equals("started"))
                 return false;
@@ -112,10 +106,6 @@ public abstract class IgniteThinAbstractBenchmark extends BenchmarkDriverAdapter
     protected IgniteClient client() {
         return client;
     }
-
-
-
-
 
     /**
      * @param max Key range.
