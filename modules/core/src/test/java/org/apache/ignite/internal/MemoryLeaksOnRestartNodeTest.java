@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import java.io.File;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -76,8 +75,6 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
      * @throws Exception On failed.
      */
     public void test() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_DELAYED_REPLACED_PAGE_WRITE, "false");
-
         // Warmup
         for (int i = 0; i < RESTARTS / 2; ++i) {
             startGrids(NODES);
