@@ -574,22 +574,23 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
-        Object entryProcessorRes = updateAllInternal(TRANSFORM,
-            invokeMap.keySet(),
-            invokeMap.values(),
-            args,
-            expiryPerCall(),
-            false,
-            false,
-            null,
-            ctx.writeThrough(),
-            ctx.readThrough(),
-            keepBinary);
+        Map<K, EntryProcessorResult<T>> entryProcessorRes = (Map<K, EntryProcessorResult<T>>) updateAllInternal(
+                TRANSFORM,
+                invokeMap.keySet(),
+                invokeMap.values(),
+                args,
+                expiryPerCall(),
+                false,
+                false,
+                null,
+                ctx.writeThrough(),
+                ctx.readThrough(),
+                keepBinary);
 
         if (statsEnabled)
             metrics0().addInvokeTimeNanos(System.nanoTime() - start);
 
-        return (Map<K, EntryProcessorResult<T>>)entryProcessorRes;
+        return entryProcessorRes;
     }
 
     /** {@inheritDoc} */
@@ -685,17 +686,18 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        Map<K, EntryProcessorResult<T>> entryProcessorResult = (Map<K, EntryProcessorResult<T>>)updateAllInternal(TRANSFORM,
-            map.keySet(),
-            map.values(),
-            args,
-            expiryPerCall(),
-            false,
-            false,
-            null,
-            ctx.writeThrough(),
-            ctx.readThrough(),
-            opCtx != null && opCtx.isKeepBinary());
+        Map<K, EntryProcessorResult<T>> entryProcessorResult = (Map<K, EntryProcessorResult<T>>) updateAllInternal(
+                TRANSFORM,
+                map.keySet(),
+                map.values(),
+                args,
+                expiryPerCall(),
+                false,
+                false,
+                null,
+                ctx.writeThrough(),
+                ctx.readThrough(),
+                opCtx != null && opCtx.isKeepBinary());
 
         if (statsEnabled)
             metrics0().addInvokeTimeNanos(System.nanoTime() - start);
@@ -921,23 +923,23 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                     try {
                         entry = entryEx(cacheKey);
 
-                    GridTuple3<Boolean, Object, EntryProcessorResult<Object>> t = entry.innerUpdateLocal(
-                        ver,
-                        val == null ? DELETE : op,
-                        val,
-                        invokeArgs,
-                        writeThrough,
-                        readThrough,
-                        retval,
-                        keepBinary,
-                        expiryPlc,
-                        true,
-                        true,
-                        filters,
-                        intercept,
-                        subjId,
-                        taskName,
-                        false);
+                        GridTuple3<Boolean, Object, EntryProcessorResult<Object>> t = entry.innerUpdateLocal(
+                            ver,
+                            val == null ? DELETE : op,
+                            val,
+                            invokeArgs,
+                            writeThrough,
+                            readThrough,
+                            retval,
+                            keepBinary,
+                            expiryPlc,
+                            true,
+                            true,
+                            filters,
+                            intercept,
+                            subjId,
+                            taskName,
+                            false);
 
                         if (op == TRANSFORM) {
                             if (t.get3() != null) {
@@ -1331,7 +1333,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      * @param err Optional partial update exception.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @param transformed
+     * @param transformed {@code True} if transform operation performed.
      * @return Partial update exception.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ForLoopReplaceableByForEach"})

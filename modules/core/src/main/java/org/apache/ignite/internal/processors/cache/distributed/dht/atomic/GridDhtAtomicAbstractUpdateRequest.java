@@ -60,7 +60,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
     /** */
     protected static final int DHT_ATOMIC_OBSOLETE_NEAR_KEY_FLAG_MASK = 0x20;
 
-    /** Flag indicating tranformation operation was performed. */
+    /** Flag indicating transformation operation was performed. */
     protected static final int DHT_ATOMIC_TRANSFORM_OP_FLAG_MASK = 0x40;
 
     /** Message index. */
@@ -279,7 +279,7 @@ public abstract class GridDhtAtomicAbstractUpdateRequest extends GridCacheIdMess
      * @param addPrevVal If {@code true} adds previous value.
      * @param prevVal Previous value.
      * @param updateCntr Update counter.
-     * @param cacheOp corresponding cache operation.
+     * @param cacheOp Corresponding cache operation.
      */
     public abstract void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,

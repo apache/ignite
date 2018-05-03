@@ -2640,7 +2640,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return fut0.chain(new CX1<IgniteInternalFuture<GridCacheReturn>, EntryProcessorResult<T>>() {
             @Override public EntryProcessorResult<T> applyx(IgniteInternalFuture<GridCacheReturn> fut)
                 throws IgniteCheckedException {
-
                 GridCacheReturn ret = fut.get();
 
                 if (statsEnabled)
@@ -2771,7 +2770,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return syncOp(new SyncOp<Map<K, EntryProcessorResult<T>>>(map.size() == 1) {
             @Nullable @Override public Map<K, EntryProcessorResult<T>> op(GridNearTxLocal tx)
                 throws IgniteCheckedException {
-
                 IgniteInternalFuture<GridCacheReturn> fut =
                     tx.invokeAsync(ctx, null, (Map<? extends K, ? extends EntryProcessor<K, V, Object>>)map, args);
 

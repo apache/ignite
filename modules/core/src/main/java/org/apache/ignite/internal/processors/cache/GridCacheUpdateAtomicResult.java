@@ -57,7 +57,7 @@ public class GridCacheUpdateAtomicResult {
     /** */
     private final long updateCntr;
 
-    /** Flag indicating transformed value. */
+    /** Flag indicating whether value is transformed. */
     private boolean transformed;
 
     /** Value computed by entry processor. */

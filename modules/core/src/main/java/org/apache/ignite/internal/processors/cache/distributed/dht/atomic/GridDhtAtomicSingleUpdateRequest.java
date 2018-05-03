@@ -121,7 +121,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param addPrevVal If {@code true} adds previous value.
      * @param prevVal Previous value.
      * @param updateCntr Update counter.
-     * @param cacheOp corresponding cache operation.
+     * @param cacheOp Corresponding cache operation.
      */
     @Override public void addWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,

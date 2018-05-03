@@ -89,7 +89,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
@@ -1808,7 +1807,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (updateMetrics && INVOKE_NO_OP.equals(updateRes.outcome()) && (transformOp || updateRes.transformed()))
                 cctx.cache().metrics0().onReadOnlyInvoke(oldVal != null);
-            else if (updateMetrics && REMOVE_NO_VAL.equals(updateRes.outcome())  && (transformOp || updateRes.transformed()))
+            else if (updateMetrics && REMOVE_NO_VAL.equals(updateRes.outcome())
+                    && (transformOp || updateRes.transformed()))
                 cctx.cache().metrics0().onInvokeRemove(oldVal != null);
 
             switch (updateRes.outcome()) {
@@ -4260,6 +4260,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      *
      * @param op Operation.
      * @param metrics Update merics flag.
+     * @param transformed {@code True} if transform operation caused update.
      * @param hasOldVal {@code True} if entry has old value.
      */
     private void updateMetrics(GridCacheOperation op, boolean metrics, boolean transformed, boolean hasOldVal) {

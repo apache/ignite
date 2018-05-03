@@ -520,17 +520,17 @@ public class PlatformCacheWriteMetricsTask extends ComputeTaskAdapter<Long, Obje
         }
 
         /** {@inheritDoc} */
-        @Override public float getAverageEntryProcessorInvocationTime() {
+        @Override public float getEntryProcessorAverageInvocationTime() {
             return 75;
         }
 
         /** {@inheritDoc} */
-        @Override public float getMinEntryProcessorInvocationTime() {
+        @Override public float getEntryProcessorMinInvocationTime() {
             return 76;
         }
 
         /** {@inheritDoc} */
-        @Override public float getMaxEntryProcessorInvocationTime() {
+        @Override public float getEntryProcessorMaxInvocationTime() {
             return 77;
         }
 

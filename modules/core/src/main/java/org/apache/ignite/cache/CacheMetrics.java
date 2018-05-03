@@ -132,21 +132,21 @@ public interface CacheMetrics {
      *
      * @return The time in µs.
      */
-    public float getAverageEntryProcessorInvocationTime();
+    public float getEntryProcessorAverageInvocationTime();
 
     /**
      * So far, the minimum time to execute cache invokes.
      *
      * @return The time in µs.
      */
-    public float getMinEntryProcessorInvocationTime();
+    public float getEntryProcessorMinInvocationTime();
 
     /**
      * So far, the maximum time to execute cache invokes.
      *
      * @return The time in µs.
      */
-    public float getMaxEntryProcessorInvocationTime();
+    public float getEntryProcessorMaxInvocationTime();
 
     /**
      * The total number of removals from the cache. This does not include evictions,

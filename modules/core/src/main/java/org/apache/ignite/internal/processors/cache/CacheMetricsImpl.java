@@ -64,10 +64,10 @@ public class CacheMetricsImpl implements CacheMetrics {
     private AtomicLong entryProcessorInvokeTimeNanos = new AtomicLong();
 
     /** So far, the minimum time to execute cache invokes. */
-    private AtomicLong minEntryProcessorInvocationTime = new AtomicLong();
+    private AtomicLong entryProcessorMinInvocationTime = new AtomicLong();
 
     /** So far, the maximum time to execute cache invokes. */
-    private AtomicLong maxEntryProcessorInvocationTime = new AtomicLong();
+    private AtomicLong entryProcessorMaxInvocationTime = new AtomicLong();
 
     /** Number of entry processor invokes on keys, which exist in cache. */
     private AtomicLong entryProcessorHits = new AtomicLong();
@@ -469,8 +469,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         entryProcessorMisses.set(0);
         entryProcessorHits.set(0);
         entryProcessorInvokeTimeNanos.set(0);
-        maxEntryProcessorInvocationTime.set(0);
-        minEntryProcessorInvocationTime.set(0);
+        entryProcessorMaxInvocationTime.set(0);
+        entryProcessorMinInvocationTime.set(0);
 
         offHeapGets.set(0);
         offHeapPuts.set(0);
@@ -580,24 +580,24 @@ public class CacheMetricsImpl implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public float getAverageEntryProcessorInvocationTime() {
+    @Override public float getEntryProcessorAverageInvocationTime() {
         long totalInvokes = getEntryProcessorInvocations();
         long timeNanos = entryProcessorInvokeTimeNanos.get();
 
         if (timeNanos == 0 || totalInvokes == 0)
             return 0;
 
-        return timeNanos / totalInvokes / NANOS_IN_MICROSECOND;
+        return (1f * timeNanos) / totalInvokes / NANOS_IN_MICROSECOND;
     }
 
     /** {@inheritDoc} */
-    @Override public float getMinEntryProcessorInvocationTime() {
-        return minEntryProcessorInvocationTime.get() / NANOS_IN_MICROSECOND;
+    @Override public float getEntryProcessorMinInvocationTime() {
+        return (1f * entryProcessorMinInvocationTime.get()) / NANOS_IN_MICROSECOND;
     }
 
     /** {@inheritDoc} */
-    @Override public float getMaxEntryProcessorInvocationTime() {
-        return maxEntryProcessorInvocationTime.get() / NANOS_IN_MICROSECOND;
+    @Override public float getEntryProcessorMaxInvocationTime() {
+        return (1f * entryProcessorMaxInvocationTime.get()) / NANOS_IN_MICROSECOND;
     }
 
     /** {@inheritDoc} */
@@ -661,6 +661,8 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /**
      * Cache invocations caused update callback.
+     *
+     * @param isHit Hit or miss flag.
      */
     public void onInvokeUpdate(boolean isHit) {
         entryProcessorPuts.incrementAndGet();
@@ -676,6 +678,8 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /**
      * Cache invocations caused removal callback.
+     *
+     * @param isHit Hit or miss flag.
      */
     public void onInvokeRemove(boolean isHit) {
         entryProcessorRemovals.incrementAndGet();
@@ -691,6 +695,8 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /**
      * Read-only cache invocations.
+     *
+     * @param isHit Hit or miss flag.
      */
     public void onReadOnlyInvoke(boolean isHit) {
         entryProcessorReadOnlyInvocations.incrementAndGet();
@@ -727,13 +733,13 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration Duration.
      */
     private void recalculateInvokeMinTimeNanos(long duration){
-        long minTime = minEntryProcessorInvocationTime.longValue();
+        long minTime = entryProcessorMinInvocationTime.longValue();
 
         while (minTime > duration || minTime == 0) {
-            if (minEntryProcessorInvocationTime.compareAndSet(minTime, duration))
+            if (entryProcessorMinInvocationTime.compareAndSet(minTime, duration))
                 break;
             else
-                minTime = minEntryProcessorInvocationTime.longValue();
+                minTime = entryProcessorMinInvocationTime.longValue();
         }
     }
 
@@ -743,13 +749,13 @@ public class CacheMetricsImpl implements CacheMetrics {
      * @param duration Duration.
      */
     private void recalculateInvokeMaxTimeNanos(long duration){
-        long maxTime = maxEntryProcessorInvocationTime.longValue();
+        long maxTime = entryProcessorMaxInvocationTime.longValue();
 
         while (maxTime < duration) {
-            if (maxEntryProcessorInvocationTime.compareAndSet(maxTime, duration))
+            if (entryProcessorMaxInvocationTime.compareAndSet(maxTime, duration))
                 break;
             else
-                maxTime = maxEntryProcessorInvocationTime.longValue();
+                maxTime = entryProcessorMaxInvocationTime.longValue();
         }
     }
 

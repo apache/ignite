@@ -326,18 +326,18 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public float getAverageEntryProcessorInvocationTime() {
-        return cache.metrics0().getAverageEntryProcessorInvocationTime();
+    @Override public float getEntryProcessorAverageInvocationTime() {
+        return cache.metrics0().getEntryProcessorAverageInvocationTime();
     }
 
     /** {@inheritDoc} */
-    @Override public float getMinEntryProcessorInvocationTime() {
-        return cache.metrics0().getMinEntryProcessorInvocationTime();
+    @Override public float getEntryProcessorMinInvocationTime() {
+        return cache.metrics0().getEntryProcessorMinInvocationTime();
     }
 
     /** {@inheritDoc} */
-    @Override public float getMaxEntryProcessorInvocationTime() {
-        return cache.metrics0().getMaxEntryProcessorInvocationTime();
+    @Override public float getEntryProcessorMaxInvocationTime() {
+        return cache.metrics0().getEntryProcessorMaxInvocationTime();
     }
 
     /** {@inheritDoc} */

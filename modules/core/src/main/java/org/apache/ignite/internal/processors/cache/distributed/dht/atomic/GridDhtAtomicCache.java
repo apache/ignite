@@ -944,7 +944,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        Object updateResults = updateAll0(null,
+        Map<K, EntryProcessorResult<T>> updateResults = (Map<K, EntryProcessorResult<T>>) updateAll0(null,
             map,
             args,
             null,
@@ -957,7 +957,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (statsEnabled)
             metrics0().addInvokeTimeNanos(System.nanoTime() - start);
 
-        return (Map<K, EntryProcessorResult<T>>)updateResults;
+        return updateResults;
     }
 
     /** {@inheritDoc} */
