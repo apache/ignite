@@ -130,6 +130,7 @@ const COMPOSITE_TYPE = Object.freeze({
  * In this case the Ignite client tries to make automatic mapping between JavaScript types
  * and Ignite object types according to the following mapping table:
  * <pre>
+ *      TODO
  *      JavaScript type              to / from        type code ({@link ObjectType.PRIMITIVE_TYPE} and {@link ObjectType.COMPOSITE_TYPE})
  *      null                         to / from        NULL
  *      number                       to / from        DOUBLE
@@ -269,7 +270,10 @@ const COLLECTION_SUBTYPE = Object.freeze({
 });
 
 /**
- * ???
+ * Class representing a collection type of Ignite object.
+ *
+ * It is described by COMPOSITE_TYPE.COLLECTION {@link ObjectType.COMPOSITE_TYPE}
+ * and one of {@link CollectionObjectType.COLLECTION_SUBTYPE}.
  *
  * @extends CompositeType
  */
@@ -281,11 +285,16 @@ class CollectionObjectType extends CompositeType {
     /**
      * Public constructor.
      *
-     * ???
+     * Specifies a kind of collection
+     * and optionally specifies a type of elements in the collection.
+     *
+     * If the type of elements is not specified then during operations the Ignite client
+     * will try to make automatic mapping between JavaScript types and Ignite object types -
+     * according to the mapping table defined in the description of the {@link ObjectType} class.
      * 
      * @param {CollectionObjectType.COLLECTION_SUBTYPE} collectionSubType - collection subtype, one of the 
      *  {@link CollectionObjectType.COLLECTION_SUBTYPE} constants.
-     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [elementType=null] - type of the elements in the collection:
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [elementType=null] - type of elements in the collection:
      *   - either a type code of primitive (simple) type
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
