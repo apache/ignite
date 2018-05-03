@@ -18,13 +18,19 @@
 package org.apache.ignite.configuration;
 
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.cluster.graph.ClusterGraph;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Default Communication Failure Resolver.
@@ -36,38 +42,154 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
 
     /** {@inheritDoc} */
     @Override public void resolve(CommunicationFailureContext ctx) {
-        ClusterGraph graph = new ClusterGraph(log, ctx);
+        ClusterPart largestCluster = findLargestConnectedCluster(ctx);
 
-        ClusterSearch cluster = graph.findLargestIndependentCluster();
+        if (largestCluster == null)
+            return;
 
-        List<ClusterNode> nodes = ctx.topologySnapshot();
+        log.info("Communication problem resolver found fully connected independent cluster ["
+            + "serverNodesCnt=" + largestCluster.srvNodesCnt + ", "
+            + "clientNodesCnt=" + largestCluster.connectedClients.size() + ", "
+            + "totalAliveNodes=" + ctx.topologySnapshot().size() + ", "
+            + "serverNodesIds=" + clusterNodeIds(largestCluster.nodesSet, ctx.topologySnapshot(), 1000) + "]");
 
-        assert nodes.size() > 0;
-        assert cluster != null;
+        keepCluster(ctx, largestCluster);
+    }
 
-        if (graph.checkFullyConnected(cluster.nodesBitSet)) {
-            assert cluster.nodeCnt <= nodes.size();
+    @Nullable private ClusterPart findLargestConnectedCluster(CommunicationFailureContext ctx) {
+        List<ClusterNode> srvNodes = ctx.topologySnapshot()
+            .stream()
+            .filter(node -> !CU.clientNode(node))
+            .collect(Collectors.toList());
 
-            if (cluster.nodeCnt < nodes.size()) {
-                if (log.isInfoEnabled()) {
-                    log.info("Communication problem resolver found fully connected independent cluster [" +
-                        "clusterSrvCnt=" + cluster.srvCnt +
-                        ", clusterTotalNodes=" + cluster.nodeCnt +
-                        ", totalAliveNodes=" + nodes.size() + "]");
-                }
+        ClusterGraph graph = new ClusterGraph(log, ctx, CU::clientNode);
 
-                for (int i = 0; i < nodes.size(); i++) {
-                    if (!cluster.nodesBitSet.get(i))
-                        ctx.killNode(nodes.get(i));
-                }
-            }
-            else
-                U.warn(log, "All alive nodes are fully connected, this should be resolved automatically.");
+        List<BitSet> components = graph.findConnectedComponents();
+
+        if (components.isEmpty()) {
+            U.warn(log, "Unable to find at least one alive server node in the cluster " + ctx);
+
+            return null;
         }
-        else {
-            if (log.isInfoEnabled()) {
-                log.info("Communication problem resolver failed to find fully connected independent cluster.");
+
+        if (components.size() == 1) {
+            BitSet nodesSet = components.get(0);
+            int nodeCnt = nodesSet.cardinality();
+
+            boolean fullyConnected = graph.checkFullyConnected(nodesSet);
+
+            if (fullyConnected && nodeCnt == srvNodes.size()) {
+                U.warn(log, "All alive nodes are fully connected, this should be resolved automatically.");
+
+                return null;
             }
+
+            if (log.isInfoEnabled())
+                log.info("Communication problem resolver detected partial lost for some connections inside cluster. "
+                    + "Will keep largest set of healthy fully-connected nodes. Other nodes will be killed forcibly.");
+
+            BitSet fullyConnectedPart = graph.findLargestFullyConnectedComponent(nodesSet);
+            Set<ClusterNode> connectedClients = connectedClients(ctx.topologySnapshot(), fullyConnectedPart);
+
+            return new ClusterPart(fullyConnectedPart, connectedClients);
+        }
+
+        // If cluster has splitted on several parts and there are at least 2 parts which aren't single node
+        // It means that split brain has happened.
+        boolean isSplitBrain = components.size() > 1 &&
+            components.stream().filter(cmp -> cmp.size() > 1).count() >= 2;
+
+        if (isSplitBrain)
+            U.warn(log, "Communication problem resolver detected split brain. "
+                + "Cluster has splitted on " + components.size() + " independent parts. "
+                + "Will keep only one largest fully-connected part. "
+                + "Other nodes will be killed forcibly.");
+        else
+            U.warn(log, "Communication problem resolver detected full lost for some connections inside cluster. "
+                + "Problem nodes will be found and killed forcibly.");
+
+        ClusterPart largestCluster = null;
+        for (int i = 0; i < components.size(); i++) {
+            BitSet clusterPart = components.get(i);
+
+            BitSet fullyConnectedPart = graph.findLargestFullyConnectedComponent(clusterPart);
+            Set<ClusterNode> connectedClients = connectedClients(ctx.topologySnapshot(), fullyConnectedPart);
+
+            ClusterPart current = new ClusterPart(fullyConnectedPart, connectedClients);
+
+            if (largestCluster == null || current.compareTo(largestCluster) > 0)
+                largestCluster = current;
+        }
+
+        assert largestCluster != null
+            : "Unable to find at least one alive independent cluster.";
+
+        return largestCluster;
+    }
+
+    /**
+     * Keeps in the server cluster nodes presented in given {@code nodesSet}.
+     * Client nodes which have connections to presented {@code nodesSet} will be also keeped.
+     * Other nodes will be killed forcibly.
+     *
+     * @param ctx Communication failure context.
+     * @param clusterPart Set of nodes need to keep in the cluster.
+     */
+    private void keepCluster(CommunicationFailureContext ctx, ClusterPart clusterPart) {
+        List<ClusterNode> allNodes = ctx.topologySnapshot();
+
+        // Kill server nodes.
+        for (int idx = 0; idx < allNodes.size(); idx++) {
+            ClusterNode node = allNodes.get(idx);
+
+            // Client nodes will be processed separately.
+            if (CU.clientNode(node))
+                continue;
+
+            if (!clusterPart.nodesSet.get(idx))
+                ctx.killNode(node);
+        }
+
+        // Kill client nodes unable to connect to the presented part of cluster.
+        for (int idx = 0; idx < allNodes.size(); idx++) {
+            ClusterNode node = allNodes.get(idx);
+
+            if (CU.clientNode(node) && !clusterPart.connectedClients.contains(node))
+                ctx.killNode(node);
+        }
+    }
+
+    /**
+     * Find set of the client nodes which are able to connect to given set of server nodes {@code srvNodesSet}.
+     *
+     * @param allNodes All nodes.
+     * @param srvNodesSet Server nodes set.
+     * @return Set of client nodes.
+     */
+    private Set<ClusterNode> connectedClients(List<ClusterNode> allNodes, BitSet srvNodesSet) {
+        return Collections.emptySet();
+    }
+
+    private static class ClusterPart implements Comparable<ClusterPart> {
+        int srvNodesCnt;
+
+        BitSet nodesSet;
+
+        Set<ClusterNode> connectedClients;
+
+        public ClusterPart(BitSet nodesSet, Set<ClusterNode> connectedClients) {
+            this.nodesSet = nodesSet;
+            this.srvNodesCnt = nodesSet.cardinality();
+            this.connectedClients = connectedClients;
+        }
+
+        @Override public int compareTo(@NotNull ClusterPart o) {
+            int srvNodesCmp = Integer.compare(o.srvNodesCnt, srvNodesCnt);
+
+            if (srvNodesCmp != 0)
+                return srvNodesCmp;
+
+            return Integer.compare(o.connectedClients.size(), connectedClients.size());
         }
     }
 
@@ -107,195 +229,6 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
         builder.append(']');
 
         return builder.toString();
-    }
-
-    /**
-     *
-     */
-    private static class ClusterSearch {
-        /** */
-        int srvCnt;
-
-        /** */
-        int nodeCnt;
-
-        /** */
-        final BitSet nodesBitSet;
-
-        /**
-         * @param nodes Total nodes.
-         */
-        ClusterSearch(int nodes) {
-            nodesBitSet = new BitSet(nodes);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class ClusterGraph {
-        /** */
-        private final static int WORD_IDX_SHIFT = 6;
-
-        /** */
-        private final IgniteLogger log;
-
-        /** */
-        private final int nodeCnt;
-
-        /** */
-        private final long[] visitBitSet;
-
-        /** */
-        private final CommunicationFailureContext ctx;
-
-        /** */
-        private final List<ClusterNode> nodes;
-
-        /**
-         * @param log Logger.
-         * @param ctx Context.
-         */
-        ClusterGraph(IgniteLogger log, CommunicationFailureContext ctx) {
-            this.log = log;
-            this.ctx = ctx;
-
-            nodes = ctx.topologySnapshot();
-
-            nodeCnt = nodes.size();
-
-            assert nodeCnt > 0;
-
-            visitBitSet = initBitSet(nodeCnt);
-        }
-
-        /**
-         * @param bitIndex Bit index.
-         * @return Word index containing bit with given index.
-         */
-        private static int wordIndex(int bitIndex) {
-            return bitIndex >> WORD_IDX_SHIFT;
-        }
-
-        /**
-         * @param bitCnt Number of bits.
-         * @return Bit set words.
-         */
-        static long[] initBitSet(int bitCnt) {
-            return new long[wordIndex(bitCnt - 1) + 1];
-        }
-
-        /**
-         * @return Cluster nodes bit set.
-         */
-        ClusterSearch findLargestIndependentCluster() {
-            ClusterSearch maxCluster = null;
-
-            for (int i = 0; i < nodeCnt; i++) {
-                if (getBit(visitBitSet, i))
-                    continue;
-
-                ClusterSearch cluster = new ClusterSearch(nodeCnt);
-
-                search(cluster, i);
-
-                if (log.isInfoEnabled()) {
-                    log.info("Communication problem resolver found cluster [srvCnt=" + cluster.srvCnt +
-                        ", totalNodeCnt=" + cluster.nodeCnt +
-                        ", nodeIds=" + clusterNodeIds(cluster.nodesBitSet, nodes, 1000) + "]");
-                }
-
-                if (maxCluster == null || cluster.srvCnt > maxCluster.srvCnt)
-                    maxCluster = cluster;
-            }
-
-            return maxCluster;
-        }
-
-        /**
-         * @param cluster Cluster nodes bit set.
-         * @return {@code True} if all cluster nodes are able to connect to each other.
-         */
-        boolean checkFullyConnected(BitSet cluster) {
-            int startIdx = 0;
-
-            int clusterNodes = cluster.cardinality();
-
-            for (;;) {
-                int idx = cluster.nextSetBit(startIdx);
-
-                if (idx == -1)
-                    break;
-
-                ClusterNode node1 = nodes.get(idx);
-
-                for (int i = 0; i < clusterNodes; i++) {
-                    if (!cluster.get(i) || i == idx)
-                        continue;
-
-                    ClusterNode node2 = nodes.get(i);
-
-                    if (cluster.get(i) && !ctx.connectionAvailable(node1, node2))
-                        return false;
-                }
-
-                startIdx = idx + 1;
-            }
-
-            return true;
-        }
-
-        /**
-         * @param cluster Current cluster bit set.
-         * @param idx Node index.
-         */
-        void search(ClusterSearch cluster, int idx) {
-            assert !getBit(visitBitSet, idx);
-
-            setBit(visitBitSet, idx);
-
-            cluster.nodesBitSet.set(idx);
-            cluster.nodeCnt++;
-
-            ClusterNode node1 = nodes.get(idx);
-
-            if (!CU.clientNode(node1))
-                cluster.srvCnt++;
-
-            for (int i = 0; i < nodeCnt; i++) {
-                if (i == idx || getBit(visitBitSet, i))
-                    continue;
-
-                ClusterNode node2 = nodes.get(i);
-
-                boolean connected = ctx.connectionAvailable(node1, node2) ||
-                    ctx.connectionAvailable(node2, node1);
-
-                if (connected)
-                    search(cluster, i);
-            }
-        }
-
-        /**
-         * @param words Bit set words.
-         * @param bitIndex Bit index.
-         */
-        static void setBit(long words[], int bitIndex) {
-            int wordIndex = wordIndex(bitIndex);
-
-            words[wordIndex] |= (1L << bitIndex);
-        }
-
-        /**
-         * @param words Bit set words.
-         * @param bitIndex Bit index.
-         * @return Bit value.
-         */
-        static boolean getBit(long[] words, int bitIndex) {
-            int wordIndex = wordIndex(bitIndex);
-
-            return (words[wordIndex] & (1L << bitIndex)) != 0;
-        }
     }
 
     /** {@inheritDoc} */
