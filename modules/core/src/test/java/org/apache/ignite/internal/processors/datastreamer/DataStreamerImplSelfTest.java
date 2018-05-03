@@ -238,6 +238,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             IgniteFuture fut = null;
 
             try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
+                streamer.perThreadBufferSize(1);
+
                 fut = streamer.addData(1, "1");
 
                 streamer.flush();
@@ -333,6 +335,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
         final IgniteDataStreamer ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME);
+
+        ldr.perThreadBufferSize(1);
 
         final IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
@@ -466,6 +470,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         IgniteDataStreamer<Object, Object> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME);
+
+        streamer.perThreadBufferSize(1);
 
         ((DataStreamerImpl)streamer).maxRemapCount(0);
 

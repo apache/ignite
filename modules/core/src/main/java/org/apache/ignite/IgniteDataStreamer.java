@@ -119,6 +119,9 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
     /** Default operations batch size to sent to remote node for loading. */
     public static final int DFLT_PER_NODE_BUFFER_SIZE = 512;
 
+    /** Default batch size per thread to send to buffer on node. */
+    public static final int DFLT_PER_THREAD_BUFFER_SIZE = 4096;
+
     /** Default timeout for streamer's operations. */
     public static final long DFLT_UNLIMIT_TIMEOUT = -1;
 
@@ -223,6 +226,20 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * @see IgniteConfiguration#getDataStreamerThreadPoolSize()
      */
     public void perNodeParallelOperations(int parallelOps);
+
+    /**
+     * Allows to set buffer size for thread in case of stream by {@link #addData(Object, Object)} call.
+     *
+     * @param size Size of buffer.
+     */
+    public void perThreadBufferSize(int size);
+
+    /**
+     * Gets buffer size set by {@link #perThreadBufferSize(int)}.
+     *
+     * @return Buffer size.
+     */
+    public int perThreadBufferSize();
 
     /**
      * Sets the timeout that is used in the following cases:
