@@ -23,10 +23,11 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridDebug;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests leaks.
+ * Tests leaks on node restart with enabled persistence.
  */
 public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
     /** Heap dump file name. */
@@ -39,7 +40,7 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
     private static final int NODES = 3;
 
     /** Allow 5Mb leaks on node restart. */
-    private static final int ALLOW_LEAK_ON_RESTART_IN_MB = 2;
+    private static final int ALLOW_LEAK_ON_RESTART_IN_MB = 1;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -50,55 +51,70 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setName("mem0").setPersistenceEnabled(false))
-            .setDataRegionConfigurations(new DataRegionConfiguration[] {
+            .setDataRegionConfigurations(
                 new DataRegionConfiguration().setName("disk").setPersistenceEnabled(true),
-                new DataRegionConfiguration().setName("mem2").setPersistenceEnabled(false)
-            }));
+                new DataRegionConfiguration().setName("mem2").setPersistenceEnabled(false)));
 
         return cfg;
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        cleanPersistenceDir();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
         cleanPersistenceDir();
 
-        super.beforeTest();
+        super.afterTestsStopped();
     }
 
     /**
      * @throws Exception On failed.
      */
     public void test() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_DELAYED_REPLACED_PAGE_WRITE, "false");
+
         // Warmup
         for (int i = 0; i < RESTARTS / 2; ++i) {
             startGrids(NODES);
 
-            Thread.sleep(500);
+            U.sleep(500);
 
             stopAllGrids();
         }
 
         GridDebug.dumpHeap(HEAP_DUMP_FILE_NAME, true);
 
-        final long size0 = new File(HEAP_DUMP_FILE_NAME).length();
+        File dumpFile = new File(HEAP_DUMP_FILE_NAME);
+
+        final long size0 = dumpFile.length();
 
         // Restarts
         for (int i = 0; i < RESTARTS; ++i) {
             startGrids(NODES);
 
-            Thread.sleep(500);
+            U.sleep(500);
 
             stopAllGrids();
+
+            GridDebug.dumpHeap(HEAP_DUMP_FILE_NAME, true);
         }
 
         GridDebug.dumpHeap(HEAP_DUMP_FILE_NAME, true);
 
-        final long size1 = new File(HEAP_DUMP_FILE_NAME).length();
+        final float leakSize = (float)(dumpFile.length() - size0) / 1024 / 1024 / NODES / RESTARTS;
 
-        final long leakSize = ((size1 - size0) >> 20);
+        assertTrue("Possible leaks detected. The " + leakSize + "M leaks per node restart after " + RESTARTS
+                + " restarts. See the '" + dumpFile.getAbsolutePath() + "'",
+            leakSize < ALLOW_LEAK_ON_RESTART_IN_MB);
 
-        assertTrue("Possible leaks detected. The " + leakSize + "M leaks after " + RESTARTS + " restarts. " +
-                "See the '" + new File(HEAP_DUMP_FILE_NAME).getAbsolutePath() + "'",
-            leakSize < RESTARTS * ALLOW_LEAK_ON_RESTART_IN_MB * NODES);
+        // Remove dump if successful.
+        dumpFile.delete();
    }
 }

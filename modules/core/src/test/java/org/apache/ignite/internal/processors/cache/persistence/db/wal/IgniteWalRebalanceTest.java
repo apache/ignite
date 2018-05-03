@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import java.util.concurrent.TimeUnit;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -47,6 +48,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0"); //to make all rebalance wal-based
 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setConsistentId(gridName);
 
         CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
@@ -87,9 +90,11 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test simple WAL historical rebalance.
+     *
      * @throws Exception if failed.
      */
-    public void test() throws Exception {
+    public void testSimple() throws Exception {
         IgniteEx ig0 = startGrid(0);
         IgniteEx ig1 = startGrid(1);
         final int entryCnt = 10_000;
@@ -112,12 +117,60 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         ig1 = startGrid(1);
 
-        IgniteCache<Object, Object> cache1 = ig1.cache(CACHE_NAME);
+        awaitPartitionMapExchange();
 
-        cache1.rebalance().get(2, TimeUnit.MINUTES);
+        for (Ignite ig : G.allGrids()) {
+            IgniteCache<Object, Object> cache1 = ig.cache(CACHE_NAME);
+
+            for (int k = 0; k < entryCnt; k++)
+                assertEquals(new IndexedObject(k + 1), cache1.get(k));
+        }
+    }
+
+    /**
+     * Test that cache entry removes are rebalanced properly using WAL.
+     *
+     * @throws Exception If failed.
+     */
+    public void testRebalanceRemoves() throws Exception {
+        IgniteEx ig0 = startGrid(0);
+        IgniteEx ig1 = startGrid(1);
+        final int entryCnt = 10_000;
+
+        ig0.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ig0.cache(CACHE_NAME);
 
         for (int k = 0; k < entryCnt; k++)
-            assertEquals(new IndexedObject(k + 1), cache.get(k));
+            cache.put(k, new IndexedObject(k));
+
+        forceCheckpoint();
+
+        stopGrid(1, false);
+
+        for (int k = 0; k < entryCnt; k++) {
+            if (k % 3 != 2)
+                cache.put(k, new IndexedObject(k + 1));
+            else // Spread removes across all partitions.
+                cache.remove(k);
+        }
+
+        forceCheckpoint();
+
+        ig1 = startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        for (Ignite ig : G.allGrids()) {
+            IgniteCache<Object, Object> cache1 = ig.cache(CACHE_NAME);
+
+            for (int k = 0; k < entryCnt; k++) {
+                if (k % 3 != 2)
+                    assertEquals(new IndexedObject(k + 1), cache1.get(k));
+                else
+                    assertNull(cache1.get(k));
+            }
+        }
     }
 
     /**
