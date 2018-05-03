@@ -28,8 +28,8 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
  * The configuration includes:
  *   - (mandatory) Ignite node endpoint(s)
  *   - (optional) user credentials for authentication
- *   - (optional) networking and connection settings ???
- *   - (optional) TLS settings ???
+ *   - (optional) TLS enabling
+ *   - (optional) connection options
  */
 class IgniteClientConfiguration {
 
@@ -90,16 +90,19 @@ class IgniteClientConfiguration {
     }
 
     /**
-     * ???
+     * Sets connection options.
      *
-     * @param {boolean} useTLS - ???
-     * @param {object} connectionOptions - ???
-     *   net.Socket.connect() method options (https://nodejs.org/api/net.html#net_socket_connect_options_connectlistener) or
-     *   tls.connect() method options (https://nodejs.org/api/tls.html#tls_tls_connect_options_callback)
+     * By default the client establishes a non-secure connection with default connection options defined by nodejs.
+     *
+     * @param {boolean} useTLS - if true, secure connection will be established;
+     *                           if false, non-secure connection will be established.
+     * @param {object} [connectionOptions=null] - connection options.
+     *   For non-secure connection: options defined here https://nodejs.org/api/net.html#net_socket_connect_options_connectlistener
+     *   For secure connection: options defined here https://nodejs.org/api/tls.html#tls_tls_connect_options_callback
      *
      * @return {IgniteClientConfiguration} - the same instance of the IgniteClientConfiguration.
      */
-    setConnectionCfg(useTLS, connectionOptions = null) {
+    setConnectionOptions(useTLS, connectionOptions = null) {
         this._useTLS = useTLS;
         this._options = connectionOptions;
         return this;
