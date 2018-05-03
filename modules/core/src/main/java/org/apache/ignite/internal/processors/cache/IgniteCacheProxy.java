@@ -124,7 +124,4 @@ public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizabl
      * @see SqlFieldsQuery
      */
     public List<FieldsQueryCursor<List<?>>> queryMultipleStatements(SqlFieldsQuery qry);
-
-    /** */
-    public boolean isLocking();
 }

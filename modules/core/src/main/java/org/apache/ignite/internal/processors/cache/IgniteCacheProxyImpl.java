@@ -1605,13 +1605,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         return new IgniteFutureImpl<>(ctx.kernalContext().cache().dynamicCloseCache(ctx.name()));
     }
 
-    /**
-     * @return {@code true} if proxy have lock.
-     */
-    @Override public boolean isLocking() {
-        return cachedProxy.isLocking();
-    }
-
     /** {@inheritDoc} */
     @Override public boolean isClosed() {
         return ctx.kernalContext().cache().context().closed(ctx);

@@ -1379,11 +1379,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isLocking() {
-        return lock;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isClosed() {
         return delegate.isClosed();
     }
