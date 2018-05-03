@@ -65,7 +65,7 @@ public class IgnitePdsPartitionFilesTruncateTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        //cleanPersistenceDir();
+        cleanPersistenceDir();
 
         super.afterTest();
     }
@@ -146,7 +146,7 @@ public class IgnitePdsPartitionFilesTruncateTest extends GridCommonAbstractTest 
 
         int part = Integer.parseInt(matcher.group(1));
 
-        for (int p: parts){
+        for (int p: parts) {
             if(p == part)
                 return true;
         }
