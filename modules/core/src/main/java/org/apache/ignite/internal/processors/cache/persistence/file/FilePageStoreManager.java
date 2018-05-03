@@ -664,9 +664,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         }
         catch (IgniteCheckedException e) {
             if (e.hasCause(ClassNotFoundException.class))
-                throw new IgniteCheckedException("An error occurred during cache configuration loading from given file. " +
-                    "Make sure that user library containing required class is valid. " +
-                    "If library is valid then delete cache configuration file and restart cache [file=" +
+                throw new IgniteCheckedException("An error occurred during cache configuration loading from file [file=" +
                     conf.getAbsolutePath() + ']', e);
             else
                 throw e;

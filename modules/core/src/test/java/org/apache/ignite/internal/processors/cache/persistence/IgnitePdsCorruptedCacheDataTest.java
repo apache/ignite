@@ -17,16 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.util.concurrent.Callable;
 import javax.cache.configuration.Factory;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -34,10 +32,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  *
  */
 public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
-    /** Error message. */
-    private static final String ERR_MESSAGE = "An error occurred during cache configuration loading from given file. " +
-        "Make sure that user library containing required class is valid. " +
-        "If library is valid then delete cache configuration file and restart cache";
+    /** Start grid with known cache factory. */
+    private boolean withFactory = true;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -67,8 +63,8 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
         );
 
         cfg.setDataStorageConfiguration(dsCfg);
-        cfg.setClassLoader(getExternalClassLoader());
         cfg.setCacheConfiguration(getCacheConfiguration());
+        cfg.setClassLoader(withFactory ? getExternalClassLoader() : U.gridClassLoader());
 
         return cfg;
     }
@@ -81,11 +77,13 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
     private CacheConfiguration getCacheConfiguration() throws Exception {
         CacheConfiguration cacheCfg = new CacheConfiguration("test_cache");
 
-        Factory storeFactory = (Factory)getExternalClassLoader()
-            .loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestStoreFactory")
-            .newInstance();
+        if (withFactory) {
+            Factory storeFactory = (Factory)getExternalClassLoader()
+                .loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestStoreFactory")
+                .newInstance();
 
-        cacheCfg.setCacheStoreFactory(storeFactory);
+            cacheCfg.setCacheStoreFactory(storeFactory);
+        }
 
         return cacheCfg;
     }
@@ -94,26 +92,22 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testFilePageStoreManagerShouldThrowExceptionWhenFactoryClassCannotBeLoaded() throws Exception {
-        IgniteEx ignite = (IgniteEx)startGrid();
+        startGrid()
+            .cluster()
+            .active(true);
 
-        ignite.cluster().active(true);
+        stopGrid();
 
-        ignite.context().config().setClassLoader(U.gridClassLoader());
+        withFactory = false;
 
-        GridCacheSharedContext sharedCtx = ignite.context().cache().context();
-        FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
-
-        assertNotNull(pageStore);
-
-        Throwable e = GridTestUtils.assertThrowsWithCause(() -> {
-                pageStore.readCacheConfigurations();
-
+        GridTestUtils.assertThrowsAnyCause(
+            new NullLogger(),
+            () -> {
+                startGrid();
                 return null;
             },
-            ClassNotFoundException.class);
-
-        assertNotNull(e);
-
-        assertTrue(e.getMessage().startsWith(ERR_MESSAGE));
+            IgniteCheckedException.class,
+            "An error occurred during cache configuration loading from file"
+        );
     }
 }
