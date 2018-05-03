@@ -18,8 +18,6 @@
 import templateUrl from 'views/templates/confirm.tpl.pug';
 import {CancellationError} from 'app/errors/CancellationError';
 
-export const REJECTED_BY_USER = 'REJECTED_BY_USER';
-
 export class Confirm {
     static $inject = ['$modal', '$q'];
     /**
@@ -40,7 +38,7 @@ export class Confirm {
             this.$modal({
                 templateUrl,
                 backdrop: true,
-                onBeforeHide: () => reject(),
+                onBeforeHide: () => reject(new CancellationError()),
                 controller: ['$scope', ($scope) => {
                     $scope.yesNo = yesNo;
                     $scope.content = content;
@@ -49,7 +47,7 @@ export class Confirm {
                         $scope.$hide();
                     };
                     $scope.confirmYes = () => {
-                        resolve(true);
+                        resolve();
                         $scope.$hide();
                     };
                 }]
