@@ -107,7 +107,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public static final String DEFAULT_VOLATILE_DS_GROUP_NAME = "default-volatile-ds-group";
 
     /** */
-    private static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
+    public static final String DEFAULT_DS_GROUP_NAME = "default-ds-group";
 
     /** */
     private static final String DS_CACHE_NAME_PREFIX = "datastructures_";
