@@ -59,7 +59,6 @@ import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
-import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
@@ -73,7 +72,6 @@ import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.LocalJoinCachesContext;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
@@ -2375,19 +2373,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
-        for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet()) {
-            int p = e.getKey();
-            long maxCntr = e.getValue().cnt;
+        Map<Integer, Set<UUID>> ownersByUpdCounters = new HashMap<>(maxCntrs.size());
+        for (Map.Entry<Integer, CounterWithNodes> e : maxCntrs.entrySet())
+            ownersByUpdCounters.put(e.getKey(), e.getValue().nodes);
 
-            entryLeft--;
+        Map<UUID, Set<Integer>> partitionsToRebalance = top.resetOwners(ownersByUpdCounters, haveHistory);
 
-            if (entryLeft != 0 && maxCntr == 0)
-                continue;
+        for (Map.Entry<UUID, Set<Integer>> e : partitionsToRebalance.entrySet()) {
+            UUID nodeId = e.getKey();
+            Set<Integer> parts = e.getValue();
 
-            Set<UUID> nodesToReload = top.setOwners(p, e.getValue().nodes, haveHistory.contains(p), entryLeft == 0);
-
-            for (UUID nodeId : nodesToReload)
-                partsToReload.put(nodeId, top.groupId(), p);
+            for (int part : parts)
+                partsToReload.put(nodeId, top.groupId(), part);
         }
     }
 
