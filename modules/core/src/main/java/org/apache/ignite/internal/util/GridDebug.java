@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
+import com.sun.management.HotSpotDiagnosticMXBean;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -32,6 +33,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.management.MBeanServer;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -67,7 +69,13 @@ public class GridDebug {
     /** */
     private static boolean allowLog;
 
-    /** */
+    /** This is the name of the HotSpot Diagnostic MBean */
+    private static final String HOTSPOT_BEAN_NAME = "com.sun.management:type=HotSpotDiagnostic";
+
+    /** field to store the hotspot diagnostic MBean */
+    private static volatile HotSpotDiagnosticMXBean hotspotMBean;
+
+    /* */
     static {
         if (LOGS_PATH != null) {
             File log = new File(new File(LOGS_PATH), new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss-").format(new Date()) +
@@ -300,6 +308,65 @@ public class GridDebug {
     private static String formatEntry(long ts, String threadName, long threadId, Object... data) {
         return "<" + DEBUG_DATE_FMT.format(new Date(ts)) + "><~DBG~><" + threadName + " id:" + threadId + "> " +
             Arrays.deepToString(data);
+    }
+
+    /**
+     * Call this method from your application whenever you
+     * want to dump the heap snapshot into a file.
+     *
+     * @param fileName name of the heap dump file
+     * @param live flag that tells whether to dump
+     * only the live objects
+     */
+    public static void dumpHeap(String fileName, boolean live) {
+        // initialize hotspot diagnostic MBean
+        initHotspotMBean();
+
+        File f = new File(fileName);
+
+        if (f.exists())
+            f.delete();
+
+        try {
+            hotspotMBean.dumpHeap(fileName, live);
+        }
+        catch (RuntimeException re) {
+            throw re;
+        }
+        catch (Exception exp) {
+            throw new RuntimeException(exp);
+        }
+    }
+
+    /**
+     * Initialize the hotspot diagnostic MBean field
+     */
+    private static void initHotspotMBean() {
+        if (hotspotMBean == null) {
+            synchronized (GridDebug.class) {
+                if (hotspotMBean == null)
+                    hotspotMBean = getHotspotMBean();
+            }
+        }
+    }
+
+    /**
+     * Gets the hotspot diagnostic MBean from the platform MBean server
+     * @return Diagnostic bean.
+     */
+    private static HotSpotDiagnosticMXBean getHotspotMBean() {
+        try {
+            MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+
+            HotSpotDiagnosticMXBean bean = ManagementFactory.newPlatformMXBeanProxy(server,
+                HOTSPOT_BEAN_NAME, HotSpotDiagnosticMXBean.class);
+
+            return bean;
+        } catch (RuntimeException re) {
+            throw re;
+        } catch (Exception exp) {
+            throw new RuntimeException(exp);
+        }
     }
 
     /**
