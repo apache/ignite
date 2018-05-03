@@ -164,13 +164,6 @@ public class DmlStatementsProcessor {
     private UpdateResult updateSqlFields(String schemaName, Connection conn, Prepared prepared,
         SqlFieldsQuery fieldsQry, boolean loc, IndexingQueryFilter filters, GridQueryCancel cancel)
         throws IgniteCheckedException {
-        // TODO IGNITE-7604 SQL TX: Allow DML operations with reducer
-        if (GridSqlQueryParser.dmlTable(prepared).cache().mvccEnabled()) {
-            fieldsQry = fieldsQueryEx(fieldsQry, false);
-
-            ((SqlFieldsQueryEx)fieldsQry).setSkipReducerOnUpdate(true);
-        }
-
         Object[] errKeys = null;
 
         long items = 0;
@@ -1186,31 +1179,6 @@ public class DmlStatementsProcessor {
         }
 
         return plan.iteratorForTransaction(idx, cur, cacheOperation(plan.mode()));
-    }
-
-    /**
-     * @param fieldsQuery Fields query.
-     * @param isQuery Is query flag.
-     * @return Extended fields query.
-     */
-    private SqlFieldsQueryEx fieldsQueryEx(SqlFieldsQuery fieldsQuery, boolean isQuery) {
-        if (!(fieldsQuery instanceof SqlFieldsQueryEx)) {
-            SqlFieldsQueryEx tmp = new SqlFieldsQueryEx(fieldsQuery.getSql(), isQuery);
-
-            tmp.setSchema(fieldsQuery.getSchema());
-            tmp.setCollocated(fieldsQuery.isCollocated());
-            tmp.setDistributedJoins(fieldsQuery.isDistributedJoins());
-            tmp.setEnforceJoinOrder(fieldsQuery.isEnforceJoinOrder());
-            tmp.setTimeout(fieldsQuery.getTimeout(), TimeUnit.MILLISECONDS);
-            tmp.setLocal(fieldsQuery.isLocal());
-            tmp.setLazy(fieldsQuery.isLazy());
-            tmp.setPageSize(fieldsQuery.getPageSize());
-            tmp.setArgs(fieldsQuery.getArgs());
-
-            fieldsQuery = tmp;
-        }
-
-        return (SqlFieldsQueryEx) fieldsQuery;
     }
 
     /**
