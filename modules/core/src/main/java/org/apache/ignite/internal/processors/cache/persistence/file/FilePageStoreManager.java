@@ -672,7 +672,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     ccfgs.put(cacheName, cacheData);
                 else
                     U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
-                            + file.getName());
+                            + file.getName() + " in group directory " + grpDir.getName()) ;
             }
         }
     }
