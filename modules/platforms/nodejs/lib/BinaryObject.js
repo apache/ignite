@@ -144,7 +144,8 @@ class BinaryObject {
 
     /**
      * Removes the specified field.
-     * ??? if the field does not exist.
+     *
+     * Does nothing if the field does not exist.
      *
      * @param {string} fieldName - name of the field.
      *
@@ -172,7 +173,7 @@ class BinaryObject {
      * Returns a value of the specified field.
      *
      * Optionally, specifies a type of the field.
-     * If the type is not specified then during operations the Ignite client
+     * If the type is not specified then the Ignite client
      * will try to make automatic mapping between JavaScript types and Ignite object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
@@ -229,9 +230,9 @@ class BinaryObject {
     }
 
     /**
-     * ???.
+     * Returns names of all fields of this BinaryObject instance.
      *
-     * @return {Array<string>} - ???.
+     * @return {Array<string>} - names of all fields.
      */
     getFieldNames() {
         return this._typeBuilder._schema.fieldIds.map(fieldId => {
