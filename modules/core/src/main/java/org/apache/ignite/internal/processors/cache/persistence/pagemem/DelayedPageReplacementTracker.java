@@ -21,6 +21,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -58,13 +60,7 @@ public class DelayedPageReplacementTracker {
      * Dirty page write for replacement operations thread local. Because page write {@link DelayedDirtyPageWrite} is
      * stateful and not thread safe, this thread local protects from GC pressure on pages replacement.
      */
-    private final ThreadLocal<DelayedDirtyPageWrite> delayedPageWriteThreadLoc
-        = new ThreadLocal<DelayedDirtyPageWrite>() {
-        @Override protected DelayedDirtyPageWrite initialValue() {
-            return new DelayedDirtyPageWrite(flushDirtyPage, byteBufThreadLoc, pageSize,
-                DelayedPageReplacementTracker.this);
-        }
-    };
+    private final Map<Long, DelayedDirtyPageWrite> delayedPageWriteThreadLocMap = new ConcurrentHashMap<>();
 
     /**
      * @param pageSize Page size.
@@ -87,7 +83,8 @@ public class DelayedPageReplacementTracker {
      * @return delayed page write implementation, finish method to be called to actually write page.
      */
     public DelayedDirtyPageWrite delayedPageWrite() {
-        return delayedPageWriteThreadLoc.get();
+        return delayedPageWriteThreadLocMap.computeIfAbsent(Thread.currentThread().getId(),
+            id -> new DelayedDirtyPageWrite(flushDirtyPage, byteBufThreadLoc, pageSize, this));
     }
 
     /**
