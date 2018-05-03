@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -246,9 +247,9 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
                 Object key;
                 Object val = null;
 
-                if (row instanceof Object[]) {
-                    key = ((Object[])row)[0];
-                    val = ((Object[])row)[1];
+                if (row instanceof IgniteBiTuple) {
+                    key = ((IgniteBiTuple)row).getKey();
+                    val = ((IgniteBiTuple)row).getValue();
                 }
                 else
                     key = row;
@@ -284,7 +285,7 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
                     if (values[i] != null)
                         values[i].finishUnmarshal(objCtx, ldr);
 
-                    rows.add(new Object[] {keys[i], values[i]});
+                    rows.add(new IgniteBiTuple<>(keys[i], values[i]));
                 }
             }
 

@@ -1767,7 +1767,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @return Operation future.
      */
     public IgniteInternalFuture<Long> updateAsync(GridCacheContext cacheCtx, MvccSnapshot mvccSnapshot,
-        GridCacheOperation op, UpdateSourceIterator<IgniteBiTuple> it, int pageSize, long timeout) {
+        GridCacheOperation op, UpdateSourceIterator<?> it, int pageSize, long timeout) {
         try {
             beforePut(cacheCtx, false, true);
 

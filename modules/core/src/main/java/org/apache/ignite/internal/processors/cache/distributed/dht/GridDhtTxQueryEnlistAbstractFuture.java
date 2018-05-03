@@ -49,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -264,14 +265,14 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends GridCacheIdMe
 
                 GridCacheOperation op = it.operation();
 
-                Object[] row0 = row.getClass().isArray() ? (Object[])row : null;
+                IgniteBiTuple row0 = (row instanceof IgniteBiTuple) ? (IgniteBiTuple)row : null;
 
                 CacheObject val = null;
 
                 if (op == CREATE || op == UPDATE) {
                     assert row0 != null;
 
-                    val = cctx.toCacheObject(row0[1]);
+                    val = cctx.toCacheObject(row0.getValue());
                 }
 
                 GridCacheUpdateTxResult res;
@@ -399,7 +400,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends GridCacheIdMe
      * @return Extracted key.
      */
     private KeyCacheObject key(Object row) {
-        return cctx.toCacheKeyObject(row.getClass().isArray() ? ((Object[])row)[0] : row);
+        return cctx.toCacheKeyObject(row instanceof IgniteBiTuple ? ((IgniteBiTuple)row).getKey() : row);
     }
 
 
