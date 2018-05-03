@@ -102,7 +102,6 @@ import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
 import org.apache.ignite.internal.util.nio.compression.BlockingCompressionHandler;
 import org.apache.ignite.internal.util.nio.compression.GridCompressionMeta;
 import org.apache.ignite.internal.util.nio.compression.GridNioCompressionFilter;
-import org.apache.ignite.internal.util.nio.compression.GridNioCompressionHandler;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
@@ -149,6 +148,7 @@ import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnecti
 import org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationNodeConnectionCheckFuture;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
+import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage3;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
@@ -498,7 +498,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     sndId = ((HandshakeMessage)msg).nodeId();
                     connKey = new ConnectionKey(sndId, msg0.connectionIndex(), msg0.connectCount());
 
-                    if (msg0.compressionFlag())
+                    if (msg instanceof HandshakeMessage3 && ((HandshakeMessage3)msg).compressionFlag())
                         ses.setCompressed(true);
                 }
 
@@ -726,7 +726,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         if (log.isDebugEnabled())
                             log.debug("Close incoming connection, failed to enter gateway.");
 
-                        if (msg instanceof HandshakeMessage && ((HandshakeMessage)msg).compressionFlag())
+                        if (msg instanceof HandshakeMessage3 && ((HandshakeMessage3)msg).compressionFlag())
                             ses.setCompressed(true);
 
                         ses.send(new RecoveryLastReceivedMessage(NODE_STOPPING)).listen(new CI1<IgniteInternalFuture<?>>() {
@@ -3722,20 +3722,25 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 int msgSize = HandshakeMessage.MESSAGE_FULL_SIZE;
 
-                if (handshakeConnIdx != null) {
-                    msg = new HandshakeMessage2(locNode.id(),
+                if (isCompressed) {
+                    msg = new HandshakeMessage3(locNode.id(),
                         recovery.incrementConnectCount(),
                         recovery.received(),
                         handshakeConnIdx,
                         isCompressed);
+                }
+                else if (handshakeConnIdx != null) {
+                    msg = new HandshakeMessage2(locNode.id(),
+                        recovery.incrementConnectCount(),
+                        recovery.received(),
+                        handshakeConnIdx);
 
                     msgSize += 4;
                 }
                 else {
                     msg = new HandshakeMessage(locNode.id(),
                         recovery.incrementConnectCount(),
-                        recovery.received(),
-                        isCompressed);
+                        recovery.received());
                 }
 
                 if (log.isDebugEnabled())

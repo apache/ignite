@@ -26,17 +26,17 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Updated handshake message.
  */
-public class HandshakeMessage2 extends HandshakeMessage {
+public class HandshakeMessage3 extends HandshakeMessage2 {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private int connIdx;
+    private boolean compressionFlag;
 
     /**
      *
      */
-    public HandshakeMessage2() {
+    public HandshakeMessage3() {
         // No-op.
     }
 
@@ -45,21 +45,24 @@ public class HandshakeMessage2 extends HandshakeMessage {
      * @param connectCnt Connect count.
      * @param rcvCnt Number of received messages.
      * @param connIdx Connection index.
+     * @param compressionFlag Compression flag.
      */
-    public HandshakeMessage2(UUID nodeId, long connectCnt, long rcvCnt, int connIdx) {
-        super(nodeId, connectCnt, rcvCnt);
+    public HandshakeMessage3(UUID nodeId, long connectCnt, long rcvCnt, int connIdx, boolean compressionFlag) {
+        super(nodeId, connectCnt, rcvCnt, connIdx);
 
-        this.connIdx = connIdx;
+        this.compressionFlag = compressionFlag;
+    }
+
+    /**
+     * @return Compression flag.
+     */
+    public boolean compressionFlag() {
+        return compressionFlag;
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return -44;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int connectionIndex() {
-        return connIdx;
+        return 136;
     }
 
     /** {@inheritDoc} */
@@ -67,10 +70,10 @@ public class HandshakeMessage2 extends HandshakeMessage {
         if (!super.writeTo(buf, writer))
             return false;
 
-        if (buf.remaining() < 4)
+        if (buf.remaining() < 1)
             return false;
 
-        buf.putInt(connIdx);
+        buf.put((byte)(compressionFlag ? 1 : 0));
 
         return true;
     }
@@ -80,16 +83,16 @@ public class HandshakeMessage2 extends HandshakeMessage {
         if (!super.readFrom(buf, reader))
             return false;
 
-        if (buf.remaining() < 4)
+        if (buf.remaining() < 1)
             return false;
 
-        connIdx = buf.getInt();
+        compressionFlag = buf.get() == 1;
 
         return true;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(HandshakeMessage2.class, this);
+        return S.toString(HandshakeMessage3.class, this);
     }
 }
