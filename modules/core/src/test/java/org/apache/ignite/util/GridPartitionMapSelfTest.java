@@ -155,7 +155,14 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
 
         Iterator<Map.Entry<Integer, GridDhtPartitionState>> iter = map.entrySet().iterator();
 
+        for (int i = 0; i < map.size() + 1; i++)
+            assertTrue(iter.hasNext());
+
         Map.Entry<Integer, GridDhtPartitionState> entry1 = iter.next();
+
+        for (int i = 0; i < map.size() + 1; i++)
+            assertTrue(iter.hasNext());
+
         Map.Entry<Integer, GridDhtPartitionState> entry2 = iter.next();
 
         iter.remove();

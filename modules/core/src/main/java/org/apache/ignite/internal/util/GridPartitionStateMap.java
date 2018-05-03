@@ -42,7 +42,20 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
     private static final int BITS = Integer.SIZE -
         Integer.numberOfLeadingZeros(GridDhtPartitionState.values().length + 1);
 
-    /** */
+    /**
+     * Contains partition map.
+     * For a map containing 3 partitions with a size of 3 bits storage will be done this way:
+     * <pre>
+     *     +-----------+-----------+-----------+
+     *     |  p0 - 100 |  p1 - 011 |  p2 - 001 |
+     *     +---+---+---++--+---+---+---+---+---+
+     *     | 0 | 0 | 1 | 1 | 1 | 0 | 1 | 0 | 0 |
+     *     +---+---+---+---+---+---+---+---+---+
+     * </pre>
+     *
+     * The first element takes the first {@link GridPartitionStateMap#BITS} bits in reverse order,
+     * the second element next {@link GridPartitionStateMap#BITS} bits in reverse order, etc.
+     */
     private final BitSet states;
 
     /** */
@@ -53,7 +66,10 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
         return new AbstractSet<Entry<Integer, GridDhtPartitionState>>() {
             @Override public Iterator<Entry<Integer, GridDhtPartitionState>> iterator() {
                 return new Iterator<Entry<Integer, GridDhtPartitionState>>() {
+                    /** Current {@link GridPartitionStateMap#states} index. */
                     private int idx;
+
+                    /** Current key value. */
                     private int cur;
 
                     @Override public boolean hasNext() {
