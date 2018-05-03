@@ -30,6 +30,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -623,6 +624,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         Map<String, StoredCacheData> ccfgs = new HashMap<>();
 
+        Arrays.sort(files);
+
         for (File file : files) {
             if (file.isDirectory()) {
                 if (file.getName().startsWith(CACHE_DIR_PREFIX)) {
@@ -631,7 +634,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     if (conf.exists() && conf.length() > 0) {
                         StoredCacheData cacheData = readCacheData(conf);
 
-                        ccfgs.put(cacheData.config().getName(), cacheData);
+                        String cacheName = cacheData.config().getName();
+
+                        if (!ccfgs.containsKey(cacheName))
+                            ccfgs.put(cacheName, cacheData);
+                        else
+                            U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
+                                    + file.getName());
                     }
                 }
                 else if (file.getName().startsWith(CACHE_GRP_DIR_PREFIX))
@@ -657,7 +666,13 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             if (!file.isDirectory() && file.getName().endsWith(CACHE_DATA_FILENAME) && file.length() > 0) {
                 StoredCacheData cacheData = readCacheData(file);
 
-                ccfgs.put(cacheData.config().getName(), cacheData);
+                String cacheName = cacheData.config().getName();
+
+                if (!ccfgs.containsKey(cacheName))
+                    ccfgs.put(cacheName, cacheData);
+                else
+                    U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
+                            + file.getName());
             }
         }
     }
