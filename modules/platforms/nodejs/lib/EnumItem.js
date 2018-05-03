@@ -20,14 +20,23 @@
 const ArgumentChecker = require('./internal/ArgumentChecker');
 
 /**
- * ???
+ * Class representing an item of enum.
+ *
+ * The item is defined by:
+ *   - type Id (mandatory) - Id of the enum type.
+ *   - ordinal (optional) - ordinal of the item in the enum type.
+ *   - name (optional) - name of the item.
+ *   - value (optional) - value of the item.
+ * Usually, at least one from the optional ordinal, name or value must be specified
+ * in order to use an instance of this class.
+ *
  */
 class EnumItem {
 
     /**
      * Public constructor.
      *
-     * @param {number} typeId - ???.
+     * @param {number} typeId - Id of the enum type.
      *
      * @return {EnumItem} - new EnumItem instance
      */
@@ -39,18 +48,18 @@ class EnumItem {
     }
 
     /**
-     * ???
+     * Returns Id of the enum type.
      *
-     * @return {number} - ???.
+     * @return {number} - Id of the enum type.
      */
     getTypeId() {
         return this._typeId;
     }
 
     /**
-     * ???
+     * Updates Id of the enum type.
      *
-     * @param {number} typeId - ???.
+     * @param {number} typeId - new Id of the enum type.
      */
     setTypeId(typeId) {
         ArgumentChecker.isInteger(typeId, 'typeId');
@@ -58,18 +67,19 @@ class EnumItem {
     }
 
     /**
-     * ???
+     * Returns ordinal of the item in the enum type
+     * or null if ordinal is not set.
      *
-     * @return {number} - ???.
+     * @return {number} - ordinal of the item in the enum type.
      */
     getOrdinal() {
         return this._ordinal;
     }
 
     /**
-     * ???
+     * Sets or updates ordinal of the item in the enum type.
      *
-     * @param {number} ordinal - ???.
+     * @param {number} ordinal - ordinal of the item in the enum type.
      */
     setOrdinal(ordinal) {
         ArgumentChecker.isInteger(ordinal, 'ordinal');
@@ -77,18 +87,19 @@ class EnumItem {
     }
 
     /**
-     * ???
+     * Returns name of the item
+     * or null if name is not set.
      *
-     * @return {string} - ???.
+     * @return {string} - name of the item.
      */
     getName() {
         return this._name;
     }
 
     /**
-     * ???
+     * Sets or updates name of the item.
      *
-     * @param {string} name - ???.
+     * @param {string} name - name of the item.
      */
     setName(name) {
         ArgumentChecker.notEmpty(name, 'name');
@@ -96,18 +107,19 @@ class EnumItem {
     }
 
     /**
-     * ???
+     * Returns value of the item
+     * or null if value is not set.
      *
-     * @return {number} - ???.
+     * @return {number} - value of the item.
      */
     getValue() {
         return this._value;
     }
 
     /**
-     * ???
+     * Sets or updates value of the item.
      *
-     * @param {number} value - ???.
+     * @param {number} value - value of the item.
      */
     setValue(value) {
         ArgumentChecker.isInteger(value, 'value');
