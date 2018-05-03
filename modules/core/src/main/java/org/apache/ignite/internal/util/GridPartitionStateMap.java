@@ -52,7 +52,6 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
      *     | 0 | 0 | 1 | 1 | 1 | 0 | 1 | 0 | 0 |
      *     +---+---+---+---+---+---+---+---+---+
      * </pre>
-     *
      * The first element takes the first {@link GridPartitionStateMap#BITS} bits in reverse order,
      * the second element next {@link GridPartitionStateMap#BITS} bits in reverse order, etc.
      */
