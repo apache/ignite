@@ -3728,6 +3728,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         recovery.received(),
                         handshakeConnIdx,
                         isCompressed);
+
+                    msgSize += 5;
                 }
                 else if (handshakeConnIdx != null) {
                     msg = new HandshakeMessage2(locNode.id(),
