@@ -27,8 +27,6 @@ import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
-import static org.junit.Assert.assertNotEquals;
-
 /**
  * Grid utils tests.
  */
@@ -148,7 +146,7 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Tests that entries from {@link Iterator#next()} remain unaltered.
      */
     public void testIteratorNext() {
         GridPartitionStateMap map = new GridPartitionStateMap();
@@ -164,8 +162,12 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(entry1.getValue());
         assertNotNull(entry2.getValue());
-        assertNotEquals(entry1.getKey(), entry2.getKey());
-        assertNotEquals(entry1.getValue(), entry2.getValue());
+
+        assertEquals(Integer.valueOf(0), entry1.getKey());
+        assertEquals(Integer.valueOf(1), entry2.getKey());
+
+        assertEquals(GridDhtPartitionState.MOVING, entry1.getValue());
+        assertEquals(GridDhtPartitionState.RENTING, entry2.getValue());
     }
 
     /** */

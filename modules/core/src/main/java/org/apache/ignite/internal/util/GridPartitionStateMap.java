@@ -70,6 +70,7 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
 
                         int bitN = idx % BITS;
 
+                        // Get value from BitSet like in GridPartitionStateMap#state, but don't process known bits.
                         int st = 1 << bitN;
 
                         for (int i = 1; i < BITS - bitN; i++)
