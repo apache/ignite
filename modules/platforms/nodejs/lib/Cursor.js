@@ -35,16 +35,14 @@ const BinaryWriter = require('./internal/BinaryWriter');
 class Cursor {
 
     /**
-     * ???
-     * Returns a portion of results - cache entries (key-value pairs) returned by the query.
+     * Returns one cache entry (key-value pair) from the query results.
      *
-     * Every new call returns the next portion of results.
-     * If the method returns null, no more results are available.
+     * Every new call returns the next cache entry from the query results.
+     * If the method returns null, no more entries are available.
      *
      * @async
      *
-     * @return {Promise<CacheEntry>} - a portion of cache entries (key-value pairs)
-     *   returned by SQL or Scan query.
+     * @return {Promise<CacheEntry>} - a cache entry (key-value pair).
      */
     async getValue() {
         if (!this._values || this._valueIndex >= this._values.length) {
@@ -60,9 +58,9 @@ class Cursor {
     }
 
     /**
-     * Checks if more results are available.
+     * Checks if more cache entries are available in the query results.
      *
-     * @return {boolean} - true if more results are available, false otherwise.
+     * @return {boolean} - true if more cache entries are available, false otherwise.
      */
     hasMore() {
         return this._hasNext ||
@@ -70,9 +68,9 @@ class Cursor {
     }
 
     /**
-     * Returns all results - cache entries (key-value pairs) returned by the query.
+     * Returns all cache entries (key-value pairs) from the query results.
      *
-     * May be used instead of getValue() method if the number of returned elements
+     * May be used instead of getValue() method if the number of returned entries
      * is relatively small and will not cause memory utilization issues.
      *
      * @async
@@ -93,10 +91,10 @@ class Cursor {
     }
 
     /**
-     * Closes the cursor. Obtaining the results is not possible after this.
+     * Closes the cursor. Obtaining cache entries from the results is not possible after this.
      *
-     * This method should be called if no more results are needed.
-     * It is not neccessary to call it if all results have been already obtained.
+     * This method should be called if no more cache entries are needed.
+     * It is not neccessary to call it if all cache entries have been already obtained.
      *
      * @async
      */
