@@ -40,7 +40,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.4.0");
+    public static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.4.4");
 
     /** Rebalance id. */
     private long rebalanceId;

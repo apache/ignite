@@ -1,11 +1,26 @@
 Apache Ignite Docker module
-------------------------
+===========================
+Apache Ignite Docker module provides Dockerfile and accompanying files for building docker image.
 
-Apache Ignite Docker module provides Dockerfile and bash scripts for building docker image.
 
 Build image
--------------------------------------
+===========
+1) Build Apache Ignite binary archive as described in DEVNOTES.txt.
 
-cd to ./modules/docker
+2) Goto Apache Ignite's Docker module directory
 
-sudo docker build .
+        cd modules/docker
+
+3) Copy Apache Ignite's binary archive to Docker module directory
+
+        cp -rfv ../../target/bin/apache-ignite-fabric-*.zip
+
+4) Unpack Apache Ignite's binary archive
+
+        unzip apache-ignite-fabric-*.zip
+
+5) Build docker image
+
+        docker build . -t apacheignite/ignite[:<version>]
+
+   Prepared image will be available issuing `docker images` command
