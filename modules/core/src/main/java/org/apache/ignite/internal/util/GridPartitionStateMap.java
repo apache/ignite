@@ -52,7 +52,7 @@ public class GridPartitionStateMap extends AbstractMap<Integer, GridDhtPartition
     @Override public Set<Entry<Integer, GridDhtPartitionState>> entrySet() {
         return new AbstractSet<Entry<Integer, GridDhtPartitionState>>() {
             @Override public Iterator<Entry<Integer, GridDhtPartitionState>> iterator() {
-                final int size = states.isEmpty() ? 0 : (states.length() - 1)/ BITS + 1;
+                final int size = states.isEmpty() ? 0 : (states.length() - 1) / BITS + 1;
 
                 return new Iterator<Entry<Integer, GridDhtPartitionState>>() {
                     private int next;

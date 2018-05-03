@@ -32,17 +32,17 @@ panel-collapsible(
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-60
                 +checkbox('Enabled', connectionEnabled, '"SqlConnectorEnabled"', 'Flag indicating whether to configure SQL connector configuration')
-            .pc-form-grid-col-40
+            .pc-form-grid-col-60
                 +text-enabled('Host:', `${connectionModel}.host`, '"SqlConnectorHost"', connectionEnabled, 'false', 'localhost')
-            .pc-form-grid-col-20
+            .pc-form-grid-col-30
                 +number('Port:', `${connectionModel}.port`, '"SqlConnectorPort"', connectionEnabled, '10800', '1025')
-            .pc-form-grid-col-20
+            .pc-form-grid-col-30
                 +number('Port range:', `${connectionModel}.portRange`, '"SqlConnectorPortRange"', connectionEnabled, '100', '0')
-            .pc-form-grid-col-20
+            .pc-form-grid-col-30
                 +number('Socket send buffer size:', `${connectionModel}.socketSendBufferSize`, '"SqlConnectorSocketSendBufferSize"', connectionEnabled, '0', '0',
                     'Socket send buffer size.<br/>\
                     When set to <b>0</b>, operation system default will be used')
-            .pc-form-grid-col-20
+            .pc-form-grid-col-30
                 +number('Socket receive buffer size:', `${connectionModel}.socketReceiveBufferSize`, '"SqlConnectorSocketReceiveBufferSize"', connectionEnabled, '0', '0',
                     'Socket receive buffer size.<br/>\
                     When set to <b>0</b>, operation system default will be used')
