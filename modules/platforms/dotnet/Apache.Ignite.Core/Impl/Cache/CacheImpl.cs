@@ -204,6 +204,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 _flagSkipStore, true, _flagNoRetries, _flagPartitionRecover, _flagAllowAtomicOpsInTx);
         }
 
+        /** <inheritDoc /> */
         public ICache<TK, TV> WithAllowAtomicOpsInTx()
         {
             if (_flagAllowAtomicOpsInTx)

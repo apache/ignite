@@ -77,6 +77,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             get { return _cache.IsKeepBinary; }
         }
 
+        /** <inheritDoc /> */
         public bool IsAllowAtomicOpsInTx {
             get { return _cache.IsAllowAtomicOpsInTx; }
         }
@@ -99,6 +100,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             return _cache.WithKeepBinary<TK1, TV1>().WrapAsync();
         }
 
+        /** <inheritDoc /> */
         public ICache<TK, TV> WithAllowAtomicOpsInTx()
         {
             return _cache.WithAllowAtomicOpsInTx().WrapAsync();
