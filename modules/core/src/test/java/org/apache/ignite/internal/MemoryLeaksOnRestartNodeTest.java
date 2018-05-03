@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridDebug;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -48,10 +49,9 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration().setName("mem0").setPersistenceEnabled(false))
-            .setDataRegionConfigurations(new DataRegionConfiguration[] {
+            .setDataRegionConfigurations(
                 new DataRegionConfiguration().setName("disk").setPersistenceEnabled(true),
-                new DataRegionConfiguration().setName("mem2").setPersistenceEnabled(false)
-            }));
+                new DataRegionConfiguration().setName("mem2").setPersistenceEnabled(false)));
 
         return cfg;
     }
@@ -82,7 +82,7 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
         for (int i = 0; i < RESTARTS / 2; ++i) {
             startGrids(NODES);
 
-            Thread.sleep(500);
+            U.sleep(500);
 
             stopAllGrids();
         }
@@ -97,7 +97,7 @@ public class MemoryLeaksOnRestartNodeTest extends GridCommonAbstractTest {
         for (int i = 0; i < RESTARTS; ++i) {
             startGrids(NODES);
 
-            Thread.sleep(500);
+            U.sleep(500);
 
             stopAllGrids();
 
