@@ -58,16 +58,16 @@ public class IgnitePdsPartitionFilesTruncateTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+        stopAllGrids();
 
         cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cleanPersistenceDir();
+        stopAllGrids();
 
-        super.afterTest();
+        cleanPersistenceDir();
     }
 
     /**
@@ -85,7 +85,6 @@ public class IgnitePdsPartitionFilesTruncateTest extends GridCommonAbstractTest 
 
         assertEquals(1, ignite0.cacheNames().size());
 
-        waitForRebalancing();
         awaitPartitionMapExchange(true, true, null);
 
         checkPartFiles(0);
@@ -96,7 +95,6 @@ public class IgnitePdsPartitionFilesTruncateTest extends GridCommonAbstractTest 
 
         ignite0.cluster().setBaselineTopology(ignite0.cluster().topologyVersion());
 
-        waitForRebalancing();
         awaitPartitionMapExchange(true, true, null);
 
         checkPartFiles(0);
@@ -106,7 +104,6 @@ public class IgnitePdsPartitionFilesTruncateTest extends GridCommonAbstractTest 
 
         ignite0.cluster().setBaselineTopology(ignite0.cluster().topologyVersion());
 
-        waitForRebalancing();
         awaitPartitionMapExchange(true, true, null);
 
         checkPartFiles(0);
@@ -123,7 +120,7 @@ public class IgnitePdsPartitionFilesTruncateTest extends GridCommonAbstractTest 
         int[] parts = ignite.affinity(DEFAULT_CACHE_NAME).allPartitions(ignite.cluster().localNode());
 
         Path dirPath = Paths.get(U.defaultWorkDirectory(), "db",
-                ignite.configuration().getIgniteInstanceName().replace(".", "_"), "cache-" + DEFAULT_CACHE_NAME);
+                U.maskForFileName(ignite.configuration().getIgniteInstanceName()), "cache-" + DEFAULT_CACHE_NAME);
 
         info("Path: " + dirPath.toString());
 
@@ -138,8 +135,8 @@ public class IgnitePdsPartitionFilesTruncateTest extends GridCommonAbstractTest 
 
     /** */
     private boolean anyMatch(int[] parts, Path f) {
-        Pattern pattern = Pattern.compile("part-(\\d+).bin");
-        Matcher matcher = pattern.matcher(f.getFileName().toString());
+        Pattern ptrn = Pattern.compile("part-(\\d+).bin");
+        Matcher matcher = ptrn.matcher(f.getFileName().toString());
 
         if (!matcher.find())
             throw new IllegalArgumentException("File is not a partition:" + f.getFileName());
@@ -147,7 +144,7 @@ public class IgnitePdsPartitionFilesTruncateTest extends GridCommonAbstractTest 
         int part = Integer.parseInt(matcher.group(1));
 
         for (int p: parts) {
-            if(p == part)
+            if (p == part)
                 return true;
         }
 
