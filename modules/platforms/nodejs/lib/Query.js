@@ -434,12 +434,25 @@ class SqlFieldsQuery extends SqlQuery {
 }
 
 /**
- * ???
+ * Class representing a Scan query which returns the whole cache entries (key-value pairs).
+ *
+ * This version of the class does not support a possibility to specify a Filter object for the query.
+ * The query returns all entries from the entire cache or from the specified partition.
  */
 class ScanQuery extends Query {
 
     /**
      * Public constructor.
+     *
+     * Scan query settings have the following defaults:
+     * <pre>
+     *     Scan Query setting        :    Default value
+     *     Local query flag          :    false
+     *     Cursor page size          :    1024
+     *     ??? Number of partitions      :    0 (entire cache)
+     *     Filter object             :    null (not supported)
+     * </pre>
+     * Every setting (except Filter object) may be changed using set methods.
      *
      * @return {ScanQuery} - new ScanQuery instance.
      */
@@ -449,7 +462,7 @@ class ScanQuery extends Query {
     }
 
     /**
-     * Sets partition number over which this query should iterate. 
+     * ??? Sets partition number over which this query should iterate. 
      * Must be in the range [0, N) where N is partition number in the cache. If 0, query will iterate over
      * all partitions in the cache. 
      *
