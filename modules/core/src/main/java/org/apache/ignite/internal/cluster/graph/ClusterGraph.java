@@ -46,11 +46,10 @@ public class ClusterGraph {
     /**
      * Constructor.
      *
-     * @param log Logger.
      * @param ctx Communication failure context.
      * @param nodeFilterOut Filter to exclude some cluster nodes from graph.
      */
-    public ClusterGraph(IgniteLogger log, CommunicationFailureContext ctx, Predicate<ClusterNode> nodeFilterOut) {
+    public ClusterGraph(CommunicationFailureContext ctx, Predicate<ClusterNode> nodeFilterOut) {
         nodes = ctx.topologySnapshot();
 
         nodeCnt = nodes.size();

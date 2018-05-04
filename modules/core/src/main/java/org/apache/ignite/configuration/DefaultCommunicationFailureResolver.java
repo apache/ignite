@@ -71,7 +71,7 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
             .collect(Collectors.toList());
 
         // Exclude client nodes from analysis.
-        ClusterGraph graph = new ClusterGraph(log, ctx, CU::clientNode);
+        ClusterGraph graph = new ClusterGraph(ctx, CU::clientNode);
 
         List<BitSet> components = graph.findConnectedComponents();
 
@@ -233,12 +233,12 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
 
         /** {@inheritDoc */
         @Override public int compareTo(@NotNull ClusterPart o) {
-            int srvNodesCmp = Integer.compare(o.srvNodesCnt, srvNodesCnt);
+            int srvNodesCmp = Integer.compare(srvNodesCnt, o.srvNodesCnt);
 
             if (srvNodesCmp != 0)
                 return srvNodesCmp;
 
-            return Integer.compare(o.connectedClients.size(), connectedClients.size());
+            return Integer.compare(connectedClients.size(), o.connectedClients.size());
         }
     }
 

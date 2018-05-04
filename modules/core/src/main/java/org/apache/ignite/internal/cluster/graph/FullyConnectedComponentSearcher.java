@@ -23,7 +23,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 
 /**
- * Class to find (possibly) largest fully-connected component in graph.
+ * Class to find (possibly) largest fully-connected component (also can be called as <b>complete subgraph</b>) in graph.
  * This problem is also known as <b>Clique problem</b> which is NP-complete.
  *
  * For small number of nodes simple brute-force algorithm is used which finds such component guaranteed.

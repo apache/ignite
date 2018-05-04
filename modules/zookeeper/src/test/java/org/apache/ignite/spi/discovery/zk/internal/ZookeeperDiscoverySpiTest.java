@@ -3576,11 +3576,11 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     public void testSimpleSplitBrain() throws Exception {
         failCommSpi = true;
 
-        Ignite ignite = startGridsMultiThreaded(5);
+        startGridsMultiThreaded(5);
 
         client = true;
 
-        startGridsMultiThreaded(5, 3);
+        Ignite clientIg = startGridsMultiThreaded(5, 3);
 
         List<Ignite> all = G.allGrids();
 
@@ -3594,8 +3594,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         FailureMatrix matrix = FailureMatrix.buildFrom(part1, part2);
 
-/*
-        ClusterNode lastClient = all.get(all.size() - 1).cluster().localNode();
+        ClusterNode lastClient = clientIg.cluster().localNode();
 
         // Make last client connected to other nodes.
         for (Ignite ig : all) {
@@ -3604,14 +3603,14 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 continue;
 
             matrix.addConnection(lastClient, node);
+            matrix.addConnection(node, lastClient);
         }
-*/
 
         PeerToPeerCommunicationFailureDiscoverySpi.fail(matrix);
 
         Thread.sleep(5000L);
 
-        waitForTopology(3);
+        waitForTopology(4);
 
         Thread.sleep(5000L);
     }
