@@ -37,6 +37,20 @@ namespace Apache.Ignite.Core.Impl.Services
         /** */
         private static readonly ModuleBuilder ModuleBuilder = CreateModuleBuilder();
 
+        /** Classic .NET Method. */
+        private static readonly MethodInfo AppDomainDefineAssembly = typeof(AppDomain).GetMethod(
+            "DefineDynamicAssembly",
+            new[] {typeof(AssemblyName), typeof(AssemblyBuilderAccess)});
+
+        /** .NET Core Method. */
+        private static readonly MethodInfo AssemblyBuilderDefineAssembly = typeof(AssemblyBuilder).GetMethod(
+            "DefineDynamicAssembly",
+            BindingFlags.Public | BindingFlags.Static,
+            null,
+            new[] {typeof(AssemblyName), typeof(AssemblyBuilderAccess)},
+            null);
+
+
         /// <summary>
         /// Generates the proxy for specified service type.
         /// </summary>
@@ -76,15 +90,13 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             var name = Guid.NewGuid().ToString("N");
 
-#if !NETCOREAPP2_0
-            var assemblyBuilder =
-                AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(name),
-                    AssemblyBuilderAccess.RunAndCollect);
-#else
-            var assemblyBuilder =
-                AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(name),
-                    AssemblyBuilderAccess.RunAndCollect);
-#endif
+            object[] parameters = {new AssemblyName(name), AssemblyBuilderAccess.RunAndCollect};
+
+            var assemblyBuilderObj = AppDomainDefineAssembly != null
+                ? AppDomainDefineAssembly.Invoke(AppDomain.CurrentDomain, parameters)
+                : AssemblyBuilderDefineAssembly.Invoke(null, parameters);
+
+            var assemblyBuilder = (AssemblyBuilder) assemblyBuilderObj;
 
             return assemblyBuilder.DefineDynamicModule(name);
         }
@@ -97,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Services
             // Static field - empty object array to optimize calls without parameters.
             buildContext.EmptyParametersField = buildContext.ProxyType.DefineField("_emptyParameters",
                 typeof(object[]), FieldAttributes.Static | FieldAttributes.Private | FieldAttributes.InitOnly);
-            
+
             // Instance field for function to invoke.
             buildContext.ActionField = buildContext.ProxyType.DefineField("_action", ActionType,
                 FieldAttributes.Private | FieldAttributes.InitOnly);
@@ -197,10 +209,10 @@ namespace Apache.Ignite.Core.Impl.Services
             // Load methods array field.
             gen.Emit(OpCodes.Ldarg_0);
             gen.Emit(OpCodes.Ldfld, buildContext.MethodsField);
-            
+
             // Load index of method.
             gen.Emit(OpCodes.Ldc_I4, methodIndex);
-            
+
             // Load array element.
             gen.Emit(OpCodes.Ldelem_Ref);
 
@@ -215,10 +227,10 @@ namespace Apache.Ignite.Core.Impl.Services
                 for (var i = 0; i < parameters.Length; i++)
                 {
                     gen.Emit(OpCodes.Dup);
-                    
+
                     // Parameter's index in array.
                     gen.Emit(OpCodes.Ldc_I4, i);
-                    
+
                     // Parameter's value.
                     gen.Emit(OpCodes.Ldarg, i + 1);
                     if (parameterTypes[i].IsValueType)
