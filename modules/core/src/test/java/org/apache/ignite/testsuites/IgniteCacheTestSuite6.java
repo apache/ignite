@@ -21,7 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.authentication.AuthenticationConfigurationClusterTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationOnNotActiveClusterTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNPEOnStartTest;
-import org.apache.ignite.internal.processors.authentication. AuthenticationProcessorNodeRestartPersistenceOffTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartPersistenceOffTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartPersistenceOnTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorPersistenceOffSelfTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorPersistenceOnSelfTest;
