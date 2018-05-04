@@ -57,11 +57,14 @@ class Timestamp extends Date {
      *
      * @param {number} nanos - new value for the nanoseconds of the last second.
      *
+     * @return {Timestamp} - the same instance of Timestamp
+     *
      * @throws {IgniteClientError} if error.
      */
     setNanos(nanos) {
         ArgumentChecker.isInteger(nanos, 'nanos');
         this._nanos = nanos;
+        return this;
     }
 }
 

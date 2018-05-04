@@ -57,6 +57,7 @@ class BinaryReader {
             case BinaryUtils.TYPE_CODE.DATE:
                 return buffer.readDate();
             case BinaryUtils.TYPE_CODE.ENUM:
+            case BinaryUtils.TYPE_CODE.BINARY_ENUM:
                 return BinaryReader._readEnum(buffer);
             case BinaryUtils.TYPE_CODE.DECIMAL:
                 return BinaryReader._readDecimal(buffer);
@@ -100,8 +101,10 @@ class BinaryReader {
         return [...buffer.readBuffer(BinaryUtils.getSize(BinaryUtils.TYPE_CODE.UUID))];
     }
 
-    static _readEnum(buffer) {
-        return new EnumItem(buffer.readInteger(), buffer.readInteger());
+    static async _readEnum(buffer) {
+        const enumItem = new EnumItem(0);
+        await enumItem._read(buffer);
+        return enumItem;
     }
 
     static _readDecimal(buffer) {

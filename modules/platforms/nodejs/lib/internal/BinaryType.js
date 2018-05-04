@@ -31,6 +31,7 @@ class BinaryType {
         this._fields = new Map();
         this._schemas = new Map();
         this._isEnum = false;
+        this._enumValues = null;
     }
 
     get id() {
@@ -131,7 +132,14 @@ class BinaryType {
     async _writeEnum(buffer) {
         buffer.writeBoolean(this._isEnum);
         if (this._isEnum) {
-            buffer.writeInteger(0);
+            const length = this._enumValues ? this._enumValues.length : 0;
+            buffer.writeInteger(length);
+            if (length > 0) {
+                for (let [key, value] of this._enumValues) {
+                    await BinaryWriter.writeString(buffer, key);
+                    buffer.writeInteger(value);
+                }
+            }
         }
     }
 
@@ -165,12 +173,13 @@ class BinaryType {
     }
 
     async _readEnum(buffer) {
+        const BinaryReader = require('./BinaryReader');
         this._isEnum = buffer.readBoolean();
         if (this._isEnum) {
-            const fieldsCount = buffer.readInteger();
-            for (let i = 0; i < fieldsCount; i++) {
-                await BinaryReader.readObject(buffer);
-                buffer.readInteger();
+            const valuesCount = buffer.readInteger();
+            this._enumValues = new Array(valuesCount);
+            for (let i = 0; i < valuesCount; i++) {
+                this._enumValues[i] = [await BinaryReader.readObject(buffer), buffer.readInteger()];
             }
         }
     }

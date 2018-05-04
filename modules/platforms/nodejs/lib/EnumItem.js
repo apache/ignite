@@ -18,6 +18,7 @@
 'use strict';
 
 const ArgumentChecker = require('./internal/ArgumentChecker');
+const Errors = require('./Errors');
 
 /**
  * Class representing an item of enum.
@@ -63,11 +64,14 @@ class EnumItem {
      *
      * @param {number} typeId - new Id of the enum type.
      *
+     * @return {EnumItem} - the same instance of EnumItem
+     *
      * @throws {IgniteClientError} if error.
      */
     setTypeId(typeId) {
         ArgumentChecker.isInteger(typeId, 'typeId');
         this._typeId = typeId;
+        return this;
     }
 
     /**
@@ -85,11 +89,14 @@ class EnumItem {
      *
      * @param {number} ordinal - ordinal of the item in the enum type.
      *
+     * @return {EnumItem} - the same instance of EnumItem
+     *
      * @throws {IgniteClientError} if error.
      */
     setOrdinal(ordinal) {
         ArgumentChecker.isInteger(ordinal, 'ordinal');
         this._ordinal = ordinal;
+        return this;
     }
 
     /**
@@ -107,11 +114,14 @@ class EnumItem {
      *
      * @param {string} name - name of the item.
      *
+     * @return {EnumItem} - the same instance of EnumItem
+     *
      * @throws {IgniteClientError} if error.
      */
     setName(name) {
         ArgumentChecker.notEmpty(name, 'name');
         this._name = name;
+        return this;
     }
 
     /**
@@ -129,11 +139,63 @@ class EnumItem {
      *
      * @param {number} value - value of the item.
      *
+     * @return {EnumItem} - the same instance of EnumItem
+     *
      * @throws {IgniteClientError} if error.
      */
     setValue(value) {
         ArgumentChecker.isInteger(value, 'value');
         this._value = value;
+        return this;
+    }
+
+    /** Private methods */
+
+    /**
+     * @ignore
+     */
+    async _write(buffer) {
+        buffer.writeInteger(this._typeId);
+        if (this._ordinal !== null) {
+            buffer.writeInteger(this._ordinal);
+            return;
+        }
+        else if (this._name !== null || this._value !== null) {
+            const type = await this._getType(this._typeId);
+            if (type._isEnum && type._enumValues) {
+                for (let i = 0; i < type._enumValues.length; i++) {
+                    if (this._name === type._enumValues[i][0] ||
+                        this._value === type._enumValues[i][1]) {
+                        buffer.writeInteger(i);
+                        return;
+                    }
+                }
+            }
+        }
+        throw Errors.IgniteClientError.illegalArgumentError(
+            'ordinal, name or value must be specified for EnumItem');
+    }
+
+    /**
+     * @ignore
+     */
+    async _read(buffer) {
+        this._typeId = buffer.readInteger();
+        this._ordinal = buffer.readInteger();
+        const type = await this._getType(this._typeId);
+        if (!type._isEnum || !type._enumValues || type._enumValues.length <= this._ordinal) {
+            throw new Errors.IgniteClientError('EnumItem can not be deserialized: type mismatch');
+        }
+        this._name = type._enumValues[this._ordinal][0];
+        this._value = type._enumValues[this._ordinal][1];
+    }
+
+    /**
+     * @ignore
+     */
+    async _getType(typeId) {
+        const BinaryTypeStorage = require('./internal/BinaryTypeStorage');
+        return await BinaryTypeStorage.getEntity().getType(typeId);
     }
 }
 

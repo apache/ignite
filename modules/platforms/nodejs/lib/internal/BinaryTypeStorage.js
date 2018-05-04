@@ -50,7 +50,7 @@ class BinaryTypeStorage {
         }
     }
 
-    async getType(typeId, schemaId) {
+    async getType(typeId, schemaId = null) {
         let storageType = this._types.get(typeId);
         if (!storageType || schemaId && !storageType.hasSchema(schemaId)) {
             storageType = await this._getBinaryType(typeId);

@@ -119,9 +119,8 @@ class BinaryWriter {
         buffer.writeBuffer(Buffer.from(value));
     }
 
-    static _writeEnum(buffer, enumValue) {
-        buffer.writeInteger(enumValue.getTypeId());
-        buffer.writeInteger(enumValue.getOrdinal());
+    static async _writeEnum(buffer, enumValue) {
+        await enumValue._write(buffer);
     }
 
     static _writeDecimal(buffer, decimal) {

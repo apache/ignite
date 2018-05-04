@@ -75,7 +75,8 @@ const OPERATION = Object.freeze({
 });
 
 const TYPE_CODE = Object.assign({
-        BINARY_OBJECT : 27
+        BINARY_OBJECT : 27,
+        BINARY_ENUM : 38
     },
     ObjectType.PRIMITIVE_TYPE,
     ObjectType.COMPOSITE_TYPE);
