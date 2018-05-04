@@ -29,7 +29,7 @@ public class NodeStoppingException extends IgniteCheckedException implements Cri
     /**
      * @param cause Original node stopping cause.
      */
-    public NodeStoppingException(Exception cause) {
+    public NodeStoppingException(NodeStoppingException cause) {
         super(cause);
     }
 

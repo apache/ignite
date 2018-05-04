@@ -4233,12 +4233,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     registerExecutorMBean(entry.getKey(), entry.getValue());
             }
 
-//            if (U.IGNITE_TEST_FEATURES_ENABLED) {
+            if (U.IGNITE_TEST_FEATURES_ENABLED) {
                 WorkersControlMXBean workerCtrlMXBean = new WorkersControlMXBeanImpl(workersRegistry);
 
                 registerMBean("Kernal", workerCtrlMXBean.getClass().getSimpleName(),
                     workerCtrlMXBean, WorkersControlMXBean.class);
-//            }
+            }
         }
 
         /**
