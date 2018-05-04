@@ -105,25 +105,25 @@ mixin data-region-form({modelAt, namePlaceholder, dataRegionsAt})
     .pc-form-grid-col-30
         +sane-ignite-form-field-number({
             label: 'Metrics sub interval count:',
-            model: `${modelAt}.subIntervals`,
-            name: '"subIntervals"',
-            placeholder: '{{ ::$ctrl.Clusters.dataRegion.subIntervals.default }}',
-            min: '{{ ::$ctrl.Clusters.dataRegion.subIntervals.min }}',
-            step: '{{ ::$ctrl.Clusters.dataRegion.subIntervals.step }}',
+            model: `${modelAt}.metricsSubIntervalCount`,
+            name: '"metricsSubIntervalCount"',
+            placeholder: '{{ ::$ctrl.Clusters.dataRegion.metricsSubIntervalCount.default }}',
+            min: '{{ ::$ctrl.Clusters.dataRegion.metricsSubIntervalCount.min }}',
+            step: '{{ ::$ctrl.Clusters.dataRegion.metricsSubIntervalCount.step }}',
             tip: 'A number of sub-intervals the whole rate time interval will be split into to calculate allocation and eviction rates'
         })
 
     .pc-form-grid-col-30
         pc-form-field-size(
-            ng-model=`${modelAt}.rateTimeInterval`
+            ng-model=`${modelAt}.metricsRateTimeInterval`
             ng-model-options='{allowInvalid: true}'
-            name='rateTimeInterval'
+            name='metricsRateTimeInterval'
             size-type='seconds'
             label='Metrics rate time interval:'
-            placeholder='{{ $ctrl.Clusters.dataRegion.rateTimeInterval.default / _rateTimeIntervalScale.value }}'
-            min=`{{ ::$ctrl.Clusters.dataRegion.rateTimeInterval.min }}`
+            placeholder='{{ $ctrl.Clusters.dataRegion.metricsRateTimeInterval.default / _metricsRateTimeIntervalScale.value }}'
+            min=`{{ ::$ctrl.Clusters.dataRegion.metricsRateTimeInterval.min }}`
             tip='Time interval for allocation rate and eviction rate monitoring purposes'
-            on-scale-change='_rateTimeIntervalScale = $event'
+            on-scale-change='_metricsRateTimeIntervalScale = $event'
             size-scale-label='s'
         )
             

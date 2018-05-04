@@ -40,6 +40,9 @@ public class CommandHandlerParsingTest extends TestCase {
         CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
+            if (cmd == Command.CACHE)
+                continue; // --cache subcommand requires its own specific arguments.
+
             try {
                 hnd.parseAndValidate(asList("--user"));
 
@@ -91,6 +94,9 @@ public class CommandHandlerParsingTest extends TestCase {
         CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
+            if (cmd == Command.CACHE)
+                continue; // --cache subcommand requires its own specific arguments.
+
             Arguments args = hnd.parseAndValidate(asList(cmd.text()));
 
             assertEquals(cmd, args.command());
@@ -98,7 +104,7 @@ public class CommandHandlerParsingTest extends TestCase {
             assertEquals(DFLT_PORT, args.port());
 
             args = hnd.parseAndValidate(asList("--port", "12345", "--host", "test-host", "--ping-interval", "5000",
-                    "--ping-timeout", "40000", cmd.text()));
+                "--ping-timeout", "40000", cmd.text()));
 
             assertEquals(cmd, args.command());
             assertEquals("test-host", args.host());
