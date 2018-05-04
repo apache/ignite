@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -175,6 +177,62 @@ public class GridPartitionMapSelfTest extends GridCommonAbstractTest {
 
         assertEquals(GridDhtPartitionState.MOVING, entry1.getValue());
         assertEquals(GridDhtPartitionState.RENTING, entry2.getValue());
+    }
+
+    /**
+     * Tests {@link GridDhtPartitionState} compatibility with {@link TreeMap} on random operations.
+     */
+    public void testOnRandomOperations() {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        Map<Integer, GridDhtPartitionState> treeMap = new TreeMap<>();
+        Map<Integer, GridDhtPartitionState> gridMap = new GridPartitionStateMap();
+
+        int statesNum = GridDhtPartitionState.values().length;
+
+        for (int i = 0; i < 10_000; i++) {
+            Integer part = rnd.nextInt(1024);
+
+            GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal(rnd.nextInt(statesNum));
+
+            int rndOperation = rnd.nextInt(9);
+
+            if (rndOperation <= 5) {
+                treeMap.put(part, state);
+                gridMap.put(part, state);
+            }
+            else if (rndOperation == 6) {
+                treeMap.remove(part);
+                gridMap.remove(part);
+            }
+            else if (treeMap.size() > 0) {
+                int n = rnd.nextInt(0, treeMap.size());
+
+                Iterator<Map.Entry<Integer, GridDhtPartitionState>> iter1 = treeMap.entrySet().iterator();
+                Iterator<Map.Entry<Integer, GridDhtPartitionState>> iter2 = gridMap.entrySet().iterator();
+
+                Map.Entry<Integer, GridDhtPartitionState> entry1 = iter1.next();
+                Map.Entry<Integer, GridDhtPartitionState> entry2 = iter2.next();
+
+                for (int j = 1; j <= n; j++) {
+                    entry1 = iter1.next();
+                    entry2 = iter2.next();
+                }
+
+                if (rndOperation == 7) {
+                    entry1.setValue(state);
+                    entry2.setValue(state);
+                }
+                else {
+                    iter1.remove();
+                    iter2.remove();
+                }
+            }
+
+            assertEquals(treeMap.size(), gridMap.size());
+        }
+
+        assertEquals(treeMap, gridMap);
     }
 
     /** */
