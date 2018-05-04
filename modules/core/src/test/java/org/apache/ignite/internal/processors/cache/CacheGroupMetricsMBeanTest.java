@@ -254,6 +254,10 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
                 st.addData(i, i);
         }
 
+        // Pause rebalance to check instant partitions states.
+        grid(0).rebalanceEnabled(false);
+        grid(1).rebalanceEnabled(false);
+
         stopGrid(2);
 
         // Check moving partitions while rebalancing.
@@ -261,6 +265,5 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
 
         assertTrue(mxBean0Grp1.getLocalNodeMovingPartitionsCount() > 0);
         assertTrue(mxBean0Grp1.getClusterMovingPartitionsCount() > 0);
-
     }
 }
