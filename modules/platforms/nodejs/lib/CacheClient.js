@@ -26,7 +26,7 @@ const SqlFieldsQuery = require('./Query').SqlFieldsQuery;
 const ScanQuery = require('./Query').ScanQuery;
 
 /**
- * ???
+ * Peek modes
  * @typedef CacheClient.PEEK_MODE
  * @enum
  * @readonly
@@ -493,7 +493,7 @@ class CacheClient {
      *
      * @async
      *
-     * @param {...CacheClient.PEEK_MODE} [peekModes] - ???
+     * @param {...CacheClient.PEEK_MODE} [peekModes] - peek modes.
      *
      * @return {Promise<number>} - the number of the entries in the cache.
      *
