@@ -216,7 +216,7 @@ describe('cache put get test suite >', () => {
     };
     const timestampComparator = (value1, value2) => {
         return value1 === null && value2 === null ||
-            dateComparator(value1.getDate(), value2.getDate()) &&
+            dateComparator(value1.getTime(), value2.getTime()) &&
             value1.getNanos() === value2.getNanos(); };
 
     const numericValueModificator = (data) => { return data > 0 ? data - 10 : data + 10; };
@@ -227,7 +227,7 @@ describe('cache put get test suite >', () => {
     const UUIDValueModificator = (data) => { return data.reverse(); };
     const enumValueModificator = (data) => { return new EnumItem(data.getTypeId(), data.getOrdinal() + 1); };
     const decimalValueModificator = (data) => { return data.add(12345); };
-    const timestampValueModificator = (data) => { return new Timestamp(new Date(data.getDate() + 12345), data.getNanos() + 123); };
+    const timestampValueModificator = (data) => { return new Timestamp(new Date(data.getTime() + 12345), data.getNanos() + 123); };
 
     const primitiveValues = {
         [ObjectType.PRIMITIVE_TYPE.BYTE] : { 
@@ -298,7 +298,7 @@ describe('cache put get test suite >', () => {
             modificator : decimalValueModificator
         },
         [ObjectType.PRIMITIVE_TYPE.TIMESTAMP] : {
-            values : [new Timestamp(new Date(), 12345), new Timestamp(new Date('1995-12-17'), 543), new Timestamp(new Date(0), 0)],
+            values : [new Timestamp(new Date().getTime(), 12345), new Timestamp(new Date('1995-12-17').getTime(), 543), new Timestamp(0, 0)],
             typeOptional : true,
             comparator : timestampComparator,
             modificator : timestampValueModificator

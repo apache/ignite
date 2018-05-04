@@ -120,7 +120,7 @@ class BinaryReader {
     }
 
     static _readTimestamp(buffer) {
-        return new Timestamp(buffer.readDate(), buffer.readInteger());
+        return new Timestamp(buffer.readLong().toNumber(), buffer.readInteger());
     }
 
     static async _readArray(buffer, arrayTypeCode, arrayType) {

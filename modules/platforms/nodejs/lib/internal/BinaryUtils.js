@@ -316,6 +316,9 @@ class BinaryUtils {
         else if (objectType === 'boolean') {
             return BinaryUtils.TYPE_CODE.BOOLEAN;
         }
+        else if (object instanceof Timestamp) {
+            return BinaryUtils.TYPE_CODE.TIMESTAMP;
+        }
         else if (object instanceof Date) {
             return BinaryUtils.TYPE_CODE.DATE;
         }
@@ -324,9 +327,6 @@ class BinaryUtils {
         }
         else if (object instanceof Decimal) {
             return BinaryUtils.TYPE_CODE.DECIMAL;
-        }
-        else if (object instanceof Timestamp) {
-            return BinaryUtils.TYPE_CODE.TIMESTAMP;
         }
         else if (object instanceof Array) {
             if (object.length > 0 && object[0] !== null) {
@@ -521,9 +521,6 @@ class BinaryUtils {
     }
 
     static getArrayType(elementType) {
-        if (elementType instanceof ComplexObjectType) {
-            return new ObjectArrayType(elementType);
-        }
         switch (BinaryUtils.getTypeCode(elementType)) {
             case BinaryUtils.TYPE_CODE.BYTE:
                 return BinaryUtils.TYPE_CODE.BYTE_ARRAY;
@@ -556,8 +553,7 @@ class BinaryUtils {
             case BinaryUtils.TYPE_CODE.TIME:
                 return BinaryUtils.TYPE_CODE.TIME_ARRAY;
             default:
-                throw Errors.IgniteClientError.unsupportedTypeError(
-                    'array of ' + BinaryUtils.getTypeName(elementType));
+                return new ObjectArrayType(elementType);
         }
     }
 

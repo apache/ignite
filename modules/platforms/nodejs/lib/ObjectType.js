@@ -418,10 +418,10 @@ class ComplexObjectType extends CompositeType {
 }
 
 /**
- * Class representing an array of Ignite complex type objects.
+ * ??? Class representing an array of Ignite complex type objects.
  *
  * It is described by COMPOSITE_TYPE.OBJECT_ARRAY {@link ObjectType.COMPOSITE_TYPE}
- * and by a concrete {@link ComplexObjectType} instance which defines an element of the array.
+ * and by a concrete {@link CompositeType} instance which defines an element of the array.
  *
  * @extends CompositeType
  */
@@ -430,15 +430,15 @@ class ObjectArrayType extends CompositeType {
     /**
      * Public constructor.
      *
-     * @param {ComplexObjectType} elementType - type of the array element
+     * @param {CompositeType} [elementType] - type of the array element
      *
      * @return {ObjectArrayType} - new ObjectArrayType instance
      *
      * @throws {IgniteClientError} if error.
      */
-    constructor(elementType) {
+    constructor(elementType = null) {
         super(COMPOSITE_TYPE.OBJECT_ARRAY);
-        ArgumentChecker.hasType(elementType, 'elementType', false, ComplexObjectType);
+        ArgumentChecker.hasType(elementType, 'elementType', false, CompositeType);
         this._elementType = elementType;
     }
 }

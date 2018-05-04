@@ -157,7 +157,7 @@ class BinaryWriter {
     }
 
     static _writeTimestamp(buffer, timestamp) {
-        buffer.writeDate(timestamp.getDate());
+        buffer.writeDate(timestamp);
         buffer.writeInteger(timestamp.getNanos());
     }
 
@@ -170,9 +170,10 @@ class BinaryWriter {
     static async _writeArray(buffer, array, arrayType, arrayTypeCode) {
         const elementType = BinaryUtils.getArrayElementType(arrayType);
         const keepElementType = BinaryUtils.keepArrayElementType(arrayTypeCode);
-        if (arrayTypeCode === BinaryUtils.TYPE_CODE.OBJECT_ARRAY && 
-            elementType instanceof ComplexObjectType) {
-            buffer.writeInteger(BinaryType._calculateId(elementType._typeName));
+        if (arrayTypeCode === BinaryUtils.TYPE_CODE.OBJECT_ARRAY) {
+            buffer.writeInteger(elementType instanceof ComplexObjectType ?
+                BinaryType._calculateId(elementType._typeName) :
+                0);
         }
         buffer.writeInteger(array.length);
         for (let elem of array) {

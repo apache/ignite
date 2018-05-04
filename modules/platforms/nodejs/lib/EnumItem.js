@@ -39,6 +39,8 @@ class EnumItem {
      * @param {number} typeId - Id of the enum type.
      *
      * @return {EnumItem} - new EnumItem instance
+     *
+     * @throws {IgniteClientError} if error.
      */
     constructor(typeId) {
         this.setTypeId(typeId);
@@ -60,6 +62,8 @@ class EnumItem {
      * Updates Id of the enum type.
      *
      * @param {number} typeId - new Id of the enum type.
+     *
+     * @throws {IgniteClientError} if error.
      */
     setTypeId(typeId) {
         ArgumentChecker.isInteger(typeId, 'typeId');
@@ -80,6 +84,8 @@ class EnumItem {
      * Sets or updates ordinal of the item in the enum type.
      *
      * @param {number} ordinal - ordinal of the item in the enum type.
+     *
+     * @throws {IgniteClientError} if error.
      */
     setOrdinal(ordinal) {
         ArgumentChecker.isInteger(ordinal, 'ordinal');
@@ -100,6 +106,8 @@ class EnumItem {
      * Sets or updates name of the item.
      *
      * @param {string} name - name of the item.
+     *
+     * @throws {IgniteClientError} if error.
      */
     setName(name) {
         ArgumentChecker.notEmpty(name, 'name');
@@ -120,6 +128,8 @@ class EnumItem {
      * Sets or updates value of the item.
      *
      * @param {number} value - value of the item.
+     *
+     * @throws {IgniteClientError} if error.
      */
     setValue(value) {
         ArgumentChecker.isInteger(value, 'value');

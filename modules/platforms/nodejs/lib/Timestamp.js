@@ -26,39 +26,21 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
  *   - date - a standard JavaScript {@link Date}.
  *   - nanoseconds - fraction of the last second, which value could be in the range from 0 to 999999999.
  */
-class Timestamp {
+class Timestamp extends Date {
 
     /**
      * Public constructor.
      *
-     * @param {Date} date - date.
+     * @param {number} time - integer value representing the number of milliseconds since January 1, 1970, 00:00:00 UTC.
      * @param {number} nanos - nanoseconds of the last second.
      *
      * @return {Timestamp} - new Timestamp instance
+     *
+     * @throws {IgniteClientError} if error.
      */
-    constructor(date, nanos) {
-        this.setDate(date);
+    constructor(time, nanos) {
+        super(time);
         this.setNanos(nanos);
-    }
-
-    /**
-     * Returns the date from the timestamp without nanoseconds of the last second.
-     *
-     * @return {Date} - date.
-     */
-    getDate() {
-        return this._date;
-    }
-
-    /**
-     * Updates the date in the timestamp without changing nanoseconds of the last second.
-     *
-     * @param {Date} date - new date.
-     */
-    setDate(date) {
-        ArgumentChecker.notNull(date, 'date');
-        ArgumentChecker.hasType(date, 'date', false, Date);
-        this._date = date;
     }
 
     /**
@@ -74,6 +56,8 @@ class Timestamp {
      * Updates the nanoseconds of the last second in the timestamp without changing the date.
      *
      * @param {number} nanos - new value for the nanoseconds of the last second.
+     *
+     * @throws {IgniteClientError} if error.
      */
     setNanos(nanos) {
         ArgumentChecker.isInteger(nanos, 'nanos');

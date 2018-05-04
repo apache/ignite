@@ -94,6 +94,8 @@ class BinaryObject {
      *   to/from the Ignite types.
      *
      * @return {BinaryObject} - new BinaryObject instance.
+     *
+     * @throws {IgniteClientError} if error.
      */
     static async fromObject(jsObject, complexObjectType = null) {
         ArgumentChecker.hasType(complexObjectType, 'complexObjectType', false, ComplexObjectType);
@@ -201,6 +203,8 @@ class BinaryObject {
      *
      * @return {object} - instance of the JavaScript object
      *   which corresponds to the specified complex object type.
+     *
+     * @throws {IgniteClientError} if error.
      */
     async toObject(complexObjectType) {
         ArgumentChecker.notNull(complexObjectType, 'complexObjectType');

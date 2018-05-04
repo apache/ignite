@@ -49,7 +49,7 @@ class Query {
     /**
      * Set {@link Cursor} page size.
      *
-     * @param {integer} pageSize - cursor page size.
+     * @param {number} pageSize - cursor page size.
      *
      * @return {Query} - the same instance of the Query.
      */
@@ -332,7 +332,7 @@ class SqlFieldsQuery extends SqlQuery {
     /**
      * Set max rows.
      *
-     * @param {integer} maxRows - max rows.
+     * @param {number} maxRows - max rows.
      *
      * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
      */
@@ -453,7 +453,7 @@ class ScanQuery extends Query {
      * Must be in the range [0, N) where N is partition number in the cache. If 0, query will iterate over
      * all partitions in the cache. 
      *
-     * @param {integer} partitionsNumber - partition number over which this query should iterate.
+     * @param {number} partitionsNumber - partition number over which this query should iterate.
      *
      * @return {ScanQuery} - the same instance of the ScanQuery.
      */
