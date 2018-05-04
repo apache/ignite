@@ -94,8 +94,12 @@ public class GridDhtPartitionsEvictor {
                                 try {
                                     boolean success = part.tryClear();
 
-                                    if (success)
+                                    if (success) {
                                         evictionQueue.remove(part.id());
+
+                                        if (part.state() == GridDhtPartitionState.EVICTED && part.markForDestroy())
+                                            part.destroy();
+                                    }
                                 }
                                 catch (Throwable ex) {
                                     if (ctx.kernalContext().isStopping()) {

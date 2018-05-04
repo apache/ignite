@@ -3571,12 +3571,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param oldRow Old row if available.
      * @throws IgniteCheckedException If update failed.
      */
-    protected boolean storeValue(CacheObject val,
+    protected boolean storeValue(@Nullable CacheObject val,
         long expireTime,
         GridCacheVersion ver,
         @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
-        assert val != null : "null values in update for key: " + key;
-
         return storeValue(val, expireTime, ver, oldRow, null);
     }
 
