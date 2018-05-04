@@ -20,6 +20,7 @@ package org.apache.ignite.spi.communication.tcp.messages;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -34,7 +35,7 @@ public class HandshakeMessage3 extends HandshakeMessage2 {
     private boolean compressionFlag;
 
     /**
-     *
+     * Default constructor required by {@link Message}.
      */
     public HandshakeMessage3() {
         // No-op.
