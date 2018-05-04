@@ -151,19 +151,19 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
     /**
      * @param ses Session.
      */
-    public static void lock(GridNioSession ses) {
+    public static void compressLock(GridNioSession ses) {
         assert ses != null;
 
-        compressionHandler(ses).lock();
+        compressionHandler(ses).compressLock();
     }
 
     /**
      * @param ses NIO session.
      */
-    public static void unlock(GridNioSession ses) {
+    public static void compressUnlock(GridNioSession ses) {
         assert ses != null;
 
-        compressionHandler(ses).unlock();
+        compressionHandler(ses).compressUnlock();
     }
 
     /**
@@ -178,13 +178,13 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
 
         GridNioCompressionHandler hnd = compressionHandler(ses);
 
-        lock(ses);
+        hnd.compressLock();
 
         try {
             return hnd.compress(input);
         }
         finally {
-            unlock(ses);
+            hnd.compressUnlock();
         }
     }
 
@@ -208,7 +208,7 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
 
         GridNioCompressionHandler hnd = compressionHandler(ses);
 
-        lock(ses);
+        hnd.compressLock();
 
         try {
             hnd.compress(input);
@@ -219,7 +219,7 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
             throw new GridNioException("Failed to compress data: " + ses, e);
         }
         finally {
-            unlock(ses);
+            hnd.compressUnlock();
         }
     }
 
@@ -238,7 +238,7 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
 
         GridNioCompressionHandler hnd = compressionHandler(ses);
 
-        lock(ses);
+        hnd.decompressLock();
 
         try {
             ByteBuffer appBuf = hnd.decompress(input);
@@ -252,7 +252,7 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
             throw new GridNioException("Failed to decompress data: " + ses, e);
         }
         finally {
-            unlock(ses);
+            hnd.decompressUnlock();
         }
     }
 
@@ -265,13 +265,13 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
 
         GridNioCompressionHandler hnd = compressionHandler(ses);
 
-        lock(ses);
+        hnd.compressLock();
 
         try {
             return shutdownSession(ses, hnd);
         }
         finally {
-            unlock(ses);
+            hnd.compressUnlock();
         }
     }
 

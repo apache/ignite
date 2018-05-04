@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.communication;
+package org.apache.ignite.internal.util.nio.compression;
 
 import com.github.luben.zstd.Zstd;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
-import org.apache.ignite.internal.util.nio.compression.CompressionEngineResult;
 
 import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.BUFFER_OVERFLOW;
 import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.BUFFER_UNDERFLOW;
@@ -204,8 +202,7 @@ public final class ZstdEngine implements CompressionEngine {
     private static int getInt(ByteBuffer buf) {
         assert buf.remaining() >= BLOCK_LENGTH;
 
-        return ((buf.get() & 0xFF) << 24) | ((buf.get() & 0xFF) << 16)
-            | ((buf.get() & 0xFF) << 8) | (buf.get() & 0xFF);
+        return buf.getInt();
     }
 
     /**
@@ -217,9 +214,6 @@ public final class ZstdEngine implements CompressionEngine {
     private static void putInt(int val, ByteBuffer buf) {
         assert buf.remaining() >= BLOCK_LENGTH;
 
-        buf.put((byte)(val >>> 24));
-        buf.put((byte)(val >>> 16));
-        buf.put((byte)(val >>> 8));
-        buf.put((byte)(val));
+        buf.putInt(val);
     }
 }

@@ -1344,7 +1344,7 @@ public class GridNioServer<T> {
             boolean isCompressed = ses.isCompressed();
 
             if (isCompressed)
-                netCompressFilter.lock(ses);
+                netCompressFilter.compressLock(ses);
 
             boolean handshakeFinished = false;
 
@@ -1521,7 +1521,7 @@ public class GridNioServer<T> {
                     sslFilter.unlock(ses);
 
                 if (isCompressed)
-                    netCompressFilter.unlock(ses);
+                    netCompressFilter.compressUnlock(ses);
             }
         }
 

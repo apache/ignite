@@ -41,6 +41,9 @@ public final class LZ4Engine implements CompressionEngine {
     private final LZ4SafeDecompressor decompressor;
 
     /** */
+    private static final int BLOCK_LENGTH = 4;
+
+    /** */
     public LZ4Engine() {
         LZ4Factory factory = LZ4Factory.fastestInstance();
 
@@ -52,11 +55,11 @@ public final class LZ4Engine implements CompressionEngine {
     @Override public CompressionEngineResult compress(ByteBuffer src, ByteBuffer buf) {
         assert src != null;
         assert buf != null;
-        assert buf.position() + 4 /* Block length */ <= Integer.MAX_VALUE;
+        assert buf.position() + BLOCK_LENGTH <= Integer.MAX_VALUE;
 
         try {
             int compress = compressor.compress(src, src.position(), src.remaining(),
-                buf, buf.position() + 4, buf.remaining() - 4);
+                buf, buf.position() + BLOCK_LENGTH, buf.remaining() - BLOCK_LENGTH);
 
             putInt(compress, buf);
 
@@ -75,11 +78,10 @@ public final class LZ4Engine implements CompressionEngine {
         assert src != null;
         assert buf != null;
 
-        int len = src.remaining();
-        int initPos = src.position();
-
-        if (len < 4 /* Block length */)
+        if (src.remaining() < BLOCK_LENGTH)
             return BUFFER_UNDERFLOW;
+
+        int initPos = src.position();
 
         int compressedLen = getInt(src);
 
@@ -114,7 +116,7 @@ public final class LZ4Engine implements CompressionEngine {
      * @return {@code int} Value.
      */
     private static int getInt(ByteBuffer buf) {
-        assert buf.remaining() >=4;
+        assert buf.remaining() >= BLOCK_LENGTH;
 
         return ((buf.get() & 0xFF) << 24) | ((buf.get() & 0xFF) << 16)
             | ((buf.get() & 0xFF) << 8) | (buf.get() & 0xFF);
@@ -127,7 +129,7 @@ public final class LZ4Engine implements CompressionEngine {
      * @param buf ByteBuffer.
      */
     private static void putInt(int val, ByteBuffer buf) {
-        assert buf.remaining() >=4;
+        assert buf.remaining() >= BLOCK_LENGTH;
 
         buf.put((byte)(val >>> 24));
         buf.put((byte)(val >>> 16));

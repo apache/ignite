@@ -28,8 +28,11 @@ import org.jetbrains.annotations.Nullable;
  * Thread safe compression handler.
  */
 public final class GridNioCompressionHandler extends BlockingCompressionHandler {
-    /** Lock. */
-    private final ReentrantLock lock = new ReentrantLock();
+    /** Compress lock. */
+    private final ReentrantLock compressLock = new ReentrantLock();
+
+    /** Decompress lock. */
+    private final ReentrantLock decompressLock = new ReentrantLock();
 
     /**
      * Creates handler.
@@ -48,34 +51,48 @@ public final class GridNioCompressionHandler extends BlockingCompressionHandler 
     /**
      * Lock handler.
      */
-    public void lock() {
-        lock.lock();
+    public void compressLock() {
+        compressLock.lock();
     }
 
     /**
      * Unlock handler.
      */
-    public void unlock() {
-        lock.unlock();
+    public void compressUnlock() {
+        compressLock.unlock();
+    }
+
+    /**
+     * Lock handler.
+     */
+    public void decompressLock() {
+        decompressLock.lock();
+    }
+
+    /**
+     * Unlock handler.
+     */
+    public void decompressUnlock() {
+        decompressLock.unlock();
     }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer compress(ByteBuffer buf) throws IOException {
-        assert lock.isHeldByCurrentThread();
+        assert compressLock.isHeldByCurrentThread();
 
         return super.compress(buf);
     }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer decompress(ByteBuffer buf) throws IOException {
-        assert lock.isHeldByCurrentThread();
+        assert decompressLock.isHeldByCurrentThread();
 
         return super.decompress(buf);
     }
 
     /** {@inheritDoc} */
     @Override public ByteBuffer getOutputBuffer() {
-        assert lock.isHeldByCurrentThread();
+        assert compressLock.isHeldByCurrentThread();
 
         return super.getOutputBuffer();
     }
