@@ -433,5 +433,56 @@ class SqlFieldsQuery extends SqlQuery {
     }
 }
 
+/**
+ * ???
+ */
+class ScanQuery extends Query {
+
+    /**
+     * Public constructor.
+     *
+     * @return {ScanQuery} - new ScanQuery instance.
+     */
+    constructor() {
+        super(BinaryUtils.OPERATION.QUERY_SCAN);
+        this._partitionsNumber = 0;
+    }
+
+    /**
+     * Sets partition number over which this query should iterate. 
+     * Must be in the range [0, N) where N is partition number in the cache. If 0, query will iterate over
+     * all partitions in the cache. 
+     *
+     * @param {integer} partitionsNumber - partition number over which this query should iterate.
+     *
+     * @return {ScanQuery} - the same instance of the ScanQuery.
+     */
+    setPartitionsNumber(partitionsNumber) {
+        this._partitionsNumber = partitionsNumber;
+        return this;
+    }
+
+    /** Private methods */
+
+    /**
+     * @ignore
+     */
+    async _write(buffer) {
+        // filter
+        await BinaryWriter.writeObject(buffer, null);
+        buffer.writeInteger(this._pageSize);
+        buffer.writeInteger(this._partitionsNumber);
+        buffer.writeBoolean(this._local);
+    }
+
+    /**
+     * @ignore
+     */
+    async _getCursor(socket, payload, keyType = null, valueType = null) {
+        return new Cursor(socket, BinaryUtils.OPERATION.QUERY_SCAN_CURSOR_GET_PAGE, payload, keyType, valueType);
+    }
+}
+
 module.exports.SqlQuery = SqlQuery;
 module.exports.SqlFieldsQuery = SqlFieldsQuery;
+module.exports.ScanQuery = ScanQuery;

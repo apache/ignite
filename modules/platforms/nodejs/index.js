@@ -38,5 +38,6 @@ module.exports.QueryIndex = require('./lib/CacheConfiguration').QueryIndex;
 module.exports.CacheKeyConfiguration = require('./lib/CacheConfiguration').CacheKeyConfiguration;
 module.exports.SqlQuery = require('./lib/Query').SqlQuery;
 module.exports.SqlFieldsQuery = require('./lib/Query').SqlFieldsQuery;
+module.exports.ScanQuery = require('./lib/Query').ScanQuery;
 module.exports.Cursor = require('./lib/Cursor').Cursor;
 module.exports.SqlFieldsCursor = require('./lib/Cursor').SqlFieldsCursor;

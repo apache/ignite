@@ -23,6 +23,7 @@ const BinaryWriter = require('./internal/BinaryWriter');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 const SqlQuery = require('./Query').SqlQuery;
 const SqlFieldsQuery = require('./Query').SqlFieldsQuery;
+const ScanQuery = require('./Query').ScanQuery;
 
 /**
  * ???
@@ -519,11 +520,11 @@ class CacheClient {
     /* Methods to operate with the cache using SQL and Scan Queries */
 
     /**
-     * Starts an SQL query operation.
+     * Starts an SQL or Scan query operation.
      *
      * @async
      *
-     * @param {SqlQuery | SqlFieldsQuery} query - query to be executed.
+     * @param {SqlQuery | SqlFieldsQuery | ScanQuery} query - query to be executed.
      *
      * @return {Promise<Cursor>} - cursor to obtain the results of the query operation:
      *   - {@link SqlFieldsCursor} in case of {@link SqlFieldsQuery} query
@@ -533,7 +534,7 @@ class CacheClient {
      */
     async query(query) {
         ArgumentChecker.notNull(query, 'query');
-        ArgumentChecker.hasType(query, 'query', false, SqlQuery, SqlFieldsQuery);
+        ArgumentChecker.hasType(query, 'query', false, SqlQuery, SqlFieldsQuery, ScanQuery);
 
         let value = null;
         await this._socket.send(
