@@ -66,7 +66,7 @@ public class KnapsackTerminateCriteria implements ITerminateCriteria {
         printItems(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome));
         igniteLogger.info("##########################################################################################");
 
-        if (!(currentGeneration > 30))
+        if (!(currentGeneration > 29))
             isTerminate = false;
 
         return isTerminate;
