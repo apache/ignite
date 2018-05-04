@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.cluster.graph;
 
 import java.util.ArrayList;
@@ -9,37 +26,31 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CommunicationFailureContext;
 
+/**
+ * Class to represent cluster nodes avalaible connections as graph.
+ * Provides several graph algorithms to analyze cluster nodes connections.
+ */
 public class ClusterGraph {
-    /** */
-    private final IgniteLogger log;
-
-    /** */
-    private final CommunicationFailureContext ctx;
-
-    /** */
-    private final Predicate<ClusterNode> nodeFilterOut;
-
-    /** */
+    /** Number of all cluster nodes. */
     private final int nodeCnt;
 
-    /** */
+    /** List of the all cluster nodes. */
     private final List<ClusterNode> nodes;
 
-    /** */
+    /** Connectivity (adjacency) matrix between cluster nodes. */
     private final BitSet[] connections;
 
-    /** */
+    /** Fully-connected component searcher. */
     private final FullyConnectedComponentSearcher fccSearcher;
 
     /**
+     * Constructor.
+     *
      * @param log Logger.
-     * @param ctx Context.
+     * @param ctx Communication failure context.
+     * @param nodeFilterOut Filter to exclude some cluster nodes from graph.
      */
     public ClusterGraph(IgniteLogger log, CommunicationFailureContext ctx, Predicate<ClusterNode> nodeFilterOut) {
-        this.log = log;
-        this.ctx = ctx;
-        this.nodeFilterOut = nodeFilterOut;
-
         nodes = ctx.topologySnapshot();
 
         nodeCnt = nodes.size();
@@ -51,6 +62,13 @@ public class ClusterGraph {
         fccSearcher = new FullyConnectedComponentSearcher(connections);
     }
 
+    /**
+     * Builds connectivity matrix (adjacency matrix) for all cluster nodes.
+     *
+     * @param ctx Communication failure context.
+     * @param nodeFilterOut Filter to exclude some cluster nodes from graph.
+     * @return Connections bit set for each node, where set bit means avalable connection.
+     */
     private BitSet[] buildConnectivityMatrix(CommunicationFailureContext ctx, Predicate<ClusterNode> nodeFilterOut) {
         BitSet[] connections = new BitSet[nodeCnt];
 
@@ -65,6 +83,9 @@ public class ClusterGraph {
             connections[i] = new BitSet(nodeCnt);
             for (int j = 0; j < nodeCnt; j++) {
                 ClusterNode to = nodes.get(j);
+
+                if (nodeFilterOut.test(to))
+                    continue;
 
                 if (i == j || ctx.connectionAvailable(node, to))
                     connections[i].set(j);
@@ -87,8 +108,9 @@ public class ClusterGraph {
     }
 
     /**
+     * Finds connected components in cluster graph.
      *
-     * @return
+     * @return List of set of nodes, each set represents connected component.
      */
     public List<BitSet> findConnectedComponents() {
         List<BitSet> connectedComponets = new ArrayList<>();
@@ -99,16 +121,23 @@ public class ClusterGraph {
             if (visitSet.get(i) || connections[i] == null)
                 continue;
 
-            BitSet graphComponent = new BitSet(nodeCnt);
+            BitSet currentComponent = new BitSet(nodeCnt);
 
-            dfs(i, graphComponent, visitSet);
+            dfs(i, currentComponent, visitSet);
 
-            connectedComponets.add(graphComponent);
+            connectedComponets.add(currentComponent);
         }
 
         return connectedComponets;
     }
 
+    /**
+     * Deep-first search to find connected components in connections graph.
+     *
+     * @param nodeIdx Current node index to traverse from.
+     * @param currentComponent Current connected component to populate.
+     * @param allVisitSet Set of the visited nodes in whole graph during traversal.
+     */
     private void dfs(int nodeIdx, BitSet currentComponent, BitSet allVisitSet) {
         assert !allVisitSet.get(nodeIdx)
             : "Incorrect node visit " + nodeIdx;
@@ -131,6 +160,12 @@ public class ClusterGraph {
         }
     }
 
+    /**
+     * Finds largest fully-connected component from given {@code nodesSet}.
+     *
+     * @param nodesSet Set of nodes.
+     * @return Set of nodes which forms largest fully-connected component.
+     */
     public BitSet findLargestFullyConnectedComponent(BitSet nodesSet) {
         // Check that current set is already fully connected.
         boolean fullyConnected = checkFullyConnected(nodesSet);
@@ -138,12 +173,19 @@ public class ClusterGraph {
         if (fullyConnected)
             return nodesSet;
 
-        return fccSearcher.findLargest(nodesSet);
+        BitSet result = fccSearcher.findLargest(nodesSet);
+
+        assert checkFullyConnected(result)
+            : "Not fully connected component was found [result=" + result + ", nodesSet=" + nodesSet + "]";
+
+        return result;
     }
 
     /**
-     * @param nodesSet Cluster nodes bit set.
-     * @return {@code True} if all cluster nodes are able to connect to each other.
+     * Checks that given {@code nodesSet} forms fully-connected component.
+     *
+     * @param nodesSet Set of cluster nodes.
+     * @return {@code True} if all given cluster nodes are able to connect to each other.
      */
     public boolean checkFullyConnected(BitSet nodesSet) {
         int maxIdx = nodesSet.length();

@@ -18,12 +18,14 @@
 package org.apache.ignite.configuration;
 
 import java.util.BitSet;
-import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.cluster.graph.BitSetIterator;
 import org.apache.ignite.internal.cluster.graph.ClusterGraph;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -51,17 +53,24 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
             + "serverNodesCnt=" + largestCluster.srvNodesCnt + ", "
             + "clientNodesCnt=" + largestCluster.connectedClients.size() + ", "
             + "totalAliveNodes=" + ctx.topologySnapshot().size() + ", "
-            + "serverNodesIds=" + clusterNodeIds(largestCluster.nodesSet, ctx.topologySnapshot(), 1000) + "]");
+            + "serverNodesIds=" + clusterNodeIds(largestCluster.srvNodesSet, ctx.topologySnapshot(), 1000) + "]");
 
         keepCluster(ctx, largestCluster);
     }
 
+    /**
+     * Finds largest part of the cluster where each node is able to connect to each other.
+     *
+     * @param ctx Communication failure context.
+     * @return Largest part of the cluster nodes to keep.
+     */
     @Nullable private ClusterPart findLargestConnectedCluster(CommunicationFailureContext ctx) {
         List<ClusterNode> srvNodes = ctx.topologySnapshot()
             .stream()
             .filter(node -> !CU.clientNode(node))
             .collect(Collectors.toList());
 
+        // Exclude client nodes from analysis.
         ClusterGraph graph = new ClusterGraph(log, ctx, CU::clientNode);
 
         List<BitSet> components = graph.findConnectedComponents();
@@ -89,7 +98,7 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
                     + "Will keep largest set of healthy fully-connected nodes. Other nodes will be killed forcibly.");
 
             BitSet fullyConnectedPart = graph.findLargestFullyConnectedComponent(nodesSet);
-            Set<ClusterNode> connectedClients = connectedClients(ctx.topologySnapshot(), fullyConnectedPart);
+            Set<ClusterNode> connectedClients = findConnectedClients(ctx, fullyConnectedPart);
 
             return new ClusterPart(fullyConnectedPart, connectedClients);
         }
@@ -97,7 +106,7 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
         // If cluster has splitted on several parts and there are at least 2 parts which aren't single node
         // It means that split brain has happened.
         boolean isSplitBrain = components.size() > 1 &&
-            components.stream().filter(cmp -> cmp.size() > 1).count() >= 2;
+            components.stream().filter(cmp -> cmp.size() > 1).count() > 1;
 
         if (isSplitBrain)
             U.warn(log, "Communication problem resolver detected split brain. "
@@ -108,12 +117,13 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
             U.warn(log, "Communication problem resolver detected full lost for some connections inside cluster. "
                 + "Problem nodes will be found and killed forcibly.");
 
+        // For each part of splitted cluster extract largest fully-connected component.
         ClusterPart largestCluster = null;
         for (int i = 0; i < components.size(); i++) {
             BitSet clusterPart = components.get(i);
 
             BitSet fullyConnectedPart = graph.findLargestFullyConnectedComponent(clusterPart);
-            Set<ClusterNode> connectedClients = connectedClients(ctx.topologySnapshot(), fullyConnectedPart);
+            Set<ClusterNode> connectedClients = findConnectedClients(ctx, fullyConnectedPart);
 
             ClusterPart current = new ClusterPart(fullyConnectedPart, connectedClients);
 
@@ -128,8 +138,8 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
     }
 
     /**
-     * Keeps in the server cluster nodes presented in given {@code nodesSet}.
-     * Client nodes which have connections to presented {@code nodesSet} will be also keeped.
+     * Keeps server cluster nodes presented in given {@code srvNodesSet}.
+     * Client nodes which have connections to presented {@code srvNodesSet} will be also keeped.
      * Other nodes will be killed forcibly.
      *
      * @param ctx Communication failure context.
@@ -146,7 +156,7 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
             if (CU.clientNode(node))
                 continue;
 
-            if (!clusterPart.nodesSet.get(idx))
+            if (!clusterPart.srvNodesSet.get(idx))
                 ctx.killNode(node);
         }
 
@@ -160,29 +170,68 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
     }
 
     /**
-     * Find set of the client nodes which are able to connect to given set of server nodes {@code srvNodesSet}.
+     * Finds set of the client nodes which are able to connect to given set of server nodes {@code srvNodesSet}.
      *
-     * @param allNodes All nodes.
+     * @param ctx Communication failure context.
      * @param srvNodesSet Server nodes set.
      * @return Set of client nodes.
      */
-    private Set<ClusterNode> connectedClients(List<ClusterNode> allNodes, BitSet srvNodesSet) {
-        return Collections.emptySet();
+    private Set<ClusterNode> findConnectedClients(CommunicationFailureContext ctx, BitSet srvNodesSet) {
+        Set<ClusterNode> connectedClients = new HashSet<>();
+
+        List<ClusterNode> allNodes = ctx.topologySnapshot();
+
+        for (ClusterNode node : allNodes) {
+            if (!CU.clientNode(node))
+                continue;
+
+            boolean hasConnections = true;
+
+            Iterator<Integer> it = new BitSetIterator(srvNodesSet);
+            while (it.hasNext()) {
+                int srvNodeIdx = it.next();
+                ClusterNode srvNode = allNodes.get(srvNodeIdx);
+
+                if (!ctx.connectionAvailable(node, srvNode) || !ctx.connectionAvailable(srvNode, node)) {
+                    hasConnections = false;
+
+                    break;
+                }
+            }
+
+            if (hasConnections)
+                connectedClients.add(node);
+        }
+
+        return connectedClients;
     }
 
+    /**
+     * Class representing part of cluster.
+     */
     private static class ClusterPart implements Comparable<ClusterPart> {
+        /** Server nodes count. */
         int srvNodesCnt;
 
-        BitSet nodesSet;
+        /** Server nodes set. */
+        BitSet srvNodesSet;
 
+        /** Set of client nodes are able to connect to presented part of server nodes. */
         Set<ClusterNode> connectedClients;
 
-        public ClusterPart(BitSet nodesSet, Set<ClusterNode> connectedClients) {
-            this.nodesSet = nodesSet;
-            this.srvNodesCnt = nodesSet.cardinality();
+        /**
+         * Constructor.
+         *
+         * @param srvNodesSet Server nodes set.
+         * @param connectedClients Set of client nodes.
+         */
+        public ClusterPart(BitSet srvNodesSet, Set<ClusterNode> connectedClients) {
+            this.srvNodesSet = srvNodesSet;
+            this.srvNodesCnt = srvNodesSet.cardinality();
             this.connectedClients = connectedClients;
         }
 
+        /** {@inheritDoc */
         @Override public int compareTo(@NotNull ClusterPart o) {
             int srvNodesCmp = Integer.compare(o.srvNodesCnt, srvNodesCnt);
 
