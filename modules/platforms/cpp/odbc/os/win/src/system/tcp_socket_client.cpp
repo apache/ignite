@@ -97,7 +97,6 @@ namespace ignite
     {
         namespace system
         {
-
             TcpSocketClient::TcpSocketClient() :
                 socketHandle(INVALID_SOCKET),
                 blocking(true)

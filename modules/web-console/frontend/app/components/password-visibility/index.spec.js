@@ -46,7 +46,7 @@ suite('password-visibility', () => {
             </div>
         `);
         $compile(el)($scope);
-        const toggleButton = el.find('password-visibility-toggle-button button');
+        const toggleButton = el.find('password-visibility-toggle-button').children()[0];
         $scope.$digest();
 
         assert.isFalse(el.hasClass(PASSWORD_VISIBLE_CLASS), 'Password is hidden by default');

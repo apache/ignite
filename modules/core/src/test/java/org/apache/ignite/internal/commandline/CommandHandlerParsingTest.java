@@ -34,12 +34,15 @@ import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
  */
 public class CommandHandlerParsingTest extends TestCase {
     /**
-     * Test parsing and validation for user and password arguments
+     * Test parsing and validation for user and password arguments.
      */
     public void testParseAndValidateUserAndPassword() {
         CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
+            if (cmd == Command.CACHE)
+                continue; // --cache subcommand requires its own specific arguments.
+
             try {
                 hnd.parseAndValidate(asList("--user"));
 
@@ -85,28 +88,52 @@ public class CommandHandlerParsingTest extends TestCase {
     }
 
     /**
-     * tests host and port arguments
+     * Tests connection settings arguments.
      */
-    public void testHostAndPort() {
+    public void testConnectionSettings() {
         CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
+            if (cmd == Command.CACHE)
+                continue; // --cache subcommand requires its own specific arguments.
+
             Arguments args = hnd.parseAndValidate(asList(cmd.text()));
 
             assertEquals(cmd, args.command());
             assertEquals(DFLT_HOST, args.host());
             assertEquals(DFLT_PORT, args.port());
 
-            args = hnd.parseAndValidate(asList("--port", "12345", "--host", "test-host", cmd.text()));
+            args = hnd.parseAndValidate(asList("--port", "12345", "--host", "test-host", "--ping-interval", "5000",
+                "--ping-timeout", "40000", cmd.text()));
 
             assertEquals(cmd, args.command());
             assertEquals("test-host", args.host());
             assertEquals("12345", args.port());
+            assertEquals(5000, args.pingInterval());
+            assertEquals(40000, args.pingTimeout());
 
             try {
                 hnd.parseAndValidate(asList("--port", "wrong-port", cmd.text()));
 
                 fail("expected exception: Invalid value for port:");
+            }
+            catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                hnd.parseAndValidate(asList("--ping-interval", "-10", cmd.text()));
+
+                fail("expected exception: Ping interval must be specified");
+            }
+            catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                hnd.parseAndValidate(asList("--ping-timeout", "-20", cmd.text()));
+
+                fail("expected exception: Ping timeout must be specified");
             }
             catch (IllegalArgumentException e) {
                 e.printStackTrace();

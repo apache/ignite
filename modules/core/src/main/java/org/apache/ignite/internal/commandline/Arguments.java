@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.commandline;
 
+import org.apache.ignite.internal.client.GridClientConfiguration;
+import org.apache.ignite.internal.commandline.cache.CacheArguments;
 import org.apache.ignite.internal.visor.tx.VisorTxTaskArg;
 
 /**
@@ -51,8 +53,19 @@ public class Arguments {
      */
     private String baselineArgs;
 
+    /** Ping timeout for grid client. See {@link GridClientConfiguration#pingTimeout}.*/
+    private long pingTimeout;
+
+    /** Ping interval for grid client. See {@link GridClientConfiguration#pingInterval}.*/
+    private long pingInterval;
+
     /** Transaction arguments. */
     private final VisorTxTaskArg txArg;
+
+    /**
+     * Arguments for --cache subcommand.
+     */
+    private CacheArguments cacheArgs;
 
     /**
      * @param cmd Command.
@@ -64,11 +77,13 @@ public class Arguments {
      * @param baselineArgs Baseline args.
      * @param txArg TX arg.
      * @param force Force flag.
+     * @param pingTimeout Ping timeout. See {@link GridClientConfiguration#pingTimeout}.
+     * @param pingInterval Ping interval. See {@link GridClientConfiguration#pingInterval}.
+     * @param cacheArgs --cache subcommand arguments.
      */
-    public Arguments(Command cmd, String host, String port, String user, String pwd,
-        String baselineAct, String baselineArgs,
-        VisorTxTaskArg txArg, boolean force
-    ) {
+    public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
+        String baselineArgs, long pingTimeout, long pingInterval, VisorTxTaskArg txArg, boolean force,
+        CacheArguments cacheArgs) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -76,8 +91,11 @@ public class Arguments {
         this.pwd = pwd;
         this.baselineAct = baselineAct;
         this.baselineArgs = baselineArgs;
+        this.pingTimeout = pingTimeout;
+        this.pingInterval = pingInterval;
         this.force = force;
         this.txArg = txArg;
+        this.cacheArgs = cacheArgs;
     }
 
     /**
@@ -130,6 +148,24 @@ public class Arguments {
     }
 
     /**
+     * See {@link GridClientConfiguration#pingTimeout}.
+     *
+     * @return Ping timeout.
+     */
+    public long pingTimeout() {
+        return pingTimeout;
+    }
+
+    /**
+     * See {@link GridClientConfiguration#pingInterval}.
+     *
+     * @return Ping interval.
+     */
+    public long pingInterval() {
+        return pingInterval;
+    }
+
+    /**
      * @return Transaction arguments.
      */
     public VisorTxTaskArg transactionArguments() {
@@ -141,5 +177,12 @@ public class Arguments {
      */
     public boolean force() {
         return force;
+    }
+
+    /**
+     * @return Arguments for --cache subcommand.
+     */
+    public CacheArguments cacheArgs() {
+        return cacheArgs;
     }
 }

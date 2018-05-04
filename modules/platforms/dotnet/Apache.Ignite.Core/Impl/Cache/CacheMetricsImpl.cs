@@ -116,6 +116,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         private readonly int _keySize;
 
         /** */
+        private readonly long _cacheSize;
+
+        /** */
         private readonly bool _isEmpty;
 
         /** */
@@ -323,6 +326,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             _estimatedRebalancingFinishTime = reader.ReadLong();
             _rebalancingStartTime = reader.ReadLong();
             _rebalancingClearingPartitionsLeft = reader.ReadLong();
+            _cacheSize = reader.ReadLong();
         }
 
         /** <inheritDoc /> */
@@ -411,6 +415,9 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** <inheritDoc /> */
         public int Size { get { return _size; } }
+
+        /** <inheritDoc /> */
+        public long CacheSize { get { return _cacheSize; } }
 
         /** <inheritDoc /> */
         public int KeySize { get { return _keySize; } }
