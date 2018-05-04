@@ -29,7 +29,7 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 /**
  * Represents the terminate condition for Knapsack Genetic algorithm
  *
- * Class terminates Genetic algorithm when current generation > 30
+ * Class terminates Genetic algorithm when once GA Grid has performed 30 generations.
  */
 public class KnapsackTerminateCriteria implements ITerminateCriteria {
     /** Ignite instance */
