@@ -35,7 +35,7 @@ const BinaryWriter = require('./internal/BinaryWriter');
 class Cursor {
 
     /**
-     * Returns one cache entry (key-value pair) from the query results.
+     * Returns one element (cache entry - key-value pair) from the query results.
      *
      * Every new call returns the next cache entry from the query results.
      * If the method returns null, no more entries are available.
@@ -58,7 +58,7 @@ class Cursor {
     }
 
     /**
-     * Checks if more cache entries are available in the query results.
+     * Checks if more elements are available in the query results.
      *
      * @return {boolean} - true if more cache entries are available, false otherwise.
      */
@@ -68,7 +68,7 @@ class Cursor {
     }
 
     /**
-     * Returns all cache entries (key-value pairs) from the query results.
+     * Returns all elements (cache entries - key-value pairs) from the query results.
      *
      * May be used instead of getValue() method if the number of returned entries
      * is relatively small and will not cause memory utilization issues.
@@ -91,10 +91,10 @@ class Cursor {
     }
 
     /**
-     * Closes the cursor. Obtaining cache entries from the results is not possible after this.
+     * Closes the cursor. Obtaining elements from the results is not possible after this.
      *
-     * This method should be called if no more cache entries are needed.
-     * It is not neccessary to call it if all cache entries have been already obtained.
+     * This method should be called if no more elements are needed.
+     * It is not neccessary to call it if all elements have been already obtained.
      *
      * @async
      */
@@ -200,16 +200,14 @@ class Cursor {
 class SqlFieldsCursor extends Cursor {
 
     /**
-     * ???
-     * Returns a portion of results - field values returned by the query.
+     * Returns one element (array with values of the fields) from the query results.
      *
-     * Every new call returns the next portion of results.
-     * If the method returns null, no more results are available.
+     * Every new call returns the next element from the query results.
+     * If the method returns null, no more elements are available.
      *
      * @async
      *
-     * @return {Promise<Array<*>>} - a portion of results returned by SQL Fields query.
-     *   Every element of the array is an array with values of the fields requested by the query.
+     * @return {Promise<Array<*>>} - array with values of the fields requested by the query.
      *
      */
     async getValue() {
@@ -217,14 +215,14 @@ class SqlFieldsCursor extends Cursor {
     }
 
     /**
-     * Returns all results - field values returned by the query.
+     * Returns all elements (arrays with values of the fields) from the query results.
      *
      * May be used instead of getValue() method if the number of returned elements
      * is relatively small and will not cause memory utilization issues.
      *
      * @async
      *
-     * @return {Promise<Array<CacheEntry>>} - all results returned by SQL Fields query.
+     * @return {Promise<Array<Array<*»>} - all results returned by SQL Fields query.
      *   Every element of the array is an array with values of the fields requested by the query.
      *
      */
