@@ -34,13 +34,13 @@ namespace Apache.Ignite.Core.Impl.Services
         /** */
         private static readonly MethodInfo InvokeMethod = ActionType.GetMethod("Invoke");
 
-        /** */
-        private static readonly ModuleBuilder ModuleBuilder = CreateModuleBuilder();
-
         /** Classic .NET Method. */
         private static readonly MethodInfo AppDomainDefineAssembly = typeof(AppDomain).GetMethod(
             "DefineDynamicAssembly",
-            new[] {typeof(AssemblyName), typeof(AssemblyBuilderAccess)});
+            BindingFlags.Public | BindingFlags.Instance,
+            null,
+            new[] {typeof(AssemblyName), typeof(AssemblyBuilderAccess)},
+            null);
 
         /** .NET Core Method. */
         private static readonly MethodInfo AssemblyBuilderDefineAssembly = typeof(AssemblyBuilder).GetMethod(
@@ -50,6 +50,8 @@ namespace Apache.Ignite.Core.Impl.Services
             new[] {typeof(AssemblyName), typeof(AssemblyBuilderAccess)},
             null);
 
+        /** */
+        private static readonly ModuleBuilder ModuleBuilder = CreateModuleBuilder();
 
         /// <summary>
         /// Generates the proxy for specified service type.
