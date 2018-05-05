@@ -172,6 +172,11 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     }
 
     /** {@inheritDoc} */
+    @Override public void setTxTimeoutOnPartitionMapExchange(long timeout) {
+        cluster.setTxTimeoutOnPartitionMapExchange(timeout);
+    }
+
+    /** {@inheritDoc} */
     @Override public Ignite ignite() {
         return cluster.ignite();
     }
@@ -334,6 +339,20 @@ public class IgniteClusterAsyncImpl extends AsyncSupportAdapter<IgniteCluster>
     /** {@inheritDoc} */
     @Nullable @Override public IgniteFuture<?> clientReconnectFuture() {
         return cluster.clientReconnectFuture();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean enableWal(String cacheName) throws IgniteException {
+        return cluster.enableWal(cacheName);
+    }
+    /** {@inheritDoc} */
+    @Override public boolean disableWal(String cacheName) throws IgniteException {
+        return cluster.disableWal(cacheName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isWalEnabled(String cacheName) {
+        return cluster.isWalEnabled(cacheName);
     }
 
     /** {@inheritDoc} */

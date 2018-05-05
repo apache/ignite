@@ -43,10 +43,12 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Ssl;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Plugin;
+    using Apache.Ignite.Core.Ssl;
     using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -192,6 +194,9 @@ namespace Apache.Ignite.Core
         /** */
         private bool? _isActiveOnStart;
 
+        /** */
+        private bool? _authenticationEnabled;
+        
         /** Local event listeners. Stored as array to ensure index access. */
         private LocalEventListener[] _localEventListenersInternal;
 
@@ -217,6 +222,11 @@ namespace Apache.Ignite.Core
         /// Default value for <see cref="RedirectJavaConsoleOutput"/> property.
         /// </summary>
         public const bool DefaultRedirectJavaConsoleOutput = true;
+
+        /// <summary>
+        /// Default value for <see cref="AuthenticationEnabled"/> property.
+        /// </summary>
+        public const bool DefaultAuthenticationEnabled = false;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
@@ -293,6 +303,7 @@ namespace Apache.Ignite.Core
             writer.WriteTimeSpanAsLongNullable(_clientFailureDetectionTimeout);
             writer.WriteTimeSpanAsLongNullable(_longQueryWarningTimeout);
             writer.WriteBooleanNullable(_isActiveOnStart);
+            writer.WriteBooleanNullable(_authenticationEnabled);
             writer.WriteObjectDetached(ConsistentId);
 
             // Thread pools
@@ -405,6 +416,7 @@ namespace Apache.Ignite.Core
                 writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
                 writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
                 writer.WriteInt((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
+                writer.WriteLong((long) TransactionConfiguration.DefaultDefaultTimeoutOnPartitionMapExchange.TotalMilliseconds);
             }
             else
                 writer.WriteBoolean(false);
@@ -496,6 +508,9 @@ namespace Apache.Ignite.Core
             {
                 writer.WriteBoolean(false);
             }
+
+            // SSL Context factory.
+            SslFactorySerializer.Write(writer, SslContextFactory);
 
             // Plugins (should be last).
             if (PluginConfigurations != null)
@@ -604,6 +619,7 @@ namespace Apache.Ignite.Core
             _clientFailureDetectionTimeout = r.ReadTimeSpanNullable();
             _longQueryWarningTimeout = r.ReadTimeSpanNullable();
             _isActiveOnStart = r.ReadBooleanNullable();
+            _authenticationEnabled = r.ReadBooleanNullable();
             ConsistentId = r.ReadObject<object>();
 
             // Thread pools
@@ -666,7 +682,8 @@ namespace Apache.Ignite.Core
                     DefaultTransactionConcurrency = (TransactionConcurrency) r.ReadInt(),
                     DefaultTransactionIsolation = (TransactionIsolation) r.ReadInt(),
                     DefaultTimeout = TimeSpan.FromMilliseconds(r.ReadLong()),
-                    PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt())
+                    PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt()),
+                    DefaultTimeoutOnPartitionMapExchange = TimeSpan.FromMilliseconds(r.ReadLong())
                 };
             }
 
@@ -717,6 +734,9 @@ namespace Apache.Ignite.Core
             {
                 DataStorageConfiguration = new DataStorageConfiguration(r);
             }
+
+            // SSL context factory.
+            SslContextFactory = SslFactorySerializer.Read(r);
         }
 
         /// <summary>
@@ -1242,6 +1262,14 @@ namespace Apache.Ignite.Core
         public DataStorageConfiguration DataStorageConfiguration { get; set; }
 
         /// <summary>
+        /// Gets or sets the SSL context factory that will be used for creating a secure socket layer b/w nodes.
+        /// <para />
+        /// Default is null (no SSL).
+        /// <para />
+        /// </summary>
+        public ISslContextFactory SslContextFactory { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating how user assemblies should be loaded on remote nodes.
         /// <para />
         /// For example, when executing <see cref="ICompute.Call{TRes}(IComputeFunc{TRes})"/>,
@@ -1409,5 +1437,15 @@ namespace Apache.Ignite.Core
         /// </summary>
         [DefaultValue(DefaultRedirectJavaConsoleOutput)]
         public bool RedirectJavaConsoleOutput { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether user authentication is enabled for the cluster. Default is <c>false</c>. 
+        /// </summary>
+        [DefaultValue(DefaultAuthenticationEnabled)]
+        public bool AuthenticationEnabled
+        {
+            get { return _authenticationEnabled ?? DefaultAuthenticationEnabled; }
+            set { _authenticationEnabled = value; }
+        }
     }
 }

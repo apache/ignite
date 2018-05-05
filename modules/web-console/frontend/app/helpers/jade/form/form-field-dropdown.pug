@@ -16,33 +16,45 @@
 
 mixin ignite-form-field-dropdown(label, model, name, disabled, required, multiple, placeholder, placeholderEmpty, options, tip)
     mixin form-field-input()
+        -var errLbl = label.substring(0, label.length - 1)
+
         button.select-toggle.form-control(
+            type='button'
             id=`{{ ${name} }}Input`
             name=`{{ ${name} }}`
 
             data-placeholder=placeholderEmpty ? `{{ ${options}.length > 0 ? '${placeholder}' : '${placeholderEmpty}' }}` : placeholder
             
-            data-ng-model=model
-            data-ng-disabled=disabled && `${disabled}`
-            data-ng-required=required && `${required}`
+            ng-model=model
+            ng-disabled=disabled && `${disabled}`
+            ng-required=required && `${required}`
 
             bs-select
             bs-options=`item.value as item.label for item in ${options}`
+            expose-ignite-form-field-control='$input'
 
             data-multiple=multiple ? '1' : false
 
             tabindex='0'
-
-            data-ignite-form-panel-field=''
         )&attributes(attributes.attributes)
 
-    .ignite-form-field
-        +ignite-form-field__label(label, name, required)
-        .ignite-form-field__control
+    .ignite-form-field.ignite-form-field-dropdown
+        +ignite-form-field__label(label, name, required, disabled)
             +tooltip(tip, tipOpts)
-
+        .ignite-form-field__control
+            .input-tip
+                +form-field-input(attributes=attributes)
+        .ignite-form-field__errors(
+            ng-messages=`$input.$error`
+            ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
+        )
             if block
                 block
 
-            .input-tip
-                +form-field-input(attributes=attributes)
+            if required
+                +form-field-feedback(name, 'required', multiple ? 'At least one option should be selected' : 'An option should be selected')
+
+mixin sane-ignite-form-field-dropdown({label, model, name, disabled = false, required = false, multiple = false, placeholder, placeholderEmpty, options, tip})
+    +ignite-form-field-dropdown(label, model, name, disabled, required, multiple, placeholder, placeholderEmpty, options, tip)&attributes(attributes)
+        if block
+            block

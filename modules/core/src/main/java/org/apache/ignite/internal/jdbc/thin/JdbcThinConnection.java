@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.sql.Array;
+import java.sql.BatchUpdateException;
 import java.sql.Blob;
 import java.sql.CallableStatement;
 import java.sql.Clob;
@@ -33,17 +34,27 @@ import java.sql.SQLXML;
 import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -61,9 +72,6 @@ public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
-    /** Connection URL. */
-    private String url;
-
     /** Schema name. */
     private String schema;
 
@@ -78,6 +86,9 @@ public class JdbcThinConnection implements Connection {
 
     /** Read-only flag. */
     private boolean readOnly;
+
+    /** Streaming flag. */
+    private volatile boolean stream;
 
     /** Current transaction holdability. */
     private int holdability;
@@ -94,39 +105,144 @@ public class JdbcThinConnection implements Connection {
     /** Connection properties. */
     private ConnectionProperties connProps;
 
+    /** Batch size for streaming. */
+    private int streamBatchSize;
+
+    /** Batch for streaming. */
+    private List<JdbcQuery> streamBatch;
+
+    /** Last added query to recognize batches. */
+    private String lastStreamQry;
+
+    /** Connected. */
+    private boolean connected;
+
+    /** Tracked statements to close on disconnect. */
+    private ArrayList<JdbcThinStatement> stmts = new ArrayList<>();
+
     /**
      * Creates new connection.
      *
-     * @param url Connection URL.
-     * @param schema Schema name.
-     * @param props Connection properties.
+     * @param connProps Connection properties.
      * @throws SQLException In case Ignite client failed to start.
      */
-    public JdbcThinConnection(String url, String schema, Properties props) throws SQLException {
-        assert url != null;
-
-        this.url = url;
-
-        connProps = new ConnectionPropertiesImpl();
-
-        ((ConnectionPropertiesImpl)connProps).init(props);
+    public JdbcThinConnection(ConnectionProperties connProps) throws SQLException {
+        this.connProps = connProps;
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
-        this.schema = normalizeSchema(schema);
+        schema = normalizeSchema(connProps.getSchema());
 
+        cliIo = new JdbcThinTcpIo(connProps);
+
+        ensureConnected();
+    }
+
+    /**
+     * @throws SQLException On connection error.
+     */
+    private synchronized void ensureConnected() throws SQLException {
         try {
-            cliIo = new JdbcThinTcpIo(connProps);
+            if (connected)
+                return;
 
             cliIo.start();
+
+            connected = true;
+        }
+        catch (SQLException e) {
+            close();
+
+            throw e;
         }
         catch (Exception e) {
-            cliIo.close();
+            close();
 
-            throw new SQLException("Failed to connect to Ignite cluster [host=" + connProps.getHost() +
-                ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            throw new SQLException("Failed to connect to Ignite cluster [url=" + connProps.getUrl() + ']',
+                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+        }
+    }
+
+    /**
+     * @return Whether this connection is streamed or not.
+     */
+    boolean isStream() {
+        return stream;
+    }
+
+    /**
+     * @param sql Statement.
+     * @param cmd Parsed form of {@code sql}.
+     * @throws SQLException if failed.
+     */
+    void executeNative(String sql, SqlCommand cmd) throws SQLException {
+        if (cmd instanceof SqlSetStreamingCommand) {
+            // If streaming is already on, we have to disable it first.
+            if (stream) {
+                // We have to send request regardless of actual batch size.
+                executeBatch(true);
+
+                stream = false;
+            }
+
+            boolean newVal = ((SqlSetStreamingCommand)cmd).isTurnOn();
+
+            // Actual ON, if needed.
+            if (newVal) {
+                sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
+                    schema, 1, 1, sql, null));
+
+                streamBatchSize = ((SqlSetStreamingCommand)cmd).batchSize();
+
+                stream = true;
+            }
+        }
+        else
+            throw IgniteQueryErrorCode.createJdbcSqlException("Unsupported native statement: " + sql,
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+    }
+
+    /**
+     * Add another query for batched execution.
+     * @param sql Query.
+     * @param args Arguments.
+     * @throws SQLException On error.
+     */
+    void addBatch(String sql, List<Object> args) throws SQLException {
+        boolean newQry = (args == null || !F.eq(lastStreamQry, sql));
+
+        // Providing null as SQL here allows for recognizing subbatches on server and handling them more efficiently.
+        JdbcQuery q  = new JdbcQuery(newQry ? sql : null, args != null ? args.toArray() : null);
+
+        if (streamBatch == null)
+            streamBatch = new ArrayList<>(streamBatchSize);
+
+        streamBatch.add(q);
+
+        // Null args means "addBatch(String)" was called on non-prepared Statement,
+        // we don't want to remember its query string.
+        lastStreamQry = (args != null ? sql : null);
+
+        if (streamBatch.size() == streamBatchSize)
+            executeBatch(false);
+    }
+
+    /**
+     * @param lastBatch Whether open data streamers must be flushed and closed after this batch.
+     * @throws SQLException if failed.
+     */
+    private void executeBatch(boolean lastBatch) throws SQLException {
+        JdbcBatchExecuteResult res = sendRequest(new JdbcBatchExecuteRequest(schema, streamBatch, lastBatch));
+
+        streamBatch = null;
+
+        lastStreamQry = null;
+
+        if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
+            throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),
+                res.errorCode(), res.updateCounts());
         }
     }
 
@@ -151,6 +267,8 @@ public class JdbcThinConnection implements Connection {
 
         if (timeout > 0)
             stmt.timeout(timeout);
+
+        stmts.add(stmt);
 
         return stmt;
     }
@@ -180,6 +298,8 @@ public class JdbcThinConnection implements Connection {
 
         if (timeout > 0)
             stmt.timeout(timeout);
+
+        stmts.add(stmt);
 
         return stmt;
     }
@@ -271,6 +391,15 @@ public class JdbcThinConnection implements Connection {
     @Override public void close() throws SQLException {
         if (isClosed())
             return;
+
+        if (!F.isEmpty(streamBatch)) {
+            try {
+                executeBatch(true);
+            }
+            catch (SQLException e) {
+                LOG.log(Level.WARNING, "Exception during batch send on streamed connection close", e);
+            }
+        }
 
         closed = true;
 
@@ -641,6 +770,8 @@ public class JdbcThinConnection implements Connection {
      */
     @SuppressWarnings("unchecked")
     <R extends JdbcResult> R sendRequest(JdbcRequest req) throws SQLException {
+        ensureConnected();
+
         try {
             JdbcResponse res = cliIo.sendRequest(req);
 
@@ -653,7 +784,7 @@ public class JdbcThinConnection implements Connection {
             throw e;
         }
         catch (Exception e) {
-            close();
+            onDisconnect();
 
             throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
         }
@@ -663,7 +794,28 @@ public class JdbcThinConnection implements Connection {
      * @return Connection URL.
      */
     public String url() {
-        return url;
+        return connProps.getUrl();
+    }
+
+    /**
+     * Called on IO disconnect: close the client IO and opened statements.
+     */
+    private void onDisconnect() {
+        if (!connected)
+            return;
+
+        cliIo.close();
+
+        connected = false;
+
+        streamBatch = null;
+
+        lastStreamQry = null;
+
+        for (JdbcThinStatement s : stmts)
+            s.closeOnDisconnect();
+
+        stmts.clear();
     }
 
     /**

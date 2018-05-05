@@ -149,7 +149,7 @@ public class ExchangeActions {
      */
     public Set<String> cachesToResetLostPartitions() {
         Set<String> caches = null;
-        
+
         if (cachesToResetLostParts != null)
             caches = new HashSet<>(cachesToResetLostParts.keySet());
 
@@ -409,7 +409,7 @@ public class ExchangeActions {
     /**
      *
      */
-    static class CacheGroupActionData {
+    public static class CacheGroupActionData {
         /** */
         private final CacheGroupDescriptor desc;
 

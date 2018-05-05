@@ -30,6 +30,9 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     private long totalAllocatedPages;
 
     /** */
+    private long totalAllocatedSize;
+
+    /** */
     private float allocationRate;
 
     /** */
@@ -53,12 +56,40 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** */
     private long physicalMemoryPages;
 
+    /** */
+    private long physicalMemorySize;
+
+    /** */
+    private long checkpointBufferPages;
+
+    /** */
+    private long checkpointBufferSize;
+
+    /** */
+    private int pageSize;
+
+    /** */
+    private long readPages;
+
+    /** */
+    private long writtenPages;
+
+    /** */
+    private long replacedPage;
+
+    /** */
+    private long offHeapSize;
+
+    /** */
+    private long offHeapUsedSize;
+
     /**
      * @param metrics Metrics instance to take a copy.
      */
     public DataRegionMetricsSnapshot(DataRegionMetrics metrics) {
         name = metrics.getName();
         totalAllocatedPages = metrics.getTotalAllocatedPages();
+        totalAllocatedSize = metrics.getTotalAllocatedSize();
         allocationRate = metrics.getAllocationRate();
         evictionRate = metrics.getEvictionRate();
         largeEntriesPagesPercentage = metrics.getLargeEntriesPagesPercentage();
@@ -67,6 +98,15 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
         pageReplaceRate = metrics.getPagesReplaceRate();
         pageReplaceAge = metrics.getPagesReplaceAge();
         physicalMemoryPages = metrics.getPhysicalMemoryPages();
+        physicalMemorySize = metrics.getPhysicalMemorySize();
+        checkpointBufferPages = metrics.getCheckpointBufferPages();
+        checkpointBufferSize = metrics.getCheckpointBufferSize();
+        pageSize = metrics.getPageSize();
+        readPages = metrics.getPagesRead();
+        writtenPages = metrics.getPagesWritten();
+        replacedPage = metrics.getPagesReplaced();
+        offHeapSize = metrics.getOffHeapSize();
+        offHeapUsedSize = metrics.getOffheapUsedSize();
     }
 
     /** {@inheritDoc} */
@@ -77,6 +117,11 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
         return totalAllocatedPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        return totalAllocatedSize;
     }
 
     /** {@inheritDoc} */
@@ -117,5 +162,50 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** {@inheritDoc} */
     @Override public long getPhysicalMemoryPages() {
         return physicalMemoryPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPhysicalMemorySize() {
+        return physicalMemorySize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferPages() {
+        return checkpointBufferPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferSize() {
+        return checkpointBufferSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getPageSize() {
+        return pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesRead() {
+        return readPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesWritten() {
+        return writtenPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesReplaced() {
+        return replacedPage;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapSize() {
+        return offHeapSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffheapUsedSize() {
+        return offHeapUsedSize;
     }
 }

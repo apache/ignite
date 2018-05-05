@@ -94,7 +94,8 @@
         <log4j.version>2.8.1</log4j.version>
         <lucene.bundle.version>5.5.2_1</lucene.bundle.version>
         <lucene.version>5.5.2</lucene.version>
-        <maven.bundle.plugin.version>2.5.4</maven.bundle.plugin.version>
+        <maven.bundle.plugin.version>3.5.0</maven.bundle.plugin.version>
+        <mockito.version>1.10.19</mockito.version>
         <mysql.connector.version>5.1.39</mysql.connector.version>
         <netlibjava.version>1.1.2</netlibjava.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>
@@ -106,6 +107,7 @@
         <scala210.jline.version>2.10.4</scala210.jline.version>
         <scala210.library.version>2.10.6</scala210.library.version>
         <scala211.library.version>2.11.8</scala211.library.version>
+        <scala.library.version>2.11.8</scala.library.version>
         <slf4j.version>1.7.7</slf4j.version>
         <slf4j16.version>1.6.4</slf4j16.version>
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
@@ -113,6 +115,7 @@
         <spring.data.version>1.13.1.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
         <spring.version>4.3.7.RELEASE</spring.version> <!-- don't forget to update spring-data version -->
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
+        <storm.version>1.1.1</storm.version>
         <tomcat.version>8.0.23</tomcat.version>
         <twitter.hbc.version>2.2.0</twitter.hbc.version>
         <yammer.metrics.annotation.version>2.2.0</yammer.metrics.annotation.version>
@@ -309,7 +312,6 @@
                         <version>false</version>
                         <additionalparam>${javadoc.opts}</additionalparam>
                         <links>
-                            <link>http://docs.oracle.com/javase/7/docs/api/</link>
                             <link>http://hadoop.apache.org/docs/current/api/</link>
                         </links>
                         <groups>
@@ -402,6 +404,10 @@
                                 <packages>org.apache.ignite.spi.eventstorage*</packages>
                             </group>
                             <group>
+                                <title>Communication Failure Detection</title>
+                                <packages>org.apache.ignite.failure</packages>
+                            </group>
+                            <group>
                                 <title>Segmentation Detection</title>
                                 <packages>org.apache.ignite.plugin.segmentation</packages>
                             </group>
@@ -463,7 +469,11 @@
                             </group>
                             <group>
                                 <title>RocketMQ integration</title>
-                                <packages>org.apache.ignite.rocketmq*</packages>
+                                <packages>org.apache.ignite.stream.rocketmq*</packages>
+                            </group>
+                            <group>
+                                <title>Storm integration</title>
+                                <packages>org.apache.ignite.stream.storm*</packages>
                             </group>
                             <group>
                                 <title>Ignite Development Utils</title>
@@ -580,7 +590,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.17</version>
+                <version>2.20.1</version>
                 <configuration>
                     <forkCount>0</forkCount>
                 </configuration>
@@ -607,7 +617,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
-                <version>1.0.0-beta-3</version>
+                <version>1.0.1</version>
 
                 <configuration>
                     <flattenMode>minimum</flattenMode>
@@ -810,6 +820,8 @@
                                         <exclude>**/*index*.md</exclude><!--readme files-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
                                         <exclude>**/*.iml</exclude><!--IDEA files-->
+                                        <exclude>**/*.csv</exclude><!--CSV files-->
+                                        <exclude>**/*.jks</exclude><!--bin-files-->
                                         <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
                                         <exclude>**/keystore/*.jks</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
@@ -829,6 +841,7 @@
                                         <exclude>src/main/java/org/apache/ignite/internal/util/nio/SelectedSelectionKeySet.java</exclude><!-- Apache 2.0 license -->
                                         <exclude>src/main/java/org/apache/ignite/internal/util/snaptree/*.java</exclude><!--BSD license-->
                                         <exclude>src/main/java/org/jsr166/*.java</exclude>
+                                        <exclude>src/main/java/org/mindrot/*.java</exclude>
                                         <exclude>src/test/java/org/apache/ignite/p2p/p2p.properties</exclude><!--test depends on file content-->
                                         <exclude>src/test/resources/log/ignite.log.tst</exclude><!--test resource-->
                                         <exclude>src/test/java/org/apache/ignite/spi/deployment/uri/META-INF/ignite.incorrefs</exclude><!--test resource-->
@@ -837,11 +850,7 @@
                                         <exclude>**/books/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
-                                        <exclude>src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
-                                        <exclude>**/resources/datasets/knn/*</exclude><!--Dataset examples in ml module-->
-                                        <exclude>**/resources/datasets/regression/*</exclude><!--Dataset examples in ml module-->
-                                        <exclude>**/ml/knn/datasets/*</exclude><!--Datasets for ML KNN in examples module-->
-                                        <exclude>examples/src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
+                                        <exclude>**/resources/datasets/**/*</exclude><!--KNN Datasets in ml module-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>dev-tools/IGNITE-*.patch</exclude>
                                         <exclude>dev-tools/.gradle/**/*</exclude>
@@ -919,16 +928,15 @@
                                         <exclude>**/.dockerignore</exclude>
                                         <exclude>**/backend/config/settings.json.sample</exclude>
                                         <exclude>**/backend/node_modules/**</exclude>
+                                        <exclude>**/e2e/testcafe/node_modules/**</exclude>
                                         <exclude>**/frontend/build/**</exclude>
                                         <exclude>**/frontend/public/images/**/*.png</exclude>
                                         <exclude>**/frontend/public/images/**/*.svg</exclude>
                                         <exclude>**/frontend/ignite_modules/**</exclude>
                                         <exclude>**/frontend/ignite_modules_temp/**</exclude>
                                         <exclude>**/frontend/node_modules/**</exclude>
-                                        <!--RPM packaging, IGNITE-7107-->
-                                        <exclude>**/packaging/rpm/SOURCES/name.service</exclude>
-                                        <exclude>**/packaging/rpm/SOURCES/service.sh</exclude>
-                                        <exclude>**/packaging/rpm/SPECS/apache-ignite.spec</exclude>
+                                        <!--Packaging -->
+                                        <exclude>packaging/**</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
@@ -951,7 +959,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.17</version>
+                        <version>2.20.1</version>
                         <configuration>
                             <forkCount>1</forkCount>
                         </configuration>
@@ -961,20 +969,52 @@
         </profile>
 
         <profile>
-            <id>tools.jar-default</id>
+            <id>java-9</id>
+            <activation>
+                <jdk>[1.9,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.source>9</maven.compiler.source>
+                <maven.compiler.target>9</maven.compiler.target>
+                <scala.library.version>2.12.4</scala.library.version>
+            </properties>
+            <dependencies/>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>3.7.0</version>
+                        <configuration>
+                            <compilerArgs>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/jdk.internal.misc=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.base/sun.nio.ch=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED</arg>
+                                <arg>--add-exports</arg>
+                                <arg>jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</arg>
+                            </compilerArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
 
+        <profile>
+            <id>tools.jar-default</id>
             <activation>
                 <file>
                     <exists>${java.home}/../lib/tools.jar</exists>
                 </file>
             </activation>
-
             <dependencies>
                 <dependency>
                     <groupId>com.sun</groupId>
                     <artifactId>tools</artifactId>
-                    <version>1.4.2</version>
                     <scope>system</scope>
+                    <version>${java.version}</version>
                     <systemPath>${java.home}/../lib/tools.jar</systemPath>
                 </dependency>
             </dependencies>
@@ -982,19 +1022,17 @@
 
         <profile>
             <id>tools.jar-mac</id>
-
             <activation>
                 <file>
                     <exists>${java.home}/../Classes/classes.jar</exists>
                 </file>
             </activation>
-
             <dependencies>
                 <dependency>
                     <groupId>com.sun</groupId>
                     <artifactId>tools</artifactId>
-                    <version>1.4.2</version>
                     <scope>system</scope>
+                    <version>${java.version}</version>
                     <systemPath>${java.home}/../Classes/classes.jar</systemPath>
                 </dependency>
             </dependencies>

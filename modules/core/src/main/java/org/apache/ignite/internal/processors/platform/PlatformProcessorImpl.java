@@ -69,6 +69,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import static org.apache.ignite.internal.processors.platform.PlatformAbstractTarget.FALSE;
+import static org.apache.ignite.internal.processors.platform.PlatformAbstractTarget.TRUE;
+
 /**
  * GridGain platform processor.
  */
@@ -151,6 +154,18 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** */
     private static final int OP_GET_BASELINE_TOPOLOGY = 26;
+
+    /** */
+    private static final int OP_DISABLE_WAL = 27;
+
+    /** */
+    private static final int OP_ENABLE_WAL = 28;
+
+    /** */
+    private static final int OP_IS_WAL_ENABLED = 29;
+
+    /** */
+    private static final int OP_SET_TX_TIMEOUT_ON_PME = 30;
 
     /** Start latch. */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -412,7 +427,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public long processInLongOutLong(int type, long val) throws IgniteCheckedException {
         switch (type) {
             case OP_LOGGER_IS_LEVEL_ENABLED: {
-                return loggerIsLevelEnabled((int) val) ? PlatformAbstractTarget.TRUE : PlatformAbstractTarget.FALSE;
+                return loggerIsLevelEnabled((int) val) ? TRUE : FALSE;
             }
 
             case OP_RELEASE_START: {
@@ -468,6 +483,24 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                 ctx.grid().addCacheConfiguration(cfg);
 
                 return 0;
+
+            case OP_DISABLE_WAL:
+                ctx.grid().cluster().disableWal(reader.readString());
+
+                return 0;
+
+            case OP_ENABLE_WAL:
+                ctx.grid().cluster().enableWal(reader.readString());
+
+                return 0;
+
+            case OP_SET_TX_TIMEOUT_ON_PME:
+                ctx.grid().cluster().setTxTimeoutOnPartitionMapExchange(reader.readLong());
+
+                return 0;
+
+            case OP_IS_WAL_ENABLED:
+                return ctx.grid().cluster().isWalEnabled(reader.readString()) ? TRUE : FALSE;
         }
 
         return PlatformAbstractTarget.throwUnsupported(type);
@@ -615,6 +648,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                 IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateNearCache(cacheName, cfg);
 
                 return createPlatformCache(cache);
+            }
+
+            case OP_GET_TRANSACTIONS: {
+                String lbl = reader.readString();
+
+                return new PlatformTransactions(platformCtx, lbl);
             }
         }
 

@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -60,6 +61,7 @@ import org.apache.ignite.internal.util.Jsr310Java8DateTimeApiUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -196,6 +198,27 @@ public class QueryUtils {
     }
 
     /**
+     * Normalize cache query entities.
+     *
+     * @param entities Query entities.
+     * @param cfg Cache config.
+     * @return Normalized query entities.
+     */
+    public static Collection<QueryEntity> normalizeQueryEntities(Collection<QueryEntity> entities,
+        CacheConfiguration<?, ?> cfg) {
+        Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
+
+        for (QueryEntity entity : entities) {
+            if (!F.isEmpty(entity.getNotNullFields()))
+                checkNotNullAllowed(cfg);
+
+            normalEntities.add(normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
+        }
+
+        return normalEntities;
+    }
+
+    /**
      * Normalize query entity. If "escape" flag is set, nothing changes. Otherwise we convert all object names to
      * upper case and replace inner class separator characters ('$' for Java and '.' for .NET) with underscore.
      *
@@ -242,6 +265,7 @@ public class QueryUtils {
         normalEntity.setValueFieldName(entity.getValueFieldName());
         normalEntity.setNotNullFields(entity.getNotNullFields());
         normalEntity.setDefaultFieldValues(entity.getDefaultFieldValues());
+        normalEntity.setDecimalInfo(entity.getDecimalInfo());
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
@@ -388,8 +412,10 @@ public class QueryUtils {
 
         // Key and value classes still can be available if they are primitive or JDK part.
         // We need that to set correct types for _key and _val columns.
-        Class<?> keyCls = U.classForName(qryEntity.findKeyType(), null);
-        Class<?> valCls = U.classForName(qryEntity.findValueType(), null);
+        // We better box these types - otherwise, if user provides, say, raw 'byte' for
+        // key or value (which they could), we'll deem key or value as Object which clearly is not right.
+        Class<?> keyCls = U.box(U.classForName(qryEntity.findKeyType(), null, true));
+        Class<?> valCls = U.box(U.classForName(qryEntity.findValueType(), null, true));
 
         // If local node has the classes and they are externalizable, we must use reflection properties.
         boolean keyMustDeserialize = mustDeserializeBinary(ctx, keyCls);
@@ -517,6 +543,7 @@ public class QueryUtils {
         Set<String> keyFields = qryEntity.getKeyFields();
         Set<String> notNulls = qryEntity.getNotNullFields();
         Map<String, Object> dlftVals = qryEntity.getDefaultFieldValues();
+        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo  = qryEntity.getDecimalInfo();
 
         // We have to distinguish between empty and null keyFields when the key is not of SQL type -
         // when a key is not of SQL type, absence of a field in nonnull keyFields tell us that this field
@@ -547,9 +574,14 @@ public class QueryUtils {
 
             Object dfltVal = dlftVals != null ? dlftVals.get(entry.getKey()) : null;
 
+            IgniteBiTuple<Integer, Integer> precisionAndScale =
+                decimalInfo != null ? decimalInfo.get(entry.getKey()) : null;
+
             QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(),
                 U.classForName(entry.getValue(), Object.class, true),
-                d.aliases(), isKeyField, notNull, dfltVal);
+                d.aliases(), isKeyField, notNull, dfltVal,
+                precisionAndScale != null ? precisionAndScale.get1() : -1,
+                precisionAndScale != null ? precisionAndScale.get2() : -1);
 
             d.addProperty(prop, false);
         }
@@ -693,11 +725,14 @@ public class QueryUtils {
      *      to key, {@code false} if it belongs to value, {@code null} if QueryEntity#keyFields is null.
      * @param notNull {@code true} if {@code null} value is not allowed.
      * @param dlftVal Default value.
+     * @param precision Precision.
+     * @param scale Scale.
      * @return Binary property.
      * @throws IgniteCheckedException On error.
      */
     public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr, Class<?> resType,
-        Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal) throws IgniteCheckedException {
+        Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal,
+        int precision, int scale) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
@@ -713,7 +748,8 @@ public class QueryUtils {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal);
+            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
+                precision, scale);
         }
 
         return res;
@@ -1375,6 +1411,16 @@ public class QueryUtils {
         /** {@inheritDoc} */
         @Override public Object defaultValue() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int precision() {
+            return -1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int scale() {
+            return -1;
         }
     }
 }

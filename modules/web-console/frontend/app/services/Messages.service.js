@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+import {CancellationError} from 'app/errors/CancellationError';
+import isEmpty from 'lodash/isEmpty';
+import {nonEmpty} from 'app/utils/lodashMixins';
+
 // Service to show various information and error messages.
 export default ['IgniteMessages', ['$alert', ($alert) => {
     // Common instance of alert modal.
@@ -35,8 +39,8 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
                 return prefix + (errIndex >= 0 ? msg.substring(errIndex + 5, msg.length - 1) : msg);
             }
 
-            if (_.nonEmpty(err.className)) {
-                if (_.isEmpty(prefix))
+            if (nonEmpty(err.className)) {
+                if (isEmpty(prefix))
                     prefix = 'Internal cluster error: ';
 
                 return prefix + err.className;
@@ -70,7 +74,7 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
         errorMessage,
         hideAlert,
         showError(message, err) {
-            if (message && message.cancelled)
+            if (message instanceof CancellationError)
                 return false;
 
             _showMessage(message, err, 'danger', 10);

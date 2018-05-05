@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsEvictor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
@@ -126,6 +127,9 @@ public class CacheGroupContext {
     /** */
     private GridCachePreloader preldr;
 
+    /** Partition evictor. */
+    private GridDhtPartitionsEvictor evictor;
+
     /** */
     private final DataRegion dataRegion;
 
@@ -147,6 +151,12 @@ public class CacheGroupContext {
     /** MXBean. */
     private CacheGroupMetricsMXBean mxBean;
 
+    /** */
+    private volatile boolean localWalEnabled;
+
+    /** */
+    private volatile boolean globalWalEnabled;
+
     /**
      * @param grpId Group ID.
      * @param ctx Context.
@@ -159,6 +169,7 @@ public class CacheGroupContext {
      * @param freeList Free list.
      * @param reuseList Reuse list.
      * @param locStartVer Topology version when group was started on local node.
+     * @param walEnabled Wal enabled flag.
      */
     CacheGroupContext(
         GridCacheSharedContext ctx,
@@ -171,7 +182,8 @@ public class CacheGroupContext {
         CacheObjectContext cacheObjCtx,
         FreeList freeList,
         ReuseList reuseList,
-        AffinityTopologyVersion locStartVer) {
+        AffinityTopologyVersion locStartVer,
+        boolean walEnabled) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
         assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
@@ -187,6 +199,10 @@ public class CacheGroupContext {
         this.reuseList = reuseList;
         this.locStartVer = locStartVer;
         this.cacheType = cacheType;
+        this.globalWalEnabled = walEnabled;
+        this.localWalEnabled = true;
+
+        persistGlobalWalState(walEnabled);
 
         ioPlc = cacheType.ioPolicy();
 
@@ -234,6 +250,13 @@ public class CacheGroupContext {
      */
     public GridCachePreloader preloader() {
         return preldr;
+    }
+
+    /**
+     * @return Partitions evictor.
+     */
+    public GridDhtPartitionsEvictor evictor() {
+        return evictor;
     }
 
     /**
@@ -399,7 +422,7 @@ public class CacheGroupContext {
         for (int i = 0; i < caches.size(); i++) {
             GridCacheContext cctx = caches.get(i);
 
-            if (cctx.recordEvent(type)) {
+            if (!cctx.config().isEventsDisabled() && cctx.recordEvent(type)) {
                 cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
                     cctx.localNode(),
                     "Cache rebalancing event.",
@@ -426,14 +449,15 @@ public class CacheGroupContext {
         for (int i = 0; i < caches.size(); i++) {
             GridCacheContext cctx = caches.get(i);
 
-            cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
-                cctx.localNode(),
-                "Cache unloading event.",
-                EVT_CACHE_REBALANCE_PART_UNLOADED,
-                part,
-                null,
-                0,
-                0));
+            if (!cctx.config().isEventsDisabled())
+                cctx.gridEvents().record(new CacheRebalancingEvent(cctx.name(),
+                    cctx.localNode(),
+                    "Cache unloading event.",
+                    EVT_CACHE_REBALANCE_PART_UNLOADED,
+                    part,
+                    null,
+                    0,
+                    0));
         }
     }
 
@@ -464,20 +488,21 @@ public class CacheGroupContext {
         for (int i = 0; i < caches.size(); i++) {
             GridCacheContext cctx = caches.get(i);
 
-            cctx.events().addEvent(part,
-                key,
-                evtNodeId,
-                (IgniteUuid)null,
-                null,
-                type,
-                newVal,
-                hasNewVal,
-                oldVal,
-                hasOldVal,
-                null,
-                null,
-                null,
-                keepBinary);
+            if (!cctx.config().isEventsDisabled())
+                cctx.events().addEvent(part,
+                    key,
+                    evtNodeId,
+                    (IgniteUuid)null,
+                    null,
+                    type,
+                    newVal,
+                    hasNewVal,
+                    oldVal,
+                    hasOldVal,
+                    null,
+                    null,
+                    null,
+                    keepBinary);
         }
     }
 
@@ -849,7 +874,8 @@ public class CacheGroupContext {
             ccfg.getAffinity(),
             ccfg.getNodeFilter(),
             ccfg.getBackups(),
-            ccfg.getCacheMode() == LOCAL);
+            ccfg.getCacheMode() == LOCAL,
+            persistenceEnabled());
 
         if (ccfg.getCacheMode() != LOCAL) {
             top = new GridDhtPartitionTopologyImpl(ctx, this);
@@ -869,6 +895,8 @@ public class CacheGroupContext {
         }
         else
             preldr = new GridCachePreloaderAdapter(this);
+
+        evictor = new GridDhtPartitionsEvictor(this);
 
         if (persistenceEnabled()) {
             try {
@@ -991,5 +1019,58 @@ public class CacheGroupContext {
     /** {@inheritDoc} */
     @Override public String toString() {
         return "CacheGroupContext [grp=" + cacheOrGroupName() + ']';
+    }
+
+    /**
+     * WAL enabled flag.
+     */
+    public boolean walEnabled() {
+        return localWalEnabled && globalWalEnabled;
+    }
+
+    /**
+     * Local WAL enabled flag.
+     */
+    public boolean localWalEnabled() {
+        return localWalEnabled;
+    }
+
+    /**
+     * @return Global WAL enabled flag.
+     */
+    public boolean globalWalEnabled() {
+        return globalWalEnabled;
+    }
+
+    /**
+     * @param enabled Global WAL enabled flag.
+     */
+    public void globalWalEnabled(boolean enabled) {
+        persistGlobalWalState(enabled);
+
+        this.globalWalEnabled = enabled;
+    }
+
+    /**
+     * @param enabled Local WAL enabled flag.
+     */
+    public void localWalEnabled(boolean enabled) {
+        persistLocalWalState(enabled);
+
+        this.localWalEnabled = enabled;
+    }
+
+    /**
+     * @param enabled Enabled flag..
+     */
+    private void persistGlobalWalState(boolean enabled) {
+        shared().database().walEnabled(grpId, enabled, false);
+    }
+
+    /**
+     * @param enabled Enabled flag..
+     */
+    private void persistLocalWalState(boolean enabled) {
+        shared().database().walEnabled(grpId, enabled, true);
     }
 }
