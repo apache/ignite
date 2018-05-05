@@ -77,7 +77,7 @@ class Query {
     /**
      * Set {@link Cursor} page size.
      *
-     * @param {integer} pageSize - cursor page size.
+     * @param {number} pageSize - cursor page size.
      *
      * @return {Query} - the same instance of the Query.
      */
@@ -232,7 +232,7 @@ class SqlQuery extends Query {
     /**
      * Set timeout.
      *
-     * @param {number} timeout - timeout value in miliseconds.
+     * @param {number} timeout - timeout value in milliseconds.
      *   Must be non-negative. Zero value disables timeout.
      *
      * @return {SqlQuery} - the same instance of the SqlQuery.
@@ -247,10 +247,10 @@ class SqlQuery extends Query {
     /**
      * @ignore
      */
-    _write(buffer) {
-        BinaryWriter.writeString(buffer, this._type);
-        BinaryWriter.writeString(buffer, this._sql);
-        this._writeArgs(buffer);
+    async _write(buffer) {
+        await BinaryWriter.writeString(buffer, this._type);
+        await BinaryWriter.writeString(buffer, this._sql);
+        await this._writeArgs(buffer);
         buffer.writeBoolean(this._distributedJoins);
         buffer.writeBoolean(this._local);
         buffer.writeBoolean(this._replicatedOnly);
@@ -261,14 +261,14 @@ class SqlQuery extends Query {
     /**
      * @ignore
      */
-    _writeArgs(buffer) {
+    async _writeArgs(buffer) {
         const argsLength = this._args ? this._args.length : 0;
         buffer.writeInteger(argsLength);
         if (argsLength > 0) {
             let argType;
             for (let i = 0; i &lt; argsLength; i++) {
                 argType = this._argTypes &amp;&amp; i &lt; this._argTypes.length ? this._argTypes[i] : null;
-                BinaryWriter.writeObject(buffer, this._args[i], argType);
+                await BinaryWriter.writeObject(buffer, this._args[i], argType);
             }
         }
     }
@@ -276,10 +276,8 @@ class SqlQuery extends Query {
     /**
      * @ignore
      */
-    _getCursor(socket, payload, keyType = null, valueType = null) {
-        const cursor = new Cursor(socket, BinaryUtils.OPERATION.QUERY_SQL_CURSOR_GET_PAGE, keyType, valueType);
-        cursor._read(payload);
-        return cursor;
+    async _getCursor(socket, payload, keyType = null, valueType = null) {
+        return new Cursor(socket, BinaryUtils.OPERATION.QUERY_SQL_CURSOR_GET_PAGE, payload, keyType, valueType);
     }
 }
 
@@ -362,7 +360,7 @@ class SqlFieldsQuery extends SqlQuery {
     /**
      * Set max rows.
      *
-     * @param {integer} maxRows - max rows.
+     * @param {number} maxRows - max rows.
      *
      * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
      */
@@ -436,12 +434,12 @@ class SqlFieldsQuery extends SqlQuery {
     /**
      * @ignore
      */
-    _write(buffer) {
-        BinaryWriter.writeString(buffer, this._schema);
+    async _write(buffer) {
+        await BinaryWriter.writeString(buffer, this._schema);
         buffer.writeInteger(this._pageSize);
         buffer.writeInteger(this._maxRows);
-        BinaryWriter.writeString(buffer, this._sql);
-        this._writeArgs(buffer)
+        await BinaryWriter.writeString(buffer, this._sql);
+        await this._writeArgs(buffer)
         buffer.writeByte(this._statementType);
         buffer.writeBoolean(this._distributedJoins);
         buffer.writeBoolean(this._local);
@@ -456,15 +454,79 @@ class SqlFieldsQuery extends SqlQuery {
     /**
      * @ignore
      */
-    _getCursor(socket, payload, keyType = null, valueType = null) {
-        const cursor = new SqlFieldsCursor(socket);
-        cursor._read(payload, true, this._includeFieldNames);
+    async _getCursor(socket, payload, keyType = null, valueType = null) {
+        const cursor = new SqlFieldsCursor(socket, payload);
+        await cursor._readFieldNames(payload, this._includeFieldNames);
         return cursor;
+    }
+}
+
+/**
+ * Class representing a Scan query which returns the whole cache entries (key-value pairs).
+ *
+ * This version of the class does not support a possibility to specify a Filter object for the query.
+ * The query returns all entries from the entire cache or from the specified partition.
+ */
+class ScanQuery extends Query {
+
+    /**
+     * Public constructor.
+     *
+     * Scan query settings have the following defaults:
+     * &lt;pre>
+     *     Scan Query setting        :    Default value
+     *     Local query flag          :    false
+     *     Cursor page size          :    1024
+     *     Number of partitions      :    -1 (entire cache)
+     *     Filter object             :    null (not supported)
+     * &lt;/pre>
+     * Every setting (except Filter object) may be changed using set methods.
+     *
+     * @return {ScanQuery} - new ScanQuery instance.
+     */
+    constructor() {
+        super(BinaryUtils.OPERATION.QUERY_SCAN);
+        this._partitionsNumber = -1;
+    }
+
+    /**
+     * Sets number of partitions over which this query should iterate.
+     *
+     * If negative, the query will iterate over all partitions in the cache. 
+     *
+     * @param {number} partitionsNumber - number of partitions over which this query should iterate.
+     *
+     * @return {ScanQuery} - the same instance of the ScanQuery.
+     */
+    setPartitionsNumber(partitionsNumber) {
+        this._partitionsNumber = partitionsNumber;
+        return this;
+    }
+
+    /** Private methods */
+
+    /**
+     * @ignore
+     */
+    async _write(buffer) {
+        // filter
+        await BinaryWriter.writeObject(buffer, null);
+        buffer.writeInteger(this._pageSize);
+        buffer.writeInteger(this._partitionsNumber);
+        buffer.writeBoolean(this._local);
+    }
+
+    /**
+     * @ignore
+     */
+    async _getCursor(socket, payload, keyType = null, valueType = null) {
+        return new Cursor(socket, BinaryUtils.OPERATION.QUERY_SCAN_CURSOR_GET_PAGE, payload, keyType, valueType);
     }
 }
 
 module.exports.SqlQuery = SqlQuery;
 module.exports.SqlFieldsQuery = SqlFieldsQuery;
+module.exports.ScanQuery = ScanQuery;
 </code></pre>
         </article>
     </section>
@@ -475,13 +537,13 @@ module.exports.SqlFieldsQuery = SqlFieldsQuery;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="CacheEntry.html">CacheEntry</a></li><li><a href="CacheKeyConfiguration.html">CacheKeyConfiguration</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="Cursor.html">Cursor</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectArrayType.html">ObjectArrayType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="Query.html">Query</a></li><li><a href="QueryEntity.html">QueryEntity</a></li><li><a href="QueryField.html">QueryField</a></li><li><a href="QueryIndex.html">QueryIndex</a></li><li><a href="SqlFieldsCursor.html">SqlFieldsCursor</a></li><li><a href="SqlFieldsQuery.html">SqlFieldsQuery</a></li><li><a href="SqlQuery.html">SqlQuery</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="CacheEntry.html">CacheEntry</a></li><li><a href="CacheKeyConfiguration.html">CacheKeyConfiguration</a></li><li><a href="CollectionObjectType.html">CollectionObjectType</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="Cursor.html">Cursor</a></li><li><a href="EnumItem.html">EnumItem</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectArrayType.html">ObjectArrayType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="Query.html">Query</a></li><li><a href="QueryEntity.html">QueryEntity</a></li><li><a href="QueryField.html">QueryField</a></li><li><a href="QueryIndex.html">QueryIndex</a></li><li><a href="ScanQuery.html">ScanQuery</a></li><li><a href="SqlFieldsCursor.html">SqlFieldsCursor</a></li><li><a href="SqlFieldsQuery.html">SqlFieldsQuery</a></li><li><a href="SqlQuery.html">SqlQuery</a></li><li><a href="Timestamp.html">Timestamp</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Apr 11 2018 01:06:42 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sat May 05 2018 19:39:34 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

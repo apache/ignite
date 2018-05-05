@@ -33,6 +33,15 @@ const Errors = require('./Errors');
  * See Apache Ignite documentation for details of every configuration setting. 
  */
 class CacheKeyConfiguration {
+
+    /**
+     * Public constructor.
+     *
+     * @param {string} [typeName=null]
+     * @param {string} [affinityKeyFieldName=null]
+     *
+     * @return {CacheKeyConfiguration} - new CacheKeyConfiguration instance.
+     */
     constructor(typeName = null, affinityKeyFieldName = null) {
         this._typeName = typeName;
         this._affinityKeyFieldName = affinityKeyFieldName;
@@ -40,6 +49,10 @@ class CacheKeyConfiguration {
 
     /**
      *
+     *
+     * @param {string} typeName
+     *
+     * @return {CacheKeyConfiguration} - the same instance of the CacheKeyConfiguration.
      */
     setTypeName(typeName) {
         this._typeName = typeName;
@@ -48,6 +61,8 @@ class CacheKeyConfiguration {
 
     /**
      *
+     *
+     * @return {string}
      */
     getTypeName() {
         return this._typeName;
@@ -55,6 +70,10 @@ class CacheKeyConfiguration {
 
     /**
      *
+     *
+     * @param {string} affinityKeyFieldName
+     *
+     * @return {CacheKeyConfiguration} - the same instance of the CacheKeyConfiguration.
      */
     setAffinityKeyFieldName(affinityKeyFieldName) {
         this._affinityKeyFieldName = affinityKeyFieldName;
@@ -63,6 +82,8 @@ class CacheKeyConfiguration {
 
     /**
      *
+     *
+     * @return {string}
      */
     getAffinityKeyFieldName() {
         return this._affinityKeyFieldName;
@@ -97,7 +118,9 @@ class CacheKeyConfiguration {
 class QueryEntity {
 
     /**
+     * Public constructor.
      *
+     * @return {QueryEntity} - new QueryEntity instance.
      */
     constructor() {
         this._keyTypeName = null;
@@ -112,6 +135,10 @@ class QueryEntity {
 
     /**
      *
+     *
+     * @param {string} keyTypeName
+     *
+     * @return {QueryEntity} - the same instance of the QueryEntity.
      */
     setKeyTypeName(keyTypeName) {
         this._keyTypeName = keyTypeName;
@@ -120,6 +147,8 @@ class QueryEntity {
 
     /**
      *
+     *
+     * @return {string}
      */
     getKeyTypeName() {
         return this._keyTypeName;
@@ -127,6 +156,10 @@ class QueryEntity {
 
     /**
      *
+     *
+     * @param {string} valueTypeName
+     *
+     * @return {QueryEntity} - the same instance of the QueryEntity.
      */
     setValueTypeName(valueTypeName) {
         this._valueTypeName = valueTypeName;
@@ -135,6 +168,8 @@ class QueryEntity {
 
     /**
      *
+     *
+     * @return {string}
      */
     getValueTypeName() {
         return this._valueTypeName;
@@ -142,6 +177,10 @@ class QueryEntity {
 
     /**
      *
+     *
+     * @param {string} tableName
+     *
+     * @return {QueryEntity} - the same instance of the QueryEntity.
      */
     setTableName(tableName) {
         this._tableName = tableName;
@@ -150,6 +189,8 @@ class QueryEntity {
 
     /**
      *
+     *
+     * @return {string}
      */
     getTableName() {
         return this._tableName;
@@ -157,6 +198,10 @@ class QueryEntity {
 
     /**
      *
+     *
+     * @param {string} keyFieldName
+     *
+     * @return {QueryEntity} - the same instance of the QueryEntity.
      */
     setKeyFieldName(keyFieldName) {
         this._keyFieldName = keyFieldName;
@@ -165,6 +210,8 @@ class QueryEntity {
 
     /**
      *
+     *
+     * @return {string}
      */
     getKeyFieldName() {
         return this._keyFieldName;
@@ -172,6 +219,10 @@ class QueryEntity {
 
     /**
      *
+     *
+     * @param {string} valueFieldName
+     *
+     * @return {QueryEntity} - the same instance of the QueryEntity.
      */
     setValueFieldName(valueFieldName) {
         this._valueFieldName = valueFieldName;
@@ -180,6 +231,8 @@ class QueryEntity {
 
     /**
      *
+     *
+     * @return {string}
      */
     getValueFieldName() {
         return this._valueFieldName;
@@ -188,7 +241,9 @@ class QueryEntity {
     /**
      * 
      *
-     * @param {Array<QueryField>} fields -
+     * @param {Array<QueryField>} fields
+     *
+     * @return {QueryEntity} - the same instance of the QueryEntity.
      */
     setFields(fields) {
         this._fields = fields;
@@ -198,7 +253,7 @@ class QueryEntity {
     /**
      * 
      *
-     * @return {Array<QueryField>} -
+     * @return {Array<QueryField>}
      */
     getFields() {
         return this._fields;
@@ -207,7 +262,9 @@ class QueryEntity {
     /**
      * 
      *
-     * @param {Map<string, string>} aliases -
+     * @param {Map<string, string>} aliases
+     *
+     * @return {QueryEntity} - the same instance of the QueryEntity.
      */
     setAliases(aliases) {
         this._aliases = aliases;
@@ -217,7 +274,7 @@ class QueryEntity {
     /**
      * 
      *
-     * @return {Map<string, string>} -
+     * @return {Map<string, string>}
      */
     getAliases() {
         return this._aliases;
@@ -226,7 +283,9 @@ class QueryEntity {
     /**
      * 
      *
-     * @param {Array<QueryIndex>} indexes -
+     * @param {Array<QueryIndex>} indexes
+     *
+     * @return {QueryEntity} - the same instance of the QueryEntity.
      */
     setIndexes(indexes) {
         this._indexes = indexes;
@@ -236,7 +295,7 @@ class QueryEntity {
     /**
      * 
      *
-     * @return {Array<QueryIndex>} -
+     * @return {Array<QueryIndex>}
      */
     getIndexes() {
         return this._indexes;
@@ -341,7 +400,12 @@ class QueryEntity {
 class QueryField {
 
     /**
+     * Public constructor.
      *
+     * @param {string} [name=null]
+     * @param {string} [typeName=null]
+     *
+     * @return {QueryField} - new QueryField instance.
      */
     constructor(name = null, typeName = null) {
         this._name = name;
@@ -354,6 +418,10 @@ class QueryField {
 
     /**
      *
+     *
+     * @param {string} name
+     *
+     * @return {QueryField} - the same instance of the QueryField.
      */
     setName(name) {
         this._name = name;
@@ -362,6 +430,8 @@ class QueryField {
 
     /**
      *
+     *
+     * @return {string}
      */
     getName() {
         return this._name;
@@ -369,6 +439,10 @@ class QueryField {
 
     /**
      *
+     *
+     * @param {string} typeName
+     *
+     * @return {QueryField} - the same instance of the QueryField.
      */
     setTypeName(typeName) {
         this._typeName = typeName;
@@ -377,6 +451,8 @@ class QueryField {
 
     /**
      *
+     *
+     * @return {string}
      */
     getTypeName() {
         return this._typeName;
@@ -384,6 +460,10 @@ class QueryField {
 
     /**
      *
+     *
+     * @param {boolean} isKeyField
+     *
+     * @return {QueryField} - the same instance of the QueryField.
      */
     setIsKeyField(isKeyField) {
         this._isKeyField = isKeyField;
@@ -392,6 +472,8 @@ class QueryField {
 
     /**
      *
+     *
+     * @return {boolean}
      */
     getIsKeyField() {
         return this._isKeyField;
@@ -399,6 +481,10 @@ class QueryField {
 
     /**
      *
+     *
+     * @param {boolean} isNotNull
+     *
+     * @return {QueryField} - the same instance of the QueryField.
      */
     setIsNotNull(isNotNull) {
         this._isNotNull = isNotNull;
@@ -407,6 +493,8 @@ class QueryField {
 
     /**
      *
+     *
+     * @return {boolean}
      */
     getIsNotNull() {
         return this._isNotNull;
@@ -414,6 +502,14 @@ class QueryField {
 
     /**
      *
+     *
+     * @param {*} defaultValue
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [valueType=null] - type of the default value:
+     *   - either a type code of primitive (simple) type
+     *   - or an instance of class representing non-primitive (composite) type
+     *   - or null (or not specified) that means the type is not specified
+     *
+     * @return {QueryField} - the same instance of the QueryField.
      */
     setDefaultValue(defaultValue, valueType = null) {
         this._defaultValue = defaultValue;
@@ -422,6 +518,13 @@ class QueryField {
 
     /**
      *
+     *
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [valueType=null] - type of the default value:
+     *   - either a type code of primitive (simple) type
+     *   - or an instance of class representing non-primitive (composite) type
+     *   - or null (or not specified) that means the type is not specified
+     *
+     * @return {*}
      */
     getDefaultValue(valueType = null) {
         return this._defaultValue;
@@ -452,7 +555,16 @@ class QueryField {
     }
 }
 
-const INDEX_TYPE = Object.freeze({
+/**
+ * 
+ * @typedef QueryIndex.INDEX_TYPE
+ * @enum
+ * @readonly
+ * @property SORTED 0
+ * @property FULLTEXT 1
+ * @property GEOSPATIAL 2
+ */
+ const INDEX_TYPE = Object.freeze({
     SORTED : 0,
     FULLTEXT : 1,
     GEOSPATIAL : 2
@@ -468,7 +580,12 @@ const INDEX_TYPE = Object.freeze({
 class QueryIndex {
     
     /**
+     * Public constructor.
      *
+     * @param {string} [name=null]
+     * @param {string} [typeName=QueryIndex.INDEX_TYPE.SORTED]
+     *
+     * @return {QueryIndex} - new QueryIndex instance.
      */
     constructor(name = null, type = QueryIndex.INDEX_TYPE.SORTED) {
         this._name = name;
@@ -483,6 +600,10 @@ class QueryIndex {
 
     /**
      *
+     *
+     * @param {string} name
+     *
+     * @return {QueryIndex} - the same instance of the QueryIndex.
      */
     setName(name) {
         this._name = name;
@@ -491,6 +612,8 @@ class QueryIndex {
 
     /**
      *
+     *
+     * @return {string}
      */
     getName() {
         return this._name;
@@ -498,6 +621,12 @@ class QueryIndex {
 
     /**
      *
+     *
+     * @param {QueryIndex.INDEX_TYPE} type
+     *
+     * @return {QueryIndex} - the same instance of the QueryIndex.
+     *
+     * @throws {IgniteClientError} if error.
      */
     setType(type) {
         ArgumentChecker.hasValueFrom(type, 'type', false, QueryIndex.INDEX_TYPE);
@@ -507,6 +636,8 @@ class QueryIndex {
 
     /**
      *
+     *
+     * @return {QueryIndex.INDEX_TYPE}
      */
     getType() {
         return this._type;
@@ -514,6 +645,10 @@ class QueryIndex {
 
     /**
      *
+     *
+     * @param {number} inlineSize
+     *
+     * @return {QueryIndex} - the same instance of the QueryIndex.
      */
     setInlineSize(inlineSize) {
         this._inlineSize = inlineSize;
@@ -522,15 +657,19 @@ class QueryIndex {
 
     /**
      *
+     *
+     * @return {number}
      */
-    getInlineSize() {
+     getInlineSize() {
         return this._inlineSize;
     }
 
     /**
      * 
      *
-     * @param {Map<string, boolean>} fields -
+     * @param {Map<string, boolean>} fields
+     *
+     * @return {QueryIndex} - the same instance of the QueryIndex.
      */
     setFields(fields) {
         this._fields = fields;
@@ -540,7 +679,7 @@ class QueryIndex {
     /**
      * 
      *
-     * @return {Map<string, boolean>} -
+     * @return {Map<string, boolean>}
      */
     getFields() {
         return this._fields;
@@ -649,17 +788,45 @@ const PROP_TYPES = Object.freeze({
     [PROP_STATISTICS_ENABLED] : BinaryUtils.TYPE_CODE.BOOLEAN
 });
 
+/**
+ * 
+ * @typedef CacheConfiguration.CACHE_ATOMICITY_MODE
+ * @enum
+ * @readonly
+ * @property TRANSACTIONAL 0
+ * @property ATOMIC 1
+ */
 const CACHE_ATOMICITY_MODE = Object.freeze({
     TRANSACTIONAL : 0,
     ATOMIC : 1
 });
 
+/**
+ * 
+ * @typedef CacheConfiguration.CACHE_MODE
+ * @enum
+ * @readonly
+ * @property LOCAL 0
+ * @property REPLICATED 1
+ * @property PARTITIONED 2
+ */
 const CACHE_MODE = Object.freeze({
     LOCAL : 0,
     REPLICATED : 1,
     PARTITIONED : 2
 });
 
+/**
+ * 
+ * @typedef CacheConfiguration.PARTITION_LOSS_POLICY
+ * @enum
+ * @readonly
+ * @property READ_ONLY_SAFE 0
+ * @property READ_ONLY_ALL 1
+ * @property READ_WRITE_SAFE 2
+ * @property READ_WRITE_ALL 3
+ * @property IGNORE 4
+ */
 const PARTITION_LOSS_POLICY = Object.freeze({
     READ_ONLY_SAFE : 0,
     READ_ONLY_ALL : 1,
@@ -668,12 +835,30 @@ const PARTITION_LOSS_POLICY = Object.freeze({
     IGNORE : 4
 });
 
+/**
+ * 
+ * @typedef CacheConfiguration.REABALANCE_MODE
+ * @enum
+ * @readonly
+ * @property SYNC 0
+ * @property ASYNC 1
+ * @property NONE 2
+ */
 const REABALANCE_MODE = Object.freeze({
     SYNC : 0,
     ASYNC : 1,
     NONE : 2
 });
 
+/**
+ * 
+ * @typedef CacheConfiguration.WRITE_SYNCHRONIZATION_MODE
+ * @enum
+ * @readonly
+ * @property FULL_SYNC 0
+ * @property FULL_ASYNC 1
+ * @property PRIMARY_SYNC 2
+ */
 const WRITE_SYNCHRONIZATION_MODE = Object.freeze({
     FULL_SYNC : 0,
     FULL_ASYNC : 1,
@@ -690,7 +875,9 @@ const WRITE_SYNCHRONIZATION_MODE = Object.freeze({
 class CacheConfiguration {
 
     /**
+     * Public constructor.
      *
+     * @return {CacheConfiguration} - new CacheConfiguration instance.
      */
     constructor() {
         this._properties = new Map();
@@ -718,6 +905,12 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {CacheConfiguration.CACHE_ATOMICITY_MODE} atomicityMode
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
+     *
+     * @throws {IgniteClientError} if error.
      */
     setAtomicityMode(atomicityMode) {
         ArgumentChecker.hasValueFrom(atomicityMode, 'atomicityMode', false, CACHE_ATOMICITY_MODE);
@@ -727,6 +920,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {CacheConfiguration.CACHE_ATOMICITY_MODE}
      */
     getAtomicityMode() {
         return this._properties.get(PROP_ATOMICITY_MODE);
@@ -734,6 +929,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {number} backups
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setBackups(backups) {
         this._properties.set(PROP_BACKUPS, backups);
@@ -742,6 +941,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {number}
      */
     getBackups() {
         return this._properties.get(PROP_BACKUPS);
@@ -749,6 +950,12 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {CacheConfiguration.CACHE_MODE} cacheMode
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
+     *
+     * @throws {IgniteClientError} if error.
      */
     setCacheMode(cacheMode) {
         ArgumentChecker.hasValueFrom(cacheMode, 'cacheMode', false, CACHE_MODE);
@@ -758,6 +965,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {CacheConfiguration.CACHE_MODE}
      */
     getCacheMode() {
         return this._properties.get(PROP_CACHE_MODE);
@@ -765,6 +974,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {boolean} copyOnRead
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setCopyOnRead(copyOnRead) {
         this._properties.set(PROP_COPY_ON_READ, copyOnRead);
@@ -773,6 +986,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {boolean}
      */
     getCopyOnRead() {
         return this._properties.get(PROP_COPY_ON_READ);
@@ -780,6 +995,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {string} dataRegionName
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setDataRegionName(dataRegionName) {
         this._properties.set(PROP_DATA_REGION_NAME, dataRegionName);
@@ -788,6 +1007,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {string}
      */
     getDataRegionName() {
         return this._properties.get(PROP_DATA_REGION_NAME);
@@ -795,6 +1016,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {boolean} eagerTtl
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setEagerTtl(eagerTtl) {
         this._properties.set(PROP_EAGER_TTL, eagerTtl);
@@ -803,6 +1028,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {boolean}
      */
     getEagerTtl() {
         return this._properties.get(PROP_EAGER_TTL);
@@ -810,6 +1037,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {boolean} statisticsEnabled
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setStatisticsEnabled(statisticsEnabled) {
         this._properties.set(PROP_STATISTICS_ENABLED, statisticsEnabled);
@@ -818,6 +1049,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {boolean}
      */
     getStatisticsEnabled() {
         return this._properties.get(PROP_STATISTICS_ENABLED);
@@ -825,6 +1058,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {string} groupName
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setGroupName(groupName) {
         this._properties.set(PROP_GROUP_NAME, groupName);
@@ -833,6 +1070,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {string}
      */
     getGroupName() {
         return this._properties.get(PROP_GROUP_NAME);
@@ -840,6 +1079,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {number} lockTimeout
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setDefaultLockTimeout(lockTimeout) {
         this._properties.set(PROP_DEFAULT_LOCK_TIMEOUT, lockTimeout);
@@ -848,6 +1091,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {number}
      */
     getDefaultLockTimeout() {
         return this._properties.get(PROP_DEFAULT_LOCK_TIMEOUT);
@@ -855,6 +1100,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {number} maxConcurrentAsyncOperations
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setMaxConcurrentAsyncOperations(maxConcurrentAsyncOperations) {
         this._properties.set(PROP_MAX_CONCURRENT_ASYNC_OPS, maxConcurrentAsyncOperations);
@@ -863,6 +1112,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {number}
      */
     getMaxConcurrentAsyncOperations() {
         return this._properties.get(PROP_MAX_CONCURRENT_ASYNC_OPS);
@@ -870,6 +1121,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {number} maxQueryIterators
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setMaxQueryIterators(maxQueryIterators) {
         this._properties.set(PROP_MAX_QUERY_ITERATORS, maxQueryIterators);
@@ -878,6 +1133,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {number}
      */
     getMaxQueryIterators() {
         return this._properties.get(PROP_MAX_QUERY_ITERATORS);
@@ -885,6 +1142,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {boolean} isOnheapCacheEnabled
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setIsOnheapCacheEnabled(isOnheapCacheEnabled) {
         this._properties.set(PROP_IS_ONHEAP_CACHE_ENABLED, isOnheapCacheEnabled);
@@ -893,6 +1154,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {boolean}
      */
     getIsOnheapCacheEnabled() {
         return this._properties.get(PROP_IS_ONHEAP_CACHE_ENABLED);
@@ -900,6 +1163,12 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {CacheConfiguration.PARTITION_LOSS_POLICY} partitionLossPolicy
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
+     *
+     * @throws {IgniteClientError} if error.
      */
     setPartitionLossPolicy(partitionLossPolicy) {
         ArgumentChecker.hasValueFrom(partitionLossPolicy, 'partitionLossPolicy', false, PARTITION_LOSS_POLICY);
@@ -909,6 +1178,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {CacheConfiguration.PARTITION_LOSS_POLICY}
      */
     getPartitionLossPolicy() {
         return this._properties.get(PROP_PARTITION_LOSS_POLICY);
@@ -916,6 +1187,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {number} queryDetailMetricsSize
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setQueryDetailMetricsSize(queryDetailMetricsSize) {
         this._properties.set(PROP_QUERY_DETAIL_METRICS_SIZE, queryDetailMetricsSize);
@@ -924,6 +1199,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {number}
      */
     getQueryDetailMetricsSize() {
         return this._properties.get(PROP_QUERY_DETAIL_METRICS_SIZE);
@@ -931,6 +1208,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {number} queryParallelism
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setQueryParallelism(queryParallelism) {
         this._properties.set(PROP_QUERY_PARALLELISM, queryParallelism);
@@ -939,6 +1220,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {number}
      */
     getQueryParallelism() {
         return this._properties.get(PROP_QUERY_PARALLELISM);
@@ -946,6 +1229,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {boolean} readFromBackup
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setReadFromBackup(readFromBackup) {
         this._properties.set(PROP_READ_FROM_BACKUP, readFromBackup);
@@ -954,6 +1241,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {boolean}
      */
     getReadFromBackup() {
         return this._properties.get(PROP_READ_FROM_BACKUP);
@@ -961,6 +1250,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {number} rebalanceBatchSize
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setRebalanceBatchSize(rebalanceBatchSize) {
         this._properties.set(PROP_REBALANCE_BATCH_SIZE, rebalanceBatchSize);
@@ -969,6 +1262,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {number}
      */
     getRebalanceBatchSize() {
         return this._properties.get(PROP_REBALANCE_BATCH_SIZE);
@@ -976,6 +1271,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {number} rebalanceBatchesPrefetchCount
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setRebalanceBatchesPrefetchCount(rebalanceBatchesPrefetchCount) {
         this._properties.set(PROP_REBALANCE_BATCHES_PREFETCH_COUNT, rebalanceBatchesPrefetchCount);
@@ -984,6 +1283,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {number}
      */
     getRebalanceBatchesPrefetchCount() {
         return this._properties.get(PROP_REBALANCE_BATCHES_PREFETCH_COUNT);
@@ -991,6 +1292,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {number} rebalanceDelay
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setRebalanceDelay(rebalanceDelay) {
         this._properties.set(PROP_REBALANCE_DELAY, rebalanceDelay);
@@ -999,6 +1304,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {number}
      */
     getRebalanceDelay() {
         return this._properties.get(PROP_REBALANCE_DELAY);
@@ -1006,6 +1313,12 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {CacheConfiguration.REABALANCE_MODE} rebalanceMode
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
+     *
+     * @throws {IgniteClientError} if error.
      */
     setRebalanceMode(rebalanceMode) {
         ArgumentChecker.hasValueFrom(rebalanceMode, 'rebalanceMode', false, REABALANCE_MODE);
@@ -1015,6 +1328,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {CacheConfiguration.REABALANCE_MODE}
      */
     getRebalanceMode() {
         return this._properties.get(PROP_REBALANCE_MODE);
@@ -1022,6 +1337,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {number} rebalanceOrder
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setRebalanceOrder(rebalanceOrder) {
         this._properties.set(PROP_REBALANCE_ORDER, rebalanceOrder);
@@ -1030,6 +1349,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {number}
      */
     getRebalanceOrder() {
         return this._properties.get(PROP_REBALANCE_ORDER);
@@ -1037,6 +1358,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {number} rebalanceThrottle
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setRebalanceThrottle(rebalanceThrottle) {
         this._properties.set(PROP_REBALANCE_THROTTLE, rebalanceThrottle);
@@ -1045,6 +1370,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {number}
      */
     getRebalanceThrottle() {
         return this._properties.get(PROP_REBALANCE_THROTTLE);
@@ -1052,6 +1379,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {number} rebalanceTimeout
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setRebalanceTimeout(rebalanceTimeout) {
         this._properties.set(PROP_REBALANCE_TIMEOUT, rebalanceTimeout);
@@ -1060,6 +1391,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {number}
      */
     getRebalanceTimeout() {
         return this._properties.get(PROP_REBALANCE_TIMEOUT);
@@ -1067,6 +1400,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {boolean} sqlEscapeAll
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setSqlEscapeAll(sqlEscapeAll) {
         this._properties.set(PROP_SQL_ESCAPE_ALL, sqlEscapeAll);
@@ -1075,6 +1412,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {boolean}
      */
     getSqlEscapeAll() {
         return this._properties.get(PROP_SQL_ESCAPE_ALL);
@@ -1082,6 +1421,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {number} sqlIndexInlineMaxSize
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setSqlIndexInlineMaxSize(sqlIndexInlineMaxSize) {
         this._properties.set(PROP_SQL_INDEX_INLINE_MAX_SIZE, sqlIndexInlineMaxSize);
@@ -1090,6 +1433,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {number}
      */
     getSqlIndexInlineMaxSize() {
         return this._properties.get(PROP_SQL_INDEX_INLINE_MAX_SIZE);
@@ -1097,6 +1442,10 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {string} sqlSchema
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
      */
     setSqlSchema(sqlSchema) {
         this._properties.set(PROP_SQL_SCHEMA, sqlSchema);
@@ -1105,6 +1454,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {string}
      */
     getSqlSchema() {
         return this._properties.get(PROP_SQL_SCHEMA);
@@ -1112,6 +1463,12 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @param {CacheConfiguration.WRITE_SYNCHRONIZATION_MODE} writeSynchronizationMode
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
+     *
+     * @throws {IgniteClientError} if error.
      */
     setWriteSynchronizationMode(writeSynchronizationMode) {
         ArgumentChecker.hasValueFrom(writeSynchronizationMode, 'writeSynchronizationMode', false, WRITE_SYNCHRONIZATION_MODE);
@@ -1121,6 +1478,8 @@ class CacheConfiguration {
 
     /**
      *
+     *
+     * @return {CacheConfiguration.WRITE_SYNCHRONIZATION_MODE}
      */
     getWriteSynchronizationMode() {
         return this._properties.get(PROP_WRITE_SYNCHRONIZATION_MODE);
@@ -1129,7 +1488,11 @@ class CacheConfiguration {
     /**
      * 
      *
-     * @param {...CacheKeyConfiguration} keyConfigurations -
+     * @param {...CacheKeyConfiguration} keyConfigurations
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
+     *
+     * @throws {IgniteClientError} if error.
      */
     setKeyConfigurations(...keyConfigurations) {
         ArgumentChecker.hasType(keyConfigurations, 'keyConfigurations', true, CacheKeyConfiguration);
@@ -1140,7 +1503,7 @@ class CacheConfiguration {
     /**
      * 
      *
-     * @return {Array<CacheKeyConfiguration>} -
+     * @return {Array<CacheKeyConfiguration>}
      */
     getKeyConfigurations() {
         return this._properties.get(PROP_CACHE_KEY_CONFIGURATION);
@@ -1149,7 +1512,11 @@ class CacheConfiguration {
     /**
      * 
      *
-     * @param {...QueryEntity} queryEntities -
+     * @param {...QueryEntity} queryEntities
+     *
+     * @return {CacheConfiguration} - the same instance of the CacheConfiguration.
+     *
+     * @throws {IgniteClientError} if error.
      */
     setQueryEntities(...queryEntities) {
         ArgumentChecker.hasType(queryEntities, 'queryEntities', true, QueryEntity);
@@ -1160,7 +1527,7 @@ class CacheConfiguration {
     /**
      * 
      *
-     * @return {Array<QueryEntity>} -
+     * @return {Array<QueryEntity>}
      */
     getQueryEntities() {
         return this._properties.get(PROP_QUERY_ENTITY);

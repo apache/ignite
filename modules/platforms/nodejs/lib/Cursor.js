@@ -222,7 +222,7 @@ class SqlFieldsCursor extends Cursor {
      *
      * @async
      *
-     * @return {Promise<Array<Array<*»>} - all results returned by SQL Fields query.
+     * @return {Promise<Array<Array<*>>>} - all results returned by SQL Fields query.
      *   Every element of the array is an array with values of the fields requested by the query.
      *
      */

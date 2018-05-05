@@ -51,6 +51,7 @@ const CacheConfiguration = require('./CacheConfiguration');
 const BinaryUtils = require('./internal/BinaryUtils');
 const BinaryWriter = require('./internal/BinaryWriter');
 const BinaryReader = require('./internal/BinaryReader');
+const BinaryTypeStorage = require('./internal/BinaryTypeStorage');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 const Logger = require('./internal/Logger');
 
@@ -97,6 +98,7 @@ class IgniteClient {
     constructor(onStateChanged = null) {
         const ClientFailoverSocket = require('./internal/ClientFailoverSocket');
         this._socket = new ClientFailoverSocket(onStateChanged);
+        BinaryTypeStorage.createEntity(this._socket);
     }
 
     static get STATE() {
@@ -163,8 +165,8 @@ class IgniteClient {
             cacheConfig ?
                 BinaryUtils.OPERATION.CACHE_CREATE_WITH_CONFIGURATION :
                 BinaryUtils.OPERATION.CACHE_CREATE_WITH_NAME,
-            (payload) => {
-                this._writeCacheNameOrConfig(payload, name, cacheConfig);
+            async (payload) => {
+                await this._writeCacheNameOrConfig(payload, name, cacheConfig);
             });
         return this._getCache(name, cacheConfig);
     }
@@ -191,8 +193,8 @@ class IgniteClient {
             cacheConfig ?
                 BinaryUtils.OPERATION.CACHE_GET_OR_CREATE_WITH_CONFIGURATION :
                 BinaryUtils.OPERATION.CACHE_GET_OR_CREATE_WITH_NAME,
-            (payload) => {
-                this._writeCacheNameOrConfig(payload, name, cacheConfig);
+            async (payload) => {
+                await this._writeCacheNameOrConfig(payload, name, cacheConfig);
             });
         return this._getCache(name, cacheConfig);
     }
@@ -227,7 +229,7 @@ class IgniteClient {
         ArgumentChecker.notEmpty(name, 'name');
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_DESTROY,
-            (payload) => {
+            async (payload) => {
                 payload.writeInteger(CacheClient._calculateId(name));
             });
     }
@@ -239,7 +241,7 @@ class IgniteClient {
      *
      * @param {string} name - cache name.
      *
-     * @return {CacheConfiguration} - cache configuration
+     * @return {Promise&lt;CacheConfiguration>} - cache configuration
      *
      * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
      * @throws {OperationError} if cache with the provided name does not exist.
@@ -250,13 +252,13 @@ class IgniteClient {
         let config;
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_GET_CONFIGURATION,
-            (payload) => {
+            async (payload) => {
                 payload.writeInteger(CacheClient._calculateId(name));
                 payload.writeByte(0);
             },
-            (payload) => {
+            async (payload) => {
                 config = new CacheConfiguration();
-                config._read(payload);
+                await config._read(payload);
             });
         return config;
     }
@@ -277,8 +279,8 @@ class IgniteClient {
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_GET_NAMES,
             null,
-            (payload) => {
-                names = BinaryReader.readStringArray(payload);
+            async (payload) => {
+                names = await BinaryReader.readStringArray(payload);
             });
         return names;
     }
@@ -305,12 +307,12 @@ class IgniteClient {
     /**
      * @ignore
      */
-    _writeCacheNameOrConfig(buffer, name, cacheConfig) {
+    async _writeCacheNameOrConfig(buffer, name, cacheConfig) {
         if (cacheConfig) {
-            cacheConfig._write(buffer, name);
+            await cacheConfig._write(buffer, name);
         }
         else {
-            BinaryWriter.writeString(buffer, name);
+            await BinaryWriter.writeString(buffer, name);
         }
     }
 }
@@ -326,13 +328,13 @@ module.exports = IgniteClient;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="CacheEntry.html">CacheEntry</a></li><li><a href="CacheKeyConfiguration.html">CacheKeyConfiguration</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="Cursor.html">Cursor</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectArrayType.html">ObjectArrayType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="Query.html">Query</a></li><li><a href="QueryEntity.html">QueryEntity</a></li><li><a href="QueryField.html">QueryField</a></li><li><a href="QueryIndex.html">QueryIndex</a></li><li><a href="SqlFieldsCursor.html">SqlFieldsCursor</a></li><li><a href="SqlFieldsQuery.html">SqlFieldsQuery</a></li><li><a href="SqlQuery.html">SqlQuery</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="CacheEntry.html">CacheEntry</a></li><li><a href="CacheKeyConfiguration.html">CacheKeyConfiguration</a></li><li><a href="CollectionObjectType.html">CollectionObjectType</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="Cursor.html">Cursor</a></li><li><a href="EnumItem.html">EnumItem</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectArrayType.html">ObjectArrayType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="Query.html">Query</a></li><li><a href="QueryEntity.html">QueryEntity</a></li><li><a href="QueryField.html">QueryField</a></li><li><a href="QueryIndex.html">QueryIndex</a></li><li><a href="ScanQuery.html">ScanQuery</a></li><li><a href="SqlFieldsCursor.html">SqlFieldsCursor</a></li><li><a href="SqlFieldsQuery.html">SqlFieldsQuery</a></li><li><a href="SqlQuery.html">SqlQuery</a></li><li><a href="Timestamp.html">Timestamp</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Apr 11 2018 01:06:42 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sat May 05 2018 19:39:34 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

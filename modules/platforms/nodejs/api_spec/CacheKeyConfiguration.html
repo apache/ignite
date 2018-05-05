@@ -28,7 +28,11 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>CacheKeyConfiguration<span class="signature">()</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>CacheKeyConfiguration<span class="signature">(typeName<span class="signature-attributes">opt</span>, affinityKeyFieldName<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
+        
+            <div class="class-description"><p>Class representing Cache Key part of Ignite <a href="CacheConfiguration.html">CacheConfiguration</a>.</p>
+<p>All configuration settings are optional and have defaults which are defined on a server side.</p>
+<p>See Apache Ignite documentation for details of every configuration setting.</p></div>
         
     
 </header>
@@ -39,12 +43,20 @@
         
 
     
-
-    
-    <h4 class="name" id="CacheKeyConfiguration"><span class="type-signature"></span>new CacheKeyConfiguration<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h2>Constructor</h2>
     
 
     
+    <h4 class="name" id="CacheKeyConfiguration"><span class="type-signature"></span>new CacheKeyConfiguration<span class="signature">(typeName<span class="signature-attributes">opt</span>, affinityKeyFieldName<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Public constructor.</p>
+</div>
 
 
 
@@ -54,6 +66,112 @@
 
 
 
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>typeName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>affinityKeyFieldName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -89,7 +207,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line32">line 32</a>
+        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line35">line 35</a>
     </li></ul></dd>
     
 
@@ -143,7 +261,7 @@
     
 
     
-    <h4 class="name" id="getAffinityKeyFieldName"><span class="type-signature"></span>getAffinityKeyFieldName<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getAffinityKeyFieldName"><span class="type-signature"></span>getAffinityKeyFieldName<span class="signature">()</span><span class="type-signature"> &rarr; {string}</span></h4>
     
 
     
@@ -191,7 +309,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line64">line 64</a>
+        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line88">line 88</a>
     </li></ul></dd>
     
 
@@ -214,6 +332,24 @@
 
 
 
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -225,7 +361,7 @@
     
 
     
-    <h4 class="name" id="getTypeName"><span class="type-signature"></span>getTypeName<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="getTypeName"><span class="type-signature"></span>getTypeName<span class="signature">()</span><span class="type-signature"> &rarr; {string}</span></h4>
     
 
     
@@ -273,7 +409,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line49">line 49</a>
+        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line67">line 67</a>
     </li></ul></dd>
     
 
@@ -296,6 +432,24 @@
 
 
 
+<h5>Returns:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -307,7 +461,7 @@
     
 
     
-    <h4 class="name" id="setAffinityKeyFieldName"><span class="type-signature"></span>setAffinityKeyFieldName<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="setAffinityKeyFieldName"><span class="type-signature"></span>setAffinityKeyFieldName<span class="signature">(affinityKeyFieldName)</span><span class="type-signature"> &rarr; {<a href="CacheKeyConfiguration.html">CacheKeyConfiguration</a>}</span></h4>
     
 
     
@@ -320,6 +474,55 @@
 
 
 
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>affinityKeyFieldName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -355,7 +558,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line56">line 56</a>
+        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line78">line 78</a>
     </li></ul></dd>
     
 
@@ -378,6 +581,30 @@
 
 
 
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>the same instance of the CacheKeyConfiguration.</li>
+</ul>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="CacheKeyConfiguration.html">CacheKeyConfiguration</a></span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -389,7 +616,7 @@
     
 
     
-    <h4 class="name" id="setTypeName"><span class="type-signature"></span>setTypeName<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="setTypeName"><span class="type-signature"></span>setTypeName<span class="signature">(typeName)</span><span class="type-signature"> &rarr; {<a href="CacheKeyConfiguration.html">CacheKeyConfiguration</a>}</span></h4>
     
 
     
@@ -402,6 +629,55 @@
 
 
 
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>typeName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
 
 
 
@@ -437,7 +713,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line41">line 41</a>
+        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line57">line 57</a>
     </li></ul></dd>
     
 
@@ -460,6 +736,30 @@
 
 
 
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>the same instance of the CacheKeyConfiguration.</li>
+</ul>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="CacheKeyConfiguration.html">CacheKeyConfiguration</a></span>
+
+
+    </dd>
+</dl>
+
+    
 
 
 
@@ -481,13 +781,13 @@
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="CacheEntry.html">CacheEntry</a></li><li><a href="CacheKeyConfiguration.html">CacheKeyConfiguration</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="Cursor.html">Cursor</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectArrayType.html">ObjectArrayType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="Query.html">Query</a></li><li><a href="QueryEntity.html">QueryEntity</a></li><li><a href="QueryField.html">QueryField</a></li><li><a href="QueryIndex.html">QueryIndex</a></li><li><a href="SqlFieldsCursor.html">SqlFieldsCursor</a></li><li><a href="SqlFieldsQuery.html">SqlFieldsQuery</a></li><li><a href="SqlQuery.html">SqlQuery</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="CacheEntry.html">CacheEntry</a></li><li><a href="CacheKeyConfiguration.html">CacheKeyConfiguration</a></li><li><a href="CollectionObjectType.html">CollectionObjectType</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="Cursor.html">Cursor</a></li><li><a href="EnumItem.html">EnumItem</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectArrayType.html">ObjectArrayType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="Query.html">Query</a></li><li><a href="QueryEntity.html">QueryEntity</a></li><li><a href="QueryField.html">QueryField</a></li><li><a href="QueryIndex.html">QueryIndex</a></li><li><a href="ScanQuery.html">ScanQuery</a></li><li><a href="SqlFieldsCursor.html">SqlFieldsCursor</a></li><li><a href="SqlFieldsQuery.html">SqlFieldsQuery</a></li><li><a href="SqlQuery.html">SqlQuery</a></li><li><a href="Timestamp.html">Timestamp</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed Apr 11 2018 01:06:42 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sat May 05 2018 19:39:34 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

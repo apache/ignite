@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: ObjectArrayType</title>
+    <title>JSDoc: Class: ScanQuery</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: ObjectArrayType</h1>
+    <h1 class="page-title">Class: ScanQuery</h1>
 
     
 
@@ -28,11 +28,11 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>ObjectArrayType<span class="signature">(elementType<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>ScanQuery<span class="signature">()</span><span class="type-signature"></span></h2>
         
-            <div class="class-description"><p>??? Class representing an array of Ignite complex type objects.</p>
-<p>It is described by COMPOSITE_TYPE.OBJECT_ARRAY <a href="ObjectType.html#.COMPOSITE_TYPE">ObjectType.COMPOSITE_TYPE</a>
-and by a concrete <a href="CompositeType.html">CompositeType</a> instance which defines an element of the array.</p></div>
+            <div class="class-description"><p>Class representing a Scan query which returns the whole cache entries (key-value pairs).</p>
+<p>This version of the class does not support a possibility to specify a Filter object for the query.
+The query returns all entries from the entire cache or from the specified partition.</p></div>
         
     
 </header>
@@ -47,7 +47,7 @@ and by a concrete <a href="CompositeType.html">CompositeType</a> instance which 
     
 
     
-    <h4 class="name" id="ObjectArrayType"><span class="type-signature"></span>new ObjectArrayType<span class="signature">(elementType<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="ScanQuery"><span class="type-signature"></span>new ScanQuery<span class="signature">()</span><span class="type-signature"></span></h4>
     
 
     
@@ -56,6 +56,122 @@ and by a concrete <a href="CompositeType.html">CompositeType</a> instance which 
 
 <div class="description">
     <p>Public constructor.</p>
+<p>Scan query settings have the following defaults:</p>
+<p><pre>
+    Scan Query setting        :    Default value
+    Local query flag          :    false
+    Cursor page size          :    1024
+    Number of partitions      :    -1 (entire cache)
+    Filter object             :    null (not supported)
+</pre>
+Every setting (except Filter object) may be changed using set methods.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="Query.js.html">Query.js</a>, <a href="Query.js.html#line442">line 442</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setPartitionsNumber"><span class="type-signature"></span>setPartitionsNumber<span class="signature">(partitionsNumber)</span><span class="type-signature"> &rarr; {<a href="ScanQuery.html">ScanQuery</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Sets number of partitions over which this query should iterate.</p>
+<p>If negative, the query will iterate over all partitions in the cache.</p>
 </div>
 
 
@@ -79,11 +195,7 @@ and by a concrete <a href="CompositeType.html">CompositeType</a> instance which 
         <th>Type</th>
 
         
-        <th>Attributes</th>
-        
 
-        
-        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -95,39 +207,23 @@ and by a concrete <a href="CompositeType.html">CompositeType</a> instance which 
 
         <tr>
             
-                <td class="name"><code>elementType</code></td>
+                <td class="name"><code>partitionsNumber</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><a href="CompositeType.html">CompositeType</a></span>
+<span class="param-type">number</span>
 
 
             
             </td>
 
             
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
 
             
-                <td class="default">
-                
-                    null
-                
-                </td>
-            
 
-            <td class="description last"><p>type of the array element</p></td>
+            <td class="description last"><p>number of partitions over which this query should iterate.</p></td>
         </tr>
 
     
@@ -168,7 +264,7 @@ and by a concrete <a href="CompositeType.html">CompositeType</a> instance which 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line428">line 428</a>
+        <a href="Query.js.html">Query.js</a>, <a href="Query.js.html#line473">line 473</a>
     </li></ul></dd>
     
 
@@ -191,39 +287,36 @@ and by a concrete <a href="CompositeType.html">CompositeType</a> instance which 
 
 
 
-
-
-
-
-
-    
-    </div>
-
-    
-        <h3 class="subsection-title">Extends</h3>
+<h5>Returns:</h5>
 
         
-
-
+<div class="param-desc">
     <ul>
-        <li><a href="CompositeType.html">CompositeType</a></li>
-    </ul>
+<li>the same instance of the ScanQuery.</li>
+</ul>
+</div>
 
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="ScanQuery.html">ScanQuery</a></span>
+
+
+    </dd>
+</dl>
 
     
 
-    
 
-    
 
-    
 
-    
 
-    
-
-    
-
+        
     
 
     

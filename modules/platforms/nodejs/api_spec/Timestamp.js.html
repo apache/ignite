@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Source: IgniteClientConfiguration.js</title>
+    <title>JSDoc: Source: Timestamp.js</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Source: IgniteClientConfiguration.js</h1>
+    <h1 class="page-title">Source: Timestamp.js</h1>
 
     
 
@@ -45,99 +45,58 @@
 
 'use strict';
 
-const FS = require('fs');
-const Util = require('util');
-const Errors = require('./Errors');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 
 /**
- * Class representing Ignite client configuration.
+ * Class representing a timestamp.
  *
- * The configuration includes:
- *   - (mandatory) Ignite node endpoint(s)
- *   - (optional) user credentials for authentication
- *   - (optional) TLS enabling
- *   - (optional) connection options
+ * The timestamp consists of:
+ *   - date - a standard JavaScript {@link Date}.
+ *   - nanoseconds - fraction of the last second, which value could be in the range from 0 to 999999999.
  */
-class IgniteClientConfiguration {
+class Timestamp extends Date {
 
     /**
-     * Creates an instance of Ignite client configuration
-     * with the provided mandatory settings and default optional settings.
+     * Public constructor.
      *
-     * By default, the client does not use authentication and secure connection.
+     * @param {number} time - integer value representing the number of milliseconds since January 1, 1970, 00:00:00 UTC.
+     * @param {number} nanos - nanoseconds of the last second.
      *
-     * @param {...string} endpoints - Ignite node endpoint(s).
-     *  The client randomly connects/reconnects to one of the specified node.
-     *
-     * @return {IgniteClientConfiguration} - new client configuration instance.
+     * @return {Timestamp} - new Timestamp instance
      *
      * @throws {IgniteClientError} if error.
      */
-    constructor(...endpoints) {
-        ArgumentChecker.notEmpty(endpoints, 'endpoints');
-        this._endpoints = endpoints;
-        this._userName = null;
-        this._password = null;
-        this._useTLS = false;
-        this._options = null;
+    constructor(time, nanos) {
+        super(time);
+        this.setNanos(nanos);
     }
 
+    /**
+     * Returns the nanoseconds of the last second from the timestamp.
+     *
+     * @return {number} - nanoseconds of the last second.
+     */
+    getNanos() {
+        return this._nanos;
+    }
 
     /**
-     * Sets username which will be used for authentication during the client's connection.
+     * Updates the nanoseconds of the last second in the timestamp without changing the date.
      *
-     * If username is not set, the client does not use authentication during connection.
+     * @param {number} nanos - new value for the nanoseconds of the last second.
      *
-     * @param {string} userName - username. If null, authentication is disabled.
-     *
-     * @return {IgniteClientConfiguration} - the same instance of the IgniteClientConfiguration.
+     * @return {Timestamp} - the same instance of Timestamp
      *
      * @throws {IgniteClientError} if error.
      */
-    setUserName(userName) {
-        this._userName = userName;
-        return this;
-    }
-
-    /**
-     * Sets password which will be used for authentication during the client's connection.
-     *
-     * Password is ignored, if username is not set.
-     * If password is not set, it is considered empty.
-     *
-     * @param {string} password - password. If null, password is empty.
-     *
-     * @return {IgniteClientConfiguration} - the same instance of the IgniteClientConfiguration.
-     *
-     * @throws {IgniteClientError} if error.
-     */
-    setPassword(password) {
-        this._password = password;
-        return this;
-    }
-
-    /**
-     * Sets connection options.
-     *
-     * By default the client establishes a non-secure connection with default connection options defined by nodejs.
-     *
-     * @param {boolean} useTLS - if true, secure connection will be established;
-     *                           if false, non-secure connection will be established.
-     * @param {object} [connectionOptions=null] - connection options.
-     *   For non-secure connection: options defined here https://nodejs.org/api/net.html#net_socket_connect_options_connectlistener
-     *   For secure connection: options defined here https://nodejs.org/api/tls.html#tls_tls_connect_options_callback
-     *
-     * @return {IgniteClientConfiguration} - the same instance of the IgniteClientConfiguration.
-     */
-    setConnectionOptions(useTLS, connectionOptions = null) {
-        this._useTLS = useTLS;
-        this._options = connectionOptions;
+    setNanos(nanos) {
+        ArgumentChecker.isInteger(nanos, 'nanos');
+        this._nanos = nanos;
         return this;
     }
 }
 
-module.exports = IgniteClientConfiguration;
+module.exports = Timestamp;
 </code></pre>
         </article>
     </section>

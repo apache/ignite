@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: QueryIndex</title>
+    <title>JSDoc: Class: EnumItem</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: QueryIndex</h1>
+    <h1 class="page-title">Class: EnumItem</h1>
 
     
 
@@ -28,11 +28,18 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>QueryIndex<span class="signature">(name<span class="signature-attributes">opt</span>, typeName<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>EnumItem<span class="signature">(typeId)</span><span class="type-signature"></span></h2>
         
-            <div class="class-description"><p>Class representing one Query Index element of <a href="QueryEntity.html">QueryEntity</a> of Ignite <a href="CacheConfiguration.html">CacheConfiguration</a>.</p>
-<p>All configuration settings are optional and have defaults which are defined on a server side.</p>
-<p>See Apache Ignite documentation for details of every configuration setting.</p></div>
+            <div class="class-description"><p>Class representing an item of enum.</p>
+<p>The item is defined by:</p>
+<ul>
+<li>type Id (mandatory) - Id of the enum type.</li>
+<li>ordinal (optional) - ordinal of the item in the enum type.</li>
+<li>name (optional) - name of the item.</li>
+<li>value (optional) - value of the item.
+Usually, at least one from the optional ordinal, name or value must be specified
+in order to use an instance of this class.</li>
+</ul></div>
         
     
 </header>
@@ -47,7 +54,7 @@
     
 
     
-    <h4 class="name" id="QueryIndex"><span class="type-signature"></span>new QueryIndex<span class="signature">(name<span class="signature-attributes">opt</span>, typeName<span class="signature-attributes">opt</span>)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="EnumItem"><span class="type-signature"></span>new EnumItem<span class="signature">(typeId)</span><span class="type-signature"></span></h4>
     
 
     
@@ -79,11 +86,7 @@
         <th>Type</th>
 
         
-        <th>Attributes</th>
-        
 
-        
-        <th>Default</th>
         
 
         <th class="last">Description</th>
@@ -95,78 +98,23 @@
 
         <tr>
             
-                <td class="name"><code>name</code></td>
+                <td class="name"><code>typeId</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type">string</span>
+<span class="param-type">number</span>
 
 
             
             </td>
 
             
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
 
             
-                <td class="default">
-                
-                    null
-                
-                </td>
-            
 
-            <td class="description last"></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>typeName</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                    QueryIndex.INDEX_TYPE.SORTED
-                
-                </td>
-            
-
-            <td class="description last"></td>
+            <td class="description last"><p>Id of the enum type.</p></td>
         </tr>
 
     
@@ -207,7 +155,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line580">line 580</a>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line35">line 35</a>
     </li></ul></dd>
     
 
@@ -251,354 +199,9 @@
     
 
     
-        <h3 class="subsection-title">Members</h3>
-
-        
-            
-<h4 class="name" id=".INDEX_TYPE"><span class="type-signature">(static, readonly) </span>INDEX_TYPE<span class="type-signature"></span></h4>
-
-
-
-
-
-
-
-
-
-
-    <h5 class="subsection-title">Properties:</h5>
-
-    
-
-<table class="props">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>SORTED</code></td>
-            
-
-            <td class="type">
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>0</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>FULLTEXT</code></td>
-            
-
-            <td class="type">
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>1</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>GEOSPATIAL</code></td>
-            
-
-            <td class="type">
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>2</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line558">line 558</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-    
 
     
         <h3 class="subsection-title">Methods</h3>
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="getFields"><span class="type-signature"></span>getFields<span class="signature">()</span><span class="type-signature"> &rarr; {Map.&lt;string, boolean>}</span></h4>
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line684">line 684</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">Map.&lt;string, boolean></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="getInlineSize"><span class="type-signature"></span>getInlineSize<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line663">line 663</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type">number</span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
 
         
             
@@ -613,6 +216,11 @@
 
 
 
+<div class="description">
+    <p>Returns name of the item
+or null if name is not set.</p>
+</div>
+
 
 
 
@@ -654,7 +262,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line618">line 618</a>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line108">line 108</a>
     </li></ul></dd>
     
 
@@ -680,6 +288,12 @@
 <h5>Returns:</h5>
 
         
+<div class="param-desc">
+    <ul>
+<li>name of the item.</li>
+</ul>
+</div>
+
 
 
 <dl>
@@ -706,12 +320,17 @@
     
 
     
-    <h4 class="name" id="getType"><span class="type-signature"></span>getType<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="QueryIndex.html#.INDEX_TYPE">QueryIndex.INDEX_TYPE</a>}</span></h4>
+    <h4 class="name" id="getOrdinal"><span class="type-signature"></span>getOrdinal<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
     
 
     
 
 
+
+<div class="description">
+    <p>Returns ordinal of the item in the enum type
+or null if ordinal is not set.</p>
+</div>
 
 
 
@@ -754,156 +373,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line642">line 642</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type"><a href="QueryIndex.html#.INDEX_TYPE">QueryIndex.INDEX_TYPE</a></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="setFields"><span class="type-signature"></span>setFields<span class="signature">(fields)</span><span class="type-signature"> &rarr; {<a href="QueryIndex.html">QueryIndex</a>}</span></h4>
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>fields</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">Map.&lt;string, boolean></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line674">line 674</a>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line83">line 83</a>
     </li></ul></dd>
     
 
@@ -931,7 +401,7 @@
         
 <div class="param-desc">
     <ul>
-<li>the same instance of the QueryIndex.</li>
+<li>ordinal of the item in the enum type.</li>
 </ul>
 </div>
 
@@ -943,86 +413,41 @@
     </dt>
     <dd>
         
-<span class="param-type"><a href="QueryIndex.html">QueryIndex</a></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="setInlineSize"><span class="type-signature"></span>setInlineSize<span class="signature">(inlineSize)</span><span class="type-signature"> &rarr; {<a href="QueryIndex.html">QueryIndex</a>}</span></h4>
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>inlineSize</code></td>
-            
-
-            <td class="type">
-            
-                
 <span class="param-type">number</span>
 
 
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
+    </dd>
+</dl>
 
     
-    </tbody>
-</table>
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getTypeId"><span class="type-signature"></span>getTypeId<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Returns Id of the enum type.</p>
+</div>
+
+
+
+
+
+
+
 
 
 
@@ -1058,7 +483,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line653">line 653</a>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line58">line 58</a>
     </li></ul></dd>
     
 
@@ -1086,7 +511,7 @@
         
 <div class="param-desc">
     <ul>
-<li>the same instance of the QueryIndex.</li>
+<li>Id of the enum type.</li>
 </ul>
 </div>
 
@@ -1098,7 +523,7 @@
     </dt>
     <dd>
         
-<span class="param-type"><a href="QueryIndex.html">QueryIndex</a></span>
+<span class="param-type">number</span>
 
 
     </dd>
@@ -1116,12 +541,127 @@
     
 
     
-    <h4 class="name" id="setName"><span class="type-signature"></span>setName<span class="signature">(name)</span><span class="type-signature"> &rarr; {<a href="QueryIndex.html">QueryIndex</a>}</span></h4>
+    <h4 class="name" id="getValue"><span class="type-signature"></span>getValue<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
     
 
     
 
 
+
+<div class="description">
+    <p>Returns value of the item
+or null if value is not set.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line133">line 133</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>value of the item.</li>
+</ul>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setName"><span class="type-signature"></span>setName<span class="signature">(name)</span><span class="type-signature"> &rarr; {<a href="EnumItem.html">EnumItem</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Sets or updates name of the item.</p>
+</div>
 
 
 
@@ -1172,7 +712,7 @@
 
             
 
-            <td class="description last"></td>
+            <td class="description last"><p>name of the item.</p></td>
         </tr>
 
     
@@ -1213,162 +753,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line608">line 608</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <ul>
-<li>the same instance of the QueryIndex.</li>
-</ul>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type"><a href="QueryIndex.html">QueryIndex</a></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="setType"><span class="type-signature"></span>setType<span class="signature">(type)</span><span class="type-signature"> &rarr; {<a href="QueryIndex.html">QueryIndex</a>}</span></h4>
-    
-
-    
-
-
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>type</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="QueryIndex.html#.INDEX_TYPE">QueryIndex.INDEX_TYPE</a></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line631">line 631</a>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line121">line 121</a>
     </li></ul></dd>
     
 
@@ -1425,7 +810,7 @@
         
 <div class="param-desc">
     <ul>
-<li>the same instance of the QueryIndex.</li>
+<li>the same instance of EnumItem</li>
 </ul>
 </div>
 
@@ -1437,7 +822,571 @@
     </dt>
     <dd>
         
-<span class="param-type"><a href="QueryIndex.html">QueryIndex</a></span>
+<span class="param-type"><a href="EnumItem.html">EnumItem</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setOrdinal"><span class="type-signature"></span>setOrdinal<span class="signature">(ordinal)</span><span class="type-signature"> &rarr; {<a href="EnumItem.html">EnumItem</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Sets or updates ordinal of the item in the enum type.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>ordinal</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>ordinal of the item in the enum type.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line96">line 96</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>if error.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type"><a href="IgniteClientError.html">IgniteClientError</a></span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>the same instance of EnumItem</li>
+</ul>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="EnumItem.html">EnumItem</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setTypeId"><span class="type-signature"></span>setTypeId<span class="signature">(typeId)</span><span class="type-signature"> &rarr; {<a href="EnumItem.html">EnumItem</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Updates Id of the enum type.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>typeId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>new Id of the enum type.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line71">line 71</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>if error.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type"><a href="IgniteClientError.html">IgniteClientError</a></span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>the same instance of EnumItem</li>
+</ul>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="EnumItem.html">EnumItem</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setValue"><span class="type-signature"></span>setValue<span class="signature">(value)</span><span class="type-signature"> &rarr; {<a href="EnumItem.html">EnumItem</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Sets or updates value of the item.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>value of the item.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line146">line 146</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>if error.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type"><a href="IgniteClientError.html">IgniteClientError</a></span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>the same instance of EnumItem</li>
+</ul>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="EnumItem.html">EnumItem</a></span>
 
 
     </dd>
