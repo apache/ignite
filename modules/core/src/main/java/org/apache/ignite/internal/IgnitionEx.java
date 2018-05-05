@@ -2645,6 +2645,10 @@ public class IgnitionEx {
 
             execSvc = null;
 
+            U.shutdownNow(getClass(), svcExecSvc, log);
+
+            svcExecSvc = null;
+
             U.shutdownNow(getClass(), sysExecSvc, log);
 
             sysExecSvc = null;
