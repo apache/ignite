@@ -173,7 +173,7 @@ class EnumItem {
             }
         }
         throw Errors.IgniteClientError.illegalArgumentError(
-            'ordinal, name or value must be specified for EnumItem');
+            'Proper ordinal, name or value must be specified for EnumItem');
     }
 
     /**

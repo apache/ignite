@@ -58,7 +58,7 @@ class BinaryReader {
                 return buffer.readDate();
             case BinaryUtils.TYPE_CODE.ENUM:
             case BinaryUtils.TYPE_CODE.BINARY_ENUM:
-                return BinaryReader._readEnum(buffer);
+                return await BinaryReader._readEnum(buffer);
             case BinaryUtils.TYPE_CODE.DECIMAL:
                 return BinaryReader._readDecimal(buffer);
             case BinaryUtils.TYPE_CODE.TIMESTAMP:

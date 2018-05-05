@@ -69,7 +69,7 @@ class BinaryWriter {
                 buffer.writeDate(object);
                 break;
             case BinaryUtils.TYPE_CODE.ENUM:
-                BinaryWriter._writeEnum(buffer, object);
+                await BinaryWriter._writeEnum(buffer, object);
                 break;
             case BinaryUtils.TYPE_CODE.DECIMAL:
                 BinaryWriter._writeDecimal(buffer, object);
