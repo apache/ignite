@@ -412,8 +412,10 @@ class QueryField {
         this._typeName = typeName;
         this._isKeyField = false;
         this._isNotNull = false;
-        this._defaultValue = null;
+        this._defaultValue = undefined;
         this._valueType = null;
+        this._buffer = null;
+        this._index = null;
     }
 
     /**
@@ -514,6 +516,7 @@ class QueryField {
     setDefaultValue(defaultValue, valueType = null) {
         this._defaultValue = defaultValue;
         this._valueType = valueType;
+        return this;
     }
 
     /**
@@ -524,10 +527,26 @@ class QueryField {
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (or not specified) that means the type is not specified
      *
+     * @async
+     *
      * @return {*}
      */
-    getDefaultValue(valueType = null) {
-        return this._defaultValue;
+    async getDefaultValue(valueType = null) {
+        if (this._defaultValue === undefined) {
+            if (this._buffer) {
+                const position = this._buffer.position;
+                this._buffer.position = this._index;
+                const result = await BinaryReader.readObject(this._buffer, valueType);
+                this._buffer.position = position;
+                return result;
+            }
+            else {
+                return null;
+            }
+        }
+        else {
+            return this._defaultValue;
+        }
     }
 
     /** Private methods */
@@ -540,7 +559,7 @@ class QueryField {
         await BinaryWriter.writeString(buffer, this._typeName);
         buffer.writeBoolean(this._isKeyField);
         buffer.writeBoolean(this._isNotNull);
-        await BinaryWriter.writeObject(buffer, this._defaultValue, this._valueType);
+        await BinaryWriter.writeObject(buffer, this._defaultValue ? this._defaultValue : null, this._valueType);
     }
 
     /**
@@ -551,7 +570,10 @@ class QueryField {
         this._typeName = await BinaryReader.readObject(buffer);
         this._isKeyField = buffer.readBoolean();
         this._isNotNull = buffer.readBoolean();
-        this._defaultValue = await BinaryReader.readObject(buffer, this._valueType);
+        this._defaultValue = undefined;
+        this._buffer = buffer;
+        this._index = buffer.position;
+        await BinaryReader.readObject(buffer);
     }
 }
 
