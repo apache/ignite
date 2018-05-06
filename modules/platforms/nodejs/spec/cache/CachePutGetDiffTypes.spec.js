@@ -24,9 +24,12 @@ const IgniteClient = require('apache-ignite-client');
 const ObjectType = IgniteClient.ObjectType;
 const MapObjectType = IgniteClient.MapObjectType;
 const CollectionObjectType = IgniteClient.CollectionObjectType;
+const ObjectArrayType = IgniteClient.ObjectArrayType;
+const ComplexObjectType = IgniteClient.ComplexObjectType;
 const EnumItem = IgniteClient.EnumItem;
 const Timestamp = IgniteClient.Timestamp;
 const Decimal = IgniteClient.Decimal;
+const BinaryObject = IgniteClient.BinaryObject;
 
 const CACHE_NAME = '__test_cache';
 
@@ -58,22 +61,21 @@ describe('cache put get test suite >', () => {
     it('put get primitive values of different types', (done) => {
         Promise.resolve().
             then(async () => {
-                for (let type1 of Object.keys(primitiveValues)) {
+                for (let type1 of Object.keys(TestingHelper.primitiveValues)) {
                     type1 = parseInt(type1);
-                    const typeInfo1 = primitiveValues[type1];
-                    for (let type2 of Object.keys(primitiveValues)) {
+                    const typeInfo1 = TestingHelper.primitiveValues[type1];
+                    for (let type2 of Object.keys(TestingHelper.primitiveValues)) {
                         type2 = parseInt(type2);
-                        const typeInfo2 = primitiveValues[type2];
-                        const comparator = typeInfo2.comparator;
+                        const typeInfo2 = TestingHelper.primitiveValues[type2];
                         const modificator = typeInfo2.modificator;
                         for (let value1 of typeInfo1.values) {
                             for (let value2 of typeInfo2.values) {
-                                await putGetPrimitiveValues(type1, type2, value1, value2, modificator, comparator);
+                                await putGetPrimitiveValues(type1, type2, value1, value2, modificator);
                                 if (typeInfo1.typeOptional) {
-                                    await putGetPrimitiveValues(null, type2, value1, value2, modificator, comparator);
+                                    await putGetPrimitiveValues(null, type2, value1, value2, modificator);
                                 }
                                 if (typeInfo2.typeOptional) {
-                                    await putGetPrimitiveValues(type1, null, value1, value2, modificator, comparator);
+                                    await putGetPrimitiveValues(type1, null, value1, value2, modificator);
                                 }
                             }
                         }
@@ -87,16 +89,15 @@ describe('cache put get test suite >', () => {
     it('put get arrays of different types', (done) => {
         Promise.resolve().
             then(async () => {
-                for (let type of Object.keys(arrayValues)) {
+                for (let type of Object.keys(TestingHelper.arrayValues)) {
                     type = parseInt(type);
-                    const typeInfo = arrayValues[type];
+                    const typeInfo = TestingHelper.arrayValues[type];
                     const primitiveType = typeInfo.elemType;
-                    const values = primitiveValues[primitiveType].values;
-                    const comparator = primitiveValues[primitiveType].comparator;
-                    await putGetArrays(primitiveType, type, values[0], values, comparator);
-                    await putGetArrays(primitiveType, type, values[0], [], comparator);
+                    const values = TestingHelper.primitiveValues[primitiveType].values;
+                    await putGetArrays(primitiveType, type, values[0], values);
+                    await putGetArrays(primitiveType, type, values[0], []);
                     if (typeInfo.typeOptional) {
-                        await putGetArrays(primitiveType, null, values[0], values, comparator);
+                        await putGetArrays(primitiveType, null, values[0], values);
                     }
                 }
             }).
@@ -107,15 +108,15 @@ describe('cache put get test suite >', () => {
     it('put get maps of different key/value types', (done) => {
         Promise.resolve().
             then(async () => {
-                for (let type1 of Object.keys(primitiveValues)) {
+                for (let type1 of Object.keys(TestingHelper.primitiveValues)) {
                     type1 = parseInt(type1);
-                    const typeInfo1 = primitiveValues[type1];
-                    if (typeInfo1.comparator) {
+                    const typeInfo1 = TestingHelper.primitiveValues[type1];
+                    if (!typeInfo1.isMapKey) {
                         continue;
                     }
-                    for (let type2 of Object.keys(primitiveValues)) {
+                    for (let type2 of Object.keys(TestingHelper.primitiveValues)) {
                         type2 = parseInt(type2);
-                        const typeInfo2 = primitiveValues[type2];
+                        const typeInfo2 = TestingHelper.primitiveValues[type2];
                         const map = new Map();
                         let index2 = 0;
                         for (let value1 of typeInfo1.values) {
@@ -128,18 +129,18 @@ describe('cache put get test suite >', () => {
                         }
                         await putGetMaps(
                             new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, type1, type2),
-                            map, typeInfo2.comparator);
+                            map);
                         await putGetMaps(
                             new MapObjectType(
                                 MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, type1, type2), 
-                            map, typeInfo2.comparator);
+                            map);
                         if (typeInfo1.typeOptional) {
                             await putGetMaps(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, null, type2),
-                            map, typeInfo2.comparator);
+                            map);
                         }
                         if (typeInfo2.typeOptional) {
                             await putGetMaps(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, type1, null),
-                            map, typeInfo2.comparator);
+                            map);
                         }
                     }
                 }
@@ -151,18 +152,17 @@ describe('cache put get test suite >', () => {
     it('put get maps with arrays of different types', (done) => {
         Promise.resolve().
             then(async () => {
-                for (let type1 of Object.keys(primitiveValues)) {
+                for (let type1 of Object.keys(TestingHelper.primitiveValues)) {
                     type1 = parseInt(type1);
-                    const typeInfo1 = primitiveValues[type1];
-                    if (typeInfo1.comparator) {
+                    const typeInfo1 = TestingHelper.primitiveValues[type1];
+                    if (!typeInfo1.isMapKey) {
                         continue;
                     }
-                    for (let type2 of Object.keys(arrayValues)) {
+                    for (let type2 of Object.keys(TestingHelper.arrayValues)) {
                         type2 = parseInt(type2);
-                        const typeInfo2 = arrayValues[type2];
+                        const typeInfo2 = TestingHelper.arrayValues[type2];
                         const primitiveType2 = typeInfo2.elemType;
-                        const values2 = primitiveValues[primitiveType2].values;
-                        const comparator = primitiveValues[primitiveType2].comparator;
+                        const values2 = TestingHelper.primitiveValues[primitiveType2].values;
                         const map = new Map();
                         let index2 = 0;
                         const arrayValues2 = [values2, null, values2.reverse()];
@@ -175,17 +175,17 @@ describe('cache put get test suite >', () => {
                         }
                         await putGetMaps(
                             new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, type1, type2),
-                            map, comparator);
+                            map);
                         await putGetMaps(
                             new MapObjectType(MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, type1, type2), 
-                            map, comparator);
+                            map);
                         if (typeInfo1.typeOptional) {
                             await putGetMaps(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, null, type2),
-                            map, comparator);
+                            map);
                         }
                         if (typeInfo2.typeOptional) {
                             await putGetMaps(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, type1, null),
-                            map, comparator);
+                            map);
                         }
                     }
                 }
@@ -197,26 +197,26 @@ describe('cache put get test suite >', () => {
     it('put get sets of different key/value types', (done) => {
         Promise.resolve().
             then(async () => {
-                for (let type of Object.keys(primitiveValues)) {
+                for (let type of Object.keys(TestingHelper.primitiveValues)) {
                     type = parseInt(type);
-                    const typeInfo = primitiveValues[type];
+                    const typeInfo = TestingHelper.primitiveValues[type];
                     const set = new Set();
                     for (let value of typeInfo.values) {
                         set.add(value);
                     }
                     await putGetSets(
                         new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.USER_SET, type),
-                            set, typeInfo.comparator);
+                            set);
                     await putGetSets(
                         new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.HASH_SET, type),
-                            set, typeInfo.comparator);
+                            set);
                     await putGetSets(
                         new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.LINKED_HASH_SET, type),
-                            set, typeInfo.comparator);
+                            set);
                     if (typeInfo.typeOptional) {
                         await putGetSets(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.LINKED_HASH_SET),
-                            set, typeInfo.comparator);
-                        await putGetSets(null, set, typeInfo.comparator);
+                            set);
+                        await putGetSets(null, set);
                     }
                 }
             }).
@@ -227,291 +227,365 @@ describe('cache put get test suite >', () => {
     it('put get lists of different key/value types', (done) => {
         Promise.resolve().
             then(async () => {
-                for (let type of Object.keys(primitiveValues)) {
+                for (let type of Object.keys(TestingHelper.primitiveValues)) {
                     type = parseInt(type);
-                    const typeInfo = primitiveValues[type];
+                    const typeInfo = TestingHelper.primitiveValues[type];
                     const list = new Array();
                     for (let value of typeInfo.values) {
                         list.push(value);
                     }
                     await putGetLists(
                         new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.USER_COL, type),
-                            list, typeInfo.comparator);
+                            list);
                     await putGetLists(
                         new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.ARRAY_LIST, type),
-                            list, typeInfo.comparator);
+                            list);
                     await putGetLists(
                         new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.LINKED_LIST, type),
-                            list, typeInfo.comparator);
+                            list);
                     if (typeInfo.typeOptional) {
                         await putGetLists(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.ARRAY_LIST),
-                            list, typeInfo.comparator);
+                            list);
                     }
                     // const singletonList = [typeInfo.values[0]];
                     // await putGetLists(
                     //     new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.SINGLETON_LIST, type),
-                    //         singletonList, typeInfo.comparator);
+                    //         singletonList);
                 }
             }).
             then(done).
             catch(error => done.fail(error));
     });
 
-    const dateComparator = (date1, date2) => { return !date1 && !date2 || date1.value === date2.value; };
-    const floatComparator = (date1, date2) => { return Math.abs(date1 - date2) < 0.00001; };
-    const defaultComparator = (value1, value2) => { return value1 === value2; };
-    const UUIDComparator = (value1, value2) => {
-        if (value1 === null && value2 === null) {
-            return true;
-        }
-        if (value1 === null && value2 !== null || value1 !== null && value2 === null) {
-            return false;
-        }
-        return value1 instanceof Array && value2 instanceof Array &&
-            value1.length === value2.length &&
-            value1.every((elem1, index) => defaultComparator(elem1, value2[index]));
-    };
-    const enumComparator = (value1, value2) => {
-        return value1.getTypeId() === value2.getTypeId() &&
-            value1.getOrdinal() === value2.getOrdinal(); };
-    const decimalComparator = (value1, value2) => {
-        return value1 === null && value2 === null ||
-            value1.equals(value2);
-    };
-    const timestampComparator = (value1, value2) => {
-        return value1 === null && value2 === null ||
-            dateComparator(value1.getTime(), value2.getTime()) &&
-            value1.getNanos() === value2.getNanos(); };
+    it('put get object array of maps', (done) => {
+        Promise.resolve().
+            then(async () => {
+                for (let type1 of Object.keys(TestingHelper.primitiveValues)) {
+                    type1 = parseInt(type1);
+                    const typeInfo1 = TestingHelper.primitiveValues[type1];
+                    if (typeInfo1.isMapKey) {
+                        continue;
+                    }
+                    for (let type2 of Object.keys(TestingHelper.primitiveValues)) {
+                        type2 = parseInt(type2);
+                        const typeInfo2 = TestingHelper.primitiveValues[type2];
+                        let map = new Map();
+                        let index2 = 0;
+                        for (let value1 of typeInfo1.values) {
+                            let value2 = typeInfo2.values[index2];
+                            index2++;
+                            if (index2 >= typeInfo2.values.length) {
+                                index2 = 0;
+                            }
+                            map.set(value1, value2);
+                        }
+                        const array = new Array();
+                        for (let i = 0; i < 10; i++) {
+                            map = new Map([...map.entries()].map(([key, value]) => [typeInfo1.modificator(key), typeInfo2.modificator(value)]));
+                            array.push(map);
+                        }
+                        await putGetObjectArrays(new ObjectArrayType(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, type1, type2)), 
+                            array);
+                        if (typeInfo1.typeOptional) {
+                            await putGetObjectArrays(new ObjectArrayType(new MapObjectType(MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, null, type2)), 
+                                array);
+                        }
+                        if (typeInfo2.typeOptional) {
+                            await putGetObjectArrays(new ObjectArrayType(new MapObjectType(MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, type1)), 
+                                array);
+                        }
+                        if (typeInfo1.typeOptional && typeInfo2.typeOptional) {
+                            await putGetObjectArrays(new ObjectArrayType(), array);
+                            await putGetObjectArrays(null, array);
+                        }
+                    }
+                }
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
 
-    const numericValueModificator = (data) => { return data > 0 ? data - 10 : data + 10; };
-    const charValueModificator = (data) => { return String.fromCharCode(data.charCodeAt(0) + 5); };
-    const booleanValueModificator = (data) => { return !data; };
-    const stringValueModificator = (data) => { return data + 'xxx'; };
-    const dateValueModificator = (data) => { return new Date(data.value + 12345); };
-    const UUIDValueModificator = (data) => { return data.reverse(); };
-    const enumValueModificator = (data) => { return new EnumItem(data.getTypeId(), data.getOrdinal() + 1); };
-    const decimalValueModificator = (data) => { return data.add(12345); };
-    const timestampValueModificator = (data) => { return new Timestamp(new Date(data.getTime() + 12345), data.getNanos() + 123); };
+    it('put get object array of sets', (done) => {
+        Promise.resolve().
+            then(async () => {
+                for (let type of Object.keys(TestingHelper.primitiveValues)) {
+                    type = parseInt(type);
+                    const typeInfo = TestingHelper.primitiveValues[type];
+                    let set = new Set();
+                    for (let value of typeInfo.values) {
+                        set.add(value);
+                    }
+                    const array = new Array();
+                    for (let i = 0; i < 10; i++) {
+                        set = new Set([...set].map((value) => typeInfo.modificator(value)));
+                        array.push(set);
+                    }
+                    await putGetObjectArrays(
+                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.USER_SET, type)), 
+                        array);
+                    await putGetObjectArrays(
+                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.HASH_SET, type)), 
+                        array);
+                    await putGetObjectArrays(
+                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.LINKED_HASH_SET, type)), 
+                        array);
+                    if (typeInfo.typeOptional) {
+                        await putGetObjectArrays(new ObjectArrayType(), array);
+                        await putGetObjectArrays(null, array);
+                    }
+                }
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
 
-    const primitiveValues = {
-        [ObjectType.PRIMITIVE_TYPE.BYTE] : { 
-            values : [-128, 0, 127],
-            modificator : numericValueModificator
-        },
-        [ObjectType.PRIMITIVE_TYPE.SHORT] : {
-            values : [-32768, 0, 32767],
-            modificator : numericValueModificator
-        },
-        [ObjectType.PRIMITIVE_TYPE.INTEGER] : {
-            values : [12345, 0, -54321],
-            modificator : numericValueModificator
-        },
-        [ObjectType.PRIMITIVE_TYPE.LONG] : {
-            values : [12345678912345, 0, -98765432112345],
-            modificator : numericValueModificator
-        },
-        [ObjectType.PRIMITIVE_TYPE.FLOAT] : {
-            values : [-1.155, 0, 123e-5],
-            comparator : floatComparator,
-            modificator : numericValueModificator
-        },
-        [ObjectType.PRIMITIVE_TYPE.DOUBLE] : {
-            values : [-123e5, 0, 0.0001],
-            typeOptional : true,
-            comparator : floatComparator,
-            modificator : numericValueModificator
-        },
-        [ObjectType.PRIMITIVE_TYPE.CHAR] : {
-            values : ['a', String.fromCharCode(0x1234)],
-            modificator : charValueModificator
-        },
-        [ObjectType.PRIMITIVE_TYPE.BOOLEAN] : {
-            values : [true, false],
-            typeOptional : true,
-            modificator : booleanValueModificator
-        },
-        [ObjectType.PRIMITIVE_TYPE.STRING] : {
-            values : ['abc', ''],
-            typeOptional : true,
-            modificator : stringValueModificator
-        },
-        [ObjectType.PRIMITIVE_TYPE.UUID] : {
-            values : [
-                [ 18, 70, 2, 119, 154, 254, 198, 254, 195, 146, 33, 60, 116, 230, 0, 146 ],
-                [ 141, 77, 31, 194, 127, 36, 184, 255, 192, 4, 118, 57, 253, 209, 111, 147 ]
-            ],
-            comparator : UUIDComparator,
-            modificator : UUIDValueModificator
-        },
-        [ObjectType.PRIMITIVE_TYPE.DATE] : {
-            values : [new Date(), new Date('1995-12-17T03:24:00'), new Date(0)],
-            typeOptional : true,
-            comparator : dateComparator,
-            modificator : dateValueModificator
-        },
-        // [ObjectType.PRIMITIVE_TYPE.ENUM] : {
-        //     values : [new EnumItem(12345, 7), new EnumItem(0, 0)],
-        //     typeOptional : true,
-        //     comparator : enumComparator,
-        //     modificator : enumValueModificator
-        // },
-        [ObjectType.PRIMITIVE_TYPE.DECIMAL] : {
-            values : [new Decimal('123456789.6789345'), new Decimal(0), new Decimal('-98765.4321e15')],
-            typeOptional : true,
-            comparator : decimalComparator,
-            modificator : decimalValueModificator
-        },
-        [ObjectType.PRIMITIVE_TYPE.TIMESTAMP] : {
-            values : [new Timestamp(new Date().getTime(), 12345), new Timestamp(new Date('1995-12-17T03:24:00').getTime(), 543), new Timestamp(0, 0)],
-            typeOptional : true,
-            comparator : timestampComparator,
-            modificator : timestampValueModificator
-        },
-        [ObjectType.PRIMITIVE_TYPE.TIME] : {
-            values : [new Date(), new Date('1995-12-17T03:24:00'), new Date(0)],
-            comparator : dateComparator,
-            modificator : dateValueModificator
-        }
-    };
+    it('put get object array of lists', (done) => {
+        Promise.resolve().
+            then(async () => {
+                for (let type of Object.keys(TestingHelper.primitiveValues)) {
+                    type = parseInt(type);
+                    const typeInfo = TestingHelper.primitiveValues[type];
+                    let list = new Array();
+                    for (let value of typeInfo.values) {
+                        list.push(value);
+                    }
+                    const array = new Array();
+                    for (let i = 0; i < 10; i++) {
+                        list = list.map((value) => typeInfo.modificator(value));
+                        array.push(list);
+                    }
+                    await putGetObjectArrays(
+                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.USER_COL, type)), 
+                        array);
+                    await putGetObjectArrays(
+                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.ARRAY_LIST, type)), 
+                        array);
+                    await putGetObjectArrays(
+                        new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.LINKED_LIST, type)), 
+                        array);
+                    if (typeInfo.typeOptional) {
+                        await putGetObjectArrays(
+                            new ObjectArrayType(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.ARRAY_LIST)), 
+                            array);
+                    }
+                }
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
 
-    async function putGetPrimitiveValues(keyType, valueType, key, value, modificator, comparator = null) {
+    it('put get object array of complex objects', (done) => {
+        Promise.resolve().
+            then(async () => {
+                let object = {};
+                for (let type of Object.keys(TestingHelper.primitiveValues)) {
+                    type = parseInt(type);
+                    const typeInfo = TestingHelper.primitiveValues[type];
+                    object['field' + type] = typeInfo.values[0];
+                }
+                const objectType = new ComplexObjectType(object);
+                for (let type of Object.keys(TestingHelper.primitiveValues)) {
+                    type = parseInt(type);
+                    objectType.setFieldType('field' + type, type);
+                }
+
+                let array = new Array();
+                for (let i = 0; i < 10; i++) {
+                    for (let field in object) {
+                        const type = parseInt(field.substring(5));
+                        object[field] = TestingHelper.primitiveValues[type].modificator(object[field]);
+                    }
+                    array.push(object);
+                }
+                await putGetObjectArrays(
+                    new ObjectArrayType(objectType), array);
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
+    it('put get object array of complex objects with default field types', (done) => {
+        Promise.resolve().
+            then(async () => {
+                let object = {};
+                for (let type of Object.keys(TestingHelper.primitiveValues)) {
+                    type = parseInt(type);
+                    const typeInfo = TestingHelper.primitiveValues[type];
+                    if (typeInfo.typeOptional) {
+                        object['field' + type] = typeInfo.values[0];
+                    }
+                }
+                const objectType = new ComplexObjectType(object, 'tstComplObjectWithDefaultFieldTypes');
+                let array = new Array();
+                for (let i = 0; i < 10; i++) {
+                    for (let field in object) {
+                        const type = parseInt(field.substring(5));
+                        object[field] = TestingHelper.primitiveValues[type].modificator(object[field]);
+                    }
+                    array.push(object);
+                }
+                await putGetObjectArrays(
+                    new ObjectArrayType(objectType), array);
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
+    it('put get object array of binary objects', (done) => {
+        Promise.resolve().
+            then(async () => {
+                let binObject = new BinaryObject('tstBinaryObj');
+                for (let type of Object.keys(TestingHelper.primitiveValues)) {
+                    type = parseInt(type);
+                    const typeInfo = TestingHelper.primitiveValues[type];
+                    binObject.setField('field' + type, typeInfo.values[0], type);
+                }
+                let array = new Array();
+                for (let i = 0; i < 10; i++) {
+                    for (let field of binObject.getFieldNames()) {
+                        const type = parseInt(field.substring(5));
+                        binObject.setField(
+                            'field' + type,
+                            TestingHelper.primitiveValues[type].modificator(await binObject.getField('field' + type)),
+                            type);
+                    }
+                    array.push(binObject);
+                }
+                await putGetObjectArrays(new ObjectArrayType(), array);
+                await putGetObjectArrays(null, array);
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
+    it('put get object array of object arrays', (done) => {
+        Promise.resolve().
+            then(async () => {
+                let object = {};
+                for (let type of Object.keys(TestingHelper.primitiveValues)) {
+                    type = parseInt(type);
+                    const typeInfo = TestingHelper.primitiveValues[type];
+                    object['field' + type] = typeInfo.values[0];
+                }
+                const objectType = new ComplexObjectType(object);
+                for (let type of Object.keys(TestingHelper.primitiveValues)) {
+                    type = parseInt(type);
+                    objectType.setFieldType('field' + type, type);
+                }
+
+                let array = new Array();
+                for (let i = 0; i < 5; i++) {
+                    let innerArray = new Array();
+                    for (let j = 0; j < 2; j++) {
+                        for (let field in object) {
+                            const type = parseInt(field.substring(5));
+                            object[field] = TestingHelper.primitiveValues[type].modificator(object[field]);
+                        }
+                        innerArray.push(object);
+                    }
+                    array.push(innerArray);
+                }
+                await putGetObjectArrays(
+                    new ObjectArrayType(new ObjectArrayType(objectType)), array);
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
+    async function putGetPrimitiveValues(keyType, valueType, key, value, modificator) {
         const cache = await igniteClient.getCache(CACHE_NAME).
             setKeyType(keyType).
             setValueType(valueType);
         try {
-            if (!comparator) {
-                comparator = defaultComparator;
-            }
-            await putGetPrimitive(cache, key, value, valueType, comparator);
+            await putGetPrimitive(cache, key, value, valueType);
             const newValue = modificator(value);
-            await putGetPrimitive(cache, key, newValue, valueType, comparator);
+            await putGetPrimitive(cache, key, newValue, valueType);
         }
         finally {
             await cache.removeAll();
         }
     }
 
-    async function putGetPrimitive(cache, key, value, valueType, comparator) {
+    async function putGetPrimitive(cache, key, value, valueType) {
         await cache.put(key, value);
         let result = await cache.get(key);
-        expect(comparator(result, value)).toBe(true,
+        expect(await TestingHelper.compare(value, result)).toBe(true,
             `values are not equal: valueType=${valueType}, put value=${value}, get value=${result}`);
     }
 
-    const arrayValues = {
-        [ObjectType.PRIMITIVE_TYPE.BYTE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.BYTE },
-        [ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.SHORT },
-        [ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.INTEGER },
-        [ObjectType.PRIMITIVE_TYPE.LONG_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.LONG },
-        [ObjectType.PRIMITIVE_TYPE.FLOAT_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.FLOAT },
-        [ObjectType.PRIMITIVE_TYPE.DOUBLE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DOUBLE, typeOptional : true },
-        [ObjectType.PRIMITIVE_TYPE.CHAR_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.CHAR },
-        [ObjectType.PRIMITIVE_TYPE.BOOLEAN_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.BOOLEAN, typeOptional : true },
-        [ObjectType.PRIMITIVE_TYPE.STRING_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.STRING, typeOptional : true },
-        [ObjectType.PRIMITIVE_TYPE.UUID_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.UUID },
-        [ObjectType.PRIMITIVE_TYPE.DATE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DATE, typeOptional : true },
-        //[ObjectType.PRIMITIVE_TYPE.ENUM_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.ENUM, typeOptional : true },
-        [ObjectType.PRIMITIVE_TYPE.DECIMAL_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DECIMAL, typeOptional : true },
-        [ObjectType.PRIMITIVE_TYPE.TIMESTAMP_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.TIMESTAMP, typeOptional : true },
-        [ObjectType.PRIMITIVE_TYPE.TIME_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.TIME }
-    };
-
-    async function putGetArrays(keyType, valueType, key, value, comparator = null) {
+    async function putGetArrays(keyType, valueType, key, value) {
         const cache = await igniteClient.getCache(CACHE_NAME).
             setKeyType(keyType).
             setValueType(valueType);
         try {
             await cache.put(key, value);
             let result = await cache.get(key);
-            if (!comparator) {
-                comparator = defaultComparator;
-            }
             await cache.clearKey(key);
             expect(result instanceof Array).toBe(true,
                 `result is not Array: arrayType=${valueType}, result=${result}`);
-            expect(result.length).toBe(value.length,
-                `unexpected array length: arrayType=${valueType}, put array=${value}, get array=${result}`);
-            expect(result.every((elem, i) => { return comparator(elem, value[i]); })).toBe(true,
-                `arrays are different: arrayType=${valueType}, put array=${value}, get array=${result}`);
+            expect(await TestingHelper.compare(value, result)).toBe(true, 
+                `Arrays are not equal: arrayType=${valueType}, put array=${value}, get array=${result}`);
         }
         finally {
             await cache.removeAll();
         }
     }
 
-    async function putGetMaps(mapType, value, comparator = null) {
+    async function putGetMaps(mapType, value) {
         const key = new Date();
         const cache = await igniteClient.getCache(CACHE_NAME).
             setValueType(mapType);
         await cache.put(key, value);
         let result = await cache.get(key);
-        if (!comparator) {
-            comparator = defaultComparator;
-        }
         expect(result instanceof Map).toBe(true,
             `result is not Map: mapType=${mapType}, result=${result}`);
-        expect(result.size).toBe(value.size,
-            `unexpected Map size: mapType=${mapType}, put value=${value}, get value=${result}`);
-        result.forEach((val, key) => {
-            if (val instanceof Array && mapType._valueType !== ObjectType.PRIMITIVE_TYPE.UUID) {
-                expect(val.every((elem, i) => { return comparator(elem, value.get(key)[i]); })).toBe(true,
-                    `Maps are not equal: valueType=${mapType._valueType}, put value=${val}, get value=${value.get(key)}`);
-            }
-            else {
-                expect(comparator(val, value.get(key))).toBe(true,
-                    `Maps are not equal: valueType=${mapType._valueType}, put value=${value}, get value=${result}`);
-            }
-        });
+        expect(await TestingHelper.compare(value, result)).toBe(true, 
+            `Maps are not equal: valueType=${mapType._valueType}, put value=${value}, get value=${result}`);
     }
 
-    async function putGetSets(setType, value, comparator = null) {
+    async function putGetSets(setType, value) {
         const key = new Date();
         const cache = await igniteClient.getCache(CACHE_NAME).
             setValueType(setType);
         await cache.put(key, value);
         let result = await cache.get(key);
-        if (!comparator) {
-            comparator = defaultComparator;
-        }
+
         expect(result instanceof Set).toBe(true,
             `result is not Set: setType=${setType}, result=${result}`);
-        expect(result.size).toBe(value.size,
-            `unexpected Set size: setType=${setType}, put value=${[...value]}, get value=${[...result]}`);
-        const valueArr = [...value];
-        const resultArr = [...result];
         if (!setType || setType._subType !== CollectionObjectType.COLLECTION_SUBTYPE.LINKED_HASH_SET) {
-            valueArr.sort();
-            resultArr.sort();
+            const valueArr = [...value].sort();
+            const resultArr = [...result].sort();
+            expect(await TestingHelper.compare(valueArr, resultArr)).toBe(true, `Sets are not equal: valueType=${setType ? setType._elementType : 
+                            null}, put value=${valueArr}, get value=${resultArr}`);
         }
-        if (resultArr.length === valueArr.length) {
-            for (let i = 0; i < valueArr.length; i++) {
-                expect(comparator(valueArr[i], resultArr[i])).toBe(true,
-                    `Sets are not equal: valueType=${setType ? setType._elementType : 
-                        null}, put value=${valueArr}, get value=${resultArr}`);
-            }
+        else {
+            expect(await TestingHelper.compare(value, result)).toBe(true, `Sets are not equal: valueType=${setType ? setType._elementType : 
+                            null}, put value=${[...value]}, get value=${[...result]}`);
         }
     }
 
-    async function putGetLists(listType, value, comparator = null) {
+    async function putGetLists(listType, value) {
         const key = new Date();
         const cache = await igniteClient.getCache(CACHE_NAME).
             setValueType(listType);
         await cache.put(key, value);
         let result = await cache.get(key);
-        if (!comparator) {
-            comparator = defaultComparator;
-        }
         expect(result instanceof Array).toBe(true,
             `result is not Array: listType=${listType}, result=${result}`);
-        expect(result.length).toBe(value.length,
-            `unexpected List length: listType=${listType}, put value=${value}, get value=${result}`);
-        if (result.length === value.length) {
-            for (let i = 0; i < value.length; i++) {
-                expect(comparator(value[i], result[i])).toBe(true,
-                    `Lists are not equal: valueType=${listType ? listType._elementType : 
+        expect(await TestingHelper.compare(value, result)).toBe(true, `Lists are not equal: valueType=${listType ? listType._elementType : 
                         null}, put value=${value}, get value=${result}`);
-            }
-        }
+    }
+
+    async function putGetObjectArrays(arrayType, value) {
+        const key = new Date();
+        const cache = await igniteClient.getCache(CACHE_NAME).
+            setValueType(arrayType);
+        await cache.put(key, value);
+        let result = await cache.get(key);
+        expect(result instanceof Array).toBe(true,
+            `result is not Array: arrayType=${arrayType}, result=${result}`);
+        expect(await TestingHelper.compare(value, result)).toBe(true, `Arrays are not equal: valueType=${arrayType ? arrayType._elementType : 
+                        null}, put value=${value}, get value=${result}`);
     }
 
     async function testSuiteCleanup(done) {

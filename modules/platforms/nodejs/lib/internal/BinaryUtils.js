@@ -469,10 +469,8 @@ class BinaryUtils {
                 }
                 return;
             case BinaryUtils.TYPE_CODE.COLLECTION:
-                if (!type || !type instanceof CollectionObjectType ||
-                    type._isSet() && !value instanceof Set ||
-                    !value instanceof Array) {
-                    throw Errors.IgniteClientError.typeCastError(valueType, type._isSet() ? 'set' : typeCode);
+                if (!(type && type._isSet() && value instanceof Set || value instanceof Array)) {
+                    throw Errors.IgniteClientError.typeCastError(valueType, type && type._isSet() ? 'set' : typeCode);
                 }
                 return;
             case BinaryUtils.TYPE_CODE.NULL:
@@ -553,6 +551,8 @@ class BinaryUtils {
                 return BinaryUtils.TYPE_CODE.TIMESTAMP_ARRAY;
             case BinaryUtils.TYPE_CODE.TIME:
                 return BinaryUtils.TYPE_CODE.TIME_ARRAY;
+            case BinaryUtils.TYPE_CODE.BINARY_OBJECT:
+                return new ObjectArrayType();
             default:
                 return new ObjectArrayType(elementType);
         }

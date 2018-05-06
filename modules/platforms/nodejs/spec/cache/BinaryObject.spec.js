@@ -72,16 +72,16 @@ describe('binary object test suite >', () => {
                     await cache.put(2, obj1);
                     await cache.put(3, obj1);
                     const obj2 = await cache.get(2);
-                    await binaryObjectsEqual(obj1, obj2);
-                    const obj3 = await cache.get(3);
+                    expect(await TestingHelper.compare(obj1, obj2)).toBe(true);
 
+                    const obj3 = await cache.get(3);
                     obj2.setField('field_double', await obj1.getField('field_double'));
                     obj2.setField('field_string', await obj1.getField('field_string'));
-                    await binaryObjectsEqual(obj1, obj2);
+                    expect(await TestingHelper.compare(obj1, obj2)).toBe(true);
 
                     obj1.setField('field_double', await obj3.getField('field_double'));
                     obj1.setField('field_string', await obj3.getField('field_string'));
-                    await binaryObjectsEqual(obj1, obj3);
+                    expect(await TestingHelper.compare(obj1, obj3)).toBe(true);
                 }
                 finally {
                     await cache.removeAll();
@@ -109,7 +109,7 @@ describe('binary object test suite >', () => {
 
                     await cache.put(3, obj1);
                     const obj2 = await cache.get(3);
-                    await binaryObjectsEqual(obj1, obj2);
+                    expect(await TestingHelper.compare(obj1, obj2)).toBe(true);
 
                     obj2.setField('field_bool', boolValue);
                     expect(obj2.hasField('field_bool')).toBe(true);
@@ -125,7 +125,7 @@ describe('binary object test suite >', () => {
                     obj1.setField('field_bool', boolValue);
                     await cache.put(5, obj1);
 
-                    await binaryObjectsEqual(await cache.get(4), await cache.get(5));
+                    expect(await TestingHelper.compare(await cache.get(4), await cache.get(5))).toBe(true);
                 }
                 finally {
                     await cache.removeAll();
@@ -156,11 +156,11 @@ describe('binary object test suite >', () => {
                     obj3.removeField('field_string');
                     const obj4 = await cache.get(2, obj1);
                     obj4.removeField('field_date');
-                    await binaryObjectsEqual(obj3, obj4);
+                    expect(await TestingHelper.compare(obj3, obj4)).toBe(true);
 
                     await cache.put(3, obj3);
                     await cache.put(4, obj4);
-                    await binaryObjectsEqual(await cache.get(3), await cache.get(4));
+                    expect(await TestingHelper.compare(await cache.get(3), await cache.get(4))).toBe(true);
                 }
                 finally {
                     await cache.removeAll();
@@ -169,16 +169,6 @@ describe('binary object test suite >', () => {
             then(done).
             catch(error => done.fail(error));
     });
-
-    async function binaryObjectsEqual(obj1, obj2) {
-        expect(obj1.getTypeName()).toBe(obj2.getTypeName());
-        expect(obj1.getFieldNames()).toEqual(obj2.getFieldNames());
-        for (let fieldName of obj1.getFieldNames()) {
-            expect(obj1.hasField(fieldName)).toBe(true);
-            expect(obj2.hasField(fieldName)).toBe(true);
-            expect(await obj1.getField(fieldName)).toEqual(await obj2.getField(fieldName));
-        }
-    }
 
     async function testSuiteCleanup(done) {
         await TestingHelper.destroyCache(CACHE_NAME, done);

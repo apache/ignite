@@ -21,7 +21,6 @@ const Decimal = require('decimal.js');
 const Errors = require('../Errors');
 const ComplexObjectType = require('../ObjectType').ComplexObjectType;
 const BinaryUtils = require('./BinaryUtils');
-const BinaryType = require('./BinaryType');
 
 class BinaryWriter {
 
@@ -167,12 +166,12 @@ class BinaryWriter {
     }
 
     static async _writeArray(buffer, array, arrayType, arrayTypeCode) {
+        const BinaryType = require('./BinaryType');
         const elementType = BinaryUtils.getArrayElementType(arrayType);
         const keepElementType = BinaryUtils.keepArrayElementType(arrayTypeCode);
         if (arrayTypeCode === BinaryUtils.TYPE_CODE.OBJECT_ARRAY) {
             buffer.writeInteger(elementType instanceof ComplexObjectType ?
-                BinaryType._calculateId(elementType._typeName) :
-                0);
+                BinaryType._calculateId(elementType._typeName) : -1);
         }
         buffer.writeInteger(array.length);
         for (let elem of array) {
@@ -181,8 +180,7 @@ class BinaryWriter {
     }
 
     static async _writeCollection(buffer, collection, collectionType) {
-        const isSet = collectionType._isSet();
-        buffer.writeInteger(isSet ? collection.size : collection.length);
+        buffer.writeInteger(collection instanceof Set ? collection.size : collection.length);
         buffer.writeByte(collectionType._subType);
         for (let element of collection) {
             await BinaryWriter.writeObject(buffer, element, collectionType._elementType);

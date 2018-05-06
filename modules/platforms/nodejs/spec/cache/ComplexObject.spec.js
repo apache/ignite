@@ -43,6 +43,8 @@ class SubClass1 extends Class1 {
         this.field_1_4 = null;
         this.field_1_5 = new Class3();
         this.field_1_6 = null;
+        this.field_1_7 = null;
+        this.field_1_8 = null;
     }
 }
 
@@ -57,98 +59,6 @@ class Class3 {
     constructor() {
         this.field_3_1 = null;
         this.field_3_2 = null;
-    }
-}
-
-const dateComparator = (date1, date2) => {
-    const result = !date1 && !date2 || date1.value === date2.value;
-    if (!result) {
-        TestingHelper.logDebug(Util.format('dateComparator, values are different: %s, %s', date1, date2));
-    }
-    return result;
-};
-const floatComparator = (value1, value2) => {
-    const result = Math.abs(value1 - value2) < 0.00001;
-    if (!result) {
-        TestingHelper.logDebug(Util.format('floatComparator, values are different: %d, %d', value1, value2));
-    }
-    return result;
-};
-const defaultComparator = (value1, value2) => {
-    const result = value1 === value2;
-    if (!result) {
-        TestingHelper.logDebug(Util.format('defaultComparator, values are different: %s, %s', value1, value2));
-    }
-    return result;
-};
-
-async function compare(value1, value2) {
-    TestingHelper.logDebug(Util.format('compare: %s, %s', JSON.stringify(value1), JSON.stringify(value2)));
-    if (value1 === undefined || value2 === undefined) {
-        TestingHelper.logDebug(Util.format('compare: unexpected "undefined" value'));
-        return false;
-    }
-    if (value1 === null && value2 === null) {
-        return true;
-    }
-    if (value1 === null && value2 !== null || value1 !== null && value2 === null) {
-        return false;
-    }
-    if (typeof value1 !== typeof value2) {
-        TestingHelper.logDebug(Util.format('compare: value types are different'));
-        return false;
-    }
-    if (typeof value1 === 'number') {
-        return floatComparator(value1, value2);
-    }
-    else if (typeof value1 !== 'object') {
-        return defaultComparator(value1, value2);
-    }
-    else if (value1 instanceof Date && value2 instanceof Date) {
-        return dateComparator(value1, value2);
-    }
-    else if (value1 instanceof Array && value2 instanceof Array) {
-        if (value1.length !== value2.length) {
-            TestingHelper.logDebug(Util.format('compare: array lengths are different'));
-            return false;
-        }
-        return value1.every((elem, i) => { return compare(elem, value2[i]); });
-    }
-    else if (value1 instanceof Map && value2 instanceof Map) {
-        if (value1.size !== value2.size) {
-            TestingHelper.logDebug(Util.format('compare: map sizes are different'));
-            return false;
-        }
-        for (var [key, val] of value1) {
-            if (!(await compare(val, value2.get(key)))) {
-                TestingHelper.logDebug(Util.format('compare: map values are different: %s, %s',
-                    JSON.stringify(val), JSON.stringify(value2.get(key))));
-                return false;
-            }
-        }
-        return true;
-    }
-    else if (value2 instanceof BinaryObject) {
-        let value;
-        for (let key of Object.keys(value1)) {
-            value = await value2.getField(key);
-            if (!(await compare(value1[key], value))) {
-                TestingHelper.logDebug(Util.format('compare: binary object values are different: %s, %s',
-                    JSON.stringify(value1[key]), JSON.stringify(value)));
-                return false;
-            }
-        }
-        return true;
-    }
-    else {
-        for (let key of Object.keys(value1)) {
-            if (!(await compare(value1[key], value2[key]))) {
-                TestingHelper.logDebug(Util.format('compare: object values are different: %s, %s',
-                    JSON.stringify(value1[key]), JSON.stringify(value2[key])));
-                return false;
-            }
-        }
-        return true;
     }
 }
 
@@ -200,8 +110,10 @@ describe('complex object test suite >', () => {
                 value2.field_1_3 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.BOOLEAN);
                 value2.field_1_4 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.STRING);
                 value2.field_1_5.field_3_1 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.DATE);
-                value2.field_1_5.field_3_2 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.SHORT);
-                value2.field_1_6 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.INTEGER);
+                value2.field_1_5.field_3_2 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.UUID);
+                value2.field_1_6 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.DECIMAL);
+                value2.field_1_7 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.TIMESTAMP);
+                value2.field_1_8 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.TIME);
 
                 const valueType2 = new ComplexObjectType(new SubClass1()).
                     setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.FLOAT).
@@ -212,8 +124,10 @@ describe('complex object test suite >', () => {
                     setFieldType('field_1_4', ObjectType.PRIMITIVE_TYPE.STRING).
                     setFieldType('field_1_5', new ComplexObjectType(new Class3()).
                         setFieldType('field_3_1', ObjectType.PRIMITIVE_TYPE.DATE).
-                        setFieldType('field_3_2', ObjectType.PRIMITIVE_TYPE.SHORT)).
-                    setFieldType('field_1_6', ObjectType.PRIMITIVE_TYPE.INTEGER);
+                        setFieldType('field_3_2', ObjectType.PRIMITIVE_TYPE.UUID)).
+                    setFieldType('field_1_6', ObjectType.PRIMITIVE_TYPE.DECIMAL).
+                    setFieldType('field_1_7', ObjectType.PRIMITIVE_TYPE.TIMESTAMP).
+                    setFieldType('field_1_8', ObjectType.PRIMITIVE_TYPE.TIME);
 
                 await putGetComplexObjectsWithDifferentTypes(
                     value1, value2, valueType1, valueType2, Class1, SubClass1);
@@ -302,8 +216,10 @@ describe('complex object test suite >', () => {
                 value2.field_1_3 = getArrayValues(ObjectType.PRIMITIVE_TYPE.BOOLEAN_ARRAY);
                 value2.field_1_4 = getArrayValues(ObjectType.PRIMITIVE_TYPE.STRING_ARRAY);
                 value2.field_1_5.field_3_1 = getArrayValues(ObjectType.PRIMITIVE_TYPE.DATE_ARRAY);
-                value2.field_1_5.field_3_2 = getArrayValues(ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY);
-                value2.field_1_6 = getArrayValues(ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY);
+                value2.field_1_5.field_3_2 = getArrayValues(ObjectType.PRIMITIVE_TYPE.UUID_ARRAY);
+                value2.field_1_6 = getArrayValues(ObjectType.PRIMITIVE_TYPE.DECIMAL_ARRAY);
+                value2.field_1_7 = getArrayValues(ObjectType.PRIMITIVE_TYPE.TIMESTAMP_ARRAY);
+                value2.field_1_8 = getArrayValues(ObjectType.PRIMITIVE_TYPE.TIME_ARRAY);
 
                 const valueType2 = new ComplexObjectType(new SubClass1(), 'SubClass1WithArrays').
                     setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.FLOAT_ARRAY).
@@ -314,8 +230,10 @@ describe('complex object test suite >', () => {
                     setFieldType('field_1_4', ObjectType.PRIMITIVE_TYPE.STRING_ARRAY).
                     setFieldType('field_1_5', new ComplexObjectType(new Class3(), 'Class3WithArrays').
                         setFieldType('field_3_1', ObjectType.PRIMITIVE_TYPE.DATE_ARRAY).
-                        setFieldType('field_3_2', ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY)).
-                    setFieldType('field_1_6', ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY);
+                        setFieldType('field_3_2', ObjectType.PRIMITIVE_TYPE.UUID_ARRAY)).
+                    setFieldType('field_1_6', ObjectType.PRIMITIVE_TYPE.DECIMAL_ARRAY).
+                    setFieldType('field_1_7', ObjectType.PRIMITIVE_TYPE.TIMESTAMP_ARRAY).
+                    setFieldType('field_1_8', ObjectType.PRIMITIVE_TYPE.TIME_ARRAY);
 
                 await putGetComplexObjectsWithDifferentTypes(
                     value1, value2, valueType1, valueType2, Class1, SubClass1, true);
@@ -351,15 +269,17 @@ describe('complex object test suite >', () => {
                 value2.field_1_3 = getMapValue(ObjectType.PRIMITIVE_TYPE.BOOLEAN);
                 value2.field_1_4 = getMapValue(ObjectType.PRIMITIVE_TYPE.STRING);
                 value2.field_1_5.field_3_1 = getMapValue(ObjectType.PRIMITIVE_TYPE.DATE);
-                value2.field_1_5.field_3_2 = getMapValue(ObjectType.PRIMITIVE_TYPE.SHORT);
-                value2.field_1_6 = getMapValue(ObjectType.PRIMITIVE_TYPE.INTEGER);
+                value2.field_1_5.field_3_2 = getMapValue(ObjectType.PRIMITIVE_TYPE.UUID);
+                value2.field_1_6 = getMapValue(ObjectType.PRIMITIVE_TYPE.DECIMAL);
+                value2.field_1_7 = getMapValue(ObjectType.PRIMITIVE_TYPE.TIMESTAMP);
+                value2.field_1_8 = getMapValue(ObjectType.PRIMITIVE_TYPE.TIME);
 
                 const valueType2 = new ComplexObjectType(new SubClass1(), 'SubClass1WithMaps').
                     setFieldType('field_1_1', new MapObjectType(
-                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.LONG, ObjectType.PRIMITIVE_TYPE.FLOAT)).
+                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.STRING, ObjectType.PRIMITIVE_TYPE.FLOAT)).
                     setFieldType('field_1_2', new ComplexObjectType(new Class2(), 'Class2WithDoubleCharMaps').
                         setFieldType('field_2_1', new MapObjectType(
-                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.LONG, ObjectType.PRIMITIVE_TYPE.DOUBLE)).
+                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.STRING, ObjectType.PRIMITIVE_TYPE.DOUBLE)).
                         setFieldType('field_2_2', new MapObjectType(
                             MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.CHAR, ObjectType.PRIMITIVE_TYPE.CHAR))).
                     setFieldType('field_1_3', new MapObjectType(
@@ -368,11 +288,15 @@ describe('complex object test suite >', () => {
                         MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.STRING, ObjectType.PRIMITIVE_TYPE.STRING)).
                     setFieldType('field_1_5', new ComplexObjectType(new Class3(), 'Class3WithMaps').
                         setFieldType('field_3_1', new MapObjectType(
-                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.LONG, ObjectType.PRIMITIVE_TYPE.DATE)).
+                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.STRING, ObjectType.PRIMITIVE_TYPE.DATE)).
                         setFieldType('field_3_2', new MapObjectType(
-                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.SHORT, ObjectType.PRIMITIVE_TYPE.SHORT))).
+                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.STRING, ObjectType.PRIMITIVE_TYPE.UUID))).
                     setFieldType('field_1_6', new MapObjectType(
-                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.INTEGER, ObjectType.PRIMITIVE_TYPE.INTEGER));
+                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.STRING, ObjectType.PRIMITIVE_TYPE.DECIMAL)).
+                    setFieldType('field_1_7', new MapObjectType(
+                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.STRING, ObjectType.PRIMITIVE_TYPE.TIMESTAMP)).
+                    setFieldType('field_1_8', new MapObjectType(
+                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.STRING, ObjectType.PRIMITIVE_TYPE.TIME));
 
                 await putGetComplexObjectsWithDifferentTypes(
                     value1, value2, valueType1, valueType2, Class1, SubClass1, true);
@@ -399,59 +323,6 @@ describe('complex object test suite >', () => {
             catch(error => done.fail(error));
     });
 
-    const primitiveValues = {
-        [ObjectType.PRIMITIVE_TYPE.BYTE] : { 
-            values : [-128, 0, 127],
-        },
-        [ObjectType.PRIMITIVE_TYPE.SHORT] : {
-            values : [-32768, 0, 32767],
-        },
-        [ObjectType.PRIMITIVE_TYPE.INTEGER] : {
-            values : [12345, 0, -54321],
-        },
-        [ObjectType.PRIMITIVE_TYPE.LONG] : {
-            values : [12345678912345, 0, -98765432112345],
-        },
-        [ObjectType.PRIMITIVE_TYPE.FLOAT] : {
-            values : [-1.155, 0, 123e-5],
-            comparator : floatComparator,
-        },
-        [ObjectType.PRIMITIVE_TYPE.DOUBLE] : {
-            values : [-123e5, 0, 0.0001],
-            typeOptional : true,
-            comparator : floatComparator,
-        },
-        [ObjectType.PRIMITIVE_TYPE.CHAR] : {
-            values : ['a', String.fromCharCode(0x1234)],
-        },
-        [ObjectType.PRIMITIVE_TYPE.BOOLEAN] : {
-            values : [true, false],
-            typeOptional : true,
-        },
-        [ObjectType.PRIMITIVE_TYPE.STRING] : {
-            values : ['abc', ''],
-            typeOptional : true,
-        },
-        [ObjectType.PRIMITIVE_TYPE.DATE] : {
-            values : [new Date(), new Date('1995-12-17'), new Date(0)],
-            typeOptional : true,
-            comparator : dateComparator,
-        }
-    };
-
-    const arrayValues = {
-        [ObjectType.PRIMITIVE_TYPE.BYTE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.BYTE },
-        [ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.SHORT },
-        [ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.INTEGER },
-        [ObjectType.PRIMITIVE_TYPE.LONG_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.LONG },
-        [ObjectType.PRIMITIVE_TYPE.FLOAT_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.FLOAT },
-        [ObjectType.PRIMITIVE_TYPE.DOUBLE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DOUBLE, typeOptional : true },
-        [ObjectType.PRIMITIVE_TYPE.CHAR_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.CHAR },
-        [ObjectType.PRIMITIVE_TYPE.BOOLEAN_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.BOOLEAN, typeOptional : true },
-        [ObjectType.PRIMITIVE_TYPE.STRING_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.STRING, typeOptional : true },
-        [ObjectType.PRIMITIVE_TYPE.DATE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DATE, typeOptional : true }
-    };
-
     async function testSuiteCleanup(done) {
         await TestingHelper.destroyCache(CACHE_NAME, done);
     }
@@ -461,7 +332,7 @@ describe('complex object test suite >', () => {
         try {
             await cache.put(key, value);
             const result = await cache.get(key);
-            expect(await compare(valuePattern, result)).toBe(true,
+            expect(await TestingHelper.compare(valuePattern, result)).toBe(true,
                 `values are not equal: put value=${JSON.stringify(valuePattern)}, get value=${JSON.stringify(result)}`);
         }
         finally {
@@ -470,20 +341,20 @@ describe('complex object test suite >', () => {
     }
 
     async function binaryObjectEquals(binaryObj, valuePattern, valueType) {
-        expect(await compare(valuePattern, binaryObj)).toBe(true,
+        expect(await TestingHelper.compare(valuePattern, binaryObj)).toBe(true,
             `binary values are not equal: put value=${JSON.stringify(valuePattern)}, get value=${JSON.stringify(binaryObj)}`);
 
         let value1, value2;
         for (let key of Object.keys(valuePattern)) {
             value1 = valuePattern[key];
             value2 = await binaryObj.getField(key, valueType ? valueType._getFieldType(key) : null);
-            expect(await compare(value1, value2)).toBe(true,
+            expect(await TestingHelper.compare(value1, value2)).toBe(true,
                 `values for key ${key} are not equal: put value=${value1}, get value=${value2}`);
         }
 
         if (valueType) {
             const toObject = await binaryObj.toObject(valueType);
-            expect(await compare(valuePattern, toObject)).toBe(true,
+            expect(await TestingHelper.compare(valuePattern, toObject)).toBe(true,
                 `values are not equal: put value=${JSON.stringify(valuePattern)}, get value=${JSON.stringify(toObject)}`);
         }
     }
@@ -570,23 +441,20 @@ describe('complex object test suite >', () => {
     }
 
     function getPrimitiveValue(typeCode) {
-        return primitiveValues[typeCode].values[0];
+        return TestingHelper.primitiveValues[typeCode].values[0];
     }
 
     function getArrayValues(typeCode) {
-        return primitiveValues[arrayValues[typeCode].elemType].values;
+        return TestingHelper.primitiveValues[TestingHelper.arrayValues[typeCode].elemType].values;
     }
 
     function getMapValue(typeCode) {
         const map = new Map();
-        const values = primitiveValues[typeCode].values;
+        const values = TestingHelper.primitiveValues[typeCode].values;
         const length = values.length;
         values.forEach((value, index) => {
-            if (typeCode === ObjectType.PRIMITIVE_TYPE.FLOAT || typeCode === ObjectType.PRIMITIVE_TYPE.DOUBLE) {
-                value = Math.trunc(value);
-            }
-            else if (typeCode === ObjectType.PRIMITIVE_TYPE.DATE) {
-                value = value ? value.getTime() : value;
+            if (!TestingHelper.primitiveValues[typeCode].isMapKey) {
+                value = Util.format("%s", value);
             }
             map.set(value, values[length - index - 1]);
         });
