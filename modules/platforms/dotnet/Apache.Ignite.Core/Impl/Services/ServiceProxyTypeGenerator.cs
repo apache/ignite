@@ -98,7 +98,7 @@ namespace Apache.Ignite.Core.Impl.Services
             var domain = Expression.Constant(AppDomain.CurrentDomain);
 
             var callExpr = AppDomainDefineAssembly != null
-                ? Expression.Call(AppDomainDefineAssembly, domain, asmName, access)
+                ? Expression.Call(domain, AppDomainDefineAssembly, asmName, access)
                 : Expression.Call(AssemblyBuilderDefineAssembly, asmName, access);
 
             var callExprLambda = Expression.Lambda<Func<AssemblyBuilder>>(callExpr);
