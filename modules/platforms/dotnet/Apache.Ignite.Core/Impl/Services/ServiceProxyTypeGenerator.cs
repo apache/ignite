@@ -97,6 +97,10 @@ namespace Apache.Ignite.Core.Impl.Services
             var access = Expression.Constant(AssemblyBuilderAccess.RunAndCollect);
             var domain = Expression.Constant(AppDomain.CurrentDomain);
 
+            // AppDomain.DefineDynamicAssembly is not available on .NET Core;
+            // AssemblyBuilder.DefineDynamicAssembly is not available on .NET 4.
+            // Both of them can not be called with Reflection.
+            // So we have to be creative and use expression trees.
             var callExpr = AppDomainDefineAssembly != null
                 ? Expression.Call(domain, AppDomainDefineAssembly, asmName, access)
                 : Expression.Call(AssemblyBuilderDefineAssembly, asmName, access);
