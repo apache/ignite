@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
     using System.Diagnostics;
+    using System.Linq.Expressions;
     using System.Reflection;
     using System.Reflection.Emit;
     using ProxyAction = System.Func<System.Reflection.MethodBase, object[], object>;
@@ -92,13 +93,17 @@ namespace Apache.Ignite.Core.Impl.Services
         {
             var name = Guid.NewGuid().ToString("N");
 
-            object[] parameters = {new AssemblyName(name), AssemblyBuilderAccess.RunAndCollect};
+            var asmName = Expression.Constant(new AssemblyName(name));
+            var access = Expression.Constant(AssemblyBuilderAccess.RunAndCollect);
+            var domain = Expression.Constant(AppDomain.CurrentDomain);
 
-            var assemblyBuilderObj = AppDomainDefineAssembly != null
-                ? AppDomainDefineAssembly.Invoke(AppDomain.CurrentDomain, parameters)
-                : AssemblyBuilderDefineAssembly.Invoke(null, parameters);
+            var callExpr = AppDomainDefineAssembly != null
+                ? Expression.Call(AppDomainDefineAssembly, domain, asmName, access)
+                : Expression.Call(AssemblyBuilderDefineAssembly, asmName, access);
 
-            var assemblyBuilder = (AssemblyBuilder) assemblyBuilderObj;
+            var callExprLambda = Expression.Lambda<Func<AssemblyBuilder>>(callExpr);
+
+            var assemblyBuilder = callExprLambda.Compile()();
 
             return assemblyBuilder.DefineDynamicModule(name);
         }
