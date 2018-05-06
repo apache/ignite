@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -29,6 +30,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueAdapter;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
+import org.apache.ignite.internal.processors.datastructures.IgniteCacheSetImpl;
+import org.apache.ignite.internal.processors.datastructures.IgniteCacheSetProxy;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -140,24 +143,19 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
      * @return Cache context.
      */
     protected static GridCacheContext cctx(IgniteSet set) {
-        if (set instanceof GridCacheSetProxy)
-            return GridTestUtils.getFieldValue(set, GridCacheSetProxy.class, "cctx");
-        else
-            return GridTestUtils.getFieldValue(set, GridCacheSetImpl.class, "ctx");
+        try {
+            return GridTestUtils.getFieldValue(set, "cctx");
+        }
+        catch (IgniteException e) {
+            return GridTestUtils.getFieldValue(set, "ctx");
+        }
     }
 
     /**
      * @param set Ignite set.
-     * @return {@code True} if this instance of IgniteSet is using shared cache.
+     * @return {@code True} if this instance of IgniteSet is compatible with previous (Ignite 2.5) version.
      */
-    protected static boolean shared(IgniteSet set) {
-        GridCacheSetImpl impl;
-
-        if (set instanceof GridCacheSetProxy)
-            impl = GridTestUtils.getFieldValue(set, GridCacheSetProxy.class, "delegate");
-        else
-            impl = (GridCacheSetImpl)set;
-
-        return GridTestUtils.getFieldValue(impl, GridCacheSetImpl.class, "sharedCacheMode");
+    protected static boolean legacy(IgniteSet set) {
+        return (set instanceof GridCacheSetProxy || set instanceof GridCacheSetImpl);
     }
 }

@@ -28,22 +28,23 @@ import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Cache set proxy.
- *
- * @deprecated Replaced by {@link IgniteCacheSetProxy}.
  */
-@Deprecated
-public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
+public class IgniteCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +57,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         };
 
     /** Delegate set. */
-    private GridCacheSetImpl<T> delegate;
+    private IgniteCacheSetImpl<T> delegate;
 
     /** Cache context. */
     private GridCacheContext cctx;
@@ -73,7 +74,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     /**
      * Required by {@link Externalizable}.
      */
-    public GridCacheSetProxy() {
+    public IgniteCacheSetProxy() {
         // No-op.
     }
 
@@ -81,7 +82,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
      * @param cctx Cache context.
      * @param delegate Delegate set.
      */
-    public GridCacheSetProxy(GridCacheContext cctx, GridCacheSetImpl<T> delegate) {
+    public IgniteCacheSetProxy(GridCacheContext cctx, IgniteCacheSetImpl<T> delegate) {
         this.cctx = cctx;
         this.delegate = delegate;
 
@@ -93,7 +94,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     /**
      * @return Set delegate.
      */
-    public GridCacheSetImpl delegate() {
+    public IgniteCacheSetImpl delegate() {
         return delegate;
     }
 
@@ -355,14 +356,28 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void close() {
+        IgniteFuture<Boolean> destroyFut = null;
+
         gate.enter();
 
         try {
             delegate.close();
+
+            if (!delegate.collocated()) {
+                IgniteInternalFuture<Boolean> fut = cctx.kernalContext().cache().dynamicDestroyCache(
+                    cctx.cache().name(), false, true, false);
+
+                ((GridFutureAdapter)fut).ignoreInterrupts();
+
+                destroyFut = new IgniteFutureImpl<>(fut);
+            }
         }
         finally {
             gate.leave();
         }
+
+        if (destroyFut != null)
+            destroyFut.get();
     }
 
     /** {@inheritDoc} */
