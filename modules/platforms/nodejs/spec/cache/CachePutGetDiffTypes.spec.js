@@ -23,6 +23,7 @@ const TestingHelper = require('../TestingHelper');
 const IgniteClient = require('apache-ignite-client');
 const ObjectType = IgniteClient.ObjectType;
 const MapObjectType = IgniteClient.MapObjectType;
+const CollectionObjectType = IgniteClient.CollectionObjectType;
 const EnumItem = IgniteClient.EnumItem;
 const Timestamp = IgniteClient.Timestamp;
 const Decimal = IgniteClient.Decimal;
@@ -193,6 +194,69 @@ describe('cache put get test suite >', () => {
             catch(error => done.fail(error));
     });
 
+    it('put get sets of different key/value types', (done) => {
+        Promise.resolve().
+            then(async () => {
+                for (let type of Object.keys(primitiveValues)) {
+                    type = parseInt(type);
+                    const typeInfo = primitiveValues[type];
+                    const set = new Set();
+                    for (let value of typeInfo.values) {
+                        set.add(value);
+                    }
+                    await putGetSets(
+                        new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.USER_SET, type),
+                            set, typeInfo.comparator);
+                    await putGetSets(
+                        new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.HASH_SET, type),
+                            set, typeInfo.comparator);
+                    await putGetSets(
+                        new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.LINKED_HASH_SET, type),
+                            set, typeInfo.comparator);
+                    if (typeInfo.typeOptional) {
+                        await putGetSets(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.LINKED_HASH_SET),
+                            set, typeInfo.comparator);
+                        await putGetSets(null, set, typeInfo.comparator);
+                    }
+                }
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
+    it('put get lists of different key/value types', (done) => {
+        Promise.resolve().
+            then(async () => {
+                for (let type of Object.keys(primitiveValues)) {
+                    type = parseInt(type);
+                    const typeInfo = primitiveValues[type];
+                    const list = new Array();
+                    for (let value of typeInfo.values) {
+                        list.push(value);
+                    }
+                    await putGetLists(
+                        new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.USER_COL, type),
+                            list, typeInfo.comparator);
+                    await putGetLists(
+                        new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.ARRAY_LIST, type),
+                            list, typeInfo.comparator);
+                    await putGetLists(
+                        new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.LINKED_LIST, type),
+                            list, typeInfo.comparator);
+                    if (typeInfo.typeOptional) {
+                        await putGetLists(new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.ARRAY_LIST),
+                            list, typeInfo.comparator);
+                    }
+                    // const singletonList = [typeInfo.values[0]];
+                    // await putGetLists(
+                    //     new CollectionObjectType(CollectionObjectType.COLLECTION_SUBTYPE.SINGLETON_LIST, type),
+                    //         singletonList, typeInfo.comparator);
+                }
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
     const dateComparator = (date1, date2) => { return !date1 && !date2 || date1.value === date2.value; };
     const floatComparator = (date1, date2) => { return Math.abs(date1 - date2) < 0.00001; };
     const defaultComparator = (value1, value2) => { return value1 === value2; };
@@ -280,7 +344,7 @@ describe('cache put get test suite >', () => {
             modificator : UUIDValueModificator
         },
         [ObjectType.PRIMITIVE_TYPE.DATE] : {
-            values : [new Date(), new Date('1995-12-17'), new Date(0)],
+            values : [new Date(), new Date('1995-12-17T03:24:00'), new Date(0)],
             typeOptional : true,
             comparator : dateComparator,
             modificator : dateValueModificator
@@ -298,13 +362,13 @@ describe('cache put get test suite >', () => {
             modificator : decimalValueModificator
         },
         [ObjectType.PRIMITIVE_TYPE.TIMESTAMP] : {
-            values : [new Timestamp(new Date().getTime(), 12345), new Timestamp(new Date('1995-12-17').getTime(), 543), new Timestamp(0, 0)],
+            values : [new Timestamp(new Date().getTime(), 12345), new Timestamp(new Date('1995-12-17T03:24:00').getTime(), 543), new Timestamp(0, 0)],
             typeOptional : true,
             comparator : timestampComparator,
             modificator : timestampValueModificator
         },
         [ObjectType.PRIMITIVE_TYPE.TIME] : {
-            values : [new Date(), new Date('1995-12-17'), new Date(0)],
+            values : [new Date(), new Date('1995-12-17T03:24:00'), new Date(0)],
             comparator : dateComparator,
             modificator : dateValueModificator
         }
@@ -398,6 +462,56 @@ describe('cache put get test suite >', () => {
                     `Maps are not equal: valueType=${mapType._valueType}, put value=${value}, get value=${result}`);
             }
         });
+    }
+
+    async function putGetSets(setType, value, comparator = null) {
+        const key = new Date();
+        const cache = await igniteClient.getCache(CACHE_NAME).
+            setValueType(setType);
+        await cache.put(key, value);
+        let result = await cache.get(key);
+        if (!comparator) {
+            comparator = defaultComparator;
+        }
+        expect(result instanceof Set).toBe(true,
+            `result is not Set: setType=${setType}, result=${result}`);
+        expect(result.size).toBe(value.size,
+            `unexpected Set size: setType=${setType}, put value=${[...value]}, get value=${[...result]}`);
+        const valueArr = [...value];
+        const resultArr = [...result];
+        if (!setType || setType._subType !== CollectionObjectType.COLLECTION_SUBTYPE.LINKED_HASH_SET) {
+            valueArr.sort();
+            resultArr.sort();
+        }
+        if (resultArr.length === valueArr.length) {
+            for (let i = 0; i < valueArr.length; i++) {
+                expect(comparator(valueArr[i], resultArr[i])).toBe(true,
+                    `Sets are not equal: valueType=${setType ? setType._elementType : 
+                        null}, put value=${valueArr}, get value=${resultArr}`);
+            }
+        }
+    }
+
+    async function putGetLists(listType, value, comparator = null) {
+        const key = new Date();
+        const cache = await igniteClient.getCache(CACHE_NAME).
+            setValueType(listType);
+        await cache.put(key, value);
+        let result = await cache.get(key);
+        if (!comparator) {
+            comparator = defaultComparator;
+        }
+        expect(result instanceof Array).toBe(true,
+            `result is not Array: listType=${listType}, result=${result}`);
+        expect(result.length).toBe(value.length,
+            `unexpected List length: listType=${listType}, put value=${value}, get value=${result}`);
+        if (result.length === value.length) {
+            for (let i = 0; i < value.length; i++) {
+                expect(comparator(value[i], result[i])).toBe(true,
+                    `Lists are not equal: valueType=${listType ? listType._elementType : 
+                        null}, put value=${value}, get value=${result}`);
+            }
+        }
     }
 
     async function testSuiteCleanup(done) {

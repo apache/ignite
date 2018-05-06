@@ -19,6 +19,7 @@
 
 const Decimal = require('decimal.js');
 const BinaryObject = require('../BinaryObject');
+const CollectionObjectType = require('../ObjectType').CollectionObjectType;
 const Errors = require('../Errors');
 const Timestamp = require('../Timestamp');
 const EnumItem = require('../EnumItem');
@@ -158,7 +159,7 @@ class BinaryReader {
     static async _readCollection(buffer, expectedColType) {
         const size = buffer.readInteger();
         const subType = buffer.readByte();
-        const isSet = expectedColType && expectedColType._isSet();
+        const isSet = CollectionObjectType._isSet(subType);
         const result = isSet ? new Set() : new Array(size);
         let element;
         for (let i = 0; i < size; i++) {

@@ -318,10 +318,17 @@ class CollectionObjectType extends CompositeType {
     /**
      * @ignore
      */
+    static _isSet(subType) {
+        return subType === CollectionObjectType.COLLECTION_SUBTYPE.USER_SET ||
+            subType === CollectionObjectType.COLLECTION_SUBTYPE.HASH_SET ||
+            subType === CollectionObjectType.COLLECTION_SUBTYPE.LINKED_HASH_SET;
+    }
+
+    /**
+     * @ignore
+     */
     _isSet() {
-        return this._subType === CollectionObjectType.COLLECTION_SUBTYPE.USER_SET ||
-            this._subType === CollectionObjectType.COLLECTION_SUBTYPE.HASH_SET ||
-            this._subType === CollectionObjectType.COLLECTION_SUBTYPE.LINKED_HASH_SET;
+        return CollectionObjectType._isSet(this._subType);
     }
 }
 
