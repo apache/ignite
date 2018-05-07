@@ -29,18 +29,30 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+/**
+ * Class to test correctness of fully-connectet component searching algorithm.
+ */
 @RunWith(Parameterized.class)
 public class FullyConnectedComponentSearcherTest {
 
+    /** Adjacency matrix provider for each test. */
     private AdjacencyMatrixProvider provider;
 
+    /** Minimul acceptable result of size of fully-connected component for each test. */
     private int minAcceptableResult;
 
+    /**
+     * @param provider Adjacency matrix.
+     * @param minAcceptableResult Expected result.
+     */
     public FullyConnectedComponentSearcherTest(AdjacencyMatrixProvider provider, int minAcceptableResult) {
         this.provider = provider;
         this.minAcceptableResult = minAcceptableResult;
     }
 
+    /**
+     *
+     */
     @Test
     public void testFind() {
         BitSet[] matrix = provider.provide();
@@ -60,9 +72,37 @@ public class FullyConnectedComponentSearcherTest {
             size >= minAcceptableResult);
     }
 
+    /**
+     * @return Test dataset.
+     */
     @Parameterized.Parameters(name = "{index}: search({0}) >= {1}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
+            {new StaticMatrix(new String[] {
+                "100",
+                "010",
+                "001",
+            }), 1},
+            {new StaticMatrix(new String[] {
+                "101",
+                "010",
+                "101",
+            }), 2},
+            {new StaticMatrix(new String[] {
+                "1101",
+                "1111",
+                "0110",
+                "1101",
+            }), 3},
+            {new StaticMatrix(new String[] {
+                "1111001",
+                "1111000",
+                "1111000",
+                "1111000",
+                "0000111",
+                "0000111",
+                "1000111",
+            }), 4},
             {new AlmostSplittedMatrix(30, 100, 200), 200},
             {new AlmostSplittedMatrix(500, 1000, 2000), 2000},
             {new AlmostSplittedMatrix(1000, 2000, 3000), 3000},
@@ -75,10 +115,20 @@ public class FullyConnectedComponentSearcherTest {
         });
     }
 
+    /**
+     * Provider for adjacency matrix for each test.
+     */
     interface AdjacencyMatrixProvider {
+        /**
+         * @return Adjacency matrix.
+         */
         BitSet[] provide();
     }
 
+    /**
+     * Static graph represented as array of strings. Each cell (i, j) in such matrix means that there is connection
+     * between node(i) and node(j). Needed mostly to test bruteforce algorithm implementation.
+     */
     static class StaticMatrix implements AdjacencyMatrixProvider {
 
         private final BitSet[] matrix;
@@ -98,11 +148,24 @@ public class FullyConnectedComponentSearcherTest {
                     matrix[i].set(j, stringMatrix[i].charAt(j) == '1');
         }
 
+        /** {@inheritDoc */
         @Override public BitSet[] provide() {
             return matrix;
         }
+
+        /** {@inheritDoc */
+        @Override public String toString() {
+            return "StaticMatrix{" +
+                "matrix=" + Arrays.toString(matrix) +
+                '}';
+        }
     }
 
+    /**
+     * A graph splitted on several isolated fully-connected components,
+     * but each of such component have some connections to another to reach graph connectivity.
+     * Answer is this case should be the size max(Pi), where Pi size of each fully-connected component.
+     */
     static class AlmostSplittedMatrix implements AdjacencyMatrixProvider {
 
         private final int[] partSizes;
@@ -150,10 +213,12 @@ public class FullyConnectedComponentSearcherTest {
             }
         }
 
+        /** {@inheritDoc */
         @Override public BitSet[] provide() {
             return matrix;
         }
 
+        /** {@inheritDoc */
         @Override
         public String toString() {
             return "AlmostSplittedGraph{" +
@@ -163,6 +228,11 @@ public class FullyConnectedComponentSearcherTest {
         }
     }
 
+    /**
+     * Complete graph with several connections lost choosen randomly.
+     * In worst case each lost connection decreases potential size of maximal fully-connected component.
+     * So answer in this test case should be at least N - L, where N - nodes, L - lost connections.
+     */
     static class SeveralConnectionsAreLostMatrix implements AdjacencyMatrixProvider {
 
         private final int nodes;
@@ -195,12 +265,13 @@ public class FullyConnectedComponentSearcherTest {
             }
         }
 
+        /** {@inheritDoc */
         @Override public BitSet[] provide() {
             return matrix;
         }
 
-        @Override
-        public String toString() {
+        /** {@inheritDoc */
+        @Override public String toString() {
             return "SeveralConnectionsAreLost{" +
                 "nodes=" + nodes +
                 ", lostConnections=" + lostConnections +
@@ -208,19 +279,32 @@ public class FullyConnectedComponentSearcherTest {
         }
     }
 
-    private static void fillAll(BitSet[] matrix, int fromIdx, int endIdx) {
-        for (int i = fromIdx; i < endIdx; i++)
-            for (int j = fromIdx; j < endIdx; j++) {
-                matrix[i].set(j);
-                matrix[j].set(i);
-            }
-    }
-
+    /**
+     * Utility method to pre-create adjacency matrix.
+     *
+     * @param nodes Nodes in graph.
+     * @return Adjacency matrix.
+     */
     private static BitSet[] init(int nodes) {
         BitSet[] matrix = new BitSet[nodes];
         for (int i = 0; i < nodes; i++)
             matrix[i] = new BitSet(nodes);
 
         return matrix;
+    }
+
+    /**
+     * Utility method to fill all connections between all nodes from {@code fromIdx} and {@code endIdx} exclusive.
+     *
+     * @param matrix Adjacency matrix.
+     * @param fromIdx Lower bound node index inclusive.
+     * @param endIdx Upper bound node index exclusive.
+     */
+    private static void fillAll(BitSet[] matrix, int fromIdx, int endIdx) {
+        for (int i = fromIdx; i < endIdx; i++)
+            for (int j = fromIdx; j < endIdx; j++) {
+                matrix[i].set(j);
+                matrix[j].set(i);
+            }
     }
 }

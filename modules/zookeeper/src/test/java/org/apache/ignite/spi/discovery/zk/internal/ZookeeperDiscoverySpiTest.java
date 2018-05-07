@@ -347,7 +347,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             cfg.setCommunicationSpi(new ZkTestCommunicationSpi());
 
         if (failCommSpi)
-            cfg.setCommunicationSpi(new PeerToPeerCommunicationFailureDiscoverySpi());
+            cfg.setCommunicationSpi(new PeerToPeerCommunicationFailureSpi());
 
         if (commFailureRslvr != null)
             cfg.setCommunicationFailureResolver(commFailureRslvr.apply());
@@ -3572,7 +3572,14 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         reconnectServersRestart(3);
     }
 
-
+    /**
+     * A simple split-brain test, where cluster spliited on 2 parts of server nodes (2 and 3).
+     * There is also client which sees both parts of splitted cluster.
+     *
+     * Result cluster should be: 3 server nodes + 1 client.
+     *
+     * @throws Exception If failed.
+     */
     public void testSimpleSplitBrain() throws Exception {
         failCommSpi = true;
 
@@ -3580,25 +3587,21 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         client = true;
 
-        Ignite clientIg = startGridsMultiThreaded(5, 3);
+        startGridsMultiThreaded(5, 3);
 
-        List<Ignite> all = G.allGrids();
+        List<ClusterNode> all = G.allGrids().stream()
+            .map(g -> g.cluster().localNode())
+            .collect(Collectors.toList());;
 
-        List<ClusterNode> part1 = all.subList(0, 3).stream()
-            .map(i -> i.cluster().localNode())
-            .collect(Collectors.toList());
+        List<ClusterNode> part1 = all.subList(0, 3);
+        List<ClusterNode> part2 = all.subList(3, all.size());
 
-        List<ClusterNode> part2 = all.subList(3, all.size()).stream()
-            .map(i -> i.cluster().localNode())
-            .collect(Collectors.toList());
+        ConnectionsFailureMatrix matrix = ConnectionsFailureMatrix.buildFrom(part1, part2);
 
-        FailureMatrix matrix = FailureMatrix.buildFrom(part1, part2);
-
-        ClusterNode lastClient = clientIg.cluster().localNode();
+        ClusterNode lastClient = startGrid(8).cluster().localNode();
 
         // Make last client connected to other nodes.
-        for (Ignite ig : all) {
-            ClusterNode node = ig.cluster().localNode();
+        for (ClusterNode node : all) {
             if (node.id().equals(lastClient.id()))
                 continue;
 
@@ -3606,62 +3609,200 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             matrix.addConnection(node, lastClient);
         }
 
-        PeerToPeerCommunicationFailureDiscoverySpi.fail(matrix);
-
-        Thread.sleep(5000L);
+        PeerToPeerCommunicationFailureSpi.fail(matrix);
 
         waitForTopology(4);
-
-        Thread.sleep(5000L);
     }
 
-    static class FailureMatrix {
+    /**
+     * A simple not actual split-brain test, where some connections between server nodes are lost.
+     * Server nodes: 5.
+     * Client nodes: 5.
+     * Lost connections between server nodes: 2.
+     *
+     * Result cluster should be: 3 server nodes + 5 clients.
+     *
+     * @throws Exception If failed.
+     */
+    public void testNotActualSplitBrain() throws Exception {
+        failCommSpi = true;
 
+        startGridsMultiThreaded(5);
+
+        List<ClusterNode> srvNodes = G.allGrids().stream()
+            .map(g -> g.cluster().localNode())
+            .collect(Collectors.toList());
+
+        client = true;
+
+        startGridsMultiThreaded(5, 3);
+
+        ConnectionsFailureMatrix matrix = new ConnectionsFailureMatrix();
+
+        matrix.addAll(G.allGrids().stream().map(g -> g.cluster().localNode()).collect(Collectors.toList()));
+
+        // Remove 2 connections between server nodes.
+        matrix.removeConnection(srvNodes.get(0), srvNodes.get(1));
+        matrix.removeConnection(srvNodes.get(1), srvNodes.get(0));
+        matrix.removeConnection(srvNodes.get(2), srvNodes.get(3));
+        matrix.removeConnection(srvNodes.get(3), srvNodes.get(2));
+
+        PeerToPeerCommunicationFailureSpi.fail(matrix);
+
+        waitForTopology(8);
+    }
+
+    /**
+     * Almost split-brain test, server nodes splitted on 2 parts and there are some connections between these 2 parts.
+     * Server nodes: 5.
+     * Client nodes: 5.
+     * Splitted on: 3 servers + 2 clients and 3 servers + 3 clients.
+     * Extra connections between server nodes: 3.
+     *
+     * Result cluster should be: 3 server nodes + 3 clients.
+     *
+     * @throws Exception If failed.
+     */
+    public void testAlmostSplitBrain() throws Exception {
+        failCommSpi = true;
+
+        startGridsMultiThreaded(6);
+
+        List<ClusterNode> srvNodes = G.allGrids().stream()
+            .map(g -> g.cluster().localNode())
+            .collect(Collectors.toList());
+
+        List<ClusterNode> srvPart1 = srvNodes.subList(0, 3);
+        List<ClusterNode> srvPart2 = srvNodes.subList(3, srvNodes.size());
+
+        client = true;
+
+        startGridsMultiThreaded(6, 5);
+
+        List<ClusterNode> clientNodes = G.allGrids().stream()
+            .map(g -> g.cluster().localNode())
+            .filter(ClusterNode::isClient)
+            .collect(Collectors.toList());
+
+        List<ClusterNode> clientPart1 = clientNodes.subList(0, 2);
+        List<ClusterNode> clientPart2 = clientNodes.subList(2, clientNodes.size());
+
+        List<ClusterNode> splittedPart1 = new ArrayList<>();
+        splittedPart1.addAll(srvPart1);
+        splittedPart1.addAll(clientPart1);
+
+        List<ClusterNode> splittedPart2 = new ArrayList<>();
+        splittedPart2.addAll(srvPart2);
+        splittedPart2.addAll(clientPart2);
+
+        ConnectionsFailureMatrix matrix = new ConnectionsFailureMatrix();
+
+        matrix.addAll(splittedPart1);
+        matrix.addAll(splittedPart2);
+
+        matrix.addConnection(srvPart1.get(0), srvPart2.get(1));
+        matrix.addConnection(srvPart2.get(1), srvPart1.get(0));
+
+        matrix.addConnection(srvPart1.get(1), srvPart2.get(2));
+        matrix.addConnection(srvPart2.get(2), srvPart1.get(1));
+
+        matrix.addConnection(srvPart1.get(2), srvPart2.get(0));
+        matrix.addConnection(srvPart2.get(0), srvPart1.get(2));
+
+        PeerToPeerCommunicationFailureSpi.fail(matrix);
+
+        waitForTopology(6);
+    }
+
+    /**
+     * Class represents available connections between cluster nodes.
+     * This is needed to simulate network problems in {@link PeerToPeerCommunicationFailureSpi}.
+     */
+    static class ConnectionsFailureMatrix {
+        /** Available connections per each node id. */
         private Map<UUID, Set<UUID>> availableConnections = new HashMap<>();
 
+        /**
+         * @param from Cluster node 1.
+         * @param to Cluster node 2.
+         * @return {@code True} if there is connection between nodes {@code from} and {@code to}.
+         */
         public boolean hasConnection(ClusterNode from, ClusterNode to) {
             return availableConnections.getOrDefault(from.id(), Collections.emptySet()).contains(to.id());
         }
 
-        public boolean hasConnection(UUID from, UUID to) {
-            return availableConnections.getOrDefault(from, Collections.emptySet()).contains(to);
-        }
-
+        /**
+         * Adds connection between nodes {@code from} and {@code to}.
+         * @param from Cluster node 1.
+         * @param to Cluster node 2.
+         */
         public void addConnection(ClusterNode from, ClusterNode to) {
             availableConnections.computeIfAbsent(from.id(), s -> new HashSet<>()).add(to.id());
         }
 
-        private static void populate(FailureMatrix matrix, List<ClusterNode> connSet) {
-            for (int i = 0; i < connSet.size(); i++) {
-                for (int j = 0; j < connSet.size(); j++) {
+        /**
+         * Removes connection between nodes {@code from} and {@code to}.
+         * @param from Cluster node 1.
+         * @param to Cluster node 2.
+         */
+        public void removeConnection(ClusterNode from, ClusterNode to) {
+            availableConnections.getOrDefault(from.id(), Collections.emptySet()).remove(to.id());
+        }
+
+        /**
+         * Adds connections between all nodes presented in given {@code nodeSet}.
+         *
+         * @param nodeSet Set of the cluster nodes.
+         */
+        public void addAll(List<ClusterNode> nodeSet) {
+            for (int i = 0; i < nodeSet.size(); i++) {
+                for (int j = 0; j < nodeSet.size(); j++) {
                     if (i == j)
                         continue;
 
-                    matrix.addConnection(connSet.get(i), connSet.get(j));
+                    addConnection(nodeSet.get(i), nodeSet.get(j));
                 }
             }
         }
 
-        static FailureMatrix buildFrom(List<ClusterNode> part1, List<ClusterNode> part2) {
-            FailureMatrix matrix = new FailureMatrix();
-            populate(matrix, part1);
-            populate(matrix, part2);
+        /**
+         * Builds connections failure matrix from two part of the cluster nodes.
+         * Each part has all connections inside, but hasn't any connection to another part.
+         *
+         * @param part1 Part 1.
+         * @param part2 Part 2.
+         * @return Connections failure matrix.
+         */
+        static ConnectionsFailureMatrix buildFrom(List<ClusterNode> part1, List<ClusterNode> part2) {
+            ConnectionsFailureMatrix matrix = new ConnectionsFailureMatrix();
+            matrix.addAll(part1);
+            matrix.addAll(part2);
             return matrix;
         }
     }
 
-    static class PeerToPeerCommunicationFailureDiscoverySpi extends TcpCommunicationSpi {
+    /**
+     * Communication SPI with possibility to simulate network problems between some of the cluster nodes.
+     */
+    static class PeerToPeerCommunicationFailureSpi extends TcpCommunicationSpi {
+        /** Flag indicates that connections according to {@code matrix} should be failed. */
         private static volatile boolean failure;
 
-        private static FailureMatrix matrix;
+        /** Connections failure matrix. */
+        private static ConnectionsFailureMatrix matrix;
 
-        public static void fail(FailureMatrix with) {
+        /**
+         * Start failing connections according to given matrix {@code with}.
+         * @param with Failure matrix.
+         */
+        public static void fail(ConnectionsFailureMatrix with) {
             matrix = with;
             failure = true;
         }
 
-        @Override
-        public IgniteFuture<BitSet> checkConnection(List<ClusterNode> nodes) {
+        /** {@inheritDoc} */
+        @Override public IgniteFuture<BitSet> checkConnection(List<ClusterNode> nodes) {
+            // Creates connections statuses according to failure matrix.
             BitSet bitSet = new BitSet();
 
             ClusterNode localNode = getLocalNode();
@@ -3669,9 +3810,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             int idx = 0;
 
             for (ClusterNode remoteNode : nodes) {
-                if (localNode.id().equals(remoteNode.id())) {
+                if (localNode.id().equals(remoteNode.id()))
                     bitSet.set(idx);
-                }
                 else {
                     if (matrix.hasConnection(localNode, remoteNode))
                         bitSet.set(idx);
@@ -3682,19 +3822,25 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             return new IgniteFinishedFutureImpl<>(bitSet);
         }
 
+        /** {@inheritDoc} */
         @Override protected GridCommunicationClient createTcpClient0(ClusterNode node, int connIdx, Collection<InetSocketAddress> addrs) throws IgniteCheckedException {
-            if (failure && !matrix.hasConnection(getLocalNode(), node)) {
+            if (failure && !matrix.hasConnection(getLocalNode(), node))
                 throw new IgniteCheckedException("Test", new SocketTimeoutException());
-            }
 
             return new FailingCommunicationClient(getLocalNode(), node, super.createTcpClient0(node, connIdx, addrs));
         }
 
+        /**
+         * Communication client with possibility to simulate network error between peers.
+         */
         class FailingCommunicationClient implements GridCommunicationClient {
+            /** Delegate. */
             private final GridCommunicationClient delegate;
 
+            /** Local node which sends messages. */
             private final ClusterNode localNode;
 
+            /** Remote node which receives messages. */
             private final ClusterNode remoteNode;
 
             FailingCommunicationClient(ClusterNode localNode, ClusterNode remoteNode, GridCommunicationClient delegate) {
@@ -3703,76 +3849,77 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 this.remoteNode = remoteNode;
             }
 
-            @Override
-            public void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws IgniteCheckedException {
-                if (failure && !matrix.hasConnection(localNode.id(), remoteNode.id()))
+            /** {@inheritDoc} */
+            @Override public void doHandshake(IgniteInClosure2X<InputStream, OutputStream> handshakeC) throws IgniteCheckedException {
+                if (failure && !matrix.hasConnection(localNode, remoteNode))
                     throw new IgniteCheckedException("Test", new SocketTimeoutException());
 
                 delegate.doHandshake(handshakeC);
             }
 
-            @Override
-            public boolean close() {
+            /** {@inheritDoc} */
+            @Override public boolean close() {
                 return delegate.close();
             }
 
-            @Override
-            public void forceClose() {
+            /** {@inheritDoc} */
+            @Override public void forceClose() {
                 delegate.forceClose();
             }
 
-            @Override
-            public boolean closed() {
+            /** {@inheritDoc} */
+            @Override public boolean closed() {
                 return delegate.closed();
             }
 
-            @Override
-            public boolean reserve() {
+            /** {@inheritDoc} */
+            @Override public boolean reserve() {
                 return delegate.reserve();
             }
 
-            @Override
-            public void release() {
+            /** {@inheritDoc} */
+            @Override public void release() {
                 delegate.release();
             }
 
-            @Override
-            public long getIdleTime() {
+            /** {@inheritDoc} */
+            @Override public long getIdleTime() {
                 return delegate.getIdleTime();
             }
 
-            @Override
-            public void sendMessage(ByteBuffer data) throws IgniteCheckedException {
-                if (failure && !matrix.hasConnection(localNode.id(), remoteNode.id()))
+            /** {@inheritDoc} */
+            @Override public void sendMessage(ByteBuffer data) throws IgniteCheckedException {
+                if (failure && !matrix.hasConnection(localNode, remoteNode))
                     throw new IgniteCheckedException("Test", new SocketTimeoutException());
 
                 delegate.sendMessage(data);
             }
 
-            @Override
-            public void sendMessage(byte[] data, int len) throws IgniteCheckedException {
-                if (failure && !matrix.hasConnection(localNode.id(), remoteNode.id()))
+            /** {@inheritDoc} */
+            @Override public void sendMessage(byte[] data, int len) throws IgniteCheckedException {
+                if (failure && !matrix.hasConnection(localNode, remoteNode))
                     throw new IgniteCheckedException("Test", new SocketTimeoutException());
 
                 delegate.sendMessage(data, len);
             }
 
-            @Override
-            public boolean sendMessage(@Nullable UUID nodeId, Message msg, @Nullable IgniteInClosure<IgniteException> c) throws IgniteCheckedException {
+            /** {@inheritDoc} */
+            @Override public boolean sendMessage(@Nullable UUID nodeId, Message msg, @Nullable IgniteInClosure<IgniteException> c) throws IgniteCheckedException {
                 // This will enforce SPI to create new client.
-                if (failure && !matrix.hasConnection(localNode.id(), remoteNode.id()))
+                if (failure && !matrix.hasConnection(localNode, remoteNode))
                     return true;
 
                 return delegate.sendMessage(nodeId, msg, c);
             }
 
+            /** {@inheritDoc} */
             @Override
             public boolean async() {
                 return delegate.async();
             }
 
-            @Override
-            public int connectionIndex() {
+            /** {@inheritDoc} */
+            @Override public int connectionIndex() {
                 return delegate.connectionIndex();
             }
         }
@@ -4105,6 +4252,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         System.clearProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET);
 
         err = false;
+
+        failCommSpi = false;
 
         evts.clear();
 
