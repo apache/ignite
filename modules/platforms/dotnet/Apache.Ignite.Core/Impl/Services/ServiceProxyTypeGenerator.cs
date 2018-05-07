@@ -19,9 +19,11 @@ namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
     using System.Diagnostics;
+    using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Reflection.Emit;
+    using Apache.Ignite.Core.Impl.Binary;
     using ProxyAction = System.Func<System.Reflection.MethodBase, object[], object>;
 
     /// <summary>
@@ -76,7 +78,10 @@ namespace Apache.Ignite.Core.Impl.Services
             GenerateStaticConstructor(buildContext);
             GenerateConstructor(buildContext);
 
-            buildContext.Methods = ServiceMethodHelper.GetVirtualMethods(buildContext.ServiceType);
+            buildContext.Methods = ReflectionUtils.GetMethods(buildContext.ServiceType)
+                .Where(m => m.IsVirtual)
+                .ToArray();
+
             for (var i = 0; i < buildContext.Methods.Length; i++)
             {
                 GenerateMethod(buildContext, i);
