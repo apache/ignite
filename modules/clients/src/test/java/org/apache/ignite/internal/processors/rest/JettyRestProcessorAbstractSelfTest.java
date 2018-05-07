@@ -985,9 +985,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         if (dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled())
             fail("IGNITE-5874");
 
-        for (DataRegionConfiguration dataRegCfg : dsCfg.getDataRegionConfigurations()) {
-            if (dataRegCfg.isPersistenceEnabled())
-                fail("IGNITE-5874");
+        if (!F.isEmpty(dsCfg.getDataRegionConfigurations())) {
+            for (DataRegionConfiguration dataRegCfg : dsCfg.getDataRegionConfigurations()) {
+                if (dataRegCfg.isPersistenceEnabled())
+                    fail("IGNITE-5874");
+            }
         }
     }
 

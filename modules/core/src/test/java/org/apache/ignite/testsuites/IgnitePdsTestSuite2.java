@@ -22,12 +22,12 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorage
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest2;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedCacheDataTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedStoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPageSizesTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreDataStructuresTest;
+import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeChangeDuringRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAllBaselineNodesOnlineFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOfflineBaselineNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOnlineNodeOutOfBaselineFullApiSelfTest;
@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalS
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteDataIntegrityTests;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.reader.IgniteWalReaderTest;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileDownloaderTest;
 
 /**
  *
@@ -69,6 +70,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteOfflineBaselineNodeFullApiSelfTest.class);
         suite.addTestSuite(IgniteOnlineNodeOutOfBaselineFullApiSelfTest.class);
 
+        suite.addTestSuite(FileDownloaderTest.class);
+
         return suite;
     }
 
@@ -77,7 +80,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
      *
      * @param suite suite to add tests into.
      */
-    public static void addRealPageStoreTestsLongRunning(TestSuite suite) {
+    private static void addRealPageStoreTestsLongRunning(TestSuite suite) {
         suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
 
         suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
@@ -87,6 +90,9 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgnitePdsContinuousRestartTest2.class);
 
         suite.addTestSuite(IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class);
+
+        // Integrity test.
+        suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
     }
 
     /**
@@ -95,8 +101,6 @@ public class IgnitePdsTestSuite2 extends TestSuite {
      * @param suite suite to add tests into.
      */
     public static void addRealPageStoreTests(TestSuite suite) {
-        // Integrity test.
-        suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
         suite.addTestSuite(IgnitePdsPageSizesTest.class);
 
         // Metrics test.
@@ -137,6 +141,6 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgnitePdsCorruptedStoreTest.class);
 
-        suite.addTestSuite(IgnitePdsCorruptedCacheDataTest.class);
+        suite.addTestSuite(LocalWalModeChangeDuringRebalancingSelfTest.class);
     }
 }
