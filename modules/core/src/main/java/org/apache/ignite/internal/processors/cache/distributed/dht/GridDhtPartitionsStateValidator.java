@@ -92,6 +92,12 @@ public class GridDhtPartitionsStateValidator {
             if (node != null && node.version().compareTo(SIZES_VALIDATION_AVAILABLE_SINCE) < 0)
                 ignoringNodes.add(id);
         }
+
+        // Validate cache sizes.
+        result = validatePartitionsSizes(top, messages, ignoringNodes);
+
+        if (!result.isEmpty())
+            throw new IgniteCheckedException("Partitions cache sizes are inconsistent for " + fold(topVer, result));
     }
 
     /**
