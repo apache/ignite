@@ -2579,23 +2579,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private long lastRingMsgTime;
 
-        /** Encapsulates thread body. */
-        private GridWorker worker;
-
         /**
          */
         RingMessageWorker() {
             super("tcp-disco-msg-worker", 10);
 
             initConnectionCheckFrequency();
-
-            WorkersRegistry workerRegistry = ((IgniteEx)spi.ignite()).context().workersRegistry();
-
-            worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
-                @Override protected void body() throws InterruptedException {
-                    workerBody();
-                }
-            };
         }
 
         /**
@@ -2684,9 +2673,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            assert worker != null;
+            WorkersRegistry workerRegistry = ((IgniteEx)spi.ignite()).context().workersRegistry();
 
-            worker.run();
+            new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
+                @Override protected void body() throws InterruptedException {
+                    workerBody();
+                }
+            }.run();
         }
         /**
          * Initializes connection check frequency. Used only when failure detection timeout is enabled.
@@ -5601,9 +5594,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Port to listen. */
         private int port;
 
-        /** Encapsulates thread body. */
-        private GridWorker worker;
-
         /**
          * Constructor.
          *
@@ -5635,14 +5625,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ", locNodeId=" + spi.ignite().configuration().getNodeId() +
                             ']');
                     }
-
-                    WorkersRegistry workerRegistry = ((IgniteEx)spi.ignite()).context().workersRegistry();
-
-                    worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
-                        @Override protected void body() {
-                            workerBody();
-                        }
-                    };
 
                     return;
                 }
@@ -5728,9 +5710,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            assert worker != null;
+            WorkersRegistry workerRegistry = ((IgniteEx)spi.ignite()).context().workersRegistry();
 
-            worker.run();
+            new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
+                @Override protected void body() {
+                    workerBody();
+                }
+            }.run();
         }
 
         /** {@inheritDoc} */

@@ -175,10 +175,16 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
         return "Cache manager received onKernalStop() callback.";
     }
 
-    protected GridWorker makeWorker(String threadName, Runnable r) {
+    /**
+     * Creates {@link GridWorker} object from {@link Runnable} given.
+     *
+     * @param workerName name of the newly created worker.
+     * @param r {@link Runnable} to be used as worker body.
+     */
+    protected GridWorker makeWorker(String workerName, Runnable r) {
         WorkersRegistry workerRegistry = cctx.kernalContext().workersRegistry();
 
-        return new GridWorker(cctx.igniteInstanceName(), threadName, log, workerRegistry) {
+        return new GridWorker(cctx.igniteInstanceName(), workerName, log, workerRegistry) {
             @Override protected void body() {
                 r.run();
             }
