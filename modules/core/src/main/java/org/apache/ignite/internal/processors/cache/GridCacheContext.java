@@ -1080,8 +1080,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Eviction manager.
      */
     public CacheEvictionManager evicts() {
-        ensureCacheNotStopped();
-
         return evictMgr;
     }
 
@@ -1805,6 +1803,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Cache key object.
      */
     public KeyCacheObject toCacheKeyObject(Object obj) {
+        assert validObjectForCache(obj) : obj;
+
         ensureCacheNotStopped();
 
         return cacheObjects().toCacheKeyObject(cacheObjCtx, this, obj, true);

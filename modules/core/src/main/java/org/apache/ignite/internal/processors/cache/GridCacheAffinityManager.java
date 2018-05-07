@@ -147,7 +147,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         GridAffinityAssignmentCache aff0 = aff;
 
         if (aff0 == null)
-            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+            throw new IllegalStateException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
         return aff0.partitions();
     }
@@ -173,7 +173,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         GridAffinityAssignmentCache aff0 = aff;
 
         if (aff0 == null)
-            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+            throw new IllegalStateException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
         if (useKeyPart && (key instanceof KeyCacheObject)) {
             int part = ((KeyCacheObject)key).partition();

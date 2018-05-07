@@ -149,7 +149,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
 
                                 prepareOnTopology(remap, c);
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (IllegalStateException | IgniteCheckedException e) {
                                 onDone(e);
                             }
                             finally {

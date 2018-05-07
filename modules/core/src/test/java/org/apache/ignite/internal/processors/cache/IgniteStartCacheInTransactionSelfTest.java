@@ -275,7 +275,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testPutDestroyCacheGroup() throws Exception {
+    public void testPutHangsOnCacheDestroy() throws Exception {
         final Ignite ignite = grid(0);
 
         grpName = "testGroup";
@@ -302,8 +302,7 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
                     boolean rightErrMsg = false;
 
                     for (Throwable t : X.getThrowableList(e)) {
-                        if (t.getClass() == IgniteCheckedException.class ||
-                            t.getClass() == CacheStoppedException.class ||
+                        if (t.getClass() == CacheStoppedException.class ||
                             t.getClass() == IllegalStateException.class) {
                             String errMsg = t.getMessage().toLowerCase();
 
