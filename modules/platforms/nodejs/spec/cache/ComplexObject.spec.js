@@ -177,7 +177,7 @@ describe('complex object test suite >', () => {
                     valueType1, valueType2, value2);
 
                 await putGetComplexObjects({}, {},
-                    new ComplexObjectType(), new ComplexObjectType(), {});
+                    new ComplexObjectType({}), new ComplexObjectType({}), {});
 
                 let binaryKey = await BinaryObject.fromObject(value1, valueType1);
                 let binaryValue = await BinaryObject.fromObject(value2, valueType2);

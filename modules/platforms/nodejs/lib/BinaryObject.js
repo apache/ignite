@@ -66,8 +66,11 @@ class BinaryObject {
      * @param {string} typeName - name of the complex type to generate the type Id.
      *
      * @return {BinaryObject} - new BinaryObject instance.
+     *
+     * @throws {IgniteClientError} if error.
      */
     constructor(typeName) {
+        ArgumentChecker.notEmpty(typeName, 'typeName');
         this._buffer = null;
         this._fields = new Map();
         this._typeBuilder = BinaryTypeBuilder.fromTypeName(typeName);
@@ -98,9 +101,11 @@ class BinaryObject {
      * @throws {IgniteClientError} if error.
      */
     static async fromObject(jsObject, complexObjectType = null) {
+        ArgumentChecker.notEmpty(jsObject, 'jsObject');
         ArgumentChecker.hasType(complexObjectType, 'complexObjectType', false, ComplexObjectType);
-        const result = new BinaryObject(null);
-        result._typeBuilder = BinaryTypeBuilder.fromObject(jsObject, complexObjectType);
+        const typeBuilder = BinaryTypeBuilder.fromObject(jsObject, complexObjectType);
+        const result = new BinaryObject(typeBuilder.getTypeName());
+        result._typeBuilder = typeBuilder;
         let fieldName;
         for (let field of result._typeBuilder.getFields()) {
             fieldName = field.name;
@@ -135,8 +140,11 @@ class BinaryObject {
      *   - or null (or not specified) that means the type is not specified.
      *
      * @return {BinaryObject} - the same instance of BinaryObject
+     *
+     * @throws {IgniteClientError} if error.
      */
     setField(fieldName, fieldValue, fieldType = null) {
+        ArgumentChecker.notEmpty(fieldName, 'fieldName');
         this._modified = true;
         const field = new BinaryObjectField(fieldName, fieldValue, fieldType);
         this._fields.set(field.id, field);
@@ -151,8 +159,11 @@ class BinaryObject {
      * @param {string} fieldName - name of the field.
      *
      * @return {BinaryObject} - the same instance of BinaryObject
+     *
+     * @throws {IgniteClientError} if error.
      */
     removeField(fieldName) {
+        ArgumentChecker.notEmpty(fieldName, 'fieldName');
         this._modified = true;
         this._fields.delete(BinaryField._calculateId(fieldName));
         this._typeBuilder.removeField(fieldName);
@@ -165,8 +176,11 @@ class BinaryObject {
      * @param {string} fieldName - name of the field.
      *
      * @return {boolean} - true if exists, false otherwise.
+     *
+     * @throws {IgniteClientError} if error.
      */
     hasField(fieldName) {
+        ArgumentChecker.notEmpty(fieldName, 'fieldName');
         return this._fields.has(BinaryField._calculateId(fieldName));
     }
 
@@ -191,6 +205,7 @@ class BinaryObject {
      * @throws {IgniteClientError} if error.
      */
     async getField(fieldName, fieldType = null) {
+        ArgumentChecker.notEmpty(fieldName, 'fieldName');
         const field = this._fields.get(BinaryField._calculateId(fieldName));
         return field ? await field.getValue(fieldType) : undefined;
     }
@@ -267,7 +282,7 @@ class BinaryObject {
      * @ignore
      */
     static async _fromBuffer(buffer) {
-        const result = new BinaryObject(null);
+        const result = new BinaryObject(new ComplexObjectType({})._typeName);
         result._buffer = buffer;
         result._startPos = buffer.position;
         await result._read();

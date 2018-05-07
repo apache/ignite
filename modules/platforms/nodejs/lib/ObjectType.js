@@ -372,6 +372,7 @@ class ComplexObjectType extends CompositeType {
      */
     constructor(jsObject, typeName = null) {
         super(COMPOSITE_TYPE.COMPLEX_OBJECT);
+        ArgumentChecker.notEmpty(jsObject, 'jsObject');
         this._template = jsObject;
         this._objectConstructor = jsObject && jsObject.constructor ?
             jsObject.constructor : Object;
