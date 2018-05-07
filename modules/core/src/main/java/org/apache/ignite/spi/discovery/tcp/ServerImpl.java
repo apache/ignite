@@ -2579,12 +2579,23 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private long lastRingMsgTime;
 
+        /** Encapsulates thread body. */
+        private GridWorker worker;
+
         /**
          */
         RingMessageWorker() {
             super("tcp-disco-msg-worker", 10);
 
             initConnectionCheckFrequency();
+
+            WorkersRegistry workerRegistry = ((IgniteEx)spi.ignite()).context().workersRegistry();
+
+            worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
+                @Override protected void body() throws InterruptedException {
+                    workerBody();
+                }
+            };
         }
 
         /**
@@ -2615,8 +2626,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.debug("Message has been added to queue: " + msg);
         }
 
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException {
+        /** */
+        private void workerBody() throws InterruptedException {
             Throwable err = null;
 
             try {
@@ -2671,6 +2682,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
+        /** {@inheritDoc} */
+        @Override protected void body() {
+            assert worker != null;
+
+            worker.run();
+        }
         /**
          * Initializes connection check frequency. Used only when failure detection timeout is enabled.
          */
