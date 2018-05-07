@@ -46,8 +46,6 @@ import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
-import org.apache.ignite.internal.util.nio.compression.DeflaterFactory;
-import org.apache.ignite.internal.util.nio.compression.ZstdFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -119,7 +117,7 @@ public class IgniteConfiguration {
     public static final long DFLT_METRICS_EXPIRE_TIME = Long.MAX_VALUE;
 
     /** Default network compression flag. */
-    public static final boolean DFLT_NETWORK_COMPRESSION_ENABLED = true;
+    public static final boolean DFLT_NETWORK_COMPRESSION_ENABLED = false;
 
     /** Default maximum timeout to wait for network responses in milliseconds (value is {@code 5,000ms}). */
     public static final long DFLT_NETWORK_TIMEOUT = 5000;
@@ -299,7 +297,7 @@ public class IgniteConfiguration {
     private int[] inclEvtTypes;
 
     /** Network compression factory. */
-    @Nullable private Factory<CompressionEngine> netCompressionEngineFactory = new ZstdFactory();
+    @Nullable private Factory<CompressionEngine> netCompressionEngineFactory;
 
     /** Network compression enabled flag. */
     private boolean netCompressionEnabled = DFLT_NETWORK_COMPRESSION_ENABLED;

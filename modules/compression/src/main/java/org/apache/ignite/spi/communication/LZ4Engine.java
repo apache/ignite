@@ -55,15 +55,14 @@ public final class LZ4Engine implements CompressionEngine {
     @Override public CompressionEngineResult compress(ByteBuffer src, ByteBuffer buf) {
         assert src != null;
         assert buf != null;
-        assert buf.position() + BLOCK_LENGTH <= Integer.MAX_VALUE;
 
         try {
-            int compress = compressor.compress(src, src.position(), src.remaining(),
+            int size = compressor.compress(src, src.position(), src.remaining(),
                 buf, buf.position() + BLOCK_LENGTH, buf.remaining() - BLOCK_LENGTH);
 
-            putInt(compress, buf);
+            buf.putInt(size);
 
-            buf.position(buf.position() + compress);
+            buf.position(buf.position() + size);
             src.position(src.position() + src.remaining());
         }
         catch (LZ4Exception e) {
@@ -83,7 +82,7 @@ public final class LZ4Engine implements CompressionEngine {
 
         int initPos = src.position();
 
-        int compressedLen = getInt(src);
+        int compressedLen = src.getInt();
 
         assert compressedLen > 0;
 
@@ -94,10 +93,10 @@ public final class LZ4Engine implements CompressionEngine {
         }
 
         try {
-            int decompress = decompressor.decompress(src, src.position(), compressedLen,
+            int size = decompressor.decompress(src, src.position(), compressedLen,
                 buf, buf.position(), buf.remaining());
 
-            buf.position(buf.position() + decompress);
+            buf.position(buf.position() + size);
             src.position(src.position() + compressedLen);
         }
         catch (LZ4Exception e) {
@@ -107,33 +106,5 @@ public final class LZ4Engine implements CompressionEngine {
         }
 
         return OK;
-    }
-
-    /**
-     * Read {@code int} value from a byte buffer disregard byte order.
-     *
-     * @param buf ByteBuffer.
-     * @return {@code int} Value.
-     */
-    private static int getInt(ByteBuffer buf) {
-        assert buf.remaining() >= BLOCK_LENGTH;
-
-        return ((buf.get() & 0xFF) << 24) | ((buf.get() & 0xFF) << 16)
-            | ((buf.get() & 0xFF) << 8) | (buf.get() & 0xFF);
-    }
-
-    /**
-     * Write {@code int} value to a byte buffer disregard byte order.
-     *
-     * @param int Value.
-     * @param buf ByteBuffer.
-     */
-    private static void putInt(int val, ByteBuffer buf) {
-        assert buf.remaining() >= BLOCK_LENGTH;
-
-        buf.put((byte)(val >>> 24));
-        buf.put((byte)(val >>> 16));
-        buf.put((byte)(val >>> 8));
-        buf.put((byte)(val));
     }
 }

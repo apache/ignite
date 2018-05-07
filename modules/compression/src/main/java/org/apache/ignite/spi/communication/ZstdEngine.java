@@ -71,7 +71,7 @@ public final class ZstdEngine implements CompressionEngine {
             if (res + BLOCK_LENGTH > buf.remaining())
                 return BUFFER_OVERFLOW;
 
-            putInt((int)res, buf);
+            buf.putInt((int)res);
 
             src.position(src.limit());
             buf.position(buf.position() + (int)res);
@@ -108,7 +108,7 @@ public final class ZstdEngine implements CompressionEngine {
                 return BUFFER_OVERFLOW;
             }
 
-            putInt((int)res, buf);
+            buf.putInt((int)res);
 
             buf.put(compressArr, 0, (int)res);
 
@@ -126,7 +126,7 @@ public final class ZstdEngine implements CompressionEngine {
 
         int initPos = src.position();
 
-        int compressedLen = getInt(src);
+        int compressedLen = src.getInt();
 
         assert compressedLen > 0;
 
@@ -193,33 +193,5 @@ public final class ZstdEngine implements CompressionEngine {
 
             return OK;
         }
-    }
-
-    /**
-     * Read {@code int} value from a byte buffer disregard byte order.
-     *
-     * @param buf ByteBuffer.
-     * @return {@code int} Value.
-     */
-    private static int getInt(ByteBuffer buf) {
-        assert buf.remaining() >= BLOCK_LENGTH;
-
-        return ((buf.get() & 0xFF) << 24) | ((buf.get() & 0xFF) << 16)
-            | ((buf.get() & 0xFF) << 8) | (buf.get() & 0xFF);
-    }
-
-    /**
-     * Write {@code int} value to a byte buffer disregard byte order.
-     *
-     * @param int Value.
-     * @param buf ByteBuffer.
-     */
-    private static void putInt(int val, ByteBuffer buf) {
-        assert buf.remaining() >= BLOCK_LENGTH;
-
-        buf.put((byte)(val >>> 24));
-        buf.put((byte)(val >>> 16));
-        buf.put((byte)(val >>> 8));
-        buf.put((byte)(val));
     }
 }
