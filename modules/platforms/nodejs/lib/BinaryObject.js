@@ -146,7 +146,6 @@ class BinaryObject {
 
     /**
      * Removes the specified field.
-     *
      * Does nothing if the field does not exist.
      *
      * @param {string} fieldName - name of the field.
@@ -188,6 +187,8 @@ class BinaryObject {
      *   - or null (or not specified) that means the type is not specified.
      *
      * @return {*} - value of the field or JavaScript undefined if the field does not exist.
+     *
+     * @throws {IgniteClientError} if error.
      */
     async getField(fieldName, fieldType = null) {
         const field = this._fields.get(BinaryField._calculateId(fieldName));
@@ -237,6 +238,8 @@ class BinaryObject {
      * Returns names of all fields of this BinaryObject instance.
      *
      * @return {Array<string>} - names of all fields.
+     *
+     * @throws {IgniteClientError} if error.
      */
     getFieldNames() {
         return this._typeBuilder._schema.fieldIds.map(fieldId => {
