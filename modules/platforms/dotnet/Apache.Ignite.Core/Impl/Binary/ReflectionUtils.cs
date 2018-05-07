@@ -86,11 +86,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(type != null);
 
+            if (type.IsInterface)
+            {
+                return type.GetInterfaces().Concat(new[] {typeof(object), type})
+                    .SelectMany(t => t.GetMethods(BindFlags));
+            }
+
             return GetSelfAndBaseTypes(type)
-                .Concat(type.GetInterfaces())
                 .SelectMany(t => t.GetMethods(BindFlags));
         }
 
+        /// <summary>
+        /// Returns full type hierarchy.
+        /// </summary>
         private static IEnumerable<Type> GetSelfAndBaseTypes(Type type)
         {
             Debug.Assert(type != null);
