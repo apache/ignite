@@ -673,9 +673,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         log.info(String.format("ClusterOwningPartitionsCount[1] = %d, LocalNodeOwningPartitionsCount[1] = %d",
                 clusterOwningCnt1, locOwningCnt1));
 
-        assertTrue("ClusterOwningPartitionsCount[1] must be not equal to ClusterOwningPartitionsCount[1] " +
-                        "or LocalNodeOwningPartitionsCount[2] must be not equal to LocalNodeOwningPartitionsCount[0]",
-                (clusterOwningCnt1 != clusterOwningCnt0) || (locOwningCnt1 != locOwningCnt0));
+        assertTrue("ClusterOwningPartitionsCount[1] must be equal to ClusterOwningPartitionsCount[1] " +
+                        "and LocalNodeOwningPartitionsCount[2] must be greater than LocalNodeOwningPartitionsCount[0]",
+                (clusterOwningCnt1 == clusterOwningCnt0) && (locOwningCnt1 > locOwningCnt0));
 
         startGrid(2);
 
