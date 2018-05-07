@@ -1074,12 +1074,22 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Test service interface for proxying.
+        /// Test base service.
         /// </summary>
-        public interface ITestIgniteService : IService
+        public interface ITestIgniteServiceBase
         {
+            /** */
             int TestProperty { get; set; }
 
+            /** */
+            object Method(object arg);
+        }
+
+        /// <summary>
+        /// Test service interface for proxying.
+        /// </summary>
+        public interface ITestIgniteService : IService, ITestIgniteServiceBase
+        {
             /** */
             bool Initialized { get; }
 
@@ -1094,9 +1104,6 @@ namespace Apache.Ignite.Core.Tests.Services
 
             /** */
             string LastCallContextName { get; }
-
-            /** */
-            object Method(object arg);
 
             /** */
             object ErrMethod(object arg);
@@ -1124,7 +1131,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Test serializable service.
         /// </summary>
         [Serializable]
-        private class TestIgniteServiceSerializable : IService, ITestIgniteService
+        private class TestIgniteServiceSerializable : ITestIgniteService
         {
             /** */
             [InstanceResource]
