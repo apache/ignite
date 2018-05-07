@@ -1505,8 +1505,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return locked.containsKey(absIdx);
         }
 
-        /** {@inheritDoc} */
-        @Override public void run() {
+        private void workerBody() {
             try {
                 allocateRemainingFiles();
             }
@@ -1596,6 +1595,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            makeWorker(getName(), this::workerBody).run();
         }
 
         /**
@@ -2063,8 +2067,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             super("wal-file-decompressor%" + cctx.igniteInstanceName());
         }
 
-        /** {@inheritDoc} */
-        @Override public void run() {
+        private void workerBody() {
             Throwable err = null;
 
             while (!Thread.currentThread().isInterrupted() && !stopped) {
@@ -2109,6 +2112,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
                 }
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            makeWorker(getName(), this::workerBody).run();
         }
 
         /**
@@ -3213,8 +3221,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             super("wal-write-worker%" + cctx.igniteInstanceName());
         }
 
-        /** {@inheritDoc} */
-        @Override public void run() {
+        private void workerBody() {
             Throwable err = null;
 
             try {
@@ -3303,6 +3310,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            makeWorker(getName(), this::workerBody).run();
         }
 
         /**
