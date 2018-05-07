@@ -150,7 +150,7 @@ class ZkDistributedCollectDataFuture extends GridFutureAdapter<Void> {
 
         try {
             client.deleteAll(evtDir,
-                client.getChildren(evtDir),
+                client.getChildrenIfPathExists(evtDir),
                 -1);
         }
         catch (KeeperException.NoNodeException e) {

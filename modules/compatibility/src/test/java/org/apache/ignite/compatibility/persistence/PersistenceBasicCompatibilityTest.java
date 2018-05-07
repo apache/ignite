@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
+import java.util.UUID;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -35,26 +36,18 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 /**
- * Saves data using previous version of ignite and then load this data using actual version
+ * Saves data using previous version of ignite and then load this data using actual version.
  */
-public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
+public class PersistenceBasicCompatibilityTest extends IgnitePersistenceCompatibilityAbstractTest {
     /** */
-    protected static final String TEST_CACHE_NAME = DummyPersistenceCompatibilityTest.class.getSimpleName();
+    protected static final String TEST_CACHE_NAME = PersistenceBasicCompatibilityTest.class.getSimpleName();
 
     /** */
     protected volatile boolean compactFooter;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -164,15 +157,20 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
         cache.put("Externalizable", new TestExternalizable(42));
         cache.put(new TestExternalizable(42), "Externalizable_As_Key");
         cache.put("testStringContainer", new TestStringContainerToBePrinted("testStringContainer"));
+        cache.put(UUID.fromString("DA9E0049-468C-4680-BF85-D5379164FDCC"),
+            UUID.fromString("B851B870-3BA7-4E5F-BDB8-458B42300000"));
     }
 
     /**
      * Asserts cache contained all expected values as it was saved before.
-     * @param cache cache should be filled using {@link #saveCacheData(Cache)}.
+     *
+     * @param cache Cache  should be filled using {@link #saveCacheData(Cache)}.
      */
     public static void validateResultingCacheData(Cache<Object, Object> cache) {
+        assertNotNull(cache);
+
         for (int i = 0; i < 10; i++)
-            assertEquals(cache.get(i), "data" + i);
+            assertEquals("data" + i, cache.get(i));
 
         assertEquals("2", cache.get("1"));
         assertEquals(2, cache.get(12));
@@ -185,6 +183,8 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
         assertEquals(new TestExternalizable(42), cache.get("Externalizable"));
         assertEquals("Externalizable_As_Key", cache.get(new TestExternalizable(42)));
         assertEquals(new TestStringContainerToBePrinted("testStringContainer"), cache.get("testStringContainer"));
+        assertEquals(UUID.fromString("B851B870-3BA7-4E5F-BDB8-458B42300000"),
+            cache.get(UUID.fromString("DA9E0049-468C-4680-BF85-D5379164FDCC")));
     }
 
     /** */
@@ -207,8 +207,12 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
 
     /** */
     public static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+        /** Compact footer. */
         private boolean compactFooter;
 
+        /**
+         * @param compactFooter Compact footer.
+         */
         public ConfigurationClosure(boolean compactFooter) {
             this.compactFooter = compactFooter;
         }
@@ -226,8 +230,7 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
 
             cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
 
-            if (!compactFooter)
-                cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(compactFooter));
+            cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(compactFooter));
         }
     }
 

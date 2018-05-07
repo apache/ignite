@@ -251,6 +251,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// Tests that exceptions from CacheStoreFactory are propagated properly.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-8070")]
         public void TestFailedCacheStoreException()
         {
             var ccfg = new CacheConfiguration("CacheWithFailedStore")
