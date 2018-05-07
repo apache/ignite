@@ -74,9 +74,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     /** System out. */
     protected PrintStream sysOut;
 
-    /** System err. */
-    protected PrintStream sysErr;
-
     /** Test out - can be injected via {@link #injectTestSystemOut()} instead of System.out and analyzed in test. */
     protected ByteArrayOutputStream testOut;
 
