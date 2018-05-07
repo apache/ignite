@@ -94,6 +94,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -5582,6 +5584,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Port to listen. */
         private int port;
 
+        /** Encapsulates thread body. */
+        private GridWorker worker;
+
         /**
          * Constructor.
          *
@@ -5614,6 +5619,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ']');
                     }
 
+                    WorkersRegistry workerRegistry = ((IgniteEx)spi.ignite()).context().workersRegistry();
+
+                    worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
+                        @Override protected void body() {
+                            workerBody();
+                        }
+                    };
+
                     return;
                 }
                 catch (IOException e) {
@@ -5632,8 +5645,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 ", addr=" + spi.locHost + ']');
         }
 
-        /** {@inheritDoc} */
-        @Override protected void body() {
+        /** */
+        private void workerBody() {
             Throwable err = null;
 
             try {
@@ -5694,6 +5707,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 U.closeQuiet(srvrSock);
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() {
+            assert worker != null;
+
+            worker.run();
         }
 
         /** {@inheritDoc} */
