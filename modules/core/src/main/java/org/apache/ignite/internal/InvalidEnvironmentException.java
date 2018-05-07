@@ -18,8 +18,8 @@
 package org.apache.ignite.internal;
 
 /**
- * Marker interface of critical input-output exception.
+ * Marker interface of invalid environment exception.
  */
-public interface CriticalIOException {
+public interface InvalidEnvironmentException {
 
 }

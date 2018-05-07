@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.CriticalIOException;
+import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -734,7 +734,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     }
                                 }
                                 catch (Throwable ex) {
-                                    boolean hasIOIssue = X.hasCause(ex, CriticalIOException.class);
+                                    boolean hasIOIssue = X.hasCause(ex, InvalidEnvironmentException.class);
 
                                     // In case of error, we still make the best effort to commit,
                                     // as there is no way to rollback at this point.

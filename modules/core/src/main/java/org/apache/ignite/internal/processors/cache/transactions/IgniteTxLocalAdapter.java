@@ -30,7 +30,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.CriticalIOException;
+import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -846,13 +846,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             throw ex;
                         }
                         else {
-                            boolean hasIOIssue = X.hasCause(ex, CriticalIOException.class);
+                            boolean hasInvalidEnvironmentIssue = X.hasCause(ex, InvalidEnvironmentException.class);
 
                             IgniteCheckedException err = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
                                 "(all transaction entries will be invalidated, however there was a window when " +
                                 "entries for this transaction were visible to others): " + this, ex);
 
-                            if (hasIOIssue) {
+                            if (hasInvalidEnvironmentIssue) {
                                 U.warn(log, "Failed to commit transaction, node is stopping " +
                                     "[tx=" + this + ", err=" + ex + ']');
                             }
@@ -865,7 +865,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                             try {
                                 // Courtesy to minimize damage.
-                                uncommit(hasIOIssue);
+                                uncommit(hasInvalidEnvironmentIssue);
                             }
                             catch (Throwable ex1) {
                                 U.error(log, "Failed to uncommit transaction: " + this, ex1);
