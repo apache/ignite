@@ -21,7 +21,6 @@ import junit.framework.TestSuite;
 import org.apache.curator.test.TestingCluster;
 import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
 import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomicTest;
 import org.apache.ignite.internal.processors.cache.datastructures.IgniteClientDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedNodeRestartTxSelfTest;
 import org.apache.ignite.internal.processors.cache.datastructures.partitioned.GridCachePartitionedSequenceApiSelfTest;
@@ -38,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.distributed.replicated.Ignite
 import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
+import org.apache.ignite.util.GridCommandHandlerTest;
 
 /**
  * Regular Ignite tests executed with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
@@ -88,6 +88,8 @@ public class ZookeeperDiscoverySpiTestSuite2 extends ZookeeperDiscoverySpiAbstra
 
         suite.addTestSuite(GridCacheAtomicMultiJvmFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedMultiJvmFullApiSelfTest.class);
+
+        suite.addTestSuite(GridCommandHandlerTest.class);
 
         return suite;
     }
