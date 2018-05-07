@@ -657,13 +657,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         int clusterOwningCnt0 = mxBean.getClusterOwningPartitionsCount();
         int locOwningCnt0 = mxBean.getLocalNodeOwningPartitionsCount();
 
-        log.info(String.format(
-                "ClusterOwningPartitionsCount[0] = %d, LocalNodeOwningPartitionsCount[0] = %d",
+        log.info(String.format("ClusterOwningPartitionsCount[0] = %d, LocalNodeOwningPartitionsCount[0] = %d",
                 clusterOwningCnt0 , locOwningCnt0));
 
-        ignite0.cluster().setBaselineTopology(ignite0.cluster().topologyVersion()); // reset baseline topology.
-
         stopGrid(2, true);
+
+        ignite0.cluster().setBaselineTopology(ignite0.cluster().topologyVersion()); // reset baseline topology.
 
         waitForRebalancing();
         awaitPartitionMapExchange();
