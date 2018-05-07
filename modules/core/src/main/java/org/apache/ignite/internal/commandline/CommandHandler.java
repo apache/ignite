@@ -1350,7 +1350,7 @@ public class CommandHandler {
         if (hasUsr != hasPwd)
             throw new IllegalArgumentException("Both user and password should be specified");
 
-        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs,txArgs, cacheArgs, walAct, walArgs,
+        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, txArgs, cacheArgs, walAct, walArgs,
                 pingTimeout, pingInterval, force);
     }
 
@@ -1662,7 +1662,6 @@ public class CommandHandler {
                             " delete [consistentId1,consistentId2,....,consistentIdN] [--force]");
                 }
 
-                log("By default cluster deactivation and changes in baseline topology commands request interactive confirmation. ");
                 log("The utility has --cache subcommand to view and control state of caches in cluster.");
                 log("  More info:    control.sh --cache help");
                 nl();
