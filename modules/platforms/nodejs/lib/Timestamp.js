@@ -20,11 +20,13 @@
 const ArgumentChecker = require('./internal/ArgumentChecker');
 
 /**
- * Class representing a timestamp.
+ * Class representing an Ignite timestamp type.
  *
- * The timestamp consists of:
- *   - date - a standard JavaScript {@link Date}.
- *   - nanoseconds - fraction of the last second, which value could be in the range from 0 to 999999999.
+ * The timestamp extends the standard JavaScript {@link Date} Object and consists of:
+ *   - time  - the number of milliseconds since January 1, 1970, 00:00:00 UTC,
+ *             methods of the JavaScript {@link Date} Object can be used to operate with the time.
+ *   - nanoseconds - fraction of the last second in the range from 0 to 999999999 nanoseconds,
+ *                   this class specifies additional methods to operate with the nanoseconds.
  */
 class Timestamp extends Date {
 
@@ -32,7 +34,8 @@ class Timestamp extends Date {
      * Public constructor.
      *
      * @param {number} time - integer value representing the number of milliseconds since January 1, 1970, 00:00:00 UTC.
-     * @param {number} nanos - nanoseconds of the last second.
+     * @param {number} nanos - integer value representing the nanoseconds of the last second,
+     *                         can be in the range from 0 to 999999999.
      *
      * @return {Timestamp} - new Timestamp instance
      *
@@ -53,7 +56,7 @@ class Timestamp extends Date {
     }
 
     /**
-     * Updates the nanoseconds of the last second in the timestamp without changing the date.
+     * Updates the nanoseconds of the last second in the timestamp.
      *
      * @param {number} nanos - new value for the nanoseconds of the last second.
      *
