@@ -305,6 +305,57 @@ describe('cache put get test suite >', () => {
             catch(error => done.fail(error));
     });
 
+    it('put get object array of primitive types', (done) => {
+        Promise.resolve().
+            then(async () => {
+                for (let type of Object.keys(TestingHelper.primitiveValues)) {
+                    type = parseInt(type);
+                    const typeInfo = TestingHelper.primitiveValues[type];
+                    let value = typeInfo.values[0];
+                    const array = new Array();
+                    for (let i = 0; i < 10; i++) {
+                        value = typeInfo.modificator(value);
+                        array.push(value);
+                    }
+                    await putGetObjectArrays(
+                        new ObjectArrayType(type), 
+                        array);
+                    if (typeInfo.typeOptional) {
+                        await putGetObjectArrays(new ObjectArrayType(), array);
+                    }
+                }
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
+    it('put get object array of primitive arrays', (done) => {
+        Promise.resolve().
+            then(async () => {
+                for (let type of Object.keys(TestingHelper.arrayValues)) {
+                    type = parseInt(type);
+                    const typeInfo = TestingHelper.arrayValues[type];
+                    const primitiveType = typeInfo.elemType;
+                    const primitiveTypeInfo = TestingHelper.primitiveValues[primitiveType];
+                    let values = primitiveTypeInfo.values;
+                    
+                    const array = new Array();
+                    for (let i = 0; i < 10; i++) {
+                        values = values.map((value) => primitiveTypeInfo.modificator(value));
+                        array.push(values);
+                    }
+                    await putGetObjectArrays(
+                        new ObjectArrayType(type), 
+                        array);
+                    if (typeInfo.typeOptional) {
+                        await putGetObjectArrays(new ObjectArrayType(), array);
+                    }
+                }
+            }).
+            then(done).
+            catch(error => done.fail(error));
+    });
+
     it('put get object array of sets', (done) => {
         Promise.resolve().
             then(async () => {
@@ -474,7 +525,7 @@ describe('cache put get test suite >', () => {
                 }
 
                 let array = new Array();
-                for (let i = 0; i < 5; i++) {
+                for (let i = 0; i < 4; i++) {
                     let innerArray = new Array();
                     for (let j = 0; j < 2; j++) {
                         for (let field in object) {

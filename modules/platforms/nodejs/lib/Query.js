@@ -458,7 +458,7 @@ class ScanQuery extends Query {
      */
     constructor() {
         super(BinaryUtils.OPERATION.QUERY_SCAN);
-        this._partitionsNumber = -1;
+        this._partitionNumber = -1;
     }
 
     /**
@@ -471,7 +471,7 @@ class ScanQuery extends Query {
      * @return {ScanQuery} - the same instance of the ScanQuery.
      */
     setPartitionNumber(partitionNumber) {
-        this._partitionsNumber = partitionsNumber;
+        this._partitionNumber = partitionNumber;
         return this;
     }
 
@@ -484,7 +484,7 @@ class ScanQuery extends Query {
         // filter
         await BinaryWriter.writeObject(buffer, null);
         buffer.writeInteger(this._pageSize);
-        buffer.writeInteger(this._partitionsNumber);
+        buffer.writeInteger(this._partitionNumber);
         buffer.writeBoolean(this._local);
     }
 

@@ -437,7 +437,10 @@ class ObjectArrayType extends CompositeType {
     /**
      * Public constructor.
      *
-     * @param {CompositeType} [elementType] - type of the array element
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [elementType=null] - type of the array element:
+     *   - either a type code of primitive (simple) type
+     *   - or an instance of class representing non-primitive (composite) type
+     *   - or null (or not specified) that means the type is not specified
      *
      * @return {ObjectArrayType} - new ObjectArrayType instance
      *
@@ -445,7 +448,8 @@ class ObjectArrayType extends CompositeType {
      */
     constructor(elementType = null) {
         super(COMPOSITE_TYPE.OBJECT_ARRAY);
-        ArgumentChecker.hasType(elementType, 'elementType', false, CompositeType);
+        const BinaryUtils = require('./internal/BinaryUtils');
+        BinaryUtils.checkObjectType(elementType, 'elementType');
         this._elementType = elementType;
     }
 }
