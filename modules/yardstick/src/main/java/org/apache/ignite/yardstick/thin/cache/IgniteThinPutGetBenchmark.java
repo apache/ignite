@@ -34,7 +34,7 @@ public class IgniteThinPutGetBenchmark extends IgniteThinCacheAbstractBenchmark<
         if (val != null)
             key = nextRandom(args.range());
 
-        cache.put(key, new SampleValue(key));
+        cache().put(key, new SampleValue(key));
 
         return true;
     }

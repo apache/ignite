@@ -59,7 +59,7 @@ public class IgniteThinClient {
     }
 
     /** {@inheritDoc} */
-    public IgniteClient start(BenchmarkConfiguration cfg) throws Exception {
+    public IgniteClient start(BenchmarkConfiguration cfg, String host) throws Exception {
         IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
 
         BenchmarkUtils.jcommander(cfg.commandLineArguments(), args, "<ignite-node>");
@@ -77,23 +77,9 @@ public class IgniteThinClient {
 
         String[] servHostArr = IgniteThinBenchmarkUtils.servHostArr(cfg);
 
-        String hostPort;
+        String hostPort = host + ":10800";
 
-        String locIp = IgniteThinBenchmarkUtils.getLocalIp(cfg);
-
-        // Number of local IP address in driver host addresses list.
-        int num = getNum(cfg, locIp);
-
-        // Compute server host address to connect. Trying to avoid unequal number of connections for server nodes.
-        if(servHostArr.length == 1)
-            hostPort = servHostArr[0] + ":10800";
-        else{
-            int idx = num % servHostArr.length;
-
-            hostPort = servHostArr[idx] + ":10800";
-        }
-
-        BenchmarkUtils.println(String.format("Using for connection address + %s", hostPort));
+        BenchmarkUtils.println(String.format("Using for connection address: %s", hostPort));
 
         clCfg.setAddresses(hostPort);
 

@@ -29,7 +29,7 @@ public class IgniteThinPutBenchmark extends IgniteThinCacheAbstractBenchmark<Int
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
 
-        cache.put(key, new SampleValue(key));
+        cache().put(key, new SampleValue(key));
 
         return true;
     }

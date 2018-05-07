@@ -17,7 +17,9 @@
 
 package org.apache.ignite.yardstick;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.IgniteClient;
@@ -37,7 +39,10 @@ public abstract class IgniteThinAbstractBenchmark extends BenchmarkDriverAdapter
     protected final IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
 
     /** Client. */
-    private IgniteClient client;
+    private ThreadLocal<IgniteClient> client;
+
+    /** Server host addresses queue. */
+    private ConcurrentLinkedDeque<String> servHosts;
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
@@ -47,10 +52,31 @@ public abstract class IgniteThinAbstractBenchmark extends BenchmarkDriverAdapter
 
         String locIp = IgniteThinBenchmarkUtils.getLocalIp(cfg);
 
-        client = new IgniteThinClient().start(cfg);
+        client = new ThreadLocal<IgniteClient>() {
+            @Override protected IgniteClient initialValue() {
+                synchronized (IgniteThinAbstractBenchmark.class) {
+                    try {
+                        if (servHosts == null || servHosts.isEmpty())
+                            setServHosts(cfg);
+
+                        return new IgniteThinClient().start(cfg, servHosts.poll());
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    return null;
+                }
+            }
+        };
+
+        println("Custom properties:");
+
+        for (String prop : cfg.customProperties().keySet())
+            println(String.format("%s=%s", prop, cfg.customProperties().get(prop)));
 
         // Create util cache for checking if all driver processes had been started.
-        ClientCache<String, String> utilCache = client.getOrCreateCache("start-util-cache");
+        ClientCache<String, String> utilCache = client().getOrCreateCache("start-util-cache");
 
         // Put 'started' message in util cache.
         utilCache.put(locIp, "started");
@@ -65,13 +91,25 @@ public abstract class IgniteThinAbstractBenchmark extends BenchmarkDriverAdapter
     }
 
     /**
+     *
+     * @param cfg
+     */
+    private synchronized void setServHosts(BenchmarkConfiguration cfg){
+        BenchmarkUtils.println("Setting serv host queue");
+
+        String[] servHostArr = IgniteThinBenchmarkUtils.servHostArr(cfg);
+
+        servHosts = new ConcurrentLinkedDeque<>(Arrays.asList(servHostArr));
+    }
+
+    /**
      * Check if all driver processes had been started.
      *
      * @param hostList List of driver host addresses.
      * @return {@code true} if all driver processes had been started or {@code false} if not.
      */
     private boolean checkIfAllClientsStarted(List<String> hostList){
-        ClientCache<String, String> utilCache = client.getOrCreateCache("start-util-cache");
+        ClientCache<String, String> utilCache = client().getOrCreateCache("start-util-cache");
 
         for(String host : hostList){
             if(host.equals("localhost"))
@@ -88,8 +126,8 @@ public abstract class IgniteThinAbstractBenchmark extends BenchmarkDriverAdapter
 
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
-        if (client != null)
-            client.close();
+        if (client.get() != null)
+            client.get().close();
     }
 
     /** {@inheritDoc} */
@@ -104,7 +142,7 @@ public abstract class IgniteThinAbstractBenchmark extends BenchmarkDriverAdapter
      * @return Client.
      */
     protected IgniteClient client() {
-        return client;
+        return client.get();
     }
 
     /**

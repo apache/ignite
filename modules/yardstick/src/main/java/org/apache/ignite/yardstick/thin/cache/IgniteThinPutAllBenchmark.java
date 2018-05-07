@@ -32,7 +32,7 @@ public class IgniteThinPutAllBenchmark extends IgniteThinCacheAbstractBenchmark<
         for (int i = 0; i < 500; i++ )
             vals.put(i, nextRandom(1000));
 
-        cache.putAll(vals);
+        cache().putAll(vals);
 
         return true;
     }
