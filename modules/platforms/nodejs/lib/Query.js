@@ -449,7 +449,7 @@ class ScanQuery extends Query {
      *     Scan Query setting        :    Default value
      *     Local query flag          :    false
      *     Cursor page size          :    1024
-     *     Number of partitions      :    -1 (entire cache)
+     *     Partition number          :    -1 (entire cache)
      *     Filter object             :    null (not supported)
      * </pre>
      * Every setting (except Filter object) may be changed using set methods.
@@ -462,15 +462,15 @@ class ScanQuery extends Query {
     }
 
     /**
-     * Sets number of partitions over which this query should iterate.
+     * Sets a partition number over which this query should iterate.
      *
      * If negative, the query will iterate over all partitions in the cache. 
      *
-     * @param {number} partitionsNumber - number of partitions over which this query should iterate.
+     * @param {number} partitionNumber - partition number over which this query should iterate.
      *
      * @return {ScanQuery} - the same instance of the ScanQuery.
      */
-    setPartitionsNumber(partitionsNumber) {
+    setPartitionNumber(partitionNumber) {
         this._partitionsNumber = partitionsNumber;
         return this;
     }
