@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.Serializable;
+import java.lang.management.ManagementFactory;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -28,6 +29,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.management.MBeanServer;
+import javax.management.MBeanServerInvocationHandler;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectName;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -47,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -629,6 +635,86 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
             assertEquals(ig.affinity(cacheName).partitions(), cntrs.size());
         }
+    }
+
+    /**
+     * Tests cache metrics after change baseline on rebalance.
+     *
+     * @throws Exception If failed.
+     */
+    public void testOwningPartitionsOnRebalance() throws Exception {
+        Ignite ignite0 = startGrids(3);
+
+        ignite0.cluster().active(true);
+
+        IgniteCache cache = ignite0.getOrCreateCache(DEFAULT_CACHE_NAME);
+        for (int i = 0; i < 100_000; i++)
+            cache.put(i, i);
+
+
+        CacheGroupMetricsMXBean mxBean = mxBean(0, DEFAULT_CACHE_NAME);
+
+        int clusterOwningCnt0 = mxBean.getClusterOwningPartitionsCount();
+        int locOwningCnt0 = mxBean.getLocalNodeOwningPartitionsCount();
+
+        log.info(String.format(
+                "ClusterOwningPartitionsCount[0] = %d, LocalNodeOwningPartitionsCount[0] = %d",
+                clusterOwningCnt0 , locOwningCnt0));
+
+        ignite0.cluster().setBaselineTopology(ignite0.cluster().topologyVersion()); // reset baseline topology.
+
+        stopGrid(2, true);
+
+        waitForRebalancing();
+        awaitPartitionMapExchange();
+
+        int clusterOwningCnt1 = mxBean.getClusterOwningPartitionsCount();
+        int locOwningCnt1 = mxBean.getLocalNodeOwningPartitionsCount();
+
+        log.info(String.format("ClusterOwningPartitionsCount[1] = %d, LocalNodeOwningPartitionsCount[1] = %d",
+                clusterOwningCnt1, locOwningCnt1));
+
+        assertTrue("ClusterOwningPartitionsCount[1] must be not equal to ClusterOwningPartitionsCount[1] " +
+                        "or LocalNodeOwningPartitionsCount[2] must be not equal to LocalNodeOwningPartitionsCount[0]",
+                (clusterOwningCnt1 != clusterOwningCnt0) || (locOwningCnt1 != locOwningCnt0));
+
+        startGrid(2);
+
+        ignite0.cluster().setBaselineTopology(ignite0.cluster().topologyVersion()); // reset baseline topology.
+
+        waitForRebalancing();
+        awaitPartitionMapExchange();
+
+        int clusterOwningCnt2 = mxBean.getClusterOwningPartitionsCount();
+        int locOwningCnt2 = mxBean.getLocalNodeOwningPartitionsCount();
+
+        log.info(String.format("ClusterOwningPartitionsCount[2] = %d, LocalNodeOwningPartitionsCount[2] = %d",
+                clusterOwningCnt2, locOwningCnt2));
+
+        assertEquals("ClusterOwningPartitionsCount[2] must be equal to ClusterOwningPartitionsCount[0]",
+                clusterOwningCnt2, clusterOwningCnt0);
+
+        assertEquals("LocalNodeOwningPartitionsCount[2] must be equal to LocalNodeOwningPartitionsCount[0]",
+                locOwningCnt2, locOwningCnt0);
+    }
+
+    /**
+     * Gets CacheGroupMetricsMXBean for given node and group name.
+     *
+     * @param nodeIdx Node index.
+     * @param cacheOrGrpName Cache group name.
+     * @return MBean instance.
+     */
+    private CacheGroupMetricsMXBean mxBean(int nodeIdx, String cacheOrGrpName) throws MalformedObjectNameException {
+        ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(nodeIdx), "Cache groups", cacheOrGrpName);
+
+        MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();
+
+        if (!mbeanSrv.isRegistered(mbeanName))
+            fail("MBean is not registered: " + mbeanName.getCanonicalName());
+
+        return MBeanServerInvocationHandler.newProxyInstance(mbeanSrv, mbeanName, CacheGroupMetricsMXBean.class,
+                true);
     }
 
     /**
