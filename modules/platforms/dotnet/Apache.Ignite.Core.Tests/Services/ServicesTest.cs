@@ -379,7 +379,7 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests the duck typing: proxy interface can be different from actual service interface, 
+        /// Tests the duck typing: proxy interface can be different from actual service interface,
         /// only called method signature should be compatible.
         /// </summary>
         [Test]
@@ -389,7 +389,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Deploy locally or to the remote node
             var nodeId = (local ? Grid1 : Grid2).GetCluster().GetLocalNode().Id;
-            
+
             var cluster = Grid1.GetCluster().ForNodeIds(nodeId);
 
             cluster.GetServices().DeployNodeSingleton(SvcName, svc);
@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // NodeId signature is the same as in service
             Assert.AreEqual(nodeId, prx.NodeId);
-            
+
             // Method signature is different from service signature (object -> object), but is compatible.
             Assert.AreEqual(15, prx.Method(15));
 
@@ -434,7 +434,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var top = desc.TopologySnapshot;
             var prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
-            
+
             Assert.AreEqual(1, top.Count);
             Assert.AreEqual(prx.NodeId, top.Keys.Single());
             Assert.AreEqual(1, top.Values.Single());
@@ -463,7 +463,7 @@ namespace Apache.Ignite.Core.Tests.Services
             res = (IBinaryObject) prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
             Assert.AreEqual(11, res.Deserialize<BinarizableObject>().Val);
         }
-        
+
         /// <summary>
         /// Tests the server binary flag.
         /// </summary>
@@ -558,10 +558,10 @@ namespace Apache.Ignite.Core.Tests.Services
                     MaxPerNodeCount = 2,
                     TotalCount = 2,
                     NodeFilter = new NodeFilter { NodeId = Grid1.GetCluster().GetLocalNode().Id },
-                    Service = binarizable ? new TestIgniteServiceBinarizable { TestProperty = i, ThrowInit = throwInit } 
+                    Service = binarizable ? new TestIgniteServiceBinarizable { TestProperty = i, ThrowInit = throwInit }
                         : new TestIgniteServiceSerializable { TestProperty = i, ThrowInit = throwInit }
                 });
-            } 
+            }
 
             var deploymentException = Assert.Throws<ServiceDeploymentException>(() => Services.DeployAll(cfgs));
 
@@ -569,9 +569,9 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNotNull(failedCfgs);
             Assert.AreEqual(2, failedCfgs.Count);
 
-            var firstFailedSvc = binarizable ? failedCfgs.ElementAt(0).Service as TestIgniteServiceBinarizable : 
+            var firstFailedSvc = binarizable ? failedCfgs.ElementAt(0).Service as TestIgniteServiceBinarizable :
                 failedCfgs.ElementAt(0).Service as TestIgniteServiceSerializable;
-            var secondFailedSvc = binarizable ? failedCfgs.ElementAt(1).Service as TestIgniteServiceBinarizable : 
+            var secondFailedSvc = binarizable ? failedCfgs.ElementAt(1).Service as TestIgniteServiceBinarizable :
                 failedCfgs.ElementAt(1).Service as TestIgniteServiceSerializable;
 
             Assert.IsNotNull(firstFailedSvc);
@@ -680,7 +680,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var deploymentException = Assert.Throws<ServiceDeploymentException>(() => deploy(services, svc));
 
-            var text = keepBinary 
+            var text = keepBinary
                 ? "Service deployment failed with a binary error. Examine BinaryCause for details."
                 : "Service deployment failed with an exception. Examine InnerException for details.";
 
@@ -759,7 +759,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             var ex = Assert.Throws<ServiceDeploymentException>(() =>
                 Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
-            
+
             Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual("Expected exception", ex.InnerException.Message);
 
@@ -858,7 +858,7 @@ namespace Apache.Ignite.Core.Tests.Services
             var arr = new [] {10, 11, 12}.Select(x => new PlatformComputeBinarizable {Field = x}).ToArray<object>();
             Assert.AreEqual(new[] {11, 12, 13}, svc.testBinarizableCollection(arr)
                 .OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
-            Assert.AreEqual(new[] {11, 12, 13}, 
+            Assert.AreEqual(new[] {11, 12, 13},
                 svc.testBinarizableArray(arr).OfType<PlatformComputeBinarizable>().Select(x => x.Field).ToArray());
 
             // Binary object
@@ -1076,7 +1076,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Test service interface for proxying.
         /// </summary>
-        public interface ITestIgniteService
+        public interface ITestIgniteService : IService
         {
             int TestProperty { get; set; }
 
@@ -1232,7 +1232,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 if (context.AffinityKey != null && !(context.AffinityKey is int))
                 {
                     var binaryObj = context.AffinityKey as IBinaryObject;
-                    
+
                     var key = binaryObj != null
                         ? binaryObj.Deserialize<BinarizableObject>()
                         : (BinarizableObject) context.AffinityKey;
@@ -1279,7 +1279,7 @@ namespace Apache.Ignite.Core.Tests.Services
             public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("TestProp", TestProperty);
-                
+
                 if (ThrowOnWrite)
                     throw new Exception("Expected exception");
             }
@@ -1288,7 +1288,7 @@ namespace Apache.Ignite.Core.Tests.Services
             public void ReadBinary(IBinaryReader reader)
             {
                 TestProperty = reader.ReadInt("TestProp");
-                
+
                 throw new Exception("Expected exception");
             }
         }
