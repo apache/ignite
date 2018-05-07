@@ -35,6 +35,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -67,11 +68,16 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /** Size of Department test table. */
     public final static long DEP_CNT = 50L;
 
-    /** Number of employees that aren't associated with any department. */
+    public final static long CONF_CNT = 30L;
+
+    /** Minimal number of employees that aren't associated with any department and conference. */
     public final static long FREE_EMP_CNT = 50;
 
-    /** Number of departments that doesn't have employees. */
+    /** Number of departments that don't have employees. */
     public final static long FREE_DEP_CNT = 5;
+
+    /** Number of conferences that don't have participants. */
+    public final static long FREE_CONF_CNT = 5;
 
     /** Number of possible age values (width of ages values range). */
     public final static int AGES_CNT = 50;
@@ -84,6 +90,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     /** Name of the Department table cache. */
     public static final String DEP_CACHE_NAME = "SQL_PUBLIC_DEPARTMENT";
+
+    public static final String CONF_CACHE_NAME = "SQL_PUBLIC_EMPLOYEECONFERENCE";
 
     /** Client node instance. */
     protected static IgniteEx client;
@@ -118,6 +126,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
         SqlFieldsQuery insEmp = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?, ?, ?, ?)");
 
+        SqlFieldsQuery insConf = new SqlFieldsQuery("INSERT INTO EmployeeConference VALUES (?, ?, ?)");
+
         Random rnd = new Random();
 
         for (long id = 0; id < DEP_CNT; id++) {
@@ -139,6 +149,17 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             Integer salary = rnd.nextInt(50) + 50;
 
             execute(insEmp.setArgs(id, depId, depId, firstName, lastName, age, salary));
+        }
+
+        for (long confId = 0; confId < CONF_CNT; confId++){
+            // todo: question : implement many-to-many relationship?
+
+            for (long empId = FREE_EMP_CNT; empId < EMP_CNT; empId++){
+                boolean enroll = rnd.nextInt(100) < 20; // 20 percents of employees join particular conference
+
+                if (enroll)
+                    execute(insConf.setArgs(empId, empId, confId));
+            }
         }
     }
 
@@ -168,6 +189,20 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             ";");
 
         execute("CREATE INDEX AgeIndex ON Employee (age)");
+
+        // it's important that Employee is collocated by depId but EmployeeConference by empId.
+        execute("CREATE TABLE EmployeeConference (" +
+            "empId LONG, " +
+            "empIdNoidx LONG, " +
+            "confId LONG, " +
+            "PRIMARY KEY (empId, confId)" +
+            ")" +
+            (F.isEmpty(commonParams) ? "" : " WITH \"" + commonParams + "\"") +
+            ";");
+
+        // Create indexes to use these fields in distributed joins.
+        execute("CREATE INDEX EmpIdIdx ON Employee (id)");
+        execute("CREATE INDEX ConfEmpIdIdx ON EmployeeConference (empId)");
     }
 
     /**
@@ -868,6 +903,68 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
             GridTestUtils.assertThrows(log, () -> executeFrom(fullOuterJoinSubquery, node),
                 IgniteSQLException.class, "Failed to parse query.");
+        });
+    }
+
+
+    public void testInnerDistJoin(){
+        testAllNodes(node -> {
+            String qry = "SELECT e.id, e.firstName, p.confId " +
+                "FROM Employee e INNER JOIN EmployeeConference p " +
+                "ON e.id = p.empId";
+
+            Result act = executeFrom(new SqlFieldsQuery(qry).setDistributedJoins(true), node);
+
+            List<List<Object>> exp = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(CONF_CACHE_NAME),
+                (emp, conf) -> sqlEq(emp.get("ID"), conf.get("EMPID")),
+                (emp, conf) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), conf.get("CONFID")));
+
+            assertContainsEq(act.values(), exp);
+        });
+    }
+
+    public void testNegativeInnerDistJoin(){
+        testAllNodes(node -> {
+            String qry = "SELECT e.id, e.firstName, p.confId " +
+                "FROM Employee e INNER JOIN EmployeeConference p " +
+                "ON e.id = p.empIdNoidx";
+
+            GridTestUtils.assertThrows(log,
+                () -> executeFrom(new SqlFieldsQuery(qry).setDistributedJoins(true), node),
+                CacheException.class,
+                "Failed to prepare distributed join query: join condition does not use index");
+        });
+    }
+
+    public void testLeftDistJoin(){
+        testAllNodes(node -> {
+            String qry = "SELECT e.id, e.firstName, p.confId " +
+                "FROM Employee e LEFT JOIN EmployeeConference p " +
+                "ON e.id = p.empId";
+
+            Result act = executeFrom(new SqlFieldsQuery(qry).setDistributedJoins(true), node);
+
+            List<List<Object>> exp = doLeftJoin(node.cache(EMP_CACHE_NAME), node.cache(CONF_CACHE_NAME),
+                (emp, conf) -> sqlEq(emp.get("ID"), conf.get("EMPID")),
+                (emp, conf) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), conf.get("CONFID")));
+
+            assertContainsEq(act.values(), exp);
+        });
+    }
+
+    public void testRightDistJoin(){
+        testAllNodes(node -> {
+            String qry = "SELECT e.id, e.firstName, p.confId " +
+                "FROM Employee e RIGHT JOIN EmployeeConference p " +
+                "ON e.id = p.empId";
+
+            Result act = executeFrom(new SqlFieldsQuery(qry).setDistributedJoins(true), node);
+
+            List<List<Object>> exp = doRightJoin(node.cache(EMP_CACHE_NAME), node.cache(CONF_CACHE_NAME),
+                (emp, conf) -> sqlEq(emp.get("ID"), conf.get("EMPID")),
+                (emp, conf) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), conf.get("CONFID")));
+
+            assertContainsEq(act.values(), exp);
         });
     }
 
