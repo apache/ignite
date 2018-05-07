@@ -25,7 +25,7 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
  * The timestamp extends the standard JavaScript {@link Date} Object and consists of:
  *   - time  - the number of milliseconds since January 1, 1970, 00:00:00 UTC,
  *             methods of the JavaScript {@link Date} Object can be used to operate with the time.
- *   - nanoseconds - fraction of the last second in the range from 0 to 999999999 nanoseconds,
+ *   - nanoseconds - fraction of the last millisecond in the range from 0 to 999999 nanoseconds,
  *                   this class specifies additional methods to operate with the nanoseconds.
  */
 class Timestamp extends Date {
@@ -34,8 +34,8 @@ class Timestamp extends Date {
      * Public constructor.
      *
      * @param {number} time - integer value representing the number of milliseconds since January 1, 1970, 00:00:00 UTC.
-     * @param {number} nanos - integer value representing the nanoseconds of the last second,
-     *                         can be in the range from 0 to 999999999.
+     * @param {number} nanos - integer value representing the nanoseconds of the last millisecond,
+     *                         should be in the range from 0 to 999999.
      *
      * @return {Timestamp} - new Timestamp instance
      *
@@ -47,18 +47,19 @@ class Timestamp extends Date {
     }
 
     /**
-     * Returns the nanoseconds of the last second from the timestamp.
+     * Returns the nanoseconds of the last millisecond from the timestamp.
      *
-     * @return {number} - nanoseconds of the last second.
+     * @return {number} - nanoseconds of the last millisecond.
      */
     getNanos() {
         return this._nanos;
     }
 
     /**
-     * Updates the nanoseconds of the last second in the timestamp.
+     * Updates the nanoseconds of the last millisecond in the timestamp.
      *
-     * @param {number} nanos - new value for the nanoseconds of the last second.
+     * @param {number} nanos - new value for the nanoseconds of the last millisecond,
+     *                         should be in the range from 0 to 999999.
      *
      * @return {Timestamp} - the same instance of Timestamp
      *
