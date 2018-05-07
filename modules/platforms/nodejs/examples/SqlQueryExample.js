@@ -85,11 +85,11 @@ class SqlQueryExample {
                 new SqlQuery('Person', 'salary > ? and salary <= ?').
                     setArgs(900, 1600));
 
-            console.log('Query results:');
+            console.log('SqlQuery results (salary between 900 and 1600):');
             let person;
             do {
                 person = (await sqlCursor.getValue()).getValue();
-                console.log(Util.format('name: %s %s, salary: %d',
+                console.log(Util.format('  name: %s %s, salary: %d',
                     person.firstName, person.lastName, person.salary));
             } while (sqlCursor.hasMore());
 
@@ -121,11 +121,9 @@ class SqlQueryExample {
 
     onStateChanged(state, reason) {
         if (state === IgniteClient.STATE.CONNECTED) {
-            this._connected = true;
             console.log('Client is started');
         }
         else if (state === IgniteClient.STATE.DISCONNECTED) {
-            this._connected = false;
             console.log('Client is stopped');
             if (reason) {
                 console.log(reason);

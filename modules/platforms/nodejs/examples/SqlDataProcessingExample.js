@@ -175,12 +175,12 @@ class SqlDataProcessing {
 
         const cursor = await countryCache.query(query);
 
-        console.log(">>> 10 Most Populated Cities:");
+        console.log("10 Most Populated Cities:");
 
         let row;
         do {
             row = await cursor.getValue();
-            console.log("    >>> " + row[1] + " people live in " + row[0]);
+            console.log("    " + row[1] + " people live in " + row[0]);
         } while (cursor.hasMore());
     }
 
@@ -193,10 +193,10 @@ class SqlDataProcessing {
 
         const cursor = await countryCache.query(query);
 
-        console.log(">>> 3 Most Populated Cities in US, RUS and CHN:");
+        console.log("3 Most Populated Cities in US, RUS and CHN:");
 
         for (let row of await cursor.getAll()) {
-            console.log("    >>> " + row[2] + " people live in " + row[1] + ", " + row[0]);
+            console.log("    " + row[2] + " people live in " + row[1] + ", " + row[0]);
         }
     }
 
@@ -209,9 +209,9 @@ class SqlDataProcessing {
         const fieldNames = cursor.getFieldNames();
 
         for (let city of await cursor.getAll()) {
-            console.log('>>> City Info:');
+            console.log('City Info:');
             for (let column of city) {
-                console.log("    >>> " + column);
+                console.log("    " + column);
             }
         }
     }
@@ -225,11 +225,9 @@ class SqlDataProcessing {
 
     onStateChanged(state, reason) {
         if (state === IgniteClient.STATE.CONNECTED) {
-            this._connected = true;
             console.log('Client is started');
         }
         else if (state === IgniteClient.STATE.DISCONNECTED) {
-            this._connected = false;
             console.log('Client is stopped');
             if (reason) {
                 console.log(reason);
