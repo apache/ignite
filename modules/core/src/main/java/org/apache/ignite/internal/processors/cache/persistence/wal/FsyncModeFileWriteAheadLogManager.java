@@ -101,6 +101,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -1267,6 +1268,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         /** Formatted index. */
         private int formatted;
 
+        /** Worker that encapsulates thread body */
+        private GridWorker worker;
+
         /**
          *
          */
@@ -1274,6 +1278,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             super("wal-file-archiver%" + cctx.igniteInstanceName());
 
             this.lastAbsArchivedIdx = lastAbsArchivedIdx;
+
+            worker = makeWorker(getName(), this::workerBody);
         }
 
         /**
@@ -1345,6 +1351,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /** */
         private void workerBody() {
+            // TODO IGNITE-6587: timed waits + worker heartbeat updates.
             try {
                 allocateRemainingFiles();
             }
@@ -1438,7 +1445,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /** {@inheritDoc} */
         @Override public void run() {
-            makeWorker(getName(), this::workerBody).run();
+            worker.run();
         }
 
         /**
@@ -1857,6 +1864,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Responsible for decompressing previously compressed segments of WAL archive if they are needed for replay.
      */
     private class FileDecompressor extends Thread {
+        /** */
+        private static final String POLL_TIMEOUT_PROP = "IGNITE_WAL_DECOMPRESSOR_TIMEOUT_MS";
+
+        /** */
+        private static final int DFLT_TIMEOUT = 10_000;
+
         /** Current thread stopping advice. */
         private volatile boolean stopped;
 
@@ -1869,23 +1882,35 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         /** Byte array for draining data. */
         private byte[] arr = new byte[tlbSize];
 
+        /** Worker that encapsulates thread body */
+        private GridWorker worker;
+
         /**
          *
          */
         FileDecompressor() {
             super("wal-file-decompressor%" + cctx.igniteInstanceName());
+
+            worker = makeWorker(getName(), this::workerBody);
         }
 
         /** */
         private void workerBody() {
             Throwable err = null;
 
+            long pollTimeoutMs = IgniteSystemProperties.getLong(POLL_TIMEOUT_PROP, DFLT_TIMEOUT);
+
             while (!Thread.currentThread().isInterrupted() && !stopped) {
                 try {
-                    long segmentToDecompress = segmentsQueue.take();
+                    worker.updateHeartbeat();
+
+                    Long segmentToDecompress = segmentsQueue.poll(pollTimeoutMs, TimeUnit.MILLISECONDS);
 
                     if (stopped)
                         break;
+
+                    if (segmentToDecompress == null)
+                        continue;
 
                     File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".zip");
                     File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".tmp");
@@ -1926,7 +1951,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /** {@inheritDoc} */
         @Override public void run() {
-            makeWorker(getName(), this::workerBody).run();
+            worker.run();
         }
 
         /**

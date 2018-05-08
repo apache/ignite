@@ -53,6 +53,9 @@ public abstract class GridWorker implements Runnable {
     /** Actual thread runner. */
     private volatile Thread runner;
 
+    /** Timestamp to be updated by this worker periodically to indicate it's up and running. */
+    private volatile long heartbeatTimeMillis;
+
     /** */
     private final Object mux = new Object();
 
@@ -94,6 +97,8 @@ public abstract class GridWorker implements Runnable {
         // Runner thread must be recorded first as other operations
         // may depend on it being present.
         runner = Thread.currentThread();
+
+        updateHeartbeat();
 
         if (log.isDebugEnabled())
             log.debug("Grid runnable started: " + name);
@@ -263,5 +268,10 @@ public abstract class GridWorker implements Runnable {
             "hashCode", hashCode(),
             "interrupted", (runner != null ? runner.isInterrupted() : "unknown"),
             "runner", (runner == null ? "null" : runner.getName()));
+    }
+
+    /** */
+    public void updateHeartbeat() {
+        heartbeatTimeMillis = System.currentTimeMillis();
     }
 }

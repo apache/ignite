@@ -64,6 +64,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -2579,12 +2580,25 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private long lastRingMsgTime;
 
+        /** Worker that encapsulates thread body */
+        private GridWorker worker;
+
         /**
          */
         RingMessageWorker() {
             super("tcp-disco-msg-worker", 10);
 
             initConnectionCheckFrequency();
+
+            WorkersRegistry workerRegistry = ((IgniteEx)spi.ignite()).context().workersRegistry();
+
+            worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
+                @Override protected void body() throws InterruptedException {
+                    workerBody();
+                }
+            };
+
+            setBeforeEachPollAction(worker::updateHeartbeat);
         }
 
         /**
@@ -2673,13 +2687,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            WorkersRegistry workerRegistry = ((IgniteEx)spi.ignite()).context().workersRegistry();
-
-            new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
-                @Override protected void body() throws InterruptedException {
-                    workerBody();
-                }
-            }.run();
+            worker.run();
         }
         /**
          * Initializes connection check frequency. Used only when failure detection timeout is enabled.
@@ -5588,11 +5596,20 @@ class ServerImpl extends TcpDiscoveryImpl {
      * From that moment server is no more responsible for the socket.
      */
     private class TcpServer extends IgniteSpiThread {
+        /** */
+        private static final String ACCEPT_TIMEOUT_PROP = "IGNITE_TCP_ACCEPT_SO_TIMEOUT";
+
+        /** */
+        private static final int DFLT_ACCEPT_TIMEOUT = 10_000;
+
         /** Socket TCP server listens to. */
         private ServerSocket srvrSock;
 
         /** Port to listen. */
         private int port;
+
+        /** Worker that encapsulates thread body */
+        private GridWorker worker;
 
         /**
          * Constructor.
@@ -5626,6 +5643,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ']');
                     }
 
+                    WorkersRegistry workerRegistry = ((IgniteEx)spi.ignite()).context().workersRegistry();
+
+                    worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
+                        @Override protected void body() {
+                            workerBody();
+                        }
+                    };
+
                     return;
                 }
                 catch (IOException e) {
@@ -5649,8 +5674,21 @@ class ServerImpl extends TcpDiscoveryImpl {
             Throwable err = null;
 
             try {
+                int acceptTimeoutMs = IgniteSystemProperties.getInteger(ACCEPT_TIMEOUT_PROP, DFLT_ACCEPT_TIMEOUT);
+
+                srvrSock.setSoTimeout(acceptTimeoutMs);
+
+                Socket sock;
+
                 while (!isInterrupted()) {
-                    Socket sock = srvrSock.accept();
+                    worker.updateHeartbeat();
+
+                    try {
+                        sock = srvrSock.accept();
+                    }
+                    catch (SocketTimeoutException ignored) {
+                        continue;
+                    }
 
                     long tstamp = U.currentTimeMillis();
 
@@ -5710,13 +5748,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            WorkersRegistry workerRegistry = ((IgniteEx)spi.ignite()).context().workersRegistry();
-
-            new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
-                @Override protected void body() {
-                    workerBody();
-                }
-            }.run();
+            worker.run();
         }
 
         /** {@inheritDoc} */
@@ -6772,6 +6804,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Polling timeout. */
         private final long pollingTimeout;
 
+        /** */
+        private Runnable beforeEachPoll;
+
         /**
          * @param name Thread name.
          * @param pollingTimeout Messages polling timeout.
@@ -6784,12 +6819,22 @@ class ServerImpl extends TcpDiscoveryImpl {
             setPriority(spi.threadPri);
         }
 
+        /**
+         * @param act action to be executed before each timed queue poll.
+         */
+        void setBeforeEachPollAction(Runnable act) {
+            beforeEachPoll = act;
+        }
+
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             if (log.isDebugEnabled())
                 log.debug("Message worker started [locNodeId=" + getConfiguredNodeId() + ']');
 
             while (!isInterrupted()) {
+                if (beforeEachPoll != null)
+                    beforeEachPoll.run();
+
                 T msg = queue.poll(pollingTimeout, TimeUnit.MILLISECONDS);
 
                 if (msg == null)

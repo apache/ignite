@@ -4189,11 +4189,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** */
         private final BlockingQueue<DisconnectedSessionInfo> q = new LinkedBlockingQueue<>();
 
+        /** Worker that encapsulates thread body */
+        private GridWorker worker;
+
         /**
          * @param igniteInstanceName Ignite instance name.
          */
         private CommunicationWorker(String igniteInstanceName) {
             super(igniteInstanceName, "tcp-comm-worker", log);
+
+            WorkersRegistry workerRegistry = ((IgniteEx)ignite).context().workersRegistry();
+
+            worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
+                @Override protected void body() throws InterruptedException {
+                    workerBody();
+                }
+            };
         }
 
         /** */
@@ -4205,6 +4216,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             try {
                 while (!isInterrupted()) {
+                    worker.updateHeartbeat();
+
                     DisconnectedSessionInfo disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
 
                     if (disconnectData != null)
@@ -4232,13 +4245,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            WorkersRegistry workerRegistry = ((IgniteEx)ignite).context().workersRegistry();
-
-            new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
-                @Override protected void body() throws InterruptedException {
-                    workerBody();
-                }
-            }.run();
+            worker.run();
         }
 
         /**
