@@ -1882,7 +1882,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
                             "decompression [segmentIdx=" + segmentToDecompress + ']', t);
 
-                        decompressionFutures.remove(segmentToDecompress).onDone(e);
+                        synchronized (this) {
+                            decompressionFutures.remove(segmentToDecompress).onDone(e);
+                        }
                     }
                 }
             }
