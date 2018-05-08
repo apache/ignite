@@ -62,22 +62,23 @@ import org.jetbrains.annotations.Nullable;
  * Test base for test for sql features.
  */
 public class BaseSqlTest extends GridCommonAbstractTest {
-    /** Size of Employee test table. */
+    /** Number of all employees. */
     public final static long EMP_CNT = 1000L;
 
-    /** Size of Department test table. */
+    /** Number of all departments. */
     public final static long DEP_CNT = 50L;
 
-    public final static long CONF_CNT = 30L;
+    /** Number of all addresses. */
+    public final static long ADDR_CNT = 500L;
 
-    /** Minimal number of employees that aren't associated with any department and conference. */
+    /** Minimal number of employees that aren't associated with any department. */
     public final static long FREE_EMP_CNT = 50;
 
-    /** Number of departments that don't have employees. */
+    /** Number of departments that don't have employees and addresses. */
     public final static long FREE_DEP_CNT = 5;
 
     /** Number of conferences that don't have participants. */
-    public final static long FREE_CONF_CNT = 5;
+    public final static long FREE_ADDR_CNT = 30;
 
     /** Number of possible age values (width of ages values range). */
     public final static int AGES_CNT = 50;
@@ -91,7 +92,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /** Name of the Department table cache. */
     public static final String DEP_CACHE_NAME = "SQL_PUBLIC_DEPARTMENT";
 
-    public static final String CONF_CACHE_NAME = "SQL_PUBLIC_EMPLOYEECONFERENCE";
+    public static final String ADDR_CACHE_NAME = "SQL_PUBLIC_ADDRESS";
 
     /** Client node instance. */
     protected static IgniteEx client;
@@ -122,18 +123,18 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * Fills tables with data.
      */
     protected void fillCommonData() {
-        SqlFieldsQuery insDep = new SqlFieldsQuery("INSERT INTO Department VALUES (?, ?)");
+        SqlFieldsQuery insDep = new SqlFieldsQuery("INSERT INTO Department VALUES (?, ?, ?)");
 
         SqlFieldsQuery insEmp = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?, ?, ?, ?)");
 
-        SqlFieldsQuery insConf = new SqlFieldsQuery("INSERT INTO EmployeeConference VALUES (?, ?, ?)");
+        SqlFieldsQuery insConf = new SqlFieldsQuery("INSERT INTO Address VALUES (?, ?, ?, ?)");
 
         Random rnd = new Random();
 
         for (long id = 0; id < DEP_CNT; id++) {
             String name = UUID.randomUUID().toString();
 
-            execute(insDep.setArgs(id, name));
+            execute(insDep.setArgs(id, id, name));
         }
 
         for (long id = 0; id < EMP_CNT; id++) {
@@ -151,22 +152,22 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             execute(insEmp.setArgs(id, depId, depId, firstName, lastName, age, salary));
         }
 
-        for (long confId = 0; confId < CONF_CNT; confId++){
-            // todo: question : implement many-to-many relationship?
+        for (long addrId = 0; addrId < ADDR_CNT; addrId++){
+            Long depId = (long)rnd.nextInt((int)(DEP_CNT - FREE_DEP_CNT));
 
-            for (long empId = FREE_EMP_CNT; empId < EMP_CNT; empId++){
-                boolean enroll = rnd.nextInt(100) < 20; // 20 percents of employees join particular conference
+            if (addrId < FREE_ADDR_CNT)
+                depId = null;
 
-                if (enroll)
-                    execute(insConf.setArgs(empId, empId, confId));
-            }
+            String address = UUID.randomUUID().toString();
+
+            execute(insConf.setArgs(addrId, depId, depId, address));
         }
     }
 
     /**
-     * Creates common table "Employee".
+     * Creates common tables.
      *
-     * @param commonParams Common parameters for the with clause of created table, such as "template=partitioned".
+     * @param commonParams Common parameters for the with clause (of CREATE TABLE), such as "template=partitioned".
      */
     protected final void createTables(String commonParams) {
         execute("CREATE TABLE Employee (" +
@@ -184,25 +185,26 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
         execute("CREATE TABLE Department (" +
             "id LONG PRIMARY KEY," +
-            "name VARCHAR) " +
+            "idNoidx LONG, " +
+            "name VARCHAR" +
+            ") " +
             (F.isEmpty(commonParams) ? "" : " WITH \"" + commonParams + "\"") +
             ";");
 
         execute("CREATE INDEX AgeIndex ON Employee (age)");
 
-        // it's important that Employee is collocated by depId but EmployeeConference by empId.
-        execute("CREATE TABLE EmployeeConference (" +
-            "empId LONG, " +
-            "empIdNoidx LONG, " +
-            "confId LONG, " +
-            "PRIMARY KEY (empId, confId)" +
+        execute("CREATE TABLE Address (" +
+            "id LONG PRIMARY KEY, " +
+            "depId LONG, " +
+            "depIdNoidx LONG, " +
+            "address VARCHAR" +
             ")" +
             (F.isEmpty(commonParams) ? "" : " WITH \"" + commonParams + "\"") +
             ";");
 
-        // Create indexes to use these fields in distributed joins.
-        execute("CREATE INDEX EmpIdIdx ON Employee (id)");
-        execute("CREATE INDEX ConfEmpIdIdx ON EmployeeConference (empId)");
+        // todo: indexes for address table.
+        // todo: index employee table.
+        execute("CREATE INDEX depIndex ON Address (depId)");
     }
 
     /**
@@ -711,6 +713,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    //todo: change to noidx ?
     public void testGroupByIdxField() {
         testAllNodes(node -> {
             // Need to filter out only part of records (each one is a count of employees
@@ -909,62 +912,34 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     public void testInnerDistJoin(){
         testAllNodes(node -> {
-            String qry = "SELECT e.id, e.firstName, p.confId " +
-                "FROM Employee e INNER JOIN EmployeeConference p " +
-                "ON e.id = p.empId";
+            final String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d INNER JOIN Address a " +
+                "ON d.%s = a.%s";
 
-            Result act = executeFrom(new SqlFieldsQuery(qry).setDistributedJoins(true), node);
+            Result actIdxOnOn = executeFrom(new SqlFieldsQuery(String.format(qryTpl, "id", "depId")).setDistributedJoins(true), node);
+            Result actIdxOffOn = executeFrom(new SqlFieldsQuery(String.format(qryTpl, "idNoidx", "depId")).setDistributedJoins(true), node);
+            Result actIdxOnOff = executeFrom(new SqlFieldsQuery(String.format(qryTpl, "id", "depIdNoidx")).setDistributedJoins(true), node);
 
-            List<List<Object>> exp = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(CONF_CACHE_NAME),
-                (emp, conf) -> sqlEq(emp.get("ID"), conf.get("EMPID")),
-                (emp, conf) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), conf.get("CONFID")));
+            List<List<Object>> exp = doInnerJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
+                (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
+                (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
 
-            assertContainsEq(act.values(), exp);
+            assertContainsEq("Distributed join on 'idx = idx' failed.", actIdxOnOn.values(), exp);
+            assertContainsEq("Distributed join on 'noidx = idx' failed.", actIdxOffOn.values(), exp);
+            assertContainsEq("Distributed join on 'idx = noidx' failed.", actIdxOnOff.values(), exp);
         });
     }
 
     public void testNegativeInnerDistJoin(){
         testAllNodes(node -> {
-            String qry = "SELECT e.id, e.firstName, p.confId " +
-                "FROM Employee e INNER JOIN EmployeeConference p " +
-                "ON e.id = p.empIdNoidx";
+            String qry = "SELECT d.id, d.name, a.address " +
+                "FROM Department d INNER JOIN Address a " +
+                "ON d.idNoidx = a.depIdNoidx";
 
             GridTestUtils.assertThrows(log,
                 () -> executeFrom(new SqlFieldsQuery(qry).setDistributedJoins(true), node),
                 CacheException.class,
                 "Failed to prepare distributed join query: join condition does not use index");
-        });
-    }
-
-    public void testLeftDistJoin(){
-        testAllNodes(node -> {
-            String qry = "SELECT e.id, e.firstName, p.confId " +
-                "FROM Employee e LEFT JOIN EmployeeConference p " +
-                "ON e.id = p.empId";
-
-            Result act = executeFrom(new SqlFieldsQuery(qry).setDistributedJoins(true), node);
-
-            List<List<Object>> exp = doLeftJoin(node.cache(EMP_CACHE_NAME), node.cache(CONF_CACHE_NAME),
-                (emp, conf) -> sqlEq(emp.get("ID"), conf.get("EMPID")),
-                (emp, conf) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), conf.get("CONFID")));
-
-            assertContainsEq(act.values(), exp);
-        });
-    }
-
-    public void testRightDistJoin(){
-        testAllNodes(node -> {
-            String qry = "SELECT e.id, e.firstName, p.confId " +
-                "FROM Employee e RIGHT JOIN EmployeeConference p " +
-                "ON e.id = p.empId";
-
-            Result act = executeFrom(new SqlFieldsQuery(qry).setDistributedJoins(true), node);
-
-            List<List<Object>> exp = doRightJoin(node.cache(EMP_CACHE_NAME), node.cache(CONF_CACHE_NAME),
-                (emp, conf) -> sqlEq(emp.get("ID"), conf.get("EMPID")),
-                (emp, conf) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), conf.get("CONFID")));
-
-            assertContainsEq(act.values(), exp);
         });
     }
 
