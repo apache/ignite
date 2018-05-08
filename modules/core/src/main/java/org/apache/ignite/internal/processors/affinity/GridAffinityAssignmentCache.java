@@ -300,7 +300,7 @@ public class GridAffinityAssignmentCache {
         if (prevAssignment != null && discoEvt != null) {
             boolean affNode = CU.affinityNode(discoEvt.eventNode(), nodeFilter);
 
-            if (!affNode)
+            if (!affNode && discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT)
                 assignment = prevAssignment;
             else if (hasBaseline && !changedBaseline) {
                 if (baselineAssignment == null)
