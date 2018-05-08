@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMultinodeUpdateSelfT
 import org.apache.ignite.internal.processors.cache.GridCacheStoreManagerDeserializationTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionMultinodeTest;
 import org.apache.ignite.internal.processors.cache.GridLocalCacheStoreManagerDeserializationTest;
+import org.apache.ignite.internal.processors.cache.IgniteAtomicCachePutOnDestroyTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicLocalPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicNearPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPeekModesTest;
@@ -68,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheGetCustomCollectio
 import org.apache.ignite.internal.processors.cache.IgniteCacheInvokeReadThroughSingleNodeTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheInvokeReadThroughTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCachePutOnDestroyTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughStoreCallTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStartTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxLocalPeekModesTest;
@@ -297,6 +299,9 @@ public class IgniteCacheTestSuite4 extends TestSuite {
 
         suite.addTestSuite(IgniteStartCacheInTransactionSelfTest.class);
         suite.addTestSuite(IgniteStartCacheInTransactionAtomicSelfTest.class);
+
+        suite.addTestSuite(IgniteCachePutOnDestroyTest.class);
+        suite.addTestSuite(IgniteAtomicCachePutOnDestroyTest.class);
 
         suite.addTestSuite(CacheReadThroughRestartSelfTest.class);
         suite.addTestSuite(CacheReadThroughReplicatedRestartSelfTest.class);
