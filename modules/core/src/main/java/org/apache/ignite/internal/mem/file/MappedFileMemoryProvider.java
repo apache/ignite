@@ -94,14 +94,18 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider {
 
     /** {@inheritDoc} */
     @Override public void shutdown() {
-        for (MappedFile file : mappedFiles) {
-            try {
-                file.close();
+        if (mappedFiles != null) {
+            for (MappedFile file : mappedFiles) {
+                try {
+                    file.close();
+                }
+                catch (IOException e) {
+                    log.error("Failed to close memory-mapped file upon stop (will ignore) [file=" +
+                        file.file() + ", err=" + e.getMessage() + ']');
+                }
             }
-            catch (IOException e) {
-                log.error("Failed to close memory-mapped file upon stop (will ignore) [file=" +
-                    file.file() + ", err=" + e.getMessage() + ']');
-            }
+
+            mappedFiles = null;
         }
     }
 

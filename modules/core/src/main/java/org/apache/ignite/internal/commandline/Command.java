@@ -34,7 +34,10 @@ public enum Command {
     BASELINE("--baseline"),
 
     /** */
-    TX("--tx");
+    TX("--tx"),
+
+    /** */
+    CACHE("--cache");
 
     /** */
     private final String text;
