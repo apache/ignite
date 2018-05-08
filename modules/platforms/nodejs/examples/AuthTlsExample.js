@@ -24,7 +24,7 @@ const CacheEntry = IgniteClient.CacheEntry;
 const ScanQuery = IgniteClient.ScanQuery;
 const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
 
-const ENDPOINT = 'localhost:11110';
+const ENDPOINT = 'localhost:10800';
 const USER_NAME = 'ignite';
 const PASSWORD = 'ignite';
 
