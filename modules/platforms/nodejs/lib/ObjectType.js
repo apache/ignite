@@ -228,8 +228,8 @@ const COMPOSITE_TYPE = Object.freeze({
  *
  * SEE THE PREVIOUS TABLE with the following additional comments:
  *
- * - for COMPLEX_OBJECT the Ignite Client returns a JavaScript Object (eg. class)
- * which was provided during the specified {@link ComplexObjectType} creation.
+ * - for COMPLEX_OBJECT the Ignite Client returns a JavaScript Object
+ * which is defined by the specified {@link ComplexObjectType}.
  *
  * - the returned Map for MAP is defined by the specified {@link MapObjectType}.
  *
@@ -249,8 +249,8 @@ const COMPOSITE_TYPE = Object.freeze({
  *
  * SEE THE PREVIOUS TABLE with the following additional comments:
  *
- * - for COMPLEX_OBJECT the Ignite Client allows a JavaScript Object (eg. class)
- * which was provided during the specified {@link ComplexObjectType} creation.
+ * - for COMPLEX_OBJECT the Ignite Client allows a JavaScript Object
+ * which is defined by the specified {@link ComplexObjectType}.
  *
  * - the allowed Map for MAP is defined by the specified {@link MapObjectType}.
  *
