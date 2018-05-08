@@ -123,14 +123,13 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         InetAddress locHost;
 
         try {
-            locHost = U.resolveLocalHost(ctx.config().getLocalHost());
+            locHost = U.resolveLocalHost(System.getProperty(IGNITE_JETTY_HOST, ctx.config().getLocalHost()));
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to resolve local host to bind address: " + ctx.config().getLocalHost(), e);
         }
 
-        if (System.getProperty(IGNITE_JETTY_HOST) == null)
-            System.setProperty(IGNITE_JETTY_HOST, locHost.getHostAddress());
+        System.setProperty(IGNITE_JETTY_HOST, locHost.getHostAddress());
 
         jettyHnd = new GridJettyRestHandler(hnd, new C1<String, Boolean>() {
             @Override public Boolean apply(String tok) {
