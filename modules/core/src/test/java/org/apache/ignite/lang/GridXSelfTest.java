@@ -55,6 +55,15 @@ public class GridXSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
+    public void testTimeSpan() {
+        assertEquals(X.timeSpan2DHMSM(86400001L), "1 day, 00:00:00.001");
+
+        assertEquals(X.timeSpan2DHMSM(172800004L), "2 days, 00:00:00.004");
+    }
+
+    /**
+     *
+     */
     public void testShallowClone() {
         // Single not cloneable object
         Object obj = new Object();
