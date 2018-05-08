@@ -34,7 +34,6 @@ import org.junit.runners.Parameterized;
  */
 @RunWith(Parameterized.class)
 public class FullyConnectedComponentSearcherTest {
-
     /** Adjacency matrix provider for each test. */
     private AdjacencyMatrixProvider provider;
 
