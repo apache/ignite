@@ -1,6 +1,6 @@
 # Test Instructions #
 
-NodeJS Client for Apache Ignite contains [Jasmine](https://www.npmjs.com/package/jasmine) tests in to check the client behavior.
+NodeJS Client for Apache Ignite contains [Jasmine](https://www.npmjs.com/package/jasmine) tests to check the behavior of the client.
 
 ## Tests Installation ##
 
