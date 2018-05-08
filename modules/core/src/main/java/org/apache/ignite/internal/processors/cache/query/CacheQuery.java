@@ -156,13 +156,13 @@ import org.jetbrains.annotations.Nullable;
  * private class MapPoint implements Serializable {
  *     // Geospatial index.
  *     &#64;QuerySqlField(index = true)
- *     private com.vividsolutions.jts.geom.Point location;
+ *     private org.locationtech.jts.geom.Point location;
  *
  *     // Not indexed field.
  *     &#64;QuerySqlField
  *     private String name;
  *
- *     public MapPoint(com.vividsolutions.jts.geom.Point location, String name) {
+ *     public MapPoint(org.locationtech.jts.geom.Point location, String name) {
  *         this.location = location;
  *         this.name = name;
  *     }
@@ -170,14 +170,14 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * Example of spatial query on the geo-indexed field from above:
  * <pre name="code" class="java">
- * com.vividsolutions.jts.geom.GeometryFactory factory = new com.vividsolutions.jts.geom.GeometryFactory();
+ * org.locationtech.jts.geom.GeometryFactory factory = new org.locationtech.jts.geom.GeometryFactory();
  *
- * com.vividsolutions.jts.geom.Polygon square = factory.createPolygon(new Coordinate[] {
- *     new com.vividsolutions.jts.geom.Coordinate(0, 0),
- *     new com.vividsolutions.jts.geom.Coordinate(0, 100),
- *     new com.vividsolutions.jts.geom.Coordinate(100, 100),
- *     new com.vividsolutions.jts.geom.Coordinate(100, 0),
- *     new com.vividsolutions.jts.geom.Coordinate(0, 0)
+ * org.locationtech.jts.geom.Polygon square = factory.createPolygon(new Coordinate[] {
+ *     new org.locationtech.jts.geom.Coordinate(0, 0),
+ *     new org.locationtech.jts.geom.Coordinate(0, 100),
+ *     new org.locationtech.jts.geom.Coordinate(100, 100),
+ *     new org.locationtech.jts.geom.Coordinate(100, 0),
+ *     new org.locationtech.jts.geom.Coordinate(0, 0)
  * });
  *
  * Map.Entry<String, UserData> records = cache.queries().createSqlQuery(MapPoint.class, "select * from MapPoint where location && ?")
