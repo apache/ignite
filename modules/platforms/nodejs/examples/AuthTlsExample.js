@@ -34,7 +34,8 @@ const TLS_CA_FILE_NAME = './certs/ca.crt';
 
 const CACHE_NAME = 'AuthTlsExample_cache';
 
-// This example demonstrates ???.
+// This example demonstrates secure connection to Ignite server and username/password authentication,
+// as well as basic cache put and get operations for primitive types.
 // - connects to ENDPOINT node
 // - creates CACHE_NAME cache if it doesn't exist
 //   -- specifies key and value type of the cache
