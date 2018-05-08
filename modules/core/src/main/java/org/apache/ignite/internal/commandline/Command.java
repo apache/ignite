@@ -37,7 +37,10 @@ public enum Command {
     TX("--tx"),
 
     /** */
-    CACHE("--cache");
+    CACHE("--cache"),
+
+    /** */
+    WAL("--wal");
 
     /** */
     private final String text;
