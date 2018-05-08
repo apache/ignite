@@ -102,10 +102,7 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
 
         GridTestUtils.assertThrowsAnyCause(
             new NullLogger(),
-            () -> {
-                startGrid();
-                return null;
-            },
+            this::startGrid,
             IgniteCheckedException.class,
             "An error occurred during cache configuration loading from file"
         );
