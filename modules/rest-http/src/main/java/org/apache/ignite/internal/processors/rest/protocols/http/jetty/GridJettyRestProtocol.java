@@ -120,16 +120,16 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     @Override public void start(GridRestProtocolHandler hnd) throws IgniteCheckedException {
         assert ctx.config().getConnectorConfiguration() != null;
 
-        InetAddress locHost;
+        InetAddress jettyHost;
 
         try {
-            locHost = U.resolveLocalHost(System.getProperty(IGNITE_JETTY_HOST, ctx.config().getLocalHost()));
+            jettyHost = U.resolveLocalHost(System.getProperty(IGNITE_JETTY_HOST, ctx.config().getLocalHost()));
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to resolve local host to bind address", e);
+            throw new IgniteCheckedException("Failed to resolve host to bind address", e);
         }
 
-        System.setProperty(IGNITE_JETTY_HOST, locHost.getHostAddress());
+        System.setProperty(IGNITE_JETTY_HOST, jettyHost.getHostAddress());
 
         jettyHnd = new GridJettyRestHandler(hnd, new C1<String, Boolean>() {
             @Override public Boolean apply(String tok) {
