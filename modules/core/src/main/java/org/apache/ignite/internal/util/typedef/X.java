@@ -433,14 +433,14 @@ public final class X {
      *      {@code false} otherwise.
      */
     @SafeVarargs
-    public static boolean hasCause(@Nullable Throwable t, @Nullable Class<? extends Throwable>... cls) {
+    public static boolean hasCause(@Nullable Throwable t, @Nullable Class<?>... cls) {
         if (t == null || F.isEmpty(cls))
             return false;
 
         assert cls != null;
 
         for (Throwable th = t; th != null; th = th.getCause()) {
-            for (Class<? extends Throwable> c : cls) {
+            for (Class<?> c : cls) {
                 if (c.isAssignableFrom(th.getClass()))
                     return true;
             }
