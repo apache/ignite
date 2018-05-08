@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,26 +15,15 @@
  * limitations under the License.
  */
 
-#createNotebookBtn {
-  [ignite-icon] {
-    height: 12px;
-  }
-}
+namespace Apache.Ignite.Core.Transactions
+{
+    using System;
+    using System.Collections.Generic;
 
-.queries-notebooks-list {
-  grid-no-data {
-    top: -6px;
-    background: white;
-  }
-
-  .ui-grid-render-container-left:before {
-    display: none;
-  }
-
-  .notebook-name {
-    a {
-      color: #0067b9;
+    /// <summary>
+    /// Disposable readonly collection of <see cref="ITransaction"/>
+    /// </summary>
+    public interface ITransactionCollection : ICollection<ITransaction>, IDisposable
+    {
     }
-  }
 }
-

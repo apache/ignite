@@ -155,5 +155,11 @@ namespace Apache.Ignite.Core.Cluster
         /// </summary>
         /// <param name="cacheName">Name of the cache.</param>
         bool IsWalEnabled(string cacheName);
+
+        /// <summary>
+        /// Set transaction timeout on partition map exchange
+        /// </summary>
+        /// <param name="timeout"></param>
+        void SetTxTimeoutOnPartitionMapExchange(TimeSpan timeout);
     }
 }

@@ -780,8 +780,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             WALPointer restore = restoreMemory(status);
 
-            if (restore == null && status.endPtr != CheckpointStatus.NULL_PTR)
-                throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " + status.endPtr + ".");
+            if (restore == null && !status.endPtr.equals(CheckpointStatus.NULL_PTR)) {
+                throw new StorageException("Restore wal pointer = " + restore + ", while status.endPtr = " +
+                    status.endPtr + ". Can't restore memory - critical part of WAL archive is missing.");
+            }
 
             // First, bring memory to the last consistent checkpoint state if needed.
             // This method should return a pointer to the last valid record in the WAL.
@@ -1074,10 +1076,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         throws IgniteCheckedException {
         if (!regCfg.isPersistenceEnabled())
             super.checkRegionEvictionProperties(regCfg, dbCfg);
-
-        if (regCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED)
+        else if (regCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED) {
             U.warn(log, "Page eviction mode set for [" + regCfg.getName() + "] data will have no effect" +
                 " because the oldest pages are evicted automatically if Ignite persistence is enabled.");
+        }
     }
 
     /** {@inheritDoc} */
