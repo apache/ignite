@@ -231,7 +231,7 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
             this.connectedClients = connectedClients;
         }
 
-        /** {@inheritDoc */
+        /** {@inheritDoc} */
         @Override public int compareTo(@NotNull ClusterPart o) {
             int srvNodesCmp = Integer.compare(srvNodesCnt, o.srvNodesCnt);
 

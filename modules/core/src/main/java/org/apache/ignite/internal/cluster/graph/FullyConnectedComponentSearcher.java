@@ -322,7 +322,7 @@ public class FullyConnectedComponentSearcher {
             return cachedConnRows[idx] = connections[idx].toLongArray();
         }
 
-        /** {@inheritDoc */
+        /** {@inheritDoc} */
         @Override public int compare(Integer node1, Integer node2) {
             long[] conn1 = connectionRow(node1);
             long[] conn2 = connectionRow(node2);

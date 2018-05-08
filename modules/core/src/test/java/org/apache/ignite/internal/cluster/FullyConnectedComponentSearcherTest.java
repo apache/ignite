@@ -150,12 +150,12 @@ public class FullyConnectedComponentSearcherTest {
                     matrix[i].set(j, strMatrix[i].charAt(j) == '1');
         }
 
-        /** {@inheritDoc */
+        /** {@inheritDoc} */
         @Override public BitSet[] provide() {
             return matrix;
         }
 
-        /** {@inheritDoc */
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "StaticMatrix{" +
                 "matrix=" + Arrays.toString(matrix) +
@@ -221,12 +221,12 @@ public class FullyConnectedComponentSearcherTest {
             }
         }
 
-        /** {@inheritDoc */
+        /** {@inheritDoc} */
         @Override public BitSet[] provide() {
             return matrix;
         }
 
-        /** {@inheritDoc */
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "AlmostSplittedGraph{" +
                 "partSizes=" + Arrays.toString(partSizes) +
@@ -278,12 +278,12 @@ public class FullyConnectedComponentSearcherTest {
             }
         }
 
-        /** {@inheritDoc */
+        /** {@inheritDoc} */
         @Override public BitSet[] provide() {
             return matrix;
         }
 
-        /** {@inheritDoc */
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "SeveralConnectionsAreLost{" +
                 "nodes=" + nodes +
