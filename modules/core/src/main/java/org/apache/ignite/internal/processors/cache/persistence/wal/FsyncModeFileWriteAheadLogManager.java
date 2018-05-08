@@ -28,6 +28,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.sql.Time;
 import java.util.ArrayList;
@@ -1837,8 +1838,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         /** {@inheritDoc} */
         @Override public void run() {
             while (!Thread.currentThread().isInterrupted() && !stopped) {
+                long segmentToDecompress = -1L;
+
                 try {
-                    long segmentToDecompress = segmentsQueue.take();
+                    segmentToDecompress = segmentsQueue.take();
 
                     if (stopped)
                         break;
@@ -1856,7 +1859,16 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                             io.write(arr, 0, bytesRead);
                     }
 
-                    Files.move(unzipTmp.toPath(), unzip.toPath());
+                    try {
+                        Files.move(unzipTmp.toPath(), unzip.toPath());
+                    }
+                    catch (FileAlreadyExistsException e) {
+                        U.error(log, "Can't rename temporary unzipped segment: raw segment is already present " +
+                            "[tmp=" + unzipTmp + ", raw=" + unzip + ']', e);
+
+                        if (!unzipTmp.delete())
+                            U.error(log, "Can't delete temporary unzipped segment [tmp=" + unzipTmp + ']');
+                    }
 
                     synchronized (this) {
                         decompressionFutures.remove(segmentToDecompress).onDone();
@@ -1865,10 +1877,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 catch (InterruptedException e){
                     Thread.currentThread().interrupt();
                 }
-                catch (IOException e) {
-                    U.error(log, "Unexpected error during WAL decompression", e);
+                catch (Throwable t) {
+                    if (!stopped && segmentToDecompress != -1L) {
+                        IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
+                            "decompression [segmentIdx=" + segmentToDecompress + ']', t);
 
-                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+                        decompressionFutures.remove(segmentToDecompress).onDone(e);
+                    }
                 }
             }
         }
