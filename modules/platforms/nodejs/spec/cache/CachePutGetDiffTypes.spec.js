@@ -441,7 +441,7 @@ describe('cache put get test suite >', () => {
                 }
 
                 let array = new Array();
-                for (let i = 0; i < 10; i++) {
+                for (let i = 0; i < 5; i++) {
                     for (let field in object) {
                         const type = parseInt(field.substring(5));
                         object[field] = TestingHelper.primitiveValues[type].modificator(object[field]);
@@ -468,7 +468,7 @@ describe('cache put get test suite >', () => {
                 }
                 const objectType = new ComplexObjectType(object, 'tstComplObjectWithDefaultFieldTypes');
                 let array = new Array();
-                for (let i = 0; i < 10; i++) {
+                for (let i = 0; i < 5; i++) {
                     for (let field in object) {
                         const type = parseInt(field.substring(5));
                         object[field] = TestingHelper.primitiveValues[type].modificator(object[field]);
@@ -492,7 +492,7 @@ describe('cache put get test suite >', () => {
                     binObject.setField('field' + type, typeInfo.values[0], type);
                 }
                 let array = new Array();
-                for (let i = 0; i < 10; i++) {
+                for (let i = 0; i < 5; i++) {
                     for (let field of binObject.getFieldNames()) {
                         const type = parseInt(field.substring(5));
                         binObject.setField(
@@ -525,7 +525,7 @@ describe('cache put get test suite >', () => {
                 }
 
                 let array = new Array();
-                for (let i = 0; i < 4; i++) {
+                for (let i = 0; i < 2; i++) {
                     let innerArray = new Array();
                     for (let j = 0; j < 2; j++) {
                         for (let field in object) {

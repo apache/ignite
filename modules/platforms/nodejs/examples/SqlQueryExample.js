@@ -66,7 +66,6 @@ class SqlQueryExample {
             const cacheCfg = new CacheConfiguration().
                 setQueryEntities(
                     new QueryEntity().
-                        setKeyTypeName('INT').
                         setValueTypeName('Person').
                         setFields([
                             new QueryField('id', 'java.lang.Integer'),

@@ -249,7 +249,9 @@ class SqlQuery extends Query {
      * @ignore
      */
     async _getCursor(socket, payload, keyType = null, valueType = null) {
-        return new Cursor(socket, BinaryUtils.OPERATION.QUERY_SQL_CURSOR_GET_PAGE, payload, keyType, valueType);
+        const cursor = new Cursor(socket, BinaryUtils.OPERATION.QUERY_SQL_CURSOR_GET_PAGE, payload, keyType, valueType);
+        cursor._readId(payload);
+        return cursor;
     }
 }
 
@@ -492,7 +494,9 @@ class ScanQuery extends Query {
      * @ignore
      */
     async _getCursor(socket, payload, keyType = null, valueType = null) {
-        return new Cursor(socket, BinaryUtils.OPERATION.QUERY_SCAN_CURSOR_GET_PAGE, payload, keyType, valueType);
+        const cursor = new Cursor(socket, BinaryUtils.OPERATION.QUERY_SCAN_CURSOR_GET_PAGE, payload, keyType, valueType);
+        cursor._readId(payload);
+        return cursor;
     }
 }
 

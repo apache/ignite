@@ -365,10 +365,7 @@ class BinaryUtils {
             return;
         }
         const valueTypeCode = BinaryUtils.getTypeCode(BinaryUtils.calcObjectType(value));
-        if (typeCode === BinaryUtils.TYPE_CODE.BINARY_OBJECT &&
-            valueTypeCode === BinaryUtils.TYPE_CODE.COMPLEX_OBJECT ||
-            typeCode !== BinaryUtils.TYPE_CODE.BINARY_OBJECT &&
-            valueTypeCode === BinaryUtils.TYPE_CODE.BINARY_OBJECT) {
+        if (typeCode !== valueTypeCode) {
             throw Errors.IgniteClientError.typeCastError(valueTypeCode, typeCode);
         }
     }

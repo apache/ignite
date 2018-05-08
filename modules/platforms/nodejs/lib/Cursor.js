@@ -49,7 +49,7 @@ class Cursor {
             await this._getValues();
             this._valueIndex = 0;
         }
-        if (this._values) {
+        if (this._values && this._values.length > 0) {
             const value = this._values[this._valueIndex];
             this._valueIndex++;
             return value;
@@ -162,27 +162,31 @@ class Cursor {
         buffer.writeLong(this._id);
     }
 
+    /**
+     * @ignore
+     */
+    _readId(buffer) {
+        this._id = buffer.readLong();
+    }
+
+    /**
+     * @ignore
+     */
+    async _readRow(buffer) {
+        const CacheEntry = require('./CacheClient').CacheEntry;
+        return new CacheEntry(
+            await BinaryReader.readObject(buffer, this._keyType),
+            await BinaryReader.readObject(buffer, this._valueType));
+    }
 
     /**
      * @ignore
      */
     async _read(buffer) {
-        const id = buffer.readLong();
-        if (this._id) {
-            if (!this._id.equals(id)) {
-                throw Errors.IgniteClientError.internalError();
-            }
-        }
-        else {
-            this._id = id;
-        }
-        const CacheEntry = require('./CacheClient').CacheEntry;
         const rowCount = buffer.readInteger();
         this._values = new Array(rowCount);
         for (let i = 0; i < rowCount; i++) {
-            this._values[i] = new CacheEntry(
-                await BinaryReader.readObject(buffer, this._keyType),
-                await BinaryReader.readObject(buffer, this._valueType));
+            this._values[i] = await this._readRow(buffer);
         }
         this._hasNext = buffer.readBoolean();
     }
@@ -289,20 +293,14 @@ class SqlFieldsCursor extends Cursor {
     /**
      * @ignore
      */
-    async _read(buffer) {
-        const rowCount = buffer.readInteger();
-        this._values = new Array(rowCount);
-        let values;
+    async _readRow(buffer) {
+        let values = new Array(this._fieldCount);
         let fieldType;
-        for (let i = 0; i < rowCount; i++) {
-            values = new Array(this._fieldCount);
-            for (let j = 0; j < this._fieldCount; j++) {
-                fieldType = this._fieldTypes && j < this._fieldTypes.length ? this._fieldTypes[j] : null;
-                values[j] = await BinaryReader.readObject(buffer);
-            }
-            this._values[i] = values;
+        for (let i = 0; i < this._fieldCount; i++) {
+            fieldType = this._fieldTypes && i < this._fieldTypes.length ? this._fieldTypes[i] : null;
+            values[i] = await BinaryReader.readObject(buffer);
         }
-        this._hasNext = buffer.readBoolean();
+        return values;
     }
 }
 
