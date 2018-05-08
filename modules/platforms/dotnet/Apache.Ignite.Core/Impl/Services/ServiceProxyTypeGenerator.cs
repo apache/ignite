@@ -37,6 +37,10 @@ namespace Apache.Ignite.Core.Impl.Services
         /** */
         private static readonly MethodInfo InvokeMethod = ActionType.GetMethod("Invoke");
 
+        /** */
+        private static readonly MethodInfo Finalizer = typeof(object)
+            .GetMethod("Finalize", BindingFlags.Instance | BindingFlags.NonPublic);
+
         /** Classic .NET Method. */
         private static readonly MethodInfo AppDomainDefineAssembly = typeof(AppDomain).GetMethod(
             "DefineDynamicAssembly",
@@ -78,8 +82,10 @@ namespace Apache.Ignite.Core.Impl.Services
             GenerateStaticConstructor(buildContext);
             GenerateConstructor(buildContext);
 
+            Debug.Assert(Finalizer != null);
+
             buildContext.Methods = ReflectionUtils.GetMethods(buildContext.ServiceType)
-                .Where(m => m.IsVirtual)
+                .Where(m => m.IsVirtual && m != Finalizer)
                 .ToArray();
 
             for (var i = 0; i < buildContext.Methods.Length; i++)
