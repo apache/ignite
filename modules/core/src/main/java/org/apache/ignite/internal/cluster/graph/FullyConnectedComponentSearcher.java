@@ -149,61 +149,61 @@ public class FullyConnectedComponentSearcher {
         for (int i = 0; i < selectedNodesCnt; i++)
             canUse.set(i);
 
-        BitSet bestResult = null;
+        BitSet bestRes = null;
 
         while (!canUse.isEmpty()) {
             // Even if we pick all possible nodes, their size will not be greater than current best result.
             // No needs to run next iteration in this case.
-            if (bestResult != null && canUse.cardinality() <= bestResult.cardinality())
+            if (bestRes != null && canUse.cardinality() <= bestRes.cardinality())
                 break;
 
-            BitSet currentResult = new BitSet(selectedNodesCnt);
+            BitSet currRes = new BitSet(selectedNodesCnt);
 
-            Iterator<Integer> canUseIterator = new BitSetIterator(canUse);
-            while (canUseIterator.hasNext()) {
+            Iterator<Integer> canUseIter = new BitSetIterator(canUse);
+            while (canUseIter.hasNext()) {
                 /* Try to add node to the current set that forms fully connected component.
                    Node will be skipped if after adding, current set loose fully connectivity. */
-                int pickedIdx = canUseIterator.next();
+                int pickedIdx = canUseIter.next();
 
-                if (joinNode(currentResult, pickedIdx, nodeIndexes)) {
-                    currentResult.set(pickedIdx);
+                if (joinNode(currRes, pickedIdx, nodeIndexes)) {
+                    currRes.set(pickedIdx);
                     canUse.set(pickedIdx, false);
                 }
             }
 
-            if (bestResult == null || currentResult.cardinality() > bestResult.cardinality())
-                bestResult = currentResult;
+            if (bestRes == null || currRes.cardinality() > bestRes.cardinality())
+                bestRes = currRes;
         }
 
         // Try to improve our best result, if it was formed on second or next iteration.
         for (int nodeIdx = 0; nodeIdx < selectedNodesCnt; nodeIdx++)
-            if (!bestResult.get(nodeIdx) && joinNode(bestResult, nodeIdx, nodeIndexes))
-                bestResult.set(nodeIdx);
+            if (!bestRes.get(nodeIdx) && joinNode(bestRes, nodeIdx, nodeIndexes))
+                bestRes.set(nodeIdx);
 
         // Replace relative node indexes (used in indexes) to absolute node indexes (used in whole graph connections).
-        BitSet reindexedBestResult = new BitSet(totalNodesCnt);
-        Iterator<Integer> it = new BitSetIterator(bestResult);
+        BitSet reindexedBestRes = new BitSet(totalNodesCnt);
+        Iterator<Integer> it = new BitSetIterator(bestRes);
         while (it.hasNext())
-            reindexedBestResult.set(nodeIndexes[it.next()]);
+            reindexedBestRes.set(nodeIndexes[it.next()]);
 
-        return reindexedBestResult;
+        return reindexedBestRes;
     }
 
     /**
      * Checks that given {@code nodeIdx} can be joined to current fully-connected component,
      * so after join result component will be also fully-connected.
      *
-     * @param currentComponent Current fully-connected component.
+     * @param currComponent Current fully-connected component.
      * @param nodeIdx Node relative index.
      * @param nodeIndexes Node absolute indexes.
      * @return {@code True} if given node can be joined to {@code currentComponent}.
      */
-    private boolean joinNode(BitSet currentComponent, int nodeIdx, Integer[] nodeIndexes) {
+    private boolean joinNode(BitSet currComponent, int nodeIdx, Integer[] nodeIndexes) {
         boolean fullyConnected = true;
 
-        Iterator<Integer> alreadyUsedIterator = new BitSetIterator(currentComponent);
-        while (alreadyUsedIterator.hasNext()) {
-            int existedIdx = alreadyUsedIterator.next();
+        Iterator<Integer> alreadyUsedIter = new BitSetIterator(currComponent);
+        while (alreadyUsedIter.hasNext()) {
+            int existedIdx = alreadyUsedIter.next();
 
             // If no connection between existing node and picked node, skip picked node.
             if (!connections[nodeIndexes[nodeIdx]].get(nodeIndexes[existedIdx])) {
@@ -226,7 +226,7 @@ public class FullyConnectedComponentSearcher {
     private BitSet bruteforce(int selectedNodesCnt, BitSet selectedSet) {
         Integer[] indexes = extractNodeIndexes(selectedNodesCnt, selectedSet);
 
-        int resultMask = -1;
+        int resMask = -1;
         int maxCardinality = -1;
 
         // Iterate over all possible combinations of used nodes.
@@ -253,28 +253,28 @@ public class FullyConnectedComponentSearcher {
                         }
 
             if (fullyConnected) {
-                resultMask = mask;
+                resMask = mask;
                 maxCardinality = cardinality;
             }
         }
 
-        BitSet resultSet = new BitSet(selectedNodesCnt);
+        BitSet resSet = new BitSet(selectedNodesCnt);
 
         for (int i = 0; i < selectedNodesCnt; i++) {
-            if ((resultMask & (1 << i)) != 0) {
+            if ((resMask & (1 << i)) != 0) {
                 int idx = indexes[i];
 
                 assert selectedSet.get(idx)
                     : "Result contains node which is not presented in income set [nodeIdx" + idx + ", set=" + selectedSet + "]";
 
-                resultSet.set(idx);
+                resSet.set(idx);
             }
         }
 
-        assert resultSet.cardinality() > 0
+        assert resSet.cardinality() > 0
             : "No nodes selected as fully connected component [set=" + selectedSet + "]";
 
-        return resultSet;
+        return resSet;
     }
 
     /**

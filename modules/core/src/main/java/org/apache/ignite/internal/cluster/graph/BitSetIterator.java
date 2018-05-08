@@ -19,6 +19,7 @@ package org.apache.ignite.internal.cluster.graph;
 
 import java.util.BitSet;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Iterator over set bits in {@link BitSet}.
@@ -52,11 +53,14 @@ public class BitSetIterator implements Iterator<Integer> {
     }
 
     /** {@inheritDoc} */
-    @Override public Integer next() {
-        int result = idx;
+    @Override public Integer next() throws NoSuchElementException {
+        if (idx == -1)
+            throw new NoSuchElementException();
+
+        int res = idx;
 
         advance();
 
-        return result;
+        return res;
     }
 }

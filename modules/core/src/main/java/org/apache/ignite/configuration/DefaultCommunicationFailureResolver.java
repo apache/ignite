@@ -125,10 +125,10 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
             BitSet fullyConnectedPart = graph.findLargestFullyConnectedComponent(clusterPart);
             Set<ClusterNode> connectedClients = findConnectedClients(ctx, fullyConnectedPart);
 
-            ClusterPart current = new ClusterPart(fullyConnectedPart, connectedClients);
+            ClusterPart curr = new ClusterPart(fullyConnectedPart, connectedClients);
 
-            if (largestCluster == null || current.compareTo(largestCluster) > 0)
-                largestCluster = current;
+            if (largestCluster == null || curr.compareTo(largestCluster) > 0)
+                largestCluster = curr;
         }
 
         assert largestCluster != null
@@ -263,9 +263,8 @@ public class DefaultCommunicationFailureResolver implements CommunicationFailure
 
             startIdx = idx + 1;
 
-            if (builder.length() == 0) {
+            if (builder.length() == 0)
                 builder.append('[');
-            }
             else
                 builder.append(", ");
 

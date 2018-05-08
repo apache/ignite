@@ -39,15 +39,15 @@ public class FullyConnectedComponentSearcherTest {
     private AdjacencyMatrixProvider provider;
 
     /** Minimul acceptable result of size of fully-connected component for each test. */
-    private int minAcceptableResult;
+    private int minAcceptableRes;
 
     /**
      * @param provider Adjacency matrix.
-     * @param minAcceptableResult Expected result.
+     * @param minAcceptableRes Expected result.
      */
-    public FullyConnectedComponentSearcherTest(AdjacencyMatrixProvider provider, int minAcceptableResult) {
+    public FullyConnectedComponentSearcherTest(AdjacencyMatrixProvider provider, int minAcceptableRes) {
         this.provider = provider;
-        this.minAcceptableResult = minAcceptableResult;
+        this.minAcceptableRes = minAcceptableRes;
     }
 
     /**
@@ -65,11 +65,11 @@ public class FullyConnectedComponentSearcherTest {
 
         FullyConnectedComponentSearcher searcher = new FullyConnectedComponentSearcher(matrix);
 
-        BitSet result = searcher.findLargest(all);
-        int size = result.cardinality();
+        BitSet res = searcher.findLargest(all);
+        int size = res.cardinality();
 
-        Assert.assertTrue("Actual = " + size + ", Expected = " + minAcceptableResult,
-            size >= minAcceptableResult);
+        Assert.assertTrue("Actual = " + size + ", Expected = " + minAcceptableRes,
+            size >= minAcceptableRes);
     }
 
     /**
@@ -130,22 +130,25 @@ public class FullyConnectedComponentSearcherTest {
      * between node(i) and node(j). Needed mostly to test bruteforce algorithm implementation.
      */
     static class StaticMatrix implements AdjacencyMatrixProvider {
-
+        /** Matrix. */
         private final BitSet[] matrix;
 
-        public StaticMatrix(@NotNull String[] stringMatrix) {
-            A.ensure(stringMatrix.length > 0, "Matrix should not be empty");
-            for (int i = 0; i < stringMatrix.length; i++)
-                A.ensure(stringMatrix[i].length() == stringMatrix.length,
+        /**
+         * @param strMatrix String matrix.
+         */
+        public StaticMatrix(@NotNull String[] strMatrix) {
+            A.ensure(strMatrix.length > 0, "Matrix should not be empty");
+            for (int i = 0; i < strMatrix.length; i++)
+                A.ensure(strMatrix[i].length() == strMatrix.length,
                     "Matrix should be quadratic. Problem row: " + i);
 
-            int nodes = stringMatrix.length;
+            int nodes = strMatrix.length;
 
             matrix = init(nodes);
 
             for (int i = 0; i < nodes; i++)
                 for (int j = 0; j < nodes; j++)
-                    matrix[i].set(j, stringMatrix[i].charAt(j) == '1');
+                    matrix[i].set(j, strMatrix[i].charAt(j) == '1');
         }
 
         /** {@inheritDoc */
@@ -167,13 +170,19 @@ public class FullyConnectedComponentSearcherTest {
      * Answer is this case should be the size max(Pi), where Pi size of each fully-connected component.
      */
     static class AlmostSplittedMatrix implements AdjacencyMatrixProvider {
-
+        /** Partition sizes. */
         private final int[] partSizes;
 
+        /** Connections between parts. */
         private final int connectionsBetweenParts;
 
+        /** Matrix. */
         private final BitSet[] matrix;
 
+        /**
+         * @param connectionsBetweenParts Connections between parts.
+         * @param partSizes Partition sizes.
+         */
         public AlmostSplittedMatrix(int connectionsBetweenParts, int... partSizes) {
             A.ensure(connectionsBetweenParts >= 1 + partSizes.length, "There should be at least 1 connection between parts");
             A.ensure(partSizes.length >= 2, "The should be at least 2 parts of cluster");
@@ -219,8 +228,7 @@ public class FullyConnectedComponentSearcherTest {
         }
 
         /** {@inheritDoc */
-        @Override
-        public String toString() {
+        @Override public String toString() {
             return "AlmostSplittedGraph{" +
                 "partSizes=" + Arrays.toString(partSizes) +
                 ", connectionsBetweenParts=" + connectionsBetweenParts +
@@ -234,13 +242,19 @@ public class FullyConnectedComponentSearcherTest {
      * So answer in this test case should be at least N - L, where N - nodes, L - lost connections.
      */
     static class SeveralConnectionsAreLostMatrix implements AdjacencyMatrixProvider {
-
+        /** Nodes. */
         private final int nodes;
 
+        /** Lost connections. */
         private final int lostConnections;
 
+        /** Matrix. */
         private final BitSet[] matrix;
 
+        /**
+         * @param nodes Nodes.
+         * @param lostConnections Lost connections.
+         */
         public SeveralConnectionsAreLostMatrix(int nodes, int lostConnections) {
             A.ensure(nodes > 0, "There should be at least 1 node");
 

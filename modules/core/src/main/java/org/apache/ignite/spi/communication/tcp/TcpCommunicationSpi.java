@@ -3203,7 +3203,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         }
 
         if (client == null) {
-            assert errs != null;
+            if (errs == null)
+                errs = new IgniteCheckedException("Unexpected exception during creating TCP client");
 
             if (X.hasCause(errs, ConnectException.class))
                 LT.warn(log, "Failed to connect to a remote node " +

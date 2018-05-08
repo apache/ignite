@@ -22,7 +22,6 @@ import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Predicate;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CommunicationFailureContext;
 
@@ -120,11 +119,11 @@ public class ClusterGraph {
             if (visitSet.get(i) || connections[i] == null)
                 continue;
 
-            BitSet currentComponent = new BitSet(nodeCnt);
+            BitSet currComponent = new BitSet(nodeCnt);
 
-            dfs(i, currentComponent, visitSet);
+            dfs(i, currComponent, visitSet);
 
-            connectedComponets.add(currentComponent);
+            connectedComponets.add(currComponent);
         }
 
         return connectedComponets;
@@ -134,10 +133,10 @@ public class ClusterGraph {
      * Deep-first search to find connected components in connections graph.
      *
      * @param nodeIdx Current node index to traverse from.
-     * @param currentComponent Current connected component to populate.
+     * @param currComponent Current connected component to populate.
      * @param allVisitSet Set of the visited nodes in whole graph during traversal.
      */
-    private void dfs(int nodeIdx, BitSet currentComponent, BitSet allVisitSet) {
+    private void dfs(int nodeIdx, BitSet currComponent, BitSet allVisitSet) {
         assert !allVisitSet.get(nodeIdx)
             : "Incorrect node visit " + nodeIdx;
 
@@ -146,7 +145,7 @@ public class ClusterGraph {
 
         allVisitSet.set(nodeIdx);
 
-        currentComponent.set(nodeIdx);
+        currComponent.set(nodeIdx);
 
         for (int toIdx = 0; toIdx < nodeCnt; toIdx++) {
             if (toIdx == nodeIdx || allVisitSet.get(toIdx) || connections[toIdx] == null)
@@ -155,7 +154,7 @@ public class ClusterGraph {
             boolean connected = connections[nodeIdx].get(toIdx) && connections[toIdx].get(nodeIdx);
 
             if (connected)
-                dfs(toIdx, currentComponent, allVisitSet);
+                dfs(toIdx, currComponent, allVisitSet);
         }
     }
 
@@ -172,12 +171,12 @@ public class ClusterGraph {
         if (fullyConnected)
             return nodesSet;
 
-        BitSet result = fccSearcher.findLargest(nodesSet);
+        BitSet res = fccSearcher.findLargest(nodesSet);
 
-        assert checkFullyConnected(result)
-            : "Not fully connected component was found [result=" + result + ", nodesSet=" + nodesSet + "]";
+        assert checkFullyConnected(res)
+            : "Not fully connected component was found [result=" + res + ", nodesSet=" + nodesSet + "]";
 
-        return result;
+        return res;
     }
 
     /**
