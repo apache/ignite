@@ -3658,10 +3658,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * Almost split-brain test, server nodes splitted on 2 parts and there are some connections between these 2 parts.
      * Server nodes: 5.
      * Client nodes: 5.
-     * Splitted on: 3 servers + 2 clients and 3 servers + 3 clients.
+     * Splitted on: 3 servers + 2 clients and 3 servers + 2 clients.
      * Extra connections between server nodes: 3.
      *
-     * Result cluster should be: 3 server nodes + 3 clients.
+     * Result cluster should be: 3 server nodes + 2 clients.
      *
      * @throws Exception If failed.
      */
@@ -3689,7 +3689,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             .collect(Collectors.toList());
 
         List<ClusterNode> clientPart1 = clientNodes.subList(0, 2);
-        List<ClusterNode> clientPart2 = clientNodes.subList(2, clientNodes.size());
+        List<ClusterNode> clientPart2 = clientNodes.subList(2, 4);
 
         List<ClusterNode> splittedPart1 = new ArrayList<>();
         splittedPart1.addAll(srvPart1);
@@ -3715,7 +3715,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         PeerToPeerCommunicationFailureSpi.fail(matrix);
 
-        waitForTopology(6);
+        waitForTopology(5);
     }
 
     /**
@@ -3827,20 +3827,18 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected GridCommunicationClient createTcpClient0(
+        @Override protected GridCommunicationClient createTcpClient(
             ClusterNode node,
-            int connIdx,
-            Collection<InetSocketAddress> addrs,
-            IgniteCheckedException[] errsContainer
+            int connIdx
         ) throws IgniteCheckedException {
             if (failure && !matrix.hasConnection(getLocalNode(), node)) {
-                errsContainer[0] = new IgniteCheckedException("Test", new SocketTimeoutException());
+                processClientCreationError(node, null, new IgniteCheckedException("Test", new SocketTimeoutException()));
 
                 return null;
             }
 
             return new FailingCommunicationClient(getLocalNode(), node,
-                super.createTcpClient0(node, connIdx, addrs, errsContainer));
+                super.createTcpClient(node, connIdx));
         }
 
         /**
@@ -3926,8 +3924,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             }
 
             /** {@inheritDoc} */
-            @Override
-            public boolean async() {
+            @Override public boolean async() {
                 return delegate.async();
             }
 
