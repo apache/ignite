@@ -48,6 +48,7 @@ import org.h2.command.CommandInterface;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAddConstraint;
 import org.h2.command.ddl.AlterTableAlterColumn;
+import org.h2.command.ddl.CommandWithColumns;
 import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
 import org.h2.command.ddl.CreateTableData;
@@ -366,12 +367,12 @@ public class GridSqlQueryParser {
     private static final Getter<CreateTable, CreateTableData> CREATE_TABLE_DATA = getter(CreateTable.class, "data");
 
     /** */
-    private static final Getter<CreateTable, ArrayList<DefineCommand>> CREATE_TABLE_CONSTRAINTS =
-        getter(CreateTable.class, "constraintCommands");
+    private static final Getter<CommandWithColumns, ArrayList<DefineCommand>> CREATE_TABLE_CONSTRAINTS =
+        getter(CommandWithColumns.class, "constraintCommands");
 
     /** */
-    private static final Getter<CreateTable, IndexColumn[]> CREATE_TABLE_PK = getter(CreateTable.class,
-        "pkColumns");
+    private static final Getter<CommandWithColumns, IndexColumn[]> CREATE_TABLE_PK =
+        getter(CommandWithColumns.class, "pkColumns");
 
     /** */
     private static final Getter<CreateTable, Boolean> CREATE_TABLE_IF_NOT_EXISTS = getter(CreateTable.class,
