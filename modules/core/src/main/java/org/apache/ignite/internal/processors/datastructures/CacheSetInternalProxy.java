@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.datastructures;
 import org.apache.ignite.IgniteSet;
 
 /**
- * Internal interface that extends {@link IgniteSet} with service methods.
+ * IgniteSet proxy service methods.
  */
 public interface CacheSetInternalProxy<T>  extends IgniteSet<T> {
     /**

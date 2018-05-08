@@ -97,10 +97,8 @@ public class IgniteCacheSetProxy<T> implements CacheSetInternalProxy<T>, Externa
         return delegate;
     }
 
-    /**
-     * Remove callback.
-     */
-    public void blockOnRemove() {
+    /** {@inheritDoc} */
+    @Override public void blockOnRemove() {
         delegate.removed(true);
 
         busyLock.block();
@@ -433,10 +431,8 @@ public class IgniteCacheSetProxy<T> implements CacheSetInternalProxy<T>, Externa
             throw removedError();
     }
 
-    /**
-     *
-     */
-    public void needCheckNotRemoved() {
+    /** {@inheritDoc} */
+    @Override public void needCheckNotRemoved() {
         rmvCheck = true;
     }
 
