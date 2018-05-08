@@ -345,7 +345,7 @@ class GridDhtPartitionSupplier {
                     }
                 }
 
-                CacheDataRow row = iter.nextX();
+                CacheDataRow row = iter.next();
 
                 int part = row.partition();
 
