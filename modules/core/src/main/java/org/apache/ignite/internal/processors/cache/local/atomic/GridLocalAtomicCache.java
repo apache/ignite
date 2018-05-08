@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheStorePartialUpdateException;
@@ -708,20 +709,31 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     ) {
         final GridCacheOperation op = invokeMap != null ? TRANSFORM : UPDATE;
 
-        final Collection<? extends K> keys =
-            map != null ? map.keySet() : invokeMap != null ? invokeMap.keySet() : null;
+        Map<? extends K, ? extends V> map0;
+        Map<? extends K, ? extends EntryProcessor> invokeMap0;
 
-        final Collection<?> vals = map != null ? map.values() : invokeMap != null ? invokeMap.values() : null;
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+
+        if (opCtx != null && opCtx.isAutoSorting()) {
+            map0 = CacheObjectUtils.sort(map, ctx.cacheObjectContext());
+            invokeMap0 = CacheObjectUtils.sort(invokeMap, ctx.cacheObjectContext());
+        } else {
+            map0 = map;
+            invokeMap0 = invokeMap;
+        }
+
+        final Collection<? extends K> keys =
+            map0 != null ? map0.keySet() : invokeMap0 != null ? invokeMap0.keySet() : null;
+
+        final Collection<?> vals = map0 != null ? map0.values() : invokeMap0 != null ? invokeMap0.values() : null;
 
         final boolean writeThrough = ctx.writeThrough();
 
         final boolean readThrough = ctx.readThrough();
 
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
-
         final ExpiryPolicy expiry = expiryPerCall();
-
-        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
         return asyncOp(new Callable<Object>() {
             @Override public Object call() throws Exception {

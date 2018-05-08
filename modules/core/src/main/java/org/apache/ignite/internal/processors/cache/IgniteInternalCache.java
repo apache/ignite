@@ -24,6 +24,8 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
@@ -199,6 +201,14 @@ import org.jetbrains.annotations.Nullable;
  * GridBinaryObject po = prj.get(1);
  * </pre>
  * See {@link #keepBinary()} method JavaDoc for more details.
+ * <h1 class="header">Deadlocks</h1>
+ * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+ * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+ * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+ * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+ * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
+ * <br>
+ * You can enable automatic sorting for batch operations. See {@link #autoSorting()} method for details.
  */
 public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
@@ -267,6 +277,16 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return New internal cache instance for binary objects.
      */
     public <K1, V1> IgniteInternalCache<K1, V1> keepBinary();
+
+    /**
+     * Before apply any batch operation it will sort given keys.
+     * If keys already sorted inside {@link SortedMap} or {@link SortedSet} - additional sorting will not occur.
+     * If keys are comparable - they will be sorted in natural order.
+     * If keys are not comparable - they will be sorted by hashcode.
+     *
+     * @return New internal cache instance with automatic sorting keys for batch operations.
+     */
+    public <K1, V1> IgniteInternalCache<K1, V1> autoSorting();
 
     /**
      * Returns {@code true} if this map contains no key-value mappings.

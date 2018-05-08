@@ -256,6 +256,11 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
+    @Override public <K1, V1> IgniteCache<K1, V1> withAutoSorting() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withNoRetries() {
         throw new UnsupportedOperationException();
     }
@@ -1690,6 +1695,11 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      */
     @SuppressWarnings("unchecked")
     @Override public <K1, V1> IgniteCache<K1, V1> keepBinary() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K1, V1> IgniteCache<K1, V1> autoSorting() {
         throw new UnsupportedOperationException();
     }
 

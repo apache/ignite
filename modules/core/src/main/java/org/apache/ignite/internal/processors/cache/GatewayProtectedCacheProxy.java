@@ -226,6 +226,23 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
+    @Override public <K1, V1> IgniteCache<K1, V1> withAutoSorting() {
+        return autoSorting();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K1, V1> IgniteCache<K1, V1> autoSorting() {
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            return new GatewayProtectedCacheProxy<>((IgniteCacheProxy<K1, V1>) delegate, opCtx.autoSorting(), lock);
+        }
+        finally {
+            onLeave(opGate);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public GatewayProtectedCacheProxy<K, V> withDataCenterId(byte dataCenterId) {
         CacheOperationGate opGate = onEnter();
 

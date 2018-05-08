@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.Externalizable;
 import java.util.Date;
 import java.util.List;
+import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -75,6 +77,16 @@ public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizabl
      */
     @SuppressWarnings("unchecked")
     public <K1, V1> IgniteCache<K1, V1> keepBinary();
+
+    /**
+     * Before apply any batch operation it will sort given keys.
+     * If keys already sorted inside {@link SortedMap} or {@link SortedSet} - additional sorting will not occur.
+     * If keys are comparable - they will be sorted in natural order.
+     * If keys are not comparable - they will be sorted by hashcode.
+     *
+     * @return Projection with automatic sorting keys for batch operations.
+     */
+    public <K1, V1> IgniteCache<K1, V1> autoSorting();
 
     /**
      * @param dataCenterId Data center ID.

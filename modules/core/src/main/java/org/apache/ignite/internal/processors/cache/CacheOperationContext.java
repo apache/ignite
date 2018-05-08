@@ -48,6 +48,9 @@ public class CacheOperationContext implements Serializable {
     /** Keep binary flag. */
     private final boolean keepBinary;
 
+    /** Automatic sorting keys for batch operations flag. */
+    private final boolean autoSorting;
+
     /** Expiry policy. */
     private final ExpiryPolicy expiryPlc;
 
@@ -64,6 +67,8 @@ public class CacheOperationContext implements Serializable {
 
         keepBinary = false;
 
+        autoSorting = false;
+
         expiryPlc = null;
 
         noRetries = false;
@@ -77,6 +82,7 @@ public class CacheOperationContext implements Serializable {
      * @param skipStore Skip store flag.
      * @param subjId Subject ID.
      * @param keepBinary Keep binary flag.
+     * @param autoSorting Automatic sorting keys for batch operations flag.
      * @param expiryPlc Expiry policy.
      * @param dataCenterId Data center id.
      */
@@ -84,6 +90,7 @@ public class CacheOperationContext implements Serializable {
         boolean skipStore,
         @Nullable UUID subjId,
         boolean keepBinary,
+        boolean autoSorting,
         @Nullable ExpiryPolicy expiryPlc,
         boolean noRetries,
         @Nullable Byte dataCenterId,
@@ -94,6 +101,8 @@ public class CacheOperationContext implements Serializable {
         this.subjId = subjId;
 
         this.keepBinary = keepBinary;
+
+        this.autoSorting = autoSorting;
 
         this.expiryPlc = expiryPlc;
 
@@ -112,6 +121,13 @@ public class CacheOperationContext implements Serializable {
     }
 
     /**
+     * @return Automatic sorting keys for batch operations flag.
+     */
+    public boolean isAutoSorting() {
+        return autoSorting;
+    }
+
+    /**
      * @return {@code True} if data center id is set otherwise {@code false}.
      */
     public boolean hasDataCenterId() {
@@ -127,6 +143,24 @@ public class CacheOperationContext implements Serializable {
         return new CacheOperationContext(
             skipStore,
             subjId,
+            true,
+            autoSorting,
+            expiryPlc,
+            noRetries,
+            dataCenterId,
+            recovery);
+    }
+
+    /**
+     * See {@link IgniteInternalCache#autoSorting()}.
+     *
+     * @return New instance of CacheOperationContext with keep binary flag.
+     */
+    public CacheOperationContext autoSorting() {
+        return new CacheOperationContext(
+            skipStore,
+            subjId,
+            keepBinary,
             true,
             expiryPlc,
             noRetries,
@@ -163,6 +197,7 @@ public class CacheOperationContext implements Serializable {
             skipStore,
             subjId,
             keepBinary,
+            autoSorting,
             expiryPlc,
             noRetries,
             dataCenterId,
@@ -187,6 +222,7 @@ public class CacheOperationContext implements Serializable {
             skipStore,
             subjId,
             keepBinary,
+            autoSorting,
             expiryPlc,
             noRetries,
             dataCenterId,
@@ -211,6 +247,7 @@ public class CacheOperationContext implements Serializable {
             skipStore,
             subjId,
             keepBinary,
+            autoSorting,
             plc,
             noRetries,
             dataCenterId,
@@ -226,6 +263,7 @@ public class CacheOperationContext implements Serializable {
             skipStore,
             subjId,
             keepBinary,
+            autoSorting,
             expiryPlc,
             noRetries,
             dataCenterId,
@@ -241,6 +279,7 @@ public class CacheOperationContext implements Serializable {
                 skipStore,
                 subjId,
                 keepBinary,
+                autoSorting,
                 expiryPlc,
                 noRetries,
                 dataCenterId,
@@ -256,6 +295,7 @@ public class CacheOperationContext implements Serializable {
             skipStore,
             subjId,
             keepBinary,
+            autoSorting,
             expiryPlc,
             noRetries,
             dataCenterId,

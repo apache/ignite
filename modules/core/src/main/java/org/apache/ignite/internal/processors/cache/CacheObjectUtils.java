@@ -19,11 +19,18 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache object utility methods.
@@ -192,5 +199,123 @@ public class CacheObjectUtils {
      */
     private CacheObjectUtils() {
         // No-op.
+    }
+
+    /**
+     * @param col Collection to sort.
+     * @param ctx Cache context to get value if keys in given map are CacheKeyObjects.
+     * @return {@code null} if given collection was null, same {@code col} if it contains only one entry or
+     * it is already sorted (and given comparator same as current),
+     *  and {@code SortedSet} if it was successfully sorted.
+     */
+    public static <T> Collection<T> sort(@Nullable Collection<T> col, CacheObjectValueContext ctx) {
+        if (col == null || col.size() == 1 || col instanceof SortedSet)
+            return col;
+
+        SortedSet<T> sortedSet = new TreeSet<>(compatibleComparator(col, ctx));
+
+        sortedSet.addAll(col);
+
+        return sortedSet;
+    }
+
+    /**
+     * @param map Map to sort.
+     * @param ctx Cache context to get value if keys in given map are CacheKeyObjects.
+     * @return {@code null} if given map was null, same {@code map} if it contains only one entry or
+     * it is already sorted, {@code new SortedMap} if it was successfully sorted.
+     */
+    public static <K, V> Map<K, V> sort(@Nullable Map<K, V> map, CacheObjectValueContext ctx) {
+        if (map == null || map.size() == 1 || map instanceof SortedMap)
+            return map;
+
+        SortedMap<K, V> sortedMap = new TreeMap<>(compatibleComparator(map.keySet(), ctx));
+
+        sortedMap.putAll(map);
+
+        return sortedMap;
+    }
+
+    /**
+     * @return {@link KeyCacheObjectComparator KeyCacheObjectComparator}
+     * if all given objects are {@link KeyCacheObject KeyCacheObjects}.
+     * {@link HashcodeComparator} for other objects.
+     */
+    private static <T> Comparator<T> compatibleComparator(Collection<T> col, CacheObjectValueContext ctx) {
+        for (T obj : col) {
+            if (!(obj instanceof KeyCacheObject))
+                return new HashcodeComparator<T>();
+        }
+
+        return (Comparator<T>) new KeyCacheObjectComparator(ctx);
+    }
+
+    /**
+     * Compare values inside KeyCacheObjects.
+     */
+    private static final class KeyCacheObjectComparator implements Comparator<KeyCacheObject> {
+        /** */
+        private final CacheObjectValueContext ctx;
+
+        /**
+         * @param ctx Context.
+         */
+        private KeyCacheObjectComparator(CacheObjectValueContext ctx) {
+            this.ctx = ctx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compare(KeyCacheObject o1, KeyCacheObject o2) {
+            Object val1 = getValueFromKeyCacheObject(o1, ctx);
+            Object val2 = getValueFromKeyCacheObject(o2, ctx);
+
+            return compareObjects(val1, val2);
+        }
+
+        /**
+         * @param key Where value is stored.
+         * @param ctx Context to retrieve the value from key.
+         * @return Value of the key.
+         */
+        private Object getValueFromKeyCacheObject(KeyCacheObject key, CacheObjectValueContext ctx) {
+            try {
+                return key.value(ctx, false);
+            } catch (BinaryInvalidTypeException e) {
+                return key.hashCode();
+            }
+        }
+    }
+
+    /**
+     * Compares objects by {@link Comparable#compareTo(Object) compareTo} method of possible.
+     * If objects are not comparable, compares them by hashcode.
+     */
+    private static final class HashcodeComparator<T> implements Comparator<T> {
+        /** {@inheritDoc} */
+        @Override public int compare(Object o1, Object o2) {
+            return compareObjects(o1, o2);
+        }
+    }
+
+    /**
+     * @param o1 Object to be compared.
+     * @param o2 Object to be compared.
+     * @return a negative integer, zero, or a positive integer as this object
+     * is less than, equal to, or greater than the specified object.
+     */
+    private static int compareObjects(Object o1, Object o2) {
+        if (o1 == null && o2 != null)
+            return -1;
+
+        if (o1 == null)
+            return 0;
+
+        if (o2 == null)
+            return 1;
+
+        if (o1 instanceof Comparable && o1.getClass().equals(o2.getClass()))
+            return ((Comparable)o1).compareTo(o2);
+
+        return Integer.compare(o1.hashCode(), o2.hashCode());
     }
 }

@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
 import org.apache.ignite.internal.processors.cache.CacheMetricsImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.CacheStorePartialUpdateException;
@@ -989,6 +990,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
+        if (opCtx != null && opCtx.isAutoSorting()) {
+            map = CacheObjectUtils.sort(map, ctx.cacheObjectContext());
+            invokeMap = CacheObjectUtils.sort(invokeMap, ctx.cacheObjectContext());
+            conflictPutMap = CacheObjectUtils.sort(conflictPutMap, ctx.cacheObjectContext());
+            conflictRmvMap = CacheObjectUtils.sort(conflictRmvMap, ctx.cacheObjectContext());
+        }
+
         if (opCtx != null && opCtx.hasDataCenterId()) {
             assert conflictPutMap == null : conflictPutMap;
             assert conflictRmvMap == null : conflictRmvMap;
@@ -1296,6 +1304,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
 
         Collection<GridCacheVersion> drVers = null;
+
+        if (opCtx != null && opCtx.isAutoSorting())
+            keys = CacheObjectUtils.sort(keys, ctx.cacheObjectContext());
 
         if (opCtx != null && keys != null && opCtx.hasDataCenterId()) {
             assert conflictMap == null : conflictMap;
