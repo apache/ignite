@@ -811,16 +811,14 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
     /**
      * Method checks is new partition map more stale than current partition map
-     * New partition map is stale if topology version or update sequence are less than of current map
+     * New partition map is stale if topology version or update sequence are less or equal than of current map
      *
      * @param currentMap Current partition map
      * @param newMap New partition map
      * @return True if new partition map is more stale than current partition map, false in other case
      */
     private boolean isStaleUpdate(GridDhtPartitionMap currentMap, GridDhtPartitionMap newMap) {
-        return currentMap != null &&
-            (newMap.topologyVersion().compareTo(currentMap.topologyVersion()) < 0 ||
-            newMap.topologyVersion().compareTo(currentMap.topologyVersion()) == 0 && newMap.updateSequence() <= currentMap.updateSequence());
+        return currentMap != null && newMap.compareTo(currentMap) <= 0;
     }
 
     /** {@inheritDoc} */
