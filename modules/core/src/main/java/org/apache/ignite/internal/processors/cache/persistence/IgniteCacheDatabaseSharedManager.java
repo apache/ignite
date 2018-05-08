@@ -105,7 +105,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
 
-    /** First eviction flag. */
+    /** First eviction was warned flag. */
     private volatile boolean firstEvictWarn;
 
     /** {@inheritDoc} */
@@ -1091,8 +1091,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /**
      * Warns on first eviction.
+     * @param regCfg data region configuration.
      */
-    private void warnFirstEvict(DataRegionConfiguration plcCfg) {
+    private void warnFirstEvict(DataRegionConfiguration regCfg) {
         if (firstEvictWarn)
             return;
 
@@ -1105,6 +1106,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         }
 
         U.warn(log, "Page-based evictions started." +
-                " You may wish to increase 'maxSize' on page memory policy: " + plcCfg.getName());
+                " Consider increasing 'maxSize' on Data Region configuration: " + regCfg.getName());
     }
 }

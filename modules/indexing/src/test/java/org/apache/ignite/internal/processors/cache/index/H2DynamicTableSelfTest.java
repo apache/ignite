@@ -72,6 +72,7 @@ import org.h2.value.DataType;
 /**
  * Tests for CREATE/DROP TABLE.
  */
+@SuppressWarnings("ThrowableNotThrown")
 public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
     private static final int CLIENT = 2;
@@ -717,6 +718,23 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteSQLException.class, "Table already exists: Person");
+    }
+
+    /**
+     * Test that attempting to use a non-existing column name for the primary key when {@code CREATE TABLE}
+     * yields an error.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableWithWrongColumnNameAsKey() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
+                    ", \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"c_ity\")) WITH " +
+                    "\"template=cache\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "PRIMARY KEY column is not defined: c_ity");
     }
 
     /**
