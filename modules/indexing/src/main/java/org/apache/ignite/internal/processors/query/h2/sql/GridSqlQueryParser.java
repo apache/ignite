@@ -227,7 +227,7 @@ public class GridSqlQueryParser {
     private static final Getter<Aggregate, Boolean> DISTINCT = getter(Aggregate.class, "distinct");
 
     /** */
-    private static final Getter<Aggregate, Integer> TYPE = getter(Aggregate.class, "type");
+    private static final Getter<Aggregate, Aggregate.AggregateType> TYPE = getter(Aggregate.class, "type");
 
     /** */
     private static final Getter<Aggregate, Expression> ON = getter(Aggregate.class, "on");
@@ -1981,10 +1981,10 @@ public class GridSqlQueryParser {
             return new GridSqlParameter(((Parameter)expression).getIndex());
 
         if (expression instanceof Aggregate) {
-            int typeId = TYPE.get((Aggregate)expression);
+            Aggregate.AggregateType type = TYPE.get((Aggregate)expression);
 
-            if (GridSqlAggregateFunction.isValidType(typeId)) {
-                GridSqlAggregateFunction res = new GridSqlAggregateFunction(DISTINCT.get((Aggregate)expression), typeId);
+            if (GridSqlAggregateFunction.isValidType(type)) {
+                GridSqlAggregateFunction res = new GridSqlAggregateFunction(DISTINCT.get((Aggregate)expression), type);
 
                 Expression on = ON.get((Aggregate)expression);
 
