@@ -126,31 +126,159 @@ const COMPOSITE_TYPE = Object.freeze({
  * This class helps the Ignite client to make a mapping between JavaScript types
  * and types used by Ignite.
  *
- * In many methods the Ignite client does not require to directly specify an object type.
+ * In many methods the Ignite client does not require to directly specify a type of Ignite object.
  * In this case the Ignite client tries to make automatic mapping between JavaScript types
- * and Ignite object types according to the following mapping table:
- * <pre>
- *      TODO
- *      JavaScript type              to / from        type code ({@link ObjectType.PRIMITIVE_TYPE} and {@link ObjectType.COMPOSITE_TYPE})
- *      null                         to / from        NULL
- *      number                       to / from        DOUBLE
- *      Array of number              to / from        DOUBLE_ARRAY
- *      string                       to / from        STRING
- *      Array of string              to / from        STRING_ARRAY
- *      boolean                      to / from        BOOLEAN
- *      Array of boolean             to / from        BOOLEAN_ARRAY
- *      Date                         to / from        DATE
- *      Array of Date                to / from        DATE_ARRAY
- *      Map                          to / from        MAP (HASH_MAP)
- *      BinaryObject                 to / from        COMPLEX_OBJECT
- *      Array of BinaryObject        to / from        OBJECT_ARRAY
- *      any other Object             to /  -          COMPLEX_OBJECT
- *      Array of any other Object    to /  -          OBJECT_ARRAY
- * </pre>
- * Note: type of an array content is determined by the type of the first element of the array
- * (empty array has no automatic mapping).
+ * and Ignite object types according to the following mapping tables:
  *
- * All other JavaScript types have no automatic mapping.
+ * ============================================================================
+ * DEFAULT MAPPING FROM JavaScript type TO Ignite type code.
+ *
+ * This mapping is used when an application does not explicitly specify an Ignite type
+ * for a field and is writing data to that field.
+ *
+ * <pre>
+ * | JavaScript type           | Ignite type code      |
+ * | ------------------------- | ----------------------|
+ * | number                    | DOUBLE                |
+ * | boolean                   | BOOLEAN               |
+ * | string                    | STRING                |
+ * | Date                      | DATE                  |
+ * | Timestamp*                | TIMESTAMP             |
+ * | EnumItem*                 | ENUM                  |
+ * | Decimal**                 | DECIMAL               |
+ * | BinaryObject*             | COMPLEX_OBJECT        |
+ * | Array of number           | DOUBLE_ARRAY          |
+ * | Array of boolean          | BOOLEAN_ARRAY         |
+ * | Array of string           | STRING_ARRAY          |
+ * | Array of Date             | DATE_ARRAY            |
+ * | Array of Timestamp*       | TIMESTAMP_ARRAY       |
+ * | Array of EnumItem*        | ENUM_ARRAY            |
+ * | Array of Decimal**        | DECIMAL_ARRAY         |
+ * | Array of BinaryObject*    | OBJECT_ARRAY          |
+ * | Array of any other Object | OBJECT_ARRAY          |
+ * | Set                       | COLLECTION (HASH_SET) |
+ * | Map                       | MAP (HASH_MAP)        |
+ * | any other Object          | COMPLEX_OBJECT        |
+ * </pre>
+ *
+ * Type of an array content is determined by the type of the first element of the array.
+ * Empty array has no default mapping.
+ *
+ * All other JavaScript types have no default mapping.
+ *
+ * ============================================================================
+ * DEFAULT MAPPING FROM Ignite type code TO JavaScript type.
+ *
+ * This mapping is used when an application does not explicitly specify an Ignite type
+ * for a field and is reading data from that field.
+ *
+ * <pre>
+ * | Ignite type code             | JavaScript type                       |
+ * | ---------------------------- | --------------------------------------|
+ * | BYTE                         | number                                |
+ * | SHORT                        | number                                |
+ * | INTEGER                      | number                                |
+ * | LONG                         | number                                |
+ * | FLOAT                        | number                                |
+ * | DOUBLE                       | number                                |
+ * | DECIMAL                      | Decimal**                             |
+ * | BOOLEAN                      | boolean                               |
+ * | STRING                       | string                                |
+ * | CHAR                         | string (one character)                |
+ * | UUID                         | Array of number (16 numbers)          |
+ * | DATE                         | Date                                  |
+ * | TIME                         | Date                                  |
+ * | TIMESTAMP                    | Timestamp*                            |
+ * | ENUM                         | EnumItem*                             |
+ * | COMPLEX_OBJECT               | BinaryObject*                         |
+ * | BYTE_ARRAY                   | Array of number                       |
+ * | SHORT_ARRAY                  | Array of number                       |
+ * | INTEGER_ARRAY                | Array of number                       |
+ * | LONG_ARRAY                   | Array of number                       |
+ * | FLOAT_ARRAY                  | Array of number                       |
+ * | DOUBLE_ARRAY                 | Array of number                       |
+ * | DECIMAL_ARRAY                | Array of Decimal**                    |
+ * | BOOLEAN_ARRAY                | Array of boolean                      |
+ * | STRING_ARRAY                 | Array of string                       |
+ * | CHAR_ARRAY                   | Array of string (one character)       |
+ * | UUID_ARRAY                   | Array of Array of number (16 numbers) |
+ * | DATE_ARRAY                   | Array of Date                         |
+ * | TIME_ARRAY                   | Array of Date                         |
+ * | TIMESTAMP_ARRAY              | Array of Timestamp*                   |
+ * | ENUM_ARRAY                   | Array of EnumItem*                    |
+ * | OBJECT_ARRAY                 | Array                                 |
+ * | COLLECTION (USER_COL)        | Array                                 |
+ * | COLLECTION (ARR_LIST)        | Array                                 |
+ * | COLLECTION (LINKED_LIST)     | Array                                 |
+ * | COLLECTION (SINGLETON_LIST)  | Array                                 |
+ * | COLLECTION (HASH_SET)        | Set                                   |
+ * | COLLECTION (LINKED_HASH_SET) | Set                                   |
+ * | COLLECTION (USER_SET)        | Set                                   |
+ * | MAP (HASH_MAP)               | Map                                   |
+ * | MAP (LINKED_HASH_MAP)        | Map                                   |
+ * | NULL                         | null                                  |
+ * </pre>
+ *
+ * ============================================================================
+ * RETURNED JavaScript types WHEN READING DATA OF THE SPECIFIED Ignite type code.
+ *
+ * When an application explicitly specifies an Ignite type for a field
+ * and is reading data from that field - the following JavaScript types
+ * are returned for every concrete Ignite type code -
+ *
+ * SEE THE PREVIOUS TABLE with the following additional comments:
+ *
+ * - for COMPLEX_OBJECT the Ignite Client returns a JavaScript Object (eg. class)
+ * which was provided during the specified {@link ComplexObjectType} creation.
+ *
+ * - the returned Map for MAP is defined by the specified {@link MapObjectType}.
+ *
+ * - the returned Set or Array for COLLECTION is defined by the specified {@link CollectionObjectType}.
+ *
+ * - the returned Array for OBJECT_ARRAY is defined by the specified {@link ObjectArrayType}.
+ *
+ * - NULL cannot be specified as a type of a field but JavaScript null may be returned
+ * as a value of a field.
+ *
+ * ============================================================================
+ * ALLOWED JavaScript types WHEN WRITING DATA OF THE SPECIFIED Ignite type code.
+ *
+ * When an application explicitly specifies an Ignite type for a field
+ * and is writing data to that field - the following JavaScript types
+ * are allowed for every concrete Ignite type code -
+ *
+ * SEE THE PREVIOUS TABLE with the following additional comments:
+ *
+ * - for COMPLEX_OBJECT the Ignite Client allows a JavaScript Object (eg. class)
+ * which was provided during the specified {@link ComplexObjectType} creation.
+ *
+ * - the allowed Map for MAP is defined by the specified {@link MapObjectType}.
+ *
+ * - the allowed Set or Array for COLLECTION is defined by the specified {@link CollectionObjectType}.
+ *
+ * - the allowed Array for OBJECT_ARRAY is defined by the specified {@link ObjectArrayType}.
+ *
+ * - NULL cannot be specified as a type of a field but JavaScript null is allowed
+ * as value of a field (but not as a key/value in a cache) or as a value of Array/Set/Map element
+ * for all Ignite types, except BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, CHAR, BOOLEAN.
+ *
+ * - for all *_ARRAY Ignite types an empty JavaScript Array is allowed.
+ *
+ * ============================================================================
+ * COMMENTS TO ALL TABLES
+ *
+ * JavaScript type - is a JavaScript primitive or a JavaScript Object
+ * (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures)
+ *
+ * (*) Timestamp, EnumItem and BinaryObject - are JavaScript Objects introduced by the Ignite client.
+ *
+ * (**) Decimal - is an external JavaScript Object exported into the Ignite client
+ * (https://github.com/MikeMcl/decimal.js)
+ *
+ * Ignite type code - is the type code of an Ignite primitive type ({@link ObjectType.PRIMITIVE_TYPE})
+ * or an Ignite composite type ({@link ObjectType.COMPOSITE_TYPE}).
+ *
+ * ============================================================================
  *
  * @hideconstructor
  */
@@ -333,6 +461,41 @@ class CollectionObjectType extends CompositeType {
 }
 
 /**
+ * Class representing an array type of Ignite objects.
+ *
+ * It is described by COMPOSITE_TYPE.OBJECT_ARRAY {@link ObjectType.COMPOSITE_TYPE}.
+ *
+ * @extends CompositeType
+ */
+class ObjectArrayType extends CompositeType {
+
+    /**
+     * Public constructor.
+     *
+     * Optionally specifies a type of elements in the array.
+     *
+     * If the type of elements is not specified then during operations the Ignite client
+     * will try to make automatic mapping between JavaScript types and Ignite object types -
+     * according to the mapping table defined in the description of the {@link ObjectType} class.
+     *
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [elementType=null] - type of the array element:
+     *   - either a type code of primitive (simple) type
+     *   - or an instance of class representing non-primitive (composite) type
+     *   - or null (or not specified) that means the type is not specified
+     *
+     * @return {ObjectArrayType} - new ObjectArrayType instance
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    constructor(elementType = null) {
+        super(COMPOSITE_TYPE.OBJECT_ARRAY);
+        const BinaryUtils = require('./internal/BinaryUtils');
+        BinaryUtils.checkObjectType(elementType, 'elementType');
+        this._elementType = elementType;
+    }
+}
+
+/**
  * Class representing a complex type of Ignite object.
  *
  * It is described by COMPOSITE_TYPE.COMPLEX_OBJECT {@link ObjectType.COMPOSITE_TYPE},
@@ -422,36 +585,6 @@ class ComplexObjectType extends CompositeType {
      */
     _getFieldType(fieldName) {
         return this._fields.get(fieldName);
-    }
-}
-
-/**
- * ??? Class representing an array of Ignite complex type objects.
- *
- * It is described by COMPOSITE_TYPE.OBJECT_ARRAY {@link ObjectType.COMPOSITE_TYPE}
- * and by a concrete {@link CompositeType} instance which defines an element of the array.
- *
- * @extends CompositeType
- */
-class ObjectArrayType extends CompositeType {
-
-    /**
-     * Public constructor.
-     *
-     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [elementType=null] - type of the array element:
-     *   - either a type code of primitive (simple) type
-     *   - or an instance of class representing non-primitive (composite) type
-     *   - or null (or not specified) that means the type is not specified
-     *
-     * @return {ObjectArrayType} - new ObjectArrayType instance
-     *
-     * @throws {IgniteClientError} if error.
-     */
-    constructor(elementType = null) {
-        super(COMPOSITE_TYPE.OBJECT_ARRAY);
-        const BinaryUtils = require('./internal/BinaryUtils');
-        BinaryUtils.checkObjectType(elementType, 'elementType');
-        this._elementType = elementType;
     }
 }
 
