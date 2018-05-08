@@ -26,7 +26,6 @@ import java.io.ObjectStreamException;
 import java.util.Collection;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSet;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -44,7 +43,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Cache set proxy.
  */
-public class IgniteCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
+public class IgniteCacheSetProxy<T> implements CacheSetInternalProxy<T>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

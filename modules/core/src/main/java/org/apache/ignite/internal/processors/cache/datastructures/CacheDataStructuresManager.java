@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.internal.processors.datastructures.GridTransactionalCacheQueueImpl;
 import org.apache.ignite.internal.processors.datastructures.IgniteCacheSetImpl;
 import org.apache.ignite.internal.processors.datastructures.IgniteCacheSetProxy;
+import org.apache.ignite.internal.processors.datastructures.CacheSetInternalProxy;
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -105,7 +106,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     }
 
     /** Sets map. */
-    private final ConcurrentMap<IgniteUuid, IgniteSet> setsMap;
+    private final ConcurrentMap<IgniteUuid, CacheSetInternalProxy> setsMap;
 
     /** Set keys used for set iteration. */
     private ConcurrentMap<IgniteUuid, GridConcurrentHashSet<SetItemKey>> setDataMap =
@@ -179,7 +180,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param set Set.
      */
     public void onRemoved(IgniteCacheSetProxy set) {
-        setsMap.remove(set.delegate().id(), set);
+        setsMap.remove(set.delegate().id());
     }
 
     /**
@@ -187,7 +188,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      */
     @Deprecated
     public void onRemoved(GridCacheSetProxy set) {
-        setsMap.remove(set.delegate().id(), set);
+        setsMap.remove(set.delegate().id());
     }
 
     /**
@@ -195,23 +196,16 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
-        for (Map.Entry<IgniteUuid, IgniteSet> e : setsMap.entrySet()) {
-            IgniteSet set = e.getValue();
+        for (Map.Entry<IgniteUuid, CacheSetInternalProxy> e : setsMap.entrySet()) {
+            CacheSetInternalProxy set = e.getValue();
 
             if (clusterRestarted) {
-                if (set instanceof GridCacheSetProxy)
-                    ((GridCacheSetProxy)set).blockOnRemove();
-                else
-                    ((IgniteCacheSetProxy)set).blockOnRemove();
+                set.blockOnRemove();
 
                 setsMap.remove(e.getKey(), set);
             }
-            else {
-                if (set instanceof GridCacheSetProxy)
-                    ((GridCacheSetProxy)set).needCheckNotRemoved();
-                else
-                    ((IgniteCacheSetProxy)set).needCheckNotRemoved();
-            }
+            else
+                set.needCheckNotRemoved();
         }
 
         for (Map.Entry<IgniteUuid, GridCacheQueueProxy> e : queuesMap.entrySet()) {
@@ -410,27 +404,27 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param name Set name.
      * @param colloc Collocated flag.
      * @param create Create flag.
-     * @param legacyMode {@code True} to enable Ignite 2.5 compatibility mode.
+     * @param legacy {@code True} to create legacy (Ignite 2.5 compatible) version.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public <T> IgniteSet<T> set(final String name,
         boolean colloc,
         final boolean create,
-        final boolean legacyMode)
+        final boolean legacy)
         throws IgniteCheckedException
     {
         // Non collocated mode enabled only for PARTITIONED cache.
         final boolean colloc0 = cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc;
 
-        return set0(name, colloc0, create, legacyMode);
+        return set0(name, colloc0, create, legacy);
     }
 
     /**
      * @param name Name of set.
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
-     * @param legacyMode {@code True} to enable Ignite 2.5 compatibility mode.
+     * @param legacy {@code True} to create legacy (Ignite 2.5 compatible) version.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
@@ -438,7 +432,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable private <T> IgniteSet<T> set0(String name,
         boolean collocated,
         boolean create,
-        boolean legacyMode)
+        boolean legacy)
         throws IgniteCheckedException
     {
         cctx.gate().enter();
@@ -451,7 +445,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
             // If we should use separate cache.
-            if (!legacyMode && !collocated) {
+            if (!legacy && !collocated) {
                 // For backward compatibility try to find an old header.
                 hdr = (GridCacheSetHeader)cache.get(key);
 
@@ -475,11 +469,11 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                     return null;
             }
 
-            IgniteSet<T> set = setsMap.get(hdr.id());
+            CacheSetInternalProxy<T> set = setsMap.get(hdr.id());
 
             if (set == null) {
-                IgniteSet<T> old = setsMap.putIfAbsent(hdr.id(),
-                    set = legacyMode ?
+                CacheSetInternalProxy<T> old = setsMap.putIfAbsent(hdr.id(),
+                    set = legacy ?
                         new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)) :
                         new IgniteCacheSetProxy<>(cctx, new IgniteCacheSetImpl<T>(cctx, name, hdr)));
 
@@ -673,12 +667,10 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      */
     @SuppressWarnings("unchecked")
     private void blockSet(IgniteUuid setId) {
-        IgniteSet set = setsMap.remove(setId);
+        CacheSetInternalProxy set = setsMap.remove(setId);
 
-        if (set instanceof GridCacheSetProxy)
-            ((GridCacheSetProxy)set).blockOnRemove();
-        else if (set instanceof IgniteCacheSetProxy)
-            ((IgniteCacheSetProxy)set).blockOnRemove();
+        if (set != null)
+            set.blockOnRemove();
     }
 
     /**
