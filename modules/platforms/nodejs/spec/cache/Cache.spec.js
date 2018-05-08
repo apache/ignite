@@ -161,12 +161,11 @@ describe('cache configuration operations test suite >', () => {
                             ]));
                 let cache = await igniteClient.createCache(CACHE_NAME3, cacheCfg);
                 let cfg = await igniteClient.getCacheConfiguration(CACHE_NAME3);
-                // TODO: compare cache configs
                 await igniteClient.destroyCache(CACHE_NAME3);
 
                 cache = await igniteClient.getOrCreateCache(CACHE_NAME3, cfg);
                 let cfg2 = await igniteClient.getCacheConfiguration(CACHE_NAME3);
-                // TODO: compare cache configs
+                expect(await TestingHelper.compare(cfg, cfg2)).toBe(true)
                 await igniteClient.destroyCache(CACHE_NAME3);
             }).
             then(done).
