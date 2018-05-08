@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.h2.message.DbException;
+import org.h2.util.Bits;
 import org.h2.util.JdbcUtils;
 import org.h2.util.Utils;
 import org.h2.value.CompareMode;
@@ -163,7 +164,7 @@ public class GridH2ValueCacheObject extends Value {
             if (o1.equals(o2))
                 return 0;
 
-            return Utils.compareNotNullSigned(getBytesNoCopy(), v.getBytesNoCopy());
+            return Bits.compareNotNullSigned(getBytesNoCopy(), v.getBytesNoCopy());
         }
 
         return h1 > h2 ? 1 : -1;

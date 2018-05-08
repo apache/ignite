@@ -104,8 +104,6 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.BIGGER;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.BIGGER_EQUAL;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.CONCAT;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.DIVIDE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL_NULL_SAFE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EXISTS;
@@ -113,14 +111,10 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperatio
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IS_NOT_NULL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IS_NULL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.LIKE;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.MINUS;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.MODULUS;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.MULTIPLY;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.NOT;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.NOT_EQUAL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.NOT_EQUAL_NULL_SAFE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.OR;
-import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.PLUS;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.REGEXP;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.SMALLER;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.SMALLER_EQUAL;
@@ -133,10 +127,6 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlType.fro
  */
 @SuppressWarnings("TypeMayBeWeakened")
 public class GridSqlQueryParser {
-    /** */
-    private static final GridSqlOperationType[] OPERATION_OP_TYPES =
-        {CONCAT, PLUS, MINUS, MULTIPLY, DIVIDE, null, MODULUS};
-
     /** */
     private static final GridSqlOperationType[] COMPARISON_TYPES =
         {EQUAL, BIGGER_EQUAL, BIGGER, SMALLER_EQUAL,
@@ -152,7 +142,7 @@ public class GridSqlQueryParser {
     private static final Getter<Select, int[]> GROUP_INDEXES = getter(Select.class, "groupIndex");
 
     /** */
-    private static final Getter<Operation, Integer> OPERATION_TYPE = getter(Operation.class, "opType");
+    private static final Getter<Operation, Operation.OpType> OPERATION_TYPE = getter(Operation.class, "opType");
 
     /** */
     private static final Getter<Operation, Expression> OPERATION_LEFT = getter(Operation.class, "left");
@@ -269,7 +259,7 @@ public class GridSqlQueryParser {
     private static final Getter<Explain, Prepared> EXPLAIN_COMMAND = getter(Explain.class, "command");
 
     /** */
-    private static final Getter<Merge, Table> MERGE_TABLE = getter(Merge.class, "table");
+    private static final Getter<Merge, Table> MERGE_TABLE = getter(Merge.class, "targetTable");
 
     /** */
     private static final Getter<Merge, Column[]> MERGE_COLUMNS = getter(Merge.class, "columns");
@@ -278,7 +268,7 @@ public class GridSqlQueryParser {
     private static final Getter<Merge, Column[]> MERGE_KEYS = getter(Merge.class, "keys");
 
     /** */
-    private static final Getter<Merge, List<Expression[]>> MERGE_ROWS = getter(Merge.class, "list");
+    private static final Getter<Merge, List<Expression[]>> MERGE_ROWS = getter(Merge.class, "valuesExpressionList");
 
     /** */
     private static final Getter<Merge, Query> MERGE_QUERY = getter(Merge.class, "query");
@@ -302,7 +292,7 @@ public class GridSqlQueryParser {
     private static final Getter<Insert, Boolean> INSERT_SORTED = getter(Insert.class, "sortedInsertMode");
 
     /** */
-    private static final Getter<Delete, TableFilter> DELETE_FROM = getter(Delete.class, "tableFilter");
+    private static final Getter<Delete, TableFilter> DELETE_FROM = getter(Delete.class, "targetTableFilter");
 
     /** */
     private static final Getter<Delete, Expression> DELETE_WHERE = getter(Delete.class, "condition");
@@ -311,7 +301,7 @@ public class GridSqlQueryParser {
     private static final Getter<Delete, Expression> DELETE_LIMIT = getter(Delete.class, "limitExpr");
 
     /** */
-    private static final Getter<Update, TableFilter> UPDATE_TARGET = getter(Update.class, "tableFilter");
+    private static final Getter<Update, TableFilter> UPDATE_TARGET = getter(Update.class, "targetTableFilter");
 
     /** */
     private static final Getter<Update, ArrayList<Column>> UPDATE_COLUMNS = getter(Update.class, "columns");
@@ -1760,6 +1750,41 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * Map operation type.
+     *
+     * @param opType H2 operation type.
+     * @return Ignite operation type.
+     */
+    private static GridSqlOperationType mapOperationType(Operation.OpType opType) {
+        switch (opType) {
+            case CONCAT:
+                return GridSqlOperationType.CONCAT;
+
+            case PLUS:
+                return GridSqlOperationType.PLUS;
+
+            case MINUS:
+                return GridSqlOperationType.MINUS;
+
+            case MULTIPLY:
+                return GridSqlOperationType.MULTIPLY;
+
+            case DIVIDE:
+                return GridSqlOperationType.DIVIDE;
+
+            case NEGATE:
+                // NB: Was set to null in original code for some reason; left unchanged during 1.4.197 migration.
+                return null;
+
+            case MODULUS:
+                return GridSqlOperationType.MODULUS;
+
+            default:
+                throw new IllegalStateException("Unsupported operation type: " + opType);
+        }
+    }
+
+    /**
      * @param expression Expression.
      * @param calcTypes Calculate types for all the expressions.
      * @return Parsed expression.
@@ -1787,16 +1812,16 @@ public class GridSqlQueryParser {
         if (expression instanceof Operation) {
             Operation operation = (Operation)expression;
 
-            Integer type = OPERATION_TYPE.get(operation);
+            Operation.OpType type = OPERATION_TYPE.get(operation);
 
-            if (type == Operation.NEGATE) {
+            if (type == Operation.OpType.NEGATE) {
                 assert OPERATION_RIGHT.get(operation) == null;
 
                 return new GridSqlOperation(GridSqlOperationType.NEGATE,
                     parseExpression(OPERATION_LEFT.get(operation), calcTypes));
             }
 
-            return new GridSqlOperation(OPERATION_OP_TYPES[type],
+            return new GridSqlOperation(mapOperationType(type),
                 parseExpression(OPERATION_LEFT.get(operation), calcTypes),
                 parseExpression(OPERATION_RIGHT.get(operation), calcTypes));
         }
