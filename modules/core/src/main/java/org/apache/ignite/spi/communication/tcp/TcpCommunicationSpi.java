@@ -111,6 +111,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
@@ -4195,8 +4196,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             super(igniteInstanceName, "tcp-comm-worker", log);
         }
 
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException {
+        /** */
+        private void workerBody() throws InterruptedException {
             if (log.isDebugEnabled())
                 log.debug("Tcp communication worker has been started.");
 
@@ -4227,6 +4228,17 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 else if (err != null)
                     ((IgniteEx)ignite).context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() {
+            WorkersRegistry workerRegistry = ((IgniteEx)ignite).context().workersRegistry();
+
+            new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
+                @Override protected void body() throws InterruptedException {
+                    workerBody();
+                }
+            }.run();
         }
 
         /**
