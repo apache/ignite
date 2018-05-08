@@ -72,6 +72,7 @@ class Query {
 
 /**
  * Class representing an SQL query which returns the whole cache entries (key-value pairs).
+ * @extends Query
  */
 class SqlQuery extends Query {
 
@@ -273,6 +274,7 @@ const STATEMENT_TYPE = Object.freeze({
 
 /**
  * Class representing an SQL Fields query.
+ * @extends SqlQuery
  */
 class SqlFieldsQuery extends SqlQuery {
 
@@ -440,6 +442,7 @@ class SqlFieldsQuery extends SqlQuery {
  *
  * This version of the class does not support a possibility to specify a Filter object for the query.
  * The query returns all entries from the entire cache or from the specified partition.
+ * @extends Query
  */
 class ScanQuery extends Query {
 

@@ -24,9 +24,10 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
  *
  * The timestamp extends the standard JavaScript {@link Date} Object and consists of:
  *   - time  - the number of milliseconds since January 1, 1970, 00:00:00 UTC,
- *             methods of the JavaScript {@link Date} Object can be used to operate with the time.
+ *     methods of the JavaScript {@link Date} Object can be used to operate with the time.
  *   - nanoseconds - fraction of the last millisecond in the range from 0 to 999999 nanoseconds,
- *                   this class specifies additional methods to operate with the nanoseconds.
+ *     this class specifies additional methods to operate with the nanoseconds.
+ * @extends Date
  */
 class Timestamp extends Date {
 

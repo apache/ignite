@@ -30,16 +30,18 @@
     
         <h2><span class="attribs"><span class="type-signature"></span></span>EnumItem<span class="signature">(typeId)</span><span class="type-signature"></span></h2>
         
-            <div class="class-description"><p>Class representing an item of enum.</p>
+            <div class="class-description"><p>Class representing an item of Ignite enum type.</p>
 <p>The item is defined by:</p>
 <ul>
-<li>type Id (mandatory) - Id of the enum type.</li>
-<li>ordinal (optional) - ordinal of the item in the enum type.</li>
-<li>name (optional) - name of the item.</li>
+<li>type Id (mandatory) - Id of the Ignite enum type.</li>
+<li>ordinal (optional) - ordinal of the item in the Ignite enum type.</li>
+<li>name (optional) - name of the item (field name in the Ignite enum type).</li>
 <li>value (optional) - value of the item.
 Usually, at least one from the optional ordinal, name or value must be specified
-in order to use an instance of this class.</li>
-</ul></div>
+in order to use an instance of this class in Ignite operations.</li>
+</ul>
+<p>To distinguish one item from another, the Ignite client analyzes the optional fields in the following order:
+ordinal, name, value.</p></div>
         
     
 </header>
@@ -114,7 +116,7 @@ in order to use an instance of this class.</li>
 
             
 
-            <td class="description last"><p>Id of the enum type.</p></td>
+            <td class="description last"><p>Id of the Ignite enum type.</p></td>
         </tr>
 
     
@@ -155,7 +157,7 @@ in order to use an instance of this class.</li>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line35">line 35</a>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line37">line 37</a>
     </li></ul></dd>
     
 
@@ -262,7 +264,7 @@ or null if name is not set.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line108">line 108</a>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line110">line 110</a>
     </li></ul></dd>
     
 
@@ -328,7 +330,7 @@ or null if name is not set.</p>
 
 
 <div class="description">
-    <p>Returns ordinal of the item in the enum type
+    <p>Returns ordinal of the item in the Ignite enum type
 or null if ordinal is not set.</p>
 </div>
 
@@ -373,7 +375,7 @@ or null if ordinal is not set.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line83">line 83</a>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line85">line 85</a>
     </li></ul></dd>
     
 
@@ -401,7 +403,7 @@ or null if ordinal is not set.</p>
         
 <div class="param-desc">
     <ul>
-<li>ordinal of the item in the enum type.</li>
+<li>ordinal of the item in the Ignite enum type.</li>
 </ul>
 </div>
 
@@ -439,7 +441,7 @@ or null if ordinal is not set.</p>
 
 
 <div class="description">
-    <p>Returns Id of the enum type.</p>
+    <p>Returns Id of the Ignite enum type.</p>
 </div>
 
 
@@ -483,7 +485,7 @@ or null if ordinal is not set.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line58">line 58</a>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line60">line 60</a>
     </li></ul></dd>
     
 
@@ -594,7 +596,7 @@ or null if value is not set.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line133">line 133</a>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line135">line 135</a>
     </li></ul></dd>
     
 
@@ -753,7 +755,7 @@ or null if value is not set.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line121">line 121</a>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line123">line 123</a>
     </li></ul></dd>
     
 
@@ -848,7 +850,7 @@ or null if value is not set.</p>
 
 
 <div class="description">
-    <p>Sets or updates ordinal of the item in the enum type.</p>
+    <p>Sets or updates ordinal of the item in the Ignite enum type.</p>
 </div>
 
 
@@ -900,7 +902,7 @@ or null if value is not set.</p>
 
             
 
-            <td class="description last"><p>ordinal of the item in the enum type.</p></td>
+            <td class="description last"><p>ordinal of the item in the Ignite enum type.</p></td>
         </tr>
 
     
@@ -941,7 +943,7 @@ or null if value is not set.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line96">line 96</a>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line98">line 98</a>
     </li></ul></dd>
     
 
@@ -1036,7 +1038,7 @@ or null if value is not set.</p>
 
 
 <div class="description">
-    <p>Updates Id of the enum type.</p>
+    <p>Updates Id of the Ignite enum type.</p>
 </div>
 
 
@@ -1088,7 +1090,7 @@ or null if value is not set.</p>
 
             
 
-            <td class="description last"><p>new Id of the enum type.</p></td>
+            <td class="description last"><p>new Id of the Ignite enum type.</p></td>
         </tr>
 
     
@@ -1129,7 +1131,7 @@ or null if value is not set.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line71">line 71</a>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line73">line 73</a>
     </li></ul></dd>
     
 
@@ -1317,7 +1319,7 @@ or null if value is not set.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line146">line 146</a>
+        <a href="EnumItem.js.html">EnumItem.js</a>, <a href="EnumItem.js.html#line148">line 148</a>
     </li></ul></dd>
     
 
@@ -1420,7 +1422,7 @@ or null if value is not set.</p>
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sat May 05 2018 19:39:34 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue May 08 2018 23:52:08 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

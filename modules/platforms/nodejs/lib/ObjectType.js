@@ -130,7 +130,8 @@ const COMPOSITE_TYPE = Object.freeze({
  * In this case the Ignite client tries to make automatic mapping between JavaScript types
  * and Ignite object types according to the following mapping tables:
  *
- * ============================================================================
+ * ----------------------------------------------------------------------------
+ *
  * DEFAULT MAPPING FROM JavaScript type TO Ignite type code.
  *
  * This mapping is used when an application does not explicitly specify an Ignite type
@@ -166,7 +167,8 @@ const COMPOSITE_TYPE = Object.freeze({
  *
  * All other JavaScript types have no default mapping.
  *
- * ============================================================================
+ * ----------------------------------------------------------------------------
+ *
  * DEFAULT MAPPING FROM Ignite type code TO JavaScript type.
  *
  * This mapping is used when an application does not explicitly specify an Ignite type
@@ -219,7 +221,8 @@ const COMPOSITE_TYPE = Object.freeze({
  * | NULL                         | null                                  |
  * </pre>
  *
- * ============================================================================
+ * ----------------------------------------------------------------------------
+ *
  * RETURNED JavaScript types WHEN READING DATA OF THE SPECIFIED Ignite type code.
  *
  * When an application explicitly specifies an Ignite type for a field
@@ -240,7 +243,8 @@ const COMPOSITE_TYPE = Object.freeze({
  * - NULL cannot be specified as a type of a field but JavaScript null may be returned
  * as a value of a field.
  *
- * ============================================================================
+ * ----------------------------------------------------------------------------
+ *
  * ALLOWED JavaScript types WHEN WRITING DATA OF THE SPECIFIED Ignite type code.
  *
  * When an application explicitly specifies an Ignite type for a field
@@ -264,21 +268,22 @@ const COMPOSITE_TYPE = Object.freeze({
  *
  * - for all *_ARRAY Ignite types an empty JavaScript Array is allowed.
  *
- * ============================================================================
+ * ----------------------------------------------------------------------------
+ *
  * COMMENTS TO ALL TABLES
  *
  * JavaScript type - is a JavaScript primitive or a JavaScript Object
- * (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures)
+ * ({@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures})
  *
  * (*) Timestamp, EnumItem and BinaryObject - are JavaScript Objects introduced by the Ignite client.
  *
  * (**) Decimal - is an external JavaScript Object exported into the Ignite client
- * (https://github.com/MikeMcl/decimal.js)
+ * ({@link https://github.com/MikeMcl/decimal.js})
  *
  * Ignite type code - is the type code of an Ignite primitive type ({@link ObjectType.PRIMITIVE_TYPE})
  * or an Ignite composite type ({@link ObjectType.COMPOSITE_TYPE}).
  *
- * ============================================================================
+ * ----------------------------------------------------------------------------
  *
  * @hideconstructor
  */
@@ -499,8 +504,7 @@ class ObjectArrayType extends CompositeType {
  * Class representing a complex type of Ignite object.
  *
  * It is described by COMPOSITE_TYPE.COMPLEX_OBJECT {@link ObjectType.COMPOSITE_TYPE},
- * by a name of the complex type or by the type Id
- * and by a JavaScript Object which is mapped to/from the Ignite complex type.
+ * by a name of the complex type and by a JavaScript Object which is mapped to/from the Ignite complex type.
  *
  * @extends CompositeType
  */
@@ -524,10 +528,10 @@ class ComplexObjectType extends CompositeType {
      * A type of any field may be specified later by setFieldType() method.
      *
      * By default, the name of the complex type is the name of the JavaScript Object.
-     * The name or the type Id may be explicitely specified using optional typeNameOrId parameter in the constructor.
+     * The name may be explicitely specified using optional typeName parameter in the constructor.
      * 
      * @param {object} jsObject - instance of JavaScript Object which will be mapped to/from this complex type.
-     * @param {string | number} [typeNameOrId] - name of the complex type or the type Id.
+     * @param {string} [typeName] - name of the complex type.
      *
      * @return {ComplexObjectType} - new ComplexObjectType instance
      *

@@ -200,6 +200,7 @@ class Cursor {
  * One instance of this class returns results of one SQL Fields query operation.
  *
  * @hideconstructor
+ * @extends Cursor
  */
 class SqlFieldsCursor extends Cursor {
 

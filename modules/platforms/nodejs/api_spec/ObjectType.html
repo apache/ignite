@@ -44,30 +44,145 @@ Eg. a kind of map or a kind of collection.</p>
 </ul>
 <p>This class helps the Ignite client to make a mapping between JavaScript types
 and types used by Ignite.</p>
-<p>In many methods the Ignite client does not require to directly specify an object type.
+<p>In many methods the Ignite client does not require to directly specify a type of Ignite object.
 In this case the Ignite client tries to make automatic mapping between JavaScript types
-and Ignite object types according to the following mapping table:</p>
-<p><pre>
-     TODO
-     JavaScript type              to / from        type code (<a href="ObjectType.html#.PRIMITIVE_TYPE">ObjectType.PRIMITIVE_TYPE</a> and <a href="ObjectType.html#.COMPOSITE_TYPE">ObjectType.COMPOSITE_TYPE</a>)
-     null                         to / from        NULL
-     number                       to / from        DOUBLE
-     Array of number              to / from        DOUBLE_ARRAY
-     string                       to / from        STRING
-     Array of string              to / from        STRING_ARRAY
-     boolean                      to / from        BOOLEAN
-     Array of boolean             to / from        BOOLEAN_ARRAY
-     Date                         to / from        DATE
-     Array of Date                to / from        DATE_ARRAY
-     Map                          to / from        MAP (HASH_MAP)
-     BinaryObject                 to / from        COMPLEX_OBJECT
-     Array of BinaryObject        to / from        OBJECT_ARRAY
-     any other Object             to /  -          COMPLEX_OBJECT
-     Array of any other Object    to /  -          OBJECT_ARRAY
+and Ignite object types according to the following mapping tables:</p>
+<hr>
+<p>DEFAULT MAPPING FROM JavaScript type TO Ignite type code.</p>
+<p>This mapping is used when an application does not explicitly specify an Ignite type
+for a field and is writing data to that field.</p>
+<pre>
+| JavaScript type           | Ignite type code      |
+| ------------------------- | ----------------------|
+| number                    | DOUBLE                |
+| boolean                   | BOOLEAN               |
+| string                    | STRING                |
+| Date                      | DATE                  |
+| Timestamp*                | TIMESTAMP             |
+| EnumItem*                 | ENUM                  |
+| Decimal**                 | DECIMAL               |
+| BinaryObject*             | COMPLEX_OBJECT        |
+| Array of number           | DOUBLE_ARRAY          |
+| Array of boolean          | BOOLEAN_ARRAY         |
+| Array of string           | STRING_ARRAY          |
+| Array of Date             | DATE_ARRAY            |
+| Array of Timestamp*       | TIMESTAMP_ARRAY       |
+| Array of EnumItem*        | ENUM_ARRAY            |
+| Array of Decimal**        | DECIMAL_ARRAY         |
+| Array of BinaryObject*    | OBJECT_ARRAY          |
+| Array of any other Object | OBJECT_ARRAY          |
+| Set                       | COLLECTION (HASH_SET) |
+| Map                       | MAP (HASH_MAP)        |
+| any other Object          | COMPLEX_OBJECT        |
 </pre>
-Note: type of an array content is determined by the type of the first element of the array
-(empty array has no automatic mapping).</p>
-<p>All other JavaScript types have no automatic mapping.</p></div>
+
+<p>Type of an array content is determined by the type of the first element of the array.
+Empty array has no default mapping.</p>
+<p>All other JavaScript types have no default mapping.</p>
+<hr>
+<p>DEFAULT MAPPING FROM Ignite type code TO JavaScript type.</p>
+<p>This mapping is used when an application does not explicitly specify an Ignite type
+for a field and is reading data from that field.</p>
+<pre>
+| Ignite type code             | JavaScript type                       |
+| ---------------------------- | --------------------------------------|
+| BYTE                         | number                                |
+| SHORT                        | number                                |
+| INTEGER                      | number                                |
+| LONG                         | number                                |
+| FLOAT                        | number                                |
+| DOUBLE                       | number                                |
+| DECIMAL                      | Decimal**                             |
+| BOOLEAN                      | boolean                               |
+| STRING                       | string                                |
+| CHAR                         | string (one character)                |
+| UUID                         | Array of number (16 numbers)          |
+| DATE                         | Date                                  |
+| TIME                         | Date                                  |
+| TIMESTAMP                    | Timestamp*                            |
+| ENUM                         | EnumItem*                             |
+| COMPLEX_OBJECT               | BinaryObject*                         |
+| BYTE_ARRAY                   | Array of number                       |
+| SHORT_ARRAY                  | Array of number                       |
+| INTEGER_ARRAY                | Array of number                       |
+| LONG_ARRAY                   | Array of number                       |
+| FLOAT_ARRAY                  | Array of number                       |
+| DOUBLE_ARRAY                 | Array of number                       |
+| DECIMAL_ARRAY                | Array of Decimal**                    |
+| BOOLEAN_ARRAY                | Array of boolean                      |
+| STRING_ARRAY                 | Array of string                       |
+| CHAR_ARRAY                   | Array of string (one character)       |
+| UUID_ARRAY                   | Array of Array of number (16 numbers) |
+| DATE_ARRAY                   | Array of Date                         |
+| TIME_ARRAY                   | Array of Date                         |
+| TIMESTAMP_ARRAY              | Array of Timestamp*                   |
+| ENUM_ARRAY                   | Array of EnumItem*                    |
+| OBJECT_ARRAY                 | Array                                 |
+| COLLECTION (USER_COL)        | Array                                 |
+| COLLECTION (ARR_LIST)        | Array                                 |
+| COLLECTION (LINKED_LIST)     | Array                                 |
+| COLLECTION (SINGLETON_LIST)  | Array                                 |
+| COLLECTION (HASH_SET)        | Set                                   |
+| COLLECTION (LINKED_HASH_SET) | Set                                   |
+| COLLECTION (USER_SET)        | Set                                   |
+| MAP (HASH_MAP)               | Map                                   |
+| MAP (LINKED_HASH_MAP)        | Map                                   |
+| NULL                         | null                                  |
+</pre>
+
+<hr>
+<p>RETURNED JavaScript types WHEN READING DATA OF THE SPECIFIED Ignite type code.</p>
+<p>When an application explicitly specifies an Ignite type for a field
+and is reading data from that field - the following JavaScript types
+are returned for every concrete Ignite type code -</p>
+<p>SEE THE PREVIOUS TABLE with the following additional comments:</p>
+<ul>
+<li><p>for COMPLEX_OBJECT the Ignite Client returns a JavaScript Object
+which is defined by the specified <a href="ComplexObjectType.html">ComplexObjectType</a>.</p>
+</li>
+<li><p>the returned Map for MAP is defined by the specified <a href="MapObjectType.html">MapObjectType</a>.</p>
+</li>
+<li><p>the returned Set or Array for COLLECTION is defined by the specified <a href="CollectionObjectType.html">CollectionObjectType</a>.</p>
+</li>
+<li><p>the returned Array for OBJECT_ARRAY is defined by the specified <a href="ObjectArrayType.html">ObjectArrayType</a>.</p>
+</li>
+<li><p>NULL cannot be specified as a type of a field but JavaScript null may be returned
+as a value of a field.</p>
+</li>
+</ul>
+<hr>
+<p>ALLOWED JavaScript types WHEN WRITING DATA OF THE SPECIFIED Ignite type code.</p>
+<p>When an application explicitly specifies an Ignite type for a field
+and is writing data to that field - the following JavaScript types
+are allowed for every concrete Ignite type code -</p>
+<p>SEE THE PREVIOUS TABLE with the following additional comments:</p>
+<ul>
+<li><p>for COMPLEX_OBJECT the Ignite Client allows a JavaScript Object
+which is defined by the specified <a href="ComplexObjectType.html">ComplexObjectType</a>.</p>
+</li>
+<li><p>the allowed Map for MAP is defined by the specified <a href="MapObjectType.html">MapObjectType</a>.</p>
+</li>
+<li><p>the allowed Set or Array for COLLECTION is defined by the specified <a href="CollectionObjectType.html">CollectionObjectType</a>.</p>
+</li>
+<li><p>the allowed Array for OBJECT_ARRAY is defined by the specified <a href="ObjectArrayType.html">ObjectArrayType</a>.</p>
+</li>
+<li><p>NULL cannot be specified as a type of a field but JavaScript null is allowed
+as value of a field (but not as a key/value in a cache) or as a value of Array/Set/Map element
+for all Ignite types, except BYTE, SHORT, INTEGER, LONG, FLOAT, DOUBLE, CHAR, BOOLEAN.</p>
+</li>
+<li><p>for all *_ARRAY Ignite types an empty JavaScript Array is allowed.</p>
+</li>
+</ul>
+<hr>
+<p>COMMENTS TO ALL TABLES</p>
+<p>JavaScript type - is a JavaScript primitive or a JavaScript Object
+(<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures">https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures</a>)</p>
+<p>(*) Timestamp, EnumItem and BinaryObject - are JavaScript Objects introduced by the Ignite client.</p>
+<p>(**) Decimal - is an external JavaScript Object exported into the Ignite client
+(<a href="https://github.com/MikeMcl/decimal.js">https://github.com/MikeMcl/decimal.js</a>)</p>
+<p>Ignite type code - is the type code of an Ignite primitive type (<a href="ObjectType.html#.PRIMITIVE_TYPE">ObjectType.PRIMITIVE_TYPE</a>)
+or an Ignite composite type (<a href="ObjectType.html#.COMPOSITE_TYPE">ObjectType.COMPOSITE_TYPE</a>).</p>
+<hr></div>
         
     
 </header>
@@ -120,7 +235,7 @@ Note: type of an array content is determined by the type of the first element of
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line158">line 158</a>
+        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line291">line 291</a>
     </li></ul></dd>
     
 
@@ -1002,7 +1117,7 @@ Note: type of an array content is determined by the type of the first element of
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sat May 05 2018 19:39:34 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue May 08 2018 23:52:08 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>
