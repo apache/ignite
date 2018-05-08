@@ -3637,6 +3637,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(5, 3);
 
+        client = false;
+
         ConnectionsFailureMatrix matrix = new ConnectionsFailureMatrix();
 
         matrix.addAll(G.allGrids().stream().map(g -> g.cluster().localNode()).collect(Collectors.toList()));
@@ -3678,6 +3680,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         client = true;
 
         startGridsMultiThreaded(6, 5);
+
+        client = false;
 
         List<ClusterNode> clientNodes = G.allGrids().stream()
             .map(g -> g.cluster().localNode())
@@ -3823,11 +3827,20 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected GridCommunicationClient createTcpClient0(ClusterNode node, int connIdx, Collection<InetSocketAddress> addrs) throws IgniteCheckedException {
-            if (failure && !matrix.hasConnection(getLocalNode(), node))
-                throw new IgniteCheckedException("Test", new SocketTimeoutException());
+        @Override protected GridCommunicationClient createTcpClient0(
+            ClusterNode node,
+            int connIdx,
+            Collection<InetSocketAddress> addrs,
+            IgniteCheckedException[] errsContainer
+        ) throws IgniteCheckedException {
+            if (failure && !matrix.hasConnection(getLocalNode(), node)) {
+                errsContainer[0] = new IgniteCheckedException("Test", new SocketTimeoutException());
 
-            return new FailingCommunicationClient(getLocalNode(), node, super.createTcpClient0(node, connIdx, addrs));
+                return null;
+            }
+
+            return new FailingCommunicationClient(getLocalNode(), node,
+                super.createTcpClient0(node, connIdx, addrs, errsContainer));
         }
 
         /**

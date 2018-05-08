@@ -3192,15 +3192,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     protected GridCommunicationClient createTcpClient(ClusterNode node, int connIdx) throws IgniteCheckedException {
         Collection<InetSocketAddress> addrs = nodeAddresses(node);
 
-        GridCommunicationClient client = null;
-        IgniteCheckedException errs = null;
+        IgniteCheckedException[] errsContainer = new IgniteCheckedException[1];
 
-        try {
-            client = createTcpClient0(node, connIdx, addrs);
-        }
-        catch (IgniteCheckedException e) {
-            errs = e;
-        }
+        GridCommunicationClient client = createTcpClient0(node, connIdx, addrs, errsContainer);
+
+        IgniteCheckedException errs = errsContainer[0];
 
         if (client == null) {
             if (errs == null)
@@ -3255,6 +3251,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @param node Remote node.
      * @param connIdx Connection index.
      * @param addrs Remote node addresses.
+     * @param errsContainer Container to store expected tcp client creation exceptions.
      * @return Communication client.
      *
      * @throws IgniteCheckedException If failed to establish TCP connection.
@@ -3262,7 +3259,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     protected GridCommunicationClient createTcpClient0(
         ClusterNode node,
         int connIdx,
-        Collection<InetSocketAddress> addrs
+        Collection<InetSocketAddress> addrs,
+        IgniteCheckedException[] errsContainer
     ) throws IgniteCheckedException {
         GridCommunicationClient client = null;
         IgniteCheckedException errs = null;
@@ -3514,8 +3512,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 break;
         }
 
-        if (errs != null)
-            throw errs;
+        errsContainer[0] = errs;
 
         return client;
     }
