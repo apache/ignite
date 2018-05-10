@@ -198,38 +198,42 @@ class ClientSocket {
         if (this._state === STATE.DISCONNECTED) {
             return;
         }
-        const buffer = MessageBuffer.from(message);
-        // Response length
-        const length = buffer.readInteger();
-        let requestId, isSuccess;
-        const isHandshake = this._state === STATE.HANDSHAKE;
+        let offset = 0;
+        while (offset < message.length) {
+            let buffer = MessageBuffer.from(message, offset);
+            // Response length
+            const length = buffer.readInteger();
+            offset += length + BinaryUtils.getSize(BinaryUtils.TYPE_CODE.INTEGER);
+            let requestId, isSuccess;
+            const isHandshake = this._state === STATE.HANDSHAKE;
 
-        if (isHandshake) {
-            // Handshake status
-            isSuccess = (buffer.readByte() === HANDSHAKE_SUCCESS_STATUS_CODE)
-            requestId = this._handshakeRequestId.toString();
-        }
-        else {
-            // Request id
-            requestId = buffer.readLong().toString();
-            // Status code
-            isSuccess = (buffer.readInteger() === REQUEST_SUCCESS_STATUS_CODE);
-        }
-
-        this._logMessage(requestId, false, buffer.data);
-
-        if (this._requests.has(requestId)) {
-            const request = this._requests.get(requestId);
-            this._requests.delete(requestId);
             if (isHandshake) {
-                await this._finalizeHandshake(buffer, request, isSuccess);
+                // Handshake status
+                isSuccess = (buffer.readByte() === HANDSHAKE_SUCCESS_STATUS_CODE)
+                requestId = this._handshakeRequestId.toString();
             }
             else {
-                await this._finalizeResponse(buffer, request, isSuccess);
+                // Request id
+                requestId = buffer.readLong().toString();
+                // Status code
+                isSuccess = (buffer.readInteger() === REQUEST_SUCCESS_STATUS_CODE);
             }
-        }
-        else {
-            throw Errors.IgniteClientError.internalError('Invalid response id: ' + requestId);
+
+            this._logMessage(requestId, false, buffer.data);
+
+            if (this._requests.has(requestId)) {
+                const request = this._requests.get(requestId);
+                this._requests.delete(requestId);
+                if (isHandshake) {
+                    await this._finalizeHandshake(buffer, request, isSuccess);
+                }
+                else {
+                    await this._finalizeResponse(buffer, request, isSuccess);
+                }
+            }
+            else {
+                throw Errors.IgniteClientError.internalError('Invalid response id: ' + requestId);
+            }
         }
     }
 

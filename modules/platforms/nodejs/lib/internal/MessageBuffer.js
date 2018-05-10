@@ -33,9 +33,10 @@ class MessageBuffer {
         this._position = 0;
     }
 
-    static from(source) {
+    static from(source, position) {
         const buf = new MessageBuffer();
         buf._buffer = Buffer.from(source);
+        buf._position = position;
         buf._length = buf._buffer.length;
         buf._capacity = buf._length;
         return buf;
