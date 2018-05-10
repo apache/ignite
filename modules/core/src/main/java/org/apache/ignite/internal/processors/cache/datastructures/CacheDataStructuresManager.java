@@ -180,15 +180,16 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param set Set.
      */
     public void onRemoved(IgniteCacheSetProxy set) {
-        setsMap.remove(set.delegate().id());
+        setsMap.remove(set.delegate().id(), set);
     }
 
     /**
      * @param set Set.
+     * @deprecated Replaced by {@link #onRemoved(IgniteCacheSetProxy)}.
      */
     @Deprecated
     public void onRemoved(GridCacheSetProxy set) {
-        setsMap.remove(set.delegate().id());
+        setsMap.remove(set.delegate().id(), set);
     }
 
     /**
@@ -375,6 +376,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         if (key0 instanceof SetItemKey) {
             SetItemKey setKey = (SetItemKey)key0;
 
+            // We should update on-heap values only for version that uses shared cache.
             if (setKey.setId() != null)
                 onSetItemUpdated(setKey, rmv);
         }
@@ -404,27 +406,27 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param name Set name.
      * @param colloc Collocated flag.
      * @param create Create flag.
-     * @param legacy {@code True} to create legacy (Ignite 2.5 compatible) version.
+     * @param compatibilityMode {@code True} to create Ignite 2.5 compatible version.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public <T> IgniteSet<T> set(final String name,
         boolean colloc,
         final boolean create,
-        final boolean legacy)
+        final boolean compatibilityMode)
         throws IgniteCheckedException
     {
         // Non collocated mode enabled only for PARTITIONED cache.
         final boolean colloc0 = cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc;
 
-        return set0(name, colloc0, create, legacy);
+        return set0(name, colloc0, create, compatibilityMode);
     }
 
     /**
      * @param name Name of set.
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
-     * @param legacy {@code True} to create legacy (Ignite 2.5 compatible) version.
+     * @param compatibilityMode {@code True} to create Ignite 2.5 compatible version.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
@@ -432,7 +434,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable private <T> IgniteSet<T> set0(String name,
         boolean collocated,
         boolean create,
-        boolean legacy)
+        boolean compatibilityMode)
         throws IgniteCheckedException
     {
         cctx.gate().enter();
@@ -444,8 +446,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
-            // If we should use separate cache.
-            if (!legacy && !collocated) {
+            // If allowed to use separate cache.
+            if (!compatibilityMode && !collocated) {
                 // For backward compatibility try to find an old header.
                 hdr = (GridCacheSetHeader)cache.get(key);
 
@@ -473,7 +475,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             if (set == null) {
                 CacheSetInternalProxy<T> old = setsMap.putIfAbsent(hdr.id(),
-                    set = legacy ?
+                    set = compatibilityMode ?
                         new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)) :
                         new IgniteCacheSetProxy<>(cctx, new IgniteCacheSetImpl<T>(cctx, name, hdr)));
 
