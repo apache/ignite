@@ -48,6 +48,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
+import static java.lang.Integer.MAX_VALUE;
 import static java.sql.Types.INTEGER;
 import static java.sql.Types.OTHER;
 import static java.sql.Types.VARCHAR;
@@ -386,16 +387,16 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             Set<String> expectedCols = new HashSet<>(Arrays.asList(
                 "org.ORGANIZATION.ID.null",
-                "org.ORGANIZATION.NAME.null",
+                "org.ORGANIZATION.NAME.null." + MAX_VALUE,
                 "pers.PERSON.ORGID.null",
                 "pers.PERSON.AGE.null",
-                "pers.PERSON.NAME.null",
+                "pers.PERSON.NAME.null." + MAX_VALUE,
                 "PUBLIC.TEST.ID.null",
-                "PUBLIC.TEST.NAME.'default name'",
-                "PUBLIC.TEST.VAL.null",
+                "PUBLIC.TEST.NAME.'default name'.50",
+                "PUBLIC.TEST.VAL.null.50",
                 "PUBLIC.TEST.AGE.21",
                 "PUBLIC.Quoted.Id.null",
-                "PUBLIC.Quoted.Name.null",
+                "PUBLIC.Quoted.Name.null.50",
                 "PUBLIC.TEST_DECIMAL_COLUMN.ID.null",
                 "PUBLIC.TEST_DECIMAL_COLUMN.DEC_COL.null.8.3"
             ));
@@ -414,6 +415,10 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     + (precision == 0 ? "" : ("." + precision))
                     + (scale == 0 ? "" : ("." + scale))
                 );
+            }
+
+            for (String col : actualCols) {
+                System.out.println(col);
             }
 
             assert expectedCols.equals(actualCols) : "expectedCols=" + expectedCols +
@@ -581,7 +586,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             assert meta.getParameterType(1) == Types.VARCHAR;
             assert meta.isNullable(1) == ParameterMetaData.parameterNullableUnknown;
-            assert meta.getPrecision(1) == Integer.MAX_VALUE;
+            assert meta.getPrecision(1) == MAX_VALUE;
 
             assert meta.getParameterType(2) == Types.INTEGER;
             assert meta.isNullable(2) == ParameterMetaData.parameterNullableUnknown;
