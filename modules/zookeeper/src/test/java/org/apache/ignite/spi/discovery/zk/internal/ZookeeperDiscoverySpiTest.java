@@ -3589,6 +3589,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(5, 3);
 
+        client = false;
+
+        awaitPartitionMapExchange();
+
         List<ClusterNode> all = G.allGrids().stream()
             .map(g -> g.cluster().localNode())
             .collect(Collectors.toList());;
@@ -3639,6 +3643,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         client = false;
 
+        awaitPartitionMapExchange();
+
         ConnectionsFailureMatrix matrix = new ConnectionsFailureMatrix();
 
         matrix.addAll(G.allGrids().stream().map(g -> g.cluster().localNode()).collect(Collectors.toList()));
@@ -3682,6 +3688,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(6, 5);
 
         client = false;
+
+        awaitPartitionMapExchange();
 
         List<ClusterNode> clientNodes = G.allGrids().stream()
             .map(g -> g.cluster().localNode())
