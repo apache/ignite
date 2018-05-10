@@ -203,8 +203,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             (F.isEmpty(commonParams) ? "" : " WITH \"" + commonParams + "\"") +
             ";");
 
-        // todo: indexes for address table.
-        // todo: index employee table.
         execute("CREATE INDEX depIndex ON Address (depId)");
     }
 
@@ -794,7 +792,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             }
 
             if (!foundLeft && outerLeft)
-                join.add(transformer.apply(lRow, nullRow)); // todo: or some other null object.
+                join.add(transformer.apply(lRow, nullRow));
 
         }
 
