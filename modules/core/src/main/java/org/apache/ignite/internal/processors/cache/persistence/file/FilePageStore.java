@@ -268,9 +268,12 @@ public class FilePageStore implements PageStore {
 
             this.tag = tag;
 
-            fileIO.close();
-
-            cfgFile.delete();
+            try {
+                fileIO.close();
+            }
+            finally {
+                cfgFile.delete();
+            }
         }
         catch (IOException e) {
             throw new PersistentStorageIOException(e);
