@@ -33,15 +33,17 @@ const HEADER_LENGTH = 24;
 const VERSION = 1;
 
 // user type
-const FLAG_USER_TYPE = 0x01;
+const FLAG_USER_TYPE = 0x0001;
 // schema exists
-const FLAG_HAS_SCHEMA = 0x02;
-// compact footer, no field IDs
-const FLAG_COMPACT_FOOTER = 0x20;
+const FLAG_HAS_SCHEMA = 0x0002;
+// object contains raw data
+const FLAG_HAS_RAW_DATA = 0x0004;
 // offsets take 1 byte
 const FLAG_OFFSET_ONE_BYTE = 0x0008;
 // offsets take 2 bytes
 const FLAG_OFFSET_TWO_BYTES = 0x0010;
+// compact footer, no field IDs
+const FLAG_COMPACT_FOOTER = 0x0020;
 
 /**
  * Class representing a complex Ignite object in the binary form.
@@ -417,6 +419,10 @@ class BinaryObject {
                 BinaryUtils.TYPE_CODE.SHORT :
                 BinaryUtils.TYPE_CODE.INTEGER;
 
+        if (BinaryObject._isFlagSet(FLAG_HAS_RAW_DATA)) {
+            throw Errors.IgniteClientError.serializationError(
+                false, 'complex objects with raw data are not supported');
+        }
         if (this._compactFooter && !hasSchema) {
             throw Errors.IgniteClientError.serializationError(
                 false, 'schema is absent for object with compact footer');
