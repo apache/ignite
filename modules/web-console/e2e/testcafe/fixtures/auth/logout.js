@@ -18,10 +18,9 @@
 import {dropTestDB, resolveUrl, insertTestUser} from 'envtools';
 import {createRegularUser} from '../../roles';
 import {userMenu} from '../../components/userMenu';
-import {PageSignIn} from '../../page-models/PageSignIn';
+import {pageSignin} from '../../page-models/pageSignin';
 
 const user = createRegularUser();
-const pageSignIn = new PageSignIn();
 
 fixture('Logout')
     .before(async() => {
@@ -35,5 +34,5 @@ fixture('Logout')
 test('Successful logout', async(t) => {
     await t.useRole(user).navigateTo(resolveUrl('/settings/profile'));
     await userMenu.clickOption('Log out');
-    await t.expect(pageSignIn._selector.exists).ok('Goes to sign in page after logout');
+    await t.expect(pageSignin.selector.exists).ok('Goes to sign in page after logout');
 });

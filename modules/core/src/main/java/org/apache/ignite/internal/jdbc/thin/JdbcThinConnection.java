@@ -75,6 +75,9 @@ public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
+    /** Statements modification mutex. */
+    final private Object stmtsMux = new Object();
+
     /** Schema name. */
     private String schema;
 
@@ -112,7 +115,7 @@ public class JdbcThinConnection implements Connection {
     private boolean connected;
 
     /** Tracked statements to close on disconnect. */
-    private ArrayList<JdbcThinStatement> stmts = new ArrayList<>();
+    private final ArrayList<JdbcThinStatement> stmts = new ArrayList<>();
 
     /**
      * Creates new connection.
@@ -236,7 +239,9 @@ public class JdbcThinConnection implements Connection {
         if (timeout > 0)
             stmt.timeout(timeout);
 
-        stmts.add(stmt);
+        synchronized (stmtsMux) {
+            stmts.add(stmt);
+        }
 
         return stmt;
     }
@@ -267,7 +272,9 @@ public class JdbcThinConnection implements Connection {
         if (timeout > 0)
             stmt.timeout(timeout);
 
-        stmts.add(stmt);
+        synchronized (stmtsMux) {
+            stmts.add(stmt);
+        }
 
         return stmt;
     }
@@ -801,10 +808,12 @@ public class JdbcThinConnection implements Connection {
             streamState = null;
         }
 
-        for (JdbcThinStatement s : stmts)
-            s.closeOnDisconnect();
+        synchronized (stmtsMux) {
+            for (JdbcThinStatement s : stmts)
+                s.closeOnDisconnect();
 
-        stmts.clear();
+            stmts.clear();
+        }
     }
 
     /**
