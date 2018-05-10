@@ -3652,7 +3652,9 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         ConnectionsFailureMatrix matrix = new ConnectionsFailureMatrix();
 
-        matrix.addAll(G.allGrids().stream().map(g -> g.cluster().localNode()).collect(Collectors.toList()));
+        List<ClusterNode> allNodes = G.allGrids().stream().map(g -> g.cluster().localNode()).collect(Collectors.toList());
+
+        matrix.addAll(allNodes);
 
         // Remove 2 connections between server nodes.
         matrix.removeConnection(srvNodes.get(0), srvNodes.get(1));
@@ -3816,9 +3818,13 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
          * Start failing connections according to given matrix {@code with}.
          * @param with Failure matrix.
          */
-        public static void fail(ConnectionsFailureMatrix with) {
+        static void fail(ConnectionsFailureMatrix with) {
             matrix = with;
             failure = true;
+        }
+
+        static void unfail() {
+            failure = false;
         }
 
         /** {@inheritDoc} */
@@ -4281,6 +4287,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         err = false;
 
         failCommSpi = false;
+        PeerToPeerCommunicationFailureSpi.unfail();
 
         evts.clear();
 
