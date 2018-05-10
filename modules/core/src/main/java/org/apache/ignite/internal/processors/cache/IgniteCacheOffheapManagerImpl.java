@@ -1244,7 +1244,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-                assert !grp.persistenceEnabled() || cctx.shared().database().checkpointLockIsHeldByThread();
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
 
                 dataTree.invoke(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY, c);
 
