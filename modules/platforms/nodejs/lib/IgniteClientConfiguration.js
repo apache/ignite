@@ -97,7 +97,7 @@ class IgniteClientConfiguration {
      * @param {boolean} useTLS - if true, secure connection will be established;
      *                           if false, non-secure connection will be established.
      * @param {object} [connectionOptions=null] - connection options.
-     *   - For non-secure connection options defined here {@link https://nodejs.org/api/net.html#net_socket_connect_options_connectlistener}
+     *   - For non-secure connection options defined here {@link https://nodejs.org/api/net.html#net_net_createconnection_options_connectlistener}
      *   - For secure connection options defined here {@link https://nodejs.org/api/tls.html#tls_tls_connect_options_callback}
      *
      * @return {IgniteClientConfiguration} - the same instance of the IgniteClientConfiguration.

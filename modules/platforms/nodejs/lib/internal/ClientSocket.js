@@ -153,8 +153,7 @@ class ClientSocket {
             this._socket = tls.connect(options, onConnected);
         }
         else {
-            this._socket = new net.Socket();
-            this._socket.connect(options, onConnected);
+            this._socket = net.createConnection(options, onConnected);
         }
 
         this._socket.on('data', async (data) => {
