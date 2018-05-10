@@ -82,6 +82,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
+import static org.apache.ignite.testframework.GridTestUtils.mergeExchangeWaitVersion;
 
 /**
  *
@@ -1178,15 +1179,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param node Node.
-     * @param topVer Ready exchange version to wait for before trying to merge exchanges.
-     */
-    private void mergeExchangeWaitVersion(Ignite node, long topVer) {
-        ((IgniteKernal)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
-            new AffinityTopologyVersion(topVer, 0));
-    }
-
-    /**
      * @throws Exception If failed.
      */
     private void checkCaches() throws Exception {
@@ -1197,6 +1189,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
         checkAffinity();
 
         awaitPartitionMapExchange();
+
+        checkTopologiesConsistency();
 
         checkCaches0();
     }
@@ -1211,6 +1205,42 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
         for (Ignite node : nodes)
             checkNodeCaches(node);
+    }
+
+    /**
+     * Checks that after exchange all nodes have consistent state about partition owners.
+     *
+     * @throws Exception If failed.
+     */
+    private void checkTopologiesConsistency() throws Exception {
+        List<Ignite> nodes = G.allGrids();
+
+        IgniteEx crdNode = null;
+
+        for (Ignite node : nodes) {
+            ClusterNode locNode = node.cluster().localNode();
+
+            if (crdNode == null || locNode.order() < crdNode.localNode().order())
+                crdNode = (IgniteEx) node;
+        }
+
+        for (Ignite node : nodes) {
+            IgniteEx node0 = (IgniteEx) node;
+
+            if (node0.localNode().id().equals(crdNode.localNode().id()))
+                continue;
+
+            for (IgniteInternalCache cache : node0.context().cache().caches()) {
+                int partitions = cache.context().affinity().partitions();
+                for (int p = 0; p < partitions; p++) {
+                    List<ClusterNode> crdOwners = crdNode.cachex(cache.name()).cache().context().topology().owners(p);
+
+                    List<ClusterNode> owners = cache.context().topology().owners(p);
+
+                    assertEquals(crdOwners, owners);
+                }
+            }
+        }
     }
 
     /**

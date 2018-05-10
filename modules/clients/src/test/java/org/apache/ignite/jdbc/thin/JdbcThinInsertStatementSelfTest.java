@@ -24,7 +24,6 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -177,7 +176,7 @@ public class JdbcThinInsertStatementSelfTest extends JdbcThinAbstractDmlStatemen
             @Override public Object call() throws Exception {
                 return stmt.execute(SQL);
             }
-        }, IgniteCheckedException.class,
+        }, SQLException.class,
             "Failed to INSERT some keys because they are already in cache [keys=[p2]]");
 
         assertEquals(3, jcache(0).withKeepBinary().getAll(new HashSet<>(Arrays.asList("p1", "p2", "p3"))).size());

@@ -22,8 +22,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -48,10 +48,10 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
     /** Concurrency level. */
     private int concLvl;
 
-    /** Name of MemoryPolicy to be used as default. */
+    /** Name of DataRegion to be used as default. */
     private String dfltMemPlcName;
 
-    /** Size of memory (in bytes) to use for default MemoryPolicy. */
+    /** Size of memory (in bytes) to use for default DataRegion. */
     private long dfltMemPlcSize;
 
     /** Memory policies. */
@@ -69,22 +69,22 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
      *
      * @param memCfg Memory configuration.
      */
-    public VisorMemoryConfiguration(MemoryConfiguration memCfg) {
+    public VisorMemoryConfiguration(DataStorageConfiguration memCfg) {
         assert memCfg != null;
 
-        sysCacheInitSize = memCfg.getSystemCacheInitialSize();
-        sysCacheMaxSize = memCfg.getSystemCacheMaxSize();
+        sysCacheInitSize = memCfg.getSystemRegionInitialSize();
+        sysCacheMaxSize = memCfg.getSystemRegionMaxSize();
         pageSize = memCfg.getPageSize();
         concLvl = memCfg.getConcurrencyLevel();
-        dfltMemPlcName = memCfg.getDefaultMemoryPolicyName();
-        dfltMemPlcSize = memCfg.getDefaultMemoryPolicySize();
+//        dfltMemPlcName = memCfg.getDefaultDataRegionName();
+        //dfltMemPlcSize = memCfg.getDefaultDataRegionSize();
 
-        MemoryPolicyConfiguration[] plcs = memCfg.getMemoryPolicies();
+        DataRegionConfiguration[] plcs = memCfg.getDataRegionConfigurations();
 
         if (!F.isEmpty(plcs)) {
             memPlcs = new ArrayList<>(plcs.length);
 
-            for (MemoryPolicyConfiguration plc : plcs)
+            for (DataRegionConfiguration plc : plcs)
                 memPlcs.add(new VisorMemoryPolicyConfiguration(plc));
         }
     }
@@ -118,7 +118,7 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Name of MemoryPolicy to be used as default.
+     * @return Name of DataRegion to be used as default.
      */
     public String getDefaultMemoryPolicyName() {
         return dfltMemPlcName;
@@ -132,7 +132,7 @@ public class VisorMemoryConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Collection of MemoryPolicyConfiguration objects.
+     * @return Collection of DataRegionConfiguration objects.
      */
     public List<VisorMemoryPolicyConfiguration> getMemoryPolicies() {
         return memPlcs;

@@ -113,7 +113,7 @@ public class JdbcThinComplexQuerySelfTest extends JdbcThinAbstractSelfTest {
     @Override protected void beforeTest() throws Exception {
         Connection conn = DriverManager.getConnection(URL);
 
-        conn.setSchema("pers");
+        conn.setSchema("\"pers\"");
 
         stmt = conn.createStatement();
 

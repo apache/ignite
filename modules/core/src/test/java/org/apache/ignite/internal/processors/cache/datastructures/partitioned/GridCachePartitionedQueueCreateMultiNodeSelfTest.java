@@ -162,8 +162,6 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteColl
      * @throws Exception If failed.
      */
     public void testTx() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1804");
-
         if (cacheConfiguration().getAtomicityMode() != TRANSACTIONAL)
             return;
 

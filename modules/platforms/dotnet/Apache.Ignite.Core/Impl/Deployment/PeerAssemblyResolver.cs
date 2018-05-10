@@ -147,9 +147,9 @@ namespace Apache.Ignite.Core.Impl.Deployment
             var func = new GetAssemblyFunc();
             var req = new AssemblyRequest(assemblyName);
 
-            foreach (var node in GetDotNetNodes(ignite, originNodeId))
+            foreach (var node in GetDotNetNodes(ignite.GetIgnite(), originNodeId))
             {
-                var compute = ignite.GetCluster().ForNodeIds(node).GetCompute();
+                var compute = ignite.GetIgnite().GetCluster().ForNodeIds(node).GetCompute();
                 var result = ComputeApplySafe(compute, func, req);
 
                 if (result != null)

@@ -39,19 +39,28 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
 
 /**
  * JDBC result set implementation.
  */
 public class JdbcResultSet implements ResultSet {
+    /** Is query. */
+    private final boolean isQry;
+
+    /** Update count. */
+    private final long updCnt;
+
     /** Uuid. */
     private final UUID uuid;
 
@@ -59,13 +68,13 @@ public class JdbcResultSet implements ResultSet {
     private final JdbcStatement stmt;
 
     /** Table names. */
-    private final List<String> tbls;
+    private List<String> tbls;
 
     /** Column names. */
-    private final List<String> cols;
+    private List<String> cols;
 
     /** Class names. */
-    private final List<String> types;
+    private List<String> types;
 
     /** Rows cursor iterator. */
     private Iterator<List<?>> it;
@@ -91,6 +100,7 @@ public class JdbcResultSet implements ResultSet {
     /**
      * Creates new result set.
      *
+     * @param isQry Is query flag.
      * @param uuid Query UUID.
      * @param stmt Statement.
      * @param tbls Table names.
@@ -98,26 +108,56 @@ public class JdbcResultSet implements ResultSet {
      * @param types Types.
      * @param fields Fields.
      * @param finished Result set finished flag (the last result set).
+     * @throws SQLException On error.
      */
-    JdbcResultSet(@Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
-        List<String> types, Collection<List<?>> fields, boolean finished) {
-        assert stmt != null;
-        assert tbls != null;
-        assert cols != null;
-        assert types != null;
-        assert fields != null;
-
-        this.uuid = uuid;
+    JdbcResultSet(boolean isQry, @Nullable UUID uuid, JdbcStatement stmt, List<String> tbls, List<String> cols,
+        List<String> types, List<List<?>> fields, boolean finished) throws SQLException {
+        this.isQry = isQry;
         this.stmt = stmt;
-        this.tbls = tbls;
-        this.cols = cols;
-        this.types = types;
-        this.finished = finished;
 
-        this.it = fields.iterator();
+        if (isQry) {
+            this.uuid = uuid;
+            updCnt = -1;
+            this.tbls = tbls;
+            this.cols = cols;
+            this.types = types;
+            this.finished = finished;
+
+            if (fields != null)
+                it = fields.iterator();
+            else
+                it = Collections.emptyIterator();
+        }
+        else {
+            updCnt = updateCounterFromQueryResult(fields);
+
+            this.uuid = null;
+            this.tbls = null;
+            this.cols = null;
+            this.types = null;
+            this.finished = true;
+            it = null;
+        }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param stmt Statement.
+     * @param updCnt Update count.
+     */
+    JdbcResultSet(JdbcStatement stmt, long updCnt) {
+        isQry = false;
+        this.updCnt = updCnt;
+        this.stmt = stmt;
+
+        uuid = null;
+        tbls = null;
+        cols = null;
+        types = null;
+        finished = true;
+        it = null;
+    }
+
+        /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public boolean next() throws SQLException {
         ensureNotClosed();
@@ -138,40 +178,52 @@ public class JdbcResultSet implements ResultSet {
             return true;
         }
         else if (!finished) {
-            JdbcConnection conn = (JdbcConnection)stmt.getConnection();
+            fetchPage();
 
-            Ignite ignite = conn.ignite();
-
-            UUID nodeId = conn.nodeId();
-
-            boolean loc = nodeId == null;
-
-            // Connections from new clients send queries with new tasks, so we have to continue in the same manner
-            JdbcQueryTask qryTask = JdbcQueryTaskV2.createTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(),
-                null,true, loc, null, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
-                    conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy());
-
-            try {
-                JdbcQueryTask.QueryResult res =
-                    loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
-
-                finished = res.isFinished();
-
-                it = res.getRows().iterator();
-
-                return next();
-            }
-            catch (IgniteSQLException e) {
-                throw e.toJdbcException();
-            }
-            catch (Exception e) {
-                throw new SQLException("Failed to query Ignite.", e);
-            }
+            return next();
         }
 
         it = null;
 
         return false;
+    }
+
+    /**
+     *
+     */
+    private void fetchPage() throws SQLException {
+        JdbcConnection conn = (JdbcConnection)stmt.getConnection();
+
+        Ignite ignite = conn.ignite();
+
+        UUID nodeId = conn.nodeId();
+
+        boolean loc = nodeId == null;
+
+        boolean updateMetadata = tbls == null;
+
+        // Connections from new clients send queries with new tasks, so we have to continue in the same manner
+        JdbcQueryTask qryTask = JdbcQueryTaskV3.createTask(loc ? ignite : null, conn.cacheName(), conn.schemaName(),
+            null,true, loc, null, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+            conn.isDistributedJoins(), conn.isEnforceJoinOrder(), conn.isLazy(), updateMetadata, false);
+
+        try {
+            JdbcQueryTaskResult res =
+                loc ? qryTask.call() : ignite.compute(ignite.cluster().forNodeId(nodeId)).call(qryTask);
+
+            finished = res.isFinished();
+
+            it = res.getRows().iterator();
+
+            if (updateMetadata) {
+                tbls = res.getTbls();
+                cols = res.getCols();
+                types = res.getTypes();
+            }
+        }
+        catch (Exception e) {
+            throw convertToSqlException(e, "Failed to query Ignite.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -421,6 +473,9 @@ public class JdbcResultSet implements ResultSet {
     /** {@inheritDoc} */
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
+
+        if (tbls == null)
+            fetchPage();
 
         return new JdbcResultSetMetadata(tbls, cols, types);
     }
@@ -1495,13 +1550,13 @@ public class JdbcResultSet implements ResultSet {
             else if (cls == String.class)
                 return (T)String.valueOf(val);
             else
-                return (T)val;
+                return cls.cast(val);
         }
         catch (IndexOutOfBoundsException ignored) {
             throw new SQLException("Invalid column index: " + colIdx);
         }
         catch (ClassCastException ignored) {
-            throw new SQLException("Value is an not instance of " + cls.getName());
+            throw new SQLException("Cannot convert to " + cls.getSimpleName().toLowerCase(), SqlStateCode.CONVERSION_FAILED);
         }
     }
 
@@ -1512,7 +1567,7 @@ public class JdbcResultSet implements ResultSet {
      */
     private void ensureNotClosed() throws SQLException {
         if (closed)
-            throw new SQLException("Result set is closed.");
+            throw new SQLException("Result set is closed.", SqlStateCode.INVALID_CURSOR_STATE);
     }
 
     /**
@@ -1523,5 +1578,44 @@ public class JdbcResultSet implements ResultSet {
     private void ensureHasCurrentRow() throws SQLException {
         if (curr == null)
             throw new SQLException("Result set is not positioned on a row.");
+    }
+
+    /**
+     * @return Is Query flag.
+     */
+    public boolean isQuery() {
+        return isQry;
+    }
+
+    /**
+     * @return Update count.
+     */
+    public long updateCount() {
+        return updCnt;
+    }
+
+    /**
+     * @param rows query result.
+     * @return update counter, if found.
+     * @throws SQLException if getting an update counter from result proved to be impossible.
+     */
+    private static long updateCounterFromQueryResult(List<List<?>> rows) throws SQLException {
+        if (F.isEmpty(rows))
+            return -1;
+
+        if (rows.size() != 1)
+            throw new SQLException("Expected fetch size of 1 for update operation.");
+
+        List<?> row = rows.get(0);
+
+        if (row.size() != 1)
+            throw new SQLException("Expected row size of 1 for update operation.");
+
+        Object objRes = row.get(0);
+
+        if (!(objRes instanceof Long))
+            throw new SQLException("Unexpected update result type.");
+
+        return (Long)objRes;
     }
 }

@@ -29,9 +29,11 @@ const devServerPort = process.env.PORT || 9000;
 const devServerHost = process.env.HOST || '0.0.0.0';
 
 export default merge(commonCfg, {
+    mode: 'development',
     devtool: 'source-map',
     watch: true,
     module: {
+        exprContextCritical: false,
         rules: [
             {
                 test: /\.css$/,
@@ -77,10 +79,7 @@ export default merge(commonCfg, {
                 ws: true
             },
             '/api/v1/*': {
-                target: `http://localhost:${backendPort}`,
-                pathRewrite: {
-                    '^/api/v1': ''
-                }
+                target: `http://localhost:${backendPort}`
             }
         },
         watchOptions: {
@@ -90,8 +89,5 @@ export default merge(commonCfg, {
         stats: 'errors-only',
         host: devServerHost,
         port: devServerPort
-    },
-    plugins: [
-        new webpack.optimize.CommonsChunkPlugin({name: 'vendor'})
-    ]
+    }
 });

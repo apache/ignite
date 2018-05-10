@@ -25,8 +25,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.lang.IgniteRunnable;
 
@@ -59,8 +61,13 @@ public final class CacheAffinityExample {
             System.out.println();
             System.out.println(">>> Cache affinity example started.");
 
+            CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>();
+
+            cfg.setCacheMode(CacheMode.PARTITIONED);
+            cfg.setName(CACHE_NAME);
+
             // Auto-close cache at the end of the example.
-            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
+            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cfg)) {
                 for (int i = 0; i < KEY_CNT; i++)
                     cache.put(i, Integer.toString(i));
 
@@ -87,18 +94,13 @@ public final class CacheAffinityExample {
         final IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
         for (int i = 0; i < KEY_CNT; i++) {
-            final int key = i;
+            int key = i;
 
             // This runnable will execute on the remote node where
             // data with the given key is located. Since it will be co-located
             // we can use local 'peek' operation safely.
-            ignite.compute().affinityRun(CACHE_NAME, key, new IgniteRunnable() {
-                @Override public void run() {
-                    // Peek is a local memory lookup, however, value should never be 'null'
-                    // as we are co-located with node that has a given key.
-                    System.out.println("Co-located using affinityRun [key= " + key + ", value=" + cache.localPeek(key) + ']');
-                }
-            });
+            ignite.compute().affinityRun(CACHE_NAME, key,
+                () -> System.out.println("Co-located using affinityRun [key= " + key + ", value=" + cache.localPeek(key) + ']'));
         }
     }
 
@@ -125,16 +127,14 @@ public final class CacheAffinityExample {
 
             if (node != null) {
                 // Bring computations to the nodes where the data resides (i.e. collocation).
-                ignite.compute(ignite.cluster().forNode(node)).run(new IgniteRunnable() {
-                    @Override public void run() {
-                        IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
+                ignite.compute(ignite.cluster().forNode(node)).run(() -> {
+                    IgniteCache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
-                        // Peek is a local memory lookup, however, value should never be 'null'
-                        // as we are co-located with node that has a given key.
-                        for (Integer key : mappedKeys)
-                            System.out.println("Co-located using mapKeysToNodes [key= " + key +
-                                ", value=" + cache.localPeek(key) + ']');
-                    }
+                    // Peek is a local memory lookup, however, value should never be 'null'
+                    // as we are co-located with node that has a given key.
+                    for (Integer key : mappedKeys)
+                        System.out.println("Co-located using mapKeysToNodes [key= " + key +
+                            ", value=" + cache.localPeek(key) + ']');
                 });
             }
         }

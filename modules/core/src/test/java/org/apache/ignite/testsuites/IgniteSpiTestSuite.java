@@ -56,9 +56,6 @@ public class IgniteSpiTestSuite extends TestSuite {
         // Communication.
         suite.addTest(IgniteSpiCommunicationSelfTestSuite.suite());
 
-        // Indexing.
-        suite.addTest(IgniteSpiIndexingSelfTestSuite.suite());
-
         // All other tests.
         suite.addTestSuite(GridNoopManagerSelfTest.class);
 

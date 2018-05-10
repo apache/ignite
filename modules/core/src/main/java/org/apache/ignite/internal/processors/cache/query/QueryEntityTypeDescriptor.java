@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Descriptor of type.
@@ -50,6 +51,12 @@ public class QueryEntityTypeDescriptor {
     /** */
     @GridToStringInclude
     private final Map<String, QueryEntityIndexDescriptor> indexes = new HashMap<>();
+
+    /** */
+    private Set<String> notNullFields = new HashSet<>();
+
+    /** Decimal fields information. */
+    private Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
 
     /** */
     private QueryEntityIndexDescriptor fullTextIdx;
@@ -172,6 +179,39 @@ public class QueryEntityTypeDescriptor {
 
         if (key)
             keyProps.add(name);
+    }
+
+    /**
+     * Adds a notNull field.
+     *
+     * @param field notNull field.
+     */
+    public void addNotNullField(String field) {
+        notNullFields.add(field);
+    }
+
+    /**
+     * Adds decimal info.
+     *
+     * @param field Field.
+     * @param info Decimal column info.
+     */
+    public void addDecimalInfo(String field, IgniteBiTuple<Integer, Integer> info) {
+        decimalInfo.put(field, info);
+    }
+
+    /**
+     * @return notNull fields.
+     */
+    public Set<String> notNullFields() {
+        return notNullFields;
+    }
+
+    /**
+     * @return Decimal info for fields.
+     */
+    public Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo() {
+        return decimalInfo;
     }
 
     /**

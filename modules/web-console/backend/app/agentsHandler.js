@@ -17,6 +17,14 @@
 
 'use strict';
 
+const uuid = require('uuid/v4');
+
+const fs = require('fs');
+const path = require('path');
+const JSZip = require('jszip');
+const socketio = require('socket.io');
+const _ = require('lodash');
+
 // Fire me up!
 
 /**
@@ -24,21 +32,16 @@
  */
 module.exports = {
     implements: 'agents-handler',
-    inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'settings', 'mongo', 'agent-socket']
+    inject: ['settings', 'mongo', 'agent-socket']
 };
 
 /**
- * @param _
- * @param fs
- * @param path
- * @param JSZip
- * @param socketio
  * @param settings
  * @param mongo
  * @param {AgentSocket} AgentSocket
  * @returns {AgentsHandler}
  */
-module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo, AgentSocket) {
+module.exports.factory = function(settings, mongo, AgentSocket) {
     class AgentSockets {
         constructor() {
             /**
@@ -82,19 +85,14 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
 
     class Cluster {
         constructor(top) {
-            let d = new Date().getTime();
+            const clusterName = top.clusterName;
 
-            this.id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-                const r = (d + Math.random() * 16) % 16 | 0;
-
-                d = Math.floor(d / 16);
-
-                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-            });
-
+            this.id = _.isEmpty(clusterName) ? `Cluster ${uuid().substring(0, 8).toUpperCase()}` : clusterName;
             this.nids = top.nids;
-
+            this.addresses = top.addresses;
+            this.clients = top.clients;
             this.clusterVersion = top.clusterVersion;
+            this.active = top.active;
         }
 
         isSameCluster(top) {
@@ -103,8 +101,18 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
 
         update(top) {
             this.clusterVersion = top.clusterVersion;
-
             this.nids = top.nids;
+            this.addresses = top.addresses;
+            this.clients = top.clients;
+            this.clusterVersion = top.clusterVersion;
+            this.active = top.active;
+        }
+
+        same(top) {
+            return _.difference(this.nids, top.nids).length === 0 &&
+                _.isEqual(this.addresses, top.addresses) &&
+                this.clusterVersion === top.clusterVersion &&
+                this.active === top.active;
         }
     }
 
@@ -123,6 +131,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
             this._agentSockets = new AgentSockets();
 
             this.clusters = [];
+            this.topLsnrs = [];
         }
 
         /**
@@ -192,12 +201,24 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
         }
 
         getOrCreateCluster(top) {
-            const cluster = _.find(this.clusters, (c) => c.isSameCluster(top));
+            let cluster = _.find(this.clusters, (c) => c.isSameCluster(top));
 
-            if (_.isNil(cluster))
-                this.clusters.push(new Cluster(top));
+            if (_.isNil(cluster)) {
+                cluster = new Cluster(top);
+
+                this.clusters.push(cluster);
+            }
 
             return cluster;
+        }
+
+        /**
+         * Add topology listener.
+         *
+         * @param lsnr
+         */
+        addTopologyListener(lsnr) {
+            this.topLsnrs.push(lsnr);
         }
 
         /**
@@ -223,22 +244,33 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
             sock.on('cluster:topology', (top) => {
                 const cluster = this.getOrCreateCluster(top);
 
-                if (_.isNil(agentSocket.cluster)) {
+                _.forEach(this.topLsnrs, (lsnr) => lsnr(agentSocket, cluster, top));
+
+                if (agentSocket.cluster !== cluster) {
                     agentSocket.cluster = cluster;
 
                     _.forEach(tokens, (token) => {
                         this._browsersHnd.agentStats(token);
                     });
                 }
-                else
-                    cluster.update(top);
-            });
+                else {
+                    const changed = !cluster.same(top);
 
-            sock.on('cluster:collector', (top) => {
+                    if (changed) {
+                        cluster.update(top);
 
+                        _.forEach(tokens, (token) => {
+                            this._browsersHnd.clusterChanged(token, cluster);
+                        });
+                    }
+                }
             });
 
             sock.on('cluster:disconnected', () => {
+                const newTop = _.assign({}, agentSocket.cluster, {nids: []});
+
+                _.forEach(this.topLsnrs, (lsnr) => lsnr(agentSocket, agentSocket.cluster, newTop));
+
                 agentSocket.cluster = null;
 
                 _.forEach(tokens, (token) => {
@@ -288,7 +320,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, settings, mongo,
                             if (ver && bt && !_.isEmpty(supportedAgents)) {
                                 const btDistr = _.get(supportedAgents, [ver, 'buildTime']);
 
-                                if (_.isEmpty(btDistr) || btDistr < bt)
+                                if (_.isEmpty(btDistr) || btDistr !== bt)
                                     return cb('You are using an older version of the agent. Please reload agent');
                             }
 

@@ -22,6 +22,7 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -31,10 +32,9 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -54,22 +54,36 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "cache1";
 
+    /** Checkpoint delay. */
+    private volatile int checkpointDelay = -1;
+
+    /** */
+    private boolean cancel = false;
+
+    /**
+     * Default constructor.
+     */
+    public IgnitePdsContinuousRestartTest() {
+    }
+
+    /**
+     * @param cancel Cancel.
+     */
+    public IgnitePdsContinuousRestartTest(boolean cancel) {
+        this.cancel = cancel;
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(400 * 1024 * 1024).setPersistenceEnabled(true))
+            .setWalMode(WALMode.LOG_ONLY)
+            .setCheckpointFrequency(checkpointDelay);
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
-
-        memPlcCfg.setName("dfltMemPlc");
-        memPlcCfg.setMaxSize(400 * 1024 * 1024);
-        memPlcCfg.setInitialSize(400 * 1024 * 1024);
-
-        memCfg.setMemoryPolicies(memPlcCfg);
-        memCfg.setDefaultMemoryPolicyName("dfltMemPlc");
-
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         CacheConfiguration ccfg1 = new CacheConfiguration();
 
@@ -81,11 +95,6 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(ccfg1);
 
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
-                .setWalMode(WALMode.LOG_ONLY)
-        );
-
         return cfg;
     }
 
@@ -93,21 +102,14 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        cleanPersistenceDir();
     }
 
     /**
@@ -195,6 +197,22 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testRebalncingDuringLoad_10_10_1_1() throws Exception {
+        checkRebalancingDuringLoad(10, 10, 1, 1);
+    }
+
+    /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testRebalncingDuringLoad_10_500_8_16() throws Exception {
+        checkRebalancingDuringLoad(10, 500, 8, 16);
+    }
+
+    /**
      * @throws Exception if failed.
      */
     private void checkRebalancingDuringLoad(
@@ -203,6 +221,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         int threads,
         final int batch
     ) throws Exception {
+        this.checkpointDelay = checkpointDelay;
 
         startGrids(GRID_CNT);
 
@@ -245,7 +264,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         while (System.currentTimeMillis() < end) {
             int idx = rnd.nextInt(GRID_CNT - 1) + 1;
 
-            stopGrid(idx);
+            stopGrid(idx, cancel);
 
             U.sleep(restartDelay);
 

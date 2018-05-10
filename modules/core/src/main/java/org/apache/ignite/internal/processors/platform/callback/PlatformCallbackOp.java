@@ -224,4 +224,7 @@ class PlatformCallbackOp {
 
     /** */
     public static final int PluginCallbackInLongLongOutLong = 68;
+
+    /** */
+    public static final int EventLocalListenerApply = 69;
 }

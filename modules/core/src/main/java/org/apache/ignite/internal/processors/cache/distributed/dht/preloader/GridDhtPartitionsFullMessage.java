@@ -49,7 +49,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** grpId -> FullMap */
     @GridToStringInclude
     @GridDirectTransient
     private Map<Integer, GridDhtPartitionFullMap> parts;

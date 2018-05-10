@@ -419,6 +419,11 @@ namespace Apache.Ignite.AspNet.Tests
                 throw new NotImplementedException();
             }
 
+            public IFieldsQueryCursor Query(SqlFieldsQuery qry)
+            {
+                throw new NotImplementedException();
+            }
+
             public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
             {
                 throw new NotImplementedException();
@@ -505,6 +510,16 @@ namespace Apache.Ignite.AspNet.Tests
             }
 
             public ICollection<int> GetLostPartitions()
+            {
+                throw new NotImplementedException();
+            }
+
+            public IQueryMetrics GetQueryMetrics()
+            {
+                throw new NotImplementedException();
+            }
+
+            public void ResetQueryMetrics()
             {
                 throw new NotImplementedException();
             }

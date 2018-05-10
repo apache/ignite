@@ -36,7 +36,8 @@ BOOST_AUTO_TEST_CASE(TestConnectionInfoSupportedInfo)
     char buffer[4096];
     short reslen = 0;
 
-    ConnectionInfo info;
+    Configuration cfg;
+    ConnectionInfo info(cfg);
 
     SqlResult::Type result;
 

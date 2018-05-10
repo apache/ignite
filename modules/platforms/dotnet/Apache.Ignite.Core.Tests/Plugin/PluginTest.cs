@@ -63,12 +63,11 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 Assert.IsTrue(prov.Started);
                 Assert.AreEqual(null, prov.Stopped);
                 Assert.AreEqual(TestIgnitePluginProvider.PluginName, prov.Name);
-                Assert.IsNotNullOrEmpty(prov.Copyright);
+                Assert.IsNotNull(prov.Copyright);
                 Assert.IsNotNull(prov.Context);
 
                 var ctx = prov.Context;
                 Assert.IsNotNull(ctx.Ignite);
-                Assert.AreEqual(cfg, ctx.IgniteConfiguration);
                 Assert.AreEqual("barbaz", ctx.PluginConfiguration.PluginProperty);
                 CheckResourceInjection(ctx);
 

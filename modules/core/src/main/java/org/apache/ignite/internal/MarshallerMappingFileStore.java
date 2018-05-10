@@ -51,17 +51,28 @@ final class MarshallerMappingFileStore {
     /** */
     private final IgniteLogger log;
 
-    /** */
+    /** Marshaller mapping directory */
     private final File workDir;
 
     /** */
     private final String FILE_EXTENSION = ".classname";
 
     /**
+     * @param igniteWorkDir Ignite work directory
      * @param log Logger.
      */
     MarshallerMappingFileStore(String igniteWorkDir, IgniteLogger log) throws IgniteCheckedException {
         workDir = U.resolveWorkDirectory(igniteWorkDir, "marshaller", false);
+        this.log = log;
+    }
+
+    /**
+     * Creates marshaller mapping file store with custom predefined work directory
+     * @param log logger.
+     * @param marshallerMappingFileStoreDir custom marshaller work directory
+     */
+    MarshallerMappingFileStore(final IgniteLogger log, final File marshallerMappingFileStoreDir) {
+        this.workDir = marshallerMappingFileStoreDir;
         this.log = log;
     }
 
@@ -156,18 +167,44 @@ final class MarshallerMappingFileStore {
 
             try (FileInputStream in = new FileInputStream(file)) {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    String className = reader.readLine();
+                    String clsName = reader.readLine();
 
-                    marshCtx.registerClassNameLocally(platformId, typeId, className);
+                    if (clsName == null) {
+                        throw new IgniteCheckedException("Class name is null for [platformId=" + platformId +
+                            ", typeId=" + typeId + "], marshaller mappings storage is broken. " +
+                            "Clean up marshaller directory (<work_dir>/marshaller) and restart the node.");
+                    }
+
+                    marshCtx.registerClassNameLocally(platformId, typeId, clsName);
                 }
             }
             catch (IOException e) {
-                throw new IgniteCheckedException("Reading marshaller mapping from file "
-                    + name
-                    + " failed."
-                    , e);
+                throw new IgniteCheckedException("Reading marshaller mapping from file " + name + " failed.", e);
             }
         }
+    }
+
+    /**
+     * Checks if marshaller mapping for given [platformId, typeId] pair is already presented on disk.
+     * If so verifies that it is the same (if no {@link IgniteCheckedException} is thrown).
+     * If there is not such mapping writes it.
+     *
+     * @param platformId Platform id.
+     * @param typeId Type id.
+     * @param typeName Type name.
+     */
+    void mergeAndWriteMapping(byte platformId, int typeId, String typeName) throws IgniteCheckedException {
+        String existingTypeName = readMapping(platformId, typeId);
+
+        if (existingTypeName != null) {
+            if (!existingTypeName.equals(typeName))
+                throw new IgniteCheckedException("Failed to merge new and existing marshaller mappings." +
+                    " For [platformId=" + platformId + ", typeId=" + typeId + "]" +
+                    " new typeName=" + typeName + ", existing typeName=" + existingTypeName + "." +
+                    " Consider cleaning up persisted mappings from <workDir>/marshaller directory.");
+        }
+        else
+            writeMapping(platformId, typeId, typeName);
     }
 
     /**

@@ -35,6 +35,13 @@ public class MapWrapperVector extends AbstractVector {
         setStorage(new MapWrapperStorage(map));
     }
 
+    /**
+     * No-op constructor for serialization.
+     */
+    public MapWrapperVector() {
+        // No-op.
+    }
+
     /** {@inheritDoc} */
     @Override public Vector like(int crd) {
         throw new UnsupportedOperationException();

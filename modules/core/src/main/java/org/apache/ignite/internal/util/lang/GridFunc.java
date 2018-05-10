@@ -38,10 +38,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -57,7 +59,6 @@ import org.apache.ignite.internal.util.lang.gridfunc.AtomicIntegerFactoryCallabl
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryGetValueClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryHasPeekPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.ClusterNodeGetIdClosure;
-import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentDequeFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentHashSetFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentMapFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
@@ -103,8 +104,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
-import org.jsr166.ThreadLocalRandom8;
 
 /**
  * Contains factory and utility methods for {@code closures}, {@code predicates}, and {@code tuples}.
@@ -139,9 +138,6 @@ public class GridFunc {
     private static final IgnitePredicate<Object> ALWAYS_FALSE = new AlwaysFalsePredicate<>();
 
     /** */
-    private static final IgniteCallable<?> DEQUE_FACTORY = new ConcurrentDequeFactoryCallable();
-
-    /** */
     private static final IgnitePredicate<Object> IS_NOT_NULL = new IsNotNullPredicate();
 
     /** */
@@ -167,6 +163,14 @@ public class GridFunc {
 
     /** */
     private static final IgniteClosure<ClusterNode, UUID> NODE2ID = new ClusterNodeGetIdClosure();
+
+    /** */
+    private static final IgniteClosure<BaselineNode, Object> NODE2CONSISTENTID =
+        new IgniteClosure<BaselineNode, Object>() {
+            @Override public Object apply(BaselineNode node) {
+                return node.consistentId();
+            }
+        };
 
     /**
      * Gets predicate that evaluates to {@code true} only for given local node ID.
@@ -324,6 +328,23 @@ public class GridFunc {
     }
 
     /**
+     * Convenient utility method that returns collection of node consistent IDs for a given
+     * collection of grid nodes.
+     * <p>
+     * Note that this method doesn't create a new collection but simply iterates
+     * over the input one.
+     *
+     * @param nodes Collection of grid nodes.
+     * @return Collection of node consistent IDs for given collection of grid nodes.
+     */
+    public static Collection<Object> nodeConsistentIds(@Nullable Collection<? extends BaselineNode> nodes) {
+        if (nodes == null || nodes.isEmpty())
+            return Collections.emptyList();
+
+        return F.viewReadOnly(nodes, NODE2CONSISTENTID);
+    }
+
+    /**
      * Gets random value from given collection.
      *
      * @param c Input collection (no {@code null} and not emtpy).
@@ -334,7 +355,7 @@ public class GridFunc {
     public static <T> T rand(Collection<? extends T> c) {
         A.notNull(c, "c");
 
-        int n = ThreadLocalRandom8.current().nextInt(c.size());
+        int n = ThreadLocalRandom.current().nextInt(c.size());
 
         int i = 0;
 
@@ -358,7 +379,7 @@ public class GridFunc {
     public static <T> T rand(List<T> l) {
         A.notNull(l, "l");
 
-        return l.get(ThreadLocalRandom8.current().nextInt(l.size()));
+        return l.get(ThreadLocalRandom.current().nextInt(l.size()));
     }
 
     /**
@@ -373,7 +394,7 @@ public class GridFunc {
     public static <T> T rand(T... c) {
         A.notNull(c, "c");
 
-        return c[ThreadLocalRandom8.current().nextInt(c.length)];
+        return c[ThreadLocalRandom.current().nextInt(c.length)];
     }
 
     /**
@@ -1252,19 +1273,6 @@ public class GridFunc {
     }
 
     /**
-     * Returns a factory closure that creates new {@link ConcurrentLinkedDeque8} instance.
-     * Note that this method does not create a new closure but returns a static one.
-     *
-     * @param <T> Type parameters for the created {@link List}.
-     * @return Factory closure that creates new {@link List} instance every
-     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> IgniteCallable<ConcurrentLinkedDeque8<T>> newDeque() {
-        return (IgniteCallable<ConcurrentLinkedDeque8<T>>)DEQUE_FACTORY;
-    }
-
-    /**
      * Returns a factory closure that creates new {@link AtomicInteger} instance
      * initialized to {@code zero}. Note that this method does not create a new
      * closure but returns a static one.
@@ -1386,6 +1394,7 @@ public class GridFunc {
      * @param p Optional filtering predicates.
      * @return Iterator from given iterator and optional filtering predicate.
      */
+    @SafeVarargs
     public static <T1, T2> Iterator<T2> iterator(final Iterator<? extends T1> c,
         final IgniteClosure<? super T1, T2> trans,
         final boolean readOnly,

@@ -42,21 +42,35 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration = new BinaryConfiguration(typeof (QueryPerson)),
+                BinaryConfiguration = new BinaryConfiguration(typeof(QueryPerson)),
                 CacheConfiguration = new[]
                 {
-                    new CacheConfiguration(CacheName, new QueryEntity(typeof (int), typeof (QueryPerson))
+                    new CacheConfiguration(CacheName, new QueryEntity(typeof(int), typeof(QueryPerson))
                     {
                         TableName = "CustomTableName",
                         Fields = new[]
                         {
-                            new QueryField("Name", typeof (string)),
-                            new QueryField("Age", typeof (int)),
+                            new QueryField("Name", typeof(string)),
+                            new QueryField("Age", typeof(int)),
                             new QueryField("Birthday", typeof(DateTime)),
                         },
                         Indexes = new[]
                         {
-                            new QueryIndex(false, QueryIndexType.FullText, "Name"), new QueryIndex("Age")
+                            new QueryIndex
+                            {
+                                InlineSize = 2048,
+                                IndexType = QueryIndexType.FullText,
+                                Fields = new[]
+                                {
+                                    new QueryIndexField
+                                    {
+                                        IsDescending = false,
+                                        Name = "Name"
+                                    }
+                                }
+
+                            },
+                            new QueryIndex("Age")
                         }
                     })
                 }
@@ -77,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     Assert.AreEqual(2, cursor.GetAll().Single().Key);
                 }
 
-                using (var cursor = cache.QueryFields(new SqlFieldsQuery(
+                using (var cursor = cache.Query(new SqlFieldsQuery(
                     "select _key from CustomTableName where age > ? and birthday < ?", 10, DateTime.UtcNow)))
                 {
                     Assert.AreEqual(2, cursor.GetAll().Single()[0]);
@@ -104,12 +118,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(typeof(AttributeTest), qe.ValueType);
 
             var fields = qe.Fields.ToArray();
+            var idxField = fields.Single(x => x.Name == "IndexedField1");
 
             CollectionAssert.AreEquivalent(new[]
             {
                 "SqlField", "IndexedField1", "FullTextField", "Inner", "Inner.Foo",
                 "GroupIndex1", "GroupIndex2", "GroupIndex3"
             }, fields.Select(x => x.Name));
+
+            Assert.IsTrue(fields.Single(x => x.Name == "SqlField").NotNull);
+            Assert.IsFalse(idxField.NotNull);
 
             var idx = qe.Indexes.ToArray();
 
@@ -122,6 +140,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CollectionAssert.AreEquivalent(new[] {"GroupIndex1", "GroupIndex3"}, idx[1].Fields.Select(f => f.Name));
             CollectionAssert.AreEquivalent(new[] {"IndexedField1"}, idx[2].Fields.Select(f => f.Name));
             CollectionAssert.AreEquivalent(new[] {"FullTextField"}, idx[3].Fields.Select(f => f.Name));
+
+            Assert.AreEqual(-1, idx[0].InlineSize);
+            Assert.AreEqual(-1, idx[1].InlineSize);
+            Assert.AreEqual(513, idx[2].InlineSize);
+            Assert.AreEqual(-1, idx[3].InlineSize);
+            
+            Assert.AreEqual(3, idxField.Precision);
+            Assert.AreEqual(4, idxField.Scale);
         }
 
         /// <summary>
@@ -139,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             using (var ignite = Ignition.Start(cfg))
             {
                 var cache = ignite.GetOrCreateCache<int, AttributeQueryPerson>(new CacheConfiguration(CacheName,
-                        typeof (AttributeQueryPerson)));
+                        new QueryEntity(typeof(int), typeof(AttributeQueryPerson))));
 
                 Assert.IsNotNull(cache);
 
@@ -295,10 +321,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         private class AttributeTest
         {
-            [QuerySqlField]
+            [QuerySqlField(NotNull = true)]
             public double SqlField { get; set; }
 
-            [QuerySqlField(IsIndexed = true, Name = "IndexedField1", IsDescending = true)]
+            [QuerySqlField(IsIndexed = true, Name = "IndexedField1", IsDescending = true, IndexInlineSize = 513,
+                DefaultValue = 42, Precision = 3, Scale = 4)]
             public int IndexedField { get; set; }
 
             [QueryTextField]

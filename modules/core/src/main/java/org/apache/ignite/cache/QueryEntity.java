@@ -17,8 +17,10 @@
 
 package org.apache.ignite.cache;
 
+import javax.cache.CacheException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,23 +28,32 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import javax.cache.CacheException;
+import java.util.UUID;
 import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
 import org.apache.ignite.internal.processors.cache.query.QueryEntityClassProperty;
 import org.apache.ignite.internal.processors.cache.query.QueryEntityTypeDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaAlterTableAddColumnOperation;
+import org.apache.ignite.internal.processors.query.schema.operation.SchemaIndexCreateOperation;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.Collections.unmodifiableMap;
 
 /**
  * Query entity is a description of {@link org.apache.ignite.IgniteCache cache} entry (composed of key and value)
@@ -83,6 +94,15 @@ public class QueryEntity implements Serializable {
     /** Table name. */
     private String tableName;
 
+    /** Fields that must have non-null value. NB: DO NOT remove underscore to avoid clashes with QueryEntityEx. */
+    private Set<String> _notNullFields;
+
+    /** Fields default values. */
+    private Map<String, Object> defaultFieldValues = new HashMap<>();
+
+    /** Decimal fields information. */
+    private Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
+
     /**
      * Creates an empty query entity.
      */
@@ -109,6 +129,13 @@ public class QueryEntity implements Serializable {
         idxs = other.idxs != null ? new ArrayList<>(other.idxs) : null;
 
         tableName = other.tableName;
+
+        _notNullFields = other._notNullFields != null ? new HashSet<>(other._notNullFields) : null;
+
+        defaultFieldValues = other.defaultFieldValues != null ? new HashMap<>(other.defaultFieldValues)
+            : new HashMap<String, Object>();
+
+        decimalInfo = other.decimalInfo != null ? new HashMap<>(other.decimalInfo) : new HashMap<>();
     }
 
     /**
@@ -129,7 +156,173 @@ public class QueryEntity implements Serializable {
      * @param valCls Value type.
      */
     public QueryEntity(Class<?> keyCls, Class<?> valCls) {
-        this(convert(processKeyAndValueClasses(keyCls,valCls)));
+        this(convert(processKeyAndValueClasses(keyCls, valCls)));
+    }
+
+    /**
+     * Make query entity patch. This patch can only add properties to entity and can't remove them.
+     * Other words, the patch will contain only add operations(e.g. add column, create index) and not remove ones.
+     *
+     * @param target Query entity to which this entity should be expanded.
+     * @return Patch which contains operations for expanding this entity.
+     */
+    @NotNull public QueryEntityPatch makePatch(QueryEntity target) {
+        if (target == null)
+            return QueryEntityPatch.empty();
+
+        StringBuilder conflicts = new StringBuilder();
+
+        checkEquals(conflicts, "keyType", keyType, target.keyType);
+        checkEquals(conflicts, "valType", valType, target.valType);
+        checkEquals(conflicts, "keyFieldName", keyFieldName, target.keyFieldName);
+        checkEquals(conflicts, "valueFieldName", valueFieldName, target.valueFieldName);
+        checkEquals(conflicts, "tableName", tableName, target.tableName);
+
+        List<QueryField> queryFieldsToAdd = checkFields(target, conflicts);
+
+        Collection<QueryIndex> indexesToAdd = checkIndexes(target, conflicts);
+
+        if (conflicts.length() != 0)
+            return QueryEntityPatch.conflict(tableName + " conflict: \n" + conflicts.toString());
+
+        Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
+
+        if (!queryFieldsToAdd.isEmpty())
+            patchOperations.add(new SchemaAlterTableAddColumnOperation(
+                UUID.randomUUID(),
+                null,
+                null,
+                tableName,
+                queryFieldsToAdd,
+                true,
+                true
+            ));
+
+        if (!indexesToAdd.isEmpty()) {
+            for (QueryIndex index : indexesToAdd) {
+                patchOperations.add(new SchemaIndexCreateOperation(
+                    UUID.randomUUID(),
+                    null,
+                    null,
+                    tableName,
+                    index,
+                    true,
+                    0
+                ));
+            }
+        }
+
+        return QueryEntityPatch.patch(patchOperations);
+    }
+
+    /**
+     * Comparing local fields and target fields.
+     *
+     * @param target Query entity for check.
+     * @param conflicts Storage of conflicts.
+     * @return Indexes which exist in target and not exist in local.
+     */
+    @NotNull private Collection<QueryIndex> checkIndexes(QueryEntity target, StringBuilder conflicts) {
+        HashSet<QueryIndex> indexesToAdd = new HashSet<>();
+
+        Map<String, QueryIndex> currentIndexes = new HashMap<>();
+
+        for (QueryIndex index : getIndexes()) {
+            if (currentIndexes.put(index.getName(), index) != null)
+                throw new IllegalStateException("Duplicate key");
+        }
+
+        for (QueryIndex queryIndex : target.getIndexes()) {
+            if(currentIndexes.containsKey(queryIndex.getName())) {
+                checkEquals(
+                    conflicts,
+                    "index " + queryIndex.getName(),
+                    currentIndexes.get(queryIndex.getName()),
+                    queryIndex
+                );
+            }
+            else
+                indexesToAdd.add(queryIndex);
+        }
+        return indexesToAdd;
+    }
+
+    /**
+     * Comparing local entity fields and target entity fields.
+     *
+     * @param target Query entity for check.
+     * @param conflicts Storage of conflicts.
+     * @return Fields which exist in target and not exist in local.
+     */
+    private List<QueryField> checkFields(QueryEntity target, StringBuilder conflicts) {
+        List<QueryField> queryFieldsToAdd = new ArrayList<>();
+
+        for (Map.Entry<String, String> targetField : target.getFields().entrySet()) {
+            String targetFieldName = targetField.getKey();
+            String targetFieldType = targetField.getValue();
+
+            if (getFields().containsKey(targetFieldName)) {
+                checkEquals(
+                    conflicts,
+                    "fieldType of " + targetFieldName,
+                    getFields().get(targetFieldName),
+                    targetFieldType
+                );
+
+                checkEquals(
+                    conflicts,
+                    "nullable of " + targetFieldName,
+                    contains(getNotNullFields(), targetFieldName),
+                    contains(target.getNotNullFields(), targetFieldName)
+                );
+
+                checkEquals(
+                    conflicts,
+                    "default value of " + targetFieldName,
+                    getFromMap(getDefaultFieldValues(), targetFieldName),
+                    getFromMap(target.getDefaultFieldValues(), targetFieldName)
+                );
+            }
+            else {
+                queryFieldsToAdd.add(new QueryField(
+                    targetFieldName,
+                    targetFieldType,
+                    !contains(target.getNotNullFields(),targetFieldName),
+                    getFromMap(target.getDefaultFieldValues(), targetFieldName)
+                ));
+            }
+        }
+
+        return queryFieldsToAdd;
+    }
+
+    /**
+     * @param collection Collection for checking.
+     * @param elementToCheck Element for checking to containing in collection.
+     * @return {@code true} if collection contain elementToCheck.
+     */
+    private static boolean contains(Collection<String> collection, String elementToCheck) {
+        return collection != null && collection.contains(elementToCheck);
+    }
+
+    /**
+     * @return Value from sourceMap or null if map is null.
+     */
+    private static Object getFromMap(Map<String, Object> sourceMap, String key) {
+        return sourceMap == null ? null : sourceMap.get(key);
+    }
+
+    /**
+     * Comparing two objects and add formatted text to conflicts if needed.
+     *
+     * @param conflicts Storage of conflicts resulting error message.
+     * @param name Name of comparing object.
+     * @param local Local object.
+     * @param received Received object.
+     */
+    private void checkEquals(StringBuilder conflicts, String name, Object local, Object received) {
+        if (!Objects.equals(local, received))
+            conflicts.append(String.format("%s is different: local=%s, received=%s\n", name, local, received));
     }
 
     /**
@@ -299,7 +492,7 @@ public class QueryEntity implements Serializable {
      *
      * @return Collection of index entities.
      */
-    public Collection<QueryIndex> getIndexes() {
+    @NotNull public Collection<QueryIndex> getIndexes() {
         return idxs == null ? Collections.<QueryIndex>emptyList() : idxs;
     }
 
@@ -348,14 +541,82 @@ public class QueryEntity implements Serializable {
 
     /**
      * Sets table name for this query entity.
+     *
      * @param tableName table name
+     * @return {@code this} for chaining.
      */
-    public void setTableName(String tableName) {
+    public QueryEntity setTableName(String tableName) {
         this.tableName = tableName;
+
+        return this;
+    }
+
+    /**
+     * Gets names of fields that must be checked for null.
+     *
+     * @return Set of names of fields that must have non-null values.
+     */
+    @Nullable public Set<String> getNotNullFields() {
+        return _notNullFields;
+    }
+
+    /**
+     * Sets names of fields that must checked for null.
+     *
+     * @param notNullFields Set of names of fields that must have non-null values.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setNotNullFields(@Nullable Set<String> notNullFields) {
+        this._notNullFields = notNullFields;
+
+        return this;
+    }
+
+    /**
+     * Gets set of field name to precision and scale.
+     *
+     * @return Set of names of fields that must have non-null values.
+     */
+    public Map<String, IgniteBiTuple<Integer, Integer>> getDecimalInfo() {
+        return decimalInfo == null ? Collections.emptyMap() : unmodifiableMap(decimalInfo);
+    }
+
+    /**
+     * Sets decimal fields info.
+     *
+     * @param decimalInfo Set of name to precision and scale for decimal fields.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setDecimalInfo(Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo) {
+        this.decimalInfo = decimalInfo;
+
+        return this;
+    }
+
+    /**
+     * Gets fields default values.
+     *
+     * @return Field's name to default value map.
+     */
+    public Map<String, Object> getDefaultFieldValues() {
+        return defaultFieldValues;
+    }
+
+    /**
+     * Sets fields default values.
+     *
+     * @param defaultFieldValues Field's name to default value map.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setDefaultFieldValues(Map<String, Object> defaultFieldValues) {
+        this.defaultFieldValues = defaultFieldValues;
+
+        return this;
     }
 
     /**
      * Utility method for building query entities programmatically.
+     *
      * @param fullName Full name of the field.
      * @param type Type of the field.
      * @param alias Field alias.
@@ -442,6 +703,12 @@ public class QueryEntity implements Serializable {
 
         if (!F.isEmpty(idxs))
             entity.setIndexes(idxs);
+
+        if (!F.isEmpty(desc.notNullFields()))
+            entity.setNotNullFields(desc.notNullFields());
+
+        if (!F.isEmpty(desc.decimalInfo()))
+            entity.setDecimalInfo(desc.decimalInfo());
 
         return entity;
     }
@@ -565,6 +832,12 @@ public class QueryEntity implements Serializable {
                 desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
             }
 
+            if (sqlAnn.notNull())
+                desc.addNotNullField(prop.fullName());
+
+            if (BigDecimal.class == fldCls && sqlAnn.precision() != -1 && sqlAnn.scale() != -1)
+                desc.addDecimalInfo(prop.fullName(), F.t(sqlAnn.precision(), sqlAnn.scale()));
+
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
                 && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {
                 throw new CacheException("Inline size cannot be set on a field with group index [" +
@@ -586,7 +859,6 @@ public class QueryEntity implements Serializable {
             desc.addFieldToTextIndex(prop.fullName());
     }
 
-
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -594,6 +866,7 @@ public class QueryEntity implements Serializable {
 
         if (o == null || getClass() != o.getClass())
             return false;
+
         QueryEntity entity = (QueryEntity)o;
 
         return F.eq(keyType, entity.keyType) &&
@@ -604,12 +877,16 @@ public class QueryEntity implements Serializable {
             F.eq(keyFields, entity.keyFields) &&
             F.eq(aliases, entity.aliases) &&
             F.eqNotOrdered(idxs, entity.idxs) &&
-            F.eq(tableName, entity.tableName);
+            F.eq(tableName, entity.tableName) &&
+            F.eq(_notNullFields, entity._notNullFields) &&
+            F.eq(defaultFieldValues, entity.defaultFieldValues) &&
+            F.eq(decimalInfo, entity.decimalInfo);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs, tableName);
+        return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
+            tableName, _notNullFields, defaultFieldValues, decimalInfo);
     }
 
     /** {@inheritDoc} */

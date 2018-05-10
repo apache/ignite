@@ -65,7 +65,7 @@ public class HadoopTasksV2Test extends HadoopTasksAllVersionsTest {
 
         Job hadoopJob = HadoopWordCount2.getJob(inFile, outFile);
 
-        HadoopDefaultJobInfo jobInfo = createJobInfo(hadoopJob.getConfiguration());
+        HadoopDefaultJobInfo jobInfo = createJobInfo(hadoopJob.getConfiguration(), null);
 
         UUID uuid = new UUID(0, 0);
 

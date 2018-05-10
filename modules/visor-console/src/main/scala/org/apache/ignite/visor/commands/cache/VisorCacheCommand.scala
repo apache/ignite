@@ -17,17 +17,18 @@
 
 package org.apache.ignite.visor.commands.cache
 
-import java.util.{Collection => JavaCollection, List => JavaList, Collections, UUID}
+import java.util.{Collections, UUID, Collection => JavaCollection, List => JavaList}
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
-import org.apache.ignite.visor.commands.common.VisorTextTable
+import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
 import org.jetbrains.annotations._
 
@@ -40,25 +41,31 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *
  * ==Help==
  * {{{
- * +-----------------------------------------------------------------------------------------+
- * | cache          | Prints statistics about caches from specified node on the entire grid. |
- * |                | Output sorting can be specified in arguments.                          |
- * |                |                                                                        |
- * |                | Output abbreviations:                                                  |
- * |                |     #   Number of nodes.                                               |
- * |                |     H/h Number of cache hits.                                          |
- * |                |     M/m Number of cache misses.                                        |
- * |                |     R/r Number of cache reads.                                         |
- * |                |     W/w Number of cache writes.                                        |
- * +-----------------------------------------------------------------------------------------+
- * | cache -clear   | Clears all entries from cache on all nodes.                            |
- * +-----------------------------------------------------------------------------------------+
- * | cache -scan    | List all entries in cache with specified name.                         |
- * +-----------------------------------------------------------------------------------------+
- * | cache -stop    | Stop cache with specified name.                                        |
- * +-----------------------------------------------------------------------------------------+
- * | cache -reset   | Reset metrics for cache with specified name.                           |
- * +-----------------------------------------------------------------------------------------+
+ * +-------------------------------------------------------------------------------------------+
+ * | cache            | Prints statistics about caches from specified node on the entire grid. |
+ * |                  | Output sorting can be specified in arguments.                          |
+ * |                  |                                                                        |
+ * |                  | Output abbreviations:                                                  |
+ * |                  |     #   Number of nodes.                                               |
+ * |                  |     H/h Number of cache hits.                                          |
+ * |                  |     M/m Number of cache misses.                                        |
+ * |                  |     R/r Number of cache reads.                                         |
+ * |                  |     W/w Number of cache writes.                                        |
+ * +-------------------------------------------------------------------------------------------+
+ * | cache -clear     | Clears all entries from cache on all nodes.                            |
+ * +-------------------------------------------------------------------------------------------+
+ * | cache -scan      | List all entries in cache with specified name.                         |
+ * +-------------------------------------------------------------------------------------------+
+ * | cache -stop      | Stop cache with specified name.                                        |
+ * +-------------------------------------------------------------------------------------------+
+ * | cache -reset     | Reset metrics for cache with specified name.                           |
+ * +-------------------------------------------------------------------------------------------+
+ * | cache -rebalance | Re-balance partitions for cache with specified name.                   |
+ * +-------------------------------------------------------------------------------------------+
+ * | cache -slp       | Show list of lost partitions for specified cache.                      |
+ * +-------------------------------------------------------------------------------------------+
+ * | cache -rlp       | Reset lost partitions for specified cache.                             |
+ * +-------------------------------------------------------------------------------------------+
  *
  * }}}
  *
@@ -68,9 +75,12 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *     cache -i {-system}
  *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr|cn} {-a} {-r} {-system}
  *     cache -clear {-c=<cache-name>}
- *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>} {-system}
+ *     cache -scan -c=<cache-name> {-near} {-id=<node-id>|id8=<node-id8>} {-p=<page size>} {-system}
  *     cache -stop -c=<cache-name>
  *     cache -reset -c=<cache-name>
+ *     cache -rebalance -c=<cache-name>
+ *     cache -slp -c=<cache-name>
+ *     cache -rlp -c=<cache-name>
  * }}}
  *
  * ====Arguments====
@@ -108,13 +118,21 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *     -system
  *         Enable showing of information about system caches.
  *     -clear
- *          Clears cache.
+ *         Clears cache.
  *     -scan
- *          Prints list of all entries from cache.
+ *         Prints list of all entries from cache.
+ *     -near
+ *         Prints list of all entries from near cache of cache.
  *     -stop
  *          Stop cache with specified name.
  *     -reset
  *          Reset metrics for cache with specified name.
+ *     -rebalance
+ *          Re-balance partitions for cache with specified name.
+ *     -slp
+ *          Show list of lost partitions for specified cache.
+ *     -rlp
+ *          Reset lost partitions for specified cache.
  *     -p=<page size>
  *         Number of object to fetch from cache at once.
  *         Valid range from 1 to 100.
@@ -147,25 +165,23 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *         with page of 50 items from all nodes with this cache.
  *     cache -scan -c=cache -id8=12345678
  *         Prints list entries from cache with name 'cache' and node '12345678' ID8.
+ *     cache -scan -c=cache -near -id8=12345678
+ *         Prints list entries from near cache of cache with name 'cache' and node '12345678' ID8.
  *     cache -stop -c=cache
  *         Stops cache with name 'cache'.
  *     cache -reset -c=cache
  *         Reset metrics for cache with name 'cache'.
+ *     cache -rebalance -c=cache
+ *         Re-balance partitions for cache with name 'cache'.
+ *     cache -slp -c=cache
+ *         Show list of lost partitions for cache with name 'cache'.
+ *     cache -rlp -c=cache
+ *         Reset lost partitions for cache with name 'cache'.
  *
  * }}}
  */
-class VisorCacheCommand {
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        warn(errMsgs: _*)
-        warn("Type 'help cache' to see how to use this command.")
-    }
+class VisorCacheCommand extends VisorConsoleCommand {
+    @impl protected val name: String = "cache"
 
     /**
      * ===Command===
@@ -198,6 +214,9 @@ class VisorCacheCommand {
      * <ex>cache -scan -c=cache -id8=12345678</ex>
      *     Prints list entries from cache with name 'cache' and node '12345678' ID8.
      * <br>
+     * <ex>cache -scan -c=cache -near -id8=12345678</ex>
+     *     Prints list entries from near cache of cache with name 'cache' and node '12345678' ID8.
+     * <br>
      * <ex>cache -stop -c=@c0</ex>
      *     Stop cache with name taken from 'c0' memory variable.
      * <br>
@@ -207,9 +226,7 @@ class VisorCacheCommand {
      * @param args Command arguments.
      */
     def cache(args: String) {
-        if (!isConnected)
-            adviseToConnect()
-        else {
+        if (checkConnected() && checkActiveState()) {
             var argLst = parseArgs(args)
 
             if (hasArgFlag("i", argLst)) {
@@ -231,7 +248,16 @@ class VisorCacheCommand {
 
                     return
 
-                case Right(n) => n
+                case Right(n) => n match {
+                    case None if hasArgName("scan", argLst) && hasArgName("near", argLst) =>
+                        askForNode("Select node from:") match {
+                            case None => return
+
+                            case nidOpt => nidOpt.map(ignite.cluster.node(_))
+                        }
+
+                    case _ => n
+                }
             }
 
             val showSystem = hasArgFlag("system", argLst)
@@ -253,9 +279,10 @@ class VisorCacheCommand {
             // Get cache stats data from all nodes.
             val aggrData = cacheData(node, cacheName, showSystem)
 
-            if (hasArgFlagIn("clear", "scan", "stop", "reset")) {
+            if (hasArgFlagIn("clear", "scan", "stop", "reset", "rebalance", "slp", "rlp")) {
                 if (cacheName.isEmpty)
-                    askForCache("Select cache from:", node, showSystem && !hasArgFlagIn("clear", "stop", "reset"), aggrData) match {
+                    askForCache("Select cache from:", node, showSystem
+                        && !hasArgFlagIn("clear", "stop", "reset", "rebalance"), aggrData) match {
                         case Some(name) =>
                             argLst = argLst ++ Seq("c" -> name)
 
@@ -265,25 +292,38 @@ class VisorCacheCommand {
                     }
 
                 cacheName.foreach(name => {
-                    if (hasArgFlag("scan", argLst))
-                        VisorCacheScanCommand().scan(argLst, node)
-                    else {
-                        if (aggrData.nonEmpty && !aggrData.exists(cache => F.eq(cache.getName, name) && cache.isSystem)) {
-                            if (hasArgFlag("clear", argLst))
-                                VisorCacheClearCommand().clear(argLst, node)
-                            else if (hasArgFlag("stop", argLst))
-                                VisorCacheStopCommand().stop(argLst, node)
-                            else if (hasArgFlag("reset", argLst))
-                              VisorCacheResetCommand().reset(argLst, node)
-                        }
-                        else {
-                            if (hasArgFlag("clear", argLst))
-                                warn("Clearing of system cache is not allowed: " + name)
-                            else if (hasArgFlag("stop", argLst))
-                                warn("Stopping of system cache is not allowed: " + name)
-                            else if (hasArgFlag("reset", argLst))
-                                warn("Reset metrics of system cache is not allowed: " + name)
-                        }
+                    aggrData.find(cache => F.eq(cache.getName, name)) match {
+                        case Some(cache) =>
+                            if (!cache.isSystem) {
+                                if (hasArgFlag("scan", argLst))
+                                    VisorCacheScanCommand().scan(argLst, node)
+                                else if (hasArgFlag("clear", argLst))
+                                    VisorCacheClearCommand().clear(argLst, node)
+                                else if (hasArgFlag("stop", argLst))
+                                    VisorCacheStopCommand().stop(argLst, node)
+                                else if (hasArgFlag("reset", argLst))
+                                    VisorCacheResetCommand().reset(argLst, node)
+                                else if (hasArgFlag("rebalance", argLst))
+                                    VisorCacheRebalanceCommand().rebalance(argLst, node)
+                                else if (hasArgFlag("slp", argLst))
+                                    VisorCacheLostPartitionsCommand().showLostPartitions(argLst, node)
+                                else if (hasArgFlag("rlp", argLst))
+                                    VisorCacheResetLostPartitionsCommand().resetLostPartitions(argLst, node)
+                            }
+                            else {
+                                if (hasArgFlag("scan", argLst))
+                                    warn("Scan of system cache is not allowed: " + name)
+                                else if (hasArgFlag("clear", argLst))
+                                    warn("Clearing of system cache is not allowed: " + name)
+                                else if (hasArgFlag("stop", argLst))
+                                    warn("Stopping of system cache is not allowed: " + name)
+                                else if (hasArgFlag("reset", argLst))
+                                    warn("Reset metrics of system cache is not allowed: " + name)
+                                else if (hasArgFlag("rebalance", argLst))
+                                    warn("Re-balance partitions of system cache is not allowed: " + name)
+                            }
+                        case None =>
+                            warn("Cache with specified name not found: " + name)
                     }
                 })
 
@@ -328,12 +368,12 @@ class VisorCacheCommand {
                         ad.getMode,
                         ad.getNodes.size(),
                         (
-                            "min: " + (ad.getMinimumHeapSize + ad.getMinimumOffHeapSize) +
-                                " (" + ad.getMinimumHeapSize + " / " + ad.getMinimumOffHeapSize + ")",
-                            "avg: " + formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapSize) +
-                                " (" + formatDouble(ad.getAverageHeapSize) + " / " + formatDouble(ad.getAverageOffHeapSize) + ")",
-                            "max: " + (ad.getMaximumHeapSize + ad.getMaximumOffHeapSize) +
-                                " (" + ad.getMaximumHeapSize + " / " + ad.getMaximumOffHeapSize + ")"
+                            "min: " + (ad.getMinimumHeapSize + ad.getMinimumOffHeapPrimarySize) +
+                                " (" + ad.getMinimumHeapSize + " / " + ad.getMinimumOffHeapPrimarySize + ")",
+                            "avg: " + formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapPrimarySize) +
+                                " (" + formatDouble(ad.getAverageHeapSize) + " / " + formatDouble(ad.getAverageOffHeapPrimarySize) + ")",
+                            "max: " + (ad.getMaximumHeapSize + ad.getMaximumOffHeapPrimarySize) +
+                                " (" + ad.getMaximumHeapSize + " / " + ad.getMaximumOffHeapPrimarySize + ")"
                             ),
                         (
                             "min: " + ad.getMinimumHits,
@@ -385,13 +425,13 @@ class VisorCacheCommand {
 
                     csT += ("Name(@)", cacheNameVar)
                     csT += ("Nodes", m.size())
-                    csT += ("Total size Min/Avg/Max", (ad.getMinimumHeapSize + ad.getMinimumOffHeapSize) + " / " +
-                        formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapSize) + " / " +
-                        (ad.getMaximumHeapSize + ad.getMaximumOffHeapSize))
+                    csT += ("Total size Min/Avg/Max", (ad.getMinimumHeapSize + ad.getMinimumOffHeapPrimarySize) + " / " +
+                        formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapPrimarySize) + " / " +
+                        (ad.getMaximumHeapSize + ad.getMaximumOffHeapPrimarySize))
                     csT += ("  Heap size Min/Avg/Max", ad.getMinimumHeapSize + " / " +
                         formatDouble(ad.getAverageHeapSize) + " / " + ad.getMaximumHeapSize)
-                    csT += ("  Off-heap size Min/Avg/Max", ad.getMinimumOffHeapSize + " / " +
-                        formatDouble(ad.getAverageOffHeapSize) + " / " + ad.getMaximumOffHeapSize)
+                    csT += ("  Off-heap size Min/Avg/Max", ad.getMinimumOffHeapPrimarySize + " / " +
+                        formatDouble(ad.getAverageOffHeapPrimarySize) + " / " + ad.getMaximumOffHeapPrimarySize)
 
                     val ciT = VisorTextTable()
 
@@ -408,9 +448,9 @@ class VisorCacheCommand {
                             formatDouble(nm.getCurrentCpuLoad * 100d) + " %",
                             X.timeSpan2HMSM(nm.getUpTime),
                             (
-                                "Total: " + (cm.getHeapEntriesCount + cm.getOffHeapEntriesCount()),
+                                "Total: " + (cm.getHeapEntriesCount + cm.getOffHeapPrimaryEntriesCount),
                                 "  Heap: " + cm.getHeapEntriesCount,
-                                "  Off-Heap: " + cm.getOffHeapEntriesCount(),
+                                "  Off-Heap: " + cm.getOffHeapPrimaryEntriesCount,
                                 "  Off-Heap Memory: " + formatMemory(cm.getOffHeapAllocatedSize)
                             ),
                             (
@@ -617,7 +657,6 @@ class VisorCacheCommand {
     def askForCache(title: String, node: Option[ClusterNode], showSystem: Boolean = false,
         aggrData: Seq[VisorCacheAggregatedMetrics]): Option[String] = {
         assert(title != null)
-        assert(visor.visor.isConnected)
 
         if (aggrData.isEmpty) {
             scold("No caches found.")
@@ -644,12 +683,12 @@ class VisorCacheCommand {
                 mkCacheName(ad.getName),
                 ad.getMode,
                 (
-                    "min: " + (ad.getMinimumHeapSize + ad.getMinimumOffHeapSize) +
-                        " (" + ad.getMinimumHeapSize + " / " + ad.getMinimumOffHeapSize + ")",
-                    "avg: " + formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapSize) +
-                        " (" + formatDouble(ad.getAverageHeapSize) + " / " + formatDouble(ad.getAverageOffHeapSize) + ")",
-                    "max: " + (ad.getMaximumHeapSize + ad.getMaximumOffHeapSize) +
-                        " (" + ad.getMaximumHeapSize + " / " + ad.getMaximumOffHeapSize + ")"
+                    "min: " + (ad.getMinimumHeapSize + ad.getMinimumOffHeapPrimarySize) +
+                        " (" + ad.getMinimumHeapSize + " / " + ad.getMinimumOffHeapPrimarySize + ")",
+                    "avg: " + formatDouble(ad.getAverageHeapSize + ad.getAverageOffHeapPrimarySize) +
+                        " (" + formatDouble(ad.getAverageHeapSize) + " / " + formatDouble(ad.getAverageOffHeapPrimarySize) + ")",
+                    "max: " + (ad.getMaximumHeapSize + ad.getMaximumOffHeapPrimarySize) +
+                        " (" + ad.getMaximumHeapSize + " / " + ad.getMaximumOffHeapPrimarySize + ")"
                 ))
         })
 
@@ -695,16 +734,21 @@ object VisorCacheCommand {
             " ",
             "Clears cache.",
             " ",
-            "Prints list of all entries from cache."
+            "Prints list of all entries from cache.",
+            " ",
+            "Prints or clear list lost partitions from cache."
         ),
         spec = Seq(
             "cache",
             "cache -i",
             "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr} {-a} {-r}",
             "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
-            "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
+            "cache -scan -c=<cache-name> {-near} {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
             "cache -stop -c=<cache-name>",
-            "cache -reset -c=<cache-name>"
+            "cache -reset -c=<cache-name>",
+            "cache -rebalance -c=<cache-name>",
+            "cache -slp -c=<cache-name>",
+            "cache -rlp -c=<cache-name>"
   ),
         args = Seq(
             "-id8=<node-id>" -> Seq(
@@ -724,21 +768,15 @@ object VisorCacheCommand {
                 "Name of the cache.",
                 "Note you can also use '@c0' ... '@cn' variables as shortcut to <cache-name>."
             ),
-            "-clear" -> Seq(
-                "Clears cache."
-            ),
-            "-system" -> Seq(
-                "Enable showing of information about system caches."
-            ),
-            "-scan" -> Seq(
-                "Prints list of all entries from cache."
-            ),
-            "-stop" -> Seq(
-                "Stop cache with specified name."
-            ),
-            "-reset" -> Seq(
-                "Reset metrics of cache with specified name."
-            ),
+            "-clear" -> "Clears cache.",
+            "-system" -> "Enable showing of information about system caches.",
+            "-scan" -> "Prints list of all entries from cache.",
+            "-near" -> "Prints list of all entries from near cache of cache.",
+            "-stop" -> "Stop cache with specified name.",
+            "-reset" -> "Reset metrics of cache with specified name.",
+            "-slp" -> "Show list of lost partitions for specified cache.",
+            "-rlp" -> "Reset lost partitions for specified cache.",
+            "-rebalance" -> "Re-balance partitions for cache with specified name.",
             "-s=hi|mi|rd|wr|cn" -> Seq(
                 "Defines sorting type. Sorted by:",
                 "   hi Hits.",
@@ -794,8 +832,13 @@ object VisorCacheCommand {
             "cache -scan -c=@c0 -p=50" -> ("Prints list entries from cache with name taken from 'c0' memory variable" +
                 " with page of 50 items from all nodes with this cache."),
             "cache -scan -c=cache -id8=12345678" -> "Prints list entries from cache with name 'cache' and node '12345678' ID8.",
+            "cache -scan -near -c=cache -id8=12345678" ->
+                "Prints list entries from near cache of cache with name 'cache' and node '12345678' ID8.",
             "cache -stop -c=@c0" -> "Stop cache with name taken from 'c0' memory variable.",
-            "cache -reset -c=@c0" -> "Reset metrics for cache with name taken from 'c0' memory variable."
+            "cache -reset -c=@c0" -> "Reset metrics for cache with name taken from 'c0' memory variable.",
+            "cache -rebalance -c=cache" -> "Re-balance partitions for cache with name 'cache'.",
+            "cache -slp -c=@c0" -> "Show list of lost partitions for cache with name taken from 'c0' memory variable.",
+            "cache -rlp -c=@c0" -> "Reset lost partitions for cache with name taken from 'c0' memory variable."
         ),
         emptyArgs = cmd.cache,
         withArgs = cmd.cache
@@ -839,10 +882,23 @@ object VisorCacheCommand {
 
         cacheT += ("Group", cfg.getGroupName)
         cacheT += ("Dynamic Deployment ID", cfg.getDynamicDeploymentId)
+        cacheT += ("System", bool2Str(cfg.isSystem))
+
         cacheT += ("Mode", cfg.getMode)
         cacheT += ("Atomicity Mode", safe(cfg.getAtomicityMode))
         cacheT += ("Statistic Enabled", bool2Str(cfg.isStatisticsEnabled))
         cacheT += ("Management Enabled", bool2Str(cfg.isManagementEnabled))
+
+        cacheT += ("On-heap cache enabled", bool2Str(cfg.isOnheapCacheEnabled))
+        cacheT += ("Partition Loss Policy", cfg.getPartitionLossPolicy)
+        cacheT += ("Query Parallelism", cfg.getQueryParallelism)
+        cacheT += ("Copy On Read", bool2Str(cfg.isCopyOnRead))
+        cacheT += ("Listener Configurations", cfg.getListenerConfigurations)
+        cacheT += ("Load Previous Value", bool2Str(cfg.isLoadPreviousValue))
+        cacheT += ("Memory Policy Name", cfg.getMemoryPolicyName)
+        cacheT += ("Node Filter", cfg.getNodeFilter)
+        cacheT += ("Read From Backup", bool2Str(cfg.isReadFromBackup))
+        cacheT += ("Topology Validator", cfg.getTopologyValidator)
 
         cacheT += ("Time To Live Eager Flag", cfg.isEagerTtl)
 
@@ -860,15 +916,17 @@ object VisorCacheCommand {
         cacheT += ("Rebalance Timeout", rebalanceCfg.getTimeout)
         cacheT += ("Rebalance Delay", rebalanceCfg.getPartitionedDelay)
         cacheT += ("Time Between Rebalance Messages", rebalanceCfg.getThrottle)
+        cacheT += ("Rebalance Batches Count", rebalanceCfg.getBatchesPrefetchCnt)
+        cacheT += ("Rebalance Cache Order", rebalanceCfg.getRebalanceOrder)
 
         cacheT += ("Eviction Policy Enabled", bool2Str(evictCfg.getPolicy != null))
-        cacheT += ("Eviction Policy", safe(evictCfg.getPolicy))
+        cacheT += ("Eviction Policy Factory", safe(evictCfg.getPolicy))
         cacheT += ("Eviction Policy Max Size", safe(evictCfg.getPolicyMaxSize))
         cacheT += ("Eviction Filter", safe(evictCfg.getFilter))
 
         cacheT += ("Near Cache Enabled", bool2Str(nearCfg.isNearEnabled))
         cacheT += ("Near Start Size", nearCfg.getNearStartSize)
-        cacheT += ("Near Eviction Policy", safe(nearCfg.getNearEvictPolicy))
+        cacheT += ("Near Eviction Policy Factory", safe(nearCfg.getNearEvictPolicy))
         cacheT += ("Near Eviction Policy Max Size", safe(nearCfg.getNearEvictMaxSize))
 
         cacheT += ("Default Lock Timeout", cfg.getDefaultLockTimeout)
@@ -881,8 +939,9 @@ object VisorCacheCommand {
         cacheT += ("Store Keep Binary", storeCfg.isStoreKeepBinary)
         cacheT += ("Store Read Through", bool2Str(storeCfg.isReadThrough))
         cacheT += ("Store Write Through", bool2Str(storeCfg.isWriteThrough))
+        cacheT += ("Store Write Coalescing", bool2Str(storeCfg.getWriteBehindCoalescing))
 
-        cacheT += ("Write-Behind Enabled", bool2Str(storeCfg.isEnabled))
+        cacheT += ("Write-Behind Enabled", bool2Str(storeCfg.isWriteBehindEnabled))
         cacheT += ("Write-Behind Flush Size", storeCfg.getFlushSize)
         cacheT += ("Write-Behind Frequency", storeCfg.getFlushFrequency)
         cacheT += ("Write-Behind Flush Threads Count", storeCfg.getFlushThreadCount)
@@ -895,8 +954,11 @@ object VisorCacheCommand {
         cacheT += ("Expiry Policy Factory Class Name", safe(cfg.getExpiryPolicyFactory))
 
         cacheT +=("Query Execution Time Threshold", queryCfg.getLongQueryWarningTimeout)
-        cacheT +=("Query Schema Name", queryCfg.getSqlSchema)
         cacheT +=("Query Escaped Names", bool2Str(queryCfg.isSqlEscapeAll))
+        cacheT +=("Query Schema Name", queryCfg.getSqlSchema)
+        cacheT +=("Query Indexed Types", queryCfg.getIndexedTypes)
+        cacheT +=("Maximum payload size for offheap indexes", cfg.getSqlIndexMaxInlineSize)
+        cacheT +=("Query Metrics History Size", cfg.getQueryDetailMetricsSize)
 
         val sqlFxs = queryCfg.getSqlFunctionClasses
 

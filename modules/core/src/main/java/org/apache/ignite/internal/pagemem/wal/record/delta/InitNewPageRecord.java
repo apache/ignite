@@ -89,8 +89,6 @@ public class InitNewPageRecord extends PageDeltaRecord {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(InitNewPageRecord.class, this,
-            "ioType", ioType,
-            "ioVer", ioVer,
             "newPageId", U.hexLong(newPageId),
             "super", super.toString());
     }

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import org.h2.util.StatementBuilder;
 
 /**
@@ -31,13 +30,6 @@ public class GridSqlArray extends GridSqlElement {
      */
     public GridSqlArray(int size) {
         super(size == 0 ? Collections.<GridSqlAst>emptyList() : new ArrayList<GridSqlAst>(size));
-    }
-
-    /**
-     * @param children Initial child list.
-     */
-    public GridSqlArray(List<GridSqlAst> children) {
-        super(children);
     }
 
     /** {@inheritDoc} */

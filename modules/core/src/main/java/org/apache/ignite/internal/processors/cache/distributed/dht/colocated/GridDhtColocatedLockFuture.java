@@ -23,9 +23,12 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -45,7 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -77,7 +80,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
@@ -86,7 +88,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
  * Colocated cache lock future.
  */
 public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityFuture<Boolean>
-    implements GridCacheMvccFuture<Boolean>, IgniteDiagnosticAware {
+    implements GridCacheVersionedFuture<Boolean>, IgniteDiagnosticAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -98,6 +100,10 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
     /** Logger. */
     private static IgniteLogger msgLog;
+
+    /** Done field updater. */
+    private static final AtomicIntegerFieldUpdater<GridDhtColocatedLockFuture> DONE_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(GridDhtColocatedLockFuture.class, "done");
 
     /** Cache registry. */
     @GridToStringExclude
@@ -145,6 +151,10 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
     /** Map of current values. */
     private final Map<KeyCacheObject, IgniteBiTuple<GridCacheVersion, CacheObject>> valMap;
+
+    /** */
+    @SuppressWarnings("UnusedDeclaration")
+    private volatile int done;
 
     /** Trackable flag (here may be non-volatile). */
     private boolean trackable;
@@ -226,13 +236,13 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             log = U.logger(cctx.kernalContext(), logRef, GridDhtColocatedLockFuture.class);
         }
 
-        if (timeout > 0) {
-            timeoutObj = new LockTimeoutObject();
+        valMap = new ConcurrentHashMap<>();
 
-            cctx.time().addTimeoutObject(timeoutObj);
+        if (tx != null && !tx.updateLockFuture(null, this)) {
+            onError(tx.timedOut() ? tx.timeoutException() : tx.rollbackException());
+
+            onComplete(false, false);
         }
-
-        valMap = new ConcurrentHashMap8<>();
     }
 
     /** {@inheritDoc} */
@@ -322,6 +332,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             else {
                 IgniteTxEntry txEntry = tx.entry(txKey);
 
+                assert txEntry != null;
+
                 txEntry.cached(entry);
 
                 // Check transaction entries (corresponding tx entries must be enlisted in transaction).
@@ -332,7 +344,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     threadId,
                     lockVer,
                     true,
-                    tx.entry(txKey).locked(),
+                    txEntry.locked(),
                     inTx(),
                     inTx() && tx.implicitSingle(),
                     false,
@@ -444,8 +456,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                 return;
             }
 
+            //  This warning can be triggered by deadlock detection code which clears pending futures.
             U.warn(msgLog, "Collocated lock fut, failed to find mini future [txId=" + lockVer +
-                ", inTx=" + inTx() +
+                ", tx=" + (inTx() ? CU.txString(tx) : "N/A") +
                 ", node=" + nodeId +
                 ", res=" + res +
                 ", fut=" + this + ']');
@@ -530,12 +543,14 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             err = t;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Cancellation has special meaning for lock futures. It's called then lock must be released on rollback.
+     */
     @Override public boolean cancel() {
-        if (onCancelled())
-            onComplete(false, true);
+        if (inTx())
+            onError(tx.rollbackException());
 
-        return isCancelled();
+        return onComplete(false, true);
     }
 
     /** {@inheritDoc} */
@@ -567,22 +582,30 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * @return {@code True} if complete by this operation.
      */
     private boolean onComplete(boolean success, boolean distribute) {
-        if (log.isDebugEnabled())
+        if (log.isDebugEnabled()) {
             log.debug("Received onComplete(..) callback [success=" + success + ", distribute=" + distribute +
                 ", fut=" + this + ']');
+        }
+
+        if (!DONE_UPD.compareAndSet(this, 0, 1))
+            return false;
 
         if (!success)
             undoLocks(distribute, true);
 
-        if (tx != null)
+        if (tx != null) {
             cctx.tm().txContext(tx);
+
+            if (success)
+                tx.clearLockFuture(this);
+        }
 
         if (super.onDone(success, err)) {
             if (log.isDebugEnabled())
                 log.debug("Completing future: " + this);
 
             // Clean up.
-            cctx.mvcc().removeMvccFuture(this);
+            cctx.mvcc().removeVersionedFuture(this);
 
             if (timeoutObj != null)
                 cctx.time().removeTimeoutObject(timeoutObj);
@@ -675,6 +698,15 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * part. Note that if primary node leaves grid, the future will fail and transaction will be rolled back.
      */
     void map() {
+        if (isDone()) // Possible due to async rollback.
+            return;
+
+        if (timeout > 0) {
+            timeoutObj = new LockTimeoutObject();
+
+            cctx.time().addTimeoutObject(timeoutObj);
+        }
+
         // Obtain the topology version to use.
         AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
 
@@ -1387,41 +1419,45 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
-            if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
-                synchronized (GridDhtColocatedLockFuture.this) {
-                    requestedKeys = requestedKeys0();
+            if (inTx()) {
+                if (cctx.tm().deadlockDetectionEnabled()) {
+                    synchronized (GridDhtColocatedLockFuture.this) {
+                        requestedKeys = requestedKeys0();
 
-                    clear(); // Stop response processing.
-                }
-
-                Set<IgniteTxKey> keys = new HashSet<>();
-
-                for (IgniteTxEntry txEntry : tx.allEntries()) {
-                    if (!txEntry.locked())
-                        keys.add(txEntry.txKey());
-                }
-
-                IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
-
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
-                    @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
-                        try {
-                            TxDeadlock deadlock = fut.get();
-
-                            if (deadlock != null)
-                                err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
-                                        "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
-                                        new TransactionDeadlockException(deadlock.toString(cctx.shared())));
-                        }
-                        catch (IgniteCheckedException e) {
-                            err = e;
-
-                            U.warn(log, "Failed to detect deadlock.", e);
-                        }
-
-                        onComplete(false, true);
+                        clear(); // Stop response processing.
                     }
-                });
+
+                    Set<IgniteTxKey> keys = new HashSet<>();
+
+                    for (IgniteTxEntry txEntry : tx.allEntries()) {
+                        if (!txEntry.locked())
+                            keys.add(txEntry.txKey());
+                    }
+
+                    IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
+
+                    fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
+                        @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
+                            try {
+                                TxDeadlock deadlock = fut.get();
+
+                                err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided " +
+                                    "timeout for transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
+                                    deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx.shared())) :
+                                        null);
+                            }
+                            catch (IgniteCheckedException e) {
+                                err = e;
+
+                                U.warn(log, "Failed to detect deadlock.", e);
+                            }
+
+                            onComplete(false, true);
+                        }
+                    });
+                }
+                else
+                    err = tx.timeoutException();
             }
             else
                 onComplete(false, true);

@@ -28,6 +28,6 @@ public class H2DynamicIndexingComplexClientAtomicReplicatedTest extends H2Dynami
      * Constructor.
      */
     public H2DynamicIndexingComplexClientAtomicReplicatedTest() {
-        super(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, CLIENT_IDX);
+        super(CacheMode.REPLICATED, CacheAtomicityMode.ATOMIC, 1, CLIENT_IDX);
     }
 }

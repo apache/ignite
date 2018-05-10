@@ -21,12 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -35,7 +36,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -72,7 +72,7 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
         cfg.setClientFailureDetectionTimeout(200000);
         cfg.setClientMode(!igniteInstanceName.equals(getTestIgniteInstanceName(0)));
 
-        cfg.setSqlConnectorConfiguration(new SqlConnectorConfiguration().setPortRange(1000));
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration().setPortRange(1000));
 
         CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES];
 
@@ -141,7 +141,7 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
 
                     log.info("Started [node=" + ignite.name() + ", left=" + latch.getCount() + ']');
 
-                    ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     while (latch.getCount() > 0) {
                         Thread.sleep(1000);
@@ -167,6 +167,8 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
         fut.get();
 
         log.info("Started all clients.");
+
+        waitForTopology(CLIENTS + 1);
 
         checkNodes(CLIENTS + 1);
     }

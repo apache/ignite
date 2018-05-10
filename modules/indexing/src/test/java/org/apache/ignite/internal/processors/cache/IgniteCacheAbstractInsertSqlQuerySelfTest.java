@@ -26,14 +26,17 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -303,13 +306,22 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
      * @return Cache configuration.
      */
     static CacheConfiguration cacheConfig(String name, boolean partitioned, boolean escapeSql, Class<?>... idxTypes) {
-        return new CacheConfiguration(DEFAULT_CACHE_NAME)
+        CacheConfiguration res = new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setBackups(1)
             .setSqlEscapeAll(escapeSql)
             .setIndexedTypes(idxTypes);
+
+        for (int i = 0; i < idxTypes.length / 2; i++) {
+            Class<?> keyType = idxTypes[i];
+
+            if (!QueryUtils.isSqlType(keyType))
+                res.setKeyConfiguration(new CacheKeyConfiguration(keyType));
+        }
+
+        return res;
     }
 
     /**
@@ -326,6 +338,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
         /** */
         @QuerySqlField
+        @AffinityKeyMapped
         public final int key;
 
         /** {@inheritDoc} */
