@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-import {Selector, t} from 'testcafe';
-import {CustomFormField} from '../components/FormField';
-
-export const pageSignin = {
-    email: new CustomFormField({model: '$ctrl.data.email'}),
-    password: new CustomFormField({model: '$ctrl.data.password'}),
-    signinButton: Selector('button').withText('Sign In'),
-    selector: Selector('page-signin'),
-    async login(email, password) {
-        return await t
-            .typeText(this.email.control, email)
-            .typeText(this.password.control, password)
-            .click(this.signinButton);
-    }
-};
+/**
+ * <!-- Package description. -->
+ * Package includes Spring Data integration related configuration files.
+ */
+package org.apache.ignite.springdata20.repository.config;
