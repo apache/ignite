@@ -159,6 +159,7 @@ async function connectClient() {
     const igniteClient = new IgniteClient(onStateChanged);
     try {
         const igniteClientConfiguration = new IgniteClientConfiguration('127.0.0.1:10800');
+        // connect to Ignite node
         await igniteClient.connect(igniteClientConfiguration);
     }
     catch (err) {
@@ -202,8 +203,13 @@ async function getOrCreateCacheByName() {
     const igniteClient = new IgniteClient();
     try {
         await igniteClient.connect(new IgniteClientConfiguration('127.0.0.1:10800'));
+        // get or create cache by name
         const cache = await igniteClient.getOrCreateCache('myCache');
+
         // perform cache key-value operations
+        // ...
+
+        // destroy cache
         await igniteClient.destroyCache('myCache');
     }
     catch (err) {
@@ -228,6 +234,7 @@ async function createCacheByConfiguration() {
     const igniteClient = new IgniteClient();
     try {
         await igniteClient.connect(new IgniteClientConfiguration('127.0.0.1:10800'));
+        // create cache by name and configuration
         const cache = await igniteClient.createCache(
             'myCache',
             new CacheConfiguration().setSqlSchema('PUBLIC'));
@@ -253,6 +260,7 @@ async function getExistingCache() {
     const igniteClient = new IgniteClient();
     try {
         await igniteClient.connect(new IgniteClientConfiguration('127.0.0.1:10800'));
+        // get existing cache by name
         const cache = igniteClient.getCache('myCache');
     }
     catch (err) {
@@ -287,6 +295,7 @@ async function setCacheKeyValueTypes() {
     try {
         await igniteClient.connect(new IgniteClientConfiguration('127.0.0.1:10800'));
         const cache = await igniteClient.getOrCreateCache('myCache');
+        // set cache key/value types
         cache.setKeyType(ObjectType.PRIMITIVE_TYPE.INTEGER).
             setValueType(new MapObjectType(
                 MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP,
@@ -397,7 +406,7 @@ async function performSqlQuery() {
         // create and configure sql query
         const sqlQuery = new SqlQuery('Person', 'salary > ? and salary <= ?').
             setArgs(900, 1600);
-        // obtain cursor
+        // obtain sql query cursor
         const cursor = await cache.query(sqlQuery);
         // getAll cache entries returned by the sql query
         for (let cacheEntry of await cursor.getAll()) {
@@ -448,7 +457,7 @@ async function performScanQuery() {
         // create and configure scan query
         const scanQuery = new ScanQuery().
             setPageSize(1);
-        // obtain cursor
+        // obtain scan query cursor
         const cursor = await cache.query(scanQuery);
         // getAll cache entries returned by the scan query
         for (let cacheEntry of await cursor.getAll()) {
