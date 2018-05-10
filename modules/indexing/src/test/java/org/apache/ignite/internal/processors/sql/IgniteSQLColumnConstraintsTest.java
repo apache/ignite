@@ -26,7 +26,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  */
-public class SqlColumnConstraintsTest extends GridCommonAbstractTest {
+public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
