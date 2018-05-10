@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactiva
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsClientNearCachePutGetTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDestroyCacheWithoutCheckpointsTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDuplicatedCacheConfigurationTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
@@ -85,6 +86,7 @@ public class IgnitePdsTestSuite extends TestSuite {
 
         suite.addTestSuite(IgnitePdsDestroyCacheTest.class);
         suite.addTestSuite(IgnitePdsDestroyCacheWithoutCheckpointsTest.class);
+        suite.addTestSuite(IgnitePdsDuplicatedCacheConfigurationTest.class);
 
         suite.addTestSuite(DefaultPageSizeBackwardsCompatibilityTest.class);
 
