@@ -29,15 +29,15 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 
 /**
- * Simple wrapper providing access to Cassandra prepared statement and sesGeneration of Cassandra
+ * Simple wrapper providing access to Cassandra prepared statement and generation of Cassandra
  * session which was used to create this statement
  */
 public class WrappedPreparedStatement implements PreparedStatement {
     /** Prepared statement. **/
-    public final PreparedStatement st;
+    private final PreparedStatement st;
 
     /** Generation of Cassandra session which was used to prepare this statement. **/
-    public final long generation;
+    final long generation;
 
     /**
      * Constructor.
@@ -48,6 +48,15 @@ public class WrappedPreparedStatement implements PreparedStatement {
     WrappedPreparedStatement(PreparedStatement st, long generation) {
         this.st = st;
         this.generation = generation;
+    }
+
+    /**
+     * Getter for wrapped statement.
+     *
+     * @return Wrapped original statement.
+     */
+    public PreparedStatement getWrappedStatement() {
+        return st;
     }
 
     /** {@inheritDoc} */

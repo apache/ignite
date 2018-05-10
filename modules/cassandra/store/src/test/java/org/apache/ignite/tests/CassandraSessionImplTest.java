@@ -153,13 +153,15 @@ public class CassandraSessionImplTest {
         @Override
         public BoundStatement bindStatement(PreparedStatement statement, Object obj) {
             if (statement instanceof WrappedPreparedStatement)
-                statement = ((WrappedPreparedStatement)statement).st;
+                statement = ((WrappedPreparedStatement)statement).getWrappedStatement();
 
             if (statement == preparedStatement1) {
                 return boundStatement1;
-            } else if (statement == preparedStatement2) {
+            }
+            else if (statement == preparedStatement2) {
                 return boundStatement2;
             }
+
             throw new RuntimeException("unexpected");
         }
 

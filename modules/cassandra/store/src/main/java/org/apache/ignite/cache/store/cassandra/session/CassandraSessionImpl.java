@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import javax.cache.Cache;
 import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.BoundStatement;
@@ -52,74 +53,6 @@ import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
  * Implementation for {@link org.apache.ignite.cache.store.cassandra.session.CassandraSession}.
  */
 public class CassandraSessionImpl implements CassandraSession {
-    /**
-     * Simple container for Cassandra session and its generation number.
-     */
-    private static class WrappedSession {
-        /** Cassandra driver session. **/
-        private final Session ses;
-
-        /** Cassandra session generation number. **/
-        private final long generation;
-
-        /**
-         * Constructor.
-         *
-         * @param ses Cassandra session.
-         * @param generation Cassandra session generation number.
-         */
-        WrappedSession(Session ses, long generation) {
-            this.ses = ses;
-            this.generation = generation;
-        }
-
-        /**
-         * Prepares the provided query string.
-         *
-         * @param query the CQL query string to prepare
-         * @return the prepared statement corresponding to {@code query}.
-         * @throws NoHostAvailableException if no host in the cluster can be
-         *                                  contacted successfully to prepare this query.
-         */
-        WrappedPreparedStatement prepare(String query) {
-            return new WrappedPreparedStatement(ses.prepare(query), generation);
-        }
-
-        /**
-         * Executes the provided query.
-         *
-         * @param statement The CQL query to execute (that can be any {@link Statement}).
-         *
-         * @return The result of the query. That result will never be null but can
-         */
-        ResultSet execute(Statement statement) {
-            return ses.execute(statement);
-        }
-
-        /**
-         * Executes the provided query.
-         *
-         * @param query The CQL query to execute (that can be any {@link Statement}).
-         *
-         * @return The result of the query. That result will never be null but can
-         */
-        ResultSet execute(String query) {
-            return ses.execute(query);
-        }
-
-        /**
-         * Executes the provided query asynchronously.
-         *
-         * @param statement the CQL query to execute (that can be any {@code Statement}).
-         *
-         * @return a future on the result of the query.
-         */
-        ResultSetFuture executeAsync(Statement statement) {
-            return ses.executeAsync(statement);
-        }
-
-    }
-
     /** Number of CQL query execution attempts. */
     private static final int CQL_EXECUTION_ATTEMPTS_COUNT = 20;
 
@@ -142,6 +75,7 @@ public class CassandraSessionImpl implements CassandraSession {
      **/
     private volatile Long generation = 0L;
 
+    /** Wrapped Cassandra session. **/
     private volatile WrappedSession wrapperSes;
 
     /** Number of references to Cassandra driver session (for multithreaded environment). */
@@ -167,6 +101,9 @@ public class CassandraSessionImpl implements CassandraSession {
 
     /** Table absence error handlers counter. */
     private final Map<String, AtomicInteger> tblAbsenceHandlersCnt = new ConcurrentHashMap<>();
+
+    /** Lock used to synchronize multiple threads trying to do session refresh. **/
+    private final ReentrantLock refreshLock = new ReentrantLock();
 
     /**
      * Creates instance of Cassandra driver session wrapper.
@@ -938,7 +875,7 @@ public class CassandraSessionImpl implements CassandraSession {
     private void handleTableAbsenceError(String table, KeyValuePersistenceSettings settings) {
         String tableFullName = settings.getKeyspace() + "." + table;
 
-        AtomicInteger counter = tblAbsenceHandlersCnt.getOrDefault(tableFullName, new AtomicInteger(-1));
+        AtomicInteger counter = tblAbsenceHandlersCnt.computeIfAbsent(tableFullName, k -> new AtomicInteger(-1));
 
         int hndNum = counter.incrementAndGet();
 
@@ -977,7 +914,9 @@ public class CassandraSessionImpl implements CassandraSession {
             return;
         }
 
-        synchronized (generation) {
+        refreshLock.lock();
+
+        try {
             if (sesGeneration < generation) {
                 log.warning("Prepared statement cluster error detected, another thread already fixed the problem", e);
                 return;
@@ -988,6 +927,9 @@ public class CassandraSessionImpl implements CassandraSession {
             refresh();
 
             log.warning("Cassandra session refreshed");
+        }
+        finally {
+            refreshLock.unlock();
         }
     }
 
@@ -1013,7 +955,9 @@ public class CassandraSessionImpl implements CassandraSession {
             attempt == CQL_EXECUTION_ATTEMPTS_COUNT / 2 + CQL_EXECUTION_ATTEMPTS_COUNT / 4  ||
             attempt == CQL_EXECUTION_ATTEMPTS_COUNT - 1) {
 
-            synchronized (generation) {
+            refreshLock.lock();
+
+            try {
                 if (sesGeneration < generation)
                     log.warning("Host availability problem detected, but already handled by another thread");
                 else {
@@ -1026,6 +970,9 @@ public class CassandraSessionImpl implements CassandraSession {
 
                     return true;
                 }
+            }
+            finally {
+                refreshLock.unlock();
             }
         }
 
