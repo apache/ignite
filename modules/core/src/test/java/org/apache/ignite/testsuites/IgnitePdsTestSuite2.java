@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorage
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest2;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedCacheDataTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedStoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPageSizesTest;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsRebal
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsTransactionsHangTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWholeClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.checkpoint.IgniteCheckpointDirtyPagesForLowLoadTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsUnusedWalSegmentsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.filename.IgniteUidAsConsistentIdMigrationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushBackgroundSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushDefaultSelfTest;
@@ -130,6 +132,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgnitePdsExchangeDuringCheckpointTest.class);
 
+        suite.addTestSuite(IgnitePdsUnusedWalSegmentsTest.class);
+
         // new style folders with generated consistent ID test
         suite.addTestSuite(IgniteUidAsConsistentIdMigrationTest.class);
 
@@ -142,5 +146,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgnitePdsCorruptedStoreTest.class);
 
         suite.addTestSuite(LocalWalModeChangeDuringRebalancingSelfTest.class);
+
+        suite.addTestSuite(IgnitePdsCorruptedCacheDataTest.class);
     }
 }

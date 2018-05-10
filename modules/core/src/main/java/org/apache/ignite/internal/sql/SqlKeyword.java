@@ -62,6 +62,9 @@ public class SqlKeyword {
     /** Keyword: CHARACTER. */
     public static final String CHARACTER = "CHARACTER";
 
+    /** Keyword: CHARSET. */
+    public static final String CHARSET = "CHARSET";
+
     /** Keyword: COPY. */
     public static final String COPY = "COPY";
 

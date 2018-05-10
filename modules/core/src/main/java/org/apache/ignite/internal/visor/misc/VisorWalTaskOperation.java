@@ -15,19 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.bulkload;
+package org.apache.ignite.internal.visor.misc;
 
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * A proxy, which stores given key+value pair to a cache.
+ *  WAL Task operation types.
  */
-public abstract class BulkLoadCacheWriter implements IgniteInClosure<IgniteBiTuple<?, ?>>, AutoCloseable {
+public enum VisorWalTaskOperation {
+    /** Print unused wal segments. */
+    PRINT_UNUSED_WAL_SEGMENTS,
+
+    /** Delete unused wal segments. */
+    DELETE_UNUSED_WAL_SEGMENTS;
+
+    /** Enumerated values. */
+    private static final VisorWalTaskOperation[] VALS = values();
+
     /**
-     * Returns number of entry updates made by the writer.
+     * Efficiently gets enumerated value from its ordinal.
      *
-     * @return The number of cache entry updates.
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    public abstract long updateCnt();
+    @Nullable public static VisorWalTaskOperation fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }
