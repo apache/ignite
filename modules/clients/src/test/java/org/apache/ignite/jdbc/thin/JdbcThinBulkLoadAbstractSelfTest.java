@@ -42,7 +42,6 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
@@ -173,8 +172,6 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        System.setProperty(IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK, "TRUE");
-
         stmt = conn.createStatement();
 
         assertNotNull(stmt);
@@ -187,8 +184,6 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
             stmt.close();
 
         assertTrue(stmt.isClosed());
-
-        System.clearProperty(IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK);
 
         super.afterTest();
     }
