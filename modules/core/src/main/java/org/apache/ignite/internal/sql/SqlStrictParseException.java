@@ -15,19 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.bulkload;
-
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteInClosure;
+package org.apache.ignite.internal.sql;
 
 /**
- * A proxy, which stores given key+value pair to a cache.
+ * Parse exception guarantees parse error without. Such error deliver to user
+ * statement isn't passed to H2 parser.
  */
-public abstract class BulkLoadCacheWriter implements IgniteInClosure<IgniteBiTuple<?, ?>>, AutoCloseable {
+public class SqlStrictParseException extends SqlParseException {
     /**
-     * Returns number of entry updates made by the writer.
-     *
-     * @return The number of cache entry updates.
+     * Constructor.
+     * @param e SQL parse exception.
      */
-    public abstract long updateCnt();
+    public SqlStrictParseException(SqlParseException e) {
+        super(e);
+    }
 }
