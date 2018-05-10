@@ -1,6 +1,44 @@
 Apache Ignite Release Notes
 ===========================
 
+Changes in GridGain In-Memory Data Fabric Professional Edition 2.5.1
+------------------------------------
+* Introduced ZooKeeper discovery SPI
+* Added ability to disable WAL during rebalancing
+* Added ability to rollback long-running transactions that block partition map exchange
+* Introduced additional storage metrics
+* Added utilities to control.sh script to display cache info
+* Implemented handling of broken segment in WAL compaction
+* Fixed incorrect mapping of smallint cassandra type
+* Fixed the issue that prevented rebalancing on a new baseline node join
+* Added additional data storage metrics
+* Added additional transactional metrics
+* Error while trying to initialize cluster with partially acceptable wal archive
+* Nodes with incompatible SQL metadata will not be able to join grid
+* Added ability to disable WAL during initial data rebalancing
+* Implemented additional synchronization for correct partition counters update on partition map exchange
+* Fixed NullPointerException on batch atomic cache operations with cache store
+* Added partition update counters verification on partition map exchange
+* General approach for critical failures handling implemented
+* Added configurable automatic rollback timeout for pending transactions preventing partition map exchange to complete
+
+* SQL: sqlline.sh Fixed script to use Java from JAVA_HOME
+
+* REST: Added AUTHENTICATE command
+
+* Control utility: Added utilities to control.sh script to display cache info
+* Control utility: Fixed NPE in case of empty base line and not active cluster
+* Control utility: Added utilities to view and kill active transactions
+* Control utility: Fixed timeout on changing baseline
+
+* Web Console: Added export of thread dump in text format
+* Web Console: Fixed Dockerfile generation
+* Web Console: Fixed code generation for large numbers in configuration params
+* Web Console: Fixed demo for non-collocated joins
+* Web Console: Implemented support for comma-separated list of node URIs
+
+* Visor CMD: Added "cache -slp" and "cache -rlp" commands to show and reset lost partitions for specified cache
+
 Apache Ignite In-Memory Data Fabric 2.4
 ---------------------------------------
 Ignite:
