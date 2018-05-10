@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.datastreamer;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
@@ -108,6 +109,41 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         cnt++;
 
         return cfg;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCloseWithCancellation() throws Exception {
+        cnt = 0;
+
+        boolean failed = false;
+
+        startGrids(3);
+
+        Ignite g4 = grid(2);
+
+        IgniteDataStreamer<Object, Object> dataLdr = g4.dataStreamer(DEFAULT_CACHE_NAME);
+
+        dataLdr.perNodeBufferSize(32);
+
+        List<IgniteFuture> futures = new ArrayList<>(501);
+
+        for (int i = 0; i < 500; i++)
+            futures.add(dataLdr.addData(i, i));
+
+        try {
+            dataLdr.close(true);
+        }
+        catch (CacheException ignored) {
+            failed = true;
+        }
+        finally {
+            assertTrue(failed);
+
+            for (IgniteFuture fut : futures)
+                assertTrue(fut.isDone());
+        }
     }
 
     /**
