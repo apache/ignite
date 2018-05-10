@@ -49,8 +49,6 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
 
-        withFactory = true;
-
         super.beforeTest();
     }
 
@@ -59,6 +57,11 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
         super.afterTest();
 
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
 
         cleanPersistenceDir();
     }
@@ -104,6 +107,8 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testFilePageStoreManagerShouldThrowExceptionWhenFactoryClassCannotBeLoaded() throws Exception {
+        withFactory = true;
+
         IgniteEx ignite = (IgniteEx)startGrid();
 
         ignite.cluster()
