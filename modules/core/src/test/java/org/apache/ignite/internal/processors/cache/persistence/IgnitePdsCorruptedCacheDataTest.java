@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.io.File;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -27,14 +26,12 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DIR_PREFIX;
 
 /**
  *
@@ -134,7 +131,7 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
 
         assertNotNull(pageStore);
 
-        assertTrue("Cache data file wasn't deleted", deleteCacheDataFile(pageStore.workDir()));
+        pageStore.removeCacheData(new StoredCacheData(ignite.context().cache().cacheConfiguration(TEST_CACHE)));
 
         ignite = (IgniteEx)startGrid();
 
@@ -144,24 +141,5 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
         cache = ignite.cache(TEST_CACHE);
 
         assertEquals("test value", cache.get(1));
-    }
-
-    /**
-     * Delete cache data file.
-     *
-     * @param workDir Cache work directory.
-     * @return true if file was deleted.
-     */
-    private boolean deleteCacheDataFile(File workDir) {
-        File[] files = workDir.listFiles();
-
-        if (files != null) {
-            for (File file : files) {
-                if (file.isDirectory() && file.getName().equals(CACHE_DIR_PREFIX + TEST_CACHE))
-                    return U.delete(new File(file, CACHE_DATA_FILENAME));
-            }
-        }
-
-        return false;
     }
 }
