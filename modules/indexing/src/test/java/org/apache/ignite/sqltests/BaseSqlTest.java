@@ -933,8 +933,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                 (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
                 (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
 
-            assertContainsEq("Distributed join on 'idx = idx' failed.", actIdxOnOn.values(), exp);
-            assertContainsEq("Distributed join on 'noidx = idx' failed.", actIdxOffOn.values(), exp);
+            assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
+            assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result.", actIdxOffOn.values(), exp);
         });
     }
 
@@ -962,8 +962,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                 (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
                 (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
 
-            assertContainsEq("Distributed join on 'idx = idx' failed.", actIdxOnOn.values(), exp);
-            assertContainsEq("Distributed join on 'noidx = idx' failed.", actIdxOffOn.values(), exp);
+            assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
+            assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result.", actIdxOffOn.values(), exp);
         });
     }
 
@@ -991,8 +991,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                 (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
                 (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
 
-            assertContainsEq("Distributed join on 'idx = idx' failed.", actIdxOnOn.values(), exp);
-            assertContainsEq("Distributed join on 'idx = noidx' failed.", actIdxOnOff.values(), exp);
+            assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
+            assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result.", actIdxOnOff.values(), exp);
         });
     }
 
