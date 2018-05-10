@@ -3604,6 +3604,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         ClusterNode lastClient = startGrid(8).cluster().localNode();
 
+        awaitPartitionMapExchange();
+
         // Make last client connected to other nodes.
         for (ClusterNode node : all) {
             if (node.id().equals(lastClient.id()))
