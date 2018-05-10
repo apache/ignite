@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.io.File;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -26,12 +27,13 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.CACHE_DATA_FILENAME;
 
 /**
  *
@@ -39,6 +41,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
     /** Test cache name. */
     private static final String TEST_CACHE = "test_cache";
+
     /** Start grid with known cache factory. */
     private boolean withFactory;
 
@@ -47,13 +50,6 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
         cleanPersistenceDir();
 
         super.beforeTest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -115,6 +111,18 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
 
         cache.put(1, "test value");
 
+        GridCacheSharedContext sharedCtx = ignite.context().cache().context();
+        FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
+
+        assertNotNull(pageStore);
+
+        File cacheData = new File(
+            pageStore.cacheWorkDir(ignite.context().cache().cacheConfiguration(TEST_CACHE)),
+            CACHE_DATA_FILENAME
+        );
+
+        assertTrue(cacheData.exists());
+
         stopGrid();
 
         withFactory = false;
@@ -126,12 +134,7 @@ public class IgnitePdsCorruptedCacheDataTest extends GridCommonAbstractTest {
             "An error occurred during cache configuration loading from file"
         );
 
-        GridCacheSharedContext sharedCtx = ignite.context().cache().context();
-        FilePageStoreManager pageStore = (FilePageStoreManager)sharedCtx.pageStore();
-
-        assertNotNull(pageStore);
-
-        pageStore.removeCacheData(new StoredCacheData(ignite.context().cache().cacheConfiguration(TEST_CACHE)));
+        assertTrue(cacheData.delete());
 
         ignite = (IgniteEx)startGrid();
 
