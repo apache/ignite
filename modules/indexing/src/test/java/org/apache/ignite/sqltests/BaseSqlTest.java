@@ -72,7 +72,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /** Number of all addresses. */
     public final static long ADDR_CNT = 500L;
 
-    /** Minimal number of employees that aren't associated with any department. */
+    /** Number of employees that aren't associated with any department. */
     public final static long FREE_EMP_CNT = 50;
 
     /** Number of departments that don't have employees and addresses. */
@@ -93,6 +93,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /** Name of the Department table cache. */
     public static final String DEP_CACHE_NAME = "SQL_PUBLIC_DEPARTMENT";
 
+    /** Name of the Address table cache. */
     public static final String ADDR_CACHE_NAME = "SQL_PUBLIC_ADDRESS";
 
     /** Client node instance. */
@@ -106,6 +107,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     public static final String[] ALL_EMP_FIELDS = new String[] {"ID", "DEPID", "DEPIDNOIDX", "FIRSTNAME", "LASTNAME", "AGE", "SALARY"};
 
+    /** Configuration that is injected by Suite */
     @InjectTestSuite.Parameter
     private Configuration cfg = new Configuration();
 
