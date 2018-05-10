@@ -15,18 +15,30 @@
  * limitations under the License.
  */
 
-import {Selector, t} from 'testcafe';
-import {CustomFormField} from '../components/FormField';
+package org.apache.ignite.internal.visor.misc;
 
-export const pageSignin = {
-    email: new CustomFormField({model: '$ctrl.data.email'}),
-    password: new CustomFormField({model: '$ctrl.data.password'}),
-    signinButton: Selector('button').withText('Sign In'),
-    selector: Selector('page-signin'),
-    async login(email, password) {
-        return await t
-            .typeText(this.email.control, email)
-            .typeText(this.password.control, password)
-            .click(this.signinButton);
+import org.jetbrains.annotations.Nullable;
+
+/**
+ *  WAL Task operation types.
+ */
+public enum VisorWalTaskOperation {
+    /** Print unused wal segments. */
+    PRINT_UNUSED_WAL_SEGMENTS,
+
+    /** Delete unused wal segments. */
+    DELETE_UNUSED_WAL_SEGMENTS;
+
+    /** Enumerated values. */
+    private static final VisorWalTaskOperation[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable public static VisorWalTaskOperation fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
-};
+}

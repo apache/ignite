@@ -3783,6 +3783,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
+         * @return First checkpoint entry if exists. Otherwise {@code null}.
+         */
+        private CheckpointEntry firstEntry() {
+            Map.Entry<Long,CheckpointEntry> entry = histMap.firstEntry();
+
+            return entry != null ? entry.getValue() : null;
+        }
+
+        /**
+         * Get WAL pointer to low checkpoint bound.
+         *
+         * @return WAL pointer to low checkpoint bound.
+         */
+        public WALPointer lowCheckpointBound() {
+            CheckpointEntry entry = firstEntry();
+
+            return entry != null ? entry.cpMark : null;
+        }
+
+        /**
          * @return Collection of checkpoint timestamps.
          */
         public Collection<Long> checkpoints() {
