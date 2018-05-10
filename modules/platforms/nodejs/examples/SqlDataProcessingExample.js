@@ -30,13 +30,15 @@ const CITY_CACHE_NAME = 'City';
 const COUNTRY_LANGUAGE_CACHE_NAME = 'CountryLng';
 const DUMMY_CACHE_NAME = 'SqlDataProcessing_Dummy';
 
-// This example demonstrates basic SQL Fields query operations.
-// - connects to ENDPOINT node
+// This example demonstrates basic SQL Fields Query operations:
+// - connects to a node
+// - creates a cache, if it doesn't exist
 // - creates tables (CREATE TABLE)
 // - creates indices (CREATE INDEX)
-// - writes data into tables (INSERT INTO table)
-// - reads data from tables (SELECT ...)
+// - writes data of primitive types into the tables (INSERT INTO table)
+// - reads data from the tables (SELECT ...)
 // - deletes tables (DROP TABLE)
+// - destroys the cache
 class SqlDataProcessing {
     async start() {
         const igniteClient = new IgniteClient(this.onStateChanged.bind(this));

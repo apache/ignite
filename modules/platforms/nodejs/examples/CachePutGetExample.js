@@ -46,16 +46,17 @@ class Person {
     }
 }
 
-// This example demonstrates basic Cache, Key-Value Queries operations and ScanQuery.
-// - connects to ENDPOINT node
-// - creates CACHE_NAME cache if it doesn't exist
-//   -- specifies key type as TYPE_CODE.INTEGER
+// This example demonstrates basic Cache, Key-Value Queries and Scan Query operations:
+// - connects to a node
+// - creates a cache, if it doesn't exist
+//   - specifies key type as Integer
 // - executes different cache operations with Complex Objects and Binary Objects
-//   -- put several objects in parallel
-//   -- putAll
-//   -- get
-//   -- getAll
-//   -- ScanQuery
+//   - put several objects in parallel
+//   - putAll
+//   - get
+//   - getAll
+//   - ScanQuery
+// - destroys the cache
 class CachePutGetExample {
 
     constructor() {

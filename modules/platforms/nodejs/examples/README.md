@@ -27,7 +27,7 @@ Source: [SqlQueryExample.js](./SqlQueryExample.js)
 This example demonstrates basic Cache, Key-Value Queries and SQL Query operations:
 - connects to a node
 - creates a cache from CacheConfiguration, if it doesn't exist
-- writes data of primitive types into the cache using Key-Value put operation
+- writes data of primitive and Complex Object types into the cache using Key-Value put operation
 - reads data from the cache using SQL Query
 - destroys the cache
 
