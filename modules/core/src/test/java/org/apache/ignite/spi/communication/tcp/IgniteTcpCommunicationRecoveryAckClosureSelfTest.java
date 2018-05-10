@@ -123,14 +123,14 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
-    public void testAckOnIdle() throws Exception {
+    public void te2stAckOnIdle() throws Exception {
         checkAck(10, 2000, 9);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testAckOnCount() throws Exception {
+    public void te2stAckOnCount() throws Exception {
         checkAck(10, 60_000, 10);
     }
 
@@ -260,7 +260,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
     public void testQueueOverflow() throws Exception {
         for (int i = 0; i < 3; i++) {
             try {
-                startSpis(5, 2_000, 10);
+                startSpis(5, 60_000, 10);
 
                 checkOverflow();
 
@@ -322,7 +322,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
         int sentMsgs = 1;
 
-        for (int i = 0; i < 150; i++) {
+        for (int i = 0; i < 1279; i++) {
             try {
                 spi0.sendMessage(node1, new GridTestMessage(node0.id(), ++msgId, 0), ackC);
 
