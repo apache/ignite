@@ -683,7 +683,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-    public void testGroupBy() {
+    public void testGroupByIdxField() {
         testAllNodes(node -> {
             // Need to filter out only part of records (each one is a count of employees
             // of particular age) in HAVING clause.
@@ -712,8 +712,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-    //todo: change to noidx ?
-    public void testGroupByIdxField() {
+    public void testGroupByNoIdxField() {
         testAllNodes(node -> {
             // Need to filter out only part of records (each one is a count of employees
             // associated with particular department id) in HAVING clause.
