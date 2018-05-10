@@ -20,6 +20,9 @@ package org.apache.ignite.sqltests;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Includes all base sql test plus tests that make sense in replicated mode.
+ */
 public class ReplicatedSqlTest extends BaseSqlTest {
     @Override protected void setupData() {
         createTables("template=replicated");
@@ -31,19 +34,23 @@ public class ReplicatedSqlTest extends BaseSqlTest {
         testAllNodes(node -> {
             Result act1 = executeFrom("SELECT e.id, e.depIdNoidx, d.id FROM Employee e, Department d", node);
             Result act2 = executeFrom("SELECT e.id, e.depIdNoidx, d.id FROM Employee e CROSS JOIN Department d", node);
-            // todo : verify metadata (field names)
+
+            List<String> fields = Arrays.asList("ID", "DEPIDNOIDX", "ID");
+
+            assertEquals("Returned field names are incorrect.", fields, act1.columnNames());
+            assertEquals("Returned field names are incorrect.", fields, act2.columnNames());
 
             List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
                 (emp, dep) -> true,
                 (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("DEPIDNOIDX"), dep.get("ID")));
 
-            assertContainsEq("Implicit (comma sign) version of CROSS JOIN returned unexpected result",
+            assertContainsEq("Implicit (comma sign) version of CROSS JOIN returned unexpected result.",
                 act1.values(), expected);
 
-            assertContainsEq("Explicit version of CROSS JOIN returned unexpected result",
+            assertContainsEq("Explicit version of CROSS JOIN returned unexpected result.",
                 act2.values(), expected);
 
-            assertEquals("Result size of the cross join is unexpected",
+            assertEquals("Result size of the cross join is unexpected.",
                 DEP_CNT * EMP_CNT, act1.values().size());
         });
     }
