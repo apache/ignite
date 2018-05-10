@@ -55,7 +55,10 @@ import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+
+import static java.lang.Integer.MAX_VALUE;
 
 /**
  * Shared serialization/deserialization utils.
@@ -312,6 +315,7 @@ final class ClientUtils {
                                 w.writeObject(qf.getDefaultValue());
                                 w.writeInt(qf.getPrecision());
                                 w.writeInt(qf.getScale());
+                                w.writeInt(qf.getMaxLength());
                             }
                         );
                         ClientUtils.collection(
@@ -397,6 +401,7 @@ final class ClientUtils {
                                 reader.readBoolean(),
                                 reader.readObject(),
                                 reader.readInt(),
+                                reader.readInt(),
                                 reader.readInt()
                             )
                         );
@@ -418,6 +423,15 @@ final class ClientUtils {
                             .setDefaultFieldValues(qryFields.stream()
                                 .filter(f -> f.getDefaultValue() != null)
                                 .collect(Collectors.toMap(QueryField::getName, QueryField::getDefaultValue))
+                            )
+                            .setDecimalInfo(qryFields.stream()
+                                .filter(f -> f.getPrecision() != -1 || f.getScale() != -1)
+                                .collect(Collectors.toMap(QueryField::getName, 
+                                    f -> F.t(f.getScale(), f.getPrecision())))
+                            )
+                            .setMaxLengthInfo(qryFields.stream()
+                                .filter(f -> f.getMaxLength() != MAX_VALUE)
+                                .collect(Collectors.toMap(QueryField::getName, QueryField::getMaxLength))
                             )
                             .setAliases(ClientUtils.collection(
                                 in,
@@ -505,6 +519,9 @@ final class ClientUtils {
         /** Scale. */
         private final int scale;
 
+        /** MaxLength. */
+        private final int maxLength;
+
         /** Serialization constructor. */
         QueryField(QueryEntity e, Map.Entry<String, String> nameAndTypeName) {
             name = nameAndTypeName.getKey();
@@ -514,6 +531,7 @@ final class ClientUtils {
             Set<String> notNulls = e.getNotNullFields();
             Map<String, Object> dflts = e.getDefaultFieldValues();
             Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = e.getDecimalInfo();
+            Map<String, Integer> maxLengthInfo = e.getMaxLengthInfo();
 
             isKey = keys != null && keys.contains(name);
             isNotNull = notNulls != null && notNulls.contains(name);
@@ -523,11 +541,14 @@ final class ClientUtils {
 
             precision = precisionAndScale == null? -1 : precisionAndScale.get1();
             scale = precisionAndScale == null? -1 : precisionAndScale.get2();
+            
+            maxLength = maxLengthInfo == null ? 
+                MAX_VALUE : maxLengthInfo.getOrDefault(name, MAX_VALUE);
         }
 
         /** Deserialization constructor. */
         public QueryField(String name, String typeName, boolean isKey, boolean isNotNull, Object dfltVal,
-            int precision, int scale) {
+            int precision, int scale, int maxLength) {
             this.name = name;
             this.typeName = typeName;
             this.isKey = isKey;
@@ -535,6 +556,7 @@ final class ClientUtils {
             this.dfltVal = dfltVal;
             this.precision = precision;
             this.scale = scale;
+            this.maxLength = maxLength;
         }
 
         /**
@@ -584,6 +606,13 @@ final class ClientUtils {
          */
         public int getScale() {
             return scale;
+        }
+
+        /**
+         * @return Maximum length.
+         */
+        public int getMaxLength() {
+            return maxLength;
         }
     }
 

@@ -156,4 +156,9 @@ public class QueryClassProperty implements GridQueryProperty {
     @Override public int scale() {
         return -1;
     }
+
+    /** {@inheritDoc} */
+    @Override public int maxLength() {
+        return Integer.MAX_VALUE;
+    }
 }

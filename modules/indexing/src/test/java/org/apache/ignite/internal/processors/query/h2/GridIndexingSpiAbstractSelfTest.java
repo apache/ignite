@@ -60,6 +60,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Integer.MAX_VALUE;
+
 /**
  * Tests for all SQL based indexing SPI implementations.
  */
@@ -574,6 +576,10 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 /** */
                 @Override public int scale() {
                     return -1;
+                }
+
+                @Override public int maxLength() {
+                    return MAX_VALUE;
                 }
             };
         }

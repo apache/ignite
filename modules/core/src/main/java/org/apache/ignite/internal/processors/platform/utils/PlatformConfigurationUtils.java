@@ -108,6 +108,8 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import static java.lang.Integer.MAX_VALUE;
+
 /**
  * Configuration utils.
  *
@@ -500,6 +502,7 @@ public class PlatformConfigurationUtils {
         Set<String> notNullFields = new HashSet<>(cnt);
         Map<String, Object> defVals = new HashMap<>(cnt);
         Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>(cnt);
+        Map<String, Integer> maxLengthInfo = new HashMap<>(cnt);
 
         if (cnt > 0) {
             LinkedHashMap<String, String> fields = new LinkedHashMap<>(cnt);
@@ -526,6 +529,11 @@ public class PlatformConfigurationUtils {
 
                 if (precision != -1 || scale != -1)
                     decimalInfo.put(fieldName, F.t(precision, scale));
+                
+                int maxLength = in.readInt();
+                
+                if (maxLength != MAX_VALUE)
+                    maxLengthInfo.put(fieldName, maxLength);
             }
 
             res.setFields(fields);
@@ -541,6 +549,9 @@ public class PlatformConfigurationUtils {
 
             if (!decimalInfo.isEmpty())
                 res.setDecimalInfo(decimalInfo);
+
+            if (!maxLengthInfo.isEmpty())
+                res.setMaxLengthInfo(maxLengthInfo);
         }
 
         // Aliases
@@ -1051,6 +1062,7 @@ public class PlatformConfigurationUtils {
             Set<String> notNullFields = qryEntity.getNotNullFields();
             Map<String, Object> defVals = qryEntity.getDefaultFieldValues();
             Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = qryEntity.getDecimalInfo();
+            Map<String, Integer> maxLengthInfo = qryEntity.getMaxLengthInfo();
 
             writer.writeInt(fields.size());
 
@@ -1066,6 +1078,9 @@ public class PlatformConfigurationUtils {
 
                 writer.writeInt(precisionAndScale == null ? -1 : precisionAndScale.get1());
                 writer.writeInt(precisionAndScale == null ? -1 : precisionAndScale.get2());
+                
+                writer.writeInt(maxLengthInfo == null ? 
+                    MAX_VALUE : maxLengthInfo.getOrDefault(field.getKey(), MAX_VALUE));
             }
         }
         else

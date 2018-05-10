@@ -25,6 +25,8 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static java.lang.Integer.MAX_VALUE;
+
 /**
  * JDBC column metadata.
  */
@@ -146,6 +148,13 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
      */
     public int scale() {
         return -1;
+    }
+
+    /**
+     * @return Column's max length.
+     */
+    public int maxLength() {
+        return MAX_VALUE;
     }
 
     /**

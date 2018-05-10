@@ -65,6 +65,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Integer.MAX_VALUE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 
@@ -266,6 +267,7 @@ public class QueryUtils {
         normalEntity.setNotNullFields(entity.getNotNullFields());
         normalEntity.setDefaultFieldValues(entity.getDefaultFieldValues());
         normalEntity.setDecimalInfo(entity.getDecimalInfo());
+        normalEntity.setMaxLengthInfo(entity.getMaxLengthInfo());
 
         // Normalize table name.
         String normalTblName = entity.getTableName();
@@ -544,6 +546,7 @@ public class QueryUtils {
         Set<String> notNulls = qryEntity.getNotNullFields();
         Map<String, Object> dlftVals = qryEntity.getDefaultFieldValues();
         Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo  = qryEntity.getDecimalInfo();
+        Map<String, Integer> maxLengthInfo = qryEntity.getMaxLengthInfo();
 
         // We have to distinguish between empty and null keyFields when the key is not of SQL type -
         // when a key is not of SQL type, absence of a field in nonnull keyFields tell us that this field
@@ -577,11 +580,15 @@ public class QueryUtils {
             IgniteBiTuple<Integer, Integer> precisionAndScale =
                 decimalInfo != null ? decimalInfo.get(entry.getKey()) : null;
 
+            Integer maxLength = maxLengthInfo != null ? 
+                maxLengthInfo.getOrDefault(entry.getKey(), MAX_VALUE) : MAX_VALUE;
+
             QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(),
                 U.classForName(entry.getValue(), Object.class, true),
                 d.aliases(), isKeyField, notNull, dfltVal,
                 precisionAndScale != null ? precisionAndScale.get1() : -1,
-                precisionAndScale != null ? precisionAndScale.get2() : -1);
+                precisionAndScale != null ? precisionAndScale.get2() : -1,
+                maxLength);
 
             d.addProperty(prop, false);
         }
@@ -727,12 +734,13 @@ public class QueryUtils {
      * @param dlftVal Default value.
      * @param precision Precision.
      * @param scale Scale.
+     * @param maxLength Maximum length.
      * @return Binary property.
      * @throws IgniteCheckedException On error.
      */
     public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr, Class<?> resType,
         Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal,
-        int precision, int scale) throws IgniteCheckedException {
+        int precision, int scale, int maxLength) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
@@ -749,7 +757,7 @@ public class QueryUtils {
 
             // The key flag that we've found out is valid for the whole path.
             res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
-                precision, scale);
+                precision, scale, maxLength);
         }
 
         return res;
@@ -1421,6 +1429,11 @@ public class QueryUtils {
         /** {@inheritDoc} */
         @Override public int scale() {
             return -1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int maxLength() {
+            return MAX_VALUE;
         }
     }
 }

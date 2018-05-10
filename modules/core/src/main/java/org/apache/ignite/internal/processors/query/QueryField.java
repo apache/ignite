@@ -46,13 +46,16 @@ public class QueryField implements Serializable {
     /** Scale. */
     private final int scale;
 
+    /** Max length. */
+    private final int maxLength;
+
     /**
      * @param name Field name.
      * @param typeName Class name for this field's values.
      * @param nullable Nullable flag.
      */
     public QueryField(String name, String typeName, boolean nullable) {
-        this(name, typeName, nullable, null, -1, -1);
+        this(name, typeName, nullable, null, -1, -1, Integer.MAX_VALUE);
     }
 
     /**
@@ -62,7 +65,7 @@ public class QueryField implements Serializable {
      * @param dfltValue Default value.
      */
     public QueryField(String name, String typeName, boolean nullable, Object dfltValue) {
-        this(name, typeName, nullable, dfltValue, -1, -1);
+        this(name, typeName, nullable, dfltValue, -1, -1, Integer.MAX_VALUE);
     }
 
     /**
@@ -71,13 +74,15 @@ public class QueryField implements Serializable {
      * @param nullable Nullable flag.
      * @param dfltValue Default value.
      */
-    public QueryField(String name, String typeName, boolean nullable, Object dfltValue, int precision, int scale) {
+    public QueryField(String name, String typeName, boolean nullable, Object dfltValue, int precision, int scale, 
+        int maxLength) {
         this.name = name;
         this.typeName = typeName;
         this.nullable = nullable;
         this.dfltValue = dfltValue;
         this.precision = precision;
         this.scale = scale;
+        this.maxLength = maxLength;
     }
 
     /**
@@ -120,6 +125,13 @@ public class QueryField implements Serializable {
      */
     public int scale() {
         return scale;
+    }
+
+    /**
+     * @return Maximum length.
+     */
+    public int maxLength() {
+        return maxLength;
     }
 
     /** {@inheritDoc} */

@@ -103,6 +103,9 @@ public class QueryEntity implements Serializable {
     /** Decimal fields information. */
     private Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
 
+    /** Maximum length information for a {@code String} fields. */
+    private Map<String, Integer> maxLengthInfo = new HashMap<>();
+
     /**
      * Creates an empty query entity.
      */
@@ -136,6 +139,8 @@ public class QueryEntity implements Serializable {
             : new HashMap<String, Object>();
 
         decimalInfo = other.decimalInfo != null ? new HashMap<>(other.decimalInfo) : new HashMap<>();
+
+        maxLengthInfo = other.maxLengthInfo != null ? new HashMap<>(other.maxLengthInfo) : new HashMap<>();
     }
 
     /**
@@ -594,6 +599,27 @@ public class QueryEntity implements Serializable {
     }
 
     /**
+     * Gets set of field name to maximum length.
+     * 
+     * @return Set of field name to maximum length.
+     */
+    public Map<String, Integer> getMaxLengthInfo() {
+        return maxLengthInfo == null ? Collections.emptyMap() : unmodifiableMap(maxLengthInfo);
+    }
+
+    /**
+     * Sets max length info.
+     * 
+     * @param maxLengthInfo Set of field name to maximum length.
+     * @return {@cod this} for chaining.
+     */
+    public QueryEntity setMaxLengthInfo(Map<String, Integer> maxLengthInfo) {
+        this.maxLengthInfo = maxLengthInfo;
+        
+        return this;
+    }
+
+    /**
      * Gets fields default values.
      *
      * @return Field's name to default value map.
@@ -709,6 +735,9 @@ public class QueryEntity implements Serializable {
 
         if (!F.isEmpty(desc.decimalInfo()))
             entity.setDecimalInfo(desc.decimalInfo());
+
+        if (!F.isEmpty(desc.maxLengthInfo()))
+            entity.setMaxLengthInfo(desc.maxLengthInfo());
 
         return entity;
     }
@@ -838,6 +867,9 @@ public class QueryEntity implements Serializable {
             if (BigDecimal.class == fldCls && sqlAnn.precision() != -1 && sqlAnn.scale() != -1)
                 desc.addDecimalInfo(prop.fullName(), F.t(sqlAnn.precision(), sqlAnn.scale()));
 
+            if (CharSequence.class.isAssignableFrom(fldCls) && sqlAnn.maxLength() != Integer.MAX_VALUE)
+                desc.addMaxLengthInfo(prop.fullName(), sqlAnn.maxLength());
+
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
                 && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {
                 throw new CacheException("Inline size cannot be set on a field with group index [" +
@@ -880,13 +912,14 @@ public class QueryEntity implements Serializable {
             F.eq(tableName, entity.tableName) &&
             F.eq(_notNullFields, entity._notNullFields) &&
             F.eq(defaultFieldValues, entity.defaultFieldValues) &&
-            F.eq(decimalInfo, entity.decimalInfo);
+            F.eq(decimalInfo, entity.decimalInfo) &&
+            F.eq(maxLengthInfo, entity.maxLengthInfo);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
-            tableName, _notNullFields, defaultFieldValues, decimalInfo);
+            tableName, _notNullFields, defaultFieldValues, decimalInfo, maxLengthInfo);
     }
 
     /** {@inheritDoc} */

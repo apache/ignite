@@ -423,7 +423,7 @@ public class DdlStatementsProcessor {
                         QueryField field = new QueryField(col.columnName(),
                             DataType.getTypeClassName(col.column().getType()),
                             col.column().isNullable(), col.defaultValue(),
-                            col.precision(), col.scale());
+                            col.precision(), col.scale(), col.maxLength());
 
                         cols.add(field);
 
@@ -599,6 +599,7 @@ public class DdlStatementsProcessor {
         HashMap<String, Object> dfltValues = new HashMap<>();
 
         Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
+        Map<String, Integer> maxLengthInfo = new HashMap<>();
 
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
             GridSqlColumn gridCol = e.getValue();
@@ -621,6 +622,11 @@ public class DdlStatementsProcessor {
 
             if (col.getType() == Value.DECIMAL)
                 decimalInfo.put(e.getKey(), F.t((int)col.getPrecision(), col.getScale()));
+
+            if (col.getType() == Value.STRING || 
+                col.getType() == Value.STRING_FIXED || 
+                col.getType() == Value.STRING_IGNORECASE)
+                maxLengthInfo.put(e.getKey(), (int)col.getPrecision());
         }
 
         if (!F.isEmpty(dfltValues))
@@ -628,6 +634,9 @@ public class DdlStatementsProcessor {
 
         if (!F.isEmpty(decimalInfo))
             res.setDecimalInfo(decimalInfo);
+
+        if (!F.isEmpty(maxLengthInfo))
+            res.setMaxLengthInfo(maxLengthInfo);
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);

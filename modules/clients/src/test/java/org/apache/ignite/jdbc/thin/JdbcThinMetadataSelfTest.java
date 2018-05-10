@@ -56,6 +56,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Metadata tests.
+ * 
+ * TODO: extends this tests!
  */
 public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
     /** IP finder. */
