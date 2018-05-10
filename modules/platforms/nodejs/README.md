@@ -390,22 +390,23 @@ async function putGetComplexAndBinaryObjects() {
         const person = await cache.get(1);
         console.log(person);
 
-        // set the cache value type to null to operate with BinaryObjects
-        cache.setValueType(null);
+        // new CacheClient instance of the same cache to operate with BinaryObjects
+        const binaryCache = igniteClient.getCache('myPersonCache').
+            setKeyType(ObjectType.PRIMITIVE_TYPE.INTEGER);
         // get Complex Object from the cache in a binary form, returned value is an instance of BinaryObject class
-        let binaryPerson = await cache.get(2);
+        let binaryPerson = await binaryCache.get(2);
         console.log('Binary form of Person:');       
         for (let fieldName of binaryPerson.getFieldNames()) {
             let fieldValue = await binaryPerson.getField(fieldName);
             console.log(fieldName + ' : ' + fieldValue);
         }
         // modify Binary Object and put it to the cache
-        binaryPerson.setField('id', 3, ObjectType.PRIMITIVE_TYPE.INTEGER);
-        binaryPerson.setField('name', 'Mary Major');
-        await cache.put(3, binaryPerson);
+        binaryPerson.setField('id', 3, ObjectType.PRIMITIVE_TYPE.INTEGER).
+            setField('name', 'Mary Major');
+        await binaryCache.put(3, binaryPerson);
 
         // get Binary Object from the cache and convert it to JavaScript Object
-        binaryPerson = await cache.get(3);
+        binaryPerson = await binaryCache.get(3);
         console.log(await binaryPerson.toObject(personComplexObjectType));
 
         await igniteClient.destroyCache('myPersonCache');
