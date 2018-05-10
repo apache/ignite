@@ -30,33 +30,6 @@ public class ReplicatedSqlTest extends BaseSqlTest {
         fillCommonData();
     }
 
-    // todo: review: should we remove this?
-    public void testCrossJoin() {
-        if (true)
-            throw new UnsupportedOperationException("excluded");
-        testAllNodes(node -> {
-            Result act1 = executeFrom("SELECT e.id, e.depIdNoidx, d.id FROM Employee e, Department d", node);
-            Result act2 = executeFrom("SELECT e.id, e.depIdNoidx, d.id FROM Employee e CROSS JOIN Department d", node);
-
-            List<String> fields = Arrays.asList("ID", "DEPIDNOIDX", "ID");
-
-            assertEquals("Returned field names are incorrect.", fields, act1.columnNames());
-            assertEquals("Returned field names are incorrect.", fields, act2.columnNames());
-
-            List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
-                (emp, dep) -> true,
-                (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("DEPIDNOIDX"), dep.get("ID")));
-
-            assertContainsEq("Implicit (comma sign) version of CROSS JOIN returned unexpected result.",
-                act1.values(), expected);
-
-            assertContainsEq("Explicit version of CROSS JOIN returned unexpected result.",
-                act2.values(), expected);
-
-            assertEquals("Result size of the cross join is unexpected.",
-                DEP_CNT * EMP_CNT, act1.values().size());
-        });
-    }
     public void testInnerDistJoin() {
         testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.address " +
