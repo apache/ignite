@@ -85,7 +85,23 @@ A usage of the client starts from the creation of an *IgniteClient* class instan
 
 It is possible to create as many *IgniteClient* instances as needed. All of them will work fully independently.
 
-TODO - example
+```javascript
+const IgniteClient = require('apache-ignite-client');
+
+const igniteClient = new IgniteClient(onStateChanged);
+
+function onStateChanged(state, reason) {
+    if (state === IgniteClient.STATE.CONNECTED) {
+        console.log('Client is started');
+    }
+    else if (state === IgniteClient.STATE.DISCONNECTED) {
+        console.log('Client is stopped');
+        if (reason) {
+            console.log(reason);
+        }
+    }
+}
+```
 
 ### Create Ignite Client Configuration ###
 
@@ -100,7 +116,26 @@ Optional parts of the configuration can be specified using additional set method
 
 By default, the client establishes a non-secure connection with default connection options defined by NodeJS and does not use authentication.
 
-TODO - example
+Example: default Ignite Client Configuration
+
+```javascript
+const IgniteClient = require('apache-ignite-client');
+const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
+
+const igniteClientConfiguration = new IgniteClientConfiguration('127.0.0.1:10800');
+```
+
+Example: Ignite Client Configuration with username/password authentication and additional connection options
+
+```javascript
+const IgniteClient = require('apache-ignite-client');
+const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
+
+const igniteClientConfiguration = new IgniteClientConfiguration('127.0.0.1:10800').
+    setUserName('ignite').
+    setPassword('ignite').
+    setConnectionOptions(false, { 'timeout' : 0 });
+```
 
 ### Connect Ignite Client ###
 
@@ -116,7 +151,38 @@ At any moment, an application can call the disconnect method and forcibly moves 
 
 When the client becomes disconnected, an application can call the connect method again - with the same or different configuration (eg. with different list of endpoints).
 
-TODO - example
+```javascript
+const IgniteClient = require('apache-ignite-client');
+const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
+
+async function connectClient() {
+    const igniteClient = new IgniteClient(onStateChanged);
+    try {
+        const igniteClientConfiguration = new IgniteClientConfiguration('127.0.0.1:10800');
+        await igniteClient.connect(igniteClientConfiguration);
+    }
+    catch (err) {
+        console.log(err.message);
+    }
+    finally {
+        igniteClient.disconnect();
+    }
+}
+
+function onStateChanged(state, reason) {
+    if (state === IgniteClient.STATE.CONNECTED) {
+        console.log('Client is started');
+    }
+    else if (state === IgniteClient.STATE.DISCONNECTED) {
+        console.log('Client is stopped');
+        if (reason) {
+            console.log(reason);
+        }
+    }
+}
+
+connectClient();
+```
 
 ### Obtain Cache Instance ###
 
@@ -126,7 +192,79 @@ The Ignite client provides several methods to manipulate with Ignite caches and 
 
 It is possible to obtain as many *CacheClient* instances as needed - for the same or different Ignite caches - and work with all of them "in parallel".
 
-TODO - example
+Example: get or create cache by name and destroy the cache
+
+```javascript
+const IgniteClient = require('apache-ignite-client');
+const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
+
+async function getOrCreateCacheByName() {
+    const igniteClient = new IgniteClient();
+    try {
+        await igniteClient.connect(new IgniteClientConfiguration('127.0.0.1:10800'));
+        const cache = await igniteClient.getOrCreateCache('myCache');
+        // perform cache key-value operations
+        await igniteClient.destroyCache('myCache');
+    }
+    catch (err) {
+        console.log(err.message);
+    }
+    finally {
+        igniteClient.disconnect();
+    }
+}
+
+getOrCreateCacheByName();
+```
+
+Example: create cache by name and configuration
+
+```javascript
+const IgniteClient = require('apache-ignite-client');
+const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
+const CacheConfiguration = IgniteClient.CacheConfiguration;
+
+async function createCacheByConfiguration() {
+    const igniteClient = new IgniteClient();
+    try {
+        await igniteClient.connect(new IgniteClientConfiguration('127.0.0.1:10800'));
+        const cache = await igniteClient.createCache(
+            'myCache',
+            new CacheConfiguration().setSqlSchema('PUBLIC'));
+    }
+    catch (err) {
+        console.log(err.message);
+    }
+    finally {
+        igniteClient.disconnect();
+    }
+}
+
+createCacheByConfiguration();
+```
+
+Example: get existing cache by name
+
+```javascript
+const IgniteClient = require('apache-ignite-client');
+const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
+
+async function getExistingCache() {
+    const igniteClient = new IgniteClient();
+    try {
+        await igniteClient.connect(new IgniteClientConfiguration('127.0.0.1:10800'));
+        const cache = igniteClient.getCache('myCache');
+    }
+    catch (err) {
+        console.log(err.message);
+    }
+    finally {
+        igniteClient.disconnect();
+    }
+}
+
+getExistingCache();
+```
 
 ### Configure Cache Instance ###
 
@@ -138,8 +276,33 @@ If Ignite type is not explicitly specified for some field, the client tries to m
 
 More details about types and mappings are clarified in the [Data Types](#data-types) section.
 
-TODO - example
+```javascript
+const IgniteClient = require('apache-ignite-client');
+const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
+const ObjectType = IgniteClient.ObjectType;
+const MapObjectType = IgniteClient.MapObjectType;
 
+async function setCacheKeyValueTypes() {
+    const igniteClient = new IgniteClient();
+    try {
+        await igniteClient.connect(new IgniteClientConfiguration('127.0.0.1:10800'));
+        const cache = await igniteClient.getOrCreateCache('myCache');
+        cache.setKeyType(ObjectType.PRIMITIVE_TYPE.INTEGER).
+            setValueType(new MapObjectType(
+                MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP,
+                ObjectType.PRIMITIVE_TYPE.SHORT,
+                ObjectType.PRIMITIVE_TYPE.BYTE_ARRAY));
+    }
+    catch (err) {
+        console.log(err.message);
+    }
+    finally {
+        igniteClient.disconnect();
+    }
+}
+
+setCacheKeyValueTypes();
+```
 
 Now, everything is ready to manipulate with the data in the cache.
 
@@ -147,7 +310,39 @@ Now, everything is ready to manipulate with the data in the cache.
 
 The *CacheClient* class provides methods to manipulate with the key and the value of the cache using Key-Value Queries operations - put, get, put all, get all, replace, clear, etc.
 
-TODO - example
+```javascript
+const IgniteClient = require('apache-ignite-client');
+const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
+const ObjectType = IgniteClient.ObjectType;
+const CacheEntry = IgniteClient.CacheEntry;
+
+async function performCacheKeyValueOperations() {
+    const igniteClient = new IgniteClient();
+    try {
+        await igniteClient.connect(new IgniteClientConfiguration('127.0.0.1:10800'));
+        const cache = (await igniteClient.getOrCreateCache('myCache')).
+            setKeyType(ObjectType.PRIMITIVE_TYPE.INTEGER);
+        // put and get value
+        await cache.put(1, 'abc');
+        const value = await cache.get(1);
+
+        // put and get multiple values using putAll()/getAll() methods
+        await cache.putAll([new CacheEntry(2, 'value2'), new CacheEntry(3, 'value3')]);
+        const values = await cache.getAll([1, 2, 3]);
+
+        // removes all entries from the cache
+        await cache.clear();
+    }
+    catch (err) {
+        console.log(err.message);
+    }
+    finally {
+        igniteClient.disconnect();
+    }
+}
+
+performCacheKeyValueOperations();
+```
 
 ### SQL, SQL Fields and Scan Queries ###
 
@@ -165,7 +360,62 @@ Then, pass the *SqlQuery* instance in to the query method of the Cache instance 
 
 Finally, use the *Cursor* instance to iterate over or get all cache entries returned by the query.
 
-TODO - example
+```javascript
+const IgniteClient = require('apache-ignite-client');
+const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
+const CacheConfiguration = IgniteClient.CacheConfiguration;
+const QueryEntity = IgniteClient.QueryEntity;
+const QueryField = IgniteClient.QueryField;
+const ObjectType = IgniteClient.ObjectType;
+const ComplexObjectType = IgniteClient.ComplexObjectType;
+const CacheEntry = IgniteClient.CacheEntry;
+const SqlQuery = IgniteClient.SqlQuery;
+
+async function performSqlQuery() {
+    const igniteClient = new IgniteClient();
+    try {
+        await igniteClient.connect(new IgniteClientConfiguration('127.0.0.1:10800'));
+        // cache configuration required for sql query execution
+        const cacheConfiguration = new CacheConfiguration().
+            setQueryEntities(
+                new QueryEntity().
+                    setValueTypeName('Person').
+                    setFields([
+                        new QueryField('name', 'java.lang.String'),
+                        new QueryField('salary', 'java.lang.Double')
+                    ]));
+        const cache = (await igniteClient.getOrCreateCache('sqlQueryPersonCache', cacheConfiguration)).
+            setKeyType(ObjectType.PRIMITIVE_TYPE.INTEGER).
+            setValueType(new ComplexObjectType({ 'name' : '', 'salary' : 0 }, 'Person'));
+
+        // put multiple values using putAll()
+        await cache.putAll([
+            new CacheEntry(1, { 'name' : 'John Doe', 'salary' : 1000 }),
+            new CacheEntry(2, { 'name' : 'Jane Roe', 'salary' : 2000 }),
+            new CacheEntry(2, { 'name' : 'Mary Major', 'salary' : 1500 })]);
+
+        // create and configure sql query
+        const sqlQuery = new SqlQuery('Person', 'salary > ? and salary <= ?').
+            setArgs(900, 1600);
+        // obtain cursor
+        const cursor = await cache.query(sqlQuery);
+        // getAll cache entries returned by the sql query
+        for (let cacheEntry of await cursor.getAll()) {
+            console.log(cacheEntry.getValue());
+        }
+
+        await igniteClient.destroyCache('sqlQueryPersonCache');
+    }
+    catch (err) {
+        console.log(err.message);
+    }
+    finally {
+        igniteClient.disconnect();
+    }
+}
+
+performSqlQuery();
+```
 
 #### Scan Query ####
 
@@ -175,7 +425,48 @@ Then, pass the *ScanQuery* instance in to the query method of the Cache instance
 
 Finally, use the *Cursor* instance to iterate over or get all cache entries returned by the query.
 
-TODO - example
+```javascript
+const IgniteClient = require('apache-ignite-client');
+const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
+const ObjectType = IgniteClient.ObjectType;
+const CacheEntry = IgniteClient.CacheEntry;
+const ScanQuery = IgniteClient.ScanQuery;
+
+async function performScanQuery() {
+    const igniteClient = new IgniteClient();
+    try {
+        await igniteClient.connect(new IgniteClientConfiguration('127.0.0.1:10800'));
+        const cache = (await igniteClient.getOrCreateCache('myCache')).
+            setKeyType(ObjectType.PRIMITIVE_TYPE.INTEGER);
+
+        // put multiple values using putAll()
+        await cache.putAll([
+            new CacheEntry(1, 'value1'),
+            new CacheEntry(2, 'value2'),
+            new CacheEntry(3, 'value3')]);
+
+        // create and configure scan query
+        const scanQuery = new ScanQuery().
+            setPageSize(1);
+        // obtain cursor
+        const cursor = await cache.query(scanQuery);
+        // getAll cache entries returned by the scan query
+        for (let cacheEntry of await cursor.getAll()) {
+            console.log(cacheEntry.getValue());
+        }
+
+        await igniteClient.destroyCache('myCache');
+    }
+    catch (err) {
+        console.log(err.message);
+    }
+    finally {
+        igniteClient.disconnect();
+    }
+}
+
+performScanQuery();
+```
 
 #### SQL Fields Query ####
 
@@ -185,7 +476,54 @@ Then, pass the *SqlFieldsQuery* instance in to the query method of the Cache ins
 
 Finally, use the *SqlFieldsCursor* instance to iterate over or get all elements returned by the query.
 
-TODO - example
+```javascript
+const IgniteClient = require('apache-ignite-client');
+const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
+const CacheConfiguration = IgniteClient.CacheConfiguration;
+const ObjectType = IgniteClient.ObjectType;
+const CacheEntry = IgniteClient.CacheEntry;
+const SqlFieldsQuery = IgniteClient.SqlFieldsQuery;
+
+async function performSqlFieldsQuery() {
+    const igniteClient = new IgniteClient();
+    try {
+        await igniteClient.connect(new IgniteClientConfiguration('127.0.0.1:10800'));
+        const cache = await igniteClient.getOrCreateCache('myPersonCache', new CacheConfiguration().
+            setSqlSchema('PUBLIC'));
+
+        // create table using SqlFieldsQuery
+        (await cache.query(new SqlFieldsQuery(
+           'CREATE TABLE Person (id INTEGER PRIMARY KEY, firstName VARCHAR, lastName VARCHAR, salary DOUBLE)'))).getAll();
+
+        // insert data into the table
+        const insertQuery = new SqlFieldsQuery('INSERT INTO Person (id, firstName, lastName, salary) values (?, ?, ?, ?)').
+            setArgTypes(ObjectType.PRIMITIVE_TYPE.INTEGER);
+        (await cache.query(insertQuery.setArgs(1, 'John', 'Doe', 1000))).getAll();
+        (await cache.query(insertQuery.setArgs(2, 'Jane', 'Roe', 2000))).getAll();
+
+        // obtain sql fields cursor
+        const sqlFieldsCursor = await cache.query(
+            new SqlFieldsQuery("SELECT concat(firstName, ' ', lastName), salary from Person").
+                setPageSize(1));
+
+        // iterate over elements returned by the query
+        do {
+            console.log(await sqlFieldsCursor.getValue());
+        } while (sqlFieldsCursor.hasMore());
+
+        // drop the table
+        (await cache.query(new SqlFieldsQuery("DROP TABLE Person"))).getAll();
+    }
+    catch (err) {
+        console.log(err.message);
+    }
+    finally {
+        igniteClient.disconnect();
+    }
+}
+
+performSqlFieldsQuery();
+```
 
 ### Enable Debug ###
 
