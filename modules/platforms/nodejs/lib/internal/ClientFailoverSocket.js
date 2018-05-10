@@ -37,10 +37,9 @@ class ClientFailoverSocket {
             throw new Errors.IllegalStateError();
         }
         this._config = config;
-        this._socket = new ClientSocket(this._config._endpoints[0], this._config, this._onSocketDisconnect.bind(this));
-        this._changeState(IgniteClient.STATE.CONNECTING);
-        await this._socket.connect();
-        this._changeState(IgniteClient.STATE.CONNECTED);
+        this._endpointsNumber = this._config._endpoints.length;
+        this._endpointIndex = this._getRandomInt(this._endpointsNumber - 1);
+        await this._connect();
     }
 
     async send(opCode, payloadWriter, payloadReader = null) {
@@ -60,19 +59,53 @@ class ClientFailoverSocket {
         }
     }
 
-    _onSocketDisconnect(error = null) {
-        this._changeState(IgniteClient.STATE.DISCONNECTED, error);
+    async _onSocketDisconnect(error = null) {
+        this._changeState(IgniteClient.STATE.CONNECTING, null, error);        
         this._socket = null;
+        this._endpointIndex++;
+        try {
+            await this._connect();
+        }
+        catch (err) {
+        }
     }
 
-    _changeState(state, reason = null) {
-        if (Logger.debug && this._socket) {
-            Logger.logDebug(Util.format('Socket %s: %s -> %s'),
-                this._socket._endpoint, this._getState(this._state), this._getState(state));
+    async _connect() {
+        const errors = new Array();
+        let index, endpoint;
+        for (let i = 0; i < this._endpointsNumber; i++) {
+            index = (this._endpointIndex + i) % this._endpointsNumber;
+            endpoint = this._config._endpoints[index];
+            try {
+                this._changeState(IgniteClient.STATE.CONNECTING, endpoint);
+                this._socket = new ClientSocket(
+                    endpoint, this._config, this._onSocketDisconnect.bind(this));
+                await this._socket.connect();
+                this._changeState(IgniteClient.STATE.CONNECTED, endpoint);
+                return;
+            }
+            catch (err) {
+                errors.push(Util.format('[%s] %s', endpoint, err.message));
+            }
         }
-        this._state = state;
-        if (this._onStateChanged) {
-            this._onStateChanged(state, reason);
+        const error = errors.join('; ');
+        this._changeState(IgniteClient.STATE.DISCONNECTED, endpoint, error);
+        this._socket = null;
+        throw new Errors.IgniteClientError(error);
+    }
+
+    _changeState(state, endpoint = null, reason = null) {
+        if (Logger.debug) {
+            Logger.logDebug(Util.format('Socket %s: %s -> %s'),
+                endpoint ? endpoint : this._socket ? this._socket._endpoint : '',
+                this._getState(this._state),
+                this._getState(state));
+        }
+        if (this._state !== state) {
+            this._state = state;
+            if (this._onStateChanged) {
+                this._onStateChanged(state, reason);
+            }
         }
     }
 
@@ -87,6 +120,14 @@ class ClientFailoverSocket {
             default:
                 return 'UNKNOWN';
         }
+    }
+
+    // returns a random integer between 0 and max
+    _getRandomInt(max) {
+        if (max === 0) {
+            return 0;
+        }
+        return Math.floor(Math.random() * (max + 1));
     }
 }
 
