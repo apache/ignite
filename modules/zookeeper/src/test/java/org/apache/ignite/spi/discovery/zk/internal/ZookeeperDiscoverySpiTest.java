@@ -127,6 +127,7 @@ import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -3639,6 +3640,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             .map(g -> g.cluster().localNode())
             .collect(Collectors.toList());
 
+        Assert.assertEquals(5, srvNodes.size());
+
         client = true;
 
         startGridsMultiThreaded(5, 3);
@@ -3682,6 +3685,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             .map(g -> g.cluster().localNode())
             .collect(Collectors.toList());
 
+        Assert.assertEquals(6, srvNodes.size());
+
         List<ClusterNode> srvPart1 = srvNodes.subList(0, 3);
         List<ClusterNode> srvPart2 = srvNodes.subList(3, srvNodes.size());
 
@@ -3697,6 +3702,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             .map(g -> g.cluster().localNode())
             .filter(ClusterNode::isClient)
             .collect(Collectors.toList());
+
+        Assert.assertEquals(5, clientNodes.size());
 
         List<ClusterNode> clientPart1 = clientNodes.subList(0, 2);
         List<ClusterNode> clientPart2 = clientNodes.subList(2, 4);
@@ -3803,7 +3810,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         private static volatile boolean failure;
 
         /** Connections failure matrix. */
-        private static ConnectionsFailureMatrix matrix;
+        private static volatile ConnectionsFailureMatrix matrix;
 
         /**
          * Start failing connections according to given matrix {@code with}.
