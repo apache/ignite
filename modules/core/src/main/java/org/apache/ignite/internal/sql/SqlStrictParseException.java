@@ -22,6 +22,9 @@ package org.apache.ignite.internal.sql;
  * statement isn't passed to H2 parser.
  */
 public class SqlStrictParseException extends SqlParseException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * Constructor.
      * @param e SQL parse exception.
