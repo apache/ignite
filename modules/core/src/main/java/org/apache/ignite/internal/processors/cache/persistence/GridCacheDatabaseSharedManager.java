@@ -1991,7 +1991,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         long start = U.currentTimeMillis();
         int applied = 0;
-        WALPointer lastRead = null;
+        WALPointer lastRead = status.endPtr == CheckpointStatus.NULL_PTR ? null : status.endPtr;
 
         Collection<Integer> ignoreGrps = storeOnly ? Collections.emptySet() :
             F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
