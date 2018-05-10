@@ -107,6 +107,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     public static final String[] ALL_EMP_FIELDS = new String[] {"ID", "DEPID", "DEPIDNOIDX", "FIRSTNAME", "LASTNAME", "AGE", "SALARY"};
 
+    /** Flag that forces to do explain query in log before performing actual query. */
+    public static boolean explain = false;
+
     /** Configuration that is injected by Suite */
     @InjectTestSuite.Parameter
     private Configuration cfg = new Configuration();
@@ -226,7 +229,12 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
         client = (IgniteEx)startGrid(CLIENT_NODE_NAME, clientConfiguration(), null);
 
+        boolean locExp = explain;
+        explain = false;
+
         setupData();
+
+        explain = locExp;
     }
 
     /** {@inheritDoc} */
@@ -351,7 +359,19 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @return Result of query.
      */
     protected final Result executeFrom(SqlFieldsQuery qry, Ignite node) {
-        //log.trace("Executing query from " + node.name() + " : " + qry);
+        if (explain) {
+            try {
+                SqlFieldsQuery explainQry = new SqlFieldsQuery(qry).setSql("EXPLAIN " + qry.getSql());
+
+                List<List<?>> res = ((IgniteEx)node).context().query().querySqlFields(explainQry, false).getAll();
+
+                String explanation = (String) res.get(0).get(0);
+
+                log.debug("Node: " + node.name() + ": Execution plan for query "  + qry + ":\n" + explanation);
+            } catch (Exception exc) {
+                log.error("Ignoring exception gotten explaining query : " + qry, exc);
+            }
+        }
 
         FieldsQueryCursor<List<?>> cursor = ((IgniteEx)node).context().query().querySqlFields(qry, false);
 
@@ -956,5 +976,15 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     public void testCfg() {
         // false by default, injected as true
         assertTrue(cfg.persistenceEnabled());
+    }
+
+    /**
+     * Sets explain flag. If flag is set, execute methods will perform explain query before actual query execution.
+     * Query plan is logged.
+     *
+     * @param shouldExplain explain flag value.
+     */
+    public static void setExplain(boolean shouldExplain) {
+        explain = shouldExplain;
     }
 }

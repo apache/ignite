@@ -86,6 +86,8 @@ public class PartitionedSqlTest extends BaseSqlTest {
     }
 
     public void testRightDistJoin() {
+        setExplain(true);
+
         testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.address " +
                 "FROM Department d RIGHT JOIN Address a " +
