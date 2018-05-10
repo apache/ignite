@@ -17,16 +17,11 @@
 
 package org.apache.ignite.ml.tree;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import java.util.*;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
@@ -68,7 +63,8 @@ public class DecisionTreeRegressionTrainerTest {
         DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(1, 0);
 
         DecisionTreeNode tree = trainer.fit(
-            new LocalDatasetBuilder<>(data, parts),
+            data,
+            parts,
             (k, v) -> Arrays.copyOf(v, v.length - 1),
             (k, v) -> v[v.length - 1]
         );

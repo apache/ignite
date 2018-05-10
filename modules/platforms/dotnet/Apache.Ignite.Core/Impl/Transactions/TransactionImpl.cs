@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -72,8 +73,9 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// <param name="isolation">TX isolation.</param>
         /// <param name="timeout">Timeout.</param>
         /// <param name="nodeId">The originating node identifier.</param>
+        /// <param name="bindToThread">Bind transaction to current thread or not.</param>
         public TransactionImpl(long id, TransactionsImpl txs, TransactionConcurrency concurrency,
-            TransactionIsolation isolation, TimeSpan timeout, Guid nodeId) {
+            TransactionIsolation isolation, TimeSpan timeout, Guid nodeId, bool bindToThread = true) {
             _id = id;
             _txs = txs;
             _concurrency = concurrency;
@@ -85,7 +87,8 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
             _threadId = Thread.CurrentThread.ManagedThreadId;
 
-            THREAD_TX = this;
+            if (bindToThread)
+                THREAD_TX = this;
         }    
 
         /// <summary>
@@ -457,7 +460,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// </summary>
         private Task CloseWhenComplete(Task task)
         {
-            return task.ContinueWith(x => Close());
+            return task.ContWith(x => Close());
         }
 
         /** <inheritdoc /> */

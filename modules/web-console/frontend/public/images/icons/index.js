@@ -37,4 +37,5 @@ export collapse from './collapse.svg';
 export expand from './expand.svg';
 export home from './home.svg';
 export refresh from './refresh.svg';
-
+export {default as eyeOpened} from './eyeOpened.svg';
+export {default as eyeClosed} from './eyeClosed.svg';

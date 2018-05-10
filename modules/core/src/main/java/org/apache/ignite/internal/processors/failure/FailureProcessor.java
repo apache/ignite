@@ -19,12 +19,14 @@ package org.apache.ignite.internal.processors.failure;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -39,6 +41,9 @@ public class FailureProcessor extends GridProcessorAdapter {
 
     /** Failure context. */
     private volatile FailureContext failureCtx;
+
+    /** Reserve buffer, which can be dropped to handle OOME. */
+    private volatile byte[] reserveBuf;
 
     /**
      * @param ctx Context.
@@ -56,9 +61,14 @@ public class FailureProcessor extends GridProcessorAdapter {
         if (hnd == null)
             hnd = getDefaultFailureHandler();
 
+        reserveBuf = new byte[IgniteSystemProperties.getInteger(
+            IgniteSystemProperties.IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE, 64 * 1024)];
+
         assert hnd != null;
 
         this.hnd = hnd;
+
+        U.quietAndInfo(log, "Configured failure handler: [hnd=" + hnd + ']');
     }
 
     /**
@@ -99,8 +109,11 @@ public class FailureProcessor extends GridProcessorAdapter {
         if (this.failureCtx != null) // Node already terminating, no reason to process more errors.
             return;
 
-        U.error(ignite.log(), "Critical failure. Will be handled accordingly to configured handler [hnd=" +
-            hnd.getClass() + ", failureCtx=" + failureCtx + ']', failureCtx.error());
+        U.error(ignite.log(), "Critical system error detected. Will be handled accordingly to configured handler " +
+            "[hnd=" + hnd.getClass() + ", failureCtx=" + failureCtx + ']', failureCtx.error());
+
+        if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
+            reserveBuf = null;
 
         boolean invalidated = hnd.onFailure(ignite, failureCtx);
 

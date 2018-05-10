@@ -31,16 +31,45 @@ public class DataStorageConfigurationValidationTest extends TestCase {
      *
      * @throws Exception If failed.
      */
-    public void testWalSegmentSizeOveflow() throws Exception {
+    public void testWalSegmentSizeOverflow() throws Exception {
         final DataStorageConfiguration cfg = new DataStorageConfiguration();
 
         GridTestUtils.assertThrows(null, new Callable<Void>() {
-            /** {@inheritDoc} */
             @Override public Void call() {
                 cfg.setWalSegmentSize(1 << 31);
 
                 return null;
             }
         }, IllegalArgumentException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSetWalSegmentSizeShouldThrowExceptionWhenSizeLessThen512Kb() throws Exception {
+        final DataStorageConfiguration cfg = new DataStorageConfiguration();
+
+        GridTestUtils.assertThrows(null, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cfg.setWalSegmentSize(512 * 1024 - 1);
+
+                return null;
+            }
+        }, IllegalArgumentException.class, null);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSetWalSegmentSizeShouldBeOkWhenSizeBetween512KbAnd2Gb() throws Exception {
+        final DataStorageConfiguration cfg = new DataStorageConfiguration();
+
+        cfg.setWalSegmentSize(512 * 1024);
+
+        assertEquals(512 * 1024, cfg.getWalSegmentSize());
+
+        cfg.setWalSegmentSize(Integer.MAX_VALUE);
+
+        assertEquals(Integer.MAX_VALUE, cfg.getWalSegmentSize());
     }
 }

@@ -103,6 +103,8 @@ export class NotebooksListCtrl {
             this.IgniteMessages.showError(err);
 
         } finally {
+            this.$scope.$applyAsync();
+
             await this.IgniteLoading.finish('notebooksLoading');
         }
     }

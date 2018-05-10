@@ -76,6 +76,8 @@ import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAff
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.processors.platform.events.PlatformLocalEventListener;
 import org.apache.ignite.internal.processors.platform.plugin.cache.PlatformCachePluginConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
@@ -492,6 +494,7 @@ public class PlatformConfigurationUtils {
         Set<String> keyFields = new HashSet<>(cnt);
         Set<String> notNullFields = new HashSet<>(cnt);
         Map<String, Object> defVals = new HashMap<>(cnt);
+        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>(cnt);
 
         if (cnt > 0) {
             LinkedHashMap<String, String> fields = new LinkedHashMap<>(cnt);
@@ -511,6 +514,13 @@ public class PlatformConfigurationUtils {
                 Object defVal = in.readObject();
                 if (defVal != null)
                     defVals.put(fieldName, defVal);
+
+                int precision = in.readInt();
+
+                int scale = in.readInt();
+
+                if (precision != -1 || scale != -1)
+                    decimalInfo.put(fieldName, F.t(precision, scale));
             }
 
             res.setFields(fields);
@@ -523,6 +533,9 @@ public class PlatformConfigurationUtils {
 
             if (!defVals.isEmpty())
                 res.setDefaultFieldValues(defVals);
+
+            if (!decimalInfo.isEmpty())
+                res.setDecimalInfo(decimalInfo);
         }
 
         // Aliases
@@ -721,6 +734,7 @@ public class PlatformConfigurationUtils {
             tx.setDefaultTxIsolation(TransactionIsolation.fromOrdinal(in.readInt()));
             tx.setDefaultTxTimeout(in.readLong());
             tx.setPessimisticTxLogLinger(in.readInt());
+            tx.setTxTimeoutOnPartitionMapExchange(in.readLong());
 
             cfg.setTransactionConfiguration(tx);
         }
@@ -1012,6 +1026,7 @@ public class PlatformConfigurationUtils {
             Set<String> keyFields = qryEntity.getKeyFields();
             Set<String> notNullFields = qryEntity.getNotNullFields();
             Map<String, Object> defVals = qryEntity.getDefaultFieldValues();
+            Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = qryEntity.getDecimalInfo();
 
             writer.writeInt(fields.size());
 
@@ -1021,6 +1036,12 @@ public class PlatformConfigurationUtils {
                 writer.writeBoolean(keyFields != null && keyFields.contains(field.getKey()));
                 writer.writeBoolean(notNullFields != null && notNullFields.contains(field.getKey()));
                 writer.writeObject(defVals != null ? defVals.get(field.getKey()) : null);
+
+                IgniteBiTuple<Integer, Integer> precisionAndScale =
+                    decimalInfo == null ? null : decimalInfo.get(field.getKey());
+
+                writer.writeInt(precisionAndScale == null ? -1 : precisionAndScale.get1());
+                writer.writeInt(precisionAndScale == null ? -1 : precisionAndScale.get2());
             }
         }
         else
@@ -1231,6 +1252,7 @@ public class PlatformConfigurationUtils {
             writeEnumInt(w, tx.getDefaultTxIsolation(), TransactionConfiguration.DFLT_TX_ISOLATION);
             w.writeLong(tx.getDefaultTxTimeout());
             w.writeInt(tx.getPessimisticTxLogLinger());
+            w.writeLong(tx.getTxTimeoutOnPartitionMapExchange());
         }
         else
             w.writeBoolean(false);
