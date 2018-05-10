@@ -23,6 +23,9 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.cassandra.persistence.KeyPersistenceSettings;
 import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 
+/**
+ * Simple test for DDL generator.
+ */
 public class CassandraConfigTest extends TestCase {
     /**
      * Check if same DDL generated for similar keys and same KeyPersistenceConfiguration.
