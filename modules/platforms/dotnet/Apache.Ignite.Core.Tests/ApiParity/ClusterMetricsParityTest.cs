@@ -29,9 +29,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         private static readonly string[] MissingProperties =
         {
             // IGNITE-7127
-            "TotalJobsExecutionTime", "entryProcessorPuts", "entryProcessorRemovals",
-            "entryProcessorReadOnlyInvocations", "entryProcessorInvokeTimeNanos", "entryProcessorMinInvocationTime",
-            "entryProcessorMaxInvocationTime", "entryProcessorHits", "entryProcessorMisses"
+            "TotalJobsExecutionTime"
         };
 
         /// <summary>
