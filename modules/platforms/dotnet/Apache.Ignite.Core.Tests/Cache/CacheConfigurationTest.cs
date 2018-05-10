@@ -553,6 +553,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.DefaultValue, y.DefaultValue);
             Assert.AreEqual(x.Precision, y.Precision);
             Assert.AreEqual(x.Scale, y.Scale);
+            Assert.AreEqual(x.MaxLength, y.MaxLength);
         }
 
         /// <summary>
