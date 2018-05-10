@@ -638,9 +638,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
                         if (!ccfgs.containsKey(cacheName))
                             ccfgs.put(cacheName, cacheData);
-                        else
+                        else {
                             U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
                                     + file.getName());
+                        }
                     }
                 }
                 else if (file.getName().startsWith(CACHE_GRP_DIR_PREFIX))
@@ -670,9 +671,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
                 if (!ccfgs.containsKey(cacheName))
                     ccfgs.put(cacheName, cacheData);
-                else
+                else {
                     U.warn(log, "Cache with name=" + cacheName + " is already registered, skipping config file "
-                            + file.getName() + " in group directory " + grpDir.getName()) ;
+                            + file.getName() + " in group directory " + grpDir.getName());
+                }
             }
         }
     }

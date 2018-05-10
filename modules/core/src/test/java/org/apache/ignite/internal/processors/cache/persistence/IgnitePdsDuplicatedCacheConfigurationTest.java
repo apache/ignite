@@ -140,11 +140,12 @@ public class IgnitePdsDuplicatedCacheConfigurationTest extends GridCommonAbstrac
     private void startCaches(Ignite ignite) {
         List<CacheConfiguration> ccfg = new ArrayList<>(CACHES);
 
-        for (int i = 0; i < CACHES; i++)
+        for (int i = 0; i < CACHES; i++) {
             ccfg.add(new CacheConfiguration<>(cacheName(i))
                     .setGroupName(i % 2 == 0 ? ODD_GROUP_NAME : EVEN_GROUP_NAME)
                     .setBackups(1)
                     .setAffinity(new RendezvousAffinityFunction(false, 32)));
+        }
 
         ignite.createCaches(ccfg);
     }
