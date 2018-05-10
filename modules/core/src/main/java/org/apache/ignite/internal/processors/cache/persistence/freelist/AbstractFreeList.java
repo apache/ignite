@@ -545,7 +545,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     PageIO.setRotatedIdPart(reusedPageAddr, itemId);
 
                     if (needWalDeltaRecord)
-                        wal.log(new RotatedIdPartRecord(grpId, reusedPageId, itemId));
+                        wal.log(new RotatedIdPartRecord(grpId, pageId, itemId));
                 }
             }
             finally {

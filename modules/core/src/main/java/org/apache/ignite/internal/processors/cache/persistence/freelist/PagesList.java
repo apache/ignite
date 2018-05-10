@@ -1129,7 +1129,7 @@ public abstract class PagesList extends DataStructure {
                                 PageIO.setRotatedIdPart(tailAddr, itemId);
 
                                 if (needWalDeltaRecord)
-                                    wal.log(new RotatedIdPartRecord(grpId, tailId, itemId));
+                                    wal.log(new RotatedIdPartRecord(grpId, dataPageId, itemId));
                             }
                         }
                         else
