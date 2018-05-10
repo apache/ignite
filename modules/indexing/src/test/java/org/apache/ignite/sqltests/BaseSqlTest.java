@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.cache.Cache;
@@ -152,7 +153,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             execute(insEmp.setArgs(id, depId, depId, firstName, lastName, age, salary));
         }
 
-        for (long addrId = 0; addrId < ADDR_CNT; addrId++){
+        for (long addrId = 0; addrId < ADDR_CNT; addrId++) {
             Long depId = (long)rnd.nextInt((int)(DEP_CNT - FREE_DEP_CNT));
 
             if (addrId < FREE_ADDR_CNT)
@@ -724,9 +725,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
             Result result = executeFrom(
                 "SELECT depId, COUNT(*) " +
-                "FROM Employee " +
-                "GROUP BY depId " +
-                "HAVING COUNT(*) > " + avgDep, node);
+                    "FROM Employee " +
+                    "GROUP BY depId " +
+                    "HAVING COUNT(*) > " + avgDep, node);
 
             List<List<Object>> all = select(node.cache(EMP_CACHE_NAME), null, "depId");
 
@@ -841,6 +842,18 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return doCommonJoin(left, right, filter, transformer, true, true);
     }
 
+    /**
+     * Assert that exception about incorrect index in distributed join query is thrown.
+     *
+     * @param joinCmd command that performs slq join operation.
+     */
+    protected void assertDistJoinHasIncorrectIndex(Callable<?> joinCmd) {
+        GridTestUtils.assertThrows(log,
+            joinCmd,
+            CacheException.class,
+            "Failed to prepare distributed join query: join condition does not use index");
+    }
+
     public void testInnerJoin() {
         testAllNodes(node -> {
             String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
@@ -909,16 +922,14 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-
-    public void testInnerDistJoin(){
+    public void testInnerDistJoin() {
         testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.address " +
                 "FROM Department d INNER JOIN Address a " +
                 "ON d.%s = a.%s";
 
-            Result actIdxOnOn = executeFrom(new SqlFieldsQuery(String.format(qryTpl, "id", "depId")).setDistributedJoins(true), node);
-            Result actIdxOffOn = executeFrom(new SqlFieldsQuery(String.format(qryTpl, "idNoidx", "depId")).setDistributedJoins(true), node);
-            Result actIdxOnOff = executeFrom(new SqlFieldsQuery(String.format(qryTpl, "id", "depIdNoidx")).setDistributedJoins(true), node);
+            Result actIdxOnOn = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depId")), node);
+            Result actIdxOffOn = executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depId")), node);
 
             List<List<Object>> exp = doInnerJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
                 (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
@@ -926,21 +937,97 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
             assertContainsEq("Distributed join on 'idx = idx' failed.", actIdxOnOn.values(), exp);
             assertContainsEq("Distributed join on 'noidx = idx' failed.", actIdxOffOn.values(), exp);
+        });
+    }
+
+    public void testNegativeInnerDistJoin() {
+        testAllNodes(node -> {
+            String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d INNER JOIN Address a " +
+                "ON d.%s = a.%s";
+
+            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depIdNoidx")), node));
+            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depIdNoidx")), node));
+        });
+    }
+
+    public void testLeftDistJoin() {
+        testAllNodes(node -> {
+            final String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d LEFT JOIN Address a " +
+                "ON d.%s = a.%s";
+
+            Result actIdxOnOn = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depId")), node);
+            Result actIdxOffOn = executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depId")), node);
+
+            List<List<Object>> exp = doLeftJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
+                (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
+                (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
+
+            assertContainsEq("Distributed join on 'idx = idx' failed.", actIdxOnOn.values(), exp);
+            assertContainsEq("Distributed join on 'noidx = idx' failed.", actIdxOffOn.values(), exp);
+        });
+    }
+
+    public void testNegativeLeftDistJoin() {
+        testAllNodes(node -> {
+            String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d LEFT JOIN Address a " +
+                "ON d.%s = a.%s";
+
+            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depIdNoidx")), node));
+            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "idNoIdx", "depIdNoidx")), node));
+        });
+    }
+
+    public void testRightDistJoin() {
+        testAllNodes(node -> {
+            final String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d RIGHT JOIN Address a " +
+                "ON d.%s = a.%s";
+
+            Result actIdxOnOn = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depId")), node);
+            Result actIdxOnOff = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depIdNoidx")), node);
+
+            List<List<Object>> exp = doRightJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
+                (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
+                (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
+
+            assertContainsEq("Distributed join on 'idx = idx' failed.", actIdxOnOn.values(), exp);
             assertContainsEq("Distributed join on 'idx = noidx' failed.", actIdxOnOff.values(), exp);
         });
     }
 
-    public void testNegativeInnerDistJoin(){
+    public void testNegativeRightDistJoin() {
+        testAllNodes(node -> {
+            String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d RIGHT JOIN Address a " +
+                "ON d.%s = a.%s";
+
+            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depIdNoidx")), node));
+            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depId")), node));
+        });
+    }
+
+    public void testNegativeFullOuterDistJoin() {
         testAllNodes(node -> {
             String qry = "SELECT d.id, d.name, a.address " +
-                "FROM Department d INNER JOIN Address a " +
+                "FROM Department d FULL OUTER JOIN Address a " +
                 "ON d.idNoidx = a.depIdNoidx";
 
             GridTestUtils.assertThrows(log,
                 () -> executeFrom(new SqlFieldsQuery(qry).setDistributedJoins(true), node),
-                CacheException.class,
-                "Failed to prepare distributed join query: join condition does not use index");
+                IgniteSQLException.class, "Failed to parse query.");
         });
+    }
+
+    /**
+     * Creates new SqlFieldsQuery with enabled distributed joins and predictable join order.
+     *
+     * @param qry Sql join query.
+     */
+    protected static SqlFieldsQuery prepareDistJoin(String qry) {
+        return new SqlFieldsQuery(qry).setDistributedJoins(true).setEnforceJoinOrder(true);
     }
 
     /**
