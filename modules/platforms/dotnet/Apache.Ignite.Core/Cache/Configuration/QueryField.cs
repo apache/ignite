@@ -170,7 +170,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public int Scale { get; set; }
 
         /// <summary>
-        /// Gets or sets the max length for the field.
+        /// Gets or sets the maximum length for the field.
         /// </summary>
         public int MaxLength { get; set; }
 

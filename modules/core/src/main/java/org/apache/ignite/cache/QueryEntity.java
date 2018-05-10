@@ -53,6 +53,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Integer.MAX_VALUE;
 import static java.util.Collections.unmodifiableMap;
 
 /**
@@ -608,7 +609,7 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Sets max length info.
+     * Sets maximum length info.
      * 
      * @param maxLengthInfo Set of field name to maximum length.
      * @return {@cod this} for chaining.
@@ -867,7 +868,7 @@ public class QueryEntity implements Serializable {
             if (BigDecimal.class == fldCls && sqlAnn.precision() != -1 && sqlAnn.scale() != -1)
                 desc.addDecimalInfo(prop.fullName(), F.t(sqlAnn.precision(), sqlAnn.scale()));
 
-            if (CharSequence.class.isAssignableFrom(fldCls) && sqlAnn.maxLength() != Integer.MAX_VALUE)
+            if (CharSequence.class.isAssignableFrom(fldCls) && sqlAnn.maxLength() != MAX_VALUE)
                 desc.addMaxLengthInfo(prop.fullName(), sqlAnn.maxLength());
 
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))

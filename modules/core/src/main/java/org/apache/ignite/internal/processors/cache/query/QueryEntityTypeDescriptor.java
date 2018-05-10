@@ -58,7 +58,7 @@ public class QueryEntityTypeDescriptor {
     /** Decimal fields information. */
     private Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
 
-    /** Max length information. */
+    /** Maximum length information. */
     private Map<String, Integer> maxLengthInfo = new HashMap<>();
 
     /** */
@@ -204,10 +204,10 @@ public class QueryEntityTypeDescriptor {
     }
 
     /**
-     * Adds max length info.
+     * Adds maximum length info.
      *
      * @param field Field.
-     * @param maxLength Maximum column value length;
+     * @param maxLength Maximum column value length.
      */
     public void addMaxLengthInfo(String field, int maxLength) {
         maxLengthInfo.put(field, maxLength);

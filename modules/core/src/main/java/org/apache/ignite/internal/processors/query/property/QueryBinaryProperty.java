@@ -93,7 +93,7 @@ public class QueryBinaryProperty implements GridQueryProperty {
      * @param defaultValue Default value.
      * @param precision Precision.
      * @param scale Scale.
-     * @param scale Max length.
+     * @param scale Maximum length.
      */
     public QueryBinaryProperty(GridKernalContext ctx, String propName, QueryBinaryProperty parent,
         Class<?> type, @Nullable Boolean key, String alias, boolean notNull, Object defaultValue,

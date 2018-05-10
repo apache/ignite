@@ -46,7 +46,7 @@ public class QueryField implements Serializable {
     /** Scale. */
     private final int scale;
 
-    /** Max length. */
+    /** Maximum length. */
     private final int maxLength;
 
     /**

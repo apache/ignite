@@ -144,7 +144,7 @@ public class GridSqlColumn extends GridSqlElement {
     }
 
     /**
-     * @return Max length.
+     * @return Maximum length.
      */
     public int maxLength() {
         return (int)col.getPrecision();

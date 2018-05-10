@@ -31,7 +31,7 @@ public class JdbcColumnMetaV4 extends JdbcColumnMetaV3 {
     /** Decimal field scale. */
     private int scale;
 
-    /** Decimal field scale. */
+    /** Maximum length. */
     private int maxLength;
 
     /**

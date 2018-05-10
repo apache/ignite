@@ -151,7 +151,7 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @return Column's max length.
+     * @return Column's maximum length.
      */
     public int maxLength() {
         return MAX_VALUE;

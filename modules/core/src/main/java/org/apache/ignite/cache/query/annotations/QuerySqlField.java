@@ -26,6 +26,8 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 
+import static java.lang.Integer.MAX_VALUE;
+
 /**
  * Annotates fields for SQL queries. All fields that will be involved in SQL clauses must have
  * this annotation. For more information about cache queries see {@link CacheQuery} documentation.
@@ -82,7 +84,7 @@ public @interface QuerySqlField {
      *
      * @return Maximum length for a String field.
      */
-    int maxLength() default Integer.MAX_VALUE;
+    int maxLength() default MAX_VALUE;
 
     /**
      * Array of index groups this field belongs to. Groups are used for compound indexes,
