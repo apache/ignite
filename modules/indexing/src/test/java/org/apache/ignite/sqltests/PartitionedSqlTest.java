@@ -17,10 +17,100 @@
 
 package org.apache.ignite.sqltests;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class PartitionedSqlTest extends BaseSqlTest {
     @Override protected void setupData() {
         super.createTables("template=partitioned");
 
         fillCommonData();
+    }
+
+    public void testInnerDistJoin() {
+        testAllNodes(node -> {
+            final String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d INNER JOIN Address a " +
+                "ON d.%s = a.%s";
+
+            Result actIdxOnOn = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depId")), node);
+            Result actIdxOffOn = executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depId")), node);
+
+            List<List<Object>> exp = doInnerJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
+                (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
+                (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
+
+            assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
+            assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result.", actIdxOffOn.values(), exp);
+        });
+    }
+
+    public void testNegativeInnerDistJoin() {
+        testAllNodes(node -> {
+            String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d INNER JOIN Address a " +
+                "ON d.%s = a.%s";
+
+            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depIdNoidx")), node));
+            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depIdNoidx")), node));
+        });
+    }
+
+    public void testLeftDistJoin() {
+        testAllNodes(node -> {
+            final String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d LEFT JOIN Address a " +
+                "ON d.%s = a.%s";
+
+            Result actIdxOnOn = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depId")), node);
+            Result actIdxOffOn = executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depId")), node);
+
+            List<List<Object>> exp = doLeftJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
+                (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
+                (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
+
+            assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
+            assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result.", actIdxOffOn.values(), exp);
+        });
+    }
+
+    public void testNegativeLeftDistJoin() {
+        testAllNodes(node -> {
+            String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d LEFT JOIN Address a " +
+                "ON d.%s = a.%s";
+
+            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depIdNoidx")), node));
+            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "idNoIdx", "depIdNoidx")), node));
+        });
+    }
+
+    public void testRightDistJoin() {
+        testAllNodes(node -> {
+            final String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d RIGHT JOIN Address a " +
+                "ON d.%s = a.%s";
+
+            Result actIdxOnOn = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depId")), node);
+            Result actIdxOnOff = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depIdNoidx")), node);
+
+            List<List<Object>> exp = doRightJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
+                (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
+                (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
+
+            assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
+            assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result.", actIdxOnOff.values(), exp);
+        });
+    }
+
+    public void testNegativeRightDistJoin() {
+        testAllNodes(node -> {
+            String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d RIGHT JOIN Address a " +
+                "ON d.%s = a.%s";
+
+            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depIdNoidx")), node));
+            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depId")), node));
+        });
     }
 }
