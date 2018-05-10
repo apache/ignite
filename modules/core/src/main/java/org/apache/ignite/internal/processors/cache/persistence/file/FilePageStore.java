@@ -260,26 +260,31 @@ public class FilePageStore implements PageStore {
     public void truncate(int tag) throws PersistentStorageIOException {
         lock.writeLock().lock();
 
+        long pages = this.pages();
+
         try {
             if (!inited)
                 return;
 
             this.tag = tag;
 
-            fileIO.clear();
-
-            long newAlloc = initFile();
-
-            long delta = newAlloc - allocated.getAndSet(newAlloc);
-
-            assert delta % pageSize == 0;
-
-            allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
+            try {
+                fileIO.close();
+            }
+            finally {
+                cfgFile.delete();
+            }
         }
         catch (IOException e) {
             throw new PersistentStorageIOException(e);
         }
         finally {
+            inited = false;
+
+            allocated.set(0);
+
+            allocatedTracker.updateTotalAllocatedPages(-1L * pages);
+
             lock.writeLock().unlock();
         }
     }
