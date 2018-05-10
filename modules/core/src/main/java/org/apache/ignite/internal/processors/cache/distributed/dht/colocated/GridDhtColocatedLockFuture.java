@@ -816,7 +816,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
                             mapOnTopology(remap, c);
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (RuntimeException | IgniteCheckedException e) {
                             onDone(e);
                         }
                         finally {

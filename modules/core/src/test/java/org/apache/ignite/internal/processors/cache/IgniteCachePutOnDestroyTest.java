@@ -20,23 +20,32 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-
 /**
  * Test ensures that the put operation does not hang during asynchronous cache destroy.
  */
-public class IgniteCachePutOnDestroyTest extends GridCommonAbstractTest {
+public abstract class IgniteCachePutOnDestroyTest extends GridCommonAbstractTest {
+    /** Grid count. */
+    private static final int GRID_CNT = 2;
+
+    /** Iteration count. */
+    protected static final int ITER_CNT = 50;
+
+    /** Worker threads timeout. */
+    protected static final int TIMEOUT = 10_000;
+
     /**
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    private <K, V> CacheConfiguration<K, V> cacheConfiguration(String cacheName, String grpName) {
+    protected <K, V> CacheConfiguration<K, V> cacheConfiguration(String cacheName, String grpName) {
         CacheConfiguration<K, V> cfg = new CacheConfiguration<>();
 
         cfg.setName(cacheName);
@@ -49,27 +58,30 @@ public class IgniteCachePutOnDestroyTest extends GridCommonAbstractTest {
     /**
      * @return Cache atomicity mode.
      */
-    public CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
-    }
+    protected abstract CacheAtomicityMode atomicityMode();
+
+    /**
+     * @return Cache mode.
+     */
+    protected abstract CacheMode cacheMode();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(2);
+        startGrids(GRID_CNT);
     }
 
     /**
-     * @throws Exception If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    public void testPutOnCacheDestroy() throws Exception {
-        for (int n = 0; n < 50; n++)
+    public void testPutOnCacheDestroy() throws IgniteCheckedException {
+        for (int n = 0; n < ITER_CNT; n++)
             doTestPutOnCacheDestroy();
     }
 
     /**
-     * @throws Exception If failed.
+     * @throws IgniteCheckedException If failed.
      */
-    private void doTestPutOnCacheDestroy() throws Exception {
+    private void doTestPutOnCacheDestroy() throws IgniteCheckedException {
         final Ignite ignite = grid(0);
 
         final String grpName = "testGroup";
@@ -96,29 +108,34 @@ public class IgniteCachePutOnDestroyTest extends GridCommonAbstractTest {
                     }
                 }
                 catch (Exception e) {
-                    boolean rightErrMsg = false;
-
-                    for (Throwable t : X.getThrowableList(e)) {
-                        if (t.getClass() == CacheStoppedException.class ||
-                            t.getClass() == IllegalStateException.class) {
-                            String errMsg = t.getMessage().toLowerCase();
-
-                            if (errMsg.contains("cache") && errMsg.contains("stopped")) {
-                                rightErrMsg = true;
-
-                                break;
-                            }
-                        }
-                    }
-
-                    assertTrue(X.getFullStackTrace(e), rightErrMsg);
+                    assertTrue(X.getFullStackTrace(e), hasCacheStoppedMessage(e));
                 }
 
                 return null;
-            }, 6, "put-thread").get();
+            }, 6, "put-thread").get(TIMEOUT);
         }
         finally {
             additionalCache.destroy();
         }
+    }
+
+    /**
+     * Validate exception.
+     *
+     * @param e Exception.
+     * @return {@code True} if exception (or cause) is instance of {@link CacheStoppedException} or
+     * {@link IllegalStateException} and message contains "cache" and "stopped" keywords.
+     */
+    protected boolean hasCacheStoppedMessage(Exception e) {
+        for (Throwable t : X.getThrowableList(e)) {
+            if (t.getClass() == CacheStoppedException.class || t.getClass() == IllegalStateException.class) {
+                String errMsg = t.getMessage().toLowerCase();
+
+                if (errMsg.contains("cache") && errMsg.contains("stopped"))
+                    return true;
+            }
+        }
+
+        return false;
     }
 }

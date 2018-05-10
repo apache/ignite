@@ -15,20 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.IgniteCacheAtomicPutOnDestroyTest;
 
 /**
- * Test ensures that the put operation does not hang during asynchronous cache destroy.
+ * Tests for replicated atomic cache.
  */
-public class IgniteAtomicCachePutOnDestroyTest extends IgniteCachePutOnDestroyTest {
-    /**
-     * @return Cache atomicity mode.
-     */
-    @Override public CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+public class IgniteCacheReplicatedAtomicPutOnDestroyTest extends IgniteCacheAtomicPutOnDestroyTest {
+    /** {@inheritDoc */
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
     }
 }
