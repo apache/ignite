@@ -3,6 +3,7 @@ Apache Ignite Release Notes
 
 Changes in GridGain In-Memory Data Fabric Professional Edition 2.5.1
 ------------------------------------
+Ignite:
 * Introduced ZooKeeper discovery SPI
 * Added ability to disable WAL during rebalancing
 * Added ability to rollback long-running transactions that block partition map exchange
@@ -22,6 +23,7 @@ Changes in GridGain In-Memory Data Fabric Professional Edition 2.5.1
 * General approach for critical failures handling implemented
 * Added configurable automatic rollback timeout for pending transactions preventing partition map exchange to complete
 
+SQL:
 * SQL: sqlline.sh Fixed script to use Java from JAVA_HOME
 
 * REST: Added AUTHENTICATE command
@@ -31,6 +33,7 @@ Changes in GridGain In-Memory Data Fabric Professional Edition 2.5.1
 * Control utility: Added utilities to view and kill active transactions
 * Control utility: Fixed timeout on changing baseline
 
+Web Console:
 * Web Console: Added export of thread dump in text format
 * Web Console: Fixed Dockerfile generation
 * Web Console: Fixed code generation for large numbers in configuration params
