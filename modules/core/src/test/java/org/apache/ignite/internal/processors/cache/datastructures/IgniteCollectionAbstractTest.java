@@ -30,8 +30,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueAdapter;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
-import org.apache.ignite.internal.processors.datastructures.IgniteCacheSetImpl;
-import org.apache.ignite.internal.processors.datastructures.IgniteCacheSetProxy;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -143,19 +141,22 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
      * @return Cache context.
      */
     protected static GridCacheContext cctx(IgniteSet set) {
-        try {
-            return GridTestUtils.getFieldValue(set, "cctx");
-        }
-        catch (IgniteException e) {
+        if (set instanceof GridCacheSetProxy)
+            return GridTestUtils.getFieldValue(set, GridCacheSetProxy.class, "cctx");
+        else
             return GridTestUtils.getFieldValue(set, "ctx");
-        }
     }
 
     /**
      * @param set Ignite set.
-     * @return {@code True} if this instance of IgniteSet is compatible with previous (Ignite 2.5) version.
+     * @return {@code True} if this instance of IgniteSet is compatible with older Ignite version.
      */
-    protected static boolean legacy(IgniteSet set) {
-        return (set instanceof GridCacheSetProxy || set instanceof GridCacheSetImpl);
+    protected static boolean compatibilityMode(IgniteSet set) {
+        IgniteSet impl = set;
+
+        if (set instanceof GridCacheSetProxy)
+            impl = ((GridCacheSetProxy)set).delegate();
+
+        return impl instanceof GridCacheSetImpl;
     }
 }

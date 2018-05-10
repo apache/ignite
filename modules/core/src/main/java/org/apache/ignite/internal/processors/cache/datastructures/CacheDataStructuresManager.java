@@ -60,8 +60,6 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.internal.processors.datastructures.GridTransactionalCacheQueueImpl;
 import org.apache.ignite.internal.processors.datastructures.IgniteCacheSetImpl;
-import org.apache.ignite.internal.processors.datastructures.IgniteCacheSetProxy;
-import org.apache.ignite.internal.processors.datastructures.CacheSetInternalProxy;
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -106,7 +104,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     }
 
     /** Sets map. */
-    private final ConcurrentMap<IgniteUuid, CacheSetInternalProxy> setsMap;
+    private final ConcurrentMap<IgniteUuid, GridCacheSetProxy> setsMap;
 
     /** Set keys used for set iteration. */
     private ConcurrentMap<IgniteUuid, GridConcurrentHashSet<SetItemKey>> setDataMap =
@@ -179,15 +177,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /**
      * @param set Set.
      */
-    public void onRemoved(IgniteCacheSetProxy set) {
-        setsMap.remove(set.delegate().id(), set);
-    }
-
-    /**
-     * @param set Set.
-     * @deprecated Replaced by {@link #onRemoved(IgniteCacheSetProxy)}.
-     */
-    @Deprecated
     public void onRemoved(GridCacheSetProxy set) {
         setsMap.remove(set.delegate().id(), set);
     }
@@ -197,8 +186,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
-        for (Map.Entry<IgniteUuid, CacheSetInternalProxy> e : setsMap.entrySet()) {
-            CacheSetInternalProxy set = e.getValue();
+        for (Map.Entry<IgniteUuid, GridCacheSetProxy> e : setsMap.entrySet()) {
+            GridCacheSetProxy set = e.getValue();
 
             if (clusterRestarted) {
                 set.blockOnRemove();
@@ -406,7 +395,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param name Set name.
      * @param colloc Collocated flag.
      * @param create Create flag.
-     * @param compatibilityMode {@code True} to create Ignite 2.5 compatible version.
+     * @param compatibilityMode {@code True} to create compatible with older Ignite version.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
@@ -426,7 +415,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param name Name of set.
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
-     * @param compatibilityMode {@code True} to create Ignite 2.5 compatible version.
+     * @param compatibilityMode {@code True} to create compatible with older Ignite version.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
@@ -446,15 +435,12 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
-            // If allowed to use separate cache.
             if (!compatibilityMode && !collocated) {
-                // For backward compatibility try to find an old header.
+                // For backward compatibility try to find header.
                 hdr = (GridCacheSetHeader)cache.get(key);
 
-                if (hdr == null) {
-                    // For non-collocated IgniteSet version with separated cache we don't need header.
-                    return new IgniteCacheSetProxy<>(cctx, new IgniteCacheSetImpl<T>(cctx, name));
-                }
+                if (hdr == null)
+                    return new GridCacheSetProxy<>(cctx, new IgniteCacheSetImpl<T>(cctx, name));
             }
             else if (create) {
                 hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
@@ -471,13 +457,12 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                     return null;
             }
 
-            CacheSetInternalProxy<T> set = setsMap.get(hdr.id());
+            GridCacheSetProxy<T> set = setsMap.get(hdr.id());
 
             if (set == null) {
-                CacheSetInternalProxy<T> old = setsMap.putIfAbsent(hdr.id(),
-                    set = compatibilityMode ?
-                        new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)) :
-                        new IgniteCacheSetProxy<>(cctx, new IgniteCacheSetImpl<T>(cctx, name, hdr)));
+                GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
+                    set = new GridCacheSetProxy<>(cctx, compatibilityMode ?
+                        new GridCacheSetImpl<T>(cctx, name, hdr) : new IgniteCacheSetImpl<T>(cctx, name, hdr)));
 
                 if (old != null)
                     set = old;
@@ -669,7 +654,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      */
     @SuppressWarnings("unchecked")
     private void blockSet(IgniteUuid setId) {
-        CacheSetInternalProxy set = setsMap.remove(setId);
+        GridCacheSetProxy set = setsMap.remove(setId);
 
         if (set != null)
             set.blockOnRemove();

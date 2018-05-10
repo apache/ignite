@@ -86,7 +86,7 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
 
         GridCacheSetItemKey that = (GridCacheSetItemKey)o;
 
-        return Objects.equals(this.setId, that.setId);
+        return Objects.equals(this.setId, that.setId) && item.equals(that.item);
     }
 
     /** {@inheritDoc} */

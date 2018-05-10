@@ -806,7 +806,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         GridCacheContext cctx = GridTestUtils.getFieldValue(set0, "cctx");
 
-        boolean separateCacheMode = !legacy(set0) && !set0.collocated();
+        boolean separateCacheMode = !compatibilityMode(set0) && !set0.collocated();
 
         for (int i = 0; i < gridCount(); i++) {
             GridCacheAdapter cache = grid(i).context().cache().internalCache(cctx.name());
@@ -817,7 +817,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                 continue;
             }
 
-            for (Object e : cache.localEntries(new CachePeekMode[] {CachePeekMode.ALL})) {
+            for (Object e : cache.localEntries(new CachePeekMode[]{CachePeekMode.ALL})) {
                 cnt++;
 
                 log.info("Unexpected entry: " + e);
@@ -1036,7 +1036,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set3 = ignite.set("set3", colCfg);
         IgniteSet set4 = ignite.set("set4", colCfg);
 
-        if (!legacy(set4) && !set4.collocated())
+        if (!compatibilityMode(set4) && !set4.collocated())
             assertTrue(cctx(set3).cacheId() != cctx(set4).cacheId());
         else
             assertTrue(cctx(set3).cacheId() == cctx(set4).cacheId());
@@ -1059,7 +1059,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set7 = ignite.set("set7", colCfg);
         IgniteSet set8 = ignite.set("set8", colCfg);
 
-        if (!legacy(set8) && !set8.collocated())
+        if (!compatibilityMode(set8) && !set8.collocated())
             assertTrue(cctx(set7).cacheId() != cctx(set8).cacheId());
         else
             assertTrue(cctx(set7).cacheId() == cctx(set8).cacheId());

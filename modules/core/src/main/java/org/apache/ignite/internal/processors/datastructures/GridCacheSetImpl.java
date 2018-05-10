@@ -64,7 +64,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  * @deprecated Replaced by {@link IgniteCacheSetImpl}.
  */
 @Deprecated
-public class GridCacheSetImpl<T> extends AbstractCollection<T> implements IgniteSet<T> {
+public class GridCacheSetImpl<T> extends AbstractCollection<T> implements IgniteInternalSet<T> {
     /** */
     private static final int BATCH_SIZE = 100;
 
@@ -515,7 +515,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /**
      * @param rmvd Removed flag.
      */
-    void removed(boolean rmvd) {
+    @Override public void removed(boolean rmvd) {
         if (this.rmvd)
             return;
 

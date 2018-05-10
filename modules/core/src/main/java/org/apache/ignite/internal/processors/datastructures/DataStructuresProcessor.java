@@ -919,23 +919,22 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      *
      * @param cfg Collection configuration.
      * @param grpName Group name.
-     * @param separateCacheSet {@code True} to create separate cache (for non-collocated IgniteSet instance).
+     * @param separateCache {@code True} to create separate cache.
      * @param dsName Data structure name.
      * @return Data strcuture cache.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private IgniteInternalCache compatibleCache(CollectionConfiguration cfg, String grpName,
-        boolean separateCacheSet, String dsName)
-        throws IgniteCheckedException {
-
-        // At first step we need to search compatible shared data structure cache.
+        boolean separateCache, String dsName)
+        throws IgniteCheckedException
+    {
         String cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
             cfg.getBackups() + "@" + grpName;
 
         IgniteInternalCache cache = ctx.cache().cache(cacheName);
 
-        // If it was not found or collection header does not exists in shared cache we can create separate cache.
-        if (separateCacheSet && (cache == null || cache.get(new GridCacheSetHeaderKey(dsName)) == null)) {
+        // For backward compatibility check that shared cache does not contain header before create separate cache.
+        if (separateCache && (cache == null || !cache.containsKey(new GridCacheSetHeaderKey(dsName)))) {
             cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
                 cfg.getBackups() + "_" + dsName + "@" + grpName;
 

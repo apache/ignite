@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -65,7 +64,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  * Non-collocated version uses separate cache for each instance.<br>
  * Collocated version uses shared cache.
  */
-public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements IgniteSet<T> {
+public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements IgniteInternalSet<T> {
     /** */
     private static final int BATCH_SIZE = 100;
 
@@ -147,12 +146,9 @@ public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements Igni
         return rmvd;
     }
 
-    /**
-     * @return {@code True} if set header found in cache.
-     * @throws IgniteCheckedException If failed.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    public boolean checkHeader() throws IgniteCheckedException {
+    @Override public boolean checkHeader() throws IgniteCheckedException {
         assert id != null;
 
         IgniteInternalCache<GridCacheSetHeaderKey, GridCacheSetHeader> cache0 = ctx.cache();
@@ -581,10 +577,8 @@ public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements Igni
         return nodes;
     }
 
-    /**
-     * @param rmvd Removed flag.
-     */
-    void removed(boolean rmvd) {
+    /** {@inheritDoc} */
+    @Override public void removed(boolean rmvd) {
         if (this.rmvd)
             return;
 
@@ -611,10 +605,8 @@ public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements Igni
         checkRemoved();
     }
 
-    /**
-     * @return Set ID.
-     */
-    public IgniteUuid id() {
+    /** {@inheritDoc} */
+    @Override public IgniteUuid id() {
         return id;
     }
 
