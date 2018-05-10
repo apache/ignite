@@ -714,7 +714,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-    // FIXME: affinity key is implicitly indexed so depId is indexed!
     public void testGroupByNoIdxField() {
         testAllNodes(node -> {
             // Need to filter out only part of records (each one is a count of employees
@@ -726,7 +725,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             Result result = executeFrom(
                 "SELECT depId, COUNT(*) " +
                     "FROM Employee " +
-                    "GROUP BY depId " +
+                    "GROUP BY depIdNoidx " +
                     "HAVING COUNT(*) > " + avgDep, node);
 
             List<List<Object>> all = select(node.cache(EMP_CACHE_NAME), null, "depId");
