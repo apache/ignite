@@ -575,22 +575,31 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override protected void destroyCacheDataStore0(CacheDataStore store) throws IgniteCheckedException {
-        int p = store.partId();
+        assert ctx.database() instanceof GridCacheDatabaseSharedManager;
+
+        int partId = store.partId();
+        Integer newTag;
 
         ctx.database().checkpointReadLock();
 
         try {
             saveStoreMetadata(store, null, false, true);
 
-            if (grp.allowFastEviction())
-                destroyPartitionStore(grp.groupId(), p);
+            PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+            newTag = pageMemory.invalidate(grp.groupId(), partId);
+
+            if (grp.walEnabled())
+                ctx.wal().log(new PartitionDestroyRecord(grp.groupId(), partId));
         }
         finally {
             ctx.database().checkpointReadUnlock();
         }
 
-        if (!grp.allowFastEviction())
-            ((GridCacheDatabaseSharedManager)ctx.database()).schedulePartitionDestroy(grp, p);
+        assert newTag != null
+            : "Tag for partition is not updated [grpName=" + grp.cacheOrGroupName() + ", partId=" + partId + "]";
+
+        ((GridCacheDatabaseSharedManager)ctx.database()).schedulePartitionDestroy(grp.groupId(), partId, newTag);
     }
 
     /**
@@ -599,18 +608,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      *
      * @param grpId Group ID.
      * @param partId Partition ID.
+     * @param tag Partition tag.
      *
      * @throws IgniteCheckedException If destroy has failed.
      */
-    public void destroyPartitionStore(int grpId, int partId) throws IgniteCheckedException {
-        PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
-
-        int tag = pageMemory.invalidate(grp.groupId(), partId);
-
-        if (grp.walEnabled())
-            ctx.wal().log(new PartitionDestroyRecord(grp.groupId(), partId));
-
-        ctx.pageStore().onPartitionDestroyed(grp.groupId(), partId, tag);
+    public void destroyPartitionStore(int grpId, int partId, int tag) throws IgniteCheckedException {
+        ctx.pageStore().onPartitionDestroyed(grpId, partId, tag);
     }
 
     /**
