@@ -53,6 +53,9 @@ public class SqlSetStreamingCommand implements SqlCommand {
     /** Streamer flush timeout. */
     private long flushFreq;
 
+    /** Ordered streamer. */
+    private boolean ordered;
+
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
         turnOn = parseBoolean(lex);
@@ -113,6 +116,15 @@ public class SqlSetStreamingCommand implements SqlCommand {
 
                     if (flushFreq <= 0)
                         throw error(lex, "Invalid flush frequency (must be positive).");
+
+                    break;
+
+                case SqlKeyword.ORDERED:
+                    lex.shift();
+
+                    checkOffLast(lex);
+
+                    ordered = true;
 
                     break;
 
@@ -177,6 +189,13 @@ public class SqlSetStreamingCommand implements SqlCommand {
      */
     public long flushFrequency() {
         return flushFreq;
+    }
+
+    /**
+     * @return {@code true} if the streamer keep the order of the statements. Otherwise returns {@code false}.
+     */
+    public boolean isOrdered() {
+        return ordered;
     }
 
     /** {@inheritDoc} */
