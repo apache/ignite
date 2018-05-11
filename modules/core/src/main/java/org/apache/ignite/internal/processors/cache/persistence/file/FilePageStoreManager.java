@@ -143,6 +143,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         final GridKernalContext ctx = cctx.kernalContext();
+
         if (ctx.clientNode())
             return;
 
@@ -151,6 +152,11 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         storeWorkDir = new File(folderSettings.persistentStoreRootPath(), folderSettings.folderName());
 
         U.ensureDirectory(storeWorkDir, "page store work directory", log);
+
+        if (storeWorkDir.getAbsolutePath().contains(System.getProperty("java.io.tmpdir"))) {
+            log.warning("Persistence store directory is in the \"java.io.tmpdir\" directory and may be cleaned. " +
+                "To avoid this set \"IGNITE_HOME\" environment variable properly.");
+        }
     }
 
     /** {@inheritDoc} */
