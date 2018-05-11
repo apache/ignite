@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.sql;
+import {Selector, t} from 'testcafe';
+import {CustomFormField} from '../components/FormField';
 
-/**
- * Parse exception guarantees parse error without. Such error deliver to user
- * statement isn't passed to H2 parser.
- */
-public class SqlStrictParseException extends SqlParseException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * Constructor.
-     * @param e SQL parse exception.
-     */
-    public SqlStrictParseException(SqlParseException e) {
-        super(e);
+export const pageSignin = {
+    email: new CustomFormField({model: '$ctrl.data.email'}),
+    password: new CustomFormField({model: '$ctrl.data.password'}),
+    signinButton: Selector('button').withText('Sign In'),
+    selector: Selector('page-signin'),
+    async login(email, password) {
+        return await t
+            .typeText(this.email.control, email)
+            .typeText(this.password.control, password)
+            .click(this.signinButton);
     }
-}
+};
