@@ -27,19 +27,22 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 /**
  * Test ensures that the put operation does not hang during asynchronous cache destroy.
  */
 public abstract class IgniteCachePutOnDestroyTest extends GridCommonAbstractTest {
-    /** Grid count. */
-    private static final int GRID_CNT = 2;
-
     /** Iteration count. */
     protected static final int ITER_CNT = 50;
 
+    /** Grid count. */
+    private static final int GRID_CNT = 2;
+
     /** Worker threads timeout. */
-    protected static final int TIMEOUT = 10_000;
+    private static final int TIMEOUT = 10_000;
 
     /**
      * @param cacheName Cache name.
@@ -75,16 +78,21 @@ public abstract class IgniteCachePutOnDestroyTest extends GridCommonAbstractTest
      */
     public void testPutOnCacheDestroy() throws IgniteCheckedException {
         for (int n = 0; n < ITER_CNT; n++)
-            doTestPutOnCacheDestroy();
+            doTestPutOnCacheDestroy(null, null);
     }
 
     /**
+     * @param concurrency Transaction concurrency level.
+     * @param isolation Transaction isolation level.
      * @throws IgniteCheckedException If failed.
      */
-    private void doTestPutOnCacheDestroy() throws IgniteCheckedException {
-        final Ignite ignite = grid(0);
+    protected void doTestPutOnCacheDestroy(TransactionConcurrency concurrency,
+        TransactionIsolation isolation) throws IgniteCheckedException {
+        String grpName = "testGroup";
 
-        final String grpName = "testGroup";
+        boolean explicitTx = concurrency != null && isolation != null;
+
+        Ignite ignite = grid(0);
 
         IgniteCache additionalCache = ignite.createCache(cacheConfiguration("cache1", grpName));
 
@@ -104,7 +112,15 @@ public abstract class IgniteCachePutOnDestroyTest extends GridCommonAbstractTest
                             break;
                         }
 
-                        cache.put(key, true);
+                        if (explicitTx) {
+                            try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
+                                cache.put(key, true);
+
+                                tx.commit();
+                            }
+                        }
+                        else
+                            cache.put(key, true);
                     }
                 }
                 catch (Exception e) {
@@ -126,7 +142,7 @@ public abstract class IgniteCachePutOnDestroyTest extends GridCommonAbstractTest
      * @return {@code True} if exception (or cause) is instance of {@link CacheStoppedException} or
      * {@link IllegalStateException} and message contains "cache" and "stopped" keywords.
      */
-    protected boolean hasCacheStoppedMessage(Exception e) {
+    private boolean hasCacheStoppedMessage(Exception e) {
         for (Throwable t : X.getThrowableList(e)) {
             if (t.getClass() == CacheStoppedException.class || t.getClass() == IllegalStateException.class) {
                 String errMsg = t.getMessage().toLowerCase();

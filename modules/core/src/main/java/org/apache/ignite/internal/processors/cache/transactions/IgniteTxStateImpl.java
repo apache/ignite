@@ -297,7 +297,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
                 GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
 
-                if (!cacheCtx.isLocal()) {
+                if (cacheCtx != null && !cacheCtx.isLocal()) {
                     nonLocCtx = cacheCtx;
 
                     break;
