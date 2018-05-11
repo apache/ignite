@@ -15,37 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.upload;
+package org.apache.ignite.jdbc.thin;
 
-import org.jetbrains.annotations.Nullable;
+import java.sql.Connection;
 
 /**
- * Holds parameters to tweak streamer in upload benchmarks.
- * If any method returns <code>null</code>, no parameter passed to streamer.
+ * Tests for not ordered streaming via thin driver.
  */
-public interface StreamerParams {
-    /**
-     * @return Per-node buffer size.
-     */
-    @Nullable public Integer streamerPerNodeBufferSize();
+public class JdbcThinStreamingNotOrderedSelfTest extends JdbcThinStreamingAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq) throws Exception {
+        Connection c = JdbcThinAbstractSelfTest.connect(grid(0), null);
 
-    /**
-     * @return Per-node parallel operations.
-     */
-    @Nullable public Integer streamerPerNodeParallelOperations();
+        execute(c, "SET STREAMING 1 BATCH_SIZE " + batchSize
+            + " ALLOW_OVERWRITE " + (allowOverwrite ? 1 : 0)
+            + " PER_NODE_BUFFER_SIZE 1000 "
+            + " FLUSH_FREQUENCY " + flushFreq + ";"
+        );
 
-    /**
-     * @return Local batch size.
-     */
-    @Nullable public Integer streamerLocalBatchSize();
-
-    /**
-     * @return Allow overwrite flag.
-     */
-    @Nullable public Boolean streamerAllowOverwrite();
-
-    /**
-     * @return Ordered flag.
-     */
-    public boolean streamerOrdered();
+        return c;
+    }
 }
