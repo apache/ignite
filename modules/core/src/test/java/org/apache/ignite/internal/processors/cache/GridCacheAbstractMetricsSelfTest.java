@@ -1079,8 +1079,14 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage());
         }
 
-        for (int i = 1; i < gridCount(); i++)
-            assertEquals(1, jcache(i).localMetrics().getEntryProcessorRemovals());
+        for (int i = 1; i < gridCount(); i++) {
+            Ignite ignite = ignite(i);
+
+            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+            if (affinity(cache).isPrimaryOrBackup(ignite.cluster().localNode(), key))
+                assertEquals(1, cache.localMetrics().getEntryProcessorRemovals());
+        }
 
         assertEquals(1, cache0.localMetrics().getEntryProcessorInvocations());
     }
@@ -1129,8 +1135,14 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             assertEquals(100f, cache0.localMetrics().getEntryProcessorHitPercentage());
         }
 
-        for (int i = 1; i < gridCount(); i++)
-            assertEquals(1, jcache(i).localMetrics().getEntryProcessorPuts());
+        for (int i = 1; i < gridCount(); i++) {
+            Ignite ignite = ignite(i);
+
+            IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+            if (affinity(cache).isPrimaryOrBackup(ignite.cluster().localNode(), key))
+                assertEquals(1, cache.localMetrics().getEntryProcessorPuts());
+        }
 
         assertEquals(1, cache0.localMetrics().getEntryProcessorInvocations());
     }
@@ -1192,7 +1204,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     public void testInvokeAvgTime() throws IgniteCheckedException {
         IgniteCache<Integer, Integer> cache0 = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        assertEquals(0.0, cache0.localMetrics().getEntryProcessorAverageInvocationTime(), 0.001f);
+        float averageTime = cache0.localMetrics().getEntryProcessorAverageInvocationTime();
+
+        assertEquals(0.0, averageTime, 0.001f);
 
         final Integer key = primaryKey(cache0);
 
@@ -1213,7 +1227,9 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             }
         });
 
-        assertTrue(cache0.localMetrics().getEntryProcessorAverageInvocationTime() > 0.0);
+        averageTime = cache0.localMetrics().getEntryProcessorAverageInvocationTime();
+
+        assertTrue(averageTime > 0.0);
 
         float maxTime = cache0.localMetrics().getEntryProcessorMaxInvocationTime();
         float minTime = cache0.localMetrics().getEntryProcessorMinInvocationTime();
@@ -1229,7 +1245,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
                 entry.setValue(1);
 
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(200);
                 } catch (InterruptedException e) {
                     throw new EntryProcessorException(e);
                 }
@@ -1238,6 +1254,11 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             }
         });
 
+        maxTime = cache0.localMetrics().getEntryProcessorMaxInvocationTime();
+        minTime = cache0.localMetrics().getEntryProcessorMinInvocationTime();
+        averageTime = cache0.localMetrics().getEntryProcessorAverageInvocationTime();
+
+        assertTrue(maxTime > averageTime && averageTime > minTime);
         assertEquals(2, cache0.localMetrics().getEntryProcessorInvocations());
     }
 
