@@ -153,9 +153,14 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         U.ensureDirectory(storeWorkDir, "page store work directory", log);
 
-        if (storeWorkDir.getAbsolutePath().contains(System.getProperty("java.io.tmpdir"))) {
-            log.warning("Persistence store directory is in the \"java.io.tmpdir\" directory and may be cleaned. " +
-                "To avoid this set \"IGNITE_HOME\" environment variable properly.");
+        String tmpDir = System.getProperty("java.io.tmpdir");
+
+        if (tmpDir != null && storeWorkDir.getAbsolutePath().contains(tmpDir)) {
+            log.warning("Persistence store directory is in the " + tmpDir + " directory and may be cleaned. " +
+                "To avoid this set \"IGNITE_HOME\" environment variable properly or " +
+                "change location of persistence directories in data storage configuration " +
+                "(see DataStorageConfiguration#walPath, DataStorageConfiguration#walArchivePath, " +
+                "DataStorageConfiguration#storagePath properties).");
         }
     }
 
