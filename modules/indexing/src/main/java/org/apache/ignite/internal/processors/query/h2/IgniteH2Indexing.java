@@ -2780,8 +2780,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // Close system H2 connection to INFORMATION_SCHEMA
         synchronized (schemaMux) {
-            if (sysConn != null)
+            if (sysConn != null) {
                 U.close(sysConn, log);
+
+                sysConn = null;
+            }
         }
     }
 
