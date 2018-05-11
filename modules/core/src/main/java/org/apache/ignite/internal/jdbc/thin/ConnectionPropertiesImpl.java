@@ -195,8 +195,12 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
             HostAndPortRange [] addrs = getAddresses();
 
-            for (int i = 0; i < addrs.length; i++)
+            for (int i = 0; i < addrs.length; i++) {
+                if (i > 0)
+                    sbUrl.append(',');
+
                 sbUrl.append(addrs[i].toString());
+            }
 
             if (!F.isEmpty(getSchema()))
                 sbUrl.append('/').append(getSchema());
@@ -689,6 +693,20 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             infos[i] = propsArray[i].getDriverPropertyInfo();
 
         return infos;
+    }
+
+    /**
+     * @return Properties set contains connection parameters.
+     */
+    public Properties storeToProperties() {
+        Properties props = new Properties();
+
+        for (ConnectionProperty prop : propsArray) {
+            if (prop.valueObject() != null)
+                props.setProperty(PROP_PREFIX + prop.getName(), prop.valueObject());
+        }
+
+        return props;
     }
 
     /**
