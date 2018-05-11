@@ -56,13 +56,13 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE = "cache";
 
-    /** Halt file io. */
+    /** Flag indicates that {@link HaltOnTruncateFileIO} should be used. */
     private boolean haltFileIO;
 
     /** MultiJVM flag. */
     private boolean multiJvm = true;
 
-    /** Additional args. */
+    /** Additional remote JVM args. */
     private List<String> additionalArgs = Collections.emptyList();
 
     /** {@inheritDoc} */
