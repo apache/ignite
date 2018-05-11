@@ -309,7 +309,7 @@ mixin paragraph-query
             .col-xs-8.col-sm-9(style='border-right: 1px solid #eee')
                 .sql-editor(ignite-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "sql", require: ["ace/ext/language_tools"],' +
                 'advanced: {enableSnippets: false, enableBasicAutocompletion: true, enableLiveAutocompletion: true}}'
-                ng-model='paragraph.query')
+                ng-model='paragraph.query' on-selection-change='paragraph.partialQuery = $event')
             .col-xs-4.col-sm-3
                 div(ng-show='caches.length > 0' style='padding: 5px 10px' st-table='displayedCaches' st-safe-src='caches')
                     lable.labelField.labelFormField Caches:

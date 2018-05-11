@@ -675,6 +675,45 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     }
 
     /**
+     * Test {@link CacheMetrics#getSize()} and {@link CacheMetrics#getCacheSize()} work equally.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCacheSizeWorksAsSize() throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        assertEquals(cache.metrics().getSize(), cache.metrics().getCacheSize());
+
+        for (int i = 0; i < KEY_CNT; i++) {
+            cache.put(i, i);
+
+            CacheMetrics metrics = cache.metrics();
+
+            assertEquals(metrics.getSize(), metrics.getCacheSize());
+
+            CacheMetrics localMetrics = cache.localMetrics();
+
+            assertEquals(localMetrics.getSize(), localMetrics.getCacheSize());
+        }
+
+        for (int i = 0; i < KEY_CNT / 2; i++) {
+            cache.remove(i, i);
+
+            CacheMetrics metrics = cache.metrics();
+
+            assertEquals(metrics.getSize(), metrics.getCacheSize());
+
+            CacheMetrics localMetrics = cache.localMetrics();
+
+            assertEquals(localMetrics.getSize(), localMetrics.getCacheSize());
+        }
+
+        cache.removeAll();
+
+        assertEquals(cache.metrics().getSize(), cache.metrics().getCacheSize());
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testTxEvictions() throws Exception {

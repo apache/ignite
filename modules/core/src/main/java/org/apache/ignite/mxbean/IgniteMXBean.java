@@ -433,6 +433,12 @@ public interface IgniteMXBean {
     public void dumpDebugInfo();
 
     /**
+     * Gets a formatted properties of current coordinator.
+     */
+    @MXBeanDescription("Formatted properties of current coordinator.")
+    public String getCurrentCoordinatorFormatted();
+
+    /**
      * Runs IO latency test against all remote server nodes in cluster.
      *
      * @param warmup Warmup duration in milliseconds.
@@ -475,4 +481,10 @@ public interface IgniteMXBean {
         int payLoadSize,
         boolean procFromNioThread
     );
+
+    /**
+     * Clears node local map.
+     */
+    @MXBeanDescription("Clears local node map.")
+    void clearNodeLocalMap();
 }

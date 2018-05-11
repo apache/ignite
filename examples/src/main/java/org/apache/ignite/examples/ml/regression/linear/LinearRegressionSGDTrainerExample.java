@@ -25,11 +25,11 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
-import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.thread.IgniteThread;
 
 import javax.cache.Cache;
@@ -37,7 +37,7 @@ import java.util.Arrays;
 import java.util.UUID;
 
 /**
- * Run linear regression model over distributed matrix.
+ * Run linear regression model over cached dataset.
  *
  * @see LinearRegressionSGDTrainer
  */
@@ -106,8 +106,6 @@ public class LinearRegressionSGDTrainerExample {
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
-            // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread
-            // because we create ignite cache internally.
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 LinearRegressionSGDTrainerExample.class.getSimpleName(), () -> {
 

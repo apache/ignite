@@ -92,6 +92,11 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
+    @Override public int reserved(WALPointer low, WALPointer high) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean disabled(int grpId) {
         return false;
     }
@@ -127,7 +132,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void onActivate(GridKernalContext kctx) {
         // No-op.
     }
 
