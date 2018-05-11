@@ -42,15 +42,11 @@ public class ReplicatedSqlTest extends BaseSqlTest {
         fillDepartmentTable("DepartmentPart");
     }
 
-    static String cacheName(String tabName) {
-        return "SQL_PUBLIC_" + tabName.toUpperCase();
-    }
-
     public void testInnerDistJoin1() {
         checkInnerDistJoin1(DEP_TAB);
     }
 
-    public void testMixedInnerDistJoin1(){
+    public void testMixedInnerDistJoin1() {
         checkInnerDistJoin1(DEP_PART_TAB);
     }
 
@@ -87,7 +83,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     private void checkInnerDistJoin2(String depTab) {
         testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.address " +
-                "FROM Address a INNER JOIN " + depTab +" d " +
+                "FROM Address a INNER JOIN " + depTab + " d " +
                 "ON d.%s = a.%s";
 
             Result actIdxOnOn = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depId")), node);
@@ -117,7 +113,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     private void checkLeftDistJoin(String depTab) {
         testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.address " +
-                "FROM " + depTab +" d LEFT JOIN Address a " +
+                "FROM " + depTab + " d LEFT JOIN Address a " +
                 "ON d.%s = a.%s";
 
             Result actIdxOnOn = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depId")), node);
@@ -135,7 +131,6 @@ public class ReplicatedSqlTest extends BaseSqlTest {
             assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result.", actIdxOffOff.values(), exp);
         });
     }
-
 
     public void testRightDistJoin() {
         checkRightDistJoin(DEP_TAB);
@@ -165,5 +160,21 @@ public class ReplicatedSqlTest extends BaseSqlTest {
             assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result.", actIdxOffOn.values(), exp);
             assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result.", actIdxOffOff.values(), exp);
         });
+    }
+
+    public void testMixedInnerJoin1() {
+        checkInnerJoin1(DEP_PART_TAB);
+    }
+
+    public void testMixedInnerJoin2() {
+        checkInnerJoin1(DEP_PART_TAB);
+    }
+
+    public void testMixedLeftJoin() {
+        checkLeftJoin(DEP_PART_TAB);
+    }
+
+    public void testMixedRightJoin() {
+        checkRightJoin(DEP_PART_TAB);
     }
 }

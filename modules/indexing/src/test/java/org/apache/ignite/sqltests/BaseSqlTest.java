@@ -226,6 +226,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     /**
      * Creates Employee test table.
+     *
      * @param commonParams Common params.
      */
     protected void createEmployeeTable(String commonParams) {
@@ -399,10 +400,11 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
                 List<List<?>> res = ((IgniteEx)node).context().query().querySqlFields(explainQry, false).getAll();
 
-                String explanation = (String) res.get(0).get(0);
+                String explanation = (String)res.get(0).get(0);
 
-                log.debug("Node: " + node.name() + ": Execution plan for query "  + qry + ":\n" + explanation);
-            } catch (Exception exc) {
+                log.debug("Node: " + node.name() + ": Execution plan for query " + qry + ":\n" + explanation);
+            }
+            catch (Exception exc) {
                 log.error("Ignoring exception gotten explaining query : " + qry, exc);
             }
         }
@@ -907,17 +909,42 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             "Failed to prepare distributed join query: join condition does not use index");
     }
 
-    public void testInnerJoin1() {
+    public void checkInnerJoin1(String depTab) {
         testAllNodes(node -> {
             String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
-                "FROM Employee e INNER JOIN Department d " +
+                "FROM Employee e INNER JOIN " + depTab + " d " +
                 "ON e.%s = d.%s";
             Result actIdxOnOn = executeFrom(String.format(qryTpl, "depId", "id"), node);
             Result actIdxOnOff = executeFrom(String.format(qryTpl, "depId", "idNoidx"), node);
             Result actIdxOffOn = executeFrom(String.format(qryTpl, "depIdNoidx", "id"), node);
             Result actIdxOffOff = executeFrom(String.format(qryTpl, "depIdNoidx", "idNoidx"), node);
 
-            List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
+            List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(cacheName(depTab)),
+                (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
+                (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
+
+            assertContainsEq("Join on idx = idx is incorrect.", actIdxOnOn.values(), expected);
+            assertContainsEq("Join on idx = noidx is incorrect.", actIdxOnOff.values(), expected);
+            assertContainsEq("Join on noidx = idx is incorrect.", actIdxOffOn.values(), expected);
+            assertContainsEq("Join on noidx = noidx is incorrect.", actIdxOffOff.values(), expected);
+        });
+    }
+
+    public void testInnerJoin1() {
+        checkInnerJoin1(DEP_TAB);
+    }
+
+    public void checkInnerJoin2(String depTab) {
+        testAllNodes(node -> {
+            String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+                "FROM " + depTab + " d INNER JOIN Employee e " +
+                "ON e.%s = d.%s";
+            Result actIdxOnOn = executeFrom(String.format(qryTpl, "depId", "id"), node);
+            Result actIdxOnOff = executeFrom(String.format(qryTpl, "depId", "idNoidx"), node);
+            Result actIdxOffOn = executeFrom(String.format(qryTpl, "depIdNoidx", "id"), node);
+            Result actIdxOffOff = executeFrom(String.format(qryTpl, "depIdNoidx", "idNoidx"), node);
+
+            List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(cacheName(depTab)),
                 (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
                 (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
@@ -929,16 +956,20 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     public void testInnerJoin2() {
+        checkInnerJoin2(DEP_TAB);
+    }
+
+    public void checkLeftJoin(String depTab) {
         testAllNodes(node -> {
             String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
-                "FROM Employee e INNER JOIN Department d " +
+                "FROM Employee e LEFT JOIN " + depTab + " d " +
                 "ON e.%s = d.%s";
             Result actIdxOnOn = executeFrom(String.format(qryTpl, "depId", "id"), node);
             Result actIdxOnOff = executeFrom(String.format(qryTpl, "depId", "idNoidx"), node);
             Result actIdxOffOn = executeFrom(String.format(qryTpl, "depIdNoidx", "id"), node);
             Result actIdxOffOff = executeFrom(String.format(qryTpl, "depIdNoidx", "idNoidx"), node);
 
-            List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
+            List<List<Object>> expected = doLeftJoin(node.cache(EMP_CACHE_NAME), node.cache(cacheName(depTab)),
                 (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
                 (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
@@ -950,16 +981,20 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     public void testLeftJoin() {
+        checkLeftJoin(DEP_TAB);
+    }
+
+    public void checkRightJoin(String depTab) {
         testAllNodes(node -> {
             String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
-                "FROM Employee e LEFT JOIN Department d " +
+                "FROM Employee e RIGHT JOIN " + depTab + " d " +
                 "ON e.%s = d.%s";
             Result actIdxOnOn = executeFrom(String.format(qryTpl, "depId", "id"), node);
             Result actIdxOnOff = executeFrom(String.format(qryTpl, "depId", "idNoidx"), node);
             Result actIdxOffOn = executeFrom(String.format(qryTpl, "depIdNoidx", "id"), node);
             Result actIdxOffOff = executeFrom(String.format(qryTpl, "depIdNoidx", "idNoidx"), node);
 
-            List<List<Object>> expected = doLeftJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
+            List<List<Object>> expected = doRightJoin(node.cache(EMP_CACHE_NAME), node.cache(cacheName(depTab)),
                 (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
                 (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
@@ -971,24 +1006,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     public void testRightJoin() {
-        testAllNodes(node -> {
-            String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
-                "FROM Employee e RIGHT JOIN Department d " +
-                "ON e.%s = d.%s";
-            Result actIdxOnOn = executeFrom(String.format(qryTpl, "depId", "id"), node);
-            Result actIdxOnOff = executeFrom(String.format(qryTpl, "depId", "idNoidx"), node);
-            Result actIdxOffOn = executeFrom(String.format(qryTpl, "depIdNoidx", "id"), node);
-            Result actIdxOffOff = executeFrom(String.format(qryTpl, "depIdNoidx", "idNoidx"), node);
-
-            List<List<Object>> expected = doRightJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
-                (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
-                (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
-
-            assertContainsEq("Join on idx = idx is incorrect.", actIdxOnOn.values(), expected);
-            assertContainsEq("Join on idx = noidx is incorrect.", actIdxOnOff.values(), expected);
-            assertContainsEq("Join on noidx = idx is incorrect.", actIdxOffOn.values(), expected);
-            assertContainsEq("Join on noidx = noidx is incorrect.", actIdxOffOff.values(), expected);
-        });
+        checkRightJoin(DEP_TAB);
     }
 
     public void testNegativeFullOuterJoin() {
@@ -1052,5 +1070,15 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      */
     public static void setExplain(boolean shouldExplain) {
         explain = shouldExplain;
+    }
+
+    /**
+     * Get cache name by name of created by DDL table.
+     *
+     * @param tabName name of DDL created table.
+     * @return cache name.
+     */
+    static String cacheName(String tabName) {
+        return "SQL_PUBLIC_" + tabName.toUpperCase();
     }
 }
