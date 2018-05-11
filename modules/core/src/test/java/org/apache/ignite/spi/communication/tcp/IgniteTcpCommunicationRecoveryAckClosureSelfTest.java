@@ -260,7 +260,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
     public void testQueueOverflow() throws Exception {
         for (int i = 0; i < 3; i++) {
             try {
-                startSpis(5, 60_000, 10);
+                startSpis(5, 2_000, 10);
 
                 checkOverflow();
 
@@ -365,7 +365,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
             @Override public boolean apply() {
                 return expMsgs == ackMsgs.get();
             }
-        }, spi0.getIdleConnectionTimeout());
+        }, 5000);
 
         assertEquals(expMsgs, ackMsgs.get());
     }
