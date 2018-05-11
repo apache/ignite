@@ -98,7 +98,6 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(testSpi);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
-        memCfg.setPageSize(1024);
         memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(50 * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
