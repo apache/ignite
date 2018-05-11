@@ -734,6 +734,7 @@ public class PlatformConfigurationUtils {
             tx.setDefaultTxIsolation(TransactionIsolation.fromOrdinal(in.readInt()));
             tx.setDefaultTxTimeout(in.readLong());
             tx.setPessimisticTxLogLinger(in.readInt());
+            tx.setTxTimeoutOnPartitionMapExchange(in.readLong());
 
             cfg.setTransactionConfiguration(tx);
         }
@@ -1251,6 +1252,7 @@ public class PlatformConfigurationUtils {
             writeEnumInt(w, tx.getDefaultTxIsolation(), TransactionConfiguration.DFLT_TX_ISOLATION);
             w.writeLong(tx.getDefaultTxTimeout());
             w.writeInt(tx.getPessimisticTxLogLinger());
+            w.writeLong(tx.getTxTimeoutOnPartitionMapExchange());
         }
         else
             w.writeBoolean(false);
