@@ -43,7 +43,7 @@ public class IgniteThinGetBenchmark extends IgniteThinCacheAbstractBenchmark<Int
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
 
-        cache.get(key);
+        cache().get(key);
 
         return true;
     }
