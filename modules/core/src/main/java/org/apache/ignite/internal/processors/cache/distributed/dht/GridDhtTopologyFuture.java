@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
  * safe to use when all transactions that involve moving primary partitions are completed and partition map
  * exchange is also completed.
  * <p/>
- * When new new cache operation is started, it will wait for this future before acquiring new locks on particular
+ * When new cache operation is started, it will wait for this future before acquiring new locks on particular
  * topology version.
  */
 public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopologyVersion> {
