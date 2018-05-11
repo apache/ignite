@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.sql;
 
-import java.io.Serializable;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -33,12 +32,11 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         execSql("CREATE TABLE varchar_table(id INT PRIMARY KEY, str VARCHAR(5))");
 
-        //execSql("INSERT INTO varchar_table VALUES(?, ?)", 1, "12345");
+        execSql("INSERT INTO varchar_table VALUES(?, ?)", 1, "12345");
 
-        //TODO: check DmlStatementsProcess#798
         execSql("CREATE TABLE char_table(id INT PRIMARY KEY, str CHAR(5))");
 
-        //execSql("INSERT INTO char_table VALUES(?, ?)", 1, "12345");
+        execSql("INSERT INTO char_table VALUES(?, ?)", 1, "12345");
     }
 
     /**
@@ -113,26 +111,5 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
             .setArgs(args);
 
         return grid(0).context().query().querySqlFields(qry, true).getAll();
-    }
-
-    /**
-     * Organization.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    private static class Organization implements Serializable {
-        /** ID. */
-        private final int id;
-
-        /** Name. */
-        private final String name;
-
-        /**
-         * @param id ID.
-         * @param name Name.
-         */
-        private Organization(int id, String name) {
-            this.id = id;
-            this.name = name;
-        }
     }
 }
