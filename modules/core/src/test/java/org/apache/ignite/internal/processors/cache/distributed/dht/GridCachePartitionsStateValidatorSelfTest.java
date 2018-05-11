@@ -55,10 +55,11 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         Mockito.when(topologyMock.partitions()).thenReturn(3);
 
         List<GridDhtLocalPartition> localPartitions = Lists.newArrayList(
-                partitionMock(0, 1, 1),
-                partitionMock(1, 2, 2),
-                partitionMock(2, 3, 3)
+            partitionMock(0, 1, 1),
+            partitionMock(1, 2, 2),
+            partitionMock(2, 3, 3)
         );
+
         Mockito.when(topologyMock.localPartitions()).thenReturn(localPartitions);
         Mockito.when(topologyMock.currentLocalPartitions()).thenReturn(localPartitions);
     }
@@ -82,10 +83,13 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
      */
     private GridDhtPartitionsSingleMessage from(@Nullable Map<Integer, T2<Long, Long>> countersMap, @Nullable Map<Integer, Long> sizesMap) {
         GridDhtPartitionsSingleMessage msg = new GridDhtPartitionsSingleMessage();
+
         if (countersMap != null)
             msg.addPartitionUpdateCounters(0, countersMap);
+
         if (sizesMap != null)
             msg.addPartitionSizes(0, sizesMap);
+
         return msg;
     }
 
