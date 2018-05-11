@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicC
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsWithTtlTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsEvictionTest;
@@ -39,7 +40,6 @@ import org.apache.ignite.internal.processors.database.IgniteDbDynamicCacheSelfTe
 import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeTinyPutGetTest;
-
 
 /**
  *
@@ -65,7 +65,6 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(BPlusTreePageMemoryImplTest.class);
         suite.addTestSuite(BPlusTreeReuseListPageMemoryImplTest.class);
 
-
         // Metrics
         suite.addTestSuite(FillFactorMetricTest.class);
         // Basic API tests.
@@ -79,6 +78,7 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(IgnitePdsSingleNodePutGetPersistenceTest.class);
         suite.addTestSuite(IgnitePdsDynamicCacheTest.class);
         suite.addTestSuite(IgnitePdsClientNearCachePutGetTest.class);
+        suite.addTestSuite(IgnitePdsWithTtlTest.class);
 
         suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistence.class);
 

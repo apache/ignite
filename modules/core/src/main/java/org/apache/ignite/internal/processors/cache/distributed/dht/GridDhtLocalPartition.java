@@ -327,9 +327,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
-        if (grp.allowFastEviction())
-            return internalSize() == 0;
-
         return store.fullSize() == 0 && internalSize() == 0;
     }
 
@@ -861,80 +858,71 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         else
             clear(singleCacheEntryMap.map, extras, rec);
 
-        if (!grp.allowFastEviction()) {
-            CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;
+        CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;
 
-            try {
-                GridIterator<CacheDataRow> it0 = grp.offheap().partitionIterator(id);
+        try {
+            GridIterator<CacheDataRow> it0 = grp.offheap().partitionIterator(id);
 
-                while (it0.hasNext()) {
-                    ctx.database().checkpointReadLock();
+            while (it0.hasNext()) {
+                ctx.database().checkpointReadLock();
 
-                    try {
-                        CacheDataRow row = it0.next();
+                try {
+                    CacheDataRow row = it0.next();
 
-                        if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId()))
-                            hld = cacheMapHolder(ctx.cacheContext(row.cacheId()));
+                    if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId()))
+                        hld = cacheMapHolder(ctx.cacheContext(row.cacheId()));
 
-                        assert hld != null;
+                    assert hld != null;
 
-                        GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(
-                            hld,
-                            hld.cctx,
-                            grp.affinity().lastVersion(),
-                            row.key(),
-                            true,
-                            false);
+                    GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(
+                        hld,
+                        hld.cctx,
+                        grp.affinity().lastVersion(),
+                        row.key(),
+                        true,
+                        false);
 
-                        ctx.database().checkpointReadLock();
+                    if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
+                        removeEntry(cached);
 
-                        try {
-                            if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
-                                removeEntry(cached);
-
-                                if (rec) {
-                                    hld.cctx.events().addEvent(cached.partition(),
-                                        cached.key(),
-                                        ctx.localNodeId(),
-                                        (IgniteUuid)null,
-                                        null,
-                                        EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-                                        null,
-                                        false,
-                                        cached.rawGet(),
-                                        cached.hasValue(),
-                                        null,
-                                        null,
-                                        null,
-                                        false);
-                                }
-                            }
+                        if (rec) {
+                            hld.cctx.events().addEvent(cached.partition(),
+                                cached.key(),
+                                ctx.localNodeId(),
+                                (IgniteUuid)null,
+                                null,
+                                EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+                                null,
+                                false,
+                                cached.rawGet(),
+                                cached.hasValue(),
+                                null,
+                                null,
+                                null,
+                                false);
                         }
-                        finally {
-                            ctx.database().checkpointReadUnlock();
-                        }
-                    }
-                    catch (GridDhtInvalidPartitionException e) {
-                        assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
-
-                        break; // Partition is already concurrently cleared and evicted.
-                    }
-                    finally {
-                        ctx.database().checkpointReadUnlock();
                     }
                 }
-            }
-            catch (NodeStoppingException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to get iterator for evicted partition: " + id);
+                catch (GridDhtInvalidPartitionException e) {
+                    assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
 
-                rent.onDone(e);
+                    break; // Partition is already concurrently cleared and evicted.
+                }
+                finally {
+                    ctx.database().checkpointReadUnlock();
+                }
+            }
+        }
+        catch (NodeStoppingException e) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to get iterator for evicted partition: " + id);
 
-                throw e;
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to get iterator for evicted partition: " + id, e);
-            }
+            rent.onDone(e);
+
+            throw e;
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to get iterator for evicted partition: " + id, e);
         }
     }
 
