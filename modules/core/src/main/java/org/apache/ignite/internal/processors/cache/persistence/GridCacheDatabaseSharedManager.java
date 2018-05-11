@@ -2768,7 +2768,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private void addDestroyRequest(CacheGroupContext grpCtx, int grpId, int partId, int tag) {
             PartitionDestroyRequest req = new PartitionDestroyRequest(grpId, partId, tag);
 
-            PartitionDestroyRequest old = pendingReqs.putIfAbsent(new T2<>(grpCtx.groupId(), partId), req);
+            PartitionDestroyRequest old = pendingReqs.putIfAbsent(new T2<>(grpId, partId), req);
 
             assert old == null : "Must wait for old destroy request to finish before adding a new one " +
                 "[grpId=" + grpId + ", grpName=" + grpCtx != null ? grpCtx.cacheOrGroupName() : "none" + ", partId=" + partId + ']';
