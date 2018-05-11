@@ -1354,10 +1354,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     class ClearFuture extends GridFutureAdapter<Boolean> {
         /** Flag indicates that eviction callback was registered on the current future. */
-        private volatile boolean evictionCallbackRegistered;
+        private volatile boolean evictionCbRegistered;
 
         /** Flag indicates that clearing callback was registered on the current future. */
-        private volatile boolean clearingCallbackRegistered;
+        private volatile boolean clearingCbRegistered;
 
         /** Flag indicates that future with all callbacks was finished. */
         private volatile boolean finished;
@@ -1376,25 +1376,29 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
          * @param updateSeq If {@code true} update topology sequence after successful eviction.
          */
         private void registerEvictionCallback(boolean updateSeq) {
-            if (evictionCallbackRegistered)
+            if (evictionCbRegistered)
                 return;
 
             synchronized (this) {
                 // Double check
-                if (evictionCallbackRegistered)
+                if (evictionCbRegistered)
                     return;
 
-                evictionCallbackRegistered = true;
+                evictionCbRegistered = true;
 
                 // Initiates partition eviction and destroy.
                 listen(f -> {
-                    if (f.error() != null) {
-                        rent.onDone(f.error());
-                    } else if (f.isDone()) {
+                    try {
+                        // Check for errors.
+                        f.get();
+
                         finishEviction(updateSeq);
                     }
+                    catch (Exception e) {
+                        rent.onDone(e);
+                    }
 
-                    evictionCallbackRegistered = false;
+                    evictionCbRegistered = false;
                 });
             }
         }
@@ -1403,21 +1407,21 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
          * Registers clearing callback on the future.
          */
         private void registerClearingCallback() {
-            if (clearingCallbackRegistered)
+            if (clearingCbRegistered)
                 return;
 
             synchronized (this) {
                 // Double check
-                if (clearingCallbackRegistered)
+                if (clearingCbRegistered)
                     return;
 
-                clearingCallbackRegistered = true;
+                clearingCbRegistered = true;
 
                 // Recreate cache data store in case of allowed fast eviction, and reset clear flag.
                 listen(f -> {
                     clear = false;
 
-                    clearingCallbackRegistered = false;
+                    clearingCbRegistered = false;
                 });
             }
         }
@@ -1498,8 +1502,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     reset();
 
                     finished = false;
-                    evictionCallbackRegistered = false;
-                    clearingCallbackRegistered = false;
+                    evictionCbRegistered = false;
+                    clearingCbRegistered = false;
                 }
 
                 if (evictionRequested)

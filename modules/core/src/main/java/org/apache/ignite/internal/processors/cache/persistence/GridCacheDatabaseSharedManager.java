@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.io.Serializable;
 import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -86,7 +85,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
-import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -2740,7 +2738,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     public void schedulePartitionDestroy(CacheGroupContext grpCtx, int partId) {
-        checkpointer.schedulePartitionDestroy(grpCtx, partId);
+        Checkpointer cp = checkpointer;
+
+        if (cp != null)
+            cp.schedulePartitionDestroy(grpCtx, partId);
     }
 
     /**
@@ -3138,6 +3139,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     snapshotMgr.afterCheckpointPageWritten();
 
+                    try {
+                        destroyEvictedPartitions();
+                    }
+                    catch (IgniteCheckedException e) {
+                        chp.progress.cpFinishFut.onDone(e);
+                    }
+
                     // Must mark successful checkpoint only if there are no exceptions or interrupts.
                     interrupted = false;
                 }
@@ -3193,6 +3201,59 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
+         * Processes all evicted partitions scheduled for destroy.
+         *
+         * @throws IgniteCheckedException If failed.
+         */
+        private void destroyEvictedPartitions() throws IgniteCheckedException {
+            PartitionDestroyQueue destroyQueue = curCpProgress.destroyQueue;
+
+            List<PartitionDestroyRequest> reqs = null;
+
+            if (!destroyQueue.pendingReqs.isEmpty()) {
+                for (final PartitionDestroyRequest req : destroyQueue.pendingReqs.values()) {
+                    assert req.grpCtx.offheap() instanceof GridCacheOffheapManager;
+
+                    final GridCacheOffheapManager offheap = (GridCacheOffheapManager) req.grpCtx.offheap();
+
+                    final int grpId = req.grpCtx.groupId();
+                    final int partId = req.partId;
+
+                    if (!req.beginDestroy())
+                        continue;
+
+                    Runnable destroyPartTask = () -> {
+                        try {
+                            offheap.destroyPartitionStore(grpId, partId);
+
+                            req.onDone(null);
+                        }
+                        catch (IgniteCheckedException e) {
+                            req.onDone(new IgniteCheckedException("Partition destroy is failed [grpId=" + grpId + ", partId=" + partId + "]", e));
+                        }
+                        catch (Exception e) {
+                            req.onDone(e);
+                        }
+                    };
+
+                    if (asyncRunner != null)
+                        asyncRunner.execute(destroyPartTask);
+                    else
+                        destroyPartTask.run();
+
+                    if (reqs == null)
+                        reqs = new ArrayList<>();
+
+                    reqs.add(req);
+                }
+            }
+
+            if (reqs != null)
+                for (PartitionDestroyRequest req : reqs)
+                    req.waitCompleted();
+        }
+
+        /**
          * @param grpCtx Group context.
          * @param partId Partition ID.
          */
@@ -3201,7 +3262,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 scheduledCp.destroyQueue.addDestroyRequest(grpCtx, partId);
             }
 
-            wakeupForCheckpoint(60 * 1000, "partition destroy");
+            wakeupForCheckpoint(15 * 1000, "partition destroy");
         }
 
         /**
@@ -3850,7 +3911,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private volatile SnapshotOperation snapshotOperation;
 
         /** Partitions destroy queue. */
-        private PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();
+        private final PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();
 
         /** Wakeup reason. */
         private String reason;

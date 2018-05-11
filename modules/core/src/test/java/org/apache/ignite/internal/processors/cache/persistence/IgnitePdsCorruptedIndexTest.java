@@ -161,7 +161,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
         resetBaselineTopology();
 
         // Corrupted node should be halted during partition destroy.
-        GridTestUtils.waitForCondition(() -> ignite.cluster().nodes().size() == 3, 30000);
+        GridTestUtils.waitForCondition(() -> ignite.cluster().nodes().size() == 3, getTestTimeout());
 
         // Clear remote JVM instance cache.
         IgniteProcessProxy.kill(corruptedNode.name());
