@@ -176,6 +176,37 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param commonParams Common parameters for the with clause (of CREATE TABLE), such as "template=partitioned".
      */
     protected final void createTables(String commonParams) {
+        createEmployeeTable(commonParams);
+
+        createDepartmentTable(commonParams);
+
+        createAddressTable(commonParams);
+    }
+
+    protected void createAddressTable(String commonParams) {
+        execute("CREATE TABLE Address (" +
+            "id LONG PRIMARY KEY, " +
+            "depId LONG, " +
+            "depIdNoidx LONG, " +
+            "address VARCHAR" +
+            ")" +
+            (F.isEmpty(commonParams) ? "" : " WITH \"" + commonParams + "\"") +
+            ";");
+
+        execute("CREATE INDEX depIndex ON Address (depId)");
+    }
+
+    protected void createDepartmentTable(String commonParams) {
+        execute("CREATE TABLE Department (" +
+            "id LONG PRIMARY KEY," +
+            "idNoidx LONG, " +
+            "name VARCHAR" +
+            ") " +
+            (F.isEmpty(commonParams) ? "" : " WITH \"" + commonParams + "\"") +
+            ";");
+    }
+
+    protected void createEmployeeTable(String commonParams) {
         execute("CREATE TABLE Employee (" +
             "id LONG, " +
             "depId LONG, " +
@@ -189,26 +220,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             "WITH \"affinity_key=depId" + (F.isEmpty(commonParams) ? "" : ", " + commonParams) + "\"" +
             ";");
 
-        execute("CREATE TABLE Department (" +
-            "id LONG PRIMARY KEY," +
-            "idNoidx LONG, " +
-            "name VARCHAR" +
-            ") " +
-            (F.isEmpty(commonParams) ? "" : " WITH \"" + commonParams + "\"") +
-            ";");
-
         execute("CREATE INDEX AgeIndex ON Employee (age)");
-
-        execute("CREATE TABLE Address (" +
-            "id LONG PRIMARY KEY, " +
-            "depId LONG, " +
-            "depIdNoidx LONG, " +
-            "address VARCHAR" +
-            ")" +
-            (F.isEmpty(commonParams) ? "" : " WITH \"" + commonParams + "\"") +
-            ";");
-
-        execute("CREATE INDEX depIndex ON Address (depId)");
     }
 
     /**

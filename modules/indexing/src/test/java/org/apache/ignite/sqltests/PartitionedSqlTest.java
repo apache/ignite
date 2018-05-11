@@ -20,6 +20,9 @@ package org.apache.ignite.sqltests;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Includes all base sql test plus tests that make sense in partitioned mode.
+ */
 public class PartitionedSqlTest extends BaseSqlTest {
     @Override protected void setupData() {
         super.createTables("template=partitioned");
@@ -57,8 +60,10 @@ public class PartitionedSqlTest extends BaseSqlTest {
     }
 
     public void testLeftDistJoin() {
+        setExplain(true);
+
         testAllNodes(node -> {
-            final String qryTpl = "SELECT d.id, d.name, a.address " +
+            final String qryTpl = "SELECT d.id, d.name, a.depId, a.address " +
                 "FROM Department d LEFT JOIN Address a " +
                 "ON d.%s = a.%s";
 
@@ -67,7 +72,7 @@ public class PartitionedSqlTest extends BaseSqlTest {
 
             List<List<Object>> exp = doLeftJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
                 (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
-                (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
+                (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("DEPID"), addr.get("ADDRESS")));
 
             assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
             assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result.", actIdxOffOn.values(), exp);
