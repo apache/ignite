@@ -178,6 +178,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
 
         resetBaselineTopology();
 
+        // If index was corrupted rebalance or one of the following queries should be failed.
         awaitPartitionMapExchange();
 
         for (int k = 0; k < entityCnt; k += entityCnt / 4) {
