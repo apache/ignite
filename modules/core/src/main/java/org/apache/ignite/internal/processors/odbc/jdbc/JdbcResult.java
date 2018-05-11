@@ -174,11 +174,6 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
                 break;
 
-            case META_COLUMNS_V4:
-                res = new JdbcMetaColumnsResultV4();
-
-                break;
-
             case BATCH_EXEC_ORDERED:
                 res = new JdbcOrderedBatchExecuteResult();
 
