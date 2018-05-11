@@ -50,8 +50,6 @@ public interface IgniteCacheOffheapManager {
      */
     public void start(GridCacheSharedContext ctx, CacheGroupContext grp) throws IgniteCheckedException;
 
-    ;
-
     /**
      * @param cctx Cache context.
      * @throws IgniteCheckedException If failed.

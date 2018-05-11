@@ -1702,6 +1702,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /**
+         * Removes expired entries from data store.
+         *
          * @param cctx Cache context.
          * @param c Expiry closure that should be applied to expired entry. See {@link GridCacheTtlManager} for details.
          * @param amount Limit of processed entries by single call, {@code -1} for no limit.
