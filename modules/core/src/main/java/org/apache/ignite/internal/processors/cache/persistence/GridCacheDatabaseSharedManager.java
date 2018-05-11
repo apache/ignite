@@ -2739,6 +2739,146 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return new CheckpointEntry(cpTs, ptr, cpId, cacheGrpStates);
     }
 
+    public void schedulePartitionDestroy(CacheGroupContext grpCtx, int partId) {
+        checkpointer.schedulePartitionDestroy(grpCtx, partId);
+    }
+
+    /**
+     * Partition destroy queue.
+     */
+    private static class PartitionDestroyQueue {
+        /** */
+        private final ConcurrentMap<T2<Integer, Integer>, PartitionDestroyRequest> pendingReqs =
+            new ConcurrentHashMap<>();
+
+        /**
+         * @param grpCtx Group context.
+         * @param partId Partition ID to destroy.
+         */
+        private void addDestroyRequest(CacheGroupContext grpCtx, int partId) {
+            PartitionDestroyRequest req = new PartitionDestroyRequest(grpCtx, partId);
+
+            PartitionDestroyRequest old = pendingReqs.putIfAbsent(new T2<>(grpCtx.groupId(), partId), req);
+
+            assert old == null : "Must wait for old destroy request to finish before adding a new one " +
+                "[grpId=" + grpCtx.groupId() + ", grpName=" + grpCtx.cacheOrGroupName() + ", partId=" + partId + ']';
+        }
+
+        /**
+         * @param destroyId Destroy ID.
+         * @return Destroy request to complete if was not concurrently cancelled.
+         */
+        private PartitionDestroyRequest beginDestroy(T2<Integer, Integer> destroyId) {
+            PartitionDestroyRequest rmvd = pendingReqs.remove(destroyId);
+
+            return rmvd == null ? null : rmvd.beginDestroy() ? rmvd : null;
+        }
+
+        /**
+         * @param grpId Group ID.
+         * @param partId Partition ID.
+         * @return Destroy request to wait for if destroy has begun.
+         */
+        private PartitionDestroyRequest cancelDestroy(int grpId, int partId) {
+            PartitionDestroyRequest rmvd = pendingReqs.remove(new T2<>(grpId, partId));
+
+            return rmvd == null ? null : !rmvd.cancel() ? rmvd : null;
+        }
+    }
+
+    /**
+     * Partition destroy request.
+     */
+    private static class PartitionDestroyRequest {
+        /** */
+        private CacheGroupContext grpCtx;
+
+        /** */
+        private int partId;
+
+        /** Destroy cancelled flag. */
+        private boolean cancelled;
+
+        /** Destroy future. Not null if partition destroy has begun. */
+        private GridFutureAdapter<Void> destroyFut;
+
+        /**
+         * @param grpCtx Group context.
+         * @param partId Partition ID.
+         */
+        private PartitionDestroyRequest(CacheGroupContext grpCtx, int partId) {
+            this.grpCtx = grpCtx;
+            this.partId = partId;
+        }
+
+        /**
+         * Cancels partition destroy request.
+         *
+         * @return {@code False} if this request needs to be waited for.
+         */
+        private synchronized boolean cancel() {
+            if (destroyFut != null) {
+                assert !cancelled;
+
+                return false;
+            }
+
+            cancelled = true;
+
+            return true;
+        }
+
+        /**
+         * Initiates partition destroy.
+         *
+         * @return {@code True} if destroy request should be executed, {@code false} otherwise.
+         */
+        private synchronized boolean beginDestroy() {
+            if (cancelled) {
+                assert destroyFut == null;
+
+                return false;
+            }
+
+            if (destroyFut != null)
+                return false;
+
+            destroyFut = new GridFutureAdapter<>();
+
+            return true;
+        }
+
+        /**
+         *
+         */
+        private synchronized void onDone(Throwable err) {
+            assert destroyFut != null;
+
+            destroyFut.onDone(err);
+        }
+
+        /**
+         *
+         */
+        private void waitCompleted() throws IgniteCheckedException {
+            GridFutureAdapter<Void> fut;
+
+            synchronized (this) {
+                assert destroyFut != null;
+
+                fut = destroyFut;
+            }
+
+            fut.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "PartitionDestroyRequest [grpId=" + grpCtx.groupId() + ", grpName=" + grpCtx.cacheOrGroupName() +
+                ", partId=" + partId + ']';
+        }
+    }
+
     /**
      * Checkpointer object is used for notification on checkpoint begin, predicate is {@link #scheduledCp}<code>.nextCpTs - now
      * > 0 </code>. Method {@link #wakeupForCheckpoint} uses notify, {@link #waitCheckpointEvent} uses wait
@@ -3050,6 +3190,43 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 // TODO-ignite-db how to handle exception?
                 U.error(log, "Failed to create checkpoint.", e);
             }
+        }
+
+        /**
+         * @param grpCtx Group context.
+         * @param partId Partition ID.
+         */
+        private void schedulePartitionDestroy(CacheGroupContext grpCtx, int partId) {
+            synchronized (this) {
+                scheduledCp.destroyQueue.addDestroyRequest(grpCtx, partId);
+            }
+
+            wakeupForCheckpoint(60 * 1000, "partition destroy");
+        }
+
+        /**
+         * @param grpCtx Cache group context.
+         * @param partId Partition ID.
+         */
+        private void cancelOrWaitPartitionDestroy(CacheGroupContext grpCtx, int partId)
+            throws IgniteCheckedException {
+            CheckpointProgress cur = curCpProgress;
+
+            PartitionDestroyRequest req;
+
+            if (cur != null) {
+                req = cur.destroyQueue.cancelDestroy(grpCtx.groupId(), partId);
+
+                if (req != null)
+                    req.waitCompleted();
+            }
+
+            synchronized (this) {
+                req = scheduledCp.destroyQueue.cancelDestroy(grpCtx.groupId(), partId);
+            }
+
+            if (req != null)
+                req.waitCompleted();
         }
 
         /**
@@ -3671,6 +3848,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /** */
         private volatile SnapshotOperation snapshotOperation;
+
+        /** Partitions destroy queue. */
+        private PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();
 
         /** Wakeup reason. */
         private String reason;

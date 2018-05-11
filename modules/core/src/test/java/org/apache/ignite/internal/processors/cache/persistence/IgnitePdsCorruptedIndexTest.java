@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
+import org.junit.Assert;
 
 /**
  * Test to reproduce corrupted indexes problem after partition file eviction and truncation.
@@ -178,20 +179,20 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
 
         resetBaselineTopology();
 
-        // If index was corrupted rebalance or one of the following queries should be failed.
+        // If index was corrupted, rebalance or one of the following queries should be failed.
         awaitPartitionMapExchange();
 
         for (int k = 0; k < entityCnt; k += entityCnt / 4) {
             IgniteCache<Integer, IndexedObject> cache1 = corruptedNode.cache(CACHE);
 
             int l = k;
-            int r = k + entityCnt / 4;
+            int r = k + entityCnt / 4 - 1;
 
             log.info("Check range [" + l + "-" + r + "]");
 
             QueryCursor<Cache.Entry<Long, IndexedObject>> qry =
                 cache1.query(new SqlQuery(IndexedObject.class, "lVal between ? and ?")
-                    .setArgs(l, r));
+                    .setArgs(l * l, r * r));
 
             Collection<Cache.Entry<Long, IndexedObject>> queried = qry.getAll();
 
@@ -203,9 +204,11 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
      *
      */
     private static class IndexedObject {
+        /** Integer indexed value. */
         @QuerySqlField(index = true)
         private int iVal;
 
+        /** Long indexed value. */
         @QuerySqlField(index = true)
         private long lVal;
 
@@ -251,7 +254,7 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
         /** File. */
         private final File file;
 
-        /** The overall number of file truncations were done. */
+        /** The overall number of file truncations have done. */
         private static final AtomicInteger truncations = new AtomicInteger();
 
         /**
@@ -278,11 +281,11 @@ public class IgnitePdsCorruptedIndexTest extends GridCommonAbstractTest {
 
                 checkpointedPart = (Integer) field.get(null);
             }
-            catch (Exception ignored) {
-                ignored.printStackTrace();
+            catch (Exception e) {
+                e.printStackTrace();
             }
 
-            // Wait while more than one file is truncated and checkpoint during eviction is done.
+            // Wait while more than one file have truncated and checkpoint on partition eviction has done.
             if (truncations.get() > 1 && checkpointedPart != null) {
                 System.err.println("JVM is going to be crushed for test reasons...");
 

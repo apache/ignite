@@ -575,25 +575,42 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override protected void destroyCacheDataStore0(CacheDataStore store) throws IgniteCheckedException {
+        int p = store.partId();
+
         ctx.database().checkpointReadLock();
 
         try {
-            int p = store.partId();
-
             saveStoreMetadata(store, null, false, true);
 
-            PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
-
-            int tag = pageMemory.invalidate(grp.groupId(), p);
-
-            if (grp.walEnabled())
-                ctx.wal().log(new PartitionDestroyRecord(grp.groupId(), p));
-
-            ctx.pageStore().onPartitionDestroyed(grp.groupId(), p, tag);
+            if (grp.allowFastEviction())
+                destroyPartitionStore(grp.groupId(), p);
         }
         finally {
             ctx.database().checkpointReadUnlock();
         }
+
+        if (!grp.allowFastEviction())
+            ((GridCacheDatabaseSharedManager)ctx.database()).schedulePartitionDestroy(grp, p);
+    }
+
+    /**
+     * Invalidates page memory for given partition. Destroys partition store.
+     * <b>NOTE:</b> This method can be invoked only within checkpoint lock or checkpointer thread.
+     *
+     * @param grpId Group ID.
+     * @param partId Partition ID.
+     *
+     * @throws IgniteCheckedException If destroy has failed.
+     */
+    public void destroyPartitionStore(int grpId, int partId) throws IgniteCheckedException {
+        PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+        int tag = pageMemory.invalidate(grp.groupId(), partId);
+
+        if (grp.walEnabled())
+            ctx.wal().log(new PartitionDestroyRecord(grp.groupId(), partId));
+
+        ctx.pageStore().onPartitionDestroyed(grp.groupId(), partId, tag);
     }
 
     /**
