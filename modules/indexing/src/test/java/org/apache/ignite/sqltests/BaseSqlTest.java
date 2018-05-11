@@ -910,23 +910,25 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     public void checkInnerJoin1(String depTab) {
-        testAllNodes(node -> {
-            String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
-                "FROM Employee e INNER JOIN " + depTab + " d " +
-                "ON e.%s = d.%s";
-            Result actIdxOnOn = executeFrom(String.format(qryTpl, "depId", "id"), node);
-            Result actIdxOnOff = executeFrom(String.format(qryTpl, "depId", "idNoidx"), node);
-            Result actIdxOffOn = executeFrom(String.format(qryTpl, "depIdNoidx", "id"), node);
-            Result actIdxOffOff = executeFrom(String.format(qryTpl, "depIdNoidx", "idNoidx"), node);
+        Arrays.asList(true, false).forEach( forceOrd -> {
+            testAllNodes(node -> {
+                String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+                    "FROM Employee e INNER JOIN " + depTab + " d " +
+                    "ON e.%s = d.%s";
+                Result actIdxOnOn = executeFrom(joinQry(forceOrd, qryTpl, "depId", "id"), node);
+                Result actIdxOnOff = executeFrom(joinQry(forceOrd, qryTpl, "depId", "idNoidx"), node);
+                Result actIdxOffOn = executeFrom(joinQry(forceOrd, qryTpl, "depIdNoidx", "id"), node);
+                Result actIdxOffOff = executeFrom(joinQry(forceOrd, qryTpl, "depIdNoidx", "idNoidx"), node);
 
-            List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(cacheName(depTab)),
-                (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
-                (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
+                List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(cacheName(depTab)),
+                    (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
+                    (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
-            assertContainsEq("Join on idx = idx is incorrect.", actIdxOnOn.values(), expected);
-            assertContainsEq("Join on idx = noidx is incorrect.", actIdxOnOff.values(), expected);
-            assertContainsEq("Join on noidx = idx is incorrect.", actIdxOffOn.values(), expected);
-            assertContainsEq("Join on noidx = noidx is incorrect.", actIdxOffOff.values(), expected);
+                assertContainsEq("Join on idx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOn.values(), expected);
+                assertContainsEq("Join on idx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOff.values(), expected);
+                assertContainsEq("Join on noidx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOn.values(), expected);
+                assertContainsEq("Join on noidx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOff.values(), expected);
+            });
         });
     }
 
@@ -935,23 +937,25 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     public void checkInnerJoin2(String depTab) {
-        testAllNodes(node -> {
-            String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
-                "FROM " + depTab + " d INNER JOIN Employee e " +
-                "ON e.%s = d.%s";
-            Result actIdxOnOn = executeFrom(String.format(qryTpl, "depId", "id"), node);
-            Result actIdxOnOff = executeFrom(String.format(qryTpl, "depId", "idNoidx"), node);
-            Result actIdxOffOn = executeFrom(String.format(qryTpl, "depIdNoidx", "id"), node);
-            Result actIdxOffOff = executeFrom(String.format(qryTpl, "depIdNoidx", "idNoidx"), node);
+        Arrays.asList(true, false).forEach( forceOrd -> {
+            testAllNodes(node -> {
+                String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+                    "FROM " + depTab + " d INNER JOIN Employee e " +
+                    "ON e.%s = d.%s";
+                Result actIdxOnOn = executeFrom(joinQry(forceOrd, qryTpl, "depId", "id"), node);
+                Result actIdxOnOff = executeFrom(joinQry(forceOrd, qryTpl, "depId", "idNoidx"), node);
+                Result actIdxOffOn = executeFrom(joinQry(forceOrd, qryTpl, "depIdNoidx", "id"), node);
+                Result actIdxOffOff = executeFrom(joinQry(forceOrd, qryTpl, "depIdNoidx", "idNoidx"), node);
 
-            List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(cacheName(depTab)),
-                (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
-                (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
+                List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(cacheName(depTab)),
+                    (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
+                    (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
-            assertContainsEq("Join on idx = idx is incorrect.", actIdxOnOn.values(), expected);
-            assertContainsEq("Join on idx = noidx is incorrect.", actIdxOnOff.values(), expected);
-            assertContainsEq("Join on noidx = idx is incorrect.", actIdxOffOn.values(), expected);
-            assertContainsEq("Join on noidx = noidx is incorrect.", actIdxOffOff.values(), expected);
+                assertContainsEq("Join on idx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOn.values(), expected);
+                assertContainsEq("Join on idx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOff.values(), expected);
+                assertContainsEq("Join on noidx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOn.values(), expected);
+                assertContainsEq("Join on noidx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOff.values(), expected);
+            });
         });
     }
 
@@ -960,23 +964,25 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     public void checkLeftJoin(String depTab) {
-        testAllNodes(node -> {
-            String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
-                "FROM Employee e LEFT JOIN " + depTab + " d " +
-                "ON e.%s = d.%s";
-            Result actIdxOnOn = executeFrom(String.format(qryTpl, "depId", "id"), node);
-            Result actIdxOnOff = executeFrom(String.format(qryTpl, "depId", "idNoidx"), node);
-            Result actIdxOffOn = executeFrom(String.format(qryTpl, "depIdNoidx", "id"), node);
-            Result actIdxOffOff = executeFrom(String.format(qryTpl, "depIdNoidx", "idNoidx"), node);
+        Arrays.asList(true, false).forEach( forceOrd -> {
+            testAllNodes(node -> {
+                String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+                    "FROM Employee e LEFT JOIN " + depTab + " d " +
+                    "ON e.%s = d.%s";
+                Result actIdxOnOn = executeFrom(joinQry(forceOrd, qryTpl, "depId", "id"), node);
+                Result actIdxOnOff = executeFrom(joinQry(forceOrd, qryTpl, "depId", "idNoidx"), node);
+                Result actIdxOffOn = executeFrom(joinQry(forceOrd, qryTpl, "depIdNoidx", "id"), node);
+                Result actIdxOffOff = executeFrom(joinQry(forceOrd, qryTpl, "depIdNoidx", "idNoidx"), node);
 
-            List<List<Object>> expected = doLeftJoin(node.cache(EMP_CACHE_NAME), node.cache(cacheName(depTab)),
-                (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
-                (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
+                List<List<Object>> expected = doLeftJoin(node.cache(EMP_CACHE_NAME), node.cache(cacheName(depTab)),
+                    (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
+                    (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
-            assertContainsEq("Join on idx = idx is incorrect.", actIdxOnOn.values(), expected);
-            assertContainsEq("Join on idx = noidx is incorrect.", actIdxOnOff.values(), expected);
-            assertContainsEq("Join on noidx = idx is incorrect.", actIdxOffOn.values(), expected);
-            assertContainsEq("Join on noidx = noidx is incorrect.", actIdxOffOff.values(), expected);
+                assertContainsEq("Join on idx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOn.values(), expected);
+                assertContainsEq("Join on idx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOff.values(), expected);
+                assertContainsEq("Join on noidx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOn.values(), expected);
+                assertContainsEq("Join on noidx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOff.values(), expected);
+            });
         });
     }
 
@@ -985,23 +991,25 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     public void checkRightJoin(String depTab) {
-        testAllNodes(node -> {
-            String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
-                "FROM Employee e RIGHT JOIN " + depTab + " d " +
-                "ON e.%s = d.%s";
-            Result actIdxOnOn = executeFrom(String.format(qryTpl, "depId", "id"), node);
-            Result actIdxOnOff = executeFrom(String.format(qryTpl, "depId", "idNoidx"), node);
-            Result actIdxOffOn = executeFrom(String.format(qryTpl, "depIdNoidx", "id"), node);
-            Result actIdxOffOff = executeFrom(String.format(qryTpl, "depIdNoidx", "idNoidx"), node);
+        Arrays.asList(true, false).forEach( forceOrd -> {
+            testAllNodes(node -> {
+                String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+                    "FROM Employee e RIGHT JOIN " + depTab + " d " +
+                    "ON e.%s = d.%s";
+                Result actIdxOnOn = executeFrom(joinQry(forceOrd, qryTpl, "depId", "id"), node);
+                Result actIdxOnOff = executeFrom(joinQry(forceOrd, qryTpl, "depId", "idNoidx"), node);
+                Result actIdxOffOn = executeFrom(joinQry(forceOrd, qryTpl, "depIdNoidx", "id"), node);
+                Result actIdxOffOff = executeFrom(joinQry(forceOrd, qryTpl, "depIdNoidx", "idNoidx"), node);
 
-            List<List<Object>> expected = doRightJoin(node.cache(EMP_CACHE_NAME), node.cache(cacheName(depTab)),
-                (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
-                (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
+                List<List<Object>> expected = doRightJoin(node.cache(EMP_CACHE_NAME), node.cache(cacheName(depTab)),
+                    (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
+                    (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
-            assertContainsEq("Join on idx = idx is incorrect.", actIdxOnOn.values(), expected);
-            assertContainsEq("Join on idx = noidx is incorrect.", actIdxOnOff.values(), expected);
-            assertContainsEq("Join on noidx = idx is incorrect.", actIdxOffOn.values(), expected);
-            assertContainsEq("Join on noidx = noidx is incorrect.", actIdxOffOff.values(), expected);
+                assertContainsEq("Join on idx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOn.values(), expected);
+                assertContainsEq("Join on idx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOff.values(), expected);
+                assertContainsEq("Join on noidx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOn.values(), expected);
+                assertContainsEq("Join on noidx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOff.values(), expected);
+            });
         });
     }
 
@@ -1080,5 +1088,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      */
     static String cacheName(String tabName) {
         return "SQL_PUBLIC_" + tabName.toUpperCase();
+    }
+    
+    static SqlFieldsQuery joinQry(boolean enforceJoinOrder, String tpl, Object... args){
+        return new SqlFieldsQuery(String.format(tpl, args)).setEnforceJoinOrder(enforceJoinOrder);
     }
 }
