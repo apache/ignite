@@ -365,7 +365,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
             @Override public boolean apply() {
                 return expMsgs == ackMsgs.get();
             }
-        }, 5000);
+        }, spi0.getIdleConnectionTimeout());
 
         assertEquals(expMsgs, ackMsgs.get());
     }
