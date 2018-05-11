@@ -17,12 +17,21 @@
 
 package org.apache.ignite.sqltests;
 
-public class MixedSqlTest extends PartitionedSqlTest {
+public class MixedSqlTest extends ReplicatedSqlTest {
+
+    public MixedSqlTest() {
+        setExplain(true);
+    }
+
     @Override protected void setupData() {
         createEmployeeTable("template=partitioned");
-        createDepartmentTable("template=replicated");
-        createAddressTable("template=partitioned");
+        createDepartmentTable(DEP_TAB, "template=replicated");
+        createAddressTable("template=replicated");
 
         fillCommonData();
+
+        createDepartmentTable("DepartmentPart", "template=partitioned");
+
+        fillDepartmentTable("DepartmentPart");
     }
 }

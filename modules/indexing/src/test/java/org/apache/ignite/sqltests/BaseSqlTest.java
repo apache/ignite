@@ -109,6 +109,8 @@ public class BaseSqlTest extends GridCommonAbstractTest {
 
     /** Flag that forces to do explain query in log before performing actual query. */
     public static boolean explain = false;
+    /** Department table name. */
+    protected String DEP_TAB = "Department";
 
     /** Configuration that is injected by Suite */
     @InjectTestSuite.Parameter
@@ -132,17 +134,11 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * Fills tables with data.
      */
     protected void fillCommonData() {
-        SqlFieldsQuery insDep = new SqlFieldsQuery("INSERT INTO Department VALUES (?, ?, ?)");
-
         SqlFieldsQuery insEmp = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?, ?, ?, ?)");
 
         SqlFieldsQuery insConf = new SqlFieldsQuery("INSERT INTO Address VALUES (?, ?, ?, ?)");
 
-        for (long id = 0; id < DEP_CNT; id++) {
-            String name = UUID.randomUUID().toString();
-
-            execute(insDep.setArgs(id, id, name));
-        }
+        fillDepartmentTable("Department");
 
         for (long id = 0; id < EMP_CNT; id++) {
             Long depId = (long)rnd.nextInt((int)(DEP_CNT - FREE_DEP_CNT));
@@ -171,6 +167,16 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         }
     }
 
+    protected void fillDepartmentTable(String tabName) {
+        SqlFieldsQuery insDep = new SqlFieldsQuery("INSERT INTO " + tabName + " VALUES (?, ?, ?)");
+
+        for (long id = 0; id < DEP_CNT; id++) {
+            String name = UUID.randomUUID().toString();
+
+            execute(insDep.setArgs(id, id, name));
+        }
+    }
+
     /**
      * Creates common tables.
      *
@@ -179,11 +185,16 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     protected final void createTables(String commonParams) {
         createEmployeeTable(commonParams);
 
-        createDepartmentTable(commonParams);
+        createDepartmentTable(DEP_TAB, commonParams);
 
         createAddressTable(commonParams);
     }
 
+    /**
+     * Creates Address test table.
+     *
+     * @param commonParams Common params.
+     */
     protected void createAddressTable(String commonParams) {
         execute("CREATE TABLE Address (" +
             "id LONG PRIMARY KEY, " +
@@ -197,8 +208,14 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         execute("CREATE INDEX depIndex ON Address (depId)");
     }
 
-    protected void createDepartmentTable(String commonParams) {
-        execute("CREATE TABLE Department (" +
+    /**
+     * Creates table for department entity with specified table name.
+     *
+     * @param depTabName Department tab name.
+     * @param commonParams Common params.
+     */
+    protected void createDepartmentTable(String depTabName, String commonParams) {
+        execute("CREATE TABLE " + depTabName + " (" +
             "id LONG PRIMARY KEY," +
             "idNoidx LONG, " +
             "name VARCHAR" +
@@ -207,6 +224,10 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             ";");
     }
 
+    /**
+     * Creates Employee test table.
+     * @param commonParams Common params.
+     */
     protected void createEmployeeTable(String commonParams) {
         execute("CREATE TABLE Employee (" +
             "id LONG, " +
