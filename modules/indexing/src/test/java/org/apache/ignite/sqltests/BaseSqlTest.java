@@ -114,6 +114,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     @InjectTestSuite.Parameter
     private Configuration cfg = new Configuration();
 
+    /** Random for generator. */
+    private Random rnd = new Random();
+
     /**
      * Makes configuration for client node.
      */
@@ -134,8 +137,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         SqlFieldsQuery insEmp = new SqlFieldsQuery("INSERT INTO Employee VALUES (?, ?, ?, ?, ?, ?, ?)");
 
         SqlFieldsQuery insConf = new SqlFieldsQuery("INSERT INTO Address VALUES (?, ?, ?, ?)");
-
-        Random rnd = new Random();
 
         for (long id = 0; id < DEP_CNT; id++) {
             String name = UUID.randomUUID().toString();
@@ -885,7 +886,28 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             "Failed to prepare distributed join query: join condition does not use index");
     }
 
-    public void testInnerJoin() {
+    public void testInnerJoin1() {
+        testAllNodes(node -> {
+            String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+                "FROM Employee e INNER JOIN Department d " +
+                "ON e.%s = d.%s";
+            Result actIdxOnOn = executeFrom(String.format(qryTpl, "depId", "id"), node);
+            Result actIdxOnOff = executeFrom(String.format(qryTpl, "depId", "idNoidx"), node);
+            Result actIdxOffOn = executeFrom(String.format(qryTpl, "depIdNoidx", "id"), node);
+            Result actIdxOffOff = executeFrom(String.format(qryTpl, "depIdNoidx", "idNoidx"), node);
+
+            List<List<Object>> expected = doInnerJoin(node.cache(EMP_CACHE_NAME), node.cache(DEP_CACHE_NAME),
+                (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
+                (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
+
+            assertContainsEq("Join on idx = idx is incorrect.", actIdxOnOn.values(), expected);
+            assertContainsEq("Join on idx = noidx is incorrect.", actIdxOnOff.values(), expected);
+            assertContainsEq("Join on noidx = idx is incorrect.", actIdxOffOn.values(), expected);
+            assertContainsEq("Join on noidx = noidx is incorrect.", actIdxOffOff.values(), expected);
+        });
+    }
+
+    public void testInnerJoin2() {
         testAllNodes(node -> {
             String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
                 "FROM Employee e INNER JOIN Department d " +

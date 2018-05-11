@@ -30,7 +30,7 @@ public class PartitionedSqlTest extends BaseSqlTest {
         fillCommonData();
     }
 
-    public void testInnerDistJoin() {
+    public void testInnerDistJoin1() {
         testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.address " +
                 "FROM Department d INNER JOIN Address a " +
@@ -48,7 +48,7 @@ public class PartitionedSqlTest extends BaseSqlTest {
         });
     }
 
-    public void testNegativeInnerDistJoin() {
+    public void testNegativeInnerDistJoin1() {
         testAllNodes(node -> {
             String qryTpl = "SELECT d.id, d.name, a.address " +
                 "FROM Department d INNER JOIN Address a " +
@@ -59,9 +59,36 @@ public class PartitionedSqlTest extends BaseSqlTest {
         });
     }
 
-    public void testLeftDistJoin() {
-        setExplain(true);
+    public void testInnerDistJoin2() {
+        testAllNodes(node -> {
+            final String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Address a INNER JOIN Department d " +
+                "ON d.%s = a.%s";
 
+            Result actIdxOnOn = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depId")), node);
+            Result actIdxOffOn = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depIdNoidx")), node);
+
+            List<List<Object>> exp = doInnerJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
+                (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
+                (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
+
+            assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
+            assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result.", actIdxOffOn.values(), exp);
+        });
+    }
+
+    public void testNegativeInnerDistJoin2() {
+        testAllNodes(node -> {
+            String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM  Address a INNER JOIN Department d " +
+                "ON d.%s = a.%s";
+
+            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depIdNoidx")), node));
+            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depId")), node));
+        });
+    }
+
+    public void testLeftDistJoin() {
         testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.depId, a.address " +
                 "FROM Department d LEFT JOIN Address a " +
