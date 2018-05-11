@@ -47,7 +47,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -57,9 +56,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.util.deque.FastSizeDeque;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.util.deque.FastSizeDeque;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
@@ -342,9 +341,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
-        if (grp.allowFastEviction())
-            return internalSize() == 0;
-
         return store.fullSize() == 0 && internalSize() == 0;
     }
 
@@ -981,77 +977,75 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         long cleared = 0;
 
-        if (!grp.allowFastEviction()) {
-            CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;
+        CacheMapHolder hld = grp.sharedGroup() ? null : singleCacheEntryMap;
 
-            try {
-                GridIterator<CacheDataRow> it0 = grp.offheap().partitionIterator(id);
+        try {
+            GridIterator<CacheDataRow> it0 = grp.offheap().partitionIterator(id);
 
-                while (it0.hasNext()) {
-                    ctx.database().checkpointReadLock();
+            while (it0.hasNext()) {
+                ctx.database().checkpointReadLock();
 
-                    try {
-                        CacheDataRow row = it0.next();
+                try {
+                    CacheDataRow row = it0.next();
 
-                        // Do not clear fresh rows in case of single partition clearing.
-                        if (row.version().compareTo(clearVer) >= 0 && (state() == MOVING && clear))
-                            continue;
+                    // Do not clear fresh rows in case of single partition clearing.
+                    if (row.version().compareTo(clearVer) >= 0 && (state() == MOVING && clear))
+                        continue;
 
-                        if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId()))
-                            hld = cacheMapHolder(ctx.cacheContext(row.cacheId()));
+                    if (grp.sharedGroup() && (hld == null || hld.cctx.cacheId() != row.cacheId()))
+                        hld = cacheMapHolder(ctx.cacheContext(row.cacheId()));
 
-                        assert hld != null;
+                    assert hld != null;
 
-                        GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(
-                            hld,
-                            hld.cctx,
-                            grp.affinity().lastVersion(),
-                            row.key(),
-                            true,
-                            false);
+                    GridCacheMapEntry cached = putEntryIfObsoleteOrAbsent(
+                        hld,
+                        hld.cctx,
+                        grp.affinity().lastVersion(),
+                        row.key(),
+                        true,
+                        false);
 
-                        if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
-                            removeEntry(cached);
+                    if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
+                        removeEntry(cached);
 
-                            if (rec && !hld.cctx.config().isEventsDisabled()) {
-                                hld.cctx.events().addEvent(cached.partition(),
-                                    cached.key(),
-                                    ctx.localNodeId(),
-                                    (IgniteUuid)null,
-                                    null,
-                                    EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-                                    null,
-                                    false,
-                                    cached.rawGet(),
-                                    cached.hasValue(),
-                                    null,
-                                    null,
-                                    null,
-                                    false);
-                            }
-
-                            cleared++;
+                        if (rec && !hld.cctx.config().isEventsDisabled()) {
+                            hld.cctx.events().addEvent(cached.partition(),
+                                cached.key(),
+                                ctx.localNodeId(),
+                                (IgniteUuid)null,
+                                null,
+                                EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+                                null,
+                                false,
+                                cached.rawGet(),
+                                cached.hasValue(),
+                                null,
+                                null,
+                                null,
+                                false);
                         }
-                    }
-                    catch (GridDhtInvalidPartitionException e) {
-                        assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
 
-                        break; // Partition is already concurrently cleared and evicted.
-                    }
-                    finally {
-                        ctx.database().checkpointReadUnlock();
+                        cleared++;
                     }
                 }
-            }
-            catch (NodeStoppingException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to get iterator for evicted partition: " + id);
+                catch (GridDhtInvalidPartitionException e) {
+                    assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
 
-                throw e;
+                    break; // Partition is already concurrently cleared and evicted.
+                }
+                finally {
+                    ctx.database().checkpointReadUnlock();
+                }
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to get iterator for evicted partition: " + id, e);
-            }
+        }
+        catch (NodeStoppingException e) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to get iterator for evicted partition: " + id);
+
+            throw e;
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to get iterator for evicted partition: " + id, e);
         }
 
         return cleared;
@@ -1406,37 +1400,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         }
 
         /**
-         * Recreate cache data store after successful clearing and allowed fast eviction.
-         */
-        private void recreateCacheDataStore() {
-            assert grp.offheap() instanceof GridCacheOffheapManager;
-
-            try {
-                CacheDataStore store0 = store;
-
-                store = ((GridCacheOffheapManager) grp.offheap()).recreateCacheDataStore(store0);
-
-                // Inject row cache cleaner on store creation
-                // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group
-                if (ctx.kernalContext().query().moduleEnabled()) {
-                    GridQueryRowCacheCleaner cleaner = ctx.kernalContext().query().getIndexing()
-                            .rowCacheCleaner(grp.groupId());
-
-                    if (store != null && cleaner != null)
-                        store.setRowCacheCleaner(cleaner);
-                }
-            } catch (IgniteCheckedException e) {
-                finish(e);
-            }
-        }
-
-        /**
          * Successfully finishes the future.
          */
         public void finish() {
-            if (state() == MOVING && clear && grp.allowFastEviction())
-                recreateCacheDataStore();
-
             synchronized (this) {
                 onDone();
                 finished = true;
