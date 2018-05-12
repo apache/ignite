@@ -111,10 +111,10 @@ public class CacheQueryFieldsMetaResult implements Externalizable {
     }
 
     /**
-     * @param fieldName Field name.
+     * @param fieldTypeName Field type name.
      */
-    public void setFieldTypeName(String fieldName) {
-        this.fieldName = fieldName;
+    public void setFieldTypeName(String fieldTypeName) {
+        this.fieldTypeName = fieldTypeName;
     }
 
     /** {@inheritDoc} */
