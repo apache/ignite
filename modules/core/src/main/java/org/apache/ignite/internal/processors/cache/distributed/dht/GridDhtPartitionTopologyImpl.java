@@ -1308,20 +1308,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
     }
 
-    /**
-     * Checks should current partition map overwritten by new partition map
-     * Method returns true if topology version or update sequence of new map are greater than of current map
-     *
-     * @param currentMap Current partition map
-     * @param newMap New partition map
-     * @return True if current partition map should be overwritten by new partition map, false in other case
-     */
-    private boolean shouldOverridePartitionMap(GridDhtPartitionMap currentMap, GridDhtPartitionMap newMap) {
-        return newMap != null &&
-                (newMap.topologyVersion().compareTo(currentMap.topologyVersion()) > 0 ||
-                 newMap.topologyVersion().compareTo(currentMap.topologyVersion()) == 0 && newMap.updateSequence() > currentMap.updateSequence());
-    }
-
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public boolean update(
@@ -1337,132 +1323,132 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         assert partMap != null;
 
-        ctx.database().checkpointReadLock();
+        lock.writeLock().lock();
 
         try {
-            lock.writeLock().lock();
+            if (log.isTraceEnabled() && exchangeVer != null) {
+                log.trace("Partition states before full update [grp=" + grp.cacheOrGroupName()
+                    + ", exchVer=" + exchangeVer + ", states=" + dumpPartitionStates() + ']');
+            }
 
-            try {
-                if (log.isTraceEnabled() && exchangeVer != null) {
-                    log.trace("Partition states before full update [grp=" + grp.cacheOrGroupName()
-                        + ", exchVer=" + exchangeVer + ", states=" + dumpPartitionStates() + ']');
-                }
+            if (stopping || !lastTopChangeVer.initialized() ||
+                // Ignore message not-related to exchange if exchange is in progress.
+                (exchangeVer == null && !lastTopChangeVer.equals(readyTopVer)))
+                return false;
 
-                if (stopping || !lastTopChangeVer.initialized() ||
-                    // Ignore message not-related to exchange if exchange is in progress.
-                    (exchangeVer == null && !lastTopChangeVer.equals(readyTopVer)))
-                    return false;
+            if (incomeCntrMap != null) {
+                // update local counters in partitions
+                for (int i = 0; i < locParts.length(); i++) {
+                    cntrMap.updateCounter(i, incomeCntrMap.updateCounter(i));
 
-                if (incomeCntrMap != null) {
-                    // update local counters in partitions
-                    for (int i = 0; i < locParts.length(); i++) {
-                        cntrMap.updateCounter(i, incomeCntrMap.updateCounter(i));
+                    GridDhtLocalPartition part = locParts.get(i);
 
-                        GridDhtLocalPartition part = locParts.get(i);
+                    if (part == null)
+                        continue;
 
-                        if (part == null)
-                            continue;
+                    if (part.state() == OWNING || part.state() == MOVING) {
+                        long updCntr = incomeCntrMap.updateCounter(part.id());
 
-                        if (part.state() == OWNING || part.state() == MOVING) {
-                            long updCntr = incomeCntrMap.updateCounter(part.id());
-
-                            if (updCntr != 0 && updCntr > part.updateCounter())
-                                part.updateCounter(updCntr);
-                        }
+                        if (updCntr != 0 && updCntr > part.updateCounter())
+                            part.updateCounter(updCntr);
                     }
                 }
+            }
 
-                if (exchangeVer != null) {
-                    // Ignore if exchange already finished or new exchange started.
-                    if (readyTopVer.compareTo(exchangeVer) > 0 || lastTopChangeVer.compareTo(exchangeVer) > 0) {
-                        U.warn(log, "Stale exchange id for full partition map update (will ignore) [" +
-                            "grp=" + grp.cacheOrGroupName() +
-                            ", lastTopChange=" + lastTopChangeVer +
-                            ", readTopVer=" + readyTopVer +
-                            ", exchVer=" + exchangeVer + ']');
-
-                        return false;
-                    }
-                }
-
-                if (msgTopVer != null && lastTopChangeVer.compareTo(msgTopVer) > 0) {
-                    U.warn(log, "Stale version for full partition map update message (will ignore) [" +
+            if (exchangeVer != null) {
+                // Ignore if exchange already finished or new exchange started.
+                if (readyTopVer.compareTo(exchangeVer) > 0 || lastTopChangeVer.compareTo(exchangeVer) > 0) {
+                    U.warn(log, "Stale exchange id for full partition map update (will ignore) [" +
                         "grp=" + grp.cacheOrGroupName() +
                         ", lastTopChange=" + lastTopChangeVer +
                         ", readTopVer=" + readyTopVer +
-                        ", msgVer=" + msgTopVer + ']');
+                        ", exchVer=" + exchangeVer + ']');
 
                     return false;
                 }
+            }
 
-                boolean fullMapUpdated = (node2part == null);
+            if (msgTopVer != null && lastTopChangeVer.compareTo(msgTopVer) > 0) {
+                U.warn(log, "Stale version for full partition map update message (will ignore) [" +
+                    "grp=" + grp.cacheOrGroupName() +
+                    ", lastTopChange=" + lastTopChangeVer +
+                    ", readTopVer=" + readyTopVer +
+                    ", msgVer=" + msgTopVer + ']');
 
-                if (node2part != null) {
-                    for (GridDhtPartitionMap part : node2part.values()) {
-                        GridDhtPartitionMap newPart = partMap.get(part.nodeId());
+                return false;
+            }
 
-                        if (shouldOverridePartitionMap(part, newPart)) {
-                            fullMapUpdated = true;
+            boolean fullMapUpdated = (node2part == null);
 
-                            if (log.isDebugEnabled()) {
-                                log.debug("Overriding partition map in full update map [" +
-                                    "grp=" + grp.cacheOrGroupName() +
-                                    ", exchVer=" + exchangeVer +
-                                    ", curPart=" + mapString(part) +
-                                    ", newPart=" + mapString(newPart) + ']');
-                            }
+            if (node2part != null) {
+                for (GridDhtPartitionMap part : node2part.values()) {
+                    GridDhtPartitionMap newPart = partMap.get(part.nodeId());
 
-                            if (newPart.nodeId().equals(ctx.localNodeId()))
-                                updateSeq.setIfGreater(newPart.updateSequence());
+                    if (newPart != null && newPart.compareTo(part) > 0) {
+                        fullMapUpdated = true;
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("Overriding partition map in full update map [" +
+                                "grp=" + grp.cacheOrGroupName() +
+                                ", exchVer=" + exchangeVer +
+                                ", curPart=" + mapString(part) +
+                                ", newPart=" + mapString(newPart) + ']');
                         }
-                        else {
-                            // If for some nodes current partition has a newer map,
-                            // then we keep the newer value.
-                            partMap.put(part.nodeId(), part);
-                        }
+
+                        if (newPart.nodeId().equals(ctx.localNodeId()))
+                            updateSeq.setIfGreater(newPart.updateSequence());
                     }
-
-                    // Check that we have new nodes.
-                    for (GridDhtPartitionMap part : partMap.values()) {
-                        if (fullMapUpdated)
-                            break;
-
-                        fullMapUpdated = !node2part.containsKey(part.nodeId());
-                    }
-
-                    // Remove entry if node left.
-                    for (Iterator<UUID> it = partMap.keySet().iterator(); it.hasNext(); ) {
-                        UUID nodeId = it.next();
-
-                        if (!ctx.discovery().alive(nodeId)) {
-                            if (log.isDebugEnabled())
-                                log.debug("Removing left node from full map update [grp=" + grp.cacheOrGroupName() +
-                                    ", nodeId=" + nodeId + ", partMap=" + partMap + ']');
-
-                            it.remove();
-                        }
+                    else {
+                        // If for some nodes current partition has a newer map,
+                        // then we keep the newer value.
+                        partMap.put(part.nodeId(), part);
                     }
                 }
-                else {
-                    GridDhtPartitionMap locNodeMap = partMap.get(ctx.localNodeId());
 
-                    if (locNodeMap != null)
-                        updateSeq.setIfGreater(locNodeMap.updateSequence());
+                // Check that we have new nodes.
+                for (GridDhtPartitionMap part : partMap.values()) {
+                    if (fullMapUpdated)
+                        break;
+
+                    fullMapUpdated = !node2part.containsKey(part.nodeId());
                 }
 
-                if (!fullMapUpdated) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("No updates for full partition map (will ignore) [" +
-                            "grp=" + grp.cacheOrGroupName() +
-                            ", lastExch=" + lastTopChangeVer +
-                            ", exchVer=" + exchangeVer +
-                            ", curMap=" + node2part +
-                            ", newMap=" + partMap + ']');
+                // Remove entry if node left.
+                for (Iterator<UUID> it = partMap.keySet().iterator(); it.hasNext(); ) {
+                    UUID nodeId = it.next();
+
+                    if (!ctx.discovery().alive(nodeId)) {
+                        if (log.isDebugEnabled())
+                            log.debug("Removing left node from full map update [grp=" + grp.cacheOrGroupName() +
+                                ", nodeId=" + nodeId + ", partMap=" + partMap + ']');
+
+                        it.remove();
                     }
+                }
+            }
+            else {
+                GridDhtPartitionMap locNodeMap = partMap.get(ctx.localNodeId());
 
-                    return false;
+                if (locNodeMap != null)
+                    updateSeq.setIfGreater(locNodeMap.updateSequence());
+            }
+
+            if (!fullMapUpdated) {
+                if (log.isDebugEnabled()) {
+                    log.debug("No updates for full partition map (will ignore) [" +
+                        "grp=" + grp.cacheOrGroupName() +
+                        ", lastExch=" + lastTopChangeVer +
+                        ", exchVer=" + exchangeVer +
+                        ", curMap=" + node2part +
+                        ", newMap=" + partMap + ']');
                 }
 
+                return false;
+            }
+
+            ctx.database().checkpointReadLock();
+
+            try {
                 if (exchangeVer != null) {
                     assert exchangeVer.compareTo(readyTopVer) >= 0 && exchangeVer.compareTo(lastTopChangeVer) >= 0;
 
@@ -1560,13 +1546,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     ctx.exchange().scheduleResendPartitions();
 
                 return changed;
-            } finally {
-                lock.writeLock().unlock();
+            }
+            finally {
+                ctx.database().checkpointReadUnlock();
             }
         }
         finally {
-            ctx.database().checkpointReadUnlock();
+            lock.writeLock().unlock();
         }
+
     }
 
     /** {@inheritDoc} */
@@ -1658,18 +1646,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
     }
 
-    /**
-     * Method checks is new partition map more stale than current partition map
-     * New partition map is stale if topology version or update sequence are less or equal than of current map
-     *
-     * @param currentMap Current partition map
-     * @param newMap New partition map
-     * @return True if new partition map is more stale than current partition map, false in other case
-     */
-    private boolean isStaleUpdate(GridDhtPartitionMap currentMap, GridDhtPartitionMap newMap) {
-        return currentMap != null && newMap.compareTo(currentMap) <= 0;
-    }
-
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Override public boolean update(
@@ -1691,39 +1667,35 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             return false;
         }
 
-        ctx.database().checkpointReadLock();
+        lock.writeLock().lock();
 
         try {
-            lock.writeLock().lock();
+            if (stopping)
+                return false;
 
-            try {
-                if (stopping)
+            if (!force) {
+                if (lastTopChangeVer.initialized() && exchId != null && lastTopChangeVer.compareTo(exchId.topologyVersion()) > 0) {
+                    U.warn(log, "Stale exchange id for single partition map update (will ignore) [" +
+                        "grp=" + grp.cacheOrGroupName() +
+                        ", lastTopChange=" + lastTopChangeVer +
+                        ", readTopVer=" + readyTopVer +
+                        ", exch=" + exchId.topologyVersion() + ']');
+
                     return false;
-
-                if (!force) {
-                    if (lastTopChangeVer.initialized() && exchId != null && lastTopChangeVer.compareTo(exchId.topologyVersion()) > 0) {
-                        U.warn(log, "Stale exchange id for single partition map update (will ignore) [" +
-                            "grp=" + grp.cacheOrGroupName() +
-                            ", lastTopChange=" + lastTopChangeVer +
-                            ", readTopVer=" + readyTopVer +
-                            ", exch=" + exchId.topologyVersion() + ']');
-
-                        return false;
-                    }
                 }
+            }
 
-                if (node2part == null)
-                    // Create invalid partition map.
-                    node2part = new GridDhtPartitionFullMap();
+            if (node2part == null)
+                // Create invalid partition map.
+                node2part = new GridDhtPartitionFullMap();
 
-                GridDhtPartitionMap cur = node2part.get(parts.nodeId());
+            GridDhtPartitionMap cur = node2part.get(parts.nodeId());
 
-                if (force) {
-                    if (cur != null && cur.topologyVersion().initialized())
-                        parts.updateSequence(cur.updateSequence(), cur.topologyVersion());
-                }
-                else if (isStaleUpdate(cur, parts)) {
-                    assert cur != null;
+            if (force) {
+                if (cur != null && cur.topologyVersion().initialized())
+                    parts.updateSequence(cur.updateSequence(), cur.topologyVersion());
+            } else {
+                if (cur != null && parts.compareTo(cur) <= 0) {
 
                     String msg = "Stale update for single partition map update (will ignore) [" +
                         "grp=" + grp.cacheOrGroupName() +
@@ -1741,7 +1713,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     return false;
                 }
+            }
 
+            ctx.database().checkpointReadLock();
+
+            try {
                 long updateSeq = this.updateSeq.incrementAndGet();
 
                 node2part.newUpdateSequence(updateSeq);
@@ -1820,11 +1796,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 return changed;
             }
             finally {
-                lock.writeLock().unlock();
+                ctx.database().checkpointReadUnlock();
             }
         }
         finally {
-            ctx.database().checkpointReadUnlock();
+            lock.writeLock().unlock();
         }
     }
 

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -318,7 +319,7 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
 
         GridDhtPartitionMap other = (GridDhtPartitionMap)o;
 
-        return other.nodeId.equals(nodeId) && other.updateSeq == updateSeq;
+        return other.nodeId.equals(nodeId) && other.updateSeq == updateSeq && Objects.equals(other.top, top);
     }
 
     /** {@inheritDoc} */
