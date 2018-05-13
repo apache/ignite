@@ -246,23 +246,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             cache.Remove(1);
         }
 
-
-        /// <summary>
-        /// Tests that exceptions from CacheStoreFactory are propagated properly.
-        /// </summary>
-        [Test]
-        [Ignore("IGNITE-8070")]
-        public void TestFailedCacheStoreException()
-        {
-            var ccfg = new CacheConfiguration("CacheWithFailedStore")
-            {
-                CacheStoreFactory = new FailedCacheStoreFactory(),
-                ReadThrough = true
-            };
-
-            Assert.Throws<CacheException>(() => Ignition.GetIgnite(GridName).GetOrCreateCache<int, int>(ccfg));
-        }
-
         [Test]
         [Ignore("IGNITE-4657")]
         public void TestExceptionsNoRemove()

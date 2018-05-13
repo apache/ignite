@@ -49,6 +49,6 @@
             </types>
         </binaryConfiguration>
         
-        <failureHandler type="StopNodeOrHaltFailureHandler" tryStop="true" timeout="0:0:5"/>
+        <failureHandler type="StopNodeOrHaltFailureHandler" tryStop="false" timeout="0:0:0"/>
     </igniteConfiguration>
 </configuration>

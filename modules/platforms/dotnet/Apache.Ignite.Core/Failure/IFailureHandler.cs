@@ -23,8 +23,7 @@ namespace Apache.Ignite.Core.Failure
     /// Failure handler interface.
     /// <para />
     /// Only predefined implementations are supported: 
-    /// <see cref="NoOpFailureHandler"/>, <see cref="RestartProcessFailureHandler"/>,
-    /// <see cref="StopNodeFailureHandler"/>, <see cref="StopNodeOrHaltFailureHandler"/>.
+    /// <see cref="NoOpFailureHandler"/>, <see cref="StopNodeFailureHandler"/>, <see cref="StopNodeOrHaltFailureHandler"/>.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface IFailureHandler

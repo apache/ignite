@@ -18,17 +18,27 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Data.SqlTypes;
     using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Failure;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
+    /// <summary>
+    /// Tests all three failure handlers: <see cref="StopNodeFailureHandler"/>, <see cref="StopNodeOrHaltFailureHandler"/>
+    /// and <see cref="NoOpFailureHandler"/>. By default in test configuration we use <see cref="NoOpFailureHandler"/>.
+    /// For others we should start node by <see cref="IgniteProcess"/>.
+    /// </summary>
     public class FailureHandlerTest
     {
-        /** Grid. */
+        /// <summary>
+        /// Grid that uses <see cref="NoOpFailureHandler"/> and therefore can be started without
+        /// <see cref="IgniteProcess"/>. 
+        /// </summary>
         private IIgnite _grid;
         /// <summary>
         /// Set-up routine.
@@ -54,31 +64,35 @@ namespace Apache.Ignite.Core.Tests
             TestUtils.KillProcesses();
         }
 
+        /// <summary>
+        /// Tests <see cref="StopNodeFailureHandler"/>
+        /// </summary>
         [Test]
         public void testStopNodeFailureHandler()
         {
-            var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
-                "-configFileName=config\\ignite-stophandler-dotnet-cfg.xml");
-
-            Assert.IsTrue(proc.Alive);
-
-            
-            var ccfg = new CacheConfiguration("CacheWithFailedStore")
-            {
-                CacheStoreFactory = new FailedCacheStoreFactory(),
-                ReadThrough = true
-            };
-
-            Assert.Throws<CacheException>(() => _grid.GetOrCreateCache<int, int>(ccfg));
-                
-            Assert.IsFalse(proc.Alive);
+           testFailureHandler(typeof(StopNodeFailureHandler));
         }
         
+        /// <summary>
+        /// Tests <see cref="StopNodeOrHaltFailureHandler"/>
+        /// </summary>
         [Test]
         public void testStopNodeOrHaltFailureHandler()
         {
+            testFailureHandler(typeof(StopNodeOrHaltFailureHandler));
+        }
+
+        private void testFailureHandler(Type type)
+        {
+            var configFile = "config\\ignite-stophandler-dotnet-cfg.xml";
+            
+            if (type == typeof(StopNodeOrHaltFailureHandler))
+            {
+                configFile = "config\\ignite-halthandler-dotnet-cfg.xml";
+            }
+            
             var proc = new IgniteProcess("-jvmClasspath=" + TestUtils.CreateTestClasspath(),
-                "-configFileName=config\\ignite-halthandler-dotnet-cfg.xml");
+                "-configFileName=" + configFile);
 
             Assert.IsTrue(proc.Alive);
 
@@ -90,13 +104,10 @@ namespace Apache.Ignite.Core.Tests
             };
 
             Assert.Throws<CacheException>(() =>_grid.GetOrCreateCache<int, int>(ccfg));
-            
-            Assert.IsTrue(proc.Alive);
-            
-            Thread.Sleep(TimeSpan.Parse("0:0:7"));
+
+            Thread.Sleep(TimeSpan.Parse("0:0:5"));
             
             Assert.IsFalse(proc.Alive);
-
         }
          
         /// <summary>

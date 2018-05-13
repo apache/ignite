@@ -71,7 +71,6 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.NoOpFailureHandler;
-import org.apache.ignite.failure.RestartProcessFailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -784,16 +783,11 @@ public class PlatformConfigurationUtils {
                 break;
 
             case 2:
-                cfg.setFailureHandler(new RestartProcessFailureHandler());
-
-                break;
-
-            case 3:
                 cfg.setFailureHandler(new StopNodeFailureHandler());
 
                 break;
 
-            case 4:
+            case 3:
                 cfg.setFailureHandler(new StopNodeOrHaltFailureHandler(in.readBoolean(), in.readLong()));
 
                 break;
@@ -1315,12 +1309,10 @@ public class PlatformConfigurationUtils {
             w.writeByte((byte)0);
         else if (cfg.getFailureHandler() instanceof NoOpFailureHandler)
             w.writeByte((byte)1);
-        else if (cfg.getFailureHandler() instanceof RestartProcessFailureHandler)
-            w.writeByte((byte)2);
         else if (cfg.getFailureHandler() instanceof StopNodeFailureHandler)
-            w.writeByte((byte)3);
+            w.writeByte((byte)2);
         else if (cfg.getFailureHandler() instanceof StopNodeOrHaltFailureHandler) {
-            w.writeByte((byte)4);
+            w.writeByte((byte)3);
 
             w.writeBoolean(U.field(cfg.getFailureHandler(), "tryStop"));
 

@@ -522,13 +522,9 @@ namespace Apache.Ignite.Core
             {
                 writer.WriteByte(1);
             }
-            else if (FailureHandler is RestartProcessFailureHandler)
-            {
-                writer.WriteByte(2);
-            }
             else if (FailureHandler is StopNodeFailureHandler)
             {
-                writer.WriteByte(3);
+                writer.WriteByte(2);
             }
             else 
             {
@@ -539,11 +535,11 @@ namespace Apache.Ignite.Core
                     throw new IgniteException(string.Format(
                         "Unsupported IgniteConfiguration.FailureHandler: '{0}'. " +
                         "Supported implementations: '{1}', '{2}', '{3}','{4}'.",
-                        FailureHandler.GetType(), typeof(NoOpFailureHandler), typeof(RestartProcessFailureHandler),
-                        typeof(StopNodeFailureHandler), typeof(StopNodeOrHaltFailureHandler)));
+                        FailureHandler.GetType(), typeof(NoOpFailureHandler), typeof(StopNodeFailureHandler),
+                        typeof(StopNodeOrHaltFailureHandler)));
                 }
 
-                writer.WriteByte(4);
+                writer.WriteByte(3);
 
                 failHnd.Write(writer);
             }
@@ -782,16 +778,12 @@ namespace Apache.Ignite.Core
                 case 1:
                     FailureHandler = new NoOpFailureHandler();
                     break;
-
-                case 2:
-                    FailureHandler = new RestartProcessFailureHandler();
-                    break;
                 
-                case 3:
+                case 2:
                     FailureHandler = new StopNodeFailureHandler();
                     break;
                 
-                case 4:
+                case 3:
                     FailureHandler = StopNodeOrHaltFailureHandler.Read(r);
                     break;
             }
@@ -1510,8 +1502,7 @@ namespace Apache.Ignite.Core
         /// Gets or sets the failure handler interface.
         /// <para />
         /// Only predefined implementations are supported: 
-        /// <see cref="NoOpFailureHandler"/>, <see cref="RestartProcessFailureHandler"/>,
-        /// <see cref="StopNodeFailureHandler"/>, <see cref="StopNodeOrHaltFailureHandler"/>.
+        /// <see cref="NoOpFailureHandler"/>, <see cref="StopNodeOrHaltFailureHandler"/>, <see cref="StopNodeFailureHandler"/>.
         /// </summary>
         public IFailureHandler FailureHandler { get; set; }
     }
