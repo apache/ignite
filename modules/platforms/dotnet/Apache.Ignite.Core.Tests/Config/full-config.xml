@@ -159,4 +159,5 @@
     <sslContextFactory type='SslContextFactory' protocol='SSL'
                        keyStoreFilePath='KeyStore/server.jks' keyStorePassword='123456' 
                        trustStoreFilePath='KeyStore/trust.jks' trustStorePassword='123456'/>
+    <failureHandler type="StopNodeOrHaltFailureHandler" tryStop="true" timeout="0:1:0"/>
 </igniteConfiguration>

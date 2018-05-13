@@ -18,11 +18,11 @@
 -->
 
 <xs:schema id="IgniteConfigurationSection"
-    targetNamespace="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
-    elementFormDefault="qualified"
-    xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
-    xmlns:mstns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
-    xmlns:xs="http://www.w3.org/2001/XMLSchema">
+           targetNamespace="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+           elementFormDefault="qualified"
+           xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+           xmlns:mstns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:x="http://www.w3.org/2001/XMLSchema">
 
     <xs:simpleType name="cacheMode" final="restriction">
         <xs:restriction base="xs:string">
@@ -2008,6 +2008,25 @@
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="failureHandler" minOccurs="0">
+                    <xs:complexType>
+                        <xs:attribute name="type" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="tryStop" type="xs:boolean" default="false">
+                            <xs:annotation>
+                                <xs:documentation>Try stop before halt node parameter, use only for StopNodeOrHaltFailureHandler.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="timeout" type="xs:string" default="0:0:0">
+                            <xs:annotation>
+                                <xs:documentation>Timeout for node stop, use only for StopNodeOrHaltFailureHandler.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
             </xs:all>
