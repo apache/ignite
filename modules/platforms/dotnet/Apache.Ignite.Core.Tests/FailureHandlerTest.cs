@@ -40,6 +40,7 @@ namespace Apache.Ignite.Core.Tests
         /// <see cref="IgniteProcess"/>. 
         /// </summary>
         private IIgnite _grid;
+        
         /// <summary>
         /// Set-up routine.
         /// </summary>
