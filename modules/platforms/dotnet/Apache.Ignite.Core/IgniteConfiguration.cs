@@ -534,7 +534,7 @@ namespace Apache.Ignite.Core
                 {
                     throw new IgniteException(string.Format(
                         "Unsupported IgniteConfiguration.FailureHandler: '{0}'. " +
-                        "Supported implementations: '{1}', '{2}', '{3}','{4}'.",
+                        "Supported implementations: '{1}', '{2}', '{3}'.",
                         FailureHandler.GetType(), typeof(NoOpFailureHandler), typeof(StopNodeFailureHandler),
                         typeof(StopNodeOrHaltFailureHandler)));
                 }
