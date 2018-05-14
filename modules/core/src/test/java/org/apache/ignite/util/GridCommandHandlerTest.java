@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
@@ -57,6 +58,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -85,6 +87,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
+
         cleanPersistenceDir();
 
         stopAllGrids();
@@ -99,6 +103,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
         System.setOut(sysOut);
 
@@ -777,5 +783,71 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             map.put(i + from, i + from);
 
         return map;
+    }
+
+    /**
+     *  Test execution of --wal print command.
+     *
+     *  @throws Exception if failed.
+     */
+    public void testUnusedWalPrint() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        List<String> nodes = new ArrayList<>(2);
+
+        for (ClusterNode node: ignite.cluster().forServers().nodes())
+            nodes.add(node.consistentId().toString());
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "print"));
+
+        for(String id: nodes)
+            assertTrue(testOut.toString().contains(id));
+
+        assertTrue(!testOut.toString().contains("error"));
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "print", nodes.get(0)));
+
+        assertTrue(!testOut.toString().contains(nodes.get(1)));
+
+        assertTrue(!testOut.toString().contains("error"));
+    }
+
+    /**
+     *  Test execution of --wal delete command.
+     *
+     *  @throws Exception if failed.
+     */
+    public void testUnusedWalDelete() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        List<String> nodes = new ArrayList<>(2);
+
+        for (ClusterNode node: ignite.cluster().forServers().nodes())
+            nodes.add(node.consistentId().toString());
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "delete"));
+
+        for(String id: nodes)
+            assertTrue(testOut.toString().contains(id));
+
+        assertTrue(!testOut.toString().contains("error"));
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "delete", nodes.get(0)));
+
+        assertTrue(!testOut.toString().contains(nodes.get(1)));
+
+        assertTrue(!testOut.toString().contains("error"));
     }
 }

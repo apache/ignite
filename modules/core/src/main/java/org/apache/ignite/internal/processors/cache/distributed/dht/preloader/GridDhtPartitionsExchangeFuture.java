@@ -136,6 +136,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     /** */
     private static final IgniteProductVersion FORCE_AFF_REASSIGNMENT_SINCE = IgniteProductVersion.fromString("2.4.3");
 
+    /**
+     * This may be useful when per-entry (not per-cache based) partition policy is in use.
+     * See {@link IgniteSystemProperties#IGNITE_SKIP_PARTITION_SIZE_VALIDATION} for details.
+     * Default value is {@code false}.
+     */
+    private static final boolean SKIP_PARTITION_SIZE_VALIDATION = Boolean.getBoolean(IgniteSystemProperties.IGNITE_SKIP_PARTITION_SIZE_VALIDATION);
+
     /** */
     @GridToStringExclude
     private final Object mux = new Object();
@@ -2755,13 +2762,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grpCtx.topology() :
                     cctx.exchange().clientTopology(grpId, events().discoveryCache());
 
-            // Do not validate read or write through caches or caches with disabled rebalance.
+            // Do not validate read or write through caches or caches with disabled rebalance
+            // or ExpiryPolicy is set or validation is disabled.
             if (grpCtx == null
                     || grpCtx.config().isReadThrough()
                     || grpCtx.config().isWriteThrough()
                     || grpCtx.config().getCacheStoreFactory() != null
                     || grpCtx.config().getRebalanceDelay() == -1
-                    || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE)
+                    || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE
+                    || grpCtx.config().getExpiryPolicyFactory() == null
+                    || SKIP_PARTITION_SIZE_VALIDATION)
                 continue;
 
             try {
