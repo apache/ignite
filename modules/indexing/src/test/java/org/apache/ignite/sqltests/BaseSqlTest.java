@@ -163,6 +163,11 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Fills department table with test data.
+     *
+     * @param tabName name of department table.
+     */
     protected void fillDepartmentTable(String tabName) {
         SqlFieldsQuery insDep = new SqlFieldsQuery("INSERT INTO " + tabName + " VALUES (?, ?, ?)");
 
@@ -580,6 +585,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * Check basic SELECT * query.
+     */
     public void testBasicSelect() {
         testAllNodes(node -> {
             Result emps = executeFrom("SELECT * FROM Employee", node);
@@ -592,6 +600,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Check SELECT query with projection (fields).
+     */
     public void testSelectFields() {
         testAllNodes(node -> {
             Result res = executeFrom("SELECT firstName, id, age FROM Employee;", node);
@@ -606,6 +617,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Check basic BETWEEN operator usage.
+     */
     public void testSelectBetween() {
         testAllNodes(node -> {
             Result emps = executeFrom("SELECT * FROM Employee e WHERE e.id BETWEEN 101 and 200", node);
@@ -627,6 +641,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Check BETWEEN operator filters out all the result (empty result set is expected).
+     */
     public void testEmptyBetween() {
         testAllNodes(node -> {
             Result emps = executeFrom("SELECT * FROM Employee e WHERE e.id BETWEEN 200 AND 101", node);
@@ -635,6 +652,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Check SELECT IN with fixed values.
+     */
     public void testSelectInStatic() {
         testAllNodes(node -> {
             Result actual = executeFrom("SELECT age FROM Employee WHERE id IN (1, 256, 42)", node);
@@ -647,6 +667,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Check SELECT IN with simple subquery values.
+     */
     public void testSelectInSubquery() {
         testAllNodes(node -> {
             Result actual = executeFrom("SELECT lastName FROM Employee WHERE id in (SELECT id FROM Employee WHERE age < 30)", node);
@@ -657,6 +680,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Check ORDER BY operator with varchar field.
+     */
     public void testBasicOrderByLastName() {
         testAllNodes(node -> {
             Result result = executeFrom("SELECT * FROM Employee e ORDER BY e.lastName", node);
@@ -672,6 +698,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Check DISTINCT operator selecting not unique field.
+     */
     public void testBasicDistinct() {
         testAllNodes(node -> {
             Result ages = executeFrom("SELECT DISTINCT age FROM Employee", node);
@@ -682,6 +711,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Check simple WHERE operator.
+     */
     public void testDistinctWithWhere() {
         testAllNodes(node -> {
             Result ages = executeFrom("SELECT DISTINCT age FROM Employee WHERE id < 100", node);
@@ -692,6 +724,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Check greater operator in where clause with both indexed and non-indexed field.
+     */
     public void testWhereGreater() {
         testAllNodes(node -> {
             Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age > 30", node);
@@ -707,6 +742,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Check less operator in where clause with both indexed and non-indexed field.
+     */
     public void testWhereLess() {
         testAllNodes(node -> {
             Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age < 30", node);
@@ -722,6 +760,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
+    /**
+     * Check equals operator in where clause with both indexed and non-indexed field.
+     */
     public void testWhereEq() {
         testAllNodes(node -> {
             Result idxActual = executeFrom("SELECT firstName FROM Employee WHERE age = 30", node);
@@ -737,7 +778,10 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-    public void testGroupByIdxField() {
+    /**
+     * Check GROUP BY operator with indexed field.
+     */
+    public void testGroupByIndexedField() {
         testAllNodes(node -> {
             // Need to filter out only part of records (each one is a count of employees
             // of particular age) in HAVING clause.
@@ -766,7 +810,10 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-    public void testGroupByNoIdxField() {
+    /**
+     * Check GROUP BY operator with indexed field.
+     */
+    public void testGroupByNonIndexedField() {
         testAllNodes(node -> {
             // Need to filter out only part of records (each one is a count of employees
             // associated with particular department id) in HAVING clause.
@@ -905,7 +952,12 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             "Failed to prepare distributed join query: join condition does not use index");
     }
 
-    public void checkInnerJoin1(String depTab) {
+    /**
+     * Verify result of inner join of employee and department tables.
+     *
+     * @param depTab name of the department table.
+     */
+    public void checkInnerJoinEmployeeDepartment(String depTab) {
         Arrays.asList(true, false).forEach( forceOrd -> {
             testAllNodes(node -> {
                 String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
@@ -928,11 +980,19 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-    public void testInnerJoin1() {
-        checkInnerJoin1(DEP_TAB);
+    /**
+     * Check INNER JOIN with collocated data.
+     */
+    public void testInnerJoinEmployeeDepartment() {
+        checkInnerJoinEmployeeDepartment(DEP_TAB);
     }
 
-    public void checkInnerJoin2(String depTab) {
+    /**
+     * The same as {@link #checkInnerJoinEmployeeDepartment(String)}, but join tables in the another order.
+     *
+     * @param depTab department table name.
+     */
+    public void checkInnerJoinDepartmentEmployee(String depTab) {
         Arrays.asList(true, false).forEach( forceOrd -> {
             testAllNodes(node -> {
                 String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
@@ -955,10 +1015,11 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-    public void testInnerJoin2() {
-        checkInnerJoin2(DEP_TAB);
-    }
-
+    /**
+     * Check LEFT JOIN with collocated data.
+     *
+     * @param depTab department table name.
+     */
     public void checkLeftJoin(String depTab) {
         Arrays.asList(true, false).forEach( forceOrd -> {
             testAllNodes(node -> {
@@ -981,11 +1042,18 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             });
         });
     }
-
+    /**
+     * Check LEFT JOIN with collocated data.
+     */
     public void testLeftJoin() {
         checkLeftJoin(DEP_TAB);
     }
 
+    /**
+     * Check RIGHT JOIN with collocated data.
+     *
+     * @param depTab department table name.
+     */
     public void checkRightJoin(String depTab) {
         Arrays.asList(true, false).forEach( forceOrd -> {
             testAllNodes(node -> {
@@ -1008,12 +1076,17 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             });
         });
     }
-
+    /**
+     * Check RIGHT JOIN with collocated data.
+     */
     public void testRightJoin() {
         checkRightJoin(DEP_TAB);
     }
 
-    public void testNegativeFullOuterJoin() {
+    /**
+     * Check that FULL OUTER JOIN (which is currently unsupported) causes valid error message.
+     */
+    public void testFullOuterJoinIsNotSupported() {
         testAllNodes(node -> {
             String fullOuterJoinQry = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
                 "FROM Employee e FULL OUTER JOIN Department d " +
@@ -1029,7 +1102,10 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         });
     }
 
-    public void testNegativeFullOuterDistJoin() {
+    /**
+     * Check that distributed FULL OUTER JOIN (which is currently unsupported) causes valid error message.
+     */
+    public void testFullOuterDistributedJoinIsNotSupported() {
         testAllNodes(node -> {
             String qry = "SELECT d.id, d.name, a.address " +
                 "FROM Department d FULL OUTER JOIN Address a " +

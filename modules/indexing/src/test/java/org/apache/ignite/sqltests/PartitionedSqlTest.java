@@ -24,13 +24,17 @@ import java.util.List;
  * Includes all base sql test plus tests that make sense in partitioned mode.
  */
 public class PartitionedSqlTest extends BaseSqlTest {
+    /** {@inheritDoc} */
     @Override protected void setupData() {
         super.createTables("template=partitioned");
 
         fillCommonData();
     }
 
-    public void testInnerDistJoin1() {
+    /**
+     * Check distributed INNER JOIN.
+     */
+    public void testInnerDistributedJoin() {
         testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.address " +
                 "FROM Department d INNER JOIN Address a " +
@@ -48,7 +52,10 @@ public class PartitionedSqlTest extends BaseSqlTest {
         });
     }
 
-    public void testNegativeInnerDistJoin1() {
+    /**
+     * Check that if required index is missed, correct exception will be thrown.
+     */
+    public void testInnerDistJoinMissedIndex() {
         testAllNodes(node -> {
             String qryTpl = "SELECT d.id, d.name, a.address " +
                 "FROM Department d INNER JOIN Address a " +
@@ -59,36 +66,10 @@ public class PartitionedSqlTest extends BaseSqlTest {
         });
     }
 
-    public void testInnerDistJoin2() {
-        testAllNodes(node -> {
-            final String qryTpl = "SELECT d.id, d.name, a.address " +
-                "FROM Address a INNER JOIN Department d " +
-                "ON d.%s = a.%s";
-
-            Result actIdxOnOn = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depId")), node);
-            Result actIdxOffOn = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depIdNoidx")), node);
-
-            List<List<Object>> exp = doInnerJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
-                (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
-                (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
-
-            assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
-            assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result.", actIdxOffOn.values(), exp);
-        });
-    }
-
-    public void testNegativeInnerDistJoin2() {
-        testAllNodes(node -> {
-            String qryTpl = "SELECT d.id, d.name, a.address " +
-                "FROM  Address a INNER JOIN Department d " +
-                "ON d.%s = a.%s";
-
-            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depIdNoidx")), node));
-            assertDistJoinHasIncorrectIndex(() -> executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depId")), node));
-        });
-    }
-
-    public void testLeftDistJoin() {
+    /**
+     * Check distributed LEFT JOIN.
+     */
+    public void testLeftDistributedJoin() {
         testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.depId, a.address " +
                 "FROM Department d LEFT JOIN Address a " +
@@ -106,7 +87,10 @@ public class PartitionedSqlTest extends BaseSqlTest {
         });
     }
 
-    public void testNegativeLeftDistJoin() {
+    /**
+     * Check that if required index is missed, correct exception will be thrown.
+     */
+    public void testLeftDistributedJoinMissedIndex() {
         testAllNodes(node -> {
             String qryTpl = "SELECT d.id, d.name, a.address " +
                 "FROM Department d LEFT JOIN Address a " +
@@ -117,7 +101,10 @@ public class PartitionedSqlTest extends BaseSqlTest {
         });
     }
 
-    public void testRightDistJoin() {
+    /**
+     * Check distributed RIGHT JOIN.
+     */
+    public void testRightDistributedJoin() {
         setExplain(true);
 
         testAllNodes(node -> {
@@ -137,7 +124,10 @@ public class PartitionedSqlTest extends BaseSqlTest {
         });
     }
 
-    public void testNegativeRightDistJoin() {
+    /**
+     * Check that if required index is missed, correct exception will be thrown.
+     */
+    public void testRightDistributedJoinMissedIndex() {
         testAllNodes(node -> {
             String qryTpl = "SELECT d.id, d.name, a.address " +
                 "FROM Department d RIGHT JOIN Address a " +

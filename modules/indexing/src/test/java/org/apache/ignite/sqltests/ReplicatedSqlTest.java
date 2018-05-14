@@ -42,15 +42,26 @@ public class ReplicatedSqlTest extends BaseSqlTest {
         fillDepartmentTable("DepartmentPart");
     }
 
-    public void testInnerDistJoin1() {
-        checkInnerDistJoin1(DEP_TAB);
+    /**
+     * Checks distributed INNER JOIN of replicated and replicated tables.
+     */
+    public void testInnerDistributedJoinReplicatedReplicated() {
+        checkInnerDistJoinWithReplicated(DEP_TAB);
     }
 
-    public void testMixedInnerDistJoin1() {
-        checkInnerDistJoin1(DEP_PART_TAB);
+    /**
+     * Checks distributed INNER JOIN of partitioned and replicated tables.
+     */
+    public void testInnerDistJoinPartitionedReplicated() {
+        checkInnerDistJoinWithReplicated(DEP_PART_TAB);
     }
 
-    private void checkInnerDistJoin1(String depTab) {
+    /**
+     * Checks distributed INNER JOIN of specified and replicated table.
+     *
+     * @param depTab department table name.
+     */
+    private void checkInnerDistJoinWithReplicated(String depTab) {
         testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.address " +
                 "FROM " + depTab + " d INNER JOIN Address a " +
@@ -72,15 +83,19 @@ public class ReplicatedSqlTest extends BaseSqlTest {
         });
     }
 
-    public void testInnerDistJoin2() {
-        checkInnerDistJoin2(DEP_TAB);
+    /**
+     * Checks distributed INNER JOIN of replicated and partitioned tables.
+     */
+    public void testMixedInnerDistJoinReplicatedPartitioned() {
+        checkInnerDistJoinReplicatedWith(DEP_PART_TAB);
     }
 
-    public void testMixedInnerDistJoin2() {
-        checkInnerDistJoin2(DEP_PART_TAB);
-    }
-
-    private void checkInnerDistJoin2(String depTab) {
+    /**
+     * Checks distributed INNER JOIN of replicated and specified table.
+     *
+     * @param depTab department table name.
+     */
+    private void checkInnerDistJoinReplicatedWith(String depTab) {
         testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.address " +
                 "FROM Address a INNER JOIN " + depTab + " d " +
@@ -102,15 +117,26 @@ public class ReplicatedSqlTest extends BaseSqlTest {
         });
     }
 
-    public void testLeftDistJoin() {
-        checkLeftDistJoin(DEP_TAB);
+    /**
+     * Checks distributed LEFT JOIN of replicated and replicated tables.
+     */
+    public void testLeftDistributedJoinReplicatedReplicated() {
+        checkLeftDistributedJoinWithReplicated(DEP_TAB);
     }
 
-    public void testMixedLeftDistJoin() {
-        checkLeftDistJoin(DEP_PART_TAB);
+    /**
+     * Checks distributed LEFT JOIN of partitioned and replicated tables.
+     */
+    public void testLeftDistributedJoinPartitionedReplicated() {
+        checkLeftDistributedJoinWithReplicated(DEP_PART_TAB);
     }
 
-    private void checkLeftDistJoin(String depTab) {
+    /**
+     * Checks distributed LEFT JOIN of specified and replicated table.
+     *
+     * @param depTab department table name.
+     */
+    private void checkLeftDistributedJoinWithReplicated(String depTab) {
         testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.address " +
                 "FROM " + depTab + " d LEFT JOIN Address a " +
@@ -132,15 +158,26 @@ public class ReplicatedSqlTest extends BaseSqlTest {
         });
     }
 
-    public void testRightDistJoin() {
-        checkRightDistJoin(DEP_TAB);
+    /**
+     * Checks distributed RIGHT JOIN of replicated and replicated tables.
+     */
+    public void testRightDistributedJoinReplicatedReplicated() {
+        checkRightDistJoinWithReplicated(DEP_TAB);
     }
 
-    public void testMixedRightDistJoin() {
-        checkRightDistJoin(DEP_PART_TAB);
+    /**
+     * Checks distributed RIGHT JOIN of partitioned and replicated tables.
+     */
+    public void testRightDistributedJoinPartitionedReplicated() {
+        checkRightDistJoinWithReplicated(DEP_PART_TAB);
     }
 
-    public void checkRightDistJoin(String depTab) {
+    /**
+     * Checks distributed RIGHT JOIN of specified and replicated table.
+     *
+     * @param depTab department table name.
+     */
+    public void checkRightDistJoinWithReplicated(String depTab) {
         testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.address " +
                 "FROM " + depTab + " d RIGHT JOIN Address a " +
@@ -162,19 +199,31 @@ public class ReplicatedSqlTest extends BaseSqlTest {
         });
     }
 
-    public void testMixedInnerJoin1() {
-        checkInnerJoin1(DEP_PART_TAB);
+    /**
+     * Check INNER JOIN with collocated data of replicated and partitioned tables.
+     */
+    public void testInnerJoinReplicatedPartitioned() {
+        checkInnerJoinEmployeeDepartment(DEP_PART_TAB);
     }
 
-    public void testMixedInnerJoin2() {
-        checkInnerJoin1(DEP_PART_TAB);
+    /**
+     * Check INNER JOIN with collocated data of partitioned and replicated tables.
+     */
+    public void testMixedInnerJoinPartitionedReplicated() {
+        checkInnerJoinDepartmentEmployee(DEP_PART_TAB);
     }
 
-    public void testMixedLeftJoin() {
+    /**
+     * Check LEFT JOIN with collocated data of replicated and partitioned tables.
+     */
+    public void testLeftJoinReplicatedPartitioned() {
         checkLeftJoin(DEP_PART_TAB);
     }
 
-    public void testMixedRightJoin() {
+    /**
+     * Check RIGHT JOIN with collocated data of replicated and partitioned tables.
+     */
+    public void testRightJoinReplicatedPartitioned() {
         checkRightJoin(DEP_PART_TAB);
     }
 }
