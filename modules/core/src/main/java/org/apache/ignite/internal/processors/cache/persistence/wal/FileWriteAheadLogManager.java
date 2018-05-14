@@ -124,6 +124,7 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.DIRECT;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 import static org.apache.ignite.internal.util.IgniteUtils.findField;
 import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
 
@@ -1328,17 +1329,28 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Clears the file, fills with zeros for Default mode.
+     * Clears whole the file, fills with zeros for Default mode.
      *
      * @param file File to format.
      * @throws IgniteCheckedException if formatting failed
      */
     private void formatFile(File file) throws IgniteCheckedException {
+        formatFile(file, dsCfg.getWalSegmentSize());
+    }
+
+    /**
+     * Clears the file, fills with zeros for Default mode.
+     *
+     * @param file File to format.
+     * @param bytesCntToFormat Count of first bytes to format.
+     * @throws IgniteCheckedException if formatting failed
+     */
+    private void formatFile(File file, int bytesCntToFormat) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Formatting file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
 
         try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
-            int left = dsCfg.getWalSegmentSize();
+            int left = bytesCntToFormat;
 
             if (mode == WALMode.FSYNC) {
                 while (left > 0) {
@@ -1584,6 +1596,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         synchronized (this) {
                             while (locked.containsKey(toArchive) && !stopped)
                                 wait();
+
+                            // Firstly, format working file
+                            if (!stopped)
+                                formatFile(res.getOrigWorkFile(), HEADER_RECORD_SIZE);
 
                             // Then increase counter to allow rollover on clean working file
                             changeLastArchivedIndexAndNotifyWaiters(toArchive);
@@ -1997,7 +2013,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
                 zos.putNextEntry(new ZipEntry(""));
 
-                ByteBuffer buf = ByteBuffer.allocate(RecordV1Serializer.HEADER_RECORD_SIZE);
+                ByteBuffer buf = ByteBuffer.allocate(HEADER_RECORD_SIZE);
                 buf.order(ByteOrder.nativeOrder());
 
                 zos.write(prepareSerializerVersionBuffer(nextSegment, segmentSerializerVer, true, buf).array());
@@ -2226,10 +2242,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      */
     static IgniteBiTuple<Integer, Boolean> readSerializerVersionAndCompactedFlag(FileIO io)
             throws IgniteCheckedException, IOException {
-        try (ByteBufferExpander buf = new ByteBufferExpander(RecordV1Serializer.HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
+        try (ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
             FileInput in = new FileInput(io, buf);
 
-            in.ensure(RecordV1Serializer.HEADER_RECORD_SIZE);
+            in.ensure(HEADER_RECORD_SIZE);
 
             int recordType = in.readUnsignedByte();
 
@@ -2576,7 +2592,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * Write serializer version to current handle.
          */
         public void writeHeader() {
-            SegmentedRingByteBuffer.WriteSegment seg = buf.offer(RecordV1Serializer.HEADER_RECORD_SIZE);
+            SegmentedRingByteBuffer.WriteSegment seg = buf.offer(HEADER_RECORD_SIZE);
 
             assert seg != null && seg.position() > 0;
 

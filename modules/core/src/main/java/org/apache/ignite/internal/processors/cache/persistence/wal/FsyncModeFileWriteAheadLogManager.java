@@ -115,6 +115,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 
 /**
  * File WAL manager.
@@ -1151,16 +1152,28 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /**
-     * Clears the file with zeros.
+     * Clears whole the file, fills with zeros for Default mode.
      *
      * @param file File to format.
+     * @throws IgniteCheckedException if formatting failed
      */
     private void formatFile(File file) throws IgniteCheckedException {
+        formatFile(file, dsCfg.getWalSegmentSize());
+    }
+
+    /**
+     * Clears the file, fills with zeros for Default mode.
+     *
+     * @param file File to format.
+     * @param bytesCntToFormat Count of first bytes to format.
+     * @throws IgniteCheckedException if formatting failed
+     */
+    private void formatFile(File file, int bytesCntToFormat) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Formatting file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
 
         try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
-            int left = dsCfg.getWalSegmentSize();
+            int left = bytesCntToFormat;
 
             if (mode == WALMode.FSYNC) {
                 while (left > 0) {
@@ -1424,6 +1437,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         synchronized (this) {
                             while (locked.containsKey(toArchive) && !stopped)
                                 wait();
+
+                            // Firstly, format working file
+                            if (!stopped)
+                                formatFile(res.getOrigWorkFile(), HEADER_RECORD_SIZE);
 
                             // Then increase counter to allow rollover on clean working file
                             changeLastArchivedIndexAndWakeupCompressor(toArchive);
