@@ -42,12 +42,14 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.BaselineNode;
@@ -2633,6 +2635,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Worker for discovery events. */
     private class DiscoveryWorker extends GridWorker {
         /** */
+        private static final String POLL_TIMEOUT_PROP = "IGNITE_DISCOVERY_WORKER_POLL_TIMEOUT_MS";
+
+        /** */
+        private static final int DFLT_POLL_TIMEOUT = 10_000;
+
+        /** */
         private DiscoCache discoCache;
 
         /** Event queue. */
@@ -2647,6 +2655,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         /** Node segmented event fired flag. */
         private boolean nodeSegFired;
+
+        /** */
+        private final long pollTimeoutMs = IgniteSystemProperties.getLong(POLL_TIMEOUT_PROP, DFLT_POLL_TIMEOUT);
 
         /**
          *
@@ -2755,7 +2766,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         @SuppressWarnings("DuplicateCondition")
         private void body0() throws InterruptedException {
             GridTuple6<Integer, AffinityTopologyVersion, ClusterNode, DiscoCache, Collection<ClusterNode>,
-                DiscoveryCustomMessage> evt = evts.take();
+                DiscoveryCustomMessage> evt;
+            do {
+                if (isCancelled())
+                    return;
+
+                updateHeartbeat();
+
+                evt = evts.poll(pollTimeoutMs, TimeUnit.MILLISECONDS);
+            } while (evt == null);
 
             int type = evt.get1();
 
