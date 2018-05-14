@@ -96,10 +96,14 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         // Integrity test.
         suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
+
+        suite.addTestSuite(IgnitePdsPartitionFilesDestroyTest.class);
     }
 
     /**
      * Fills {@code suite} with PDS test subset, which operates with real page store and does actual disk operations.
+     *
+     * NOTE: These tests are also executed using I/O plugins.
      *
      * @param suite suite to add tests into.
      */
@@ -148,7 +152,5 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(LocalWalModeChangeDuringRebalancingSelfTest.class);
 
         suite.addTestSuite(IgnitePdsCorruptedCacheDataTest.class);
-
-        suite.addTestSuite(IgnitePdsPartitionFilesDestroyTest.class);
     }
 }
