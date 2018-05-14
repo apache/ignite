@@ -33,6 +33,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
  *
  */
 public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstractTest {
+    /** Test timeout. */
+    private static final long TEST_TIMEOUT = 10 * 60 * 1000;
+
     /** Number of small entries. */
     private static final int SMALL_ENTRIES = ENTRIES * 10;
 
@@ -44,6 +47,11 @@ public class PageEvictionPagesRecyclingAndReusingTest extends PageEvictionAbstra
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return TEST_TIMEOUT;
     }
 
     /**
