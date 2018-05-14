@@ -1076,10 +1076,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         throws IgniteCheckedException {
         if (!regCfg.isPersistenceEnabled())
             super.checkRegionEvictionProperties(regCfg, dbCfg);
-
-        if (regCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED)
+        else if (regCfg.getPageEvictionMode() != DataPageEvictionMode.DISABLED) {
             U.warn(log, "Page eviction mode set for [" + regCfg.getName() + "] data will have no effect" +
                 " because the oldest pages are evicted automatically if Ignite persistence is enabled.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -3780,6 +3780,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 throw new IgniteCheckedException("Checkpoint entry was removed: " + cpTs);
 
             return entry;
+        }
+
+        /**
+         * @return First checkpoint entry if exists. Otherwise {@code null}.
+         */
+        private CheckpointEntry firstEntry() {
+            Map.Entry<Long,CheckpointEntry> entry = histMap.firstEntry();
+
+            return entry != null ? entry.getValue() : null;
+        }
+
+        /**
+         * Get WAL pointer to low checkpoint bound.
+         *
+         * @return WAL pointer to low checkpoint bound.
+         */
+        public WALPointer lowCheckpointBound() {
+            CheckpointEntry entry = firstEntry();
+
+            return entry != null ? entry.cpMark : null;
         }
 
         /**
