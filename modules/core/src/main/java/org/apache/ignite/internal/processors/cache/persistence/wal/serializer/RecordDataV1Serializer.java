@@ -68,6 +68,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListInitNewPageR
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListRemovePageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetNextRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetPreviousRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionCreateRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.RecycleRecord;
@@ -155,6 +156,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 8;
 
             case PARTITION_DESTROY:
+                return /*cacheId*/4 + /*partId*/4;
+
+            case PARTITION_CREATE:
                 return /*cacheId*/4 + /*partId*/4;
 
             case DATA_RECORD:
@@ -376,6 +380,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 int partId = in.readInt();
 
                 res = new PartitionDestroyRecord(cacheId, partId);
+
+                break;
+
+            case PARTITION_CREATE:
+                cacheId = in.readInt();
+                partId = in.readInt();
+
+                res = new PartitionCreateRecord(cacheId, partId);
 
                 break;
 
@@ -874,6 +886,14 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 buf.putInt(partDestroy.groupId());
                 buf.putInt(partDestroy.partitionId());
+
+                break;
+
+            case PARTITION_CREATE:
+                PartitionCreateRecord partCreate = (PartitionCreateRecord)rec;
+
+                buf.putInt(partCreate.groupId());
+                buf.putInt(partCreate.partitionId());
 
                 break;
 
