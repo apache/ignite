@@ -36,6 +36,7 @@ import org.apache.ignite.internal.pagemem.wal.record.ExchangeRecord;
 import org.apache.ignite.internal.pagemem.wal.record.SnapshotRecord;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionCreateRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
@@ -92,13 +93,16 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
                 return 8 + 1;
 
             case EXCHANGE:
-               return 4 /*type*/ + 8 /*timestamp*/ + 2 /*constId*/;
+                return 4 /*type*/ + 8 /*timestamp*/ + 2 /*constId*/;
 
             case TX_RECORD:
                 return txRecordSerializer.size((TxRecord)rec);
 
             case BASELINE_TOP_RECORD:
                 return bltRecSerializer.size((BaselineTopologyRecord)rec);
+
+            case PARTITION_CREATE:
+                return 4 /*group id*/ + 4 /*part id*/;
 
             default:
                 return delegateSerializer.size(rec);
@@ -159,6 +163,12 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
             case BASELINE_TOP_RECORD:
                 return bltRecSerializer.read(in);
+
+            case PARTITION_CREATE:
+                int grpId = in.readInt();
+                int partId = in.readInt();
+
+                return new PartitionCreateRecord(grpId, partId);
 
             default:
                 return delegateSerializer.readRecord(type, in);
@@ -233,6 +243,14 @@ public class RecordDataV2Serializer implements RecordDataSerializer {
 
             case BASELINE_TOP_RECORD:
                 bltRecSerializer.write((BaselineTopologyRecord)rec, buf);
+
+                break;
+
+            case PARTITION_CREATE:
+                PartitionCreateRecord partCreate = (PartitionCreateRecord)rec;
+
+                buf.putInt(partCreate.groupId());
+                buf.putInt(partCreate.partitionId());
 
                 break;
 
