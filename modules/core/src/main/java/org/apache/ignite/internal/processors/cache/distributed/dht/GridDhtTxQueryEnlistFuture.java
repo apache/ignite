@@ -26,17 +26,16 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQu
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
-import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 
 /**
  * Cache lock future.
  */
 public final class GridDhtTxQueryEnlistFuture
     extends GridDhtTxQueryEnlistAbstractFuture<GridNearTxQueryEnlistResponse> {
-
     /** Involved cache ids. */
     private final int[] cacheIds;
 
@@ -131,20 +130,15 @@ public final class GridDhtTxQueryEnlistFuture
      * @return Prepare response.
      */
     @NotNull @Override public GridNearTxQueryEnlistResponse createResponse(@NotNull Throwable err) {
-        return new GridNearTxQueryEnlistResponse(cctx.cacheId(), nearFutId, nearMiniId, nearLockVer, 0, err);
+        return new GridNearTxQueryEnlistResponse(cctx.cacheId(), nearFutId, nearMiniId, nearLockVer, err);
     }
 
     /**
-     * @param res {@code True} if at least one entry was enlisted.
      * @return Prepare response.
      */
-    @NotNull @Override public GridNearTxQueryEnlistResponse createResponse(long res, boolean removeMapping) {
-        GridNearTxQueryEnlistResponse rsp = new GridNearTxQueryEnlistResponse(cctx.cacheId(), nearFutId, nearMiniId,
-            nearLockVer, res, null);
-
-        rsp.removeMapping(tx.empty());
-
-        return rsp;
+    @NotNull @Override public GridNearTxQueryEnlistResponse createResponse() {
+        return new GridNearTxQueryEnlistResponse(cctx.cacheId(), nearFutId, nearMiniId,
+            nearLockVer, cnt, tx.empty());
     }
 
     /** {@inheritDoc} */

@@ -41,11 +41,22 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
      * @param miniId Mini future id.
      * @param lockVer Lock version.
      * @param res Result.
+     */
+    public GridNearTxQueryResultsEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer,
+        long res) {
+        super(cacheId, futId, miniId, lockVer, res, false);
+    }
+
+    /**
+     * @param cacheId Cache id.
+     * @param futId Future id.
+     * @param miniId Mini future id.
+     * @param lockVer Lock version.
      * @param err Error.
      */
     public GridNearTxQueryResultsEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer,
-        long res,Throwable err) {
-        super(cacheId, futId, miniId, lockVer, res, err);
+        Throwable err) {
+        super(cacheId, futId, miniId, lockVer, err);
     }
 
     /** {@inheritDoc} */

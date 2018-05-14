@@ -33,12 +33,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
- import org.apache.ignite.cache.query.QueryCancelledException;
+import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
@@ -53,14 +54,19 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsReservation;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.ResultSetEnlistFuture;
 import org.apache.ignite.internal.processors.query.h2.UpdateResult;
 import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
@@ -72,12 +78,14 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
+import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2SelectForUpdateTxDetails;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.thread.IgniteThread;
@@ -446,6 +454,36 @@ public class GridMapQueryExecutor {
 
         final Object[] params = req.parameters();
 
+        final GridDhtTxLocalAdapter tx;
+
+        GridH2SelectForUpdateTxDetails txReq = req.txDetails();
+
+        if (txReq != null) {
+            // Prepare to run queries.
+            GridCacheContext<?, ?> mainCctx = mainCacheContext(cacheIds);
+
+            if (mainCctx == null || mainCctx.atomic() || !mainCctx.mvccEnabled() || cacheIds.size() != 1)
+                throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
+                    "that involve single transactional cache.");
+
+            GridDhtTransactionalCacheAdapter txCache = (GridDhtTransactionalCacheAdapter)mainCctx.cache();
+
+            if (!node.isLocal()) {
+                tx = txCache.initTxTopologyVersion(node.id(), node, txReq.version(), txReq.futureId(),
+                    txReq.miniId(), txReq.firstClientRequest(), req.topologyVersion(), txReq.threadId(), req.timeout(),
+                    txReq.subjectId(), txReq.taskNameHash());
+            }
+            else {
+                tx = MvccUtils.activeSqlTx(ctx, txReq.version());
+
+                assert tx != null;
+            }
+        }
+        else
+            tx = null;
+
+        AtomicInteger runCntr = txReq != null && segments > 1 ? new AtomicInteger(segments) : null;
+
         for (int i = 1; i < segments; i++) {
             assert !F.isEmpty(cacheIds);
 
@@ -468,13 +506,15 @@ public class GridMapQueryExecutor {
                     req.timeout(),
                     params,
                     true,
-                    req.mvccSnapshot()); // Lazy = true.
+                    req.mvccSnapshot(),
+                    tx,
+                    txReq,
+                    runCntr);
             }
             else {
                 ctx.closure().callLocal(
                     new Callable<Void>() {
-                        @Override
-                        public Void call() throws Exception {
+                        @Override public Void call() {
                             onQueryRequest0(node,
                                 req.requestId(),
                                 segment,
@@ -491,7 +531,10 @@ public class GridMapQueryExecutor {
                                 req.timeout(),
                                 params,
                                 false,
-                                req.mvccSnapshot()); // Lazy = false.
+                                req.mvccSnapshot(),
+                                tx,
+                                txReq,
+                                runCntr);
 
                             return null;
                         }
@@ -516,7 +559,10 @@ public class GridMapQueryExecutor {
             req.timeout(),
             params,
             lazy,
-            req.mvccSnapshot());
+            req.mvccSnapshot(),
+            tx,
+            txReq,
+            runCntr);
     }
 
     /**
@@ -533,6 +579,9 @@ public class GridMapQueryExecutor {
      * @param distributedJoinMode Query distributed join mode.
      * @param lazy Streaming flag.
      * @param mvccSnapshot MVCC snapshot.
+     * @param tx Transaction.
+     * @param txDetails TX details, if it's a {@code FOR UPDATE} request, or {@code null}.
+     * @param runCntr Counter which counts remaining queries in case segmented index is used.
      */
     private void onQueryRequest0(
         final ClusterNode node,
@@ -551,9 +600,16 @@ public class GridMapQueryExecutor {
         final int timeout,
         final Object[] params,
         boolean lazy,
-        @Nullable final MvccSnapshot mvccSnapshot
-    ) {
+        @Nullable final MvccSnapshot mvccSnapshot,
+        @Nullable final GridDhtTxLocalAdapter tx,
+        @Nullable final GridH2SelectForUpdateTxDetails txDetails,
+        @Nullable final AtomicInteger runCntr) {
         MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
+
+        // In presence of TX, we also must always have matching details.
+        assert tx == null || txDetails != null;
+
+        boolean forUpdate = (tx != null);
 
         if (lazy && worker == null) {
             // Lazy queries must be re-submitted to dedicated workers.
@@ -579,7 +635,10 @@ public class GridMapQueryExecutor {
                         timeout,
                         params,
                         true,
-                        mvccSnapshot);
+                        mvccSnapshot,
+                        tx,
+                        txDetails,
+                        runCntr);
                 }
             });
 
@@ -604,9 +663,11 @@ public class GridMapQueryExecutor {
             return;
         }
 
+        if (lazy && txDetails != null)
+            throw new IgniteSQLException("Lazy execution of SELECT FOR UPDATE queries is not supported.");
+
         // Prepare to run queries.
-        GridCacheContext<?, ?> mainCctx =
-            !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0)) : null;
+        GridCacheContext<?, ?> mainCctx = mainCacheContext(cacheIds);
 
         MapNodeResults nodeRess = resultsForNode(node.id());
 
@@ -615,7 +676,9 @@ public class GridMapQueryExecutor {
         List<GridReservable> reserved = new ArrayList<>();
 
         try {
-            if (topVer != null) {
+            // We want to reserve only in not SELECT FOR UPDATE case -
+            // otherwise, their state is protected by locked topology.
+            if (topVer != null && txDetails == null) {
                 // Reserve primary for topology version or explicit partitions.
                 if (!reservePartitions(cacheIds, topVer, parts, reserved)) {
                     // Unregister lazy worker because re-try may never reach this node again.
@@ -628,7 +691,7 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            qr = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, MapQueryLazyWorker.currentWorker());
+            qr = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, MapQueryLazyWorker.currentWorker(), forUpdate);
 
             if (nodeRess.put(reqId, segmentId, qr) != null)
                 throw new IllegalStateException();
@@ -674,12 +737,40 @@ public class GridMapQueryExecutor {
                 for (GridCacheSqlQuery qry : qrys) {
                     ResultSet rs = null;
 
+                    boolean removeMapping = false;
+
                     // If we are not the target node for this replicated query, just ignore it.
                     if (qry.node() == null || (segmentId == 0 && qry.node().equals(ctx.localNodeId()))) {
                         rs = h2.executeSqlQueryWithTimer(conn, qry.query(),
                             F.asList(qry.parameters(params)), true,
                             timeout,
                             qr.queryCancel(qryIdx));
+
+                        if (forUpdate) {
+                            ResultSetEnlistFuture enlistFut = new ResultSetEnlistFuture(
+                                ctx.localNodeId(),
+                                txDetails.version(),
+                                topVer,
+                                mvccSnapshot,
+                                txDetails.threadId(),
+                                IgniteUuid.randomUuid(),
+                                txDetails.miniId(),
+                                parts,
+                                tx,
+                                timeout,
+                                mainCctx,
+                                rs
+                            );
+
+                            enlistFut.init();
+
+                            ResultSetEnlistFuture.ResultSetEnlistFutureResult r = enlistFut.get();
+
+                            if (r.error() != null)
+                                throw r.error();
+
+                            rs.beforeFirst();
+                        }
 
                         if (evt) {
                             ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -708,8 +799,13 @@ public class GridMapQueryExecutor {
                         throw new QueryCancelledException();
                     }
 
+                    if (forUpdate && tx.dht() && (runCntr == null || runCntr.decrementAndGet() == 0)) {
+                        if (removeMapping = tx.empty())
+                            tx.rollbackAsync().get();
+                    }
+
                     // Send the first page.
-                    sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize);
+                    sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping);
 
                     qryIdx++;
                 }
@@ -753,6 +849,14 @@ public class GridMapQueryExecutor {
                     reserved.get(i).release();
             }
         }
+    }
+
+    /**
+     * @param cacheIds Cache ids.
+     * @return Id of the first cache in list, or {@code null} if list is empty.
+     */
+    private GridCacheContext mainCacheContext(List<Integer> cacheIds) {
+        return !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0)) : null;
     }
 
     /**
@@ -949,12 +1053,12 @@ public class GridMapQueryExecutor {
             if (lazyWorker != null) {
                 lazyWorker.submit(new Runnable() {
                     @Override public void run() {
-                        sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize());
+                        sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize(), false);
                     }
                 });
             }
             else
-                sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize());
+                sendNextPage(nodeRess, node, qr, req.query(), req.segmentId(), req.pageSize(), false);
         }
     }
 
@@ -965,9 +1069,11 @@ public class GridMapQueryExecutor {
      * @param qry Query.
      * @param segmentId Index segment ID.
      * @param pageSize Page size.
+     * @param removeMapping Remove mapping flag.
      */
+    @SuppressWarnings("unchecked")
     private void sendNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
-        int pageSize) {
+        int pageSize, boolean removeMapping) {
         MapQueryResult res = qr.result(qry);
 
         assert res != null;
@@ -996,12 +1102,18 @@ public class GridMapQueryExecutor {
         try {
             boolean loc = node.isLocal();
 
+            // In case of SELECT FOR UPDATE the last columns is _KEY,
+            // we can't retrieve them for an arbitrary row otherwise.
+            int colsCnt = !qr.isForUpdate() ? res.columnCount() : res.columnCount() - 1;
+
             GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.queryRequestId(), segmentId, qry, page,
                 page == 0 ? res.rowCount() : -1,
-                res.columnCount(),
-                loc ? null : toMessages(rows, new ArrayList<Message>(res.columnCount())),
+                colsCnt,
+                loc ? null : toMessages(rows, new ArrayList<>(res.columnCount()), colsCnt),
                 loc ? rows : null,
                 last);
+
+            msg.removeMapping(removeMapping);
 
             if (loc)
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);

@@ -663,6 +663,9 @@ public final class UpdatePlan {
 
     /** */
     private final static class UpdateIterator extends AbstractIterator {
+        /** */
+        private static final long serialVersionUID = -4949035950470324961L;
+
         /**
          * @param idx Indexing.
          * @param cur Query cursor.
@@ -683,6 +686,9 @@ public final class UpdatePlan {
 
     /** */
     private final static class DeleteIterator extends AbstractIterator {
+        /** */
+        private static final long serialVersionUID = -4949035950470324961L;
+
         /**
          * @param idx Indexing.
          * @param cur Query cursor.
@@ -701,6 +707,9 @@ public final class UpdatePlan {
 
     /** */
     private final static class InsertIterator extends AbstractIterator {
+        /** */
+        private static final long serialVersionUID = -4949035950470324961L;
+
         /**
          * @param idx Indexing.
          * @param cur Query cursor.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache value operations.
@@ -45,7 +45,10 @@ public enum GridCacheOperation {
      * This operation is used when lock has been acquired,
      * but filter validation failed.
      */
-    NOOP;
+    NOOP,
+
+    /** SELECT FOR UPDATE operation. */
+    SELECT;
 
     /** Enum values. */
     private static final GridCacheOperation[] VALS = values();

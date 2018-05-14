@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult.UpdateOutcome;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheEntryExtras;
@@ -1136,6 +1137,61 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         return valid ? new GridCacheUpdateTxResult(true, updateCntr0, logPtr) :
                 new GridCacheUpdateTxResult(false, logPtr);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    public GridCacheUpdateTxResult mvccLock(GridDhtTxLocalAdapter tx, MvccSnapshot mvccVer)
+        throws GridCacheEntryRemovedException, IgniteCheckedException {
+        assert tx != null;
+        assert mvccVer != null;
+
+        final boolean valid = valid(tx.topologyVersion());
+
+        final GridCacheVersion newVer;
+
+        WALPointer logPtr = null;
+
+        lockEntry();
+
+        try {
+            checkObsolete();
+
+            newVer = tx.writeVersion();
+
+            assert newVer != null : "Failed to get write version for tx: " + tx;
+
+            MvccUpdateResult res = cctx.offheap().mvccLock(tx.local(), this, mvccVer);
+
+            assert res != null;
+
+            if (res.resultType() == ResultType.VERSION_MISMATCH)
+                throw new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE);
+            else if (res.resultType() == ResultType.LOCKED) {
+                unlockEntry();
+
+                MvccVersion lockVer = res.resultVersion();
+
+                GridFutureAdapter<GridCacheUpdateTxResult> resFut = new GridFutureAdapter<>();
+
+                IgniteInternalFuture lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
+
+                lockFut.listen(new MvccAcquireLockListener(tx, this, mvccVer, resFut));
+
+                return new GridCacheUpdateTxResult(false, resFut);
+            }
+        }
+        finally {
+            if (lockedByCurrentThread()) {
+                unlockEntry();
+
+                cctx.evicts().touch(this, AffinityTopologyVersion.NONE);
+            }
+        }
+
+        onUpdateFinished(0L);
+
+        return new GridCacheUpdateTxResult(valid, logPtr);
     }
 
     /** {@inheritDoc} */
@@ -4723,6 +4779,103 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             resFut.onDone(valid ? new GridCacheUpdateTxResult(true, updateCntr0, logPtr)
                     : new GridCacheUpdateTxResult(false, logPtr));
+        }
+    }
+
+    /** */
+    private static class MvccAcquireLockListener implements IgniteInClosure<IgniteInternalFuture> {
+        /** */
+        private static final long serialVersionUID = -1578749008606139541L;
+
+        /** */
+        private final IgniteInternalTx tx;
+
+        /** */
+        private final MvccSnapshot mvccVer;
+
+        /** */
+        private final GridFutureAdapter<GridCacheUpdateTxResult> resFut;
+
+        /** */
+        private GridCacheMapEntry entry;
+
+        /** */
+        MvccAcquireLockListener(IgniteInternalTx tx,
+            GridCacheMapEntry entry,
+            MvccSnapshot mvccVer,
+            GridFutureAdapter<GridCacheUpdateTxResult> resFut) {
+            this.tx = tx;
+            this.entry = entry;
+            this.mvccVer = mvccVer;
+            this.resFut = resFut;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public void apply(IgniteInternalFuture lockFut) {
+            WALPointer logPtr = null;
+            boolean valid;
+
+            GridCacheContext cctx = entry.context();
+
+            try {
+                lockFut.get();
+
+                while (true) {
+                    entry.lockEntry();
+
+                    if (entry.obsoleteVersionExtras() == null)
+                        break;
+
+                    entry.unlockEntry();
+
+                    entry = (GridCacheMapEntry)cctx.cache().entryEx(entry.key());
+                }
+
+                valid = entry.valid(tx.topologyVersion());
+
+                cctx.shared().database().checkpointReadLock();
+
+                MvccUpdateResult res;
+
+                try {
+                    res = cctx.offheap().mvccLock(tx.local(), entry, mvccVer);
+                }
+                finally {
+                    cctx.shared().database().checkpointReadUnlock();
+                }
+
+                assert res != null;
+
+                if (res.resultType() == ResultType.VERSION_MISMATCH) {
+                    resFut.onDone(new IgniteSQLException("Mvcc version mismatch.", CONCURRENT_UPDATE));
+
+                    return;
+                }
+                else if (res.resultType() == ResultType.LOCKED) {
+                    entry.unlockEntry();
+
+                    cctx.kernalContext().coordinators().waitFor(cctx, res.resultVersion()).listen(this);
+
+                    return;
+                }
+            }
+            catch (IgniteCheckedException e) {
+                resFut.onDone(e);
+
+                return;
+            }
+            finally {
+                if (entry.lockedByCurrentThread()) {
+                    entry.unlockEntry();
+
+                    cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
+                }
+            }
+
+            entry.onUpdateFinished(0L);
+
+            resFut.onDone(new GridCacheUpdateTxResult(valid, logPtr));
         }
     }
 

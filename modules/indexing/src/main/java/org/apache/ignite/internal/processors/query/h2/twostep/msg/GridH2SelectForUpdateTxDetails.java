@@ -15,94 +15,73 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.query.h2.twostep.msg;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import java.util.UUID;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * TX details holder for {@link GridH2QueryRequest}.
  */
-public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
+public class GridH2SelectForUpdateTxDetails implements Message {
     /** */
-    private static final long serialVersionUID = 0L;
+    private long threadId;
 
-    /** Future ID. */
+    /** */
     private IgniteUuid futId;
 
-    /** Error. */
-    @GridDirectTransient
-    private Throwable err;
-
-    /** Serialized error. */
-    private byte[] errBytes;
-
-    /** Mini future id. */
+    /** */
     private int miniId;
 
-    /** Result. */
-    private long res;
-
-    /** Remove mapping flag. */
-    private boolean removeMapping;
+    /** */
+    private UUID subjId;
 
     /** */
     private GridCacheVersion lockVer;
 
+    /** */
+    private int taskNameHash;
+
+    /** */
+    private boolean clientFirst;
+
     /**
      * Default constructor.
      */
-    public GridNearTxQueryEnlistResponse() {
+    GridH2SelectForUpdateTxDetails() {
         // No-op.
     }
 
     /**
-     * @param cacheId Cache id.
+     * @param threadId Thread id.
      * @param futId Future id.
-     * @param miniId Mini future id.
+     * @param miniId Mini fture id.
+     * @param subjId Subject id.
      * @param lockVer Lock version.
-     * @param err Error.
+     * @param taskNameHash Task name hash.
+     * @param clientFirst {@code True} if this is the first client request.
      */
-    public GridNearTxQueryEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer, Throwable err) {
-        this.cacheId = cacheId;
+    public GridH2SelectForUpdateTxDetails(long threadId, IgniteUuid futId, int miniId, UUID subjId,
+        GridCacheVersion lockVer, int taskNameHash, boolean clientFirst) {
+        this.threadId = threadId;
         this.futId = futId;
         this.miniId = miniId;
+        this.subjId = subjId;
         this.lockVer = lockVer;
-        this.err = err;
+        this.taskNameHash = taskNameHash;
+        this.clientFirst = clientFirst;
     }
 
     /**
-     * @param cacheId Cache id.
-     * @param futId Future id.
-     * @param miniId Mini future id.
-     * @param lockVer Lock version.
-     * @param res Result.
-     * @param removeMapping Remove mapping flag.
+     * @return Thread id.
      */
-    public GridNearTxQueryEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer, long res, boolean removeMapping) {
-        this.cacheId = cacheId;
-        this.futId = futId;
-        this.miniId = miniId;
-        this.lockVer = lockVer;
-        this.res = res;
-        this.removeMapping = removeMapping;
-    }
-
-    /**
-     * @return Loc version.
-     */
-    public GridCacheVersion version() {
-        return lockVer;
+    public long threadId() {
+        return threadId;
     }
 
     /**
@@ -113,47 +92,43 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
     }
 
     /**
-     * @return Mini future id.
+     * @return Mini fture id.
      */
     public int miniId() {
         return miniId;
     }
 
     /**
-     * @return Result.
+     * @return Subject id.
      */
-    public long result() {
-        return res;
+    public UUID subjectId() {
+        return subjId;
     }
 
     /**
-     * @return Remove mapping flag.
+     * @return Lock version.
      */
-    public boolean removeMapping() {
-        return removeMapping;
+    public GridCacheVersion version() {
+        return lockVer;
     }
 
-    /** {@inheritDoc} */
-    @Nullable @Override public Throwable error() {
-        return err;
+    /**
+     * @return Task name hash.
+     */
+    public int taskNameHash() {
+        return taskNameHash;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean addDeploymentInfo() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 9;
+    /**
+     * @return {@code True} if this is the first client request in transaction.
+     */
+    public boolean firstClientRequest() {
+        return clientFirst;
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
@@ -163,38 +138,44 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
         }
 
         switch (writer.state()) {
-            case 3:
-                if (!writer.writeByteArray("errBytes", errBytes))
+            case 0:
+                if (!writer.writeBoolean("clientFirst", clientFirst))
                     return false;
 
                 writer.incrementState();
 
-            case 4:
+            case 1:
                 if (!writer.writeIgniteUuid("futId", futId))
                     return false;
 
                 writer.incrementState();
 
-            case 5:
+            case 2:
                 if (!writer.writeMessage("lockVer", lockVer))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
+            case 3:
                 if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
-                if (!writer.writeBoolean("removeMapping", removeMapping))
+            case 4:
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
-                if (!writer.writeLong("res", res))
+            case 5:
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
+                if (!writer.writeLong("threadId", threadId))
                     return false;
 
                 writer.incrementState();
@@ -211,19 +192,16 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf, reader))
-            return false;
-
         switch (reader.state()) {
-            case 3:
-                errBytes = reader.readByteArray("errBytes");
+            case 0:
+                clientFirst = reader.readBoolean("clientFirst");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
-            case 4:
+            case 1:
                 futId = reader.readIgniteUuid("futId");
 
                 if (!reader.isLastRead())
@@ -231,7 +209,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 5:
+            case 2:
                 lockVer = reader.readMessage("lockVer");
 
                 if (!reader.isLastRead())
@@ -239,7 +217,7 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 6:
+            case 3:
                 miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
@@ -247,16 +225,24 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
 
                 reader.incrementState();
 
-            case 7:
-                removeMapping = reader.readBoolean("removeMapping");
+            case 4:
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
-            case 8:
-                res = reader.readLong("res");
+            case 5:
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
+                threadId = reader.readLong("threadId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -265,33 +251,21 @@ public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
 
         }
 
-        return reader.afterMessageRead(GridNearTxQueryEnlistResponse.class);
+        return reader.afterMessageRead(GridH2SelectForUpdateTxDetails.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 152;
+        return -57;
     }
 
     /** {@inheritDoc} */
-    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx.marshaller(), err);
+    @Override public byte fieldsCount() {
+        return 7;
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (errBytes != null)
-            err = U.unmarshal(ctx, errBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
-    }
-
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridNearTxQueryEnlistResponse.class, this);
+    @Override public void onAckReceived() {
+        // No-op.
     }
 }

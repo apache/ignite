@@ -680,6 +680,9 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
         public boolean onResult(GridNearTxQueryEnlistResponse res, Throwable err) {
             assert res != null || err != null : this;
 
+            if (err == null && res.error() != null)
+                err = res.error();
+
             synchronized (this) {
                 if (completed)
                     return false;

@@ -17,18 +17,74 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Iterator;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.jetbrains.annotations.NotNull;
 
 /** */
 public interface UpdateSourceIterator<T> extends GridCloseableIterator<T> {
     /**
-     * Callback method which should be called before moving iteration into another thread.
-     */
-    public void beforeDetach();
-
-    /**
      * @return CacheOperation.
      */
     public GridCacheOperation operation();
+
+    /**
+     * Callback method which should be called before moving iteration into another thread.
+     */
+    public default void beforeDetach() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override default void close() throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override default boolean isClosed() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override default void removeX() throws IgniteCheckedException {
+        throw new UnsupportedOperationException("remove");
+    }
+
+    /** {@inheritDoc} */
+    @Override default boolean hasNext() {
+        try {
+            return hasNextX();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override default T next() {
+        try {
+            return nextX();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override default void remove() {
+        try {
+            removeX();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override @NotNull default Iterator<T> iterator() {
+        return this;
+    }
 }

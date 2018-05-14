@@ -17,20 +17,20 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
-import org.apache.ignite.internal.processors.query.GridQueryCancel;
-import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
-import org.h2.jdbc.JdbcConnection;
-import org.jetbrains.annotations.Nullable;
-
-import javax.cache.CacheException;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.CacheException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
+import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
+import org.h2.jdbc.JdbcConnection;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SQL_FIELDS;
 
@@ -56,9 +56,11 @@ class ReduceQueryRun {
     /** Can be either CacheException in case of error or AffinityTopologyVersion to retry if needed. */
     private final AtomicReference<Object> state = new AtomicReference<>();
 
+    /** Future controlling {@code SELECT FOR UPDATE} query execution. */
+    private final GridNearTxSelectForUpdateFuture selectForUpdateFut;
+
     /**
      * Constructor.
-     *
      * @param id Query ID.
      * @param qry Query text.
      * @param schemaName Schema name.
@@ -66,17 +68,21 @@ class ReduceQueryRun {
      * @param idxsCnt Number of indexes.
      * @param pageSize Page size.
      * @param startTime Start time.
+     * @param selectForUpdateFut Future controlling {@code SELECT FOR UPDATE} query execution.
      * @param cancel Query cancel handler.
      */
     ReduceQueryRun(Long id, String qry, String schemaName, Connection conn, int idxsCnt, int pageSize, long startTime,
-        GridQueryCancel cancel) {
-        this.qry = new GridRunningQueryInfo(id, qry, SQL_FIELDS, schemaName, startTime, cancel, false);
+        GridNearTxSelectForUpdateFuture selectForUpdateFut, GridQueryCancel cancel) {
+        this.qry = new GridRunningQueryInfo(id, qry, SQL_FIELDS, schemaName, startTime, cancel,
+            false);
 
         this.conn = (JdbcConnection)conn;
 
         this.idxs = new ArrayList<>(idxsCnt);
 
         this.pageSize = pageSize > 0 ? pageSize : GridCacheTwoStepQuery.DFLT_PAGE_SIZE;
+
+        this.selectForUpdateFut = selectForUpdateFut;
     }
 
     /**
@@ -153,5 +159,12 @@ class ReduceQueryRun {
      */
     void latch(CountDownLatch latch) {
         this.latch = latch;
+    }
+
+    /**
+     * @return {@code SELECT FOR UPDATE} future, if any.
+     */
+    @Nullable public GridNearTxSelectForUpdateFuture selectForUpdateFuture() {
+        return selectForUpdateFut;
     }
 }

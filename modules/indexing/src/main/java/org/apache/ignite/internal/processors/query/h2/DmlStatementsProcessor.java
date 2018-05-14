@@ -1433,53 +1433,18 @@ public class DmlStatementsProcessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void beforeDetach() {
-            //No-op
-        }
-
-        /** {@inheritDoc} */
         @Override public GridCacheOperation operation() {
             return op;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isClosed() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        public boolean hasNextX() throws IgniteCheckedException {
+        public boolean hasNextX() {
             return it.hasNext();
         }
 
         /** {@inheritDoc} */
         public Object nextX() throws IgniteCheckedException {
             return plan.processRowForTx(it.next());
-        }
-
-        /** {@inheritDoc} */
-        @Override public void removeX() throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasNext() {
-            return it.hasNext();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteBiTuple next() {
-            throw new UnsupportedOperationException("not implemented");
-        }
-
-        /** {@inheritDoc} */
-        @NotNull @Override public Iterator<Object> iterator() {
-            throw new UnsupportedOperationException("not implemented");
         }
     }
 
@@ -1504,57 +1469,22 @@ public class DmlStatementsProcessor {
         }
 
         /** {@inheritDoc} */
-        @Override public void beforeDetach() {
-            //No-op
-        }
-
-        /** {@inheritDoc} */
         @Override public GridCacheOperation operation() {
             return op;
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isClosed() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        public boolean hasNextX() throws IgniteCheckedException {
+        public boolean hasNextX() {
             return first;
         }
 
         /** {@inheritDoc} */
-        public T nextX() throws IgniteCheckedException {
+        public T nextX() {
             T res = first ? entry : null;
 
             first = false;
 
             return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void removeX() throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasNext() {
-            return first;
-        }
-
-        /** {@inheritDoc} */
-        @Override public T next() {
-            throw new UnsupportedOperationException("not implemented");
-        }
-
-        /** {@inheritDoc} */
-        @NotNull @Override public Iterator<T> iterator() {
-            throw new UnsupportedOperationException("not implemented");
         }
     }
 }

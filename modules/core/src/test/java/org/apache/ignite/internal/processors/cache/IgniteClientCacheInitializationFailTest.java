@@ -327,8 +327,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public UpdateSourceIterator<T4<Object, Object, EntryProcessor, Object[]>> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids,
-            int[] parts,
+        @Override public UpdateSourceIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
             String schema, String qry, Object[] params, int flags, int pageSize, int timeout,
             AffinityTopologyVersion topVer,
             MvccSnapshot mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {

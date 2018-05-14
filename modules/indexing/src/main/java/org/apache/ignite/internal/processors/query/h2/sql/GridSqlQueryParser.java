@@ -153,6 +153,15 @@ public class GridSqlQueryParser {
     private static final Getter<Select, int[]> GROUP_INDEXES = getter(Select.class, "groupIndex");
 
     /** */
+    private static final Getter<Select, Boolean> SELECT_IS_FOR_UPDATE = getter(Select.class, "isForUpdate");
+
+    /** */
+    private static final Getter<Select, Boolean> SELECT_IS_GROUP_QUERY = getter(Select.class, "isGroupQuery");
+
+    /** */
+    private static final Getter<SelectUnion, Boolean> UNION_IS_FOR_UPDATE = getter(SelectUnion.class, "isForUpdate");
+
+    /** */
     private static final Getter<Operation, Integer> OPERATION_TYPE = getter(Operation.class, "opType");
 
     /** */
@@ -557,12 +566,67 @@ public class GridSqlQueryParser {
         else {
             Class<?> cmdCls = cmd.getClass();
 
-            if (cmdCls.getName().equals(ORG_H2_COMMAND_COMMAND_LIST)) {
+            if (cmdCls.getName().equals(ORG_H2_COMMAND_COMMAND_LIST))
                 return new PreparedWithRemaining(PREPARED.get(LIST_COMMAND.get(cmd)), REMAINING.get(cmd));
-            }
             else
                 throw new IgniteSQLException("Unexpected statement command");
         }
+    }
+
+    /**
+     * @param p Prepared.
+     * @return Whether {@code p} is an {@code SELECT FOR UPDATE} query.
+     */
+    public static boolean isForUpdateQuery(Prepared p) {
+        if (!p.isQuery())
+            return false;
+
+        boolean union = ((Query)p).isUnion();
+
+        boolean forUpdate = (!union && SELECT_IS_FOR_UPDATE.get((Select)p)) ||
+            (union && UNION_IS_FOR_UPDATE.get((SelectUnion)p));
+
+        if (union && forUpdate)
+            throw new IgniteSQLException("SELECT UNION FOR UPDATE is not supported.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        return forUpdate;
+    }
+
+    /**
+     * @param p Statement to rewrite, if needed.
+     * @return Query with {@code key} and {@code val} columns appended to the list of columns,
+     *     if it's an {@code FOR UPDATE} query, or {@code null} if nothing has to be done.
+     */
+    @Nullable public static String rewriteQueryForUpdateIfNeeded(Prepared p) {
+        if (!isForUpdateQuery(p))
+            return null;
+
+        GridSqlStatement gridStmt = new GridSqlQueryParser(false).parse(p);
+
+        // We have checked above that it's not an UNION query, so it's got to be SELECT.
+        assert gridStmt instanceof GridSqlSelect;
+
+        GridSqlSelect sel = (GridSqlSelect)gridStmt;
+
+        // How'd we get here otherwise?
+        assert sel.isForUpdate();
+
+        GridSqlAst from = sel.from();
+
+        GridSqlTable gridTbl = from instanceof GridSqlTable ? (GridSqlTable)from :
+            ((GridSqlAlias)from).child();
+
+        GridH2Table tbl = gridTbl.dataTable();
+
+        Column keyCol = tbl.getColumn(0);
+
+        sel.addColumn(new GridSqlColumn(keyCol, null, keyCol.getName()), true);
+
+        // We need to remove this flag for final flag we'll feed to H2.
+        sel.forUpdate(false);
+
+        return sel.getSQL();
     }
 
     /**
@@ -663,6 +727,8 @@ public class GridSqlQueryParser {
 
         TableFilter filter = select.getTopTableFilter();
 
+        boolean isForUpdate = SELECT_IS_FOR_UPDATE.get(select);
+
         do {
             assert0(filter != null, select);
             assert0(filter.getNestedJoin() == null, select);
@@ -694,6 +760,30 @@ public class GridSqlQueryParser {
 
         res.from(from);
 
+        if (isForUpdate) {
+            if (!(from instanceof GridSqlTable ||
+                (from instanceof GridSqlAlias && from.size() == 1 && from.child() instanceof GridSqlTable)))
+                throw new IgniteSQLException("SELECT FOR UPDATE with joins is not supported.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            GridSqlTable gridTbl = from instanceof GridSqlTable ? (GridSqlTable)from :
+                ((GridSqlAlias)from).child();
+
+            GridH2Table tbl = gridTbl.dataTable();
+
+            if (tbl == null)
+                throw new IgniteSQLException("SELECT FOR UPDATE query must involve Ignite table.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (select.getLimit() != null || select.getOffset() != null)
+                throw new IgniteSQLException("LIMIT/OFFSET clauses are not supported for SELECT FOR UPDATE.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            if (SELECT_IS_GROUP_QUERY.get(select))
+                throw new IgniteSQLException("SELECT FOR UPDATE with aggregates and/or GROUP BY is not supported.",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        }
+
         ArrayList<Expression> expressions = select.getExpressions();
 
         for (int i = 0; i < expressions.size(); i++)
@@ -708,6 +798,8 @@ public class GridSqlQueryParser {
 
         if (havingIdx >= 0)
             res.havingColumn(havingIdx);
+
+        res.forUpdate(isForUpdate);
 
         processSortOrder(select.getSortOrder(), res);
 
@@ -1705,6 +1797,10 @@ public class GridSqlQueryParser {
      * @return Parsed AST.
      */
     private GridSqlUnion parseUnion(SelectUnion union) {
+        if (UNION_IS_FOR_UPDATE.get(union))
+            throw new IgniteSQLException("SELECT UNION FOR UPDATE is not supported.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         GridSqlUnion res = (GridSqlUnion)h2ObjToGridObj.get(union);
 
         if (res != null)

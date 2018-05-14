@@ -17,12 +17,11 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
-import org.apache.ignite.IgniteCheckedException;
-
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 
 /**
@@ -38,11 +37,12 @@ public class H2FieldsIterator extends H2ResultSetIterator<List<?>> {
     /**
      * @param data Data.
      * @param mvccTracker Mvcc tracker.
+     * @param forUpdate {@code SELECT FOR UPDATE} flag.
      * @throws IgniteCheckedException If failed.
      */
     public H2FieldsIterator(ResultSet data,
-        MvccQueryTracker mvccTracker) throws IgniteCheckedException {
-        super(data, false, true);
+        MvccQueryTracker mvccTracker, boolean forUpdate) throws IgniteCheckedException {
+        super(data, false, true, forUpdate);
 
         this.mvccTracker = mvccTracker;
     }

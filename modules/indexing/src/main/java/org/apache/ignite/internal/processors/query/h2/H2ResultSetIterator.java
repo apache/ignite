@@ -74,9 +74,11 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
      * @param data Data array.
      * @param closeStmt If {@code true} closes result set statement when iterator is closed.
      * @param needCpy {@code True} if need copy cache object's value.
+     * @param forUpdate Whether is result is one of {@code SELECT FOR UPDATE} query.
      * @throws IgniteCheckedException If failed.
      */
-    protected H2ResultSetIterator(ResultSet data, boolean closeStmt, boolean needCpy) throws IgniteCheckedException {
+    protected H2ResultSetIterator(ResultSet data, boolean closeStmt, boolean needCpy, boolean forUpdate)
+        throws IgniteCheckedException {
         this.data = data;
         this.closeStmt = closeStmt;
 
@@ -89,7 +91,9 @@ public abstract class H2ResultSetIterator<T> extends GridCloseableIteratorAdapte
 
         if (data != null) {
             try {
-                row = new Object[data.getMetaData().getColumnCount()];
+                int colsCnt = data.getMetaData().getColumnCount();
+
+                row = new Object[forUpdate ? colsCnt - 1 : colsCnt];
             }
             catch (SQLException e) {
                 throw new IgniteCheckedException(e);

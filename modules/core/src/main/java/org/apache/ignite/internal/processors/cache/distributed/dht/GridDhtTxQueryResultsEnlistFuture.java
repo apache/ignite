@@ -39,7 +39,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class GridDhtTxQueryResultsEnlistFuture
     extends GridDhtTxQueryEnlistAbstractFuture<GridNearTxQueryResultsEnlistResponse>
-    implements UpdateSourceIterator<Object>{
+    implements UpdateSourceIterator<Object> {
     /** */
     private GridCacheOperation op;
 
@@ -96,12 +96,12 @@ public class GridDhtTxQueryResultsEnlistFuture
 
     /** {@inheritDoc} */
     @NotNull @Override public GridNearTxQueryResultsEnlistResponse createResponse(@NotNull Throwable err) {
-        return new GridNearTxQueryResultsEnlistResponse(cctx.cacheId(), nearFutId, nearMiniId, nearLockVer, 0, err);
+        return new GridNearTxQueryResultsEnlistResponse(cctx.cacheId(), nearFutId, nearMiniId, nearLockVer, err);
     }
 
     /** {@inheritDoc} */
-    @NotNull @Override public GridNearTxQueryResultsEnlistResponse createResponse(long res, boolean removeMapping) {
-        return new GridNearTxQueryResultsEnlistResponse(cctx.cacheId(), nearFutId, nearMiniId, nearLockVer, res, null);
+    @NotNull @Override public GridNearTxQueryResultsEnlistResponse createResponse() {
+        return new GridNearTxQueryResultsEnlistResponse(cctx.cacheId(), nearFutId, nearMiniId, nearLockVer, cnt);
     }
 
     /** {@inheritDoc} */
@@ -128,52 +128,17 @@ public class GridDhtTxQueryResultsEnlistFuture
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeDetach() {
-        //No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public GridCacheOperation operation() {
         return op;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isClosed() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    public boolean hasNextX() throws IgniteCheckedException {
-        return hasNext();
-    }
-
-    /** {@inheritDoc} */
-    public Object nextX() throws IgniteCheckedException {
-        return next();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void removeX() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasNext() {
+    public boolean hasNextX() {
         return it.hasNext();
     }
 
     /** {@inheritDoc} */
-    @Override public Object next() {
+    public Object nextX() {
         return it.next();
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public Iterator<Object> iterator() {
-        throw new UnsupportedOperationException("not implemented");
     }
 }

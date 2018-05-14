@@ -1069,7 +1069,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                 if (!cctx.userCache() || !cctx.group().mvccEnabled())
                     continue;
 
-                for (Object e : cache) {
+                for (Object e : cache.withKeepBinary()) {
                     IgniteBiTuple entry = (IgniteBiTuple)e;
 
                     KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());

@@ -194,6 +194,20 @@ public class GridSqlQuerySplitter {
         if (params == null)
             params = GridCacheSqlQuery.EMPTY_PARAMS;
 
+        boolean forUpdate = GridSqlQueryParser.isForUpdateQuery(prepared);
+
+        if (forUpdate) {
+            String newQry = GridSqlQueryParser.rewriteQueryForUpdateIfNeeded(prepared);
+
+            assert newQry != null;
+
+            PreparedStatement stmt = h2.prepareNativeStatement(conn.getSchema(), newQry);
+
+            GridSqlQueryParser.PreparedWithRemaining prep = GridSqlQueryParser.preparedWithRemaining(stmt);
+
+            prepared = prep.prepared();
+        }
+
         // Here we will just do initial query parsing. Do not use optimized
         // subqueries because we do not have unique FROM aliases yet.
         GridSqlQuery qry = parse(prepared, false);
@@ -221,7 +235,7 @@ public class GridSqlQuerySplitter {
             true);
 
         // Do the actual query split. We will update the original query AST, need to be careful.
-        splitter.splitQuery(qry);
+        splitter.splitQuery(qry, forUpdate);
 
         assert !F.isEmpty(splitter.mapSqlQrys): "map"; // We must have at least one map query.
         assert splitter.rdcSqlQry != null: "rdc"; // We must have a reduce query.
@@ -261,13 +275,16 @@ public class GridSqlQuerySplitter {
         // all map queries must have non-empty derivedPartitions to use this feature.
         twoStepQry.derivedPartitions(mergePartitionsFromMultipleQueries(twoStepQry.mapQueries()));
 
+        twoStepQry.forUpdate(forUpdate);
+
         return twoStepQry;
     }
 
     /**
      * @param qry Optimized and normalized query to split.
+     * @param forUpdate {@code SELECT FOR UPDATE} flag.
      */
-    private void splitQuery(GridSqlQuery qry) throws IgniteCheckedException {
+    private void splitQuery(GridSqlQuery qry, boolean forUpdate) throws IgniteCheckedException {
         // Create a fake parent AST element for the query to allow replacing the query in the parent by split.
         GridSqlSubquery fakeQryPrnt = new GridSqlSubquery(qry);
 
@@ -307,6 +324,30 @@ public class GridSqlQuerySplitter {
 
         // Get back the updated query from the fake parent. It will be our reduce query.
         qry = fakeQryPrnt.subquery();
+
+        // Let's remove last column from reduce query - SELECT FOR UPDATE makes for discrepancy
+        // between it and map query.
+        if (forUpdate) {
+            assert qry instanceof GridSqlSelect;
+
+            GridSqlSelect sel = (GridSqlSelect)qry;
+
+            int visCols = sel.visibleColumns();
+
+            int idxToRemove = visCols - 1;
+
+            List<GridSqlAst> cols = sel.columns(false);
+
+            sel.clearColumns();
+
+            // First visible columns - all but the last, as we won't actually retrieve it...
+            for (int i = 0; i < idxToRemove; i++)
+                sel.addColumn(cols.get(i), true);
+
+            // Then invisible columns.
+            for (int i = visCols; i < cols.size(); i++)
+                sel.addColumn(cols.get(i), false);
+        }
 
         String rdcQry = qry.getSQL();
 

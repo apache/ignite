@@ -56,6 +56,9 @@ public class GridSqlSelect extends GridSqlQuery {
     /** */
     private int havingCol = -1;
 
+    /** */
+    private boolean isForUpdate;
+
     /**
      * @param colIdx Column index as for {@link #column(int)}.
      * @return Child index for {@link #child(int)}.
@@ -166,6 +169,9 @@ public class GridSqlSelect extends GridSqlQuery {
         }
 
         getSortLimitSQL(buff);
+
+        if (isForUpdate)
+            buff.append("\nFOR UPDATE");
 
         return buff.toString();
     }
@@ -361,6 +367,20 @@ public class GridSqlSelect extends GridSqlQuery {
         havingCol = col;
 
         return this;
+    }
+
+    /**
+     * @return Whether this statement is {@code FOR UPDATE}.
+     */
+    public boolean isForUpdate() {
+        return isForUpdate;
+    }
+
+    /**
+     * @param forUpdate Whether this statement is {@code FOR UPDATE}.
+     */
+    public void forUpdate(boolean forUpdate) {
+        isForUpdate = forUpdate;
     }
 
     /**
