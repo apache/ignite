@@ -841,6 +841,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ackCacheConfiguration();
         ackP2pConfiguration();
         ackRebalanceConfiguration();
+        ackIPv4StackFlagIsSet();
 
         // Run background network diagnostics.
         GridDiagnostic.runBackgroundCheck(igniteInstanceName, execSvc, log);
@@ -2625,6 +2626,20 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             catch (Exception ignore) {
                 // No-op: ignore for Java 9+ and non-standard JVMs.
             }
+        }
+    }
+
+    /**
+     * Prints warning if 'java.net.preferIPv4Stack=true' is not set.
+     */
+    private void ackIPv4StackFlagIsSet() {
+        boolean preferIPv4 = Boolean.valueOf(System.getProperty("java.net.preferIPv4Stack"));
+
+        if (!preferIPv4) {
+            assert log != null;
+
+            U.quietAndWarn(log, "Please set system property '-Djava.net.preferIPv4Stack=true' " +
+                "to avoid possible problems in mixed environments.");
         }
     }
 
