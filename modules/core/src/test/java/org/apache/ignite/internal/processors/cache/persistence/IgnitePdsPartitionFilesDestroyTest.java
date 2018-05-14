@@ -51,7 +51,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.file.FileP
 /**
  * Test class to check that partition files after eviction are destroyed correctly on next checkpoint or crash recovery.
  */
-public class IgnitePdsPartitionFileDestroyTest extends GridCommonAbstractTest {
+public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE = "cache";
 
