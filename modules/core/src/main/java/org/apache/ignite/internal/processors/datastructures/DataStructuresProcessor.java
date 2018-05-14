@@ -58,6 +58,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.ExchangeActions.CacheActionData;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
@@ -138,9 +139,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** Map of continuous query IDs. */
     private final ConcurrentHashMap<Integer, UUID> qryIdMap = new ConcurrentHashMap<>();
 
-    /** Set data map init flag. */
-    private boolean initSetData = true;
-
     /** Listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
         @Override public void onEvent(final Event evt) {
@@ -197,21 +195,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      */
     public void onBeforeActivate() {
         initLatch = new CountDownLatch(1);
-
-        if (initSetData) {
-            initSetData = false;
-
-            for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
-                if (cctx.dataStructuresCache()) {
-                    try {
-                        cctx.dataStructures().initSetData();
-                    }
-                    catch (IgniteCheckedException e) {
-                        log.error("Unable to restore local set data map from cache " + cctx.name(), e);
-                    }
-                }
-            }
-        }
     }
 
     /**
@@ -309,6 +292,24 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed restore data structures state", e);
+        }
+    }
+
+    /**
+     * Called after cache start request was processed.
+     *
+     * @param cacheChangeReqs List of cache change requests.
+     */
+    public void onAfterCacheStarted(Iterable<CacheActionData> cacheChangeReqs) {
+        for (CacheActionData req : cacheChangeReqs) {
+            final GridCacheContext cctx = ctx.cache().context().cacheContext(req.descriptor().cacheId());
+
+            if (cctx.dataStructuresCache() && cctx.group().persistenceEnabled() &&
+                cctx.name().startsWith(DS_CACHE_NAME_PREFIX)) {
+                ctx.closure().runLocalSafe(() -> {
+                    cctx.dataStructures().onAfterCacheStarted();
+                });
+            }
         }
     }
 

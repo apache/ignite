@@ -34,9 +34,11 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -195,32 +197,47 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         List<Integer> addData = data.subList(total, max);
 
-        Set<Integer> exp = new HashSet<>(data.subList(updCnt, max));
-
         ignite = startGrids(4);
+
+        ignite.cluster().active(true);
+
+        final IgniteSet<Integer> set0 = ignite.set("testSet", null);
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+            set0.removeAll(rmvData);
+        });
+
+        set0.addAll(addData);
+
+        fut.get();
+
+        assertEquals(total, set0.size());
+
+        assertFalse(set0.add(max - 1));
+
+        // Check iterator.
+        Set<Integer> exp = new HashSet<>(data.subList(updCnt, max));
+        Set<Integer> actual = new HashSet<>();
+
+        for (Integer num : set0)
+            actual.add(num);
+
+        assertEquals(exp, actual);
+
+        ignite.cluster().active(false);
 
         ignite.cluster().active(true);
 
         set = ignite.set("testSet", null);
 
-        // Check consistency after restore.
+        // Check operations reordering.
+        for (int i = 0; i < updCnt; i++) {
+            set.add(i);
+
+            set.remove(i);
+        }
+
         assertEquals(total, set.size());
-
-        set.removeAll(rmvData);
-
-        set.addAll(addData);
-
-        assertEquals(total, set.size());
-
-        assertFalse(set.add(max - 1));
-
-        // Check iterator.
-        Set<Integer> actual = new HashSet<>();
-
-        for (Integer num : set)
-            actual.add(num);
-
-        assertEquals(exp, actual);
     }
 
     /**
