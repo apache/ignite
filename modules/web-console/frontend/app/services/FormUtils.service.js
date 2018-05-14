@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['IgniteFormUtils', ['$window', 'IgniteFocus', ($window, Focus) => {
+export default ['IgniteFormUtils', ['$window', 'IgniteFocus', '$rootScope', ($window, Focus, $rootScope) => {
     function ensureActivePanel(ui, pnl, focusId) {
         if (ui && ui.loadPanel) {
             const collapses = $('div.panel-collapse');
@@ -324,6 +324,22 @@ export default ['IgniteFormUtils', ['$window', 'IgniteFocus', ($window, Focus) =
         return width | 0;
     }
 
+    // TODO: move somewhere else
+    function triggerValidation(form) {
+        const fe = (m) => Object.keys(m.$error)[0];
+        const em = (e) => (m) => {
+            if (!e) return;
+            const walk = (m) => {
+                if (!m.$error[e]) return;
+                if (m.$error[e] === true) return m;
+                return walk(m.$error[e][0]);
+            };
+            return walk(m);
+        };
+
+        $rootScope.$broadcast('$showValidationError', em(fe(form))(form));
+    }
+
     return {
         /**
          * Cut class name by width in pixel or width in symbol count.
@@ -434,6 +450,7 @@ export default ['IgniteFormUtils', ['$window', 'IgniteFocus', ($window, Focus) =
         markPristineInvalidAsDirty(ngModelCtrl) {
             if (ngModelCtrl && ngModelCtrl.$invalid && ngModelCtrl.$pristine)
                 ngModelCtrl.$setDirty();
-        }
+        },
+        triggerValidation
     };
 }]];
