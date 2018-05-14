@@ -183,10 +183,7 @@ class ClientSocket {
         try {
             const message = await request.getMessage();
             this._logMessage(request.id.toString(), true, message);
-
-            if (!this._socket.write(message)) {
-                throw Errors.IgniteClientError.internalError('Request sending failed');
-            }
+            this._socket.write(message);
         }
         catch (err) {
             this._requests.delete(request.id);
