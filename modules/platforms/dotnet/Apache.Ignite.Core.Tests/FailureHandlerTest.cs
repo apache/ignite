@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
-    using System.Data.SqlTypes;
     using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -40,6 +39,9 @@ namespace Apache.Ignite.Core.Tests
         /// <see cref="IgniteProcess"/>. 
         /// </summary>
         private IIgnite _grid;
+        
+        /** Part of failed CacheStore Exception message. */
+        private const string CacheStoreExMessage = "Could not create .NET CacheStore";
         
         /// <summary>
         /// Set-up routine.
@@ -69,21 +71,21 @@ namespace Apache.Ignite.Core.Tests
         /// Tests <see cref="StopNodeFailureHandler"/>
         /// </summary>
         [Test]
-        public void testStopNodeFailureHandler()
+        public void TestStopNodeFailureHandler()
         {
-           testFailureHandler(typeof(StopNodeFailureHandler));
+           TestFailureHandler(typeof(StopNodeFailureHandler));
         }
         
         /// <summary>
         /// Tests <see cref="StopNodeOrHaltFailureHandler"/>
         /// </summary>
         [Test]
-        public void testStopNodeOrHaltFailureHandler()
+        public void TestStopNodeOrHaltFailureHandler()
         {
-            testFailureHandler(typeof(StopNodeOrHaltFailureHandler));
+            TestFailureHandler(typeof(StopNodeOrHaltFailureHandler));
         }
 
-        private void testFailureHandler(Type type)
+        private void TestFailureHandler(Type type)
         {
             var configFile = "config\\ignite-stophandler-dotnet-cfg.xml";
             
@@ -104,7 +106,9 @@ namespace Apache.Ignite.Core.Tests
                 ReadThrough = true
             };
 
-            Assert.Throws<CacheException>(() =>_grid.GetOrCreateCache<int, int>(ccfg));
+            var ex = Assert.Throws<CacheException>(() => _grid.GetOrCreateCache<int, int>(ccfg));
+            
+            Assert.IsTrue(ex.Message.Contains(CacheStoreExMessage));
 
             Thread.Sleep(TimeSpan.Parse("0:0:5"));
             
@@ -122,9 +126,8 @@ namespace Apache.Ignite.Core.Tests
             /// </summary>
             public ICacheStore CreateInstance()
             {
-                throw new Exception("FailedCacheStoreFactory.CreateInstance exception");
+                throw new Exception("Failed cache store");
             }
         }
-
     }
 }
