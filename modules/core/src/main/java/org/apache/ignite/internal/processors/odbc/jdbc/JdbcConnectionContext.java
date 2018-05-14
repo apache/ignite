@@ -53,7 +53,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
     private static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
 
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_0;
+    static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();

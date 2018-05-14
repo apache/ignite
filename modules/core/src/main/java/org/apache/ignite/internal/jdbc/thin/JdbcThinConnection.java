@@ -35,6 +35,9 @@ import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -186,7 +189,7 @@ public class JdbcThinConnection implements Connection {
 
             // Actual ON, if needed.
             if (newVal) {
-                if (!cmd0.isOrdered()  && !cliIo.igniteVersion().greaterThanEqual(2, 4, 3)) {
+                if (!cmd0.isOrdered()  && !cliIo.igniteVersion().greaterThanEqual(2, 5, 0)) {
                     throw new SQLException("Streaming without order doesn't supported by server [remoteNodeVer="
                         + cliIo.igniteVersion() + ']', SqlStateCode.INTERNAL_ERROR);
                 }

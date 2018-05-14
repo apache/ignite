@@ -349,12 +349,12 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         writer.writeBoolean(true);
 
         // Write server version.
-        writer.writeByte(IgniteVersionUtils.VER.major());
-        writer.writeByte(IgniteVersionUtils.VER.minor());
-        writer.writeByte(IgniteVersionUtils.VER.maintenance());
-        writer.writeString(IgniteVersionUtils.VER.stage());
-        writer.writeLong(IgniteVersionUtils.VER.revisionTimestamp());
-        writer.writeByteArray(IgniteVersionUtils.VER.revisionHash());
+        writer.writeByte((byte)JdbcConnectionContext.CURRENT_VER.major());
+        writer.writeByte((byte)JdbcConnectionContext.CURRENT_VER.minor());
+        writer.writeByte((byte)JdbcConnectionContext.CURRENT_VER.maintenance());
+        writer.writeString(null);
+        writer.writeLong(0);
+        writer.writeByteArray(null);
     }
 
     /**
