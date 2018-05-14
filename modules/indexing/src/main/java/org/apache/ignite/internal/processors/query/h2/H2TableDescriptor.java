@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.query.h2;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.QueryIndexType;
@@ -36,10 +39,6 @@ import org.h2.index.Index;
 import org.h2.result.SortOrder;
 import org.h2.table.Column;
 import org.h2.table.IndexColumn;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
@@ -192,7 +191,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         Index hashIdx = createHashIndex(
             tbl,
             "_key_PK_hash",
-            H2Utils.treeIndexColumns(desc, new ArrayList<IndexColumn>(2), keyCol, affCol)
+            H2Utils.treeIndexColumns(desc, keyCol, affCol)
         );
 
         if (hashIdx != null)
@@ -203,7 +202,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
             "_key_PK",
             tbl,
             true,
-            H2Utils.treeIndexColumns(desc, new ArrayList<IndexColumn>(2), keyCol, affCol),
+            H2Utils.treeIndexColumns(desc, keyCol, affCol),
             -1
         );
 
@@ -251,7 +250,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         // Add explicit affinity key index if nothing alike was found.
         if (affCol != null && !affIdxFound) {
             idxs.add(idx.createSortedIndex("AFFINITY_KEY", tbl, false,
-                H2Utils.treeIndexColumns(desc, new ArrayList<IndexColumn>(2), affCol, keyCol), -1));
+                H2Utils.treeIndexColumns(desc, affCol, keyCol), -1));
         }
 
         return idxs;
@@ -283,10 +282,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
      * @return Index.
      */
     public GridH2IndexBase createUserIndex(GridQueryIndexDescriptor idxDesc) {
-        IndexColumn keyCol = tbl.indexColumn(KEY_COL, SortOrder.ASCENDING);
-        IndexColumn affCol = tbl.getAffinityKeyColumn();
-
-        List<IndexColumn> cols = new ArrayList<>(idxDesc.fields().size() + 2);
+        List<IndexColumn> cols = new ArrayList<>(idxDesc.fields().size());
 
         for (String field : idxDesc.fields()) {
             Column col = tbl.getColumn(field);
@@ -295,13 +291,8 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
                 idxDesc.descending(field) ? SortOrder.DESCENDING : SortOrder.ASCENDING));
         }
 
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
-
-        if (idxDesc.type() == QueryIndexType.SORTED) {
-            cols = H2Utils.treeIndexColumns(desc, cols, keyCol, affCol);
-
+        if (idxDesc.type() == QueryIndexType.SORTED)
             return idx.createSortedIndex(idxDesc.name(), tbl, false, cols, idxDesc.inlineSize());
-        }
         else if (idxDesc.type() == QueryIndexType.GEOSPATIAL)
             return H2Utils.createSpatialIndex(tbl, idxDesc.name(), cols.toArray(new IndexColumn[cols.size()]));
 

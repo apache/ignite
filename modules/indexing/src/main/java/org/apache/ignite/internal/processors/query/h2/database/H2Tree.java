@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
@@ -262,7 +263,15 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                     return InlineIndexHelper.fixSort(c, col.sortType);
             }
 
-            return 0;
+            if (row instanceof CacheSearchRow) {
+                long link1 = ((H2RowLinkIO)io).getLink(pageAddr, idx);
+
+                long link2 = ((CacheSearchRow)row).link();
+
+                return Long.compare(link1, link2);
+            }
+            else
+                return 0; // Old behavior for rows that don't have links like H2's SimpleRow
         }
     }
 
