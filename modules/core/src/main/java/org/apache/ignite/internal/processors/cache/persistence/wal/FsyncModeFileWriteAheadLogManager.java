@@ -1351,7 +1351,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /** */
         private void workerBody() {
-            // TODO IGNITE-6587: timed waits + worker heartbeat updates.
             try {
                 allocateRemainingFiles();
             }
@@ -1366,12 +1365,17 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 }
             }
 
+            long waitTimeoutMs = IgniteSystemProperties.getLong(WAIT_TIMEOUT_PROP, DFLT_WAIT_TIMEOUT);
+
             Throwable err = null;
 
             try {
                 synchronized (this) {
-                    while (curAbsWalIdx == -1 && !stopped)
-                        wait();
+                    while (curAbsWalIdx == -1 && !stopped) {
+                        worker.updateHeartbeat();
+
+                        wait(waitTimeoutMs);
+                    }
 
                     // If the archive directory is empty, we can be sure that there were no WAL segments archived.
                     // This is ensured by the check in truncate() which will leave at least one file there
@@ -1379,14 +1383,19 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 }
 
                 while (!Thread.currentThread().isInterrupted() && !stopped) {
+                    worker.updateHeartbeat();
+
                     long toArchive;
 
                     synchronized (this) {
                         assert lastAbsArchivedIdx <= curAbsWalIdx : "lastArchived=" + lastAbsArchivedIdx +
                             ", current=" + curAbsWalIdx;
 
-                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped)
-                            wait();
+                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped) {
+                            worker.updateHeartbeat();
+
+                            wait(waitTimeoutMs);
+                        }
 
                         toArchive = lastAbsArchivedIdx + 1;
                     }
@@ -1398,8 +1407,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         final SegmentArchiveResult res = archiveSegment(toArchive);
 
                         synchronized (this) {
-                            while (locked.containsKey(toArchive) && !stopped)
-                                wait();
+                            while (locked.containsKey(toArchive) && !stopped) {
+                                worker.updateHeartbeat();
+
+                                wait(waitTimeoutMs);
+                            }
                         }
 
                         // Firstly, format working file
@@ -1624,6 +1636,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     }
                 }, new CI1<Integer>() {
                     @Override public void apply(Integer idx) {
+                        worker.updateHeartbeat();
+
                         synchronized (archiver) {
                             formatted = idx;
 
@@ -1864,11 +1878,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * Responsible for decompressing previously compressed segments of WAL archive if they are needed for replay.
      */
     private class FileDecompressor extends Thread {
-        /** */
-        private static final String POLL_TIMEOUT_PROP = "IGNITE_WAL_DECOMPRESSOR_TIMEOUT_MS";
-
-        /** */
-        private static final int DFLT_TIMEOUT = 10_000;
 
         /** Current thread stopping advice. */
         private volatile boolean stopped;
@@ -1898,7 +1907,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         private void workerBody() {
             Throwable err = null;
 
-            long pollTimeoutMs = IgniteSystemProperties.getLong(POLL_TIMEOUT_PROP, DFLT_TIMEOUT);
+            long pollTimeoutMs = IgniteSystemProperties.getLong(WAIT_TIMEOUT_PROP, DFLT_WAIT_TIMEOUT);
 
             while (!Thread.currentThread().isInterrupted() && !stopped) {
                 try {

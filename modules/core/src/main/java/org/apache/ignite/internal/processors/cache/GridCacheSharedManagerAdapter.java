@@ -32,6 +32,12 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
     /** */
     private static final String DIAGNOSTIC_LOG_CATEGORY = "org.apache.ignite.internal.diagnostic";
 
+    /** */
+    public static final String WAIT_TIMEOUT_PROP = "IGNITE_WAL_WAIT_TIMEOUT_MS";
+
+    /** */
+    public static final int DFLT_WAIT_TIMEOUT = 10_000;
+
     /** Context. */
     protected GridCacheSharedContext<K, V> cctx;
 
