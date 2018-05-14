@@ -154,8 +154,6 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
 
         loadData(crd, keysCnt, 1);
 
-        List<GridDhtLocalPartition> partitions = crd.cachex(CACHE).context().topology().localPartitions();
-
         startGridsMultiThreaded(2, 2);
 
         // Trigger partitions eviction.
@@ -336,7 +334,11 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks that all partition files are exist if partition has state EVICTED.
+     * If {@code exists} is {@code true}, checks that all partition files exist
+     * if partition has state EVICTED.
+     *
+     * If {@code exists} is {@code false}, checks that all partition files don't exist
+     * if partition is absent or has state EVICTED.
      *
      * @param ignite Node.
      * @param exists If {@code true} method will check that partition file exists,
