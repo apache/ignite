@@ -3823,6 +3823,9 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             failure = true;
         }
 
+        /**
+         * Resets failure matrix.
+         */
         static void unfail() {
             failure = false;
         }
