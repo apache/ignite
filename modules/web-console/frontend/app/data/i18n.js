@@ -38,35 +38,17 @@ export default {
     '/logout': 'Logout',
 
     // app/components/page-signin/template.pug
-    'app.components.page-signin.m1': 'Don\'t Have An Account?',
+    'app.components.page-signin.m1': 'Sign In',
     'app.components.page-signin.m2': 'Email:',
     'app.components.page-signin.m3': 'Input email',
     'app.components.page-signin.m4': 'Password:',
     'app.components.page-signin.m5': 'Input password',
-    'app.components.page-signin.m6': 'Confirm:',
-    'app.components.page-signin.m7': 'Confirm password',
-    'app.components.page-signin.m8': 'First name:',
-    'app.components.page-signin.m9': 'Input first name',
-    'app.components.page-signin.m10': 'Last name:',
-    'app.components.page-signin.m11': 'Input last name',
-    'app.components.page-signin.m12': 'Company:',
-    'app.components.page-signin.m13': 'Input company name',
-    'app.components.page-signin.m14': 'Country:',
-    'app.components.page-signin.m15': 'Choose your country',
-    'app.components.page-signin.m16': 'Sign Up',
-    'app.components.page-signin.m17': 'Sign In',
-    'app.components.page-signin.m18': 'Email:',
-    'app.components.page-signin.m19': 'Input email',
-    'app.components.page-signin.m20': 'Password:',
-    'app.components.page-signin.m21': 'Input password',
-    'app.components.page-signin.m22': 'Forgot password?',
-    'app.components.page-signin.m23': 'Sign In',
-    'app.components.page-signin.m24': 'Forgot password?',
-    'app.components.page-signin.m25': 'That\'s ok! Simply enter your email below and a reset password link will be sent to you via email. You can then follow that link and select a new password.',
-    'app.components.page-signin.m26': 'Email:',
-    'app.components.page-signin.m27': 'Input email',
-    'app.components.page-signin.m28': 'Sign In',
-    'app.components.page-signin.m29': 'Send it to me',
+    'app.components.page-signin.m6': 'Forgot password?',
+    'app.components.page-signin.m7': 'Sign In',
+    'app.components.page-signin.m8': 'Don\'t have an account? #[a(ui-sref=\'signup\') Get started]',
+    // app/components/page-signin/run.js
+    'app.components.page-signin.m9': 'Sign In',
+
 
     // app/components/page-queries/template.tpl.pug
     'app.components.page-queries.m1': 'Show data in tabular form',
@@ -255,5 +237,57 @@ export default {
     'app/modules/navbar/userbar.m1': 'Profile',
     'app/modules/navbar/userbar.m2': 'Getting started',
     'app/modules/navbar/userbar.m3': 'Admin panel',
-    'app/modules/navbar/userbar.m4': 'Log out'
+    'app/modules/navbar/userbar.m4': 'Log out',
+
+    // app/components/page-forgot-password/run.js
+    'app.components.page-forgot-password.m1': 'Forgot Password',
+    // app/components/page-forgot-password/template.pug
+    'app.components.page-forgot-password.m2': 'Forgot password?',
+    'app.components.page-forgot-password.m3': 'That\'s ok! Simply enter your email below and a reset password link will be sent to you via email. You can then follow that link and select a new password.',
+    'app.components.page-forgot-password.m4': 'Email:',
+    'app.components.page-forgot-password.m5': 'Input email',
+    'app.components.page-forgot-password.m6': 'Back to sign in',
+    'app.components.page-forgot-password.m7': 'Send it to me',
+
+    // app/components/page-landing/template.pug
+    'app.components.page-landing.m1': 'Sign In',
+    'app.components.page-landing.m2': 'Web Console',
+    'app.components.page-landing.m3': 'An Interactive Configuration Wizard and Management Tool for Apache™ Ignite®',
+    'app.components.page-landing.m4': 'It provides an interactive configuration wizard which helps you create and download configuration files and code snippets for your Apache Ignite projects. Additionally, the tool allows you to automatically load SQL metadata from any RDBMS, run SQL queries on your in-memory cache as well as view execution plans, in-memory schema, and streaming charts.',
+    'app.components.page-landing.m5': 'Sign Up',
+    'app.components.page-landing.m6': 'Web Console allows you to:',
+    'app.components.page-landing.m7': 'Configure Apache Ignite Clusters and Caches',
+    'app.components.page-landing.m8': 'The Web Console configuration wizard takes you through a step-by-step process to define all of your required configuration parameters. The system then generates a ready-to-use project with all of the required config files for you.',
+    'app.components.page-landing.m9': 'Run Free Form SQL Queries on #[br] Apache Ignite Caches',
+    'app.components.page-landing.m10': 'By connecting The Web Console to your Apache Ignite cluster, you can execute SQL queries on your in-memory cache. You can also view the execution plan, in-memory schema, and streaming charts for your cluster.',
+    'app.components.page-landing.m11': 'Import Database Schemas from #[br] Virtually Any RDBMS',
+    'app.components.page-landing.m12': 'To speed the creation of your configuration files, The Web Console allows you to automatically import the database schema from any current RDBMS.  and Apache Ignite support virtually any RDBMS including Oracle, SAP, MySQL, PostgreSQL and many more.',
+    'app.components.page-landing.m13': 'Manage The Web Console users',
+    'app.components.page-landing.m14': 'With The Web Console you can have accounts with different roles.',
+    'app.components.page-landing.m15': 'Get Started',
+
+    // app/components/page-signup/template.pug
+    'app.components.page-signup.m1': 'Don\'t Have An Account?',
+    'app.components.page-signup.m2': 'Email:',
+    'app.components.page-signup.m3': 'Input email',
+    'app.components.page-signup.m4': 'Password:',
+    'app.components.page-signup.m5': 'Input password',
+    'app.components.page-signup.m6': 'Confirm:',
+    'app.components.page-signup.m7': 'Confirm password',
+    'app.components.page-signup.m8': 'First name:',
+    'app.components.page-signup.m9': 'Input first name',
+    'app.components.page-signup.m10': 'Last name:',
+    'app.components.page-signup.m11': 'Input last name',
+    'app.components.page-signup.m12': 'Phone:',
+    'app.components.page-signup.m13': 'Input phone (ex.: +15417543010)',
+    'app.components.page-signup.m14': 'Country:',
+    'app.components.page-signup.m15': 'Choose your country',
+    'app.components.page-signup.m16': 'Company:',
+    'app.components.page-signup.m17': 'Input company name',
+    'app.components.page-signup.m18': 'Sign Up',
+    'app.components.page-signup.m19': 'Already have an account? #[a(ui-sref=\'signin\') Sign in here]',
+
+    // app/components/password-visibility/toggle-button.component.js
+    'app.components.password-visibility.m1': 'Hide password',
+    'app.components.password-visibility.m2': 'Show password'
 };
