@@ -3275,8 +3275,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                assert grp != null : "Cache group is not initialized [grpId=" + grpId + "]";
-                assert grp.offheap() instanceof GridCacheOffheapManager : "Destroying partition files when persistence is off";
+                assert grp != null
+                    : "Cache group is not initialized [grpId=" + grpId + "]";
+                assert grp.offheap() instanceof GridCacheOffheapManager
+                    : "Destroying partition files when persistence is off " + grp.offheap();
 
                 final GridCacheOffheapManager offheap = (GridCacheOffheapManager) grp.offheap();
 
@@ -3298,7 +3300,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (asyncRunner != null) {
                     try {
                         asyncRunner.execute(destroyPartTask);
-                    } catch (RejectedExecutionException ignore) {
+                    }
+                    catch (RejectedExecutionException ignore) {
                         // Run the task synchronously.
                         destroyPartTask.run();
                     }
