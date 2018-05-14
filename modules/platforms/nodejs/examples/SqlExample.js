@@ -28,7 +28,7 @@ const ENDPOINT = '127.0.0.1:10800';
 const COUNTRY_CACHE_NAME = 'Country';
 const CITY_CACHE_NAME = 'City';
 const COUNTRY_LANGUAGE_CACHE_NAME = 'CountryLng';
-const DUMMY_CACHE_NAME = 'SqlDataProcessing_Dummy';
+const DUMMY_CACHE_NAME = 'SqlExample_Dummy';
 
 // This example shows primary APIs to use with Ignite as with an SQL database:
 // - connects to a node
@@ -39,7 +39,7 @@ const DUMMY_CACHE_NAME = 'SqlDataProcessing_Dummy';
 // - reads data from the tables (SELECT ...)
 // - deletes tables (DROP TABLE)
 // - destroys the cache
-class SqlDataProcessing {
+class SqlExample {
     async start() {
         const igniteClient = new IgniteClient(this.onStateChanged.bind(this));
         try {
@@ -238,5 +238,5 @@ class SqlDataProcessing {
     }
 }
 
-const sqlDataProcessing = new SqlDataProcessing();
-sqlDataProcessing.start();
+const sqlExample = new SqlExample();
+sqlExample.start();

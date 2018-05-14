@@ -28,7 +28,7 @@ const SqlQuery = IgniteClient.SqlQuery;
 
 const ENDPOINT = '127.0.0.1:10800';
 
-const PERSON_CACHE_NAME = 'SqlQueryExample_person';
+const PERSON_CACHE_NAME = 'SqlQueryEntriesExample_person';
 
 class Person {
     constructor(firstName = null, lastName = null, salary = null) {
@@ -54,7 +54,7 @@ class Person {
 // - writes data of primitive and Complex Object types into the cache using Key-Value put operation
 // - reads data from the cache using SQL Query
 // - destroys the cache
-class SqlQueryExample {
+class SqlQueryEntriesExample {
     constructor() {
         this._cache = null;
     }
@@ -132,5 +132,5 @@ class SqlQueryExample {
     }
 }
 
-const sqlQueryExample = new SqlQueryExample();
-sqlQueryExample.start();
+const sqlQueryEntriesExample = new SqlQueryEntriesExample();
+sqlQueryEntriesExample.start();
