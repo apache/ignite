@@ -27,8 +27,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class PersistenceDirectoryWarningLoggingTest extends GridCommonAbstractTest {
     /** Warning message to test. */
-    private static final String WARN_MSG_PREFIX = "Persistence store directory is in the: [" +
-        System.getProperty("java.io.tmpdir") + "] directory and may be cleaned.";
+    private static final String WARN_MSG_PREFIX = "Persistence store directory is in the temp " +
+        "directory and may be cleaned.";
 
     /** String logger to check. */
     private GridStringLogger log0 = new GridStringLogger();
