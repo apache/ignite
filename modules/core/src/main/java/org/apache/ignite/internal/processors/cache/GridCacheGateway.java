@@ -155,6 +155,15 @@ public class GridCacheGateway<K, V> {
      * @return Previous operation context set on this thread.
      */
     @Nullable public CacheOperationContext enter(@Nullable CacheOperationContext opCtx) {
+        return enter(opCtx, true);
+    }
+
+    /**
+     * @param opCtx Cache operation context to guard.
+     * @param checkAtomicOpsInTx True if we need to block atomic operations inside transactions.
+     * @return Previous operation context set on this thread.
+     */
+    @Nullable public CacheOperationContext enter(@Nullable CacheOperationContext opCtx, boolean checkAtomicOpsInTx) {
         try {
             GridCacheAdapter<K, V> cache = ctx.cache();
 
@@ -181,7 +190,8 @@ public class GridCacheGateway<K, V> {
         // Must unlock in case of unexpected errors to avoid
         // deadlocks during kernal stop.
         try {
-            checkAtomicOpsInTx(opCtx);
+            if (checkAtomicOpsInTx)
+                checkAtomicOpsInTx(opCtx);
 
             return setOperationContextPerCall(opCtx);
         }
@@ -200,6 +210,8 @@ public class GridCacheGateway<K, V> {
         onEnter();
 
         checkState(false, false);
+
+        checkAtomicOpsInTx(opCtx);
 
         return setOperationContextPerCall(opCtx);
     }
@@ -352,7 +364,7 @@ public class GridCacheGateway<K, V> {
      * @throws IgniteException - in case of atomic operation inside transaction without permission.
      */
     private void checkAtomicOpsInTx(CacheOperationContext opCtx) throws IgniteException {
-        if (ctx.atomic() && (opCtx == null || !opCtx.allowedAtomicOpsInTx())) {
+        if (ctx.atomic() && !opCtx.allowedAtomicOpsInTx()) {
             if (ctx.grid().transactions().tx() != null) {
                 throw new IgniteException("Transaction spans operations on atomic cache " +
                     "(don't use atomic cache inside transaction or set up flag by cache.allowedAtomicOpsInTx()).");

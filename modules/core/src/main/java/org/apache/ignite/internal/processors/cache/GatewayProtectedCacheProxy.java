@@ -186,15 +186,12 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         CacheOperationGate opGate = onEnter();
 
         try {
-            boolean allowed = opCtx != null && opCtx.allowedAtomicOpsInTx();
+            boolean allowed = opCtx.allowedAtomicOpsInTx();
 
             if (allowed)
                 return this;
 
-            CacheOperationContext opCtx0 = opCtx != null ? opCtx.setAllowAtomicOpsInTx(true) :
-                new CacheOperationContext(false, null, false, null, false, null, false, true);
-
-            return ((IgniteCacheProxyImpl<K, V>)delegate).withAllowAtomicOpsInTx(opCtx0, lock);
+            return new GatewayProtectedCacheProxy<>(delegate, opCtx.setAllowAtomicOpsInTx(), lock);
         }
         finally {
             onLeave(opGate);

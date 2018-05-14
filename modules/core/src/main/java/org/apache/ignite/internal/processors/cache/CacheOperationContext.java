@@ -292,10 +292,9 @@ public class CacheOperationContext implements Serializable {
     }
 
     /**
-     * @param allowAtomicOpsInTx Allow in transactions flag.
      * @return Operation context.
      */
-    public CacheOperationContext setAllowAtomicOpsInTx(boolean allowAtomicOpsInTx) {
+    public CacheOperationContext setAllowAtomicOpsInTx() {
         return new CacheOperationContext(
             skipStore,
             subjId,
@@ -304,7 +303,7 @@ public class CacheOperationContext implements Serializable {
             noRetries,
             dataCenterId,
             recovery,
-            allowAtomicOpsInTx);
+            true);
     }
 
     /**

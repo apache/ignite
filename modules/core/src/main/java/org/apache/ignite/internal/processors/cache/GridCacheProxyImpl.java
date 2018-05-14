@@ -1593,9 +1593,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
-            return new GridCacheProxyImpl<>(ctx, delegate,
-                opCtx != null ? opCtx.setAllowAtomicOpsInTx(true) :
-                    new CacheOperationContext(false, null, false, null, false, null, false, true));
+            return new GridCacheProxyImpl<>(ctx, delegate, opCtx.setAllowAtomicOpsInTx());
         }
         finally {
             gate.leave(prev);

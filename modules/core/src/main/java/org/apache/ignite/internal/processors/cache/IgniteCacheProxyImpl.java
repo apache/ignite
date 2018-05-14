@@ -347,11 +347,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
     /** {@inheritDoc} */
     @Override public Lock lockAll(final Collection<? extends K> keys) {
-        return new CacheLockImpl<>(ctx.gate(),
-            delegate,
-            cachedProxy instanceof GatewayProtectedCacheProxy ?
-                ((GatewayProtectedCacheProxy)cachedProxy).opCtx() : new CacheOperationContext(),
-            keys);
+        return new CacheLockImpl<>(ctx.gate(), delegate, new CacheOperationContext(), keys);
     }
 
     /** {@inheritDoc} */
@@ -1716,18 +1712,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withAllowAtomicOpsInTx() {
         throw new UnsupportedOperationException();
-    }
-
-    /**
-     * @param opCtx Old operation context.
-     * @param lock Proxy's lock.
-     * @return Proxy with allowed atomic operations within transactions.
-     */
-    public IgniteCacheProxy<K, V> withAllowAtomicOpsInTx(CacheOperationContext opCtx, boolean lock) {
-        IgniteCacheProxyImpl<K, V> newDelegate = new IgniteCacheProxyImpl<>(ctx, delegate, restartFut, isAsync());
-
-        return newDelegate.cachedProxy = new GatewayProtectedCacheProxy<>(
-            newDelegate, opCtx.setAllowAtomicOpsInTx(true), lock);
     }
 
     /**
