@@ -181,8 +181,6 @@ public class IgniteSqlSkipReducerOnUpdateDmlSelfTest extends GridCommonAbstractT
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         checkNoLeaks();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
