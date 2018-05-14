@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
+import com.sun.management.OperatingSystemMXBean;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -75,6 +76,11 @@ public class GridDebug {
     /** field to store the hotspot diagnostic MBean */
     private static volatile HotSpotDiagnosticMXBean hotspotMBean;
 
+    /** This is the name of the HotSpot Diagnostic MBean */
+    private static final String OS_BEAN_NAME = "java.lang:type=OperatingSystem";
+
+    /** field to store the hotspot diagnostic MBean */
+    private static volatile OperatingSystemMXBean osMBean;
     /* */
     static {
         if (LOGS_PATH != null) {
@@ -339,32 +345,60 @@ public class GridDebug {
     }
 
     /**
+     *
+     * @return
+     */
+    public static long getCommittedVirtualMemorySize() {
+        initOSMBean();
+
+        try {
+            return osMBean.getCommittedVirtualMemorySize();
+        }
+        catch (RuntimeException re) {
+            throw re;
+        }
+        catch (Exception exp) {
+            throw new RuntimeException(exp);
+        }
+    }
+
+    /**
      * Initialize the hotspot diagnostic MBean field
      */
     private static void initHotspotMBean() {
         if (hotspotMBean == null) {
             synchronized (GridDebug.class) {
                 if (hotspotMBean == null)
-                    hotspotMBean = getHotspotMBean();
+                    hotspotMBean = getMBean(HOTSPOT_BEAN_NAME, HotSpotDiagnosticMXBean.class);
             }
         }
     }
 
     /**
+     * Initialize the hotspot diagnostic MBean field
+     */
+    private static void initOSMBean() {
+        if (osMBean == null) {
+            synchronized (GridDebug.class) {
+                if (osMBean == null)
+                    osMBean = getMBean(OS_BEAN_NAME, OperatingSystemMXBean.class);
+            }
+        }
+    }
+    /**
      * Gets the hotspot diagnostic MBean from the platform MBean server
      * @return Diagnostic bean.
      */
-    private static HotSpotDiagnosticMXBean getHotspotMBean() {
+    private static <T> T getMBean(String beanName, Class<T> clazz) {
         try {
-            MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+            MBeanServer srv = ManagementFactory.getPlatformMBeanServer();
 
-            HotSpotDiagnosticMXBean bean = ManagementFactory.newPlatformMXBeanProxy(server,
-                HOTSPOT_BEAN_NAME, HotSpotDiagnosticMXBean.class);
-
-            return bean;
-        } catch (RuntimeException re) {
+            return ManagementFactory.newPlatformMXBeanProxy(srv, beanName, clazz);
+        }
+        catch (RuntimeException re) {
             throw re;
-        } catch (Exception exp) {
+        }
+        catch (Exception exp) {
             throw new RuntimeException(exp);
         }
     }
