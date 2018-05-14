@@ -4,6 +4,20 @@ NodeJS Client for Apache Ignite contains fully workable examples to demonstrate 
 
 ## Description ##
 
+### Sql Example ###
+
+Source: [SqlExample.js](./SqlExample.js)
+
+This example shows primary APIs to use with Ignite as with an SQL database:
+- connects to a node
+- creates a cache, if it doesn't exist
+- creates tables (CREATE TABLE)
+- creates indices (CREATE INDEX)
+- writes data of primitive types into the tables (INSERT INTO table)
+- reads data from the tables (SELECT ...)
+- deletes tables (DROP TABLE)
+- destroys the cache
+
 ### Cache Put Get Example ###
 
 Source: [CachePutGetExample.js](./CachePutGetExample.js)
@@ -20,29 +34,15 @@ This example demonstrates basic Cache, Key-Value Queries and Scan Query operatio
   - ScanQuery
 - destroys the cache
 
-### Sql Query Example ###
+### Sql Query Entries Example ###
 
-Source: [SqlQueryExample.js](./SqlQueryExample.js)
+Source: [SqlQueryEntriesExample.js](./SqlQueryEntriesExample.js)
 
 This example demonstrates basic Cache, Key-Value Queries and SQL Query operations:
 - connects to a node
 - creates a cache from CacheConfiguration, if it doesn't exist
 - writes data of primitive and Complex Object types into the cache using Key-Value put operation
 - reads data from the cache using SQL Query
-- destroys the cache
-
-### Sql Data Processing Example ###
-
-Source: [SqlDataProcessingExample.js](./SqlDataProcessingExample.js)
-
-This example demonstrates basic SQL Fields Query operations:
-- connects to a node
-- creates a cache, if it doesn't exist
-- creates tables (CREATE TABLE)
-- creates indices (CREATE INDEX)
-- writes data of primitive types into the tables (INSERT INTO table)
-- reads data from the tables (SELECT ...)
-- deletes tables (DROP TABLE)
 - destroys the cache
 
 ### Auth Tls Example ###
