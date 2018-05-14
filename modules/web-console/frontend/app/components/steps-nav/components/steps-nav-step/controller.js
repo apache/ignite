@@ -15,38 +15,37 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line
-import StepsNav from '../../controller';
-
-export default class {
-    /** @type {StepsNav} */
+export default class StepsNavStep {
+    /** @type {import('../../controller').default} */
     stepsNav;
     /** @type {string} */
     value;
     /** @type {number} Step index among other steps */
     index;
 
+    static $inject = ['$element'];
+
+    /** 
+     * @param {JQLite} $element
+     */
+    constructor($element) {
+        this.$element = $element;
+    }
+
     $onInit() {
-        this.index = this.stepsNav.connectStep(this.value);
+        this.stepsNav.connectStep(this.value, Array.from(this.$element[0].parentElement.children).indexOf(this.$element[0]));
     }
 
     $onDestroy() {
         this.stepsNav.disconnectStep(this.value);
+        this.$element = null;
     }
 
     get visited() {
-        return this.index <= this.stepsNav.steps.findIndex((value) => value === this.stepsNav.currentStep);
-    }
-
-    get first() {
-        return this.index === 0;
-    }
-
-    get last() {
-        return this.index + 1 === this.stepsNav.steps.length;
+        return this.stepsNav.isVisited(this.value);
     }
 
     get active() {
-        return this.stepsNav.currentStep === this.value;
+        return this.stepsNav.isActive(this.value);
     }
 }

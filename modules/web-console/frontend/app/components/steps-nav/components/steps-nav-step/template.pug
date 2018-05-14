@@ -16,11 +16,13 @@
 
 div(
     ng-transclude
-    class='steps-nav-step'
+    class='steps-nav-step steps-nav-step__inactive'
     ng-class=`{
         "steps-nav-step__active": $ctrl.active,
-        "steps-nav-step__visited": $ctrl.visited,
-        "steps-nav-step__first": $ctrl.first,
-        "steps-nav-step__last": $ctrl.last
+        "steps-nav-step__visited": $ctrl.visited
     }`
 )
+<svg class="steps-nav-step__arrow" version="1.1" viewBox="0 0 4.2333332 10.054167" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+    <path d="m0 0 4.2333 5.0271-4.2333 5.0271z" fill="currentColor"/>
+    <path d="m0 10.054h0.26458l4.2333-5.0271-4.2333-5.0271h-0.26458l4.2333 5.0271z" fill="white"/>
+</svg>

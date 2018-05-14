@@ -15,74 +15,71 @@
  * limitations under the License.
  */
 
+$color-inactive: #dddddd;
+$color-active: #5896c7;
+$color-visited: #9ab9d2;
+
+$text-inactive: #393939;
+$text-active: #ffffff;
+$text-visited: #0067b9;
+
+$arrow-width: 17px;
+$arrow-to-text-gap: 24px;
+
+$transition-speed: 0.2s;
+
 steps-nav-step {
-    @import "public/stylesheets/variables.scss";
-
-    $text-color-default: #393939;
-    $text-color-active: $ignite-brand-success;
-    $indicator-color-default: #757575;
-    $indicator-color-active: $ignite-brand-success;
-    $indicator-size: 12px;
-    $indicator-border-radius: 2px;
-    $spline-height: 1px;
-    $textToIndicatorGap: 23px;
-
-    color: $text-color-default;
     display: flex;
-    flex: 1;
-    text-align: center;
-    flex-direction: column;
-    align-items: center;
+    flex: 1 1;
     position: relative;
-    padding-bottom: $textToIndicatorGap + $indicator-size;
 
     .#{&} {
-        max-width: 100%;        
-    }
-
-    // Spline
-    .#{&}:before {
-        content: '';
-        display: block;
-        background: $indicator-color-default;
-        left: calc(50% - #{$indicator-size / 2});
         width: 100%;
-        height: $spline-height;
-        bottom: $indicator-size / 2;
-        position: absolute;
+        height: 100%;
+        min-height: 36px;
+        padding: 8px 10px 9px $arrow-width + $arrow-to-text-gap;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        transition: background-color $transition-speed, color $transition-speed;
+
+        & + .steps-nav-step__arrow {
+            transition: color $transition-speed;
+        }
     }
 
-    // Square dot
-    .#{&}:after {
-        content: '';
-        display: block;
-        background: $indicator-color-default;
-        width: $indicator-size;
-        height: $indicator-size;
-        border-radius: $indicator-border-radius;
-        z-index: 1;
+    .steps-nav-step__arrow {
+        height: 100%;
+        width: $arrow-width;
         position: absolute;
+        top: 0;
         bottom: 0;
-        left: calc(50% - 6px);
+        right: -$arrow-width + 1px;
+        z-index: 2;
+        overflow: visible;
     }
 
-    .#{&}__last:before {
+    &:first-child .#{&} {
+        padding-left: $arrow-to-text-gap;
+    }
+
+    &:last-child .#{&} + .#{&}__arrow {
         display: none;
     }
 
-    .#{&}__active {
-        color: $text-color-active;
+    @mixin step-colors($suffix, $bg-color, $text-color) {
+        .steps-nav-step__#{$suffix} {
+            color: $text-color;
+            background-color: $bg-color;
 
-        &:before {
-            background: $indicator-color-default !important;            
-        }
-        &:after {
-            background: $indicator-color-active;
+            & + .steps-nav-step__arrow {
+                color: $bg-color;
+            }
         }
     }
 
-    .#{&}__visited:before,
-    .#{&}__visited:after {
-        background: $indicator-color-active;
-    }
+    @include step-colors('inactive', $color-inactive, $text-inactive);
+    @include step-colors('visited', $color-visited, $text-visited);
+    @include step-colors('active', $color-active, $text-active);
 }

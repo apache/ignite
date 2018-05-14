@@ -28,9 +28,12 @@ export default class StepsNav {
 
     /**
      * @param {string} value
+     * @param {number} index
      */
-    connectStep(value) {
-        return (this.steps = [...this.steps, value]).length - 1;
+    connectStep(value, index) {
+        const steps = [...this.steps];
+        steps.splice(index, 0, value);
+        this.steps = steps;
     }
 
     /**
@@ -38,5 +41,19 @@ export default class StepsNav {
      */
     disconnectStep(value) {
         this.steps = this.steps.filter((v) => value !== v);
+    }
+
+    /**
+     * @param {string} step
+     */
+    isVisited(step) {
+        return this.steps.indexOf(step) <= this.steps.indexOf(this.currentStep);
+    }
+
+    /**
+     * @param {string} step
+     */
+    isActive(step) {
+        return this.currentStep === step;
     }
 }
