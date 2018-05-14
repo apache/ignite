@@ -51,7 +51,6 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Persistent Store With Indexing Test Suite");
 
-/*
         suite.addTestSuite(IgnitePdsCacheIntegrationTest.class);
         suite.addTestSuite(IgnitePdsPageEvictionTest.class);
         suite.addTestSuite(IgnitePdsMultiNodePutGetRestartTest.class);
@@ -77,7 +76,6 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
         suite.addTestSuite(IgnitePdsMarshallerMappingRestoreOnNodeStartTest.class);
         suite.addTestSuite(IgnitePdsThreadInterruptionTest.class);
         suite.addTestSuite(IgnitePdsBinarySortObjectFieldsTest.class);
-*/
 
         suite.addTestSuite(IgnitePdsCorruptedIndexTest.class);
 
