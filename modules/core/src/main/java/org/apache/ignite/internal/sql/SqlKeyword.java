@@ -185,6 +185,9 @@ public class SqlKeyword {
     /** Keyword: ON. */
     public static final String ON = "ON";
 
+    /** Keyword: ORDERED. */
+    public static final String ORDERED = "ORDERED";
+
     /** Keyword: PER_NODE_PARALLEL_OPERATIONS. */
     public static final String PER_NODE_PARALLEL_OPERATIONS = "PER_NODE_PARALLEL_OPERATIONS";
 

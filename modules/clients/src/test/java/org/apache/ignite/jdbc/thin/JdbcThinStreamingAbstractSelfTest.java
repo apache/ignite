@@ -43,9 +43,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Tests for streaming via thin driver.
  */
-public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
+public abstract class JdbcThinStreamingAbstractSelfTest extends JdbcStreamingSelfTest {
     /** */
-    private int batchSize = 17;
+    protected int batchSize = 17;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -54,6 +54,16 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         super.beforeTestsStarted();
 
         batchSize = 17;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        // Init IndexingWithContext.cliCtx
+        try (Connection c = createOrdinaryConnection()) {
+            execute(c, "SELECT 1");
+        }
     }
 
     /** {@inheritDoc} */
@@ -67,17 +77,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         super.afterTest();
     }
 
-    /** {@inheritDoc} */
-    @Override protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq) throws Exception {
-        Connection c = JdbcThinAbstractSelfTest.connect(grid(0), null       );
-
-        execute(c, "SET STREAMING 1 BATCH_SIZE " + batchSize + " ALLOW_OVERWRITE " + (allowOverwrite ? 1 : 0) +
-            " PER_NODE_BUFFER_SIZE 1000 FLUSH_FREQUENCY " + flushFreq);
-
-        return c;
-    }
-
-    /** {@inheritDoc} */
+        /** {@inheritDoc} */
     @Override protected Connection createOrdinaryConnection() throws SQLException {
         return JdbcThinAbstractSelfTest.connect(grid(0), null);
     }
@@ -170,7 +170,10 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
                 SqlClientContext cliCtx = sqlClientContext();
 
-                HashMap<String, IgniteDataStreamer<?, ?>> streamers = U.field(cliCtx, "streamers");
+                final HashMap<String, IgniteDataStreamer<?, ?>> streamers = U.field(cliCtx, "streamers");
+
+                // Wait when node process requests (because client send batch requests async).
+                GridTestUtils.waitForCondition(() -> streamers.size() == 2, 1000);
 
                 assertEquals(2, streamers.size());
 
@@ -254,13 +257,26 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     /**
      * @throws SQLException if failed.
      */
-    public void testStreamingOffToOn() throws SQLException {
+    public void testStreamingOffToOn() throws Exception {
         try (Connection conn = createOrdinaryConnection()) {
             assertStreamingState(false);
 
             execute(conn, "SET STREAMING 1");
 
             assertStreamingState(true);
+        }
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testStreamingOffToOff() throws Exception {
+        try (Connection conn = createOrdinaryConnection()) {
+            assertStreamingState(false);
+
+            execute(conn, "SET STREAMING 0");
+
+            assertStreamingState(false);
         }
     }
 
@@ -330,7 +346,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
             U.sleep(500);
 
-            assertEquals((Integer)111, U.field(conn, "streamBatchSize"));
+            assertEquals((Integer)111, U.field((Object)U.field(conn, "streamState"), "streamBatchSize"));
 
             SqlClientContext cliCtx = sqlClientContext();
 
@@ -418,7 +434,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     /**
      * Check that there's nothing in cache.
      */
-    private void assertCacheEmpty() {
+    protected void assertCacheEmpty() {
         assertEquals(0, cache().size(CachePeekMode.ALL));
     }
 
@@ -427,7 +443,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
      * @param sql Statement.
      * @throws SQLException if failed.
      */
-    private static void execute(Connection conn, String sql) throws SQLException {
+    protected static void execute(Connection conn, String sql) throws SQLException {
         try (Statement s = conn.createStatement()) {
             s.execute(sql);
         }
@@ -444,10 +460,13 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
     /**
      * Check that streaming state on target node is as expected.
+     *
      * @param on Expected streaming state.
      */
-    private void assertStreamingState(boolean on) {
+    protected void assertStreamingState(boolean on) throws Exception {
         SqlClientContext cliCtx = sqlClientContext();
+
+        GridTestUtils.waitForCondition(() -> cliCtx.isStream() == on, 1000);
 
         assertEquals(on, cliCtx.isStream());
     }
@@ -462,7 +481,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     /**
      *
      */
-    private static final class IndexingWithContext extends IgniteH2Indexing {
+    static final class IndexingWithContext extends IgniteH2Indexing {
         /** Client context. */
         static SqlClientContext cliCtx;
 
