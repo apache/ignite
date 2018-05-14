@@ -300,6 +300,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     };
 
+    /** Timeout between partition file destroy and checkpoint to handle it. */
+    private static final long PARTITION_DESTROY_CHECKPOINT_TIMEOUT = 30 * 1000; // 30 Seconds.
+
     /** Checkpoint thread. Needs to be volatile because it is created in exchange worker. */
     private volatile Checkpointer checkpointer;
 
@@ -393,6 +396,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Initially disabled cache groups. */
     private Collection<Integer> initiallyGlobalWalDisabledGrps = new HashSet<>();
 
+    /** Initially local wal disabled groups. */
     private Collection<Integer> initiallyLocalWalDisabledGrps = new HashSet<>();
 
     /** File I/O factory for writing checkpoint markers. */
@@ -2754,6 +2758,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * Cancels or wait for partition destroy.
+     *
+     * @param grpId Group ID.
+     * @param partId Partition ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
+        Checkpointer cp = checkpointer;
+
+        if (cp != null)
+            cp.cancelOrWaitPartitionDestroy(cctx.cache().cacheGroup(grpId), partId);
+    }
+
+    /**
      * Partition destroy queue.
      */
     private static class PartitionDestroyQueue {
@@ -3279,7 +3297,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 scheduledCp.destroyQueue.addDestroyRequest(grpCtx, grpId, partId, tag);
             }
 
-            wakeupForCheckpoint(15 * 1000, "partition destroy");
+            wakeupForCheckpoint(PARTITION_DESTROY_CHECKPOINT_TIMEOUT, "partition destroy");
         }
 
         /**
