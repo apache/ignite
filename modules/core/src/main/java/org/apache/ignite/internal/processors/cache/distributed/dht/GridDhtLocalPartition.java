@@ -1038,25 +1038,26 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 catch (GridDhtInvalidPartitionException e) {
                     assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
 
-                        break; // Partition is already concurrently cleared and evicted.
-                    }
-                    finally {
-                        ctx.database().checkpointReadUnlock();
-                    }
+                    break; // Partition is already concurrently cleared and evicted.
                 }
+                finally {
+                    ctx.database().checkpointReadUnlock();
+                }
+            }
 
             if (forceTestCheckpointOnEviction) {
-                    if (partWhereTestCheckpointEnforced == null && cleared >= fullSize()) {
-                        ctx.database().forceCheckpoint("test").finishFuture().get();
+                if (partWhereTestCheckpointEnforced == null && cleared >= fullSize()) {
+                    ctx.database().forceCheckpoint("test").finishFuture().get();
 
-                        log.warning("Forced checkpoint by test reasons for partition: " + this);
+                    log.warning("Forced checkpoint by test reasons for partition: " + this);
 
-                        partWhereTestCheckpointEnforced = id;
-                    }
+                    partWhereTestCheckpointEnforced = id;
                 }
-            }catch (NodeStoppingException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to get iterator for evicted partition: " + id);
+            }
+        }
+        catch (NodeStoppingException e) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to get iterator for evicted partition: " + id);
 
             throw e;
         }
