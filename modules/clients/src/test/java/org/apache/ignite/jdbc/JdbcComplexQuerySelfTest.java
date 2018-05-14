@@ -85,6 +85,8 @@ public class JdbcComplexQuerySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrids(3);
 
         IgniteCache<String, Organization> orgCache = jcache(grid(0), cacheConfiguration(), "org",

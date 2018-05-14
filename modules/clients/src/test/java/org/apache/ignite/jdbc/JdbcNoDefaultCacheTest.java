@@ -86,6 +86,8 @@ public class JdbcNoDefaultCacheTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(GRID_CNT);
 
         Ignite ignite = ignite(0);

@@ -84,6 +84,8 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrid(0);
     }
 

@@ -128,6 +128,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         System.setProperty(IGNITE_JETTY_PORT, Integer.toString(JETTY_PORT));
 
         startGrid();

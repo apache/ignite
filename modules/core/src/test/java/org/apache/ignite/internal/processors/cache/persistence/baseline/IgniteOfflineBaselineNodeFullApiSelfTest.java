@@ -22,6 +22,8 @@ package org.apache.ignite.internal.processors.cache.persistence.baseline;
 public class IgniteOfflineBaselineNodeFullApiSelfTest extends IgniteBaselineAbstractFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         initStoreStrategy();
 
         cleanPersistenceDir();

@@ -73,6 +73,8 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrids(GRID_CNT);
 
         daemon = true;

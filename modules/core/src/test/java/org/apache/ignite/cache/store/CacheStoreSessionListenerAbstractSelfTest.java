@@ -83,6 +83,8 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(3);
     }
 

@@ -99,6 +99,8 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrid("server");
         startGrid("client");
     }

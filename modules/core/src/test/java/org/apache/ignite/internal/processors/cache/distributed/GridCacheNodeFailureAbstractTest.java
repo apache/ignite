@@ -102,6 +102,8 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         for (int i = 0; i < GRID_CNT; i++)
             IGNITEs.add(startGrid(i));
     }

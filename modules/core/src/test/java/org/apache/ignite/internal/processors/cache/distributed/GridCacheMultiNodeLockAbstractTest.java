@@ -102,6 +102,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         ignite1 = startGrid(1);
         ignite2 = startGrid(2);
 

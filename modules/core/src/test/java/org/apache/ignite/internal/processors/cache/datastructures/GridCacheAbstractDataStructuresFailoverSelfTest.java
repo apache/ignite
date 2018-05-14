@@ -125,6 +125,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        cleanPersistenceDir();
+
         startGridsMultiThreaded(gridCount());
 
         super.beforeTest();

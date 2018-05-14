@@ -81,13 +81,13 @@ public class CacheRandomOperationsMultithreadedTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(NODES - 1);
 
         client = true;
 
         startGrid(NODES - 1);
-
-        super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */

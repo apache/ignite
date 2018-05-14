@@ -93,6 +93,8 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(GRID_CNT);
 
         try (ServerSocket sock = new ServerSocket(0)) {

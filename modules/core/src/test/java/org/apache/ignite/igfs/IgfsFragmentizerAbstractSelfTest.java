@@ -146,6 +146,8 @@ public class IgfsFragmentizerAbstractSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrids(NODE_CNT);
     }
 

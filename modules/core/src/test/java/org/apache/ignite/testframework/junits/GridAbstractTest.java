@@ -559,7 +559,6 @@ public abstract class GridAbstractTest extends TestCase {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
     }
 
-
     /**
      * Called after execution of all test methods in class or
      * if {@link #beforeTestsStarted()} failed without execution of any test methods.

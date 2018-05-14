@@ -46,6 +46,8 @@ public class AuthenticationRestartTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         TestReconnectPluginProvider.enabled = true;
         TestReconnectProcessor.enabled = true;
 

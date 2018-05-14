@@ -86,6 +86,8 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrids(4);
     }
 

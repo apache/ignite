@@ -260,6 +260,8 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         for (int i = 0; i < 3; i++) {
             try {
                 startSpis();

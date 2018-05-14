@@ -124,6 +124,8 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         caches = new ArrayList<>(GRID_CNT);
 
         for (int i = 0; i < GRID_CNT; i++)

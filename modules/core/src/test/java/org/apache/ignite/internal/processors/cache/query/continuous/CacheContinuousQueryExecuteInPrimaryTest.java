@@ -93,6 +93,8 @@ public class CacheContinuousQueryExecuteInPrimaryTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(1);
     }
 

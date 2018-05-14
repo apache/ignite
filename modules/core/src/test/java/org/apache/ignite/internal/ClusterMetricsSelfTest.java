@@ -51,6 +51,8 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         for (int i = 0; i < NODES_CNT; i++)
             startGrid(i);
     }

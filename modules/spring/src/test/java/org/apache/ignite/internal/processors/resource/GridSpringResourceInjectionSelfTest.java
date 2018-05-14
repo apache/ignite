@@ -44,6 +44,8 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override public void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         grid = IgniteSpring.start(new ClassPathXmlApplicationContext(
             "/org/apache/ignite/internal/processors/resource/spring-resource.xml"));
     }

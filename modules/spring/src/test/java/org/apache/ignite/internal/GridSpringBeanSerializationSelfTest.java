@@ -45,6 +45,8 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         IgniteConfiguration cfg = config();
 
         marsh = createStandaloneBinaryMarshaller(cfg);

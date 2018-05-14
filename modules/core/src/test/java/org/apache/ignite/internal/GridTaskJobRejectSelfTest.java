@@ -50,6 +50,8 @@ import static org.apache.ignite.events.EventType.EVT_TASK_FINISHED;
 public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrid(1);
         startGrid(2);
     }

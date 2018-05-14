@@ -89,6 +89,8 @@ public class IgniteCacheFailedUpdateResponseTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrid("server-1");
         startGrid("server-2");
         startGrid("client");

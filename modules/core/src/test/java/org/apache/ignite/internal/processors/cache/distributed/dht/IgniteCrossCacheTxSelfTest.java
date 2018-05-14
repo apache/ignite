@@ -84,6 +84,8 @@ public class IgniteCrossCacheTxSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(nodeCount());
 
         CacheConfiguration firstCfg = new CacheConfiguration(FIRST_CACHE);

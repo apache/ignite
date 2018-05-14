@@ -53,6 +53,8 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         assert NODES_CNT > 2;
 
         ids = new LinkedList<>();

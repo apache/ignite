@@ -143,6 +143,8 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
 //        resetLog4j(Level.DEBUG, true,
 //            // Categories.
 //            GridDhtPreloader.class.getPackage().getName(),

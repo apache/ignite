@@ -113,6 +113,8 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
 
         System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "100000");
 
+        super.beforeTestsStarted();
+
         startGrids(GRID_CNT);
     }
 

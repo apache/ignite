@@ -68,6 +68,8 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrids(nodeCount());
 
         grid(0).createNearCache("data", new NearCacheConfiguration());

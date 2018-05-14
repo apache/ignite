@@ -31,6 +31,8 @@ public class RendezvousAffinityFunctionSelfTest extends AbstractAffinityFunction
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         ignite = startGrid();
     }
 

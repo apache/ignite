@@ -87,6 +87,8 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         IgniteConfiguration cfg = loadConfiguration("modules/kafka/src/test/resources/example-ignite.xml");
 
         cfg.setClientMode(false);

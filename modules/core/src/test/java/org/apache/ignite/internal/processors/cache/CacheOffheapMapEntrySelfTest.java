@@ -53,6 +53,8 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        cleanPersistenceDir();
+
         startGrids(1);
     }
 

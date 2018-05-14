@@ -57,6 +57,8 @@ public class JdbcSpringSelfTest extends JdbcConnectionSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsWithSpringCtx(GRID_CNT, false, configURL());
     }
 

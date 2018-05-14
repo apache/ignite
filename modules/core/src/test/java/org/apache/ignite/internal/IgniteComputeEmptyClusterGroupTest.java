@@ -64,6 +64,8 @@ public class IgniteComputeEmptyClusterGroupTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrids(2);
     }
 

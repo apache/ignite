@@ -52,6 +52,8 @@ public class OffheapCacheMetricsForClusterGroupSelfTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         // start grids
         clientMode = false;
         for (int i = 0; i < GRID_CNT; i++)

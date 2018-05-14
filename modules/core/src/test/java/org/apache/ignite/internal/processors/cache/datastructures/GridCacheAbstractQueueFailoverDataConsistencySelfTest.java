@@ -65,6 +65,8 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        cleanPersistenceDir();
+
         startGrids(gridCount());
     }
 

@@ -93,6 +93,8 @@ public abstract class AbstractJdbcPojoQuerySelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         Ignite ignite = startGrid(0);
 
         BinaryObjectBuilder builder = ignite.binary().builder(TEST_OBJECT);

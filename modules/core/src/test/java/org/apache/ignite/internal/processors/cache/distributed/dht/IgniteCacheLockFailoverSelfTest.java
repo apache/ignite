@@ -65,6 +65,8 @@ public class IgniteCacheLockFailoverSelfTest extends GridCacheAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        cleanPersistenceDir();
+
         startGridsMultiThreaded(gridCount());
     }
 

@@ -74,6 +74,8 @@ public class GridCacheOffheapIndexEntryEvictTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrids(1);
     }
 

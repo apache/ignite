@@ -49,6 +49,8 @@ public class IgniteCacheDuplicateEntityConfigurationSelfTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrid(0);
     }
 

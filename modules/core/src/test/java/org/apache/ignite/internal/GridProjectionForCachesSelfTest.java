@@ -109,6 +109,8 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         for (int i = 0; i < 5; i++)
             startGrid(i);
 

@@ -39,7 +39,9 @@ public class GridListenActorSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGrid();
+        super.beforeTestsStarted();
+
+        vstartGrid();
     }
 
     /** {@inheritDoc} */

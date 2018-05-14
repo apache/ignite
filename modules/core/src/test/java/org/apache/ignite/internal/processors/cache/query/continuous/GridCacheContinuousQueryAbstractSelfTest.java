@@ -152,6 +152,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(gridCount());
     }
 

@@ -82,6 +82,8 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrid(1);
         startGrid(2);
         startGrid(3);

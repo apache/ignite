@@ -28,6 +28,8 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends CacheStoreUsageMultinodeAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         cache = false;
 
         startGridsMultiThreaded(3);

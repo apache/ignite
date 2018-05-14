@@ -228,6 +228,8 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(NODES_CNT);
     }
 

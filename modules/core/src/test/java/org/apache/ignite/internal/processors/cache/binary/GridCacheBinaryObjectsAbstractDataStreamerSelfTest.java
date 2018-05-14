@@ -82,6 +82,8 @@ public abstract class GridCacheBinaryObjectsAbstractDataStreamerSelfTest extends
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(gridCount());
     }
 

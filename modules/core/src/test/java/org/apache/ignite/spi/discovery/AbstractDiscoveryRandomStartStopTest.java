@@ -194,6 +194,8 @@ public abstract class AbstractDiscoveryRandomStartStopTest<T extends DiscoverySp
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         if (getSpiContext() != null)
             getSpiContext().addLocalEventListener(new DiscoveryListener());
 

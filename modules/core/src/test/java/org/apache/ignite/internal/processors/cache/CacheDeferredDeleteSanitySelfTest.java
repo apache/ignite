@@ -36,6 +36,8 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 public class CacheDeferredDeleteSanitySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrid(0);
     }
 

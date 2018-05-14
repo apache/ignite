@@ -107,6 +107,8 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGridsMultiThreaded(3, false);
     }
 

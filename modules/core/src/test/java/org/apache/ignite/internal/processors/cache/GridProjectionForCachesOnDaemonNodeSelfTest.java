@@ -67,6 +67,8 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         ignite = startGrid(0);
 
         daemonNode = true;

@@ -60,6 +60,8 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrids();
     }
 
