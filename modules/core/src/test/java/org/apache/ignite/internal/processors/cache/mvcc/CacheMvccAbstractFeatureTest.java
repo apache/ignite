@@ -38,6 +38,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
@@ -70,6 +71,8 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
         super.beforeTest();
 
         CacheConfiguration<Integer, Person> ccfg = new CacheConfiguration<>(CACHE_NAME);
+
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         ccfg.setIndexedTypes(Integer.class, Person.class);
 

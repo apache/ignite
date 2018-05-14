@@ -134,27 +134,6 @@ public class MvccUtils {
     }
 
     /**
-     * Checks if version is visible from the given snapshot.
-     *
-     * @param cctx Cache context.
-     * @param snapshot Snapshot.
-     * @param mvccCrd Mvcc coordinator.
-     * @param mvccCntr Mvcc counter.
-     * @param mvccOpCntr Mvcc operation cunter.
-     * @param newMvccCrd New mvcc coordinator.
-     * @param newMvccCntr New mvcc counter.
-     * @param newMvccOpCntr New mvcc operation counter.
-     * @return {@code True} if visible.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
-        int mvccOpCntr, long newMvccCrd,
-        long newMvccCntr, int newMvccOpCntr) throws IgniteCheckedException {
-        return isVisible(cctx, snapshot, mvccCrd, mvccCntr, mvccOpCntr)
-            && !isVisible(cctx, snapshot, newMvccCrd, newMvccCntr, newMvccOpCntr);
-    }
-
-    /**
      * Checks if a row has not empty new version (xid_max).
      *
      * @param row Row.

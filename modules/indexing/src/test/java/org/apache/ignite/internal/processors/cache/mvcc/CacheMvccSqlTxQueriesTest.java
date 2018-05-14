@@ -18,7 +18,10 @@
 package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CyclicBarrier;
@@ -27,6 +30,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -1479,6 +1483,75 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIterator() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGrid(getConfiguration("grid").setMvccVacuumTimeInterval(Integer.MAX_VALUE));
+
+        Ignite client = startGrid(getConfiguration("client").setClientMode(true));
+
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+
+        cache.put(1, 1);
+        cache.put(2, 2);
+        cache.put(3, 3);
+        cache.put(4, 4);
+
+        List<List<?>> res;
+
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            tx.timeout(TX_TIMEOUT);
+
+            res = cache.query(new SqlFieldsQuery("UPDATE Integer SET _val = CASE _key " +
+                "WHEN 1 THEN 10 WHEN 2 THEN 20 ELSE 30 END")).getAll();
+
+            assertEquals(4L, res.get(0).get(0));
+
+            tx.rollback();
+        }
+
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            tx.timeout(TX_TIMEOUT);
+
+            res = cache.query(new SqlFieldsQuery("UPDATE Integer SET _val = CASE _val " +
+                "WHEN 1 THEN 10 WHEN 2 THEN 20 ELSE 30 END")).getAll();
+
+            assertEquals(4L, res.get(0).get(0));
+
+            res = cache.query(new SqlFieldsQuery("UPDATE Integer SET _val = CASE _val " +
+                "WHEN 10 THEN 100 WHEN 20 THEN 200 ELSE 300 END")).getAll();
+
+            assertEquals(4L, res.get(0).get(0));
+
+            res = cache.query(new SqlFieldsQuery("DELETE FROM Integer WHERE _key = 4")).getAll();
+
+            assertEquals(1L, res.get(0).get(0));
+
+            tx.commit();
+        }
+
+        IgniteCache<Integer, Integer> cache0 = client.cache(DEFAULT_CACHE_NAME);
+
+        Iterator<Cache.Entry<Integer, Integer>> it = cache0.iterator();
+
+        Map<Integer, Integer> map = new HashMap<>();
+
+        while (it.hasNext()) {
+            Cache.Entry<Integer, Integer> e = it.next();
+
+            assertNull("duplicate key returned from iterator", map.putIfAbsent(e.getKey(), e.getValue()));
+        }
+
+        assertEquals(3, map.size());
+
+        assertEquals(100, map.get(1).intValue());
+        assertEquals(200, map.get(2).intValue());
+        assertEquals(300, map.get(3).intValue());
+    }
 
     /**
      * @param ex Exception holder.
