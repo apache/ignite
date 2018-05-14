@@ -15,37 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.upload;
+package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 
 /**
- * Holds parameters to tweak streamer in upload benchmarks.
- * If any method returns <code>null</code>, no parameter passed to streamer.
+ * JDBC response result sender.
  */
-public interface StreamerParams {
+public interface JdbcResponseSender {
     /**
-     * @return Per-node buffer size.
+     * Send response to the client. Used for asynchronous result send.
+     * @param resp JDBC response.
      */
-    @Nullable public Integer streamerPerNodeBufferSize();
-
-    /**
-     * @return Per-node parallel operations.
-     */
-    @Nullable public Integer streamerPerNodeParallelOperations();
-
-    /**
-     * @return Local batch size.
-     */
-    @Nullable public Integer streamerLocalBatchSize();
-
-    /**
-     * @return Allow overwrite flag.
-     */
-    @Nullable public Boolean streamerAllowOverwrite();
-
-    /**
-     * @return Ordered flag.
-     */
-    public boolean streamerOrdered();
+    public void send(ClientListenerResponse resp);
 }

@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
@@ -419,6 +420,44 @@ public class JdbcThinTcpIo {
 
     /**
      * @param req Request.
+     * @throws IOException In case of IO error.
+     * @throws SQLException On error.
+     */
+    void sendBatchRequestNoWaitResponse(JdbcOrderedBatchExecuteRequest req) throws IOException, SQLException {
+        synchronized (mux) {
+            if (ownThread != null) {
+                throw new SQLException("Concurrent access to JDBC connection is not allowed"
+                    + " [ownThread=" + ownThread.getName()
+                    + ", curThread=" + Thread.currentThread().getName(), SqlStateCode.CONNECTION_FAILURE);
+            }
+
+            ownThread = Thread.currentThread();
+        }
+
+        try {
+            if (!igniteVer.greaterThanEqual(2, 5, 0)) {
+                throw new SQLException("Streaming without response doesn't supported by server [driverProtocolVer="
+                    + CURRENT_VER + ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
+            }
+
+            int cap = guessCapacity(req);
+
+            BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
+                null, null);
+
+            req.writeBinary(writer);
+
+            send(writer.array());
+        }
+        finally {
+            synchronized (mux) {
+                ownThread = null;
+            }
+        }
+    }
+
+    /**
+     * @param req Request.
      * @return Server response.
      * @throws IOException In case of IO error.
      * @throws SQLException On concurrent access to JDBC connection.
@@ -444,13 +483,7 @@ public class JdbcThinTcpIo {
 
             send(writer.array());
 
-            BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, null, false);
-
-            JdbcResponse res = new JdbcResponse();
-
-            res.readBinary(reader);
-
-            return res;
+            return readResponse();
         }
         finally {
             synchronized (mux) {
@@ -458,6 +491,22 @@ public class JdbcThinTcpIo {
             }
         }
     }
+
+    /**
+     * @return Server response.
+     * @throws IOException In case of IO error.
+     */
+    @SuppressWarnings("unchecked")
+    JdbcResponse readResponse() throws IOException {
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, null, false);
+
+        JdbcResponse res = new JdbcResponse();
+
+        res.readBinary(reader);
+
+        return res;
+    }
+
 
     /**
      * Try to guess request capacity.
