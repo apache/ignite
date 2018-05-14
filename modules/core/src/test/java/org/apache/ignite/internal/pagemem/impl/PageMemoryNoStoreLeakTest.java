@@ -24,6 +24,8 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.util.GridDebug;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -46,6 +48,8 @@ public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPageDoubleInitMemoryLeak() throws Exception {
+        System.out.println("first vm size=" + GridDebug.getCommittedVirtualMemorySize() / (1024 * 1024));
+
         for (int i = 0; i < 10_000; i++) {
             final DirectMemoryProvider provider = new UnsafeMemoryProvider(log());
 
@@ -80,6 +84,9 @@ public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
             finally {
                 mem.stop();
             }
+
+            if(i % 50 == 0)
+                System.out.println("last vm size=" + GridDebug.getCommittedVirtualMemorySize() / (1024 * 1024));
         }
     }
 
