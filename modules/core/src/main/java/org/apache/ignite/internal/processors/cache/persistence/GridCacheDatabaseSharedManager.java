@@ -670,6 +670,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             registrateMetricsMBean();
         }
 
+        if (checkpointer == null)
+            checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
+
         super.onActivate(ctx);
     }
 
