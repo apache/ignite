@@ -229,6 +229,11 @@ public class CacheStoreBalancingWrapper<K, V> implements CacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean supports2PhaseCommit() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheStoreBalancingWrapper.class, this);
     }

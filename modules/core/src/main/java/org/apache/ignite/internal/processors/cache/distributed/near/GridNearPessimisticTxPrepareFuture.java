@@ -76,6 +76,9 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         boolean found = false;
 
         for (IgniteInternalFuture<?> fut : futures()) {
+            if (!isMini(fut))
+                continue;
+
             MiniFuture f = (MiniFuture)fut;
 
             if (f.primary().id().equals(nodeId)) {
@@ -125,6 +128,14 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     }
 
     /**
+     * @param f Future.
+     * @return {@code True} if mini-future.
+     */
+    private boolean isMini(IgniteInternalFuture<?> f) {
+        return f.getClass().equals(MiniFuture.class);
+    }
+
+    /**
      * Finds pending mini future by the given mini ID.
      *
      * @param miniId Mini ID to find.
@@ -138,7 +149,12 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
             // Avoid iterator creation.
             for (int i = 0; i < size; i++) {
-                MiniFuture mini = (MiniFuture)future(i);
+                IgniteInternalFuture<GridNearTxPrepareResponse> fut = future(i);
+
+                if (!isMini(fut))
+                    continue;
+
+                MiniFuture mini = (MiniFuture)fut;
 
                 if (mini.futureId() == miniId) {
                     if (!mini.isDone())
@@ -419,9 +435,12 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
             @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).primary().id() +
-                    ", loc=" + ((MiniFuture)f).primary().isLocal() +
-                    ", done=" + f.isDone() + "]";
+                if (isMini(f))
+                    return "[node=" + ((MiniFuture)f).primary().id() +
+                        ", loc=" + ((MiniFuture)f).primary().isLocal() +
+                        ", done=" + f.isDone() + "]";
+                else
+                    return "";
             }
         });
 

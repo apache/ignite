@@ -1640,6 +1640,11 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
         return ses;
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean supports2PhaseCommit() {
+        return true;
+    }
+
     /**
      * Type kind.
      */

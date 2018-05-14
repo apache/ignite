@@ -367,6 +367,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     }
 
     /** {@inheritDoc} */
+    @Override public boolean supports2PhaseCommit() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
         // No-op.
     }

@@ -264,6 +264,8 @@ public final class GridCacheTestStore implements CacheStore<Integer, String> {
         putCnt.incrementAndGet();
     }
 
+    StackTraceElement[] hist ;
+
     /** {@inheritDoc} */
     @Override public void writeAll(Collection<Cache.Entry<? extends Integer, ? extends String>> entries)
         throws CacheWriterException {
@@ -277,6 +279,8 @@ public final class GridCacheTestStore implements CacheStore<Integer, String> {
             this.map.put(e.getKey(), e.getValue());
 
         putAllCnt.incrementAndGet();
+
+        hist = Thread.currentThread().getStackTrace();
     }
 
     /** {@inheritDoc} */

@@ -207,6 +207,11 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean supports2PhaseCommit() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Override public V load(K key) {
         init();

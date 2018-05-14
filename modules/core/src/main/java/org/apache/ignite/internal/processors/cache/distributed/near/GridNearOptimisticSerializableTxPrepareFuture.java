@@ -69,10 +69,6 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptimisticTxPrepareFutureAdapter {
     /** */
     @GridToStringExclude
-    private KeyLockFuture keyLockFut;
-
-    /** */
-    @GridToStringExclude
     private ClientRemapFuture remapFut;
 
     /** */
@@ -398,7 +394,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         while (it.hasNext()) {
             IgniteInternalFuture<?> fut0 = it.next();
 
-            if (skipFuture(remap, fut0))
+            if (!isMini(fut0) || skipFuture(remap, fut0))
                 continue;
 
             MiniFuture fut = (MiniFuture)fut0;
@@ -409,7 +405,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 while (it.hasNext()) {
                     fut0 = it.next();
 
-                    if (skipFuture(remap, fut0))
+                    if (!isMini(fut0) || skipFuture(remap, fut0))
                         continue;
 
                     fut = (MiniFuture)fut0;
@@ -701,9 +697,12 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         Collection<String> futs = F.viewReadOnly(futures(),
             new C1<IgniteInternalFuture<?>, String>() {
                 @Override public String apply(IgniteInternalFuture<?> f) {
-                    return "[node=" + ((MiniFuture)f).primary().id() +
-                        ", loc=" + ((MiniFuture)f).primary().isLocal() +
-                        ", done=" + f.isDone() + "]";
+                    if (isMini(f))
+                        return "[node=" + ((MiniFuture)f).primary().id() +
+                            ", loc=" + ((MiniFuture)f).primary().isLocal() +
+                            ", done=" + f.isDone() + "]";
+                    else
+                        return "";
                 }
             },
             new P1<IgniteInternalFuture<?>>() {

@@ -78,10 +78,6 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepareFutureAdapter implements
     IgniteDiagnosticAware {
     /** */
-    @GridToStringExclude
-    private KeyLockFuture keyLockFut;
-
-    /** */
     private int miniId;
 
     /** */
@@ -844,9 +840,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
             @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).node().id() +
-                    ", loc=" + ((MiniFuture)f).node().isLocal() +
-                    ", done=" + f.isDone() + "]";
+                if (isMini(f))
+                    return "[node=" + ((MiniFuture)f).node().id() +
+                        ", loc=" + ((MiniFuture)f).node().isLocal() +
+                        ", done=" + f.isDone() + "]";
+                else
+                    return "";
             }
         }, new P1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
             @Override public boolean apply(IgniteInternalFuture<GridNearTxPrepareResponse> fut) {
