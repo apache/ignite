@@ -54,7 +54,7 @@ public final class X {
     public static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
 
     /** Time span dividers. */
-    private static final long[] SPAN_DIVS = new long[] {1000L, 60L, 60L, 60L};
+    private static final long[] SPAN_DIVS = new long[] {1000L, 60L, 60L, 24L};
 
     /** The names of methods commonly used to access a wrapped exception. */
     private static final String[] CAUSE_MTD_NAMES = new String[] {
@@ -233,6 +233,29 @@ public final class X {
         return (t[3] < 10 ? "0" + t[3] : Long.toString(t[3])) + ':' +
             (t[2] < 10 ? "0" + t[2] : Long.toString(t[2])) + ':' +
             (t[1] < 10 ? "0" + t[1] : Long.toString(t[1]));
+    }
+
+    /**
+     * Creates string presentation of given time {@code span} in days, hh:mm:ss.mmm {@code HMS} format.
+     *
+     * @param span Time span.
+     * @return String presentation.
+     */
+    public static String timeSpan2DHMSM(long span) {
+        long SPAN_DIV = 86400000L;
+
+        String days = "";
+
+        String hmsm = timeSpan2HMSM(span % SPAN_DIV);
+
+        long count = span / SPAN_DIV;
+
+        if (count == 1)
+            days = count + " day, ";
+        else if (count > 1)
+            days = count + " days, ";
+
+        return days + hmsm;
     }
 
     /**
