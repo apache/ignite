@@ -83,12 +83,12 @@ public class TxLabelTest extends GridCacheAbstractSelfTest {
         AtomicReference<Throwable> ref = new AtomicReference<>();
 
         evts.localListen((IgnitePredicate<Event>)e -> {
-            if (e instanceof TransactionEvent) {
-                TransactionEvent evt = (TransactionEvent)e;
+            assert e instanceof TransactionEvent;
 
-                if (((GridNearTxLocal)(evt.tx())).label() == null)
-                    ref.set(new IllegalStateException("Label should be filled!"));
-            }
+            TransactionEvent evt = (TransactionEvent)e;
+
+            if (((GridNearTxLocal)(evt.tx())).label() == null)
+                ref.set(new IllegalStateException("Label should be filled!"));
 
             return true;
         }, EVT_TX_STARTED);
@@ -125,12 +125,12 @@ public class TxLabelTest extends GridCacheAbstractSelfTest {
         }
 
         evts.localListen((IgnitePredicate<Event>)e -> {
-            if (e instanceof TransactionEvent) {
-                TransactionEvent evt = (TransactionEvent)e;
+            assert e instanceof TransactionEvent;
 
-                if (((GridNearTxLocal)(evt.tx())).label() == null)
-                    throw new LabelNotFilledError("Label should be filled!");
-            }
+            TransactionEvent evt = (TransactionEvent)e;
+
+            if (((GridNearTxLocal)(evt.tx())).label() == null)
+                throw new LabelNotFilledError("Label should be filled!");
 
             return true;
         }, EVT_TX_STARTED);

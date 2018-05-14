@@ -41,6 +41,8 @@ public class TransactionEvent extends EventAdapter {
     public TransactionEvent(ClusterNode node, String msg, int type, IgniteInternalTx tx) {
         super(node, msg, type);
 
+        assert tx != null;
+
         this.tx = tx;
     }
 

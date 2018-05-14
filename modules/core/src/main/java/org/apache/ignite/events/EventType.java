@@ -781,9 +781,9 @@ public interface EventType {
     public static final int EVT_WAL_SEGMENT_ARCHIVED = 128;
 
     /**
-     * Built-in event type: Transaction has been started
+     * Built-in event type: Transaction has been started.
      * <p>
-     * Fired for each started transactions except system transactions
+     * Fired for each started transactions except system transactions.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -993,7 +993,7 @@ public interface EventType {
     /**
      * All Transaction events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
-     * subscribe to all cloud events.
+     * subscribe to all transaction events.
      *
      * @see TransactionEvent
      */
