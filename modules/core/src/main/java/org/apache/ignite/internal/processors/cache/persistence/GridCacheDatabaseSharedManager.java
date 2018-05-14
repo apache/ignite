@@ -3956,7 +3956,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      *
      */
-    public static class CheckpointProgress {
+    private static class CheckpointProgress {
         /** */
         private volatile long nextCpTs;
 
