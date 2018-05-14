@@ -435,7 +435,7 @@ public class JdbcThinTcpIo {
         }
 
         try {
-            if (!igniteVer.greaterThanEqual(2, 5,0)) {
+            if (!igniteVer.greaterThanEqual(2, 4, 5)) {
                 throw new SQLException("Streaming without response doesn't supported by server [driverProtocolVer="
                     + CURRENT_VER + ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
             }
