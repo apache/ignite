@@ -112,10 +112,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /** Department table name. */
     protected String DEP_TAB = "Department";
 
-    /** Configuration that is injected by Suite */
-    @InjectTestSuite.Parameter
-    private Configuration cfg = new Configuration();
-
     /** Random for generator. */
     private Random rnd = new Random();
 
@@ -1063,11 +1059,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             return false;
 
         return a.equals(b);
-    }
-
-    public void testCfg() {
-        // false by default, injected as true
-        assertTrue(cfg.persistenceEnabled());
     }
 
     /**
