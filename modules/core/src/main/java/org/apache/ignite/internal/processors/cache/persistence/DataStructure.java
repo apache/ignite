@@ -37,6 +37,7 @@ import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.MAX_PARTITION_ID;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.MAX_ITEMID_NUM;
 
 /**
  * Base class for all the data structures based on {@link PageMemory}.
@@ -363,7 +364,7 @@ public abstract class DataStructure implements PageLockListener {
             int rotatedIdPart = PageIO.getRotatedIdPart(pageAddr);
 
             if (rotatedIdPart != 0) {
-                recycled = PageIdUtils.link(pageId, rotatedIdPart);
+                recycled = PageIdUtils.link(pageId, rotatedIdPart > MAX_ITEMID_NUM ? 1 : rotatedIdPart);
 
                 PageIO.setRotatedIdPart(pageAddr, 0);
 
