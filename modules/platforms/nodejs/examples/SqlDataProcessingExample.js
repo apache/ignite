@@ -30,7 +30,7 @@ const CITY_CACHE_NAME = 'City';
 const COUNTRY_LANGUAGE_CACHE_NAME = 'CountryLng';
 const DUMMY_CACHE_NAME = 'SqlDataProcessing_Dummy';
 
-// This example demonstrates basic SQL Fields Query operations:
+// This example shows primary APIs to use with Ignite as with an SQL database:
 // - connects to a node
 // - creates a cache, if it doesn't exist
 // - creates tables (CREATE TABLE)
