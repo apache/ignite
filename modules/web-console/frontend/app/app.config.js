@@ -36,7 +36,7 @@ const igniteConsoleCfg = angular.module('ignite-console.config', ['ngAnimate', '
 
 // Configure AngularJS animation: do not animate fa-spin.
 igniteConsoleCfg.config(['$animateProvider', ($animateProvider) => {
-    $animateProvider.classNameFilter(/^((?!(fa-spin)).)*$/);
+    $animateProvider.classNameFilter(/^((?!(fa-spin|ng-animate-disabled)).)*$/);
 }]);
 
 // AngularStrap modal popup configuration.
