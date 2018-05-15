@@ -80,8 +80,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "TimeServerPortBase",
             "TimeServerPortRange",
             "IncludeProperties",
-            "isAutoActivationEnabled",  // IGNITE-7301
-            "failureHandler"            // IGNITE-8070
+            "isAutoActivationEnabled"  // IGNITE-7301
         };
 
         /// <summary>
