@@ -2103,6 +2103,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (ignoreGrps.contains(grpId))
                                 continue;
 
+                            PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
+
+                            pageMem.invalidate(grpId, destroyRecord.partitionId());
+
                             schedulePartitionDestroy(grpId, destroyRecord.partitionId());
                         }
 
