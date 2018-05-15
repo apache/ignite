@@ -260,7 +260,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
     public void testQueueOverflow() throws Exception {
         for (int i = 0; i < 3; i++) {
             try {
-                startSpis(5, 2_000, 10);
+                startSpis(5, 60_000, 10);
 
                 checkOverflow();
 
@@ -300,6 +300,9 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
         final GridNioServer srv1 = U.field(spi1, "nioSrvr");
 
+        // For prevent session close on write timeout.
+        srv1.writeTimeout(60_000);
+
         final AtomicInteger ackMsgs = new AtomicInteger(0);
 
         IgniteInClosure<IgniteException> ackC = new CI1<IgniteException>() {
@@ -315,14 +318,16 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
         // Send message to establish connection.
         spi0.sendMessage(node1, new GridTestMessage(node0.id(), ++msgId, 0), ackC);
 
+        int sentMsgs = 1;
+
         // Prevent node1 from send
         GridTestUtils.setFieldValue(srv1, "skipWrite", true);
 
         final GridNioSession ses0 = communicationSession(spi0);
 
-        int sentMsgs = 1;
+        int queueLimit = ses0.outRecoveryDescriptor().queueLimit();
 
-        for (int i = 0; i < 1279; i++) {
+        for (int i = sentMsgs; i < queueLimit; i++) {
             try {
                 spi0.sendMessage(node1, new GridTestMessage(node0.id(), ++msgId, 0), ackC);
 
