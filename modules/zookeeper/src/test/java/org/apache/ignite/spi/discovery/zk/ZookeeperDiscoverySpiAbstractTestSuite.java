@@ -95,7 +95,7 @@ public abstract class ZookeeperDiscoverySpiAbstractTestSuite extends TestSuite {
                     throw new IgniteException("Failed to create directory for test Zookeeper server: " + file.getAbsolutePath());
             }
 
-            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, 500));
+            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, 6_000, 500));
         }
 
         return new TestingCluster(specs);
