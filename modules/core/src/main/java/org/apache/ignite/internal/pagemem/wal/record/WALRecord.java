@@ -175,10 +175,7 @@ public abstract class WALRecord {
         EXCHANGE,
 
         /** Baseline topology record. */
-        BASELINE_TOP_RECORD,
-
-        /** Partition create. */
-        PARTITION_CREATE;
+        BASELINE_TOP_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();

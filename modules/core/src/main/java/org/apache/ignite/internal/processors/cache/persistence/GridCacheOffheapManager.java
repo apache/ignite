@@ -45,7 +45,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionCreateRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionDestroyRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -147,15 +146,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDataStore createCacheDataStore0(final int p)
-        throws IgniteCheckedException {
+    @Override protected CacheDataStore createCacheDataStore0(int p) throws IgniteCheckedException {
         if (ctx.database() instanceof GridCacheDatabaseSharedManager)
             ((GridCacheDatabaseSharedManager) ctx.database()).cancelOrWaitPartitionDestroy(grp.groupId(), p);
 
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
-
-        if (grp.walEnabled())
-            ctx.wal().log(new PartitionCreateRecord(grp.groupId(), p));
 
         return new GridCacheDataStore(p, exists);
     }
@@ -584,28 +579,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             : "Destroying cache data store when persistence is not enabled: " + ctx.database();
 
         int partId = store.partId();
-        Integer newTag;
 
         ctx.database().checkpointReadLock();
 
         try {
             saveStoreMetadata(store, null, false, true);
-
-            PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
-
-            newTag = pageMemory.invalidate(grp.groupId(), partId);
-
-            if (grp.walEnabled())
-                ctx.wal().log(new PartitionDestroyRecord(grp.groupId(), partId));
         }
         finally {
             ctx.database().checkpointReadUnlock();
         }
 
-        assert newTag != null
-            : "Tag for partition is not updated [grpName=" + grp.cacheOrGroupName() + ", partId=" + partId + "]";
-
-        ((GridCacheDatabaseSharedManager)ctx.database()).schedulePartitionDestroy(grp.groupId(), partId, newTag);
+        ((GridCacheDatabaseSharedManager)ctx.database()).schedulePartitionDestroy(grp.groupId(), partId);
     }
 
     /**
@@ -614,11 +598,17 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      *
      * @param grpId Group ID.
      * @param partId Partition ID.
-     * @param tag Partition tag.
      *
      * @throws IgniteCheckedException If destroy has failed.
      */
-    public void destroyPartitionStore(int grpId, int partId, int tag) throws IgniteCheckedException {
+    public void destroyPartitionStore(int grpId, int partId) throws IgniteCheckedException {
+        PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+        int tag = pageMemory.invalidate(grp.groupId(), partId);
+
+        if (grp.walEnabled())
+            ctx.wal().log(new PartitionDestroyRecord(grp.groupId(), partId));
+
         ctx.pageStore().onPartitionDestroyed(grpId, partId, tag);
     }
 

@@ -216,6 +216,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         try {
             store = grp.offheap().createCacheDataStore(id);
 
+            // Log partition creation for further crash recovery purposes.
+            if (grp.walEnabled())
+                ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), updateCounter()));
+
             // Inject row cache cleaner on store creation
             // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group
             if (ctx.kernalContext().query().moduleEnabled()) {
