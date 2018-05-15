@@ -75,6 +75,12 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
             .setIndexedTypes(idxTypes);
     }
 
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        cleanPersistenceDir();
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
