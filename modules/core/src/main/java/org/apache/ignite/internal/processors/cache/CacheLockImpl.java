@@ -66,7 +66,7 @@ class CacheLockImpl<K, V> implements Lock {
 
     /** {@inheritDoc} */
     @Override public void lock() {
-        CacheOperationContext prev = gate.enter(opCtx, false);
+        CacheOperationContext prev = gate.enter(opCtx);
 
         try {
             checkTx();
@@ -101,7 +101,7 @@ class CacheLockImpl<K, V> implements Lock {
 
     /** {@inheritDoc} */
     @Override public boolean tryLock() {
-        CacheOperationContext prev = gate.enter(opCtx, false);
+        CacheOperationContext prev = gate.enter(opCtx);
 
         try {
             checkTx();
@@ -129,7 +129,7 @@ class CacheLockImpl<K, V> implements Lock {
         if (time <= 0)
             return tryLock();
 
-        CacheOperationContext prev = gate.enter(opCtx, false);
+        CacheOperationContext prev = gate.enter(opCtx);
 
         try {
             checkTx();
@@ -174,7 +174,7 @@ class CacheLockImpl<K, V> implements Lock {
 
     /** {@inheritDoc} */
     @Override public void unlock() {
-        CacheOperationContext prev = gate.enter(opCtx, false);
+        CacheOperationContext prev = gate.enter(opCtx);
 
         try {
             if (lockedThread != Thread.currentThread()) {

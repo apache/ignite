@@ -175,15 +175,6 @@ public class GridCacheGateway<K, V> {
      * @return Previous operation context set on this thread.
      */
     @Nullable public CacheOperationContext enter(@Nullable CacheOperationContext opCtx) {
-        return enter(opCtx, true);
-    }
-
-    /**
-     * @param opCtx Cache operation context to guard.
-     * @param checkAtomicOpsInTx True if we need to block atomic operations inside transactions.
-     * @return Previous operation context set on this thread.
-     */
-    @Nullable public CacheOperationContext enter(@Nullable CacheOperationContext opCtx, boolean checkAtomicOpsInTx) {
         try {
             GridCacheAdapter<K, V> cache = ctx.cache();
 
@@ -199,7 +190,7 @@ public class GridCacheGateway<K, V> {
                 ctx.name() + "]", e);
         }
 
-        onEnter(checkAtomicOpsInTx ? opCtx : null);
+        onEnter(opCtx);
 
         Lock lock = rwLock.readLock();
 
