@@ -2872,6 +2872,8 @@ public class GridNioServer<T> {
         private void accept() throws IgniteCheckedException {
             try {
                 while (!closed && selector.isOpen() && !Thread.currentThread().isInterrupted()) {
+                    updateHeartbeat();
+
                     // Wake up every 2 seconds to check if closed.
                     if (selector.select(2000) > 0)
                         // Walk through the ready keys collection and process date requests.
