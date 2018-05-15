@@ -19,7 +19,7 @@ export default [() => {
     /**
      * @param {Number} t Time in ms.
      */
-    return (t, dflt = '') => {
+    return (t, dflt = '0') => {
         if (t === 9223372036854775807)
             return 'Infinite';
 
