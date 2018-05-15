@@ -19,13 +19,11 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
-import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.util.GridDebug;
+import org.apache.ignite.internal.util.typedef.internal.D;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -37,52 +35,37 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
     /** */
-    private static final int ONE_MEGABYTE = 1024 * 1024;
+    private static final int PAGE_SIZE = 4 * 1024;
 
     /** */
-    private static final int PAGE_SIZE = 10 * ONE_MEGABYTE;
+    private static final int MAX_MEMORY_SIZE = 10 * 1024 * 1024;
 
-    /** */
-    private static final int MAX_MEMORY_SIZE = 100 * ONE_MEGABYTE;
-
-    /** Allow 1Mb leaks. */
-    private static final int ALLOW_LEAK_IN_MB = 1;
+    /** Allow delta between GC executions. */
+    private static final int ALLOWED_DELTA = 10 * 1024 * 1024;
 
     /**
      * @throws Exception If failed.
      */
     public void testPageDoubleInitMemoryLeak() throws Exception {
-        long startedVMSize = GridDebug.getCommittedVirtualMemorySize() / ONE_MEGABYTE;
+        long initVMsize = D.getCommittedVirtualMemorySize();
 
         for (int i = 0; i < 1_000; i++) {
             final DirectMemoryProvider provider = new UnsafeMemoryProvider(log());
 
-            final DirectMemoryRegion[] regions = {null};
+            final DataRegionConfiguration plcCfg = new DataRegionConfiguration()
+                .setMaxSize(MAX_MEMORY_SIZE).setInitialSize(MAX_MEMORY_SIZE);
 
-            PageMemory mem = memory(new DirectMemoryProvider() {
-                /** {@inheritDoc} */
-                @Override public void initialize(long[] chunkSizes) {
-                    provider.initialize(chunkSizes);
-                }
-
-                /** {@inheritDoc} */
-                @Override public void shutdown() {
-                    provider.shutdown();
-                }
-
-                /** {@inheritDoc} */
-                @Override public DirectMemoryRegion nextRegion() {
-                    regions[0] = provider.nextRegion();
-                    return regions[0];
-                }
-            });
+            PageMemory mem = new PageMemoryNoStoreImpl(
+                log(),
+                provider,
+                null,
+                PAGE_SIZE,
+                plcCfg,
+                new DataRegionMetricsImpl(plcCfg),
+                true);
 
             try {
                 mem.start();
-
-                // Fill allocated memory random bytes
-                for (int j = 0; j < PAGE_SIZE; j++)
-                    PageUtils.putByte(regions[0].address(), j, (byte)255);
 
                 //Second initialization, introduces leak
                 mem.start();
@@ -91,27 +74,9 @@ public class PageMemoryNoStoreLeakTest extends GridCommonAbstractTest {
                 mem.stop();
             }
 
-            long committedVMSize = GridDebug.getCommittedVirtualMemorySize() / ONE_MEGABYTE;
+            long committedVMSize = D.getCommittedVirtualMemorySize();
 
-            assertTrue(committedVMSize - startedVMSize <= ALLOW_LEAK_IN_MB);
+            assertTrue(committedVMSize - initVMsize <= ALLOWED_DELTA);
         }
-    }
-
-    /**
-     * @param provider Memory provider e.g {@link UnsafeMemoryProvider}
-     * @return Page memory implementation.
-     */
-    private PageMemory memory(DirectMemoryProvider provider) {
-        DataRegionConfiguration plcCfg = new DataRegionConfiguration()
-            .setMaxSize(MAX_MEMORY_SIZE).setInitialSize(MAX_MEMORY_SIZE);
-
-        return new PageMemoryNoStoreImpl(
-            log(),
-            provider,
-            null,
-            PAGE_SIZE,
-            plcCfg,
-            new DataRegionMetricsImpl(plcCfg),
-            true);
     }
 }
