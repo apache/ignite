@@ -351,10 +351,12 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
         GridTestUtils.setFieldValue(srv1, "skipWrite", false);
 
-        for (int i = 0; i < 100; i++)
+        int cnt = 100 - sentMsgs % spi0.getAckSendThreshold();
+
+        for (int i = 0; i < cnt; i++)
             spi0.sendMessage(node1, new GridTestMessage(node0.id(), ++msgId, 0), ackC);
 
-        final int expMsgs = sentMsgs + 100;
+        final int expMsgs = sentMsgs + cnt;
 
         final TestListener lsnr = (TestListener)spi1.getListener();
 
