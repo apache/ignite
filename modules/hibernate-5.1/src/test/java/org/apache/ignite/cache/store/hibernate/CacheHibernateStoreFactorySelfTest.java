@@ -54,6 +54,15 @@ public class CacheHibernateStoreFactorySelfTest extends GridCommonAbstractTest {
     /** */
     static final String MODULE_PATH = "modules/hibernate-5.1/";
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        stopAllGrids();
+
+        cleanPersistenceDir();
+    }
+
     /**
      * @throws Exception If failed.
      */
