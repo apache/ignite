@@ -77,10 +77,14 @@ public class ReplicatedSqlTest extends BaseSqlTest {
                     (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
                     (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
 
-                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
-                assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result.", actIdxOnOff.values(), exp);
-                assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result.", actIdxOffOn.values(), exp);
-                assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result.", actIdxOffOff.values(), exp);
+                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOnOn.values(), exp);
+                assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOnOff.values(), exp);
+                assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOffOn.values(), exp);
+                assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOffOff.values(), exp);
             });
         });
     }
@@ -114,10 +118,14 @@ public class ReplicatedSqlTest extends BaseSqlTest {
                     (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
                     (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
 
-                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
-                assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result.", actIdxOnOff.values(), exp);
-                assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result.", actIdxOffOn.values(), exp);
-                assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result.", actIdxOffOff.values(), exp);
+                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOnOn.values(), exp);
+                assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOnOff.values(), exp);
+                assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOffOn.values(), exp);
+                assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOffOff.values(), exp);
             });
         });
     }
@@ -165,10 +173,14 @@ public class ReplicatedSqlTest extends BaseSqlTest {
                     (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
                     (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
 
-                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
-                assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result.", actIdxOnOff.values(), exp);
-                assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result.", actIdxOffOn.values(), exp);
-                assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result.", actIdxOffOff.values(), exp);
+                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOnOn.values(), exp);
+                assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOnOff.values(), exp);
+                assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOffOn.values(), exp);
+                assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOffOff.values(), exp);
             });
         });
     }
@@ -194,10 +206,14 @@ public class ReplicatedSqlTest extends BaseSqlTest {
                     (addr, dep) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
                     (addr, dep) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
 
-                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
-                assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result.", actIdxOnOff.values(), exp);
-                assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result.", actIdxOffOn.values(), exp);
-                assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result.", actIdxOffOff.values(), exp);
+                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOnOn.values(), exp);
+                assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOnOff.values(), exp);
+                assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOffOn.values(), exp);
+                assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOffOff.values(), exp);
             });
         });
     }
@@ -245,10 +261,14 @@ public class ReplicatedSqlTest extends BaseSqlTest {
                     (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
                     (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
 
-                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
-                assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result.", actIdxOnOff.values(), exp);
-                assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result.", actIdxOffOn.values(), exp);
-                assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result.", actIdxOffOff.values(), exp);
+                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOnOn.values(), exp);
+                assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOnOff.values(), exp);
+                assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOffOn.values(), exp);
+                assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOffOff.values(), exp);
             });
         });
     }
@@ -274,10 +294,14 @@ public class ReplicatedSqlTest extends BaseSqlTest {
                     (addr, dep) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
                     (addr, dep) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
 
-                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
-                assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result.", actIdxOnOff.values(), exp);
-                assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result.", actIdxOffOn.values(), exp);
-                assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result.", actIdxOffOff.values(), exp);
+                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOnOn.values(), exp);
+                assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOnOff.values(), exp);
+                assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOffOn.values(), exp);
+                assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result. " +
+                    "Preserve join order = " + forceOrder + ".", actIdxOffOff.values(), exp);
             });
         });
     }

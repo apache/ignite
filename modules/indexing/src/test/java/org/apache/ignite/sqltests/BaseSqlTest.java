@@ -958,7 +958,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param depTab name of the department table.
      */
     public void checkInnerJoinEmployeeDepartment(String depTab) {
-        Arrays.asList(true, false).forEach( forceOrd -> {
+        Arrays.asList(true, false).forEach(forceOrd -> {
             testAllNodes(node -> {
                 String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
                     "FROM Employee e INNER JOIN " + depTab + " d " +
@@ -972,10 +972,14 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                     (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
                     (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
-                assertContainsEq("Join on idx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOn.values(), expected);
-                assertContainsEq("Join on idx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOff.values(), expected);
-                assertContainsEq("Join on noidx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOn.values(), expected);
-                assertContainsEq("Join on noidx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOff.values(), expected);
+                assertContainsEq("Join on idx = idx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOnOn.values(), expected);
+                assertContainsEq("Join on idx = noidx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOnOff.values(), expected);
+                assertContainsEq("Join on noidx = idx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOffOn.values(), expected);
+                assertContainsEq("Join on noidx = noidx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOffOff.values(), expected);
             });
         });
     }
@@ -993,7 +997,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param depTab department table name.
      */
     public void checkInnerJoinDepartmentEmployee(String depTab) {
-        Arrays.asList(true, false).forEach( forceOrd -> {
+        Arrays.asList(true, false).forEach(forceOrd -> {
             testAllNodes(node -> {
                 String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
                     "FROM " + depTab + " d INNER JOIN Employee e " +
@@ -1007,10 +1011,14 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                     (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
                     (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
-                assertContainsEq("Join on idx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOn.values(), expected);
-                assertContainsEq("Join on idx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOff.values(), expected);
-                assertContainsEq("Join on noidx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOn.values(), expected);
-                assertContainsEq("Join on noidx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOff.values(), expected);
+                assertContainsEq("Join on idx = idx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOnOn.values(), expected);
+                assertContainsEq("Join on idx = noidx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOnOff.values(), expected);
+                assertContainsEq("Join on noidx = idx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOffOn.values(), expected);
+                assertContainsEq("Join on noidx = noidx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOffOff.values(), expected);
             });
         });
     }
@@ -1021,7 +1029,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param depTab department table name.
      */
     public void checkLeftJoinEmployeeDepartment(String depTab) {
-        Arrays.asList(true, false).forEach( forceOrd -> {
+        Arrays.asList(true, false).forEach(forceOrd -> {
             testAllNodes(node -> {
                 String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
                     "FROM Employee e LEFT JOIN " + depTab + " d " +
@@ -1035,10 +1043,14 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                     (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
                     (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
-                assertContainsEq("Join on idx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOn.values(), expected);
-                assertContainsEq("Join on idx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOff.values(), expected);
-                assertContainsEq("Join on noidx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOn.values(), expected);
-                assertContainsEq("Join on noidx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOff.values(), expected);
+                assertContainsEq("Join on idx = idx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOnOn.values(), expected);
+                assertContainsEq("Join on idx = noidx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOnOff.values(), expected);
+                assertContainsEq("Join on noidx = idx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOffOn.values(), expected);
+                assertContainsEq("Join on noidx = noidx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOffOff.values(), expected);
             });
         });
     }
@@ -1049,7 +1061,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param depTab department table name.
      */
     public void checkLeftJoinDepartmentEmployee(String depTab) {
-        Arrays.asList(true, false).forEach( forceOrd -> {
+        Arrays.asList(true, false).forEach(forceOrd -> {
             testAllNodes(node -> {
                 String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
                     "FROM " + depTab + " d LEFT JOIN Employee e " +
@@ -1064,10 +1076,14 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                     (dep, emp) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
                     (dep, emp) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
-                assertContainsEq("Join on idx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOn.values(), expected);
-                assertContainsEq("Join on idx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOff.values(), expected);
-                assertContainsEq("Join on noidx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOn.values(), expected);
-                assertContainsEq("Join on noidx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOff.values(), expected);
+                assertContainsEq("Join on idx = idx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOnOn.values(), expected);
+                assertContainsEq("Join on idx = noidx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOnOff.values(), expected);
+                assertContainsEq("Join on noidx = idx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOffOn.values(), expected);
+                assertContainsEq("Join on noidx = noidx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOffOff.values(), expected);
             });
         });
     }
@@ -1085,7 +1101,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param depTab department table name.
      */
     public void checkRightJoinEmployeeDepartment(String depTab) {
-        Arrays.asList(true, false).forEach( forceOrd -> {
+        Arrays.asList(true, false).forEach(forceOrd -> {
             testAllNodes(node -> {
                 String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
                     "FROM Employee e RIGHT JOIN " + depTab + " d " +
@@ -1099,10 +1115,14 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                     (emp, dep) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
                     (emp, dep) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
-                assertContainsEq("Join on idx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOn.values(), expected);
-                assertContainsEq("Join on idx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOff.values(), expected);
-                assertContainsEq("Join on noidx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOn.values(), expected);
-                assertContainsEq("Join on noidx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOff.values(), expected);
+                assertContainsEq("Join on idx = idx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOnOn.values(), expected);
+                assertContainsEq("Join on idx = noidx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOnOff.values(), expected);
+                assertContainsEq("Join on noidx = idx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOffOn.values(), expected);
+                assertContainsEq("Join on noidx = noidx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOffOff.values(), expected);
             });
         });
     }
@@ -1113,7 +1133,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param depTab department table name.
      */
     public void checkRightJoinDepartmentEmployee(String depTab) {
-        Arrays.asList(true, false).forEach( forceOrd -> {
+        Arrays.asList(true, false).forEach(forceOrd -> {
             testAllNodes(node -> {
                 String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
                     "FROM " + depTab + " d RIGHT JOIN Employee e " +
@@ -1129,10 +1149,14 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                     (dep, emp) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
                     (dep, emp) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
 
-                assertContainsEq("Join on idx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOn.values(), expected);
-                assertContainsEq("Join on idx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOff.values(), expected);
-                assertContainsEq("Join on noidx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOn.values(), expected);
-                assertContainsEq("Join on noidx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOff.values(), expected);
+                assertContainsEq("Join on idx = idx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOnOn.values(), expected);
+                assertContainsEq("Join on idx = noidx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOnOff.values(), expected);
+                assertContainsEq("Join on noidx = idx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOffOn.values(), expected);
+                assertContainsEq("Join on noidx = noidx is incorrect. " +
+                    "Preserve join order = " + forceOrd + ".", actIdxOffOff.values(), expected);
             });
         });
     }
@@ -1216,7 +1240,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param tpl query template in java format.
      * @param args arguments for the template.
      */
-    static SqlFieldsQuery joinQry(boolean enforceJoinOrder, String tpl, Object... args){
+    static SqlFieldsQuery joinQry(boolean enforceJoinOrder, String tpl, Object... args) {
         return new SqlFieldsQuery(String.format(tpl, args)).setEnforceJoinOrder(enforceJoinOrder);
     }
 
@@ -1228,7 +1252,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
      * @param tpl query template in java format.
      * @param args arguments for the template.
      */
-    static SqlFieldsQuery distributedJoinQry(boolean enforceJoinOrder, String tpl, Object... args){
+    static SqlFieldsQuery distributedJoinQry(boolean enforceJoinOrder, String tpl, Object... args) {
         return joinQry(enforceJoinOrder, tpl, args).setDistributedJoins(true);
     }
 }
