@@ -267,12 +267,22 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
      * @throws IgniteCheckedException If fails;
      */
     public void updateState(MvccVersion ver, byte state) throws IgniteCheckedException {
+        updateState(ver, state, true);
+    }
+
+    /**
+     * @param ver Version.
+     * @param state State.
+     * @param primary Flag if this is primary node.
+     * @throws IgniteCheckedException If fails;
+     */
+    public void updateState(MvccVersion ver, byte state, boolean primary) throws IgniteCheckedException {
         TxKey key = new TxKey(ver.coordinatorVersion(), ver.counter());
         List<LockFuture> waiting;
 
-        txLog.put(key, state);
+        txLog.put(key, state, primary);
 
-        if ((state == TxState.ABORTED || state == TxState.COMMITTED)
+        if (primary && (state == TxState.ABORTED || state == TxState.COMMITTED)
                 && (waiting = waitList.remove(key)) != null) {
             for (LockFuture fut0 : waiting)
                 complete(fut0);

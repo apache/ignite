@@ -486,12 +486,21 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
             tx.rollback();
         }
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), cache.get(1));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2), cache.get(2));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), cache.get(3));
-        assertEquals(null, cache.get(4));
-        assertEquals(null, cache.get(5));
-        assertEquals(null, cache.get(6));
+        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), sqlGet(1, cache).get(0).get(0));
+        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2), sqlGet(2, cache).get(0).get(0));
+        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), sqlGet(3, cache).get(0).get(0));
+        assertTrue(sqlGet(4, cache).isEmpty());
+        assertTrue(sqlGet(5, cache).isEmpty());
+        assertTrue(sqlGet(6, cache).isEmpty());
+    }
+
+    /**
+     * @param key Key.
+     * @param cache Cache.
+     * @return Result.
+     */
+    private List<List> sqlGet(int key, IgniteCache cache) {
+        return cache.query(new SqlFieldsQuery("SELECT _val from MvccTestSqlIndexValue WHERE _key=" + key)).getAll();
     }
 
     /**

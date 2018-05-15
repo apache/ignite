@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
@@ -276,6 +277,12 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         info.version(version());
 
         return info;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public List<GridCacheEntryInfo> allVersionsInfo()
+        throws IgniteCheckedException {
+        return null;
     }
 
     /** {@inheritDoc} */

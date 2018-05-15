@@ -1326,7 +1326,7 @@ public class IgniteTxHandler {
             }
             else {
                 tx.doneRemote(req.baseVersion(), null, null, null);
-
+                tx.mvccInfo(req.mvccInfo());
                 tx.rollbackRemoteTx();
             }
         }

@@ -365,7 +365,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCacheCompoundIdentity
                 tx.activeCachesDeploymentEnabled(),
                 false,
                 false,
-                null);
+                tx.mvccInfo());
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());

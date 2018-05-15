@@ -131,7 +131,8 @@ public class MvccUtils {
 
         byte state = cctx.shared().coordinators().state(mvccCrd, mvccCntr);
 
-        assert state == TxState.COMMITTED || state == TxState.ABORTED : state;
+        assert state == TxState.COMMITTED || state == TxState.ABORTED : "Unexpected state: " + state +
+            ", rowMvcc=" + mvccCntr + ", txMvcc=" + snapshot.counter() + ":" + snapshot.operationCounter();
 
         return state == TxState.COMMITTED;
     }

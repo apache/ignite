@@ -199,8 +199,6 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 res = mvccOpCntr == rowOpCntr ? ResultType.VERSION_FOUND :
                     removed ? ResultType.PREV_NULL : ResultType.PREV_NOT_NULL;
 
-                assert res != ResultType.VERSION_FOUND || !isFlagsSet(PRIMARY); // Can happen on backup node only
-
                 setFlags(LAST_FOUND);
             }
         }
@@ -275,7 +273,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                     resCntr = rowCntr;
                 }
                 else
-                    throw new IllegalStateException("Unexpected state: " + txState);
+                    throw new IllegalStateException("Unexpected state: " + txState + ", key=" + key +
+                    ", rowMvcc=" + rowCntr + ", txMvcc=" + mvccSnapshot.counter() + ":" + mvccSnapshot.operationCounter());
             }
         }
 

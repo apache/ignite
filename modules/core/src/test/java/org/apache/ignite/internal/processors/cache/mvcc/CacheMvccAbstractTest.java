@@ -133,6 +133,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     protected CacheConfiguration[] ccfgs;
 
     /** */
+    protected boolean disableScheduledVacuum;
+
+    /** */
     protected static final int TX_TIMEOUT = 3000;
 
     /** {@inheritDoc} */
@@ -140,6 +143,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setMvccEnabled(true);
+
+        if (disableScheduledVacuum)
+            cfg.setMvccVacuumTimeInterval(Integer.MAX_VALUE);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -301,9 +307,33 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         final boolean withRmvs,
         final ReadMode readMode,
         final WriteMode writeMode
-    )
-        throws Exception
-    {
+    ) throws Exception {
+        accountsTxReadAll(srvs, clients, cacheBackups, cacheParts, cfgC, withRmvs, readMode, writeMode, DFLT_TEST_TIME);
+    }
+
+    /**
+     * @param srvs Number of server nodes.
+     * @param clients Number of client nodes.
+     * @param cacheBackups Number of cache backups.
+     * @param cacheParts Number of cache partitions.
+     * @param cfgC Optional closure applied to cache configuration.
+     * @param withRmvs If {@code true} then in addition to puts tests also executes removes.
+     * @param readMode Read mode.
+     * @param writeMode Write mode.
+     * @param testTime Test time.
+     * @throws Exception If failed.
+     */
+    final void accountsTxReadAll(
+        final int srvs,
+        final int clients,
+        int cacheBackups,
+        int cacheParts,
+        @Nullable IgniteInClosure<CacheConfiguration> cfgC,
+        final boolean withRmvs,
+        final ReadMode readMode,
+        final WriteMode writeMode,
+        long testTime
+    ) throws Exception {
         final int ACCOUNTS = 20;
 
         final int ACCOUNT_START_VAL = 1000;
@@ -723,7 +753,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             cacheParts,
             writers,
             readers,
-            DFLT_TEST_TIME,
+            testTime,
             cfgC,
             init,
             writer,
@@ -1044,7 +1074,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private void verifyOldVersionsCleaned() throws Exception {
+    final void verifyOldVersionsCleaned() throws Exception {
         GridCompoundFuture fut = new GridCompoundFuture();
 
         // Run vacuum manually.

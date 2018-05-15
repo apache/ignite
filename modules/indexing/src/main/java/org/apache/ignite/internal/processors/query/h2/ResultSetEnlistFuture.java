@@ -4,10 +4,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistAbstractFuture;
@@ -87,9 +89,10 @@ public class ResultSetEnlistFuture extends GridDhtTxQueryEnlistAbstractFuture<Re
     }
 
     /** {@inheritDoc} */
-    @Override protected void processEntry(GridDhtCacheEntry entry, GridCacheOperation op, CacheObject val) {
+    @Override protected void processEntry(GridDhtCacheEntry entry, GridCacheOperation op,
+        GridCacheUpdateTxResult updRes, CacheObject val) throws IgniteCheckedException {
         synchronized (tx) {
-            super.processEntry(entry, op, val);
+            super.processEntry(entry, op, updRes, val);
         }
     }
 

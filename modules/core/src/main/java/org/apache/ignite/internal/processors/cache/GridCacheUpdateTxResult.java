@@ -78,6 +78,7 @@ public class GridCacheUpdateTxResult {
      * Constructor.
      *
      * @param success Success flag.
+     * @param updateCntr Update counter.
      * @param logPtr Logger WAL pointer for the update.
      */
     GridCacheUpdateTxResult(boolean success, long updateCntr, WALPointer logPtr) {

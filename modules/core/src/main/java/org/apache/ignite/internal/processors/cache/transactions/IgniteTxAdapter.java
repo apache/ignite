@@ -83,6 +83,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -259,6 +260,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** */
     protected MvccTxInfo mvccInfo;
+
+    /** Rollback finish future. */
+    @GridToStringExclude
+    private volatile IgniteInternalFuture rollbackFut;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -714,6 +719,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
+     * @return Rollback future.
+     */
+    public IgniteInternalFuture rollbackFuture() {
+        return rollbackFut;
+    }
+
+    /**
+     * @param fut Rollback future.
+     */
+    public void rollbackFuture(IgniteInternalFuture fut) {
+        rollbackFut = fut;
+    }
+
+    /**
      * Gets remaining allowed transaction time.
      *
      * @return Remaining transaction time. {@code 0} if timeout isn't specified. {@code -1} if time is out.
@@ -1147,8 +1166,34 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         }
 
                         try {
-                            if (!cctx.localNode().isClient())
-                                cctx.coordinators().updateState(snapshot, txState);
+                            if (!cctx.localNode().isClient()) {
+                                if (remote())
+                                    cctx.coordinators().updateState(snapshot, txState, false);
+                                else if (local()) {
+                                    IgniteInternalFuture rollbackFut = rollbackFuture();
+
+                                    boolean syncUpdate = txState == TxState.PREPARED || txState == TxState.COMMITTED ||
+                                        rollbackFut == null || rollbackFut.isDone();
+
+                                    if (syncUpdate)
+                                        cctx.coordinators().updateState(snapshot, txState);
+                                    else {
+                                        assert txState == TxState.ABORTED && rollbackFut != null;
+
+                                        // If tx was aborted, we need to wait tx log is updated on all backups.
+                                        rollbackFut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
+                                            @Override public void apply(IgniteInternalFuture fut) {
+                                                try {
+                                                    cctx.coordinators().updateState(snapshot, txState);
+                                                }
+                                                catch (IgniteCheckedException e) {
+                                                    U.error(log, "Failed to log TxState: " + txState, e);
+                                                }
+                                            }
+                                        });
+                                    }
+                                }
+                            }
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to log TxState: " + txState, e);

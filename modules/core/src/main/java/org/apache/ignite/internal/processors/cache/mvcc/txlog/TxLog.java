@@ -39,11 +39,14 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageParti
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
+import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_COUNTER_NA;
 
 /**
  *
@@ -213,9 +216,10 @@ public class TxLog implements DbCheckpointListener {
      *
      * @param key TxKey.
      * @param state  Transaction state for given version.
+     * @param primary Flag if this is a primary node.
      * @throws IgniteCheckedException If failed.
      */
-    public void put(TxKey key, byte state) throws IgniteCheckedException {
+    public void put(TxKey key, byte state, boolean primary) throws IgniteCheckedException {
         Sync sync = syncObject(key);
 
         try {
@@ -223,7 +227,7 @@ public class TxLog implements DbCheckpointListener {
 
             try {
                 synchronized (sync) {
-                    tree.putx(new TxRow(key.major(), key.minor(), state));
+                    tree.invoke(key, null, new TxLogUpdateClosure(key.major(), key.minor(), state, primary));
                 }
             }
             finally {
@@ -369,6 +373,211 @@ public class TxLog implements DbCheckpointListener {
         /** */
         boolean casCounter(int old, int upd) {
             return UPD.compareAndSet(this, old, upd);
+        }
+    }
+
+    /**
+     * TxLog update closure.
+     */
+    private static final class TxLogUpdateClosure implements IgniteTree.InvokeClosure<TxRow> {
+        /** */
+        private final long major;
+
+        /** */
+        private final long minor;
+
+        /** */
+        private final byte newState;
+
+        /** */
+        private final boolean primary;
+
+        /** */
+        private IgniteTree.OperationType treeOp;
+
+        /**
+         *
+         * @param major Coordinator version.
+         * @param minor Counter.
+         * @param newState New Tx newState.
+         * @param primary Flag if this is primary node.
+         */
+        TxLogUpdateClosure(long major, long minor, byte newState, boolean primary) {
+            assert major > 0 && minor > MVCC_COUNTER_NA && newState != TxState.NA;
+            this.major = major;
+            this.minor = minor;
+            this.newState = newState;
+            this.primary = primary;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void call(@Nullable TxRow row) {
+            if (row == null) {
+                valid();
+
+                return;
+            }
+
+            byte currState = row.state();
+
+            switch (currState) {
+                case TxState.NA:
+                    checkNa(currState);
+
+                    break;
+
+                case TxState.PREPARED:
+                    checkPrepared(currState);
+
+                    break;
+
+                case TxState.COMMITTED:
+                    checkCommitted(currState);
+
+                    break;
+
+                case TxState.ABORTED:
+                    checkAborted(currState);
+
+                    break;
+
+                default:
+                    throw new IllegalStateException("Unknown tx state: " + currState);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public TxRow newRow() {
+            return treeOp == IgniteTree.OperationType.PUT ? new TxRow(major, minor, newState) : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteTree.OperationType operationType() {
+            return treeOp;
+        }
+
+        /**
+         * Checks update possibility for {@code TxState.NA} tx status.
+         *
+         * @param currState Current tx state.
+         */
+        private void checkNa(byte currState) {
+            switch (newState) {
+                case TxState.ABORTED:
+                case TxState.PREPARED:
+                    valid();
+
+                    break;
+
+                case TxState.COMMITTED:
+                    invalid(currState); // TODO IGNITE-8445
+
+                    break;
+
+                default:
+                    invalid(currState);
+            }
+        }
+
+        /**
+         * Checks update possibility for {@code TxState.PREPARED} status.
+         *
+         * @param currState Current tx state.
+         */
+        private void checkPrepared(byte currState) {
+            switch (newState) {
+                case TxState.ABORTED:
+                case TxState.COMMITTED:
+                    valid();
+
+                    break;
+
+                case TxState.PREPARED:
+                    ignore();
+
+                    break;
+
+                default:
+                    invalid(currState);
+            }
+        }
+
+        /**
+         * Checks update possibility for {@code TxState.COMMITTED} status.
+         *
+         * @param currState Current tx state.
+         */
+        private void checkCommitted(byte currState) {
+            switch (newState) {
+                case TxState.COMMITTED:
+                    ignore();
+
+                    break;
+
+                case TxState.PREPARED:
+                    if (primary)
+                        ignore(); // In case when remote tx has updated the current state before.
+                    else
+                        invalid(currState);
+
+                    break;
+
+                default:
+                    invalid(currState);
+            }
+        }
+
+        /**
+         * Checks update possibility for {@code TxState.ABORTED} status.
+         *
+         * @param currState Current tx state.
+         */
+        private void checkAborted(byte currState) {
+            switch (newState) {
+                case TxState.ABORTED:
+                    ignore();
+
+                    break;
+
+                case TxState.PREPARED:
+                    if (primary)
+                        ignore(); // In case when remote tx has updated the current state before.
+                    else
+                        invalid(currState);
+
+                    break;
+
+                default:
+                    invalid(currState);
+            }
+        }
+
+        /**
+         * Action for valid tx status update.
+         */
+        private void valid() {
+            assert treeOp == null;
+
+            treeOp = IgniteTree.OperationType.PUT;
+        }
+
+        /**
+         * Action for invalid tx status update.
+         */
+        private void invalid(byte currState) {
+            assert treeOp == null;
+
+            throw new IllegalStateException("Unexpected new transaction state. [currState=" +
+                currState +  ", newState=" + newState +  ", cntr=" + minor +']');
+        }
+
+        /**
+         * Action for ignoring tx status update.
+         */
+        private void ignore() {
+            assert treeOp == null;
+
+            treeOp = IgniteTree.OperationType.NOOP;
         }
     }
 }

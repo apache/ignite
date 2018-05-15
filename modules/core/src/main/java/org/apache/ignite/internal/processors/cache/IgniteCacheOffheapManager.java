@@ -193,6 +193,18 @@ public interface IgniteCacheOffheapManager {
         throws IgniteCheckedException;
 
     /**
+     * Returns iterator over the all row versions for the given key.
+     *
+     * @param cctx Cache context.
+     * @param key Key.
+     * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+     * @return Iterator over all versions.
+     * @throws IgniteCheckedException If failed.
+     */
+    GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx, KeyCacheObject key, Object x)
+        throws IgniteCheckedException;
+
+    /**
      * @param entry Entry.
      * @param val Value.
      * @param ver Version.
@@ -722,6 +734,18 @@ public interface IgniteCacheOffheapManager {
          * @throws IgniteCheckedException If failed.
          */
         public CacheDataRow find(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
+
+        /**
+         * Returns iterator over the all row versions for the given key.
+         *
+         * @param cctx Cache context.
+         * @param key Key.
+         * @param x Implementation specific argument, {@code null} always means that we need to return full detached data row.
+         * @return Iterator over all versions.
+         * @throws IgniteCheckedException If failed.
+         */
+        GridCursor<CacheDataRow> mvccAllVersionsCursor(GridCacheContext cctx, KeyCacheObject key, Object x)
+            throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

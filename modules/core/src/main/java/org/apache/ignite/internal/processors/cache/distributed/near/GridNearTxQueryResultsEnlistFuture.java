@@ -144,7 +144,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridCacheFutureAdapter<L
     private LockTimeoutObject timeoutObj;
 
     /** Row extracted from iterator but not yet used. */
-    private IgniteBiTuple peek;
+    private Object peek;
 
     /** Topology locked flag. */
     private boolean topLocked;
@@ -371,14 +371,21 @@ public class GridNearTxQueryResultsEnlistFuture extends GridCacheFutureAdapter<L
         boolean flush = false;
 
         while (true) {
-            IgniteBiTuple cur = (peek != null) ? peek : (it.hasNextX() ? (IgniteBiTuple)it.nextX() : null);
+            Object cur = (peek != null) ? peek : (it.hasNextX() ? it.nextX() : null);
 
             while (cur != null) {
-                ClusterNode node = cctx.affinity().primaryByKey(cur.getKey(), topVer);
+                Object key;
+
+                if (op == GridCacheOperation.DELETE || op == GridCacheOperation.READ)
+                    key = cctx.toCacheKeyObject(cur);
+                else
+                    key = cctx.toCacheKeyObject(((IgniteBiTuple)cur).getKey());
+
+                ClusterNode node = cctx.affinity().primaryByKey(key, topVer);
 
                 if (node == null)
                     throw new ClusterTopologyCheckedException("Failed to get primary node " +
-                        "[topVer=" + topVer + ", key=" + cur.getKey() + ']');
+                        "[topVer=" + topVer + ", key=" + key + ']');
 
                 Batch batch = batches.get(node.id());
 
@@ -401,16 +408,15 @@ public class GridNearTxQueryResultsEnlistFuture extends GridCacheFutureAdapter<L
 
                 peek = null;
 
-                batch.add(op == GridCacheOperation.DELETE ? cur.getKey() :
-                    new IgniteBiTuple<>(cur.getKey(), cur.getValue()));
+                batch.add(op == GridCacheOperation.DELETE ? key : cur);
 
-                cur = it.hasNextX() ? (IgniteBiTuple)it.nextX() : null;
+                cur = it.hasNextX() ? it.nextX() : null;
 
                 if (batch.size() == batchSize) {
                     batch.ready(true);
 
                     if (res == null)
-                        res = new ArrayList<>(batchSize);
+                        res = new ArrayList<>();
 
                     res.add(batch);
                 }
@@ -429,7 +435,7 @@ public class GridNearTxQueryResultsEnlistFuture extends GridCacheFutureAdapter<L
         for (Batch batch : batches.values()) {
             if (!batch.ready()) {
                 if (res == null)
-                    res = new ArrayList<>(batchSize);
+                    res = new ArrayList<>();
 
                 batch.ready(true);
 

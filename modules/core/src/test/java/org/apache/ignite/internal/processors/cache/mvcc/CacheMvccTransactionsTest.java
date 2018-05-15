@@ -550,7 +550,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             assertEquals(KEYS / 2, map.size());
 
             try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                map = checkAndGetAll(false, cache, keys, SCAN, GET);
+                map = checkAndGetAll(true, cache, keys, SCAN, GET);
 
                 for (int k = 0; k < KEYS; k++) {
                     if (k % 2 == 0)
@@ -1361,6 +1361,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_ClientServer_Backups1_RestartCoordinator_GetAll() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7991");
         putAllGetAll(RestartMode.RESTART_CRD, 4, 2, 1, 64, GET);
     }
 
@@ -1412,6 +1413,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutAllGetAll_ClientServer_Backups1_RestartCoordinator_Scan() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7991");
         putAllGetAll(RestartMode.RESTART_CRD, 4, 2, 1, 64, SCAN);
     }
 
@@ -3115,6 +3117,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testReadInProgressCoordinatorFails_ReadDelay() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7991");
         readInProgressCoordinatorFails(true, false);
     }
 
@@ -3122,6 +3125,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testReadInsideTxInProgressCoordinatorFails_ReadDelay() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7991");
         readInProgressCoordinatorFails(true, true);
     }
 
@@ -4456,7 +4460,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * And returns value in case of it's equality for all read modes.
      * Do not use in tests with writers contention.
      *
-     * // TODO remove inTx flag in IGNITE-6938
+     * // TODO remove inTx flag in IGNITE-7764
      * @param inTx Flag whether current read is inside transaction.
      * This is because reads can't see writes made in current transaction.
      * @param cache Cache.
@@ -4494,7 +4498,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     /**
      * Reads value from cache for the given key using given read mode.
      *
-     * // TODO IGNITE-6938 remove inTx flag
+     * // TODO IGNITE-7764 remove inTx flag
      * // TODO IGNITE-6739 add SQL-get support "select _key, _val from cache where _key in ... keySet"
      * @param inTx Flag whether current read is inside transaction.
      * This is because reads can't see writes made in current transaction.

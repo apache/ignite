@@ -93,7 +93,6 @@ import org.h2.command.dml.Delete;
 import org.h2.command.dml.Insert;
 import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
@@ -532,8 +531,11 @@ public class DmlStatementsProcessor {
 
                     GridCacheOperation op = cacheOperation(plan.mode());
 
-                    if (plan.fastResult())
-                        it = new DmlUpdateSingleEntryIterator<>(op, plan.getFastRow(fieldsQry.getArgs()));
+                    if (plan.fastResult()) {
+                        IgniteBiTuple row = plan.getFastRow(fieldsQry.getArgs());
+
+                        it = new DmlUpdateSingleEntryIterator<>(op, op == GridCacheOperation.DELETE ? row.getKey() : row);
+                    }
                     else if (plan.hasRows())
                         it = new DmlUpdateResultsIterator(op, plan, plan.createRows(fieldsQry.getArgs()));
                     else {
