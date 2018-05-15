@@ -133,7 +133,9 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         IgniteEx srv = startGrid(0);
         srv.active(true);
 
-        fillCache(srv.cache(CACHE));
+        IgniteCache<Integer, String> cache = srv.cache(CACHE);
+
+        fillCache(cache);
 
         if (restartGrid) {
             stopGrid(0);
@@ -141,7 +143,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             srv.active(true);
         }
 
-        final IgniteCache<Integer, String> cache = srv.cache(CACHE);
+        cache = srv.cache(CACHE);
 
         pringStatistics((IgniteCacheProxy)cache, "After restart from LFS");
 
@@ -157,12 +159,14 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         IgniteEx srv = startGrid(0);
         srv.active(true);
 
-        fillCache(srv.cache(CACHE));
+        IgniteCache<Integer, String> cache = srv.cache(CACHE);
+
+        fillCache(cache);
 
         //causes rebalancing start
         srv = startGrid(1);
 
-        final IgniteCache<Integer, String> cache = srv.cache(CACHE);
+        cache = srv.cache(CACHE);
 
         pringStatistics((IgniteCacheProxy)cache, "After rebalancing start");
 

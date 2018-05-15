@@ -215,15 +215,11 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                         continue;
                     }
 
-                    entry.lockEntry();
-                    try {
+                    synchronized (entry) {
                         if (processRow(pageMemory, grp, row))
                             processedEntriesCnt++;
                         else
                             skippedEntries++;
-                    }
-                    finally {
-                        entry.unlockEntry();
                     }
 
                     oldPendingEntries.removex(row);
