@@ -200,7 +200,6 @@ public abstract class PageIO {
     /** */
     public static final short T_DATA_REF_METASTORAGE_LEAF = 23;
 
-
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10000;
 
@@ -224,8 +223,8 @@ public abstract class PageIO {
      * @param ver Page format version.
      */
     protected PageIO(int type, int ver) {
-        assert ver > 0 && ver < 65535: ver;
-        assert type > 0 && type < 65535: type;
+        assert ver > 0 && ver < 65535 : ver;
+        assert type > 0 && type < 65535 : type;
 
         this.type = type;
         this.ver = ver;
@@ -254,7 +253,7 @@ public abstract class PageIO {
     public static void setType(long pageAddr, int type) {
         PageUtils.putShort(pageAddr, TYPE_OFF, (short)type);
 
-        assert getType(pageAddr) == type;
+        assert getType(pageAddr) == type : getType(pageAddr);
     }
 
     /**
@@ -277,7 +276,7 @@ public abstract class PageIO {
      * @param pageAddr Page address.
      * @param ver Version.
      */
-    private static void setVersion(long pageAddr, int ver) {
+    protected static void setVersion(long pageAddr, int ver) {
         PageUtils.putShort(pageAddr, VER_OFF, (short)ver);
 
         assert getVersion(pageAddr) == ver;
@@ -607,7 +606,7 @@ public abstract class PageIO {
      * @param pageSize Page size.
      * @param sb Sb.
      */
-    protected abstract void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException ;
+    protected abstract void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException;
 
     /**
      * @param addr Address.

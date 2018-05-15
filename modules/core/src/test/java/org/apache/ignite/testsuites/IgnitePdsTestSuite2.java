@@ -20,11 +20,13 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteDataStorageMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTest2;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedCacheDataTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCorruptedStoreTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsExchangeDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPageSizesTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPartitionFilesTruncateTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeChangeDuringRebalancingSelfTest;
@@ -88,7 +90,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         // Rebalancing test
         suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
-        suite.addTestSuite(IgnitePdsContinuousRestartTest2.class);
+        suite.addTestSuite(IgnitePdsContinuousRestartTestWithExpiryPolicy.class);
 
         suite.addTestSuite(IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class);
 
@@ -104,13 +106,14 @@ public class IgnitePdsTestSuite2 extends TestSuite {
     public static void addRealPageStoreTests(TestSuite suite) {
         suite.addTestSuite(IgnitePdsPageSizesTest.class);
 
+        suite.addTestSuite(IgnitePdsPartitionFilesTruncateTest.class);
+
         // Metrics test.
         suite.addTestSuite(IgniteDataStorageMetricsSelfTest.class);
 
         suite.addTestSuite(IgnitePdsRebalancingOnNotStableTopologyTest.class);
 
         suite.addTestSuite(IgnitePdsWholeClusterRestartTest.class);
-
 
         // Rebalancing test
         suite.addTestSuite(IgniteWalHistoryReservationsTest.class);
@@ -145,5 +148,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgnitePdsCorruptedStoreTest.class);
 
         suite.addTestSuite(LocalWalModeChangeDuringRebalancingSelfTest.class);
+
+        suite.addTestSuite(IgnitePdsCorruptedCacheDataTest.class);
     }
 }
