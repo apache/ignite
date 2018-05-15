@@ -107,7 +107,17 @@ public class GridCacheGateway<K, V> {
      * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
      */
     public boolean enterIfNotStopped() {
-        onEnter();
+        return enterIfNotStopped(null);
+    }
+
+    /**
+     * Enter a cache call.
+     *
+     * @param opCtx Cache operation context.
+     * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
+     */
+    public boolean enterIfNotStopped(CacheOperationContext opCtx) {
+        onEnter(opCtx);
 
         // Must unlock in case of unexpected errors to avoid deadlocks during kernal stop.
         rwLock.readLock().lock();
@@ -121,7 +131,17 @@ public class GridCacheGateway<K, V> {
      * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
      */
     public boolean enterIfNotStoppedNoLock() {
-        onEnter();
+        return enterIfNotStoppedNoLock(null);
+    }
+
+    /**
+     * Enter a cache call without lock.
+     *
+     * @param opCtx Cache operation context.
+     * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
+     */
+    public boolean enterIfNotStoppedNoLock(CacheOperationContext opCtx) {
+        onEnter(opCtx);
 
         return checkState(false, false);
     }
@@ -179,7 +199,7 @@ public class GridCacheGateway<K, V> {
                 ctx.name() + "]", e);
         }
 
-        onEnter();
+        onEnter(checkAtomicOpsInTx ? opCtx : null);
 
         Lock lock = rwLock.readLock();
 
@@ -190,9 +210,6 @@ public class GridCacheGateway<K, V> {
         // Must unlock in case of unexpected errors to avoid
         // deadlocks during kernal stop.
         try {
-            if (checkAtomicOpsInTx)
-                checkAtomicOpsInTx(opCtx);
-
             return setOperationContextPerCall(opCtx);
         }
         catch (Throwable e) {
@@ -207,11 +224,9 @@ public class GridCacheGateway<K, V> {
      * @return Previous operation context set on this thread.
      */
     @Nullable public CacheOperationContext enterNoLock(@Nullable CacheOperationContext opCtx) {
-        onEnter();
+        onEnter(opCtx);
 
         checkState(false, false);
-
-        checkAtomicOpsInTx(opCtx);
 
         return setOperationContextPerCall(opCtx);
     }
@@ -258,13 +273,16 @@ public class GridCacheGateway<K, V> {
     }
 
     /**
-     *
+     * @param opCtx Cache operation context.
      */
-    private void onEnter() {
+    private void onEnter(CacheOperationContext opCtx) {
         ctx.itHolder().checkWeakQueue();
 
         if (ctx.deploymentEnabled())
             ctx.deploy().onEnter();
+
+        if (opCtx != null)
+            checkAtomicOpsInTx(opCtx);
     }
 
     /**
