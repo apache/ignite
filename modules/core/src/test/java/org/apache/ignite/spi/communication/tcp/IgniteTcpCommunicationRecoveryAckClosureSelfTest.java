@@ -301,7 +301,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
         final GridNioServer srv1 = U.field(spi1, "nioSrvr");
 
         // For prevent session close on write timeout.
-        srv1.writeTimeout(60_000);
+        srv1.writeTimeout(10_000);
 
         final AtomicInteger ackMsgs = new AtomicInteger(0);
 
