@@ -26,7 +26,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -36,22 +35,26 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 
-/**
- */
+/** */
 public class IgniteCachePartitionedColumnConstraintsTest extends GridCommonAbstractTest {
+    /** */
     private static final long FUT_TIMEOUT = 10_000L;
-    
-    public IgniteBiTuple<String, String> tooLongVal = t("3", "123456");
 
-    public IgniteBiTuple<String, String> tooLongKey = t("123456", "2");
+    /** */
+    private IgniteBiTuple<String, String> tooLongVal = t("3", "123456");
 
-    public IgniteBiTuple<Organization, Address> tooLongVal2 = t(new Organization("3"), new Address("123456"));
+    /** */
+    private IgniteBiTuple<String, String> tooLongKey = t("123456", "2");
 
-    public IgniteBiTuple<Organization, Address> tooLongKey2 = t(new Organization("123456"), new Address("2"));
+    /** */
+    private IgniteBiTuple<Organization, Address> tooLongVal2 = t(new Organization("3"), new Address("123456"));
+
+    /** */
+    private IgniteBiTuple<Organization, Address> tooLongKey2 = t(new Organization("123456"), new Address("2"));
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        IgniteEx ignite = startGrid(0);
+        startGrid(0);
 
         Map<String, Integer> strStrMaxLengthInfo = new HashMap<>();
 
@@ -273,6 +276,7 @@ public class IgniteCachePartitionedColumnConstraintsTest extends GridCommonAbstr
         replace3(jcache(0, "ORG_ADDRESS"), tooLongVal2.getKey(), new Address("1"), tooLongVal2.getValue());
     }
 
+    /** */
     private <K, V> void put(IgniteCache<K, V> cache, final Map.Entry<K, V> entry) {
         GridTestUtils.assertThrowsWithCause(() -> {
             if (async())
@@ -284,6 +288,7 @@ public class IgniteCachePartitionedColumnConstraintsTest extends GridCommonAbstr
         }, IgniteException.class);
     }
 
+    /** */
     private <K, V> void putIfAbsent(IgniteCache<K, V> cache, final Map.Entry<K, V> entry) {
         GridTestUtils.assertThrowsWithCause(() -> {
             if (async())
@@ -295,6 +300,7 @@ public class IgniteCachePartitionedColumnConstraintsTest extends GridCommonAbstr
         }, IgniteException.class);
     }
 
+    /** */
     private <K, V> void getAndPut(IgniteCache<K, V> cache, final Map.Entry<K, V> entry) {
         GridTestUtils.assertThrowsWithCause(() -> {
             if (async())
@@ -306,6 +312,7 @@ public class IgniteCachePartitionedColumnConstraintsTest extends GridCommonAbstr
         }, IgniteException.class);
     }
 
+    /** */
     private <K, V> void getAndPutIfAbsent(IgniteCache<K, V> cache, final Map.Entry<K, V> entry) {
         GridTestUtils.assertThrowsWithCause(() -> {
             if (async())
@@ -317,6 +324,7 @@ public class IgniteCachePartitionedColumnConstraintsTest extends GridCommonAbstr
         }, IgniteException.class);
     }
 
+    /** */
     private <K, V> void replace(IgniteCache<K, V> cache, final K key, V okVal, V errorVal) {
         cache.put(key, okVal);
 
@@ -329,7 +337,8 @@ public class IgniteCachePartitionedColumnConstraintsTest extends GridCommonAbstr
             return 0;
         }, IgniteException.class);
     }
-    
+
+    /** */
     private <K, V> void getAndReplace(IgniteCache<K, V> cache, final K key, V okVal, V errorVal) {
         cache.put(key, okVal);
 
@@ -343,6 +352,7 @@ public class IgniteCachePartitionedColumnConstraintsTest extends GridCommonAbstr
         }, IgniteException.class);
     }
 
+    /** */
     private <K, V> void replace3(IgniteCache<K, V> cache, final K key, V okVal, V errorVal) {
         cache.put(key, okVal);
 
@@ -356,6 +366,7 @@ public class IgniteCachePartitionedColumnConstraintsTest extends GridCommonAbstr
         }, IgniteException.class);
     }
 
+    /** */
     private <K, V> void putAll(IgniteCache<K, V> cache, final Map<K, V> entries) {
         GridTestUtils.assertThrowsWithCause(() -> {
             if (async())
@@ -383,10 +394,12 @@ public class IgniteCachePartitionedColumnConstraintsTest extends GridCommonAbstr
         return cache;
     }
 
+    /** */
     @NotNull protected CacheMode cacheMode() {
         return PARTITIONED;
     }
-    
+
+    /** */
     protected boolean async() {
         return false;
     }
