@@ -78,7 +78,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     /** Number of departments that don't have employees and addresses. */
     public final static long FREE_DEP_CNT = 5;
 
-    /** Number of conferences that don't have participants. */
+    /** Number of adderesses that are not associated with any departments. */
     public final static long FREE_ADDR_CNT = 30;
 
     /** Number of possible age values (width of ages values range). */
@@ -988,7 +988,7 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     /**
-     * The same as {@link #checkInnerJoinEmployeeDepartment(String)}, but join tables in the another order.
+     * Check LEFT JOIN with collocated data of department and employee tables.
      *
      * @param depTab department table name.
      */
@@ -1016,11 +1016,11 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Check LEFT JOIN with collocated data.
+     * Check LEFT JOIN with collocated data of employee and department tables.
      *
      * @param depTab department table name.
      */
-    public void checkLeftJoin(String depTab) {
+    public void checkLeftJoinEmployeeDepartment(String depTab) {
         Arrays.asList(true, false).forEach( forceOrd -> {
             testAllNodes(node -> {
                 String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
@@ -1042,19 +1042,49 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             });
         });
     }
+
+    /**
+     * Check LEFT JOIN with collocated data of department and employee tables.
+     *
+     * @param depTab department table name.
+     */
+    public void checkLeftJoinDepartmentEmployee(String depTab) {
+        Arrays.asList(true, false).forEach( forceOrd -> {
+            testAllNodes(node -> {
+                String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+                    "FROM " + depTab + " d LEFT JOIN Employee e " +
+                    "ON e.%s = d.%s";
+
+                Result actIdxOnOn = executeFrom(joinQry(forceOrd, qryTpl, "depId", "id"), node);
+                Result actIdxOnOff = executeFrom(joinQry(forceOrd, qryTpl, "depId", "idNoidx"), node);
+                Result actIdxOffOn = executeFrom(joinQry(forceOrd, qryTpl, "depIdNoidx", "id"), node);
+                Result actIdxOffOff = executeFrom(joinQry(forceOrd, qryTpl, "depIdNoidx", "idNoidx"), node);
+
+                List<List<Object>> expected = doLeftJoin(node.cache(cacheName(depTab)), node.cache(EMP_CACHE_NAME),
+                    (dep, emp) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
+                    (dep, emp) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
+
+                assertContainsEq("Join on idx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOn.values(), expected);
+                assertContainsEq("Join on idx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOff.values(), expected);
+                assertContainsEq("Join on noidx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOn.values(), expected);
+                assertContainsEq("Join on noidx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOff.values(), expected);
+            });
+        });
+    }
+
     /**
      * Check LEFT JOIN with collocated data.
      */
     public void testLeftJoin() {
-        checkLeftJoin(DEP_TAB);
+        checkLeftJoinEmployeeDepartment(DEP_TAB);
     }
 
     /**
-     * Check RIGHT JOIN with collocated data.
+     * Check RIGHT JOIN with collocated data of employee and department tables.
      *
      * @param depTab department table name.
      */
-    public void checkRightJoin(String depTab) {
+    public void checkRightJoinEmployeeDepartment(String depTab) {
         Arrays.asList(true, false).forEach( forceOrd -> {
             testAllNodes(node -> {
                 String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
@@ -1076,11 +1106,42 @@ public class BaseSqlTest extends GridCommonAbstractTest {
             });
         });
     }
+
+    /**
+     * Check RIGHT JOIN with collocated data of department and employee tables.
+     *
+     * @param depTab department table name.
+     */
+    public void checkRightJoinDepartmentEmployee(String depTab) {
+        Arrays.asList(true, false).forEach( forceOrd -> {
+            testAllNodes(node -> {
+                String qryTpl = "SELECT e.id as EmpId, e.firstName as EmpName, d.id as DepId, d.name as DepName " +
+                    "FROM " + depTab + " d RIGHT JOIN Employee e " +
+                    "ON e.%s = d.%s";
+
+                Result actIdxOnOn = executeFrom(joinQry(forceOrd, qryTpl, "depId", "id"), node);
+                Result actIdxOnOff = executeFrom(joinQry(forceOrd, qryTpl, "depId", "idNoidx"), node);
+                Result actIdxOffOn = executeFrom(joinQry(forceOrd, qryTpl, "depIdNoidx", "id"), node);
+                Result actIdxOffOff = executeFrom(joinQry(forceOrd, qryTpl, "depIdNoidx", "idNoidx"), node);
+
+                // expected in reversed order.
+                List<List<Object>> expected = doRightJoin(node.cache(cacheName(depTab)), node.cache(EMP_CACHE_NAME),
+                    (dep, emp) -> sqlEq(emp.get("DEPID"), dep.get("ID")),
+                    (dep, emp) -> Arrays.asList(emp.get("ID"), emp.get("FIRSTNAME"), dep.get("ID"), dep.get("NAME")));
+
+                assertContainsEq("Join on idx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOn.values(), expected);
+                assertContainsEq("Join on idx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOnOff.values(), expected);
+                assertContainsEq("Join on noidx = idx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOn.values(), expected);
+                assertContainsEq("Join on noidx = noidx is incorrect. Preserve join order = " + forceOrd  + ".", actIdxOffOff.values(), expected);
+            });
+        });
+    }
+
     /**
      * Check RIGHT JOIN with collocated data.
      */
     public void testRightJoin() {
-        checkRightJoin(DEP_TAB);
+        checkRightJoinEmployeeDepartment(DEP_TAB);
     }
 
     /**

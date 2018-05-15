@@ -57,7 +57,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     }
 
     /**
-     * Checks distributed INNER JOIN of specified and replicated table.
+     * Checks distributed INNER JOIN of specified and replicated tables.
      *
      * @param depTab department table name.
      */
@@ -91,7 +91,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     }
 
     /**
-     * Checks distributed INNER JOIN of replicated and specified table.
+     * Checks distributed INNER JOIN of replicated and specified tables.
      *
      * @param depTab department table name.
      */
@@ -106,6 +106,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
             Result actIdxOffOn = executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depId")), node);
             Result actIdxOffOff = executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depIdNoidx")), node);
 
+            // tables order is insufficient for golden result for inner join.
             List<List<Object>> exp = doInnerJoin(node.cache(cacheName(depTab)), node.cache(ADDR_CACHE_NAME),
                 (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
                 (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
@@ -128,11 +129,19 @@ public class ReplicatedSqlTest extends BaseSqlTest {
      * Checks distributed LEFT JOIN of partitioned and replicated tables.
      */
     public void testLeftDistributedJoinPartitionedReplicated() {
+        setExplain(true);
         checkLeftDistributedJoinWithReplicated(DEP_PART_TAB);
     }
 
     /**
-     * Checks distributed LEFT JOIN of specified and replicated table.
+     * Checks distributed LEFT JOIN of replicated and partitioned tables.
+     */
+    public void testLeftDistributedJoinReplicatedPartitioned() {
+        checkLeftDistributedJoinReplicatedWith(DEP_PART_TAB);
+    }
+
+    /**
+     * Checks distributed LEFT JOIN of specified and replicated tables.
      *
      * @param depTab department table name.
      */
@@ -159,25 +168,60 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     }
 
     /**
+     * Checks distributed LEFT JOIN of specified and replicated tables.
+     *
+     * @param depTab department table name.
+     */
+    private void checkLeftDistributedJoinReplicatedWith(String depTab) {
+        testAllNodes(node -> {
+            final String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Address a LEFT JOIN " + depTab + " d " +
+                "ON d.%s = a.%s";
+
+            Result actIdxOnOn = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depId")), node);
+            Result actIdxOnOff = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depIdNoidx")), node);
+            Result actIdxOffOn = executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depId")), node);
+            Result actIdxOffOff = executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depIdNoidx")), node);
+
+            List<List<Object>> exp = doLeftJoin(node.cache(ADDR_CACHE_NAME), node.cache(cacheName(depTab)),
+                (addr, dep) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
+                (addr, dep) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
+
+            assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
+            assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result.", actIdxOnOff.values(), exp);
+            assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result.", actIdxOffOn.values(), exp);
+            assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result.", actIdxOffOff.values(), exp);
+        });
+    }
+
+    /**
      * Checks distributed RIGHT JOIN of replicated and replicated tables.
      */
     public void testRightDistributedJoinReplicatedReplicated() {
-        checkRightDistJoinWithReplicated(DEP_TAB);
+        checkRightDistributedJoinWithReplicated(DEP_TAB);
     }
 
     /**
      * Checks distributed RIGHT JOIN of partitioned and replicated tables.
      */
     public void testRightDistributedJoinPartitionedReplicated() {
-        checkRightDistJoinWithReplicated(DEP_PART_TAB);
+        checkRightDistributedJoinWithReplicated(DEP_PART_TAB);
     }
 
     /**
-     * Checks distributed RIGHT JOIN of specified and replicated table.
+     * Checks distributed RIGHT JOIN of replicated and partitioned tables.
+     */
+    public void testRightDistributedJoinReplicatedPartitioned() {
+        setExplain(true);
+        checkRightDistributedJoinReplicatedWith(DEP_PART_TAB);
+    }
+
+    /**
+     * Checks distributed RIGHT JOIN of replicated and specified tables.
      *
      * @param depTab department table name.
      */
-    public void checkRightDistJoinWithReplicated(String depTab) {
+    public void checkRightDistributedJoinWithReplicated(String depTab) {
         testAllNodes(node -> {
             final String qryTpl = "SELECT d.id, d.name, a.address " +
                 "FROM " + depTab + " d RIGHT JOIN Address a " +
@@ -200,6 +244,33 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     }
 
     /**
+     * Checks distributed RIGHT JOIN of replicated and specified tables.
+     *
+     * @param depTab department table name.
+     */
+    public void checkRightDistributedJoinReplicatedWith(String depTab) {
+        testAllNodes(node -> {
+            final String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Address a RIGHT JOIN " + depTab + " d " +
+                "ON d.%s = a.%s";
+
+            Result actIdxOnOn = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depId")), node);
+            Result actIdxOnOff = executeFrom(prepareDistJoin(String.format(qryTpl, "id", "depIdNoidx")), node);
+            Result actIdxOffOn = executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depId")), node);
+            Result actIdxOffOff = executeFrom(prepareDistJoin(String.format(qryTpl, "idNoidx", "depIdNoidx")), node);
+
+            List<List<Object>> exp = doRightJoin(node.cache(ADDR_CACHE_NAME), node.cache(cacheName(depTab)),
+                (addr, dep) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
+                (addr, dep) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
+
+            assertContainsEq("Distributed join on 'idx = idx' returned unexpected result.", actIdxOnOn.values(), exp);
+            assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result.", actIdxOnOff.values(), exp);
+            assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result.", actIdxOffOn.values(), exp);
+            assertContainsEq("Distributed join on 'noidx = noidx' returned unexpected result.", actIdxOffOff.values(), exp);
+        });
+    }
+
+    /**
      * Check INNER JOIN with collocated data of replicated and partitioned tables.
      */
     public void testInnerJoinReplicatedPartitioned() {
@@ -209,7 +280,7 @@ public class ReplicatedSqlTest extends BaseSqlTest {
     /**
      * Check INNER JOIN with collocated data of partitioned and replicated tables.
      */
-    public void testMixedInnerJoinPartitionedReplicated() {
+    public void testInnerJoinPartitionedReplicated() {
         checkInnerJoinDepartmentEmployee(DEP_PART_TAB);
     }
 
@@ -217,13 +288,27 @@ public class ReplicatedSqlTest extends BaseSqlTest {
      * Check LEFT JOIN with collocated data of replicated and partitioned tables.
      */
     public void testLeftJoinReplicatedPartitioned() {
-        checkLeftJoin(DEP_PART_TAB);
+        checkLeftJoinEmployeeDepartment(DEP_PART_TAB);
+    }
+
+    /**
+     * Check LEFT JOIN with collocated data of partitioned and replicated tables.
+     */
+    public void testLeftJoinPartitionedReplicated() {
+        checkLeftJoinDepartmentEmployee(DEP_PART_TAB);
     }
 
     /**
      * Check RIGHT JOIN with collocated data of replicated and partitioned tables.
      */
     public void testRightJoinReplicatedPartitioned() {
-        checkRightJoin(DEP_PART_TAB);
+        checkRightJoinEmployeeDepartment(DEP_PART_TAB);
+    }
+
+    /**
+     * Check RIGHT JOIN with collocated data of partitioned and replicated tables.
+     */
+    public void testRightJoinPartitionedReplicated() {
+        checkRightJoinDepartmentEmployee(DEP_PART_TAB);
     }
 }
