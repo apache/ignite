@@ -1547,7 +1547,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return false;
         }
 
-        return lock ? gate.enterIfNotStopped() : gate.enterIfNotStoppedNoLock();
+        return lock ? gate.enterIfNotStopped(null) : gate.enterIfNotStoppedNoLock(null);
     }
 
     /**

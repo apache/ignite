@@ -104,15 +104,6 @@ public class GridCacheGateway<K, V> {
     /**
      * Enter a cache call.
      *
-     * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
-     */
-    public boolean enterIfNotStopped() {
-        return enterIfNotStopped(null);
-    }
-
-    /**
-     * Enter a cache call.
-     *
      * @param opCtx Cache operation context.
      * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
      */
@@ -123,15 +114,6 @@ public class GridCacheGateway<K, V> {
         rwLock.readLock().lock();
 
         return checkState(true, false);
-    }
-
-    /**
-     * Enter a cache call without lock.
-     *
-     * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
-     */
-    public boolean enterIfNotStoppedNoLock() {
-        return enterIfNotStoppedNoLock(null);
     }
 
     /**

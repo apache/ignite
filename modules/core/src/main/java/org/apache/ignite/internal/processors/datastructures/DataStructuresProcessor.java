@@ -645,7 +645,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             @Override public Object applyx() throws IgniteCheckedException {
                 IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = ctx.cache().cache(cacheName);
 
-                if (cache != null && cache.context().gate().enterIfNotStopped()) {
+                if (cache != null && cache.context().gate().enterIfNotStopped(null)) {
                     boolean isInterrupted = Thread.interrupted();
 
                     try {
