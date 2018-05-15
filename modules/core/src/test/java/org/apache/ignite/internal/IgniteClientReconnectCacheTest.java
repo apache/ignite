@@ -73,6 +73,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -407,17 +408,21 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         final IgniteTransactions txs = client.transactions();
 
-        Transaction tx = txs.txStart(OPTIMISTIC, REPEATABLE_READ);
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                Transaction tx = txs.txStart(concurrency, isolation);
 
-        cache.put(1, 1);
+                cache.put(1, 1);
 
-        reconnectClientNode(client, srv, null);
+                reconnectClientNode(client, srv, null);
 
-        GridTestUtils.assertThrowsWithCause(() -> {
-            tx.commit();
+                GridTestUtils.assertThrowsWithCause(() -> {
+                    tx.commit();
 
-            return null;
-        }, TransactionRollbackException.class);
+                    return null;
+                }, TransactionRollbackException.class);
+            }
+        }
 
         clientMode = false;
     }
