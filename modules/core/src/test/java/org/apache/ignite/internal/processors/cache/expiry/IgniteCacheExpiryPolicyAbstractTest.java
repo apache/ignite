@@ -88,7 +88,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        // No-op.
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
