@@ -1173,18 +1173,9 @@ public class BaseSqlTest extends GridCommonAbstractTest {
                 "ON d.idNoidx = a.depIdNoidx";
 
             GridTestUtils.assertThrows(log,
-                () -> executeFrom(new SqlFieldsQuery(qry).setDistributedJoins(true), node),
+                () -> executeFrom(distributedJoinQry(false, qry), node),
                 IgniteSQLException.class, "Failed to parse query.");
         });
-    }
-
-    /**
-     * Creates new SqlFieldsQuery with enabled distributed joins and predictable join order.
-     *
-     * @param qry Sql join query.
-     */
-    protected static SqlFieldsQuery prepareDistJoin(String qry) {
-        return new SqlFieldsQuery(qry).setDistributedJoins(true).setEnforceJoinOrder(true);
     }
 
     /**
@@ -1217,8 +1208,27 @@ public class BaseSqlTest extends GridCommonAbstractTest {
     static String cacheName(String tabName) {
         return "SQL_PUBLIC_" + tabName.toUpperCase();
     }
-    
+
+    /**
+     * Creates SqlFieldsQuery with specified enforce join order flag and specified sql from template.
+     *
+     * @param enforceJoinOrder don't let engine to reorder tables in join.
+     * @param tpl query template in java format.
+     * @param args arguments for the template.
+     */
     static SqlFieldsQuery joinQry(boolean enforceJoinOrder, String tpl, Object... args){
         return new SqlFieldsQuery(String.format(tpl, args)).setEnforceJoinOrder(enforceJoinOrder);
+    }
+
+    /**
+     * Creates SqlFieldsQuery with enabled distributed joins,
+     * specified enforce join order flag and specified sql from template.
+     *
+     * @param enforceJoinOrder don't let engine to reorder tables in join.
+     * @param tpl query template in java format.
+     * @param args arguments for the template.
+     */
+    static SqlFieldsQuery distributedJoinQry(boolean enforceJoinOrder, String tpl, Object... args){
+        return joinQry(enforceJoinOrder, tpl, args).setDistributedJoins(true);
     }
 }
