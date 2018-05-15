@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -74,6 +73,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -88,7 +88,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
-import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.junit.Assert.assertNotEquals;
 
 /**
@@ -371,12 +370,6 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         assertNull(txs.tx());
 
-        assertTrue(GridTestUtils.waitForCondition(new PA() {
-            @Override public boolean apply() {
-                return tx.state() == ROLLED_BACK;
-            }
-        }, getTestTimeout()));
-
         try (Transaction tx0 = txs.txStart(OPTIMISTIC, REPEATABLE_READ)) {
             cache.put(1, 1);
 
@@ -392,6 +385,41 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
             tx0.commit();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxStateAfterClientReconnect() throws Exception {
+        clientMode = true;
+
+        IgniteEx client = startGrid(SRV_CNT);
+
+        Ignite srv = ignite(0);
+
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(1);
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(ccfg);
+
+        final IgniteTransactions txs = client.transactions();
+
+        Transaction tx = txs.txStart(OPTIMISTIC, REPEATABLE_READ);
+
+        cache.put(1, 1);
+
+        reconnectClientNode(client, srv, null);
+
+        GridTestUtils.assertThrowsWithCause(() -> {
+            tx.commit();
+
+            return null;
+        }, TransactionRollbackException.class);
+
+        clientMode = false;
     }
 
     /**
