@@ -18,8 +18,13 @@
 package org.apache.ignite.tests;
 
 import com.datastax.driver.core.SimpleStatement;
+import com.datastax.driver.core.policies.RoundRobinPolicy;
+import java.io.IOException;
+import java.net.URL;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -28,10 +33,22 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStore;
+import org.apache.ignite.cache.store.cassandra.CassandraCacheStoreFactory;
+import org.apache.ignite.cache.store.cassandra.datasource.DataSource;
+import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.tests.pojos.Person;
+import org.apache.ignite.tests.pojos.PersonId;
+import org.apache.ignite.tests.pojos.Product;
+import org.apache.ignite.tests.pojos.ProductOrder;
+import org.apache.ignite.tests.pojos.SimplePerson;
+import org.apache.ignite.tests.pojos.SimplePersonId;
 import org.apache.ignite.tests.utils.CacheStoreHelper;
 import org.apache.ignite.tests.utils.CassandraHelper;
 import org.apache.ignite.tests.utils.TestsHelper;
@@ -39,18 +56,12 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
-
-import org.apache.ignite.tests.pojos.Product;
-import org.apache.ignite.tests.pojos.ProductOrder;
-import org.apache.ignite.tests.pojos.Person;
-import org.apache.ignite.tests.pojos.SimplePerson;
-import org.apache.ignite.tests.pojos.PersonId;
-import org.apache.ignite.tests.pojos.SimplePersonId;
 
 /**
  * Unit tests for Ignite caches which utilizing {@link org.apache.ignite.cache.store.cassandra.CassandraCacheStore}
@@ -422,6 +433,105 @@ public class IgnitePersistentStoreTest {
 
             LOGGER.info("POJO strategy delete tests passed");
         }
+    }
+
+    @Test
+    public void dynamicCacheCreationTest() throws Exception {
+        Ignition.stopAll(true);
+
+        LOGGER.info("Running POJO strategy write tests for simple objects");
+
+        Map<Long, SimplePerson> personMap = new HashMap<>();
+        TestsHelper.generateSimplePersonIdsPersonsMap().forEach((key, value) -> personMap.put(key.personNum, value));
+
+        try (Ignite ignite = Ignition.start(getIgniteConfiguration("ignite1"));
+             Ignite ignite2 = Ignition.start(getIgniteConfiguration("ignite2"))) {
+            CacheConfiguration<Long, SimplePerson> dynamicCcfg = dynamicCacheConfiguration();
+
+            IgniteCache<Long, SimplePerson> cache = ignite.createCache(dynamicCcfg);
+
+            LOGGER.info("Running single operation write tests");
+
+            PersonId id = TestsHelper.generateRandomPersonId();
+            cache.put(id.getPersonNumber(), TestsHelper.generateRandomSimplePerson(id.getPersonNumber()));
+
+            LOGGER.info("Single operation write tests passed");
+
+            LOGGER.info("Running bulk operation write tests");
+            cache.putAll(personMap);
+            LOGGER.info("Bulk operation write tests passed");
+        }
+    }
+
+    @Test
+    public void dynamicCacheCreation2Test() throws Exception {
+        Ignition.stopAll(true);
+
+        LOGGER.info("Running POJO strategy write tests for simple objects");
+
+        Map<Long, SimplePerson> personMap = new HashMap<>();
+        TestsHelper.generateSimplePersonIdsPersonsMap().forEach((key, value) -> personMap.put(key.personNum, value));
+
+        CacheConfiguration<Long, SimplePerson> dynamicCcfg = dynamicCacheConfiguration();
+
+        try (Ignite srv = Ignition.start(getIgniteConfiguration("server"));
+             Ignite client = Ignition.start(getIgniteConfiguration("client")
+                 .setCacheConfiguration(dynamicCcfg).setClientMode(true))) {
+
+            IgniteCache<Long, SimplePerson> cache = client.createCache(dynamicCcfg);
+
+            LOGGER.info("Running single operation write tests");
+
+            PersonId id = TestsHelper.generateRandomPersonId();
+            cache.put(id.getPersonNumber(), TestsHelper.generateRandomSimplePerson(id.getPersonNumber()));
+
+            LOGGER.info("Single operation write tests passed");
+
+            LOGGER.info("Running bulk operation write tests");
+            cache.putAll(personMap);
+            LOGGER.info("Bulk operation write tests passed");
+        }
+    }
+
+    private IgniteConfiguration getIgniteConfiguration(String nodeName) {
+        TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder();
+
+        finder.setAddresses(Collections.singleton("127.0.0.1:47500..47509"));
+
+        TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+
+        discoverySpi.setIpFinder(finder);
+
+        return new IgniteConfiguration().setIgniteInstanceName(nodeName)
+            .setDiscoverySpi(discoverySpi);
+    }
+
+    @NotNull private CacheConfiguration<Long, SimplePerson> dynamicCacheConfiguration() throws IOException {
+        CacheConfiguration<Long, SimplePerson> dynamicCcfg = new CacheConfiguration<>("dynamicCache");
+
+        CassandraCacheStoreFactory<Long, SimplePerson> factory = new CassandraCacheStoreFactory<>();
+
+        DataSource dataSrc = new DataSource();
+        dataSrc.setContactPoints("127.0.0.1");
+        dataSrc.setReadConsistency("ONE");
+        dataSrc.setWriteConsistency("ONE");
+        dataSrc.setLoadBalancingPolicy(new RoundRobinPolicy());
+
+        URL url = getClass().getClassLoader().getResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-7.xml");
+
+        Assert.assertNotNull(url);
+
+        String persistence = U.readFileToString(url.getFile(), "UTF-8");
+
+        factory.setDataSource(dataSrc);
+        factory.setPersistenceSettings(new KeyValuePersistenceSettings(persistence));
+
+        dynamicCcfg.setCacheStoreFactory(factory);
+        dynamicCcfg.setReadThrough(true);
+        dynamicCcfg.setWriteThrough(true);
+        dynamicCcfg.setIndexedTypes(Long.class, SimplePerson.class);
+
+        return dynamicCcfg;
     }
 
     /** */
