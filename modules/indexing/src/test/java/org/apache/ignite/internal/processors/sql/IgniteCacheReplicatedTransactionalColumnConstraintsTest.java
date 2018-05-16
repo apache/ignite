@@ -21,7 +21,8 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.jetbrains.annotations.NotNull;
 
 /** */
-public class IgniteCacheReplicatedTransactionalColumnConstraintsTest extends IgniteCacheReplicatedAtomicColumnConstraintsTest {
+public class IgniteCacheReplicatedTransactionalColumnConstraintsTest 
+    extends IgniteCacheReplicatedAtomicColumnConstraintsTest {
     /** {@inheritDoc} */
     @NotNull @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.TRANSACTIONAL;

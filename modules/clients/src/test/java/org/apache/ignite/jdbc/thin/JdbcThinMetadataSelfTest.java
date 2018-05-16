@@ -595,7 +595,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             assert meta.getParameterType(1) == Types.VARCHAR;
             assert meta.isNullable(1) == ParameterMetaData.parameterNullableUnknown;
-            assert meta.getPrecision(1) == MAX_VALUE;
+            assert meta.getPrecision(1) == Integer.MAX_VALUE;
 
             assert meta.getParameterType(2) == Types.INTEGER;
             assert meta.isNullable(2) == ParameterMetaData.parameterNullableUnknown;

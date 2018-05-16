@@ -228,7 +228,7 @@ public class QueryEntityTypeDescriptor {
     }
 
     /**
-     * @return Max length info for fields.
+     * @return Maximum length info for fields.
      */
     public Map<String, Integer> maxLengthInfo() {
         return maxLengthInfo;

@@ -647,7 +647,7 @@ public class DdlStatementsProcessor {
 
                 if (dfltVal.toString().length() > maxLengthInfo.get(fld)) {
                     throw new IgniteSQLException("Default value '" + dfltVal + 
-                        "' are longer than constraint(" + maxLengthInfo.get(fld) + ")");
+                        "' are longer than maximum length " + maxLengthInfo.get(fld));
                 }
             }
 

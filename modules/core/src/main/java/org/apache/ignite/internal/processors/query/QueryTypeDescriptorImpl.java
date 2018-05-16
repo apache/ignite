@@ -536,9 +536,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
             Object propVal;
 
-            int errCode;
-            
-            boolean isKey;
+            boolean isKey = false;
 
             if (F.eq(prop.name(), keyFieldName)) {
                 propVal = key;
@@ -547,12 +545,9 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             }
             else if (F.eq(prop.name(), valFieldName)) {
                 propVal = val;
-
-                isKey = false;
             }
             else {
                 propVal = prop.value(key, val);
-                isKey = false;
             }
 
             if (propVal == null && prop.notNull()) {
