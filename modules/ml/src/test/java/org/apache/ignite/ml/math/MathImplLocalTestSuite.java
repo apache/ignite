@@ -23,7 +23,6 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrixConstructorT
 import org.apache.ignite.ml.math.impls.matrix.MatrixAttributeTest;
 import org.apache.ignite.ml.math.impls.matrix.MatrixImplementationsTest;
 import org.apache.ignite.ml.math.impls.matrix.MatrixViewConstructorTest;
-import org.apache.ignite.ml.math.impls.matrix.RandomMatrixConstructorTest;
 import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrixConstructorTest;
 import org.apache.ignite.ml.math.impls.storage.matrix.MatrixArrayStorageTest;
 import org.apache.ignite.ml.math.impls.storage.matrix.MatrixOffHeapStorageTest;
@@ -78,7 +77,6 @@ import org.junit.runners.Suite;
     // Matrix constructors tests.
     DenseLocalOnHeapMatrixConstructorTest.class,
     DenseLocalOffHeapMatrixConstructorTest.class,
-    RandomMatrixConstructorTest.class,
     MatrixViewConstructorTest.class,
     SparseLocalOnHeapMatrixConstructorTest.class,
     // Matrix tests.
