@@ -123,14 +123,14 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
     /**
      * @throws Exception If failed.
      */
-    public void testAckOnIdle() throws Exception {
+    public void t1estAckOnIdle() throws Exception {
         checkAck(10, 2000, 9);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testAckOnCount() throws Exception {
+    public void t1estAckOnCount() throws Exception {
         checkAck(10, 60_000, 10);
     }
 
