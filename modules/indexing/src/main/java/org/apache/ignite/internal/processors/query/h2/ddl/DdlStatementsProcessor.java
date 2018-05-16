@@ -635,8 +635,24 @@ public class DdlStatementsProcessor {
         if (!F.isEmpty(decimalInfo))
             res.setDecimalInfo(decimalInfo);
 
-        if (!F.isEmpty(maxLengthInfo))
+        if (!F.isEmpty(maxLengthInfo)) {
+            for (String fld : maxLengthInfo.keySet()) {
+                if (!dfltValues.containsKey(fld)) 
+                    continue;
+
+                Object dfltVal = dfltValues.get(fld);
+
+                if (dfltVal == null)
+                    continue;
+
+                if (dfltVal.toString().length() > maxLengthInfo.get(fld)) {
+                    throw new IgniteSQLException("Default value '" + dfltVal + 
+                        "' are longer than constraint(" + maxLengthInfo.get(fld) + ")");
+                }
+            }
+
             res.setMaxLengthInfo(maxLengthInfo);
+        }
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);

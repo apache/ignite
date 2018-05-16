@@ -30,83 +30,75 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
 
-        execSql("CREATE TABLE varchar_table(id INT PRIMARY KEY, str VARCHAR(5))");
+        execSQL("CREATE TABLE varchar_table(id INT PRIMARY KEY, str VARCHAR(5))");
 
-        execSql("INSERT INTO varchar_table VALUES(?, ?)", 1, "12345");
+        execSQL("INSERT INTO varchar_table VALUES(?, ?)", 1, "12345");
 
-        execSql("CREATE TABLE char_table(id INT PRIMARY KEY, str CHAR(5))");
+        execSQL("CREATE TABLE char_table(id INT PRIMARY KEY, str CHAR(5))");
 
-        execSql("INSERT INTO char_table VALUES(?, ?)", 1, "12345");
+        execSQL("INSERT INTO char_table VALUES(?, ?)", 1, "12345");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateTableWithTooLongDefault() throws Exception {
+        checkSQLThrows("CREATE TABLE too_long_default(id INT PRIMARY KEY, str CHAR(5) DEFAULT '123456')");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInsertTooLongVarchar() throws Exception {
-        GridTestUtils.assertThrowsWithCause(() -> {
-            execSql("INSERT INTO varchar_table VALUES(?, ?)", 2, "123456");
-            
-            return 0;
-        }, IgniteSQLException.class);
+        checkSQLThrows("INSERT INTO varchar_table VALUES(?, ?)", 2, "123456");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testInsertTooLongChar() throws Exception {
-        GridTestUtils.assertThrowsWithCause(() -> {
-                execSql("INSERT INTO char_table VALUES(?, ?)", 2, "123456");
-
-                return 0;
-        }, IgniteSQLException.class);
+        checkSQLThrows("INSERT INTO char_table VALUES(?, ?)", 2, "123456");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testUpdateTooLongVarchar() throws Exception {
-        GridTestUtils.assertThrowsWithCause(() -> {
-            execSql("UPDATE varchar_table SET str = ? WHERE id = ?", "123456", 1);
-
-            return 0;
-        }, IgniteSQLException.class);
+        checkSQLThrows("UPDATE varchar_table SET str = ? WHERE id = ?", "123456", 1);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testUpdateTooLongChar() throws Exception {
-        GridTestUtils.assertThrowsWithCause(() -> {
-            execSql("UPDATE char_table SET str = ? WHERE id = ?", "123456", 1);
-
-            return 0;
-        }, IgniteSQLException.class);
+        checkSQLThrows("UPDATE char_table SET str = ? WHERE id = ?", "123456", 1);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testMergeTooLongVarchar() throws Exception {
-        GridTestUtils.assertThrowsWithCause(() -> {
-            execSql("MERGE INTO varchar_table(id, str) VALUES(?, ?)", 1, "123456");
-
-            return 0;
-        }, IgniteSQLException.class);
+        checkSQLThrows("MERGE INTO varchar_table(id, str) VALUES(?, ?)", 1, "123456");
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testMergeTooLongChar() throws Exception {
+        checkSQLThrows("MERGE INTO char_table(id, str) VALUES(?, ?)", 1, "123456");
+    }
+
+    /** */
+    private void checkSQLThrows(String sql, Object... args) {
         GridTestUtils.assertThrowsWithCause(() -> {
-            execSql("MERGE INTO char_table(id, str) VALUES(?, ?)", 1, "123456");
+            execSQL(sql, args);
 
             return 0;
         }, IgniteSQLException.class);
     }
 
     /** */
-    private List<?> execSql(String sql, Object... args) {
+    private List<?> execSQL(String sql, Object... args) {
         SqlFieldsQuery qry = new SqlFieldsQuery(sql)
             .setArgs(args);
 
