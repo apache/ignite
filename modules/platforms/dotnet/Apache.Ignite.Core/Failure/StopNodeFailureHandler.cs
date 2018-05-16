@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,20 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-/**
- * Test suite for local and distributed math tests.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    MathImplLocalTestSuite.class,
-    TracerTest.class,
-    BlasTest.class
-})
-public class MathImplMainTestSuite {
-    // No-op.
+namespace Apache.Ignite.Core.Failure
+{
+    /// <summary>
+    /// Handler will stop node in case of critical error.
+    /// <para />
+    /// </summary>h
+    public class StopNodeFailureHandler : IFailureHandler
+    {
+        // No-op.
+    }
 }

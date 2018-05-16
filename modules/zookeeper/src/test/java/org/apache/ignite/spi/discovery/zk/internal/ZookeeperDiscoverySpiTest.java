@@ -118,6 +118,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi;
+import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiAbstractTestSuite;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiMBean;
 import org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpiTestSuite2;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -419,7 +420,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         if (USE_TEST_CLUSTER && zkCluster == null) {
-            zkCluster = ZookeeperDiscoverySpiTestSuite2.createTestingCluster(ZK_SRVS);
+            zkCluster = ZookeeperDiscoverySpiAbstractTestSuite.createTestingCluster(ZK_SRVS);
 
             zkCluster.start();
         }
@@ -4313,7 +4314,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 while (!stop.get() && System.currentTimeMillis() < stopTime) {
-                    U.sleep(rnd.nextLong(500) + 500);
+                    U.sleep(rnd.nextLong(2500) + 2500);
 
                     int idx = rnd.nextInt(ZK_SRVS);
 

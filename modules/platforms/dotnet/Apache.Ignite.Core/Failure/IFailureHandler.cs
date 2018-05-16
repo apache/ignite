@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -14,21 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.ml.math;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-/**
- * Test suite for local and distributed math tests.
- */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    MathImplLocalTestSuite.class,
-    TracerTest.class,
-    BlasTest.class
-})
-public class MathImplMainTestSuite {
-    // No-op.
+ 
+namespace Apache.Ignite.Core.Failure
+{
+    using System.Diagnostics.CodeAnalysis;
+    
+    /// <summary>
+    /// Failure handler interface.
+    /// <para />
+    /// Only predefined implementations are supported: 
+    /// <see cref="NoOpFailureHandler"/>, <see cref="StopNodeFailureHandler"/>, <see cref="StopNodeOrHaltFailureHandler"/>.
+    /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
+    public interface IFailureHandler
+    {
+        // No-op.   
+    }
 }

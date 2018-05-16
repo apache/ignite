@@ -790,7 +790,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
             @Override public boolean applyx() {
                 return actualCount(srvcName, g.services().serviceDescriptors())  == expectedDeps;
             }
-        }, 1500);
+        }, 12_000);
     }
 
     /**

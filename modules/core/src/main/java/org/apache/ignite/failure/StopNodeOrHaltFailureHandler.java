@@ -101,6 +101,24 @@ public class StopNodeOrHaltFailureHandler implements FailureHandler {
         return true;
     }
 
+    /**
+     * Get stop node timeout.
+     *
+     * @return Stop node timeout.
+     */
+    public long timeout() {
+        return timeout;
+    }
+
+    /**
+     * Get try stop.
+     *
+     * @return Try stop.
+     */
+    public boolean tryStop() {
+        return tryStop;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(StopNodeOrHaltFailureHandler.class, this);
