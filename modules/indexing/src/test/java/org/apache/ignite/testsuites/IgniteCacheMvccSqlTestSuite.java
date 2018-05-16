@@ -18,15 +18,20 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccBackupsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccIteratorWithConcurrentJdbcTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccLocalEntriesWithConcurrentJdbcTransactionTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedBackupsTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedSelectForUpdateQueryTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedSqlQueriesTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedSqlTxQueriesTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedSqlTxQueriesWithReducerTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedBackupsTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSelectForUpdateQueryTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSqlQueriesTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSqlTxQueriesTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSqlTxQueriesWithReducerTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccScanQueryWithConcurrentJdbcTransactionTest;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSelectForUpdateQueryTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeWithConcurrentJdbcTransactionTest;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlQueriesTest;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlTxQueriesTest;
-import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSqlTxQueriesWithReducerTest;
 
 /**
  *
@@ -42,11 +47,16 @@ public class IgniteCacheMvccSqlTestSuite extends TestSuite {
         suite.addTestSuite(CacheMvccScanQueryWithConcurrentJdbcTransactionTest.class);
         suite.addTestSuite(CacheMvccLocalEntriesWithConcurrentJdbcTransactionTest.class);
         suite.addTestSuite(CacheMvccIteratorWithConcurrentJdbcTransactionTest.class);
-        suite.addTestSuite(CacheMvccSqlQueriesTest.class);
-        suite.addTestSuite(CacheMvccSqlTxQueriesTest.class);
-        suite.addTestSuite(CacheMvccBackupsTest.class);
-        suite.addTestSuite(CacheMvccSqlTxQueriesWithReducerTest.class);
-        suite.addTestSuite(CacheMvccSelectForUpdateQueryTest.class);
+        suite.addTestSuite(CacheMvccPartitionedSqlQueriesTest.class);
+        suite.addTestSuite(CacheMvccReplicatedSqlQueriesTest.class);
+        suite.addTestSuite(CacheMvccPartitionedSqlTxQueriesTest.class);
+        suite.addTestSuite(CacheMvccReplicatedSqlTxQueriesTest.class);
+        suite.addTestSuite(CacheMvccPartitionedSqlTxQueriesWithReducerTest.class);
+        suite.addTestSuite(CacheMvccReplicatedSqlTxQueriesWithReducerTest.class);
+        suite.addTestSuite(CacheMvccPartitionedSelectForUpdateQueryTest.class);
+        suite.addTestSuite(CacheMvccReplicatedSelectForUpdateQueryTest.class);
+        suite.addTestSuite(CacheMvccPartitionedBackupsTest.class);
+        suite.addTestSuite(CacheMvccReplicatedBackupsTest.class);
 
         return suite;
     }

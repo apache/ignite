@@ -54,7 +54,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL_SUM;
@@ -67,7 +66,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests for transactional SQL.
  */
-public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
+public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
@@ -229,7 +228,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryInsertStaticCache() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(4);
@@ -274,7 +273,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryInsertStaticCacheImplicit() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(4);
@@ -304,7 +303,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryDeleteStaticCache() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(4);
@@ -350,7 +349,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryFastDeleteStaticCache() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(4);
@@ -395,7 +394,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryFastUpdateStaticCache() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(4);
@@ -440,7 +439,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryFastDeleteObjectStaticCache() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
@@ -484,7 +483,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryFastUpdateObjectStaticCache() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
@@ -528,7 +527,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryDeleteStaticCacheImplicit() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(4);
@@ -564,7 +563,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryUpdateStaticCache() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(4);
@@ -605,7 +604,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryUpdateStaticCacheImplicit() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(4);
@@ -641,7 +640,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryDeadlock() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(2);
@@ -704,7 +703,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryDeadlockImplicit() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(2);
@@ -772,7 +771,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryInsertClient() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGrid(0);
@@ -821,7 +820,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryInsertClientImplicit() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGrid(0);
@@ -855,7 +854,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryInsertSubquery() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class, Integer.class, MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
@@ -898,7 +897,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryInsertSubqueryImplicit() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class, Integer.class, MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
@@ -936,7 +935,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryUpdateSubquery() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class, Integer.class, MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
@@ -979,7 +978,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryUpdateSubqueryImplicit() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class, Integer.class, MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
@@ -1021,7 +1020,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         final int BATCH_SIZE = 1000;
         final int ROUNDS = 10;
 
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(2);
@@ -1084,7 +1083,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryInsertUpdateMultithread() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(2);
@@ -1188,7 +1187,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryInsertVersionConflict() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(2);
@@ -1253,7 +1252,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryInsertRollback() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(4);
@@ -1293,7 +1292,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryInsertUpdateSameKeys() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(4);
@@ -1334,7 +1333,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryInsertUpdateSameKeysInSameOperation() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(4);
@@ -1366,7 +1365,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryPendingUpdates() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(4);
@@ -1434,7 +1433,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testSelectProducesTransaction() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
@@ -1468,7 +1467,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testRepeatableRead() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
@@ -1519,7 +1518,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @throws Exception If failed.
      */
     public void testIterator() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGrid(getConfiguration("grid").setMvccVacuumTimeInterval(Integer.MAX_VALUE));

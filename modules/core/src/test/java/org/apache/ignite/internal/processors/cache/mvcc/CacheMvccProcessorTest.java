@@ -17,13 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
+
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
  */
 public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
+    /** {@inheritDoc} */
+    protected CacheMode cacheMode() {
+        return PARTITIONED;
+    }
 
     /**
      * @throws Exception If failed.

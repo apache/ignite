@@ -46,7 +46,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.transactions.Transaction;
 
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.DML;
@@ -57,7 +56,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Backups tests.
  */
-public class CacheMvccBackupsTest extends CacheMvccAbstractTest {
+public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest {
 
     /** Test timeout. */
     private final long txLongTimeout = getTestTimeout() / 4;
@@ -70,7 +69,7 @@ public class CacheMvccBackupsTest extends CacheMvccAbstractTest {
     public void testBackupsCoherenceSimple() throws Exception {
         disableScheduledVacuum = true;
 
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         final int KEYS_CNT = 5_000;
@@ -183,7 +182,7 @@ public class CacheMvccBackupsTest extends CacheMvccAbstractTest {
     public void testBackupsCoherenceWithLargeOperations() throws Exception {
         disableScheduledVacuum = true;
 
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 1, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         final int KEYS_CNT = 50_000;
@@ -281,7 +280,7 @@ public class CacheMvccBackupsTest extends CacheMvccAbstractTest {
 
         disableScheduledVacuum = true;
 
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 1, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 1, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         final int KEYS_CNT = 30_000;
@@ -462,7 +461,7 @@ public class CacheMvccBackupsTest extends CacheMvccAbstractTest {
         final Ignite node1 = startGrid(0);
 
         final IgniteCache<Object, Object> cache = node1.createCache(
-            cacheConfiguration(PARTITIONED, FULL_SYNC, 1, 16)
+            cacheConfiguration(cacheMode(), FULL_SYNC, 1, 16)
                 .setIndexedTypes(Integer.class, Integer.class));
 
         try (Transaction tx = node1.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {

@@ -165,6 +165,12 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T> extends GridCacheFut
     /** */
     private WALPointer walPtr;
 
+    /** Do not send DHT requests to near node. */
+    protected boolean skipNearNodeUpdates;
+
+    /** There are keys belonging to backup partitions on near node. */
+    protected boolean hasNearNodeUpdates;
+
     /**
      *
      * @param nearNodeId Near node ID.
@@ -311,9 +317,9 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T> extends GridCacheFut
                     GridCacheUpdateTxResult res;
 
                     while (true) {
-                        try {
-                            cctx.shared().database().checkpointReadLock();
+                        cctx.shared().database().checkpointReadLock();
 
+                        try {
                             switch (op) {
                                 case DELETE:
                                     res = entry.mvccRemove(
@@ -523,6 +529,15 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T> extends GridCacheFut
         for (ClusterNode node : backupNodes(key)) {
             assert !node.isLocal();
 
+            if (skipNearNodeUpdates && node.id().equals(nearNodeId)) {
+                if (!txStarted(node))
+                    tx.addLockTransactionNode(node);
+
+                hasNearNodeUpdates = true;
+
+                continue;
+            }
+
             Batch batch = null;
 
             if (batches == null)
@@ -565,6 +580,9 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T> extends GridCacheFut
 
         // Check possibility of adding to batch and sending.
         for (ClusterNode node : backupNodes(key)) {
+            if (skipNearNodeUpdates && node.id().equals(nearNodeId))
+                continue;
+
             Batch batch = batches.get(node.id());
 
             // We can add key if batch is not full.

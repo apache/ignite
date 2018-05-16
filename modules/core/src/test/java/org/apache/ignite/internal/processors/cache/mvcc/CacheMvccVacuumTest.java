@@ -19,15 +19,22 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.List;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.testframework.GridTestUtils;
 
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+
 /**
  * Vacuum test.
  */
 public class CacheMvccVacuumTest extends CacheMvccAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return PARTITIONED;
+    }
 
     /**
      * @throws Exception If failed.

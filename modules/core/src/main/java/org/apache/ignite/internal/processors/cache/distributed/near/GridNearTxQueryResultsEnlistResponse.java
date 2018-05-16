@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * A response to {@link GridNearTxQueryResultsEnlistRequest}.
@@ -27,6 +30,12 @@ import org.apache.ignite.lang.IgniteUuid;
 public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistResponse {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private GridCacheVersion dhtVer;
+
+    /** */
+    private IgniteUuid dhtFutId;
 
     /**
      * Default-constructor.
@@ -43,8 +52,11 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
      * @param res Result.
      */
     public GridNearTxQueryResultsEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer,
-        long res) {
+        long res, GridCacheVersion dhtVer, IgniteUuid dhtFutId) {
         super(cacheId, futId, miniId, lockVer, res, false);
+
+        this.dhtVer = dhtVer;
+        this.dhtFutId = dhtFutId;
     }
 
     /**
@@ -57,6 +69,89 @@ public class GridNearTxQueryResultsEnlistResponse extends GridNearTxQueryEnlistR
     public GridNearTxQueryResultsEnlistResponse(int cacheId, IgniteUuid futId, int miniId, GridCacheVersion lockVer,
         Throwable err) {
         super(cacheId, futId, miniId, lockVer, err);
+    }
+
+    /**
+     * @return Dht version.
+     */
+    public GridCacheVersion dhtVersion() {
+        return dhtVer;
+    }
+
+    /**
+     * @return Dht future id.
+     */
+    public IgniteUuid dhtFutureId() {
+        return dhtFutId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 11;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!super.writeTo(buf, writer))
+            return false;
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 9:
+                if (!writer.writeIgniteUuid("dhtFutId", dhtFutId))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
+                if (!writer.writeMessage("dhtVer", dhtVer))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
+            case 9:
+                dhtFutId = reader.readIgniteUuid("dhtFutId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
+                dhtVer = reader.readMessage("dhtVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return reader.afterMessageRead(GridNearTxQueryResultsEnlistResponse.class);
     }
 
     /** {@inheritDoc} */

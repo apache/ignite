@@ -43,7 +43,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.transactions.Transaction;
 
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL_SUM;
@@ -58,7 +57,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * TODO IGNITE-6739: dynamic index create.
  */
 @SuppressWarnings("unchecked")
-public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
+public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
@@ -638,7 +637,7 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
 
         for (int b : backups) {
             IgniteCache<Object, Object> cache = srv0.createCache(
-                cacheConfiguration(PARTITIONED, FULL_SYNC, b, DFLT_PARTITION_COUNT).
+                cacheConfiguration(cacheMode(), FULL_SYNC, b, DFLT_PARTITION_COUNT).
                     setIndexedTypes(JoinTestParentKey.class, JoinTestParent.class, JoinTestChildKey.class, JoinTestChild.class));
 
             int cntr = 0;
@@ -703,7 +702,7 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
         final int PARTS = 64;
 
         {
-            CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, PARTS).
+            CacheConfiguration<Object, Object> ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, PARTS).
                 setIndexedTypes(Integer.class, MvccTestAccount.class);
 
             IgniteCache<Integer, MvccTestAccount> cache = (IgniteCache)srv0.createCache(ccfg);
@@ -725,7 +724,7 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
         }
 
         {
-            CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, PARTS).
+            CacheConfiguration<Object, Object> ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, PARTS).
                 setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class);
 
             IgniteCache<Integer, MvccTestSqlIndexValue> cache = (IgniteCache)srv0.createCache(ccfg);
@@ -747,7 +746,7 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
         }
 
         {
-            CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, PARTS).
+            CacheConfiguration<Object, Object> ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, PARTS).
                 setIndexedTypes(Long.class, Long.class);
 
             IgniteCache<Long, Long> cache = (IgniteCache)srv0.createCache(ccfg);
@@ -775,7 +774,7 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
     public void testChangeValueType1() throws Exception {
         Ignite srv0 = startGrid(0);
 
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT).
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, DFLT_PARTITION_COUNT).
             setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class, Integer.class, Integer.class);
 
         IgniteCache<Object, Object> cache = srv0.createCache(ccfg);
@@ -802,7 +801,7 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
     public void testChangeValueType2() throws Exception {
         Ignite srv0 = startGrid(0);
 
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT).
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, DFLT_PARTITION_COUNT).
             setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class, Integer.class, Integer.class);
 
         IgniteCache<Object, Object> cache = srv0.createCache(ccfg);
@@ -1141,7 +1140,7 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
         Ignite srv0 = startGrid(0);
 
         IgniteCache<Integer, MvccTestSqlIndexValue> cache = (IgniteCache)srv0.createCache(
-            cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT).
+            cacheConfiguration(cacheMode(), FULL_SYNC, 0, DFLT_PARTITION_COUNT).
                 setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class));
 
         for (int i = 0; i < 10; i++)
@@ -1259,7 +1258,7 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
         Ignite srv0 = ignite(0);
 
         IgniteCache<Integer, MvccTestSqlIndexValue> cache =  (IgniteCache)srv0.createCache(
-            cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT).
+            cacheConfiguration(cacheMode(), FULL_SYNC, 0, DFLT_PARTITION_COUNT).
                 setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class).
                 setSqlIndexMaxInlineSize(inlineSize));
 
@@ -1325,7 +1324,7 @@ public class CacheMvccSqlQueriesTest extends CacheMvccAbstractTest {
         Ignite srv0 = grid(0);
 
         IgniteCache<Integer, MvccTestSqlIndexValue> cache = (IgniteCache) srv0.createCache(
-            cacheConfiguration(PARTITIONED, FULL_SYNC, 0, DFLT_PARTITION_COUNT).
+            cacheConfiguration(cacheMode(), FULL_SYNC, 0, DFLT_PARTITION_COUNT).
                 setIndexedTypes(Integer.class, MvccTestSqlIndexValue.class).
                 setSqlIndexMaxInlineSize(inlineSize));
 

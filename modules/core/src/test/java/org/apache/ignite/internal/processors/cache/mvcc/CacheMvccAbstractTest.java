@@ -138,6 +138,11 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static final int TX_TIMEOUT = 3000;
 
+    /**
+     * @return Cache mode.
+     */
+    protected abstract CacheMode cacheMode();
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -231,7 +236,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         final int PARTS = 64;
 
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, PARTS);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, PARTS);
 
         if (cfgC != null)
             cfgC.apply(ccfg);
@@ -251,7 +256,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         srv0.destroyCache(cache.getName());
 
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, PARTS);
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, PARTS);
 
         if (cfgC != null)
             cfgC.apply(ccfg);
@@ -271,7 +276,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         srv0.destroyCache(cache.getName());
 
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 0, PARTS);
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, PARTS);
 
         IgniteCache<Long, Long> cache0 = (IgniteCache)srv0.createCache(ccfg);
 
@@ -867,7 +872,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             client = false;
         }
 
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(cacheMode(),
             FULL_SYNC,
             cacheBackups,
             cacheParts);

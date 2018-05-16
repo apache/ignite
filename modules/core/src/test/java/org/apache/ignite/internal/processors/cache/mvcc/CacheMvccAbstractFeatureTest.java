@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.lang.IgniteClosure2X;
@@ -46,6 +47,8 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.transactions.Transaction;
+
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Test that checks
@@ -56,6 +59,11 @@ public abstract class CacheMvccAbstractFeatureTest extends CacheMvccAbstractTest
 
     /** */
     private Ignite node;
+
+    /** {@inheritDoc} */
+    protected CacheMode cacheMode() {
+        return PARTITIONED;
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

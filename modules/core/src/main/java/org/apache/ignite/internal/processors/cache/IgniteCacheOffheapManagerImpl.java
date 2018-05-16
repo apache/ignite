@@ -1601,8 +1601,11 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 if (val != null) {
                     incrementSize(cctx.cacheId());
 
+                    // The reason for 'idxRebuild' param being true below
+                    // is to allow the case when the new row version already exists
+                    // as an effect of normal re-balance.
                     if (cctx.queries().enabled())
-                        cctx.queries().store(updateRow, null, true, false);
+                        cctx.queries().store(updateRow, null, true, true);
                 }
             }
             finally {

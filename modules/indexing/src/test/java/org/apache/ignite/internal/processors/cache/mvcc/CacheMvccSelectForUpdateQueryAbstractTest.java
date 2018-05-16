@@ -42,13 +42,14 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.connect;
 import static org.apache.ignite.internal.processors.cache.index.AbstractSchemaSelfTest.execute;
 
 /**
  * Test for {@code SELECT FOR UPDATE} queries.
  */
-public class CacheMvccSelectForUpdateQueryTest extends CacheMvccAbstractTest {
+public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvccAbstractTest {
     /** */
     private static final int CACHE_SIZE = 50;
 
@@ -61,7 +62,10 @@ public class CacheMvccSelectForUpdateQueryTest extends CacheMvccAbstractTest {
 
         CacheConfiguration seg = new CacheConfiguration("segmented*");
 
-        seg.setQueryParallelism(4);
+        seg.setCacheMode(cacheMode());
+
+        if (seg.getCacheMode() == PARTITIONED)
+            seg.setQueryParallelism(4);
 
         grid(0).addCacheConfiguration(seg);
 
@@ -109,25 +113,12 @@ public class CacheMvccSelectForUpdateQueryTest extends CacheMvccAbstractTest {
         doTestSelectForUpdateDistributed("Person", false);
     }
 
-    /**
-     *
-     */
-    public void testSelectForUpdateDistributedSegmented() throws Exception {
-        doTestSelectForUpdateDistributed("PersonSeg", false);
-    }
 
     /**
      *
      */
     public void testSelectForUpdateLocal() throws Exception {
         doTestSelectForUpdateLocal("Person", false);
-    }
-
-    /**
-     *
-     */
-    public void testSelectForUpdateLocalSegmented() throws Exception {
-        doTestSelectForUpdateLocal("PersonSeg", false);
     }
 
     /**
@@ -151,7 +142,7 @@ public class CacheMvccSelectForUpdateQueryTest extends CacheMvccAbstractTest {
      * @param outsideTx Whether select is executed outside transaction
      * @throws Exception If failed.
      */
-    private void doTestSelectForUpdateLocal(String cacheName, boolean outsideTx) throws Exception {
+    void doTestSelectForUpdateLocal(String cacheName, boolean outsideTx) throws Exception {
         Ignite node = grid(0);
 
         IgniteCache<Integer, ?> cache = node.cache(cacheName);
@@ -184,7 +175,7 @@ public class CacheMvccSelectForUpdateQueryTest extends CacheMvccAbstractTest {
      * @param outsideTx Whether select is executed outside transaction
      * @throws Exception If failed.
      */
-    private void doTestSelectForUpdateDistributed(String cacheName, boolean outsideTx) throws Exception {
+    void doTestSelectForUpdateDistributed(String cacheName, boolean outsideTx) throws Exception {
         Ignite node = grid(0);
 
         IgniteCache<Integer, ?> cache = node.cache(cacheName);

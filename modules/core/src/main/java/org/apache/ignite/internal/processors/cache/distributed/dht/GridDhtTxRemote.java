@@ -21,22 +21,31 @@ import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteSingleStateImpl;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxRemoteStateImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,6 +55,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 
 /**
@@ -366,6 +376,119 @@ public class GridDhtTxRemote extends GridDistributedTxRemoteAdapter {
         txEntry.entryProcessors(entryProcessors);
 
         txState.addWriteEntry(key, txEntry);
+    }
+
+    /**
+     *
+     * @param ctx Cache context.
+     * @param op Cache operation.
+     * @param keys Keys.
+     * @param vals Values.
+     * @param snapshot Mvcc snapshot.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void mvccEnlistBatch(GridCacheContext ctx, GridCacheOperation op, List<KeyCacheObject> keys,
+        List<CacheObject> vals, MvccSnapshot snapshot) throws IgniteCheckedException {
+
+        WALPointer ptr = null;
+
+        GridDhtCacheAdapter dht = ctx.dht();
+
+        for (int i = 0; i < keys.size(); i++) {
+            KeyCacheObject key = keys.get(i);
+
+            assert key != null;
+
+            int part = ctx.affinity().partition(key);
+
+            GridDhtLocalPartition locPart = ctx.topology().localPartition(part, topologyVersion(), false);
+
+            if (locPart == null || !locPart.reserve())
+                throw new ClusterTopologyException("Can not reserve partition. Please retry on stable topology.");
+
+            try {
+                CacheObject val = null;
+
+                if (op != DELETE)
+                    val = vals.get(i);
+
+                IgniteTxKey txKey = ctx.txKey(key);
+
+                addWrite(
+                    ctx,
+                    op,
+                    txKey,
+                    null,
+                    null,
+                    GridCacheUtils.TTL_ETERNAL,
+                    false,
+                    false);
+
+                IgniteTxEntry txEntry = entry(txKey);
+
+                assert txEntry != null;
+
+                txEntry.markValid();
+                txEntry.queryEnlisted(true);
+
+                GridDhtCacheEntry entry = dht.entryExx(key, topologyVersion());
+
+                GridCacheUpdateTxResult updRes;
+
+                while (true) {
+                    ctx.shared().database().checkpointReadLock();
+
+                    try {
+                        switch (op) {
+                            case DELETE:
+                                updRes = entry.mvccRemove(this,
+                                    ctx.localNodeId(),
+                                    topologyVersion(),
+                                    null,
+                                    snapshot);
+
+                                break;
+
+                            case CREATE:
+                            case UPDATE:
+                                updRes = entry.mvccSet(this,
+                                    ctx.localNodeId(),
+                                    val,
+                                    0,
+                                    topologyVersion(),
+                                    null,
+                                    snapshot,
+                                    op);
+
+                                break;
+
+                            default:
+                                throw new IgniteSQLException("Cannot acquire lock for operation [op= "
+                                    + op + "]" + "Operation is unsupported at the moment ",
+                                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                            }
+
+                        break;
+                    }
+                    catch (GridCacheEntryRemovedException ignore) {
+                        entry = dht.entryExx(key);
+                    }
+                    finally {
+                        ctx.shared().database().checkpointReadUnlock();
+                    }
+                }
+
+                assert updRes.updateFuture() == null : "Entry should not be locked on the backup";
+
+                ptr = updRes.loggedPointer();
+            }
+            finally {
+                locPart.release();
+            }
+        }
+
+        if (ptr != null && !ctx.tm().logTxRecords())
+            ctx.shared().wal().flush(ptr, true);
     }
 
     /** {@inheritDoc} */

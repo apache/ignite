@@ -25,6 +25,7 @@ import javax.cache.expiry.EternalExpiryPolicy;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -34,6 +35,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  *
@@ -41,6 +43,11 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
     /** Empty Class[]. */
     private final static Class[] E = new Class[]{};
+
+    /** {@inheritDoc} */
+    protected CacheMode cacheMode() {
+        return PARTITIONED;
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -150,6 +157,7 @@ public class CacheMvccOperationChecksTest extends CacheMvccAbstractTest {
         try (final Ignite node = startGrid(0)) {
             final CacheConfiguration<Integer, String> cfg = new CacheConfiguration<>("cache");
 
+            cfg.setCacheMode(cacheMode());
             cfg.setAtomicityMode(TRANSACTIONAL);
 
             try (IgniteCache<Integer, String> cache = node.createCache(cfg)) {

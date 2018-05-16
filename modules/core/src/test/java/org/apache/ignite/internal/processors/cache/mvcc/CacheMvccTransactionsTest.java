@@ -45,6 +45,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -110,6 +111,11 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  */
 @SuppressWarnings("unchecked")
 public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
+    /** {@inheritDoc} */
+    protected CacheMode cacheMode() {
+        return PARTITIONED;
+    }
+
     /**
      * @throws Exception If failed.
      */

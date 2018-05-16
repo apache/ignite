@@ -33,7 +33,6 @@ import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -46,8 +45,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
-import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
@@ -70,13 +67,11 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlo
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
@@ -98,7 +93,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_OP_COUNTER_NA;
@@ -2272,104 +2266,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             MvccSnapshot snapshot = new MvccSnapshotWithoutTxs(s0.coordinatorVersion(), s0.counter(),
                 req.operationCounter(), s0.cleanupVersion());
 
-            ctx.shared().database().checkpointReadLock();
-
-            try {
-                WALPointer ptr = null;
-
-                for (int i = 0; i < req.keys().size(); i++) {
-                    KeyCacheObject key = req.keys().get(i);
-
-                    assert key != null;
-
-                    int part = ctx.affinity().partition(key);
-
-                    GridDhtLocalPartition locPart = ctx.topology().localPartition(part, req.topologyVersion(),
-                        false);
-
-                    if (locPart == null || !locPart.reserve())
-                        throw new ClusterTopologyException("Can not reserve partition. Please retry on stable topology.");
-
-                    try {
-                        CacheObject val = null;
-
-                        if (req.op() != DELETE)
-                            val = req.values().get(i);
-
-                        IgniteTxKey txKey = ctx.txKey(key);
-
-                        tx.addWrite(
-                            ctx,
-                            req.op(),
-                            txKey,
-                            null,
-                            null,
-                            GridCacheUtils.TTL_ETERNAL,
-                            false,
-                            false);
-
-                        IgniteTxEntry txEntry = tx.entry(txKey);
-
-                        txEntry.markValid();
-                        txEntry.queryEnlisted(true);
-
-                        GridDhtCacheEntry entry = entryExx(key, tx.topologyVersion());
-
-                        GridCacheUpdateTxResult updRes;
-
-                        while (true) {
-                            try {
-                                switch (req.op()) {
-                                    case DELETE:
-                                        updRes = entry.mvccRemove(tx,
-                                            ctx.localNodeId(),
-                                            tx.topologyVersion(),
-                                            null,
-                                            snapshot);
-
-                                        break;
-
-                                    case CREATE:
-                                    case UPDATE:
-                                        updRes = entry.mvccSet(tx,
-                                            ctx.localNodeId(),
-                                            val,
-                                            0,
-                                            tx.topologyVersion(),
-                                            null,
-                                            snapshot,
-                                            req.op());
-
-                                        break;
-
-                                    default:
-                                        throw new IgniteSQLException("Cannot acquire lock for operation [op= "
-                                            + req.op() + "]" + "Operation is unsupported at the moment ",
-                                            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-                                }
-
-                                break;
-                            }
-                            catch (GridCacheEntryRemovedException ignore) {
-                                entry = entryExx(key);
-                            }
-                        }
-
-                        assert updRes.updateFuture() == null : "Entry should not be locked on the backup";
-
-                        ptr = updRes.loggedPointer();
-                    }
-                    finally {
-                        locPart.release();
-                    }
-                }
-
-                if (ptr != null && !ctx.tm().logTxRecords())
-                    ctx.shared().wal().flush(ptr, true);
-            }
-            finally {
-                ctx.shared().database().checkpointReadUnlock();
-            }
+            tx.mvccEnlistBatch(ctx, req.op(), req.keys(), req.values(), snapshot);
 
             GridDhtTxQueryEnlistResponse res = new GridDhtTxQueryEnlistResponse(req.cacheId(),
                 req.dhtFutureId(),

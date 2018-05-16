@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,8 +30,10 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheStoppedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -38,19 +41,24 @@ import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryResultsEnlistFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxRemote;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -58,6 +66,10 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_OP_COUNTER_NA;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * A future tracking requests for remote nodes transaction enlisting and locking
@@ -381,9 +393,11 @@ public class GridNearTxQueryResultsEnlistFuture extends GridCacheFutureAdapter<L
                 else
                     key = cctx.toCacheKeyObject(((IgniteBiTuple)cur).getKey());
 
-                ClusterNode node = cctx.affinity().primaryByKey(key, topVer);
+                List<ClusterNode> nodes = cctx.affinity().nodesByKey(key, topVer);
 
-                if (node == null)
+                ClusterNode node;
+
+                if (F.isEmpty(nodes) || ((node = nodes.get(0)) == null))
                     throw new ClusterTopologyCheckedException("Failed to get primary node " +
                         "[topVer=" + topVer + ", key=" + key + ']');
 
@@ -408,7 +422,8 @@ public class GridNearTxQueryResultsEnlistFuture extends GridCacheFutureAdapter<L
 
                 peek = null;
 
-                batch.add(op == GridCacheOperation.DELETE ? key : cur);
+                batch.add(op == GridCacheOperation.DELETE ? key : cur,
+                    cctx.affinityNode() && (cctx.isReplicated() || nodes.indexOf(cctx.localNode()) > 0));
 
                 cur = it.hasNextX() ? it.nextX() : null;
 
@@ -447,6 +462,133 @@ public class GridNearTxQueryResultsEnlistFuture extends GridCacheFutureAdapter<L
             onDone(this.res);
 
         return res;
+    }
+
+    /**
+     *
+     * @param primaryId Primary node id.
+     * @param rows Rows.
+     * @param dhtVer Dht version assigned at primary node.
+     * @param dhtFutId Dht future id assigned at primary node.
+     */
+    private void processBatchLocalBackupKeys(UUID primaryId, Collection<Object> rows, GridCacheVersion dhtVer,
+        IgniteUuid dhtFutId) {
+        assert dhtVer != null;
+        assert dhtFutId != null;
+
+        final ArrayList<KeyCacheObject> keys = new ArrayList<>(rows.size());
+        final ArrayList<CacheObject> vals = (op == GridCacheOperation.DELETE || op == GridCacheOperation.READ) ? null :
+            new ArrayList<>(rows.size());
+
+        for (Object row : rows) {
+            KeyCacheObject key;
+
+            if (op == GridCacheOperation.DELETE || op == GridCacheOperation.READ)
+                key = cctx.toCacheKeyObject(row);
+            else
+                key = cctx.toCacheKeyObject(((IgniteBiTuple)row).getKey());
+
+            keys.add(key);
+
+            if (vals != null)
+                vals.add(cctx.toCacheObject(((IgniteBiTuple)row).getValue()));
+        }
+
+        IgniteInternalFuture<Object> keyFut = F.isEmpty(keys) ? null :
+            cctx.group().preloader().request(cctx, keys, topVer);
+
+        if (keyFut == null || keyFut.isDone()) {
+            if (keyFut != null) {
+                try {
+                    keyFut.get();
+                }
+                catch (NodeStoppingException ignored) {
+                    return;
+                }
+                catch (IgniteCheckedException e) {
+                    onDone(e);
+
+                    return;
+                }
+            }
+
+            processBatchLocalBackupKeys0(primaryId, keys, vals, dhtVer, dhtFutId);
+        }
+        else {
+            keyFut.listen(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                @Override public void apply(IgniteInternalFuture<Object> fut) {
+                    try {
+                        fut.get();
+                    }
+                    catch (NodeStoppingException ignored) {
+                        return;
+                    }
+                    catch (IgniteCheckedException e) {
+                        onDone(e);
+
+                        return;
+                    }
+
+                    processBatchLocalBackupKeys0(primaryId, keys, vals, dhtVer, dhtFutId);
+                }
+            });
+        }
+    }
+
+    /**
+     *
+     * @param primaryId Primary node id.
+     * @param keys Keys.
+     * @param vals Values.
+     * @param dhtVer Dht version.
+     * @param dhtFutId Dht future id.
+     */
+    private void processBatchLocalBackupKeys0(UUID primaryId, List<KeyCacheObject> keys, List<CacheObject> vals,
+        GridCacheVersion dhtVer, IgniteUuid dhtFutId) {
+        try {
+            GridDhtTxRemote dhtTx = cctx.tm().tx(dhtVer);
+
+            if (dhtTx == null) {
+                dhtTx = new GridDhtTxRemote(cctx.shared(),
+                    cctx.localNodeId(),
+                    dhtFutId,
+                    primaryId,
+                    lockVer,
+                    topVer,
+                    dhtVer,
+                    null,
+                    cctx.systemTx(),
+                    cctx.ioPolicy(),
+                    PESSIMISTIC,
+                    REPEATABLE_READ,
+                    false,
+                    timeout,
+                    -1,
+                    this.tx.subjectId(),
+                    this.tx.taskNameHash(),
+                    false);
+
+                dhtTx.mvccInfo(new MvccTxInfo(cctx.shared().coordinators().currentCoordinatorId(),
+                    new MvccSnapshotWithoutTxs(mvccSnapshot.coordinatorVersion(), mvccSnapshot.counter(),
+                        MVCC_OP_COUNTER_NA, mvccSnapshot.cleanupVersion())));
+
+                dhtTx = cctx.tm().onCreated(null, dhtTx);
+
+                if (dhtTx == null || !cctx.tm().onStarted(dhtTx)) {
+                    throw new IgniteTxRollbackCheckedException("Failed to update backup " +
+                        "(transaction has been completed): " + dhtVer);
+                }
+            }
+
+            dhtTx.mvccEnlistBatch(cctx, op, keys, vals, mvccSnapshot.withoutActiveTransactions());
+        }
+        catch (IgniteCheckedException e) {
+            onDone(e);
+
+            return;
+        }
+
+        sendNextBatches(primaryId);
     }
 
     /**
@@ -567,8 +709,15 @@ public class GridNearTxQueryResultsEnlistFuture extends GridCacheFutureAdapter<L
      * @param res Response.
      */
     public void onResult(UUID nodeId, GridNearTxQueryResultsEnlistResponse res) {
-        if (checkResponse(nodeId, false, res, res.error()))
-            sendNextBatches(nodeId);
+        if (checkResponse(nodeId, false, res, res.error())) {
+
+            Batch batch = batches.get(nodeId);
+
+            if (batch != null && !F.isEmpty(batch.localBackupRows()))
+                processBatchLocalBackupKeys(nodeId, batch.localBackupRows(), res.dhtVersion(), res.dhtFutureId());
+            else
+                sendNextBatches(nodeId);
+        }
     }
 
     /** {@inheritDoc} */
@@ -716,6 +865,9 @@ public class GridNearTxQueryResultsEnlistFuture extends GridCacheFutureAdapter<L
         /** Rows. */
         private ArrayList<Object> rows = new ArrayList<>();
 
+        /** Local backup rows. */
+        private ArrayList<Object> locBkpRows;
+
         /** Readiness flag. Set when batch is full or no new rows are expected. */
         private boolean ready;
 
@@ -737,9 +889,17 @@ public class GridNearTxQueryResultsEnlistFuture extends GridCacheFutureAdapter<L
          * Adds a row.
          *
          * @param row Row.
+         * @param localBackup {@code true}, when the row key has local backup.
          */
-        public void add(Object row) {
+        public void add(Object row, boolean localBackup) {
             rows.add(row);
+
+            if (localBackup) {
+                if (locBkpRows == null)
+                    locBkpRows = new ArrayList<>();
+
+                locBkpRows.add(row);
+            }
         }
 
         /**
@@ -754,6 +914,13 @@ public class GridNearTxQueryResultsEnlistFuture extends GridCacheFutureAdapter<L
          */
         public Collection<Object> rows() {
             return rows;
+        }
+
+        /**
+         * @return Collection of local backup rows.
+         */
+        public Collection<Object> localBackupRows() {
+            return locBkpRows;
         }
 
         /**

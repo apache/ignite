@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -49,7 +48,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 /**
  * Tests for transactional SQL.
  */
-public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest  {
+public abstract class CacheMvccSqlTxQueriesWithReducerAbstractTest extends CacheMvccAbstractTest  {
     /** */
     private static final int TIMEOUT = 3000;
 
@@ -65,8 +64,8 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
      * @throws Exception If failed.
      */
     public void testQueryReducerInsert() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
-            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue.class);
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
 
@@ -75,17 +74,17 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
         Ignite checkNode  = grid(rnd.nextInt(4));
         Ignite updateNode = grid(rnd.nextInt(4));
 
-        IgniteCache<Integer, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue> cache =
+        IgniteCache<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> cache =
             checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
-            1,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1),
-            2,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2),
-            3,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3)));
+            1,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
+            2,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
+            3,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), cache.get(1));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2), cache.get(2));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), cache.get(3));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(3));
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             tx.timeout(TIMEOUT);
@@ -106,20 +105,20 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
             tx.commit();
         }
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), cache.get(1));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2), cache.get(2));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), cache.get(3));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(4), cache.get(4));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(5), cache.get(5));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(6), cache.get(6));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(3));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(4), cache.get(4));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(5), cache.get(5));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(6), cache.get(6));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testQueryReducerInsertDuplicateKey() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
-            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue.class);
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
 
@@ -128,17 +127,17 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
         Ignite checkNode  = grid(rnd.nextInt(4));
         Ignite updateNode = grid(rnd.nextInt(4));
 
-        IgniteCache<Integer, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue> cache =
+        IgniteCache<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> cache =
             checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
-            1,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1),
-            2,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2),
-            3,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3)));
+            1,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
+            2,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
+            3,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), cache.get(1));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2), cache.get(2));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), cache.get(3));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(3));
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             tx.timeout(TIMEOUT);
@@ -166,8 +165,8 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
      * @throws Exception If failed.
      */
     public void testQueryReducerMerge() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
-            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue.class);
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
 
@@ -176,17 +175,17 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
         Ignite checkNode  = grid(rnd.nextInt(4));
         Ignite updateNode = grid(rnd.nextInt(4));
 
-        IgniteCache<Integer, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue> cache =
+        IgniteCache<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> cache =
             checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
-            1,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1),
-            2,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2),
-            3,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3)));
+            1,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
+            2,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
+            3,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), cache.get(1));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2), cache.get(2));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), cache.get(3));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(3));
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             tx.timeout(TIMEOUT);
@@ -207,11 +206,11 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
             tx.commit();
         }
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), cache.get(1));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), cache.get(2));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), cache.get(3));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2), cache.get(4));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), cache.get(6));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(2));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(3));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(4));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(6));
     }
 
     /**
@@ -232,8 +231,8 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
      * @throws Exception If failed.
      */
     private void checkMultiBatchPerNode(boolean client) throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
-            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue.class);
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
 
         Ignite checkNode;
         Ignite updateNode;
@@ -256,15 +255,15 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
             updateNode = grid(rnd.nextInt(4));
         }
 
-        IgniteCache<Integer, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue> cache =
+        IgniteCache<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> cache =
             checkNode.cache(DEFAULT_CACHE_NAME);
 
         final int count = 6;
 
-        Map<Integer, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue> vals = new HashMap<>(count);
+        Map<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> vals = new HashMap<>(count);
 
         for (int idx = 1; idx <= count; ++idx)
-            vals.put(idx, new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(idx));
+            vals.put(idx, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(idx));
 
         cache.putAll(vals);
 
@@ -294,12 +293,12 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
      */
     public void testQueryReducerDelete() throws Exception {
         ccfgs = new CacheConfiguration[] {
-            cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
                 .setName("int")
                 .setIndexedTypes(Integer.class, Integer.class),
-            cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
                 .setIndexedTypes(Integer.class,
-                CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue.class),
+                CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class),
         };
 
         startGridsMultiThreaded(4);
@@ -315,10 +314,10 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
 
         final int count = 6;
 
-        Map<Integer, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue> vals = new HashMap<>(count);
+        Map<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> vals = new HashMap<>(count);
 
         for (int idx = 1; idx <= count; ++idx)
-            vals.put(idx, new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(idx));
+            vals.put(idx, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(idx));
 
         IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
@@ -345,12 +344,12 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
      */
     public void testQueryReducerUpdate() throws Exception {
         ccfgs = new CacheConfiguration[] {
-            cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
                 .setName("int")
                 .setIndexedTypes(Integer.class, Integer.class),
-            cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
                 .setIndexedTypes(Integer.class,
-                CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue.class),
+                CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class),
         };
 
         startGridsMultiThreaded(4);
@@ -366,10 +365,10 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
 
         final int count = 6;
 
-        Map<Integer, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue> vals = new HashMap<>(count);
+        Map<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> vals = new HashMap<>(count);
 
         for (int idx = 1; idx <= count; ++idx)
-            vals.put(idx, new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(idx));
+            vals.put(idx, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(idx));
 
         IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
@@ -396,8 +395,8 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
      * @throws Exception If failed.
      */
     public void testQueryReducerImplicitTxInsert() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
-            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue.class);
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
 
@@ -406,17 +405,17 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
         Ignite checkNode  = grid(rnd.nextInt(4));
         Ignite updateNode = grid(rnd.nextInt(4));
 
-        IgniteCache<Integer, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue> cache =
+        IgniteCache<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> cache =
             checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
-            1,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1),
-            2,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2),
-            3,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3)));
+            1,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
+            2,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
+            3,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), cache.get(1));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2), cache.get(2));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), cache.get(3));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(3));
 
         String sqlText = "INSERT INTO MvccTestSqlIndexValue (_key, idxVal1) " +
                 "SELECT DISTINCT _key + 3, idxVal1 + 3 FROM MvccTestSqlIndexValue";
@@ -433,20 +432,20 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
             assertEquals(3L, cur.iterator().next().get(0));
         }
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), cache.get(1));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2), cache.get(2));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), cache.get(3));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(4), cache.get(4));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(5), cache.get(5));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(6), cache.get(6));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(3));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(4), cache.get(4));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(5), cache.get(5));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(6), cache.get(6));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testQueryReducerRollbackInsert() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
-            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue.class);
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
 
@@ -455,17 +454,17 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
         Ignite checkNode  = grid(rnd.nextInt(4));
         Ignite updateNode = grid(rnd.nextInt(4));
 
-        IgniteCache<Integer, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue> cache =
+        IgniteCache<Integer, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> cache =
             checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
-            1,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1),
-            2,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2),
-            3,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3)));
+            1,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
+            2,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
+            3,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), cache.get(1));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2), cache.get(2));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), cache.get(3));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(3));
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             tx.timeout(TIMEOUT);
@@ -486,9 +485,9 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
             tx.rollback();
         }
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), sqlGet(1, cache).get(0).get(0));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2), sqlGet(2, cache).get(0).get(0));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), sqlGet(3, cache).get(0).get(0));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), sqlGet(1, cache).get(0).get(0));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), sqlGet(2, cache).get(0).get(0));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), sqlGet(3, cache).get(0).get(0));
         assertTrue(sqlGet(4, cache).isEmpty());
         assertTrue(sqlGet(5, cache).isEmpty());
         assertTrue(sqlGet(6, cache).isEmpty());
@@ -508,12 +507,12 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
      */
     public void testQueryReducerDeadlockInsert() throws Exception {
         ccfgs = new CacheConfiguration[] {
-            cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
                 .setName("int")
                 .setIndexedTypes(Integer.class, Integer.class),
-            cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
                 .setIndexedTypes(Integer.class,
-                CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue.class),
+                CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class),
         };
 
         startGridsMultiThreaded(2);
@@ -587,12 +586,12 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
      */
     public void testQueryReducerInsertVersionConflict() throws Exception {
         ccfgs = new CacheConfiguration[] {
-            cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
                 .setName("int")
                 .setIndexedTypes(Integer.class, Integer.class),
-            cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
                 .setIndexedTypes(Integer.class,
-                CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue.class),
+                CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class),
         };
 
         startGridsMultiThreaded(2);
@@ -605,10 +604,12 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
 
         HashMap<Integer, Integer> vals = new HashMap<>(100);
 
-        for (int idx = 0; idx < 20; ++idx)
+        for (int idx = 0; idx < 10; ++idx)
             vals.put(idx, idx);
 
         cache.putAll(vals);
+
+        waitForRebalancing();
 
         IgniteCache cache0 = checkNode.cache(DEFAULT_CACHE_NAME);
 
@@ -622,6 +623,8 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
             @Override public void run() {
                 try {
                     try (Transaction tx = checkNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        tx.timeout(TX_TIMEOUT);
+
                         barrier.await();
 
                         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM MvccTestSqlIndexValue");
@@ -656,8 +659,8 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
      * @throws Exception If failed.
      */
     public void testQueryReducerInsertValues() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
-            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue.class);
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
 
@@ -665,7 +668,7 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
 
         Ignite node  = grid(rnd.nextInt(4));
 
-        IgniteCache<Object, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue> cache = node.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> cache = node.cache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO MvccTestSqlIndexValue (_key, idxVal1)" +
             " values (1,?),(2,?),(3,?)");
@@ -676,9 +679,9 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
             assertEquals(3L, cur.iterator().next().get(0));
         }
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), cache.get(1));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2), cache.get(2));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), cache.get(3));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(3));
 
         qry = new SqlFieldsQuery("INSERT INTO MvccTestSqlIndexValue (_key, idxVal1) values (4,4)");
 
@@ -686,15 +689,15 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
             assertEquals(1L, cur.iterator().next().get(0));
         }
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(4), cache.get(4));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(4), cache.get(4));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testQueryReducerMergeValues() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
-            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue.class);
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
 
@@ -702,10 +705,10 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
 
         Ignite node  = grid(rnd.nextInt(4));
 
-        IgniteCache<Object, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue> cache = node.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Object, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue> cache = node.cache(DEFAULT_CACHE_NAME);
 
-        cache.put(1, new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1));
-        cache.put(3, new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3));
+        cache.put(1, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1));
+        cache.put(3, new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3));
 
         SqlFieldsQuery qry = new SqlFieldsQuery("MERGE INTO MvccTestSqlIndexValue (_key, idxVal1)" +
             " values (1,?),(2,?),(3,?)");
@@ -716,9 +719,9 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
             assertEquals(3L, cur.iterator().next().get(0));
         }
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), cache.get(1));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(4), cache.get(2));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(6), cache.get(3));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(4), cache.get(2));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(6), cache.get(3));
 
         qry = new SqlFieldsQuery("MERGE INTO MvccTestSqlIndexValue (_key, idxVal1) values (4,4)");
 
@@ -726,14 +729,14 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
             assertEquals(1L, cur.iterator().next().get(0));
         }
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(4), cache.get(4));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(4), cache.get(4));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testQueryReducerFastUpdate() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(4);
@@ -774,8 +777,8 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
      * @throws Exception If failed.
      */
     public void testQueryReducerFastDelete() throws Exception {
-        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
-            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue.class);
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue.class);
 
         startGridsMultiThreaded(4);
 
@@ -787,13 +790,13 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
         IgniteCache<Object, Object> cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
         cache.putAll(F.asMap(
-            1,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1),
-            2,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2),
-            3,new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3)));
+            1,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1),
+            2,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2),
+            3,new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3)));
 
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(1), cache.get(1));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(2), cache.get(2));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), cache.get(3));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(1), cache.get(1));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(2), cache.get(2));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(3));
 
         IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
@@ -812,7 +815,7 @@ public class CacheMvccSqlTxQueriesWithReducerTest extends CacheMvccAbstractTest 
 
         assertNull(cache.get(1));
         assertNull(cache.get(2));
-        assertEquals(new CacheMvccSqlTxQueriesTest.MvccTestSqlIndexValue(3), cache.get(3));
+        assertEquals(new CacheMvccSqlTxQueriesAbstractTest.MvccTestSqlIndexValue(3), cache.get(3));
     }
 
     /**
