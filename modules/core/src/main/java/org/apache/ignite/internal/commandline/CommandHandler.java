@@ -100,8 +100,8 @@ import static org.apache.ignite.internal.commandline.Command.BASELINE;
 import static org.apache.ignite.internal.commandline.Command.CACHE;
 import static org.apache.ignite.internal.commandline.Command.DEACTIVATE;
 import static org.apache.ignite.internal.commandline.Command.STATE;
-import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.Command.TX;
+import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
@@ -635,15 +635,30 @@ public class CommandHandler {
         boolean errors = false;
 
         for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
-            Map<PartitionKey, ValidateIndexesPartitionResult> map = nodeEntry.getValue().response();
+            Map<PartitionKey, ValidateIndexesPartitionResult> partRes = nodeEntry.getValue().partitionResult();
 
-            for (Map.Entry<PartitionKey, ValidateIndexesPartitionResult> e : map.entrySet()) {
+            for (Map.Entry<PartitionKey, ValidateIndexesPartitionResult> e : partRes.entrySet()) {
                 ValidateIndexesPartitionResult res = e.getValue();
 
                 if (!res.issues().isEmpty()) {
                     errors = true;
 
                     log(e.getKey().toString() + " " + e.getValue().toString());
+
+                    for (IndexValidationIssue is : res.issues())
+                        log(is.toString());
+                }
+            }
+
+            Map<String, ValidateIndexesPartitionResult> idxRes = nodeEntry.getValue().indexResult();
+
+            for (Map.Entry<String, ValidateIndexesPartitionResult> e : idxRes.entrySet()) {
+                ValidateIndexesPartitionResult res = e.getValue();
+
+                if (!res.issues().isEmpty()) {
+                    errors = true;
+
+                    log("SQL Index " + e.getKey() + " " + e.getValue().toString());
 
                     for (IndexValidationIssue is : res.issues())
                         log(is.toString());
