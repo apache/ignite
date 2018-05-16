@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.sql;
 
-/** */
-public class IgniteCacheReplicatedColumnConstraintsAsyncTest extends IgniteCacheReplicatedColumnConstraintsTest {
+/**
+ */
+public class IgniteCachePartitionedTransactionalColumnConstraintsAsyncTest 
+    extends IgniteCachePartitionedAtomicColumnConstraintsAsyncTest {
     /** {@inheritDoc} */
     @Override protected boolean async() {
         return true;

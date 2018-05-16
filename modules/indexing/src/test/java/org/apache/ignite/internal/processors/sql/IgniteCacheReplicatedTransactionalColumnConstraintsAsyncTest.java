@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.processors.sql;
 
-import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.jetbrains.annotations.NotNull;
 
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 
 /** */
-public class IgniteCacheReplicatedColumnConstraintsTest extends IgniteCachePartitionedColumnConstraintsTest {
+public class IgniteCacheReplicatedTransactionalColumnConstraintsAsyncTest 
+    extends IgniteCacheReplicatedAtomicColumnConstraintsAsyncTest {
     /** {@inheritDoc} */
-    @NotNull @Override protected CacheMode cacheMode() {
-        return PARTITIONED;
+    @NotNull protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
     }
 }

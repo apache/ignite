@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -31,12 +32,13 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.util.lang.GridFunc.t;
 
 /** */
-public class IgniteCachePartitionedColumnConstraintsTest extends GridCommonAbstractTest {
+public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommonAbstractTest {
     /** */
     private static final long FUT_TIMEOUT = 10_000L;
 
@@ -386,12 +388,18 @@ public class IgniteCachePartitionedColumnConstraintsTest extends GridCommonAbstr
         CacheConfiguration<?, ?> cache = defaultCacheConfiguration();
 
         cache.setCacheMode(cacheMode());
+        cache.setAtomicityMode(atomicityMode());
         cache.setBackups(1);
         cache.setWriteSynchronizationMode(FULL_SYNC);
 
         cache.setQueryEntities(Collections.singletonList(qryEntity));
 
         return cache;
+    }
+
+    /** */
+    @NotNull protected CacheAtomicityMode atomicityMode() {
+        return ATOMIC;
     }
 
     /** */
