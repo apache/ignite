@@ -58,6 +58,9 @@ public class MvccUtils {
     private static final MvccClosure<Boolean> isNewVisible = new IsNewVisible();
 
     /** */
+    private static final MvccClosure<Boolean> isUpdated = new IsUpdated();
+
+    /** */
     private static final MvccClosure<MvccVersion> getNewVer = new GetNewVersion();
 
     /**
@@ -135,6 +138,23 @@ public class MvccUtils {
             ", rowMvcc=" + mvccCntr + ", txMvcc=" + snapshot.counter() + ":" + snapshot.operationCounter();
 
         return state == TxState.COMMITTED;
+    }
+
+    /**
+     * Checks visibility of the given row versions from the given snapshot.
+     *
+     * @param cctx Context.
+     * @param snapshot Snapshot.
+     * @param crd Mvcc coordinator counter.
+     * @param cntr Mvcc counter.
+     * @param opCntr Mvcc operation counter.
+     * @param link Link to data row (new version is located there).
+     * @return Visibility status.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, long crd, long cntr,
+        int opCntr, long link) throws IgniteCheckedException {
+        return isVisible(cctx, snapshot, crd, cntr, opCntr) && !isUpdated(cctx, link, snapshot);
     }
 
     /**
@@ -310,6 +330,19 @@ public class MvccUtils {
     public static IgniteCheckedException noCoordinatorError(AffinityTopologyVersion topVer) {
         return new ClusterTopologyServerNotFoundException("Mvcc coordinator is not assigned for " +
             "topology version: " + topVer);
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param link Link to the row.
+     * @param snapshot Mvcc snapshot.
+     * @return {@code True} if row is updated for given snapshot.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static boolean isUpdated(GridCacheContext cctx, long link,
+        MvccSnapshot snapshot)
+        throws IgniteCheckedException {
+        return invoke(cctx, link, isUpdated, snapshot);
     }
 
     /**
@@ -616,6 +649,24 @@ public class MvccUtils {
         @Override public Boolean apply(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
             int mvccOpCntr, long newMvccCrd, long newMvccCntr, int newMvccOpCntr) throws IgniteCheckedException {
             return isVisible(cctx, snapshot, newMvccCrd, newMvccCntr, newMvccOpCntr);
+        }
+    }
+
+    /**
+     * Closure for checking whether the row is updated for given snapshot.
+     */
+    private static class IsUpdated implements MvccClosure<Boolean> {
+        /** {@inheritDoc} */
+        @Override public Boolean apply(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
+            int mvccOpCntr, long newMvccCrd, long newMvccCntr, int newMvccOpCntr) throws IgniteCheckedException {
+
+            if (newMvccCrd == 0)
+                return false;
+
+            assert mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
+
+            return (mvccCrd == newMvccCrd && mvccCntr == newMvccCntr) // Double-changed in scope of one transaction.
+                || isVisible(cctx, snapshot, newMvccCrd, newMvccCntr, newMvccOpCntr);
         }
     }
 

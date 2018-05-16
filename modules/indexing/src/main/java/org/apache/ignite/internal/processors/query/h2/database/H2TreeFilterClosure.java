@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
@@ -31,6 +30,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 
 /**
  *
@@ -90,8 +91,9 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
         long rowCntr = io.getMvccCounter(pageAddr, idx);
         int rowOpCntr = io.getMvccOperationCounter(pageAddr, idx);
 
-        return MvccUtils.isVisible(cctx, mvccSnapshot, rowCrdVer, rowCntr, rowOpCntr)
-                && !MvccUtils.isNewVisible(cctx, io.getLink(pageAddr, idx), mvccSnapshot);
+        assert mvccVersionIsValid(rowCrdVer, rowCntr, rowOpCntr);
+
+        return isVisible(cctx, mvccSnapshot, rowCrdVer, rowCntr, rowOpCntr, io.getLink(pageAddr, idx));
     }
 
     /** {@inheritDoc} */
