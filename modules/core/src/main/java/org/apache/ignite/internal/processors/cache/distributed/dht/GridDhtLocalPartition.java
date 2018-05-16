@@ -166,6 +166,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** Set if topology update sequence should be updated on partition destroy. */
     private boolean updateSeqOnDestroy;
 
+    /** For debug purposes. */
+    public transient volatile boolean debugPreventClear;
+
     /**
      * @param ctx Context.
      * @param grp Cache group.
@@ -509,7 +512,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param stateToRestore State to restore.
      */
     public void restoreState(GridDhtPartitionState stateToRestore) {
-        state.set(setPartState(state.get(),stateToRestore));
+        state.set(setPartState(state.get(), stateToRestore));
     }
 
     /**
@@ -643,6 +646,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param updateSeq Update sequence.
      */
     private void clearAsync0(boolean updateSeq) {
+        if (U.IGNITE_TEST_FEATURES_ENABLED && debugPreventClear)
+            return;
+
         long state = this.state.get();
 
         GridDhtPartitionState partState = getPartState(state);

@@ -2404,8 +2404,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             try {
                                 PagePartitionMetaIO io = PagePartitionMetaIO.VERSIONS.forPage(pageAddr);
 
+                                int stateId;
+
                                 if (restore != null) {
-                                    int stateId = restore.get1();
+                                    stateId = restore.get1();
 
                                     io.setPartitionState(pageAddr, (byte)stateId);
 
@@ -2419,8 +2421,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                         changed = true;
                                     }
                                 }
-                                else
+                                else {
+                                    stateId = (int)io.getPartitionState(pageAddr);
+
                                     updateState(part, (int)io.getPartitionState(pageAddr));
+
+                                    if (stateId == GridDhtPartitionState.RENTING.ordinal())
+                                        part.clearAsync();
+                                }
                             }
                             finally {
                                 pageMem.writeUnlock(grpId, partMetaId, partMetaPage, null, changed);
