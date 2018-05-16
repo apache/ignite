@@ -17,6 +17,10 @@
 
 ACLOCAL_AMFLAGS =-I m4
 
+if COND_THIN_CLIENT
+  MAYBE_THIN_CLIENT = thin-client
+endif
+
 if COND_ODBC
   MAYBE_ODBC = odbc
 
@@ -46,6 +50,7 @@ SUBDIRS = \
     $(MAYBE_JNI) \
     $(MAYBE_ODBC) \
     $(MAYBE_CORE) \
+	$(MAYBE_THIN_CLIENT) \
     $(MAYBE_NODE) \
     $(MAYBE_ODBC_TESTS) \
     $(MAYBE_CORE_TESTS)
@@ -56,6 +61,7 @@ DIST_SUBDIRS = \
     jni \
     odbc \
     core \
+	thin-client \
     ignite \
     core-test \
     odbc-test
