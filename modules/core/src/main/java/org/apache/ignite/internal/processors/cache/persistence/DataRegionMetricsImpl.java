@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMXBeanImpl.GroupAllocationTrucker;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMXBeanImpl.GroupAllocationTracker;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -39,7 +39,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     private final LongAdder totalAllocatedPages = new LongAdder();
 
     /** */
-    private final ConcurrentHashMap<Integer, GroupAllocationTrucker> groupAllocationTruckers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, GroupAllocationTracker> grpAllocationTrackers = new ConcurrentHashMap<>();
 
     /**
      * Counter for number of pages occupied by large entries (one entry is larger than one page).
@@ -358,13 +358,24 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     }
 
     /**
-     * Get or allocate group allocation trucker.
+     * Get or allocate group allocation tracker.
      *
      * @param grpId Group id.
-     * @return Group allocation trucker.
+     * @return Group allocation tracker.
      */
-    public GroupAllocationTrucker getOrAllocateGroupPageAllocationTracker(int grpId) {
-        return groupAllocationTruckers.getOrDefault(grpId, new GroupAllocationTrucker(this));
+    public GroupAllocationTracker getOrAllocateGroupPageAllocationTracker(int grpId) {
+        GroupAllocationTracker tracker = grpAllocationTrackers.get(grpId);
+
+        if (tracker == null) {
+            tracker = new GroupAllocationTracker(this);
+
+            GroupAllocationTracker old = grpAllocationTrackers.putIfAbsent(grpId, tracker);
+
+            if (old != null)
+                return old;
+        }
+
+        return tracker;
     }
 
     /**
