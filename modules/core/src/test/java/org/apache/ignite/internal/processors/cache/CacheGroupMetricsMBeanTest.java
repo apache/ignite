@@ -51,7 +51,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implements Serializable {
     /** */
-    private static boolean pds = false;
+    private boolean pds = false;
 
     /** */
     private static class RoundRobinVariableSizeAffinityFunction implements AffinityFunction {
