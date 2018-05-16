@@ -209,6 +209,22 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         if (inlineSize() == 0)
             return compareRows(getRow(io, pageAddr, idx), row);
         else {
+            // Default links comparison result is zero to fall back to old behavior
+            // for rows that don't have links like H2's SimpleRow.
+            int linksCmpRes = 0;
+
+            if (row instanceof CacheSearchRow) {
+                long link1 = ((H2RowLinkIO)io).getLink(pageAddr, idx);
+
+                long link2 = ((CacheSearchRow)row).link();
+
+                linksCmpRes = Long.compare(link1, link2);
+
+                // Same rows, we may look no further.
+                if (linksCmpRes == 0)
+                    return linksCmpRes;
+            }
+
             int off = io.offset(idx);
 
             int fieldOff = 0;
@@ -240,7 +256,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             }
 
             if (lastIdxUsed == cols.length)
-                return 0;
+                return linksCmpRes; // Fall back to links comparison if all columns are equal.
 
             SearchRow rowData = getRow(io, pageAddr, idx);
 
@@ -263,15 +279,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                     return InlineIndexHelper.fixSort(c, col.sortType);
             }
 
-            if (row instanceof CacheSearchRow) {
-                long link1 = ((H2RowLinkIO)io).getLink(pageAddr, idx);
-
-                long link2 = ((CacheSearchRow)row).link();
-
-                return Long.compare(link1, link2);
-            }
-            else
-                return 0; // Old behavior for rows that don't have links like H2's SimpleRow
+            // Fall back to links comparison if all columns are equal.
+            return linksCmpRes;
         }
     }
 

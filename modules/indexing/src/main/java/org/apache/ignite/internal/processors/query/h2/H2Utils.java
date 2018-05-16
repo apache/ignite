@@ -140,26 +140,6 @@ public class H2Utils {
     }
 
     /**
-     * @param desc Row descriptor.
-     * @param keyCol Primary key column.
-     * @param affCol Affinity key column.
-     * @return The same list back.
-     */
-    public static List<IndexColumn> treeIndexColumns(GridH2RowDescriptor desc, IndexColumn keyCol, IndexColumn affCol) {
-        assert keyCol != null;
-
-        List<IndexColumn> cols = new ArrayList<>(2);
-
-        if (!containsKeyColumn(desc, cols))
-            cols.add(keyCol);
-
-        if (affCol != null && !containsColumn(cols, affCol))
-            cols.add(affCol);
-
-        return cols;
-    }
-
-    /**
      * Create spatial index.
      *
      * @param tbl Table.

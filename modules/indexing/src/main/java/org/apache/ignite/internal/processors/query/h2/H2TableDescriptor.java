@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -191,7 +192,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         Index hashIdx = createHashIndex(
             tbl,
             "_key_PK_hash",
-            H2Utils.treeIndexColumns(desc, keyCol, affCol)
+            Collections.singletonList(keyCol)
         );
 
         if (hashIdx != null)
@@ -202,7 +203,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
             "_key_PK",
             tbl,
             true,
-            H2Utils.treeIndexColumns(desc, keyCol, affCol),
+            Collections.singletonList(keyCol),
             -1
         );
 
@@ -250,7 +251,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         // Add explicit affinity key index if nothing alike was found.
         if (affCol != null && !affIdxFound) {
             idxs.add(idx.createSortedIndex("AFFINITY_KEY", tbl, false,
-                H2Utils.treeIndexColumns(desc, affCol, keyCol), -1));
+                Collections.singletonList(affCol), -1));
         }
 
         return idxs;
