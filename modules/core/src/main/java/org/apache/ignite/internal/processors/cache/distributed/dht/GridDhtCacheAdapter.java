@@ -590,8 +590,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-        GridFutureAdapter cacheLoaderFut = ctx.mvcc().addCacheLoaderFuture(topVer);
-
         // Version for all loaded entries.
         final GridCacheVersion ver0 = ctx.shared().versions().nextForLoad(topVer);
 
@@ -605,6 +603,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
         if (p != null)
             ctx.kernalContext().resource().injectGeneric(p);
+
+        GridFutureAdapter cacheLdrFut = ctx.mvcc().addCacheLoaderFuture(topVer);
 
         try {
             ctx.store().loadCache(new CI3<KeyCacheObject, Object, GridCacheVersion>() {
@@ -620,7 +620,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             if (p instanceof PlatformCacheEntryFilter)
                 ((PlatformCacheEntryFilter)p).onClose();
 
-            cacheLoaderFut.onDone();
+            cacheLdrFut.onDone();
         }
     }
 

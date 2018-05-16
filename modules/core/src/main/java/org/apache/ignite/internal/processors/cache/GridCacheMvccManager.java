@@ -68,6 +68,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.util.deque.FastSizeDeque;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_NESTED_LISTENER_CALLS;
@@ -1482,13 +1483,14 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      */
     private class CacheStoreLoaderFuture extends GridFutureAdapter<Void> {
         /** Topology version. Instance field for toString method only. */
+        @NotNull
         @GridToStringInclude
         private final AffinityTopologyVersion topVer;
 
         /**
          * @param topVer Topology version.
          */
-        CacheStoreLoaderFuture(AffinityTopologyVersion topVer) {
+        CacheStoreLoaderFuture(@NotNull AffinityTopologyVersion topVer) {
             this.topVer = topVer;
         }
 

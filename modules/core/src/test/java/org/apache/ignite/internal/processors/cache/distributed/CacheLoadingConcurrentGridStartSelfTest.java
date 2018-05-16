@@ -163,39 +163,6 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
-    public void testLoadCacheFromStoreClient() throws Exception {
-        client = true;
-        configured = true;
-
-        try {
-            startGrid(1);
-
-            Ignite g0 = startGrid(0);
-
-            IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Ignite>() {
-                @Override public Ignite call() throws Exception {
-                    return startGridsMultiThreaded(2, GRIDS_CNT - 1);
-                }
-            });
-
-            try {
-                g0.cache(DEFAULT_CACHE_NAME).loadCache(null);
-            }
-            finally {
-                fut.get(getTestTimeout());
-            }
-
-            assertCacheSize();
-        }
-        finally {
-            client = false;
-            configured = false;
-        }
-    }
-
-    /**
-     * @throws Exception if failed
-     */
     public void testLoadCacheFromStore() throws Exception {
         configured = true;
 
@@ -214,6 +181,39 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
     /**
      * @throws Exception if failed
      */
+    public void testLoadCacheFromStoreClient() throws Exception {
+        configured = true;
+        client = true;
+
+        try {
+            startGrid(1);
+
+            Ignite g0 = startGrid(0);
+
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Ignite>() {
+                @Override public Ignite call() throws Exception {
+                    return startGridsMultiThreaded(2, GRIDS_CNT - 2);
+                }
+            });
+
+            try {
+                g0.cache(DEFAULT_CACHE_NAME).loadCache(null);
+            }
+            finally {
+                fut.get(getTestTimeout());
+            }
+
+            assertCacheSize();
+        }
+        finally {
+            configured = false;
+            client = false;
+        }
+    }
+
+    /**
+     * @throws Exception if failed
+     */
     public void testLoadCacheFromCorruptedStoreClient() throws Exception {
         client = true;
         configured = true;
@@ -226,7 +226,7 @@ public class CacheLoadingConcurrentGridStartSelfTest extends GridCommonAbstractT
 
             IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable<Ignite>() {
                 @Override public Ignite call() throws Exception {
-                    return startGridsMultiThreaded(2, GRIDS_CNT - 1);
+                    return startGridsMultiThreaded(2, GRIDS_CNT - 2);
                 }
             });
 
