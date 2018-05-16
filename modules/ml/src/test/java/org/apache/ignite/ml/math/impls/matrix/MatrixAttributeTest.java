@@ -59,12 +59,6 @@ public class MatrixAttributeTest {
 
     /** */
     @Test
-    public void isSequentialAccessTest() {
-        assertAttribute("isSequentialAccess");
-    }
-
-    /** */
-    @Test
     public void isRandomAccessTest() {
         assertAttribute("isRandomAccess");
     }
