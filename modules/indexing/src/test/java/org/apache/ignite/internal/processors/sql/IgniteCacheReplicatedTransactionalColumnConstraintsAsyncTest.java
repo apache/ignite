@@ -27,6 +27,6 @@ public class IgniteCacheReplicatedTransactionalColumnConstraintsAsyncTest
     extends IgniteCacheReplicatedAtomicColumnConstraintsAsyncTest {
     /** {@inheritDoc} */
     @NotNull protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 }

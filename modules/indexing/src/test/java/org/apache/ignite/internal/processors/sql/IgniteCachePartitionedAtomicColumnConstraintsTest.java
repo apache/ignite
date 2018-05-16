@@ -18,14 +18,20 @@
 package org.apache.ignite.internal.processors.sql;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -58,45 +64,16 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(0);
 
-        Map<String, Integer> strStrMaxLengthInfo = new HashMap<>();
-
-        strStrMaxLengthInfo.put("_KEY", 5);
-        strStrMaxLengthInfo.put("_VALUE", 5);
-
-        jcache(grid(0), cacheConfiguration(new QueryEntity(String.class.getName(), String.class.getName())
-                    .setMaxLengthInfo(strStrMaxLengthInfo)), "STR_STR");
-
         Map<String, Integer> orgAddressMaxLengthInfo = new HashMap<>();
 
-        strStrMaxLengthInfo.put("name", 5);
-        strStrMaxLengthInfo.put("address", 5);
+        orgAddressMaxLengthInfo.put("name", 5);
+        orgAddressMaxLengthInfo.put("address", 5);
 
         jcache(grid(0), cacheConfiguration(new QueryEntity(Organization.class.getName(), Address.class.getName())
+                    .addQueryField("name", "java.lang.String", "name")
+                    .addQueryField("address", "java.lang.String", "address")
                     .setMaxLengthInfo(orgAddressMaxLengthInfo)), "ORG_ADDRESS");
-    }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutAllTooLongValue() throws Exception {
-        Map<String, String> entries = new HashMap<>();
-        
-        entries.put("1", "1");
-        entries.put(tooLongVal.getKey(), tooLongVal.getValue());
-        
-        putAll(jcache(0, "STR_STR"), entries);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutAllTooLongKey() throws Exception {
-        Map<String, String> entries = new HashMap<>();
-
-        entries.put("1", "1");
-        entries.put(tooLongKey.getKey(), tooLongKey.getValue());
-
-        putAll(jcache(0, "STR_STR"), entries);
     }
 
     /**
@@ -120,21 +97,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
         entries.put(new Organization("1"), new Address("1"));
         entries.put(tooLongKey2.getKey(), tooLongKey2.getValue());
 
-        putAll(jcache(0, "ORG_ADDRESS"), tooLongKey2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutTooLongValue() throws Exception {
-        put(jcache(0, "STR_STR"), tooLongVal);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutTooLongKey() throws Exception {
-        put(jcache(0, "STR_STR"), tooLongKey);
+        putAll(jcache(0, "ORG_ADDRESS"), entries);
     }
 
     /**
@@ -154,20 +117,6 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testPutIfAbsentTooLongValue() throws Exception {
-        putIfAbsent(jcache(0, "STR_STR"), tooLongVal);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutIfAbsentTooLongKey() throws Exception {
-        putIfAbsent(jcache(0, "STR_STR"), tooLongKey);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPutIfAbsentTooLongValueField() throws Exception {
         putIfAbsent(jcache(0, "ORG_ADDRESS"), tooLongVal2);
     }
@@ -177,20 +126,6 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
      */
     public void testPutIfAbsentTooLongKeyField() throws Exception {
         putIfAbsent(jcache(0, "ORG_ADDRESS"), tooLongKey2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndPutTooLongValue() throws Exception {
-        getAndPut(jcache(0, "STR_STR"), tooLongVal);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndPutTooLongKey() throws Exception {
-        getAndPut(jcache(0, "STR_STR"), tooLongKey);
     }
 
     /**
@@ -210,20 +145,6 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testGetAndPutIfAbsentTooLongValue() throws Exception {
-        getAndPutIfAbsent(jcache(0, "STR_STR"), tooLongVal);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndPutIfAbsentTooLongKey() throws Exception {
-        getAndPutIfAbsent(jcache(0, "STR_STR"), tooLongKey);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testGetAndPutIfAbsentTooLongValueField() throws Exception {
         getAndPutIfAbsent(jcache(0, "ORG_ADDRESS"), tooLongVal2);
     }
@@ -238,22 +159,8 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testReplaceTooLongValue() throws Exception {
-        replace(jcache(0, "STR_STR"), tooLongVal.getKey(), "1", tooLongVal.getValue());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testReplaceTooLongValueField() throws Exception {
         replace(jcache(0, "ORG_ADDRESS"), tooLongVal2.getKey(), new Address("1"), tooLongVal2.getValue());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndReplaceTooLongValue() throws Exception {
-        getAndReplace(jcache(0, "STR_STR"), tooLongVal.getKey(), "1", tooLongVal.getValue());
     }
 
     /**
@@ -262,13 +169,6 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     public void testGetAndReplaceTooLongValueField() throws Exception {
         getAndReplace(jcache(0, "ORG_ADDRESS"), tooLongVal2.getKey(), new Address("1"), 
             tooLongVal2.getValue());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplace3TooLongValue() throws Exception {
-        replace3(jcache(0, "STR_STR"), tooLongVal.getKey(), "1", tooLongVal.getValue());
     }
 
     /**

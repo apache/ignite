@@ -34,6 +34,12 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Integer.MAX_VALUE;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_KEY;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_VALUE;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_KEY;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_VALUE;
+
 /**
  * Descriptor of type.
  */
@@ -381,6 +387,11 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 validateProps = new ArrayList<>();
 
             validateProps.add(prop);
+        } else if (prop.maxLength() != MAX_VALUE) {
+            if (validateProps == null)
+                validateProps = new ArrayList<>();
+
+            validateProps.add(prop);
         }
 
         if (prop.defaultValue() != null) {
@@ -526,25 +537,35 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             Object propVal;
 
             int errCode;
+            
+            boolean isKey;
 
             if (F.eq(prop.name(), keyFieldName)) {
                 propVal = key;
 
-                errCode = IgniteQueryErrorCode.NULL_KEY;
+                isKey = true;
             }
             else if (F.eq(prop.name(), valFieldName)) {
                 propVal = val;
 
-                errCode = IgniteQueryErrorCode.NULL_VALUE;
+                isKey = false;
             }
             else {
                 propVal = prop.value(key, val);
-
-                errCode = IgniteQueryErrorCode.NULL_VALUE;
+                isKey = false;
             }
 
-            if (propVal == null)
-                throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'", errCode);
+            if (propVal == null && prop.notNull()) {
+                throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'",
+                    isKey ? NULL_KEY : NULL_VALUE);
+            }
+
+            if (prop.maxLength() < MAX_VALUE && propVal != null &&
+                CharSequence.class.isAssignableFrom(propVal.getClass()) && 
+                ((CharSequence)propVal).length() > prop.maxLength()) {
+                throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'", 
+                    isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
+            }
         }
     }
 
