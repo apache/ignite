@@ -298,12 +298,16 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
         ClusterNode node0 = nodes.get(0);
         ClusterNode node1 = nodes.get(1);
 
+        // Await time to close the session by queue overflow.
+        final int awaitTime = 5_000;
+
+        // Check that session will not be closed by idle timeout because expected close by queue overflow.
+        assertTrue(spi0.getIdleConnectionTimeout() > awaitTime);
+
         final GridNioServer srv1 = U.field(spi1, "nioSrvr");
 
         // For prevent session close by write timeout.
         srv1.writeTimeout(60_000);
-
-        assertTrue(spi0.getIdleConnectionTimeout() > 5_000);
 
         final AtomicInteger ackMsgs = new AtomicInteger(0);
 
@@ -347,7 +351,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
             @Override public boolean apply() {
                 return ses0.closeTime() != 0;
             }
-        }, 5000);
+        }, awaitTime);
 
         assertTrue("Failed to wait for session close", ses0.closeTime() != 0);
 
