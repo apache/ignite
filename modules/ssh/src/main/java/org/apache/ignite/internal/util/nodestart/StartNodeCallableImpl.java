@@ -187,12 +187,12 @@ public class StartNodeCallableImpl implements StartNodeCallable {
                 if ("%TMPDIR%".equals(tmpDir))
                     tmpDir = dfltTmpDir;
 
-                scriptOutputDir = tmpDir + "\\ignite-startNodes\\" + UUID.randomUUID().toString().substring(0, 8); // FIXME: 5/16/18 Only for testing (flaky)
+                scriptOutputDir = tmpDir + "\\ignite-startNodes";
             }
             else { // Assume Unix.
                 String logDir = env(ses, "$TMPDIR", dfltTmpDir);
 
-                scriptOutputDir = logDir + "/ignite-startNodes/" + UUID.randomUUID().toString().substring(0, 8); // FIXME: 5/16/18 Only for testing (flaky)
+                scriptOutputDir = logDir + "/ignite-startNodes";
             }
 
             shell(ses, "mkdir " + scriptOutputDir);
