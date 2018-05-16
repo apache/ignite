@@ -303,6 +303,8 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
         // For prevent session close by write timeout.
         srv1.writeTimeout(60_000);
 
+        assertTrue(spi0.getIdleConnectionTimeout() > 5_000);
+
         final AtomicInteger ackMsgs = new AtomicInteger(0);
 
         IgniteInClosure<IgniteException> ackC = new CI1<IgniteException>() {
@@ -351,7 +353,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
         GridTestUtils.setFieldValue(srv1, "skipWrite", false);
 
-        // For test completion by ack on a count.
+        // It to gain all acks since acks have batch nature.
         int cnt = 100 - sentMsgs % spi0.getAckSendThreshold();
 
         for (int i = 0; i < cnt; i++)
