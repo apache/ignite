@@ -17,39 +17,7 @@
 
 ACLOCAL_AMFLAGS =-I m4
 
-if COND_THIN_CLIENT
-  MAYBE_THIN_CLIENT = thin-client
-endif
+noinst_HEADERS = \
 
-if COND_ODBC
-  MAYBE_ODBC = odbc
-endif
-
-if COND_CORE
-  MAYBE_CORE = core
-  MAYBE_JNI = jni
-endif
-
-if COND_NODE
-  MAYBE_CORE = core
-  MAYBE_JNI = jni
-  MAYBE_NODE = ignite
-endif
-
-SUBDIRS = \
-    common \
-    binary \
-    $(MAYBE_JNI) \
-    $(MAYBE_ODBC) \
-    $(MAYBE_CORE) \
-	$(MAYBE_THIN_CLIENT) \
-    $(MAYBE_NODE)
-
-DIST_SUBDIRS = \
-    common \
-    binary \
-    jni \
-    odbc \
-    core \
-	thin-client \
-    ignite
+uninstall-hook:
+	if [ -d ${includedir}/ignite ]; then find ${includedir}/ignite -type d -empty -delete; fi

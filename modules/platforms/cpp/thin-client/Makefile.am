@@ -17,39 +17,40 @@
 
 ACLOCAL_AMFLAGS =-I m4
 
-if COND_THIN_CLIENT
-  MAYBE_THIN_CLIENT = thin-client
-endif
-
-if COND_ODBC
-  MAYBE_ODBC = odbc
-endif
-
-if COND_CORE
-  MAYBE_CORE = core
-  MAYBE_JNI = jni
-endif
-
-if COND_NODE
-  MAYBE_CORE = core
-  MAYBE_JNI = jni
-  MAYBE_NODE = ignite
-endif
+lib_LTLIBRARIES = libignite-thin-client.la
 
 SUBDIRS = \
-    common \
-    binary \
-    $(MAYBE_JNI) \
-    $(MAYBE_ODBC) \
-    $(MAYBE_CORE) \
-	$(MAYBE_THIN_CLIENT) \
-    $(MAYBE_NODE)
+    include
 
-DIST_SUBDIRS = \
-    common \
-    binary \
-    jni \
-    odbc \
-    core \
-	thin-client \
-    ignite
+AM_CPPFLAGS = \
+    -I$(srcdir)/include \
+    -I@top_srcdir@/common/include \
+    -I@top_srcdir@/common/os/linux/include \
+    -I@top_srcdir@/binary/include \
+    -DIGNITE_IMPL \
+    -D__STDC_LIMIT_MACROS \
+    -D__STDC_CONSTANT_MACROS
+
+AM_CXXFLAGS = \
+    -Wall \
+    -std=c++03
+
+libignite_thin_client_la_LIBADD = \
+    @top_srcdir@/binary/libignite-binary.la
+
+libignite_thin_client_la_LDFLAGS = \
+    -no-undefined \
+    -ldl \
+    -version-info 0:0:0 \
+    -release $(PACKAGE_VERSION)
+
+libignite_thin_client_la_DEPENDENCIES = \
+    @top_srcdir@/binary/libignite-binary.la
+
+libignite_thin_client_la_SOURCES = \
+
+clean-local:
+	$(RM) *.gcno *.gcda
+
+clean-docs:
+	$(RM) $(DX_CLEANFILES)
