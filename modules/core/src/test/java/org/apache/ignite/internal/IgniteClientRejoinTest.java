@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -42,8 +43,10 @@ import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests client to be able restore connection to cluster if coordination is not available.
@@ -51,6 +54,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /** Block. */
     private volatile boolean block;
+
+    /** Drop client join messages */
+    private volatile boolean dropJoinMsg;
 
     /** Block all. */
     private volatile boolean blockAll;
@@ -60,6 +66,9 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
     /** Client reconnect disabled. */
     private boolean clientReconnectDisabled;
+
+    /** Client join timeout */
+    private int joinTimeout;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -79,6 +88,8 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         clientReconnectDisabled = false;
+
+        joinTimeout = 60_000;
     }
 
     /** {@inheritDoc} */
@@ -95,10 +106,17 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
             cfg.setDiscoverySpi(dspi);
 
-            dspi.setJoinTimeout(60_000);
+            dspi.setJoinTimeout(joinTimeout);
             dspi.setClientReconnectDisabled(clientReconnectDisabled);
 
             cfg.setClientMode(true);
+        } else {
+            TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
+            ServerDiscoverySpi serverDiscoverySpi = new ServerDiscoverySpi();
+
+            serverDiscoverySpi.setIpFinder(spi.getIpFinder());
+
+            cfg.setDiscoverySpi(serverDiscoverySpi);
         }
 
         // TODO: IGNITE-4833
@@ -299,6 +317,41 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         assertEquals(0, srv2.cluster().forClients().nodes().size());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientsReconnect2() throws Exception {
+        Ignite srv = startGrid("server0");
+
+        crd = ((IgniteKernal)srv).localNode();
+
+        joinTimeout = 0;
+
+        Ignite client = startGrid("client0");
+
+        block = true;
+
+        U.sleep(20_000);
+
+        dropJoinMsg = true;
+        block = false;
+
+        U.sleep(20_000);
+
+        dropJoinMsg = false;
+
+        IgniteCache<Integer, Integer> cache = client.getOrCreateCache(client.name());
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        for (int i = 0; i < 100; i++)
+            assert i == cache.get(i);
+
+
+        assertEquals(1, srv.cluster().forClients().nodes().size());
+    }
+
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 3 * 60_000;
@@ -373,6 +426,22 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
                 throw new SocketException("Test discovery exception");
 
             return super.openSocket(sock, remAddr, timeoutHelper);
+        }
+    }
+
+    /**
+     *
+     */
+    private class ServerDiscoverySpi extends TcpDiscoverySpi {
+        @Override
+        protected <T> T readMessage(Socket sock, @Nullable InputStream in, long timeout) throws IOException, IgniteCheckedException {
+            T t = super.readMessage(sock, in, timeout);
+            if (dropJoinMsg && t instanceof TcpDiscoveryJoinRequestMessage) {
+                System.out.println("DROP JOIN REQ");
+                return null;
+            }
+
+            return t;
         }
     }
 }
