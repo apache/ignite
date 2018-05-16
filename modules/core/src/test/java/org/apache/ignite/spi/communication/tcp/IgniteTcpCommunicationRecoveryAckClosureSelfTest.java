@@ -300,6 +300,9 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
         final GridNioServer srv1 = U.field(spi1, "nioSrvr");
 
+        // For prevent session close by write timeout.
+        srv1.writeTimeout(10_000);
+
         final AtomicInteger ackMsgs = new AtomicInteger(0);
 
         IgniteInClosure<IgniteException> ackC = new CI1<IgniteException>() {
@@ -348,6 +351,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
         GridTestUtils.setFieldValue(srv1, "skipWrite", false);
 
+        // For test completion by ack on a count.
         int cnt = 100 - sentMsgs % spi0.getAckSendThreshold();
 
         for (int i = 0; i < cnt; i++)
