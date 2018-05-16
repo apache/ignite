@@ -17,9 +17,6 @@
 
 package org.apache.ignite.ml.math.impls.vector;
 
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -36,7 +33,6 @@ import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.math.impls.storage.vector.FunctionVectorStorage;
 import org.jetbrains.annotations.NotNull;
 
 import static org.junit.Assert.assertEquals;
@@ -49,13 +45,7 @@ class VectorImplementationsFixtures {
         (Supplier<Iterable<Vector>>)DenseLocalOnHeapVectorFixture::new,
         (Supplier<Iterable<Vector>>)DenseLocalOffHeapVectorFixture::new,
         (Supplier<Iterable<Vector>>)SparseLocalVectorFixture::new,
-        (Supplier<Iterable<Vector>>)RandomVectorFixture::new,
-        (Supplier<Iterable<Vector>>)ConstantVectorFixture::new,
         (Supplier<Iterable<Vector>>)DelegatingVectorFixture::new,
-        (Supplier<Iterable<Vector>>)FunctionVectorFixture::new,
-        (Supplier<Iterable<Vector>>)SingleElementVectorFixture::new,
-        (Supplier<Iterable<Vector>>)PivotedVectorViewFixture::new,
-        (Supplier<Iterable<Vector>>)SingleElementVectorViewFixture::new,
         (Supplier<Iterable<Vector>>)MatrixVectorViewFixture::new,
         (Supplier<Iterable<Vector>>)SparseLocalOffHeapVectorFixture::new
     );
@@ -110,134 +100,7 @@ class VectorImplementationsFixtures {
         }
     }
 
-    /** */
-    private static class RandomVectorFixture extends VectorSizesFixture {
-        /** */
-        RandomVectorFixture() {
-            super("RandomVector", RandomVector::new);
-        }
-    }
 
-    /** */
-    private static class ConstantVectorFixture extends VectorSizesExtraFixture<Double> {
-        /** */
-        ConstantVectorFixture() {
-            super("ConstantVector", ConstantVector::new,
-                "value", new Double[] {-1.0, 0.0, 0.5, 1.0, 2.0, null});
-        }
-    }
-
-    /** */
-    private static class FunctionVectorFixture extends VectorSizesExtraFixture<Double> {
-        /** */
-        FunctionVectorFixture() {
-            super("FunctionVector",
-                (size, scale) -> new FunctionVectorForTest(new double[size], scale),
-                "scale", new Double[] {0.5, 1.0, 2.0, null});
-        }
-    }
-
-    /** */
-    private static class SingleElementVectorFixture implements Iterable<Vector> {
-        /** */
-        private final Supplier<TwoParamsIterator<Integer, Double>> iter;
-
-        /** */
-        private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
-
-        /** */
-        SingleElementVectorFixture() {
-            iter = () -> new TwoParamsIterator<Integer, Double>("SingleElementVector",
-                null, ctxDescrHolder::set,
-                "size", new Integer[] {1, null},
-                "value", new Double[] {-1.0, 0.0, 0.5, 1.0, 2.0, null}) {
-
-                /** {@inheritDoc} */
-                @Override BiFunction<Integer, Double, Vector> ctor() {
-                    return (size, value) -> new SingleElementVector(size, 0, value);
-                }
-            };
-        }
-
-        /** {@inheritDoc} */
-        @NotNull
-        @Override public Iterator<Vector> iterator() {
-            return iter.get();//(
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
-            return ctxDescrHolder.get();
-        }
-    }
-
-    /** */
-    private static class PivotedVectorViewFixture extends VectorSizesFixture {
-        /** */
-        PivotedVectorViewFixture() {
-            super("PivotedVectorView", PivotedVectorViewFixture::pivotedVectorView);
-        }
-
-        /** */
-        private static PivotedVectorView pivotedVectorView(int size) {
-            final DenseLocalOnHeapVector vec = new DenseLocalOnHeapVector(size);
-
-            final int[] pivot = new int[size];
-
-            for (int idx = 0; idx < size; idx++)
-                pivot[idx] = size - 1 - idx;
-
-            PivotedVectorView tmp = new PivotedVectorView(vec, pivot);
-
-            final int[] unpivot = new int[size];
-
-            for (int idx = 0; idx < size; idx++)
-                unpivot[idx] = tmp.unpivot(idx);
-
-            final int[] idxRecovery = new int[size];
-
-            for (int idx = 0; idx < size; idx++)
-                idxRecovery[idx] = idx;
-
-            return new PivotedVectorView(new PivotedVectorView(tmp, unpivot), idxRecovery);
-        }
-    }
-
-    /** */
-    private static class SingleElementVectorViewFixture implements Iterable<Vector> {
-        /** */
-        private final Supplier<TwoParamsIterator<Integer, Double>> iter;
-
-        /** */
-        private final AtomicReference<String> ctxDescrHolder = new AtomicReference<>("Iterator not started.");
-
-        /** */
-        SingleElementVectorViewFixture() {
-            iter = () -> new TwoParamsIterator<Integer, Double>("SingleElementVectorView",
-                null, ctxDescrHolder::set,
-                "size", new Integer[] {1, null},
-                "value", new Double[] {-1.0, 0.0, 0.5, 1.0, 2.0, null}) {
-
-                /** {@inheritDoc} */
-                @Override BiFunction<Integer, Double, Vector> ctor() {
-                    return (size, value) -> new SingleElementVectorView(new SingleElementVector(size, 0, value), 0);
-                }
-            };
-        }
-
-        /** {@inheritDoc} */
-        @NotNull
-        @Override public Iterator<Vector> iterator() {
-            return iter.get();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            // IMPL NOTE index within bounds is expected to be guaranteed by proper code in this class
-            return ctxDescrHolder.get();
-        }
-    }
 
     /** */
     private static class MatrixVectorViewFixture extends VectorSizesExtraFixture<Integer> {
@@ -577,72 +440,6 @@ class VectorImplementationsFixtures {
         }
     }
 
-    /** Subclass tweaked for serialization */
-    private static class FunctionVectorForTest extends FunctionVector {
-        /** */
-        double[] arr;
-
-        /** */
-        double scale;
-
-        /** */
-        public FunctionVectorForTest() {
-            // No-op.
-        }
-
-        /** */
-        FunctionVectorForTest(double[] arr, double scale) {
-            super(arr.length, idx -> arr[idx] * scale, (idx, value) -> arr[idx] = value / scale);
-
-            this.arr = arr;
-
-            this.scale = scale;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            super.writeExternal(out);
-
-            out.writeObject(arr);
-
-            out.writeDouble(scale);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            super.readExternal(in);
-
-            arr = (double[])in.readObject();
-
-            scale = in.readDouble();
-
-            setStorage(new FunctionVectorStorage(arr.length, idx -> arr[idx] * scale, (idx, value) -> arr[idx] = value / scale));
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            int res = 1;
-
-            res = res * 37 + Double.hashCode(scale);
-            res = res * 37 + Integer.hashCode(getStorage().size());
-
-            return res;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            FunctionVectorForTest that = (FunctionVectorForTest)o;
-
-            return new Double(scale).equals(that.scale)
-                && (arr != null ? Arrays.equals(arr, that.arr) : that.arr == null);
-        }
-    }
 
     /** */
     private static class SparseLocalOffHeapVectorFixture extends VectorSizesFixture {
