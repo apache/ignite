@@ -52,11 +52,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureSetUp]
         public virtual void BeforeTests()
         {
-            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
-            {
-                IgniteInstanceName = GridName,
-                SpringConfigUrl = "config\\native-client-test-cache-store.xml",
-            });
+            Restart();
         }
 
         /// <summary>
@@ -74,6 +70,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             {
                 Ignition.StopAll(true);
             }
+        }
+
+        
+        /// <summary>
+        /// Stop all instances, set and start a test instance.
+        /// </summary>
+        private void Restart()
+        {
+            Ignition.StopAll(true);
+            
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                IgniteInstanceName = GridName,
+                SpringConfigUrl = "config\\native-client-test-cache-store.xml",
+            });
         }
 
         /// <summary>
@@ -245,22 +256,29 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
 
             cache.Remove(1);
         }
-
-
+        
         /// <summary>
         /// Tests that exceptions from CacheStoreFactory are propagated properly.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-8070")]
         public void TestFailedCacheStoreException()
         {
-            var ccfg = new CacheConfiguration("CacheWithFailedStore")
+            try
             {
-                CacheStoreFactory = new FailedCacheStoreFactory(),
-                ReadThrough = true
-            };
+                var ccfg = new CacheConfiguration("CacheWithFailedStore")
+                {
+                    CacheStoreFactory = new FailedCacheStoreFactory(),
+                    ReadThrough = true
+                };
 
-            Assert.Throws<CacheException>(() => Ignition.GetIgnite(GridName).GetOrCreateCache<int, int>(ccfg));
+                Assert.Throws<CacheException>(() => Ignition.GetIgnite(GridName).GetOrCreateCache<int, int>(ccfg));
+            }
+            finally
+            {
+                // After failed cache grid is in ivalid state. Should be restarted.
+                Restart();
+            }
+          
         }
 
         [Test]

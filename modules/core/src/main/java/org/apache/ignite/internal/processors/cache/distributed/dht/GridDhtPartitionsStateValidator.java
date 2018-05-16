@@ -95,6 +95,7 @@ public class GridDhtPartitionsStateValidator {
 
         // Validate cache sizes.
         result = validatePartitionsSizes(top, messages, ignoringNodes);
+
         if (!result.isEmpty())
             throw new IgniteCheckedException("Partitions cache sizes are inconsistent for " + fold(topVer, result));
     }

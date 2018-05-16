@@ -67,7 +67,7 @@
 
         <dependency>
             <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-spring-data</artifactId>
+            <artifactId>ignite-spring-data_2.0</artifactId>
             <version>${project.version}</version>
         </dependency>
 
