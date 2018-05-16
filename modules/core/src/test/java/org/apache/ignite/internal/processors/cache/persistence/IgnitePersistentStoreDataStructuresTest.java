@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -34,7 +30,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -170,74 +165,29 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     public void testSet() throws Exception {
         Ignite ignite = startGrids(4);
 
-        int total = 200_000;
-        int updCnt = 10_000;
+        ignite.active(true);
 
-        int max = total + updCnt;
+        IgniteSet<Object> set = ignite.set("testSet", new CollectionConfiguration());
 
-        List<Integer> data = new ArrayList<>(max);
+        for (int i = 0; i < 100; i++)
+            set.add(i);
 
-        for (int i = 0; i < max; i++)
-            data.add(i);
-
-        List<Integer> initData = data.subList(0, total);
-
-        ignite.cluster().active(true);
-
-        IgniteSet<Integer> set = ignite.set("testSet", new CollectionConfiguration());
-
-        set.addAll(initData);
-
-        assertEquals(total, set.size());
+        assertEquals(100, set.size());
 
         stopAllGrids();
 
-        // Prepare new data for update after initialization.
-        List<Integer> rmvData = data.subList(0, updCnt);
-
-        List<Integer> addData = data.subList(total, max);
-
         ignite = startGrids(4);
 
-        ignite.cluster().active(true);
-
-        final IgniteSet<Integer> set0 = ignite.set("testSet", null);
-
-        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-            set0.removeAll(rmvData);
-        });
-
-        set0.addAll(addData);
-
-        fut.get();
-
-        assertEquals(total, set0.size());
-
-        assertFalse(set0.add(max - 1));
-
-        // Check iterator.
-        Set<Integer> exp = new HashSet<>(data.subList(updCnt, max));
-        Set<Integer> actual = new HashSet<>();
-
-        for (Integer num : set0)
-            actual.add(num);
-
-        assertEquals(exp, actual);
-
-        ignite.cluster().active(false);
-
-        ignite.cluster().active(true);
+        ignite.active(true);
 
         set = ignite.set("testSet", null);
 
-        // Check operations reordering.
-        for (int i = 0; i < updCnt; i++) {
-            set.add(i);
+        assertFalse(set.add(99));
 
-            set.remove(i);
-        }
+        for (int i = 0; i < 100; i++)
+            assertTrue(set.contains(i));
 
-        assertEquals(total, set.size());
+        assertEquals(100, set.size());
     }
 
     /**

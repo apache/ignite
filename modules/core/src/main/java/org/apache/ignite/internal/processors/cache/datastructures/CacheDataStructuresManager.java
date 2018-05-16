@@ -220,10 +220,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      */
     public void onAfterCacheStarted() {
         try {
-            if (log.isDebugEnabled())
-                log.debug("Restoring local set items from internal cache " + cctx.name());
-
-            Iterable entries = cctx.cache().localEntries(new CachePeekMode[] {CachePeekMode.ALL});
+            Iterable entries = cctx.cache().localEntries(new CachePeekMode[] {});
 
             for (Object entry : entries) {
                 Object key = ((Cache.Entry)entry).getKey();
@@ -231,9 +228,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                 if (key instanceof SetItemKey)
                     onSetItemUpdated((SetItemKey)key, false);
             }
-
-            if (log.isDebugEnabled())
-                log.debug("Finished restoring local set items from internal cache " + cctx.name());
         }
         catch (IgniteCheckedException e) {
             log.error("Unable to restore local set data map from cache " + cctx.name(), e);
