@@ -21,9 +21,9 @@ import com.datastax.driver.core.Session;
 import org.apache.ignite.cache.store.cassandra.common.CassandraHelper;
 
 /**
- * Wrapper for Cassandra driver session, responsible for monitoring session expiration and its closing.
+ * Simple wrapper for idle Cassandra session returned to pool, responsible for monitoring session expiration and its closing.
  */
-public class SessionWrapper {
+public class IdleSession {
     /** Cassandra driver session. */
     private Session ses;
 
@@ -38,11 +38,10 @@ public class SessionWrapper {
      *
      * @param ses Cassandra driver session.
      */
-    public SessionWrapper(Session ses, long expirationTimeout) {
+    public IdleSession(Session ses, long expirationTimeout) {
         this.ses = ses;
         this.expirationTimeout = expirationTimeout;
-
-        time = System.currentTimeMillis();
+        this.time = System.currentTimeMillis();
     }
 
     /**
@@ -68,7 +67,6 @@ public class SessionWrapper {
      */
     public void release() {
         CassandraHelper.closeSession(ses);
-
         ses = null;
     }
 }
