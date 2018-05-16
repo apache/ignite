@@ -75,13 +75,6 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     /** If {@code false} does not acquire read lock on gateway enter. */
     @GridToStringExclude private boolean lock;
 
-    /**
-     * @return Operation context.
-     */
-    CacheOperationContext opCtx() {
-        return opCtx;
-    }
-
     /** Cache operation context. */
     private CacheOperationContext opCtx;
 
@@ -1547,7 +1540,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
             return false;
         }
 
-        return lock ? gate.enterIfNotStopped(null) : gate.enterIfNotStoppedNoLock(null);
+        return lock ? gate.enterIfNotStopped() : gate.enterIfNotStoppedNoLock();
     }
 
     /**

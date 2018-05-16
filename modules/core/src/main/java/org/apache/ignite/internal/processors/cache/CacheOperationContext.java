@@ -48,7 +48,7 @@ public class CacheOperationContext implements Serializable {
     /** Keep binary flag. */
     private final boolean keepBinary;
 
-    /** Allow atomic cache in transaction */
+    /** Allow atomic cache in transaction. */
     private final boolean allowAtomicOpsInTx;
 
     /** Expiry policy. */

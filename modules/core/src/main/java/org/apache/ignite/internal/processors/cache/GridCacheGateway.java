@@ -104,11 +104,10 @@ public class GridCacheGateway<K, V> {
     /**
      * Enter a cache call.
      *
-     * @param opCtx Cache operation context.
      * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
      */
-    public boolean enterIfNotStopped(CacheOperationContext opCtx) {
-        onEnter(opCtx);
+    public boolean enterIfNotStopped() {
+        onEnter(null);
 
         // Must unlock in case of unexpected errors to avoid deadlocks during kernal stop.
         rwLock.readLock().lock();
@@ -119,11 +118,10 @@ public class GridCacheGateway<K, V> {
     /**
      * Enter a cache call without lock.
      *
-     * @param opCtx Cache operation context.
      * @return {@code True} if enter successful, {@code false} if the cache or the node was stopped.
      */
-    public boolean enterIfNotStoppedNoLock(CacheOperationContext opCtx) {
-        onEnter(opCtx);
+    public boolean enterIfNotStoppedNoLock() {
+        onEnter(null);
 
         return checkState(false, false);
     }

@@ -265,7 +265,8 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
 
         return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx,
             (GridCacheAdapter<K1, V1>)delegate,
-            opCtx != null ? opCtx.keepBinary() : new CacheOperationContext(false, null, true, null, false, null, false, false));
+            opCtx != null ? opCtx.keepBinary() :
+                new CacheOperationContext(false, null, true, null, false, null, false, false));
     }
 
     /** {@inheritDoc} */
