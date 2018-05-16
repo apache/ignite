@@ -28,8 +28,6 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmen
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
@@ -487,20 +485,17 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     break;
             }
 
-            AbstractDataPageIO<T> initIo = ioVersions().latest();
+            AbstractDataPageIO<T> initIo = null;
 
-            if (pageId == 0L)
+            if (pageId == 0L) {
                 pageId = allocateDataPage(row.partition());
-            else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA) {
-                pageId = preparePageForReuse(pageId, row, initIo);
 
-                initIo = null;
+                initIo = ioVersions().latest();
             }
-            else {
+            else if (PageIdUtils.tag(pageId) != PageIdAllocator.FLAG_DATA)
+                pageId = initReusedPage(pageId, row.partition());
+            else
                 pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
-
-                initIo = null;
-            }
 
             written = write(pageId, writeRow, initIo, row, written, FAIL_I);
 
@@ -510,19 +505,13 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
-     * Reused non-data page must obtain data page id, then initialized by {@code initIo}
-     * and non-zero {@code itemId} of reused page id must be saved into special place.
-     *
-     * @param pageId Page id.
-     * @param row Row.
-     * @param initIo Initial io.
+     * @param reusedPageId Reused page id.
+     * @param partId Partition id.
      * @return Prepared page id.
+     *
+     * @see PagesList#initReusedPage(long, long, long, int, byte, PageIO)
      */
-    private long preparePageForReuse(long pageId, T row, AbstractDataPageIO<T> initIo) throws IgniteCheckedException {
-        long reusedPageId = pageId;
-
-        pageId = PageIdUtils.pageId(row.partition(), PageIdAllocator.FLAG_DATA, PageIdUtils.pageIndex(reusedPageId));
-
+    private long initReusedPage(long reusedPageId, int partId) throws IgniteCheckedException {
         long reusedPage = acquirePage(reusedPageId);
         try {
             long reusedPageAddr = writeLock(reusedPageId, reusedPage);
@@ -530,23 +519,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             assert reusedPageAddr != 0;
 
             try {
-                initIo.initNewPage(reusedPageAddr, pageId, pageSize());
-
-                boolean needWalDeltaRecord = needWalDeltaRecord(reusedPageId, reusedPage, null);
-
-                if (needWalDeltaRecord) {
-                    wal.log(new InitNewPageRecord(grpId, reusedPageId, initIo.getType(),
-                        initIo.getVersion(), pageId));
-                }
-
-                int itemId = PageIdUtils.itemId(reusedPageId);
-
-                if (itemId != 0) {
-                    PageIO.setRotatedIdPart(reusedPageAddr, itemId);
-
-                    if (needWalDeltaRecord)
-                        wal.log(new RotatedIdPartRecord(grpId, pageId, itemId));
-                }
+                return initReusedPage(reusedPageId, reusedPage, reusedPageAddr,
+                    partId, PageIdAllocator.FLAG_DATA, ioVersions().latest());
             }
             finally {
                 writeUnlock(reusedPageId, reusedPage, reusedPageAddr, true);
@@ -555,8 +529,6 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         finally {
             releasePage(reusedPageId, reusedPage);
         }
-
-        return pageId;
     }
 
     /** {@inheritDoc} */

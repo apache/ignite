@@ -1109,29 +1109,8 @@ public abstract class PagesList extends DataStructure {
 
                         decrementBucketSize(bucket);
 
-                        if (initIoVers != null) {
-                            dataPageId = PageIdUtils.pageId(0, FLAG_DATA, PageIdUtils.pageIndex(tailId));
-
-                            PageIO initIo = initIoVers.latest();
-
-                            initIo.initNewPage(tailAddr, dataPageId, pageSize());
-
-                            boolean needWalDeltaRecord = needWalDeltaRecord(tailId, tailPage, null);
-
-                            if (needWalDeltaRecord) {
-                                wal.log(new InitNewPageRecord(grpId, tailId, initIo.getType(),
-                                    initIo.getVersion(), dataPageId));
-                            }
-
-                            int itemId = PageIdUtils.itemId(tailId);
-
-                            if (itemId != 0) {
-                                PageIO.setRotatedIdPart(tailAddr, itemId);
-
-                                if (needWalDeltaRecord)
-                                    wal.log(new RotatedIdPartRecord(grpId, dataPageId, itemId));
-                            }
-                        }
+                        if (initIoVers != null)
+                            dataPageId = initReusedPage(tailId, tailPage, tailAddr, 0, FLAG_DATA, initIoVers.latest());
                         else
                             dataPageId = recyclePage(tailId, tailPage, tailAddr, null);
 
@@ -1160,6 +1139,44 @@ public abstract class PagesList extends DataStructure {
                 releasePage(tailId, tailPage);
             }
         }
+    }
+
+    /**
+     * Reused page must obtain correctly assembled page id, then initialized by proper {@link PageIO} instance
+     * and non-zero {@code itemId} of reused page id must be saved into special place.
+     *
+     * @param reusedPageId Reused page id.
+     * @param reusedPage Reused page.
+     * @param reusedPageAddr Reused page address.
+     * @param partId Partition id.
+     * @param flag Flag.
+     * @param initIo Initial io.
+     * @return Prepared page id.
+     */
+    protected final long initReusedPage(long reusedPageId, long reusedPage, long reusedPageAddr,
+        int partId, byte flag, PageIO initIo) throws IgniteCheckedException {
+
+        long newPageId = PageIdUtils.pageId(partId, flag, PageIdUtils.pageIndex(reusedPageId));
+
+        initIo.initNewPage(reusedPageAddr, newPageId, pageSize());
+
+        boolean needWalDeltaRecord = needWalDeltaRecord(reusedPageId, reusedPage, null);
+
+        if (needWalDeltaRecord) {
+            wal.log(new InitNewPageRecord(grpId, reusedPageId, initIo.getType(),
+                initIo.getVersion(), newPageId));
+        }
+
+        int itemId = PageIdUtils.itemId(reusedPageId);
+
+        if (itemId != 0) {
+            PageIO.setRotatedIdPart(reusedPageAddr, itemId);
+
+            if (needWalDeltaRecord)
+                wal.log(new RotatedIdPartRecord(grpId, newPageId, itemId));
+        }
+
+        return newPageId;
     }
 
     /**
