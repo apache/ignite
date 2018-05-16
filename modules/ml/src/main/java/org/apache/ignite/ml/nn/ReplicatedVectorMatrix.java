@@ -317,20 +317,6 @@ class ReplicatedVectorMatrix implements Matrix {
     }
 
     /** {@inheritDoc} */
-    @Override public double determinant() {
-        // If matrix is not square throw exception.
-        checkCardinality(vector.size(), replicationCnt);
-
-        // If matrix is 1x1 then determinant is its single element otherwise there are linear dependence and determinant is 0.
-        return vector.size() > 0 ? 0 : vector.get(1);
-    }
-
-    /** {@inheritDoc} */
-    @Override public Matrix inverse() {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public Matrix divide(double x) {
         return new ReplicatedVectorMatrix(vector.divide(x), replicationCnt, asCol);
     }
