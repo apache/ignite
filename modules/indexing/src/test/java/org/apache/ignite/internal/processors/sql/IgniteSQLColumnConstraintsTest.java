@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.sql;
 
 import java.util.List;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -47,7 +47,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
             execSql("INSERT INTO varchar_table VALUES(?, ?)", 2, "123456");
             
             return 0;
-        }, IgniteException.class);
+        }, IgniteSQLException.class);
     }
 
     /**
@@ -58,7 +58,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
                 execSql("INSERT INTO char_table VALUES(?, ?)", 2, "123456");
 
                 return 0;
-        }, IgniteException.class);
+        }, IgniteSQLException.class);
     }
 
     /**
@@ -69,7 +69,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
             execSql("UPDATE varchar_table SET str = ? WHERE id = ?", "123456", 1);
 
             return 0;
-        }, IgniteException.class);
+        }, IgniteSQLException.class);
     }
 
     /**
@@ -80,7 +80,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
             execSql("UPDATE char_table SET str = ? WHERE id = ?", "123456", 1);
 
             return 0;
-        }, IgniteException.class);
+        }, IgniteSQLException.class);
     }
 
     /**
@@ -91,7 +91,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
             execSql("MERGE INTO varchar_table(id, str) VALUES(?, ?)", 1, "123456");
 
             return 0;
-        }, IgniteException.class);
+        }, IgniteSQLException.class);
     }
 
     /**
@@ -102,7 +102,7 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
             execSql("MERGE INTO char_table(id, str) VALUES(?, ?)", 1, "123456");
 
             return 0;
-        }, IgniteException.class);
+        }, IgniteSQLException.class);
     }
 
     /** */
