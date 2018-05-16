@@ -17,24 +17,13 @@
 
 package org.apache.ignite.ml.math;
 
-import org.apache.ignite.ml.math.decompositions.CholeskyDecompositionTest;
-import org.apache.ignite.ml.math.decompositions.EigenDecompositionTest;
-import org.apache.ignite.ml.math.decompositions.LUDecompositionTest;
-import org.apache.ignite.ml.math.decompositions.QRDSolverTest;
-import org.apache.ignite.ml.math.decompositions.QRDecompositionTest;
-import org.apache.ignite.ml.math.decompositions.SingularValueDecompositionTest;
 import org.apache.ignite.ml.math.distances.DistanceTest;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOffHeapMatrixConstructorTest;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrixConstructorTest;
-import org.apache.ignite.ml.math.impls.matrix.DiagonalMatrixTest;
-import org.apache.ignite.ml.math.impls.matrix.FunctionMatrixConstructorTest;
 import org.apache.ignite.ml.math.impls.matrix.MatrixAttributeTest;
 import org.apache.ignite.ml.math.impls.matrix.MatrixImplementationsTest;
 import org.apache.ignite.ml.math.impls.matrix.MatrixViewConstructorTest;
-import org.apache.ignite.ml.math.impls.matrix.PivotedMatrixViewConstructorTest;
-import org.apache.ignite.ml.math.impls.matrix.RandomMatrixConstructorTest;
 import org.apache.ignite.ml.math.impls.matrix.SparseLocalOnHeapMatrixConstructorTest;
-import org.apache.ignite.ml.math.impls.matrix.TransposedMatrixViewTest;
 import org.apache.ignite.ml.math.impls.storage.matrix.MatrixArrayStorageTest;
 import org.apache.ignite.ml.math.impls.storage.matrix.MatrixOffHeapStorageTest;
 import org.apache.ignite.ml.math.impls.storage.matrix.MatrixStorageImplementationTest;
@@ -43,21 +32,13 @@ import org.apache.ignite.ml.math.impls.storage.vector.SparseLocalOffHeapVectorSt
 import org.apache.ignite.ml.math.impls.storage.vector.VectorArrayStorageTest;
 import org.apache.ignite.ml.math.impls.storage.vector.VectorOffheapStorageTest;
 import org.apache.ignite.ml.math.impls.vector.AbstractVectorTest;
-import org.apache.ignite.ml.math.impls.vector.ConstantVectorConstructorTest;
 import org.apache.ignite.ml.math.impls.vector.DelegatingVectorConstructorTest;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOffHeapVectorConstructorTest;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVectorConstructorTest;
-import org.apache.ignite.ml.math.impls.vector.FunctionVectorConstructorTest;
 import org.apache.ignite.ml.math.impls.vector.MatrixVectorViewTest;
-import org.apache.ignite.ml.math.impls.vector.PivotedVectorViewConstructorTest;
-import org.apache.ignite.ml.math.impls.vector.RandomVectorConstructorTest;
-import org.apache.ignite.ml.math.impls.vector.SingleElementVectorConstructorTest;
-import org.apache.ignite.ml.math.impls.vector.SingleElementVectorViewConstructorTest;
 import org.apache.ignite.ml.math.impls.vector.SparseLocalVectorConstructorTest;
 import org.apache.ignite.ml.math.impls.vector.VectorAttributesTest;
 import org.apache.ignite.ml.math.impls.vector.VectorFoldMapTest;
-import org.apache.ignite.ml.math.impls.vector.VectorImplementationsTest;
-import org.apache.ignite.ml.math.impls.vector.VectorIterableTest;
 import org.apache.ignite.ml.math.impls.vector.VectorNormTest;
 import org.apache.ignite.ml.math.impls.vector.VectorToMatrixTest;
 import org.apache.ignite.ml.math.impls.vector.VectorViewTest;
@@ -74,20 +55,12 @@ import org.junit.runners.Suite;
     DenseLocalOnHeapVectorConstructorTest.class,
     DenseLocalOffHeapVectorConstructorTest.class,
     SparseLocalVectorConstructorTest.class,
-    RandomVectorConstructorTest.class,
-    ConstantVectorConstructorTest.class,
-    FunctionVectorConstructorTest.class,
-    SingleElementVectorConstructorTest.class,
-    PivotedVectorViewConstructorTest.class,
-    SingleElementVectorViewConstructorTest.class,
     DelegatingVectorConstructorTest.class,
     // Various vectors tests.
     AbstractVectorTest.class,
-    VectorImplementationsTest.class,
     VectorViewTest.class,
     MatrixVectorViewTest.class,
     // Vector particular features tests.
-    VectorIterableTest.class,
     VectorAttributesTest.class,
     VectorToMatrixTest.class,
     VectorNormTest.class,
@@ -104,23 +77,11 @@ import org.junit.runners.Suite;
     // Matrix constructors tests.
     DenseLocalOnHeapMatrixConstructorTest.class,
     DenseLocalOffHeapMatrixConstructorTest.class,
-    RandomMatrixConstructorTest.class,
-    FunctionMatrixConstructorTest.class,
     MatrixViewConstructorTest.class,
-    PivotedMatrixViewConstructorTest.class,
     SparseLocalOnHeapMatrixConstructorTest.class,
     // Matrix tests.
     MatrixImplementationsTest.class,
-    DiagonalMatrixTest.class,
     MatrixAttributeTest.class,
-    TransposedMatrixViewTest.class,
-    // Decompositions.
-    LUDecompositionTest.class,
-    EigenDecompositionTest.class,
-    CholeskyDecompositionTest.class,
-    QRDecompositionTest.class,
-    SingularValueDecompositionTest.class,
-    QRDSolverTest.class,
     DistanceTest.class,
     LSQROnHeapTest.class
 })

@@ -21,7 +21,6 @@ import java.util.Map;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.MapWrapperVector;
-import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 
 /**
  * Some utils for {@link Vector}.
@@ -62,7 +61,7 @@ public class VectorUtils {
      * @return One-hot encoded number.
      */
     public static Vector num2Vec(int num, int vecSize, boolean isDistributed) {
-        Vector res = isDistributed ? new SparseDistributedVector(vecSize) : new DenseLocalOnHeapVector(vecSize);
+        Vector res = new DenseLocalOnHeapVector(vecSize);
         return res.setX(num, 1);
     }
 
