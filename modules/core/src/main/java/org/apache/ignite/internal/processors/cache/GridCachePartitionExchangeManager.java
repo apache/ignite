@@ -217,6 +217,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** For tests only. */
     private volatile AffinityTopologyVersion exchMergeTestWaitVer;
 
+    /** For tests only. */
+    private volatile List mergedEvtsForTest;
+
     /** Distributed latch manager. */
     private ExchangeLatchManager latchMgr;
 
@@ -1879,9 +1882,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * For testing only.
      *
      * @param exchMergeTestWaitVer Version to wait for.
+     * @param mergedEvtsForTest List to collect discovery events with merged exchanges.
      */
-    public void mergeExchangesTestWaitVersion(AffinityTopologyVersion exchMergeTestWaitVer) {
+    public void mergeExchangesTestWaitVersion(
+        AffinityTopologyVersion exchMergeTestWaitVer,
+        @Nullable List mergedEvtsForTest
+    ) {
         this.exchMergeTestWaitVer = exchMergeTestWaitVer;
+        this.mergedEvtsForTest = mergedEvtsForTest;
     }
 
     /**
@@ -1968,46 +1976,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         AffinityTopologyVersion exchMergeTestWaitVer = this.exchMergeTestWaitVer;
 
-        if (exchMergeTestWaitVer != null) {
-            if (log.isInfoEnabled()) {
-                log.info("Exchange merge test, waiting for version [exch=" + curFut.initialVersion() +
-                    ", waitVer=" + exchMergeTestWaitVer + ']');
-            }
-
-            long end = U.currentTimeMillis() + 10_000;
-
-            while (U.currentTimeMillis() < end) {
-                boolean found = false;
-
-                for (CachePartitionExchangeWorkerTask task : exchWorker.futQ) {
-                    if (task instanceof GridDhtPartitionsExchangeFuture) {
-                        GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
-
-                        if (exchMergeTestWaitVer.equals(fut.initialVersion())) {
-                            if (log.isInfoEnabled())
-                                log.info("Exchange merge test, found awaited version: " + exchMergeTestWaitVer);
-
-                            found = true;
-
-                            break;
-                        }
-                    }
-                }
-
-                if (found)
-                    break;
-                else {
-                    try {
-                        U.sleep(100);
-                    }
-                    catch (IgniteInterruptedCheckedException e) {
-                        break;
-                    }
-                }
-            }
-
-            this.exchMergeTestWaitVer = null;
-        }
+        if (exchMergeTestWaitVer != null)
+            waitForTestVersion(exchMergeTestWaitVer, curFut);
 
         synchronized (curFut.mutex()) {
             int awaited = 0;
@@ -2048,6 +2018,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             ", evtNodeClient=" + CU.clientNode(fut.firstEvent().eventNode())+ ']');
                     }
 
+                    addDiscoEvtForTest(fut.firstEvent());
+
                     curFut.context().events().addEvent(fut.initialVersion(),
                         fut.firstEvent(),
                         fut.firstEventCache());
@@ -2069,6 +2041,67 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             return awaited == 0;
         }
+    }
+
+
+    /**
+     * For testing purposes. Stores discovery events with merged exchanges to enable examining them later.
+     *
+     * @param discoEvt Discovery event.
+     */
+    private void addDiscoEvtForTest(DiscoveryEvent discoEvt) {
+        List mergedEvtsForTest = this.mergedEvtsForTest;
+
+        if (mergedEvtsForTest != null)
+            mergedEvtsForTest.add(discoEvt);
+    }
+
+    /**
+     * For testing purposes. Method allows to wait for an exchange future of specific version
+     * to appear in exchange worker queue.
+     *
+     * @param exchMergeTestWaitVer Topology Version to wait for.
+     * @param curFut Current Exchange Future.
+     */
+    private void waitForTestVersion(AffinityTopologyVersion exchMergeTestWaitVer, GridDhtPartitionsExchangeFuture curFut) {
+        if (log.isInfoEnabled()) {
+            log.info("Exchange merge test, waiting for version [exch=" + curFut.initialVersion() +
+                ", waitVer=" + exchMergeTestWaitVer + ']');
+        }
+
+        long end = U.currentTimeMillis() + 10_000;
+
+        while (U.currentTimeMillis() < end) {
+            boolean found = false;
+
+            for (CachePartitionExchangeWorkerTask task : exchWorker.futQ) {
+                if (task instanceof GridDhtPartitionsExchangeFuture) {
+                    GridDhtPartitionsExchangeFuture fut = (GridDhtPartitionsExchangeFuture)task;
+
+                    if (exchMergeTestWaitVer.equals(fut.initialVersion())) {
+                        if (log.isInfoEnabled())
+                            log.info("Exchange merge test, found awaited version: " + exchMergeTestWaitVer);
+
+                        found = true;
+
+                        break;
+                    }
+                }
+            }
+
+            if (found)
+                break;
+            else {
+                try {
+                    U.sleep(100);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                    break;
+                }
+            }
+        }
+
+        this.exchMergeTestWaitVer = null;
     }
 
     /**

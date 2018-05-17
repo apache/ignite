@@ -29,8 +29,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         /** Members that are not needed on .NET side. */
         private static readonly string[] UnneededMembers =
         {
-            "deployClass",
-            "perThreadBufferSize"
+            "deployClass"
         };
 
         /** Known name mappings. */

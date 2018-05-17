@@ -54,9 +54,9 @@
         <aws.sdk.bundle.version>1.10.12_1</aws.sdk.bundle.version>
         <aws.sdk.version>1.11.75</aws.sdk.version>
         <camel.version>2.16.0</camel.version>
-        <commons.beanutils.bundle.version>1.8.3_1</commons.beanutils.bundle.version>
-        <commons.beanutils.version>1.8.3</commons.beanutils.version>
-        <commons.codec.version>1.6</commons.codec.version>
+        <commons.beanutils.bundle.version>1.9.2_1</commons.beanutils.bundle.version>
+        <commons.beanutils.version>1.9.2</commons.beanutils.version>
+        <commons.codec.version>1.11</commons.codec.version>
         <commons.collections.version>3.2.2</commons.collections.version>
         <commons.lang.version>2.6</commons.lang.version>
         <cron4j.version>2.2.5</cron4j.version>
@@ -113,7 +113,8 @@
         <spark.hadoop.version>2.6.5</spark.hadoop.version>
         <spark.version>2.2.0</spark.version>
         <spring.data.version>1.13.1.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
-        <spring.version>4.3.7.RELEASE</spring.version> <!-- don't forget to update spring-data version -->
+        <spring.version>4.3.7.RELEASE</spring.version><!-- don't forget to update spring-data version -->
+        <spring.data-2.0.version>2.0.5.RELEASE</spring.data-2.0.version> <!-- don't forget to update spring version -->
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
         <storm.version>1.1.1</storm.version>
         <tomcat.version>8.0.23</tomcat.version>

@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.compute.ComputeJobResult;
-import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -81,10 +80,7 @@ public class VisorValidateIndexesTask extends VisorMultiNodeTask<VisorValidateIn
 
                 ignite.context().resource().injectGeneric(clo);
 
-                Map<PartitionKey, ValidateIndexesPartitionResult> res = clo.call();
-
-                return new VisorValidateIndexesJobResult(res);
-
+                return clo.call();
             }
             catch (Exception e) {
                 throw new IgniteException(e);
