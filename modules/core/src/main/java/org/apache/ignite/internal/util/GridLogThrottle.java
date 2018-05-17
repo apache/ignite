@@ -34,8 +34,8 @@ import org.jsr166.ConcurrentHashMap8;
  * classes.
  */
 public class GridLogThrottle {
-    /** Default throttle timeout in milliseconds (value is <tt>5 * 60 * 1000</tt>). */
-    public static final int DFLT_THROTTLE_TIMEOUT = 5 * 60 * 1000;
+    /** Default throttle timeout in milliseconds (value is <tt>10 * 1000</tt>). */
+    public static final int DFLT_THROTTLE_TIMEOUT = 10 * 1000;
 
     /** Throttle timeout. */
     private static int throttleTimeout = DFLT_THROTTLE_TIMEOUT;
