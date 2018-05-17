@@ -42,7 +42,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.management.JMException;
@@ -182,6 +185,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_FORCE_JVM_SHUTDOWN_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
@@ -189,6 +193,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.IgniteSystemProperties.snapshot;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
 import static org.apache.ignite.internal.GridKernalState.STARTED;
@@ -257,6 +262,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** Force complete reconnect future. */
     private static final Object STOP_RECONNECT = new Object();
+
+    /** Force JVM shutdown timeout. */
+    private static final long DFLT_SHUTDOWN_TIMEOUT = -1;
 
     /** */
     @GridToStringExclude
@@ -2067,6 +2075,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             GridKernalState state = gw.getState();
 
+
             if (state == STARTED || state == DISCONNECTED)
                 firstStop = true;
             else if (state == STARTING)
@@ -2079,6 +2088,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     log.debug("Notifying lifecycle beans.");
 
                 notifyLifecycleBeansEx(LifecycleEventType.BEFORE_NODE_STOP);
+            }
+
+            final long shutdownTimeout = getLong(IGNITE_FORCE_JVM_SHUTDOWN_TIMEOUT, DFLT_SHUTDOWN_TIMEOUT);
+
+            if ( shutdownTimeout != -1 ) {
+                final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
+                U.warn(null, "This JVM will be killed in " + shutdownTimeout + " ms. Set with IGNITE_FORCE_JVM_SHUTDOWN_TIMEOUT.");
+
+                executor.schedule(new Runnable() {
+                    @Override
+                    public void run() {
+                        U.error(null, "Forcefully killing node, graceful shutdown has not been finished within "
+                            + shutdownTimeout + " ms timeout.");
+
+                        System.exit(Ignition.KILL_EXIT_CODE);
+                    }
+                }, shutdownTimeout, TimeUnit.MILLISECONDS);
             }
 
             List<GridComponent> comps = ctx.components();

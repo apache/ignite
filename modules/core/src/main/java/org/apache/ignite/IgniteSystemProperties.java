@@ -619,6 +619,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
 
     /**
+     * This property allows to set timeout for JVM to be forcefully closed if {@link IgniteKernal#close()} fails to stop gracefully.
+     * Default value is {@code -1ms}, property has to be set explicitly.
+     */
+    public static final String IGNITE_FORCE_JVM_SHUTDOWN_TIMEOUT = "IGNITE_FORCE_JVM_SHUTDOWN_TIMEOUT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
