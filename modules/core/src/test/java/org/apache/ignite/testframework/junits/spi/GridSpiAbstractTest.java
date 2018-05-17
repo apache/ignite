@@ -123,10 +123,17 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         tests.put(getClass(), new TestData<T>());
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        // No-op.
+    }
+
     /**
      * @throws Exception If failed.
      */
     @Override protected final void setUp() throws Exception {
+        cleanPersistenceDir();
+
         // Need to change classloader here, although it also handled in the parent class
         // the current test initialisation procedure doesn't allow us to setUp the parent first.
         cl = Thread.currentThread().getContextClassLoader();
