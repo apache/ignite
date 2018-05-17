@@ -491,13 +491,9 @@ public class GridReduceQueryExecutor {
             else
                 disjoint = !extraNodes.equals(nodes);
 
-            if (disjoint) {
-                if (isPreloadingActive(cacheIds))
-                    return null; // Retry.
-                else
-                    throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
-                        ", cache2=" + extraCacheName + "]");
-            }
+            if (disjoint)
+                return null; // Retry.
+
         }
 
         return map;
