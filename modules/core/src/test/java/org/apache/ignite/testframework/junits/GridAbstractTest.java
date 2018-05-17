@@ -600,6 +600,8 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
+            cleanPersistenceDir();
+
             info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if(isSafeTopology())
