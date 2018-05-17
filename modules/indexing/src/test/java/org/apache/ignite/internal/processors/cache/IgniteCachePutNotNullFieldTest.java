@@ -55,6 +55,7 @@ public class IgniteCachePutNotNullFieldTest extends GridCommonAbstractTest {
             () -> {
                 jcache(0, "ORG_ADDRESS")
                     .putAll(Collections.singletonMap(new Organization("1"), new Address(null)));
+
                 return null;
             },
             IgniteSQLException.class
