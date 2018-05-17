@@ -297,6 +297,8 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        G.stopAll(true);
+
         String path = U.getIgniteHome() + SECONDARY_CFG_PATH;
 
         new File(path).delete();

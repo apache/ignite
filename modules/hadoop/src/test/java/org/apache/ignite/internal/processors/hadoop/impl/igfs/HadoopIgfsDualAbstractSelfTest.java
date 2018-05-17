@@ -220,6 +220,11 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
         clear(igfsSecondary);
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        G.stopAll(true);
+    }
+
     /**
      * Convenient method to group paths.
      *
