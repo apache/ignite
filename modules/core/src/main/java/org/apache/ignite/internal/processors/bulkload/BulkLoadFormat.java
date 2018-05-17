@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.bulkload;
 
 import java.nio.charset.Charset;
 
-/** A superclass and a factory for bulk load format options. */
+/**
+ * A superclass and a factory for bulk load format options.
+ */
 public abstract class BulkLoadFormat {
     /** The default input charset. */
     public static final Charset DEFAULT_INPUT_CHARSET = Charset.forName("UTF-8");

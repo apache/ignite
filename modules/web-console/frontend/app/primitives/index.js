@@ -32,6 +32,7 @@ import './radio/index.scss';
 import './switcher/index.scss';
 import './typography/index.scss';
 import './grid/index.scss';
+import './checkbox/index.scss';
 import './tooltip/index.scss';
 import './spinner-circle/index.scss';
 import './form-field/index.scss';

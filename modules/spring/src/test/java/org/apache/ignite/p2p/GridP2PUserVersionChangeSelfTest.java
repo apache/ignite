@@ -44,6 +44,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testsuites.IgniteIgnore;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
 
@@ -255,12 +256,12 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             ignite2.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
-                    if (evt.type() == EVT_NODE_LEFT)
+                    if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
                         discoLatch.countDown();
 
                     return true;
                 }
-            }, EVT_NODE_LEFT);
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             Integer res1 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 

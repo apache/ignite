@@ -40,6 +40,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
@@ -50,6 +52,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -542,7 +545,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         catch (IgniteOutOfMemoryException oom) {
             DataRegionConfiguration dataRegionCfg = getDataRegionConfiguration();
 
-            throw (IgniteOutOfMemoryException) new IgniteOutOfMemoryException("Out of memory in data region [" +
+            IgniteOutOfMemoryException e = new IgniteOutOfMemoryException("Out of memory in data region [" +
                 "name=" + dataRegionCfg.getName() +
                 ", initSize=" + U.readableSize(dataRegionCfg.getInitialSize(), false) +
                 ", maxSize=" + U.readableSize(dataRegionCfg.getMaxSize(), false) +
@@ -550,7 +553,13 @@ public class PageMemoryImpl implements PageMemoryEx {
                 "  ^-- Increase maximum off-heap memory size (DataRegionConfiguration.maxSize)" + U.nl() +
                 "  ^-- Enable Ignite persistence (DataRegionConfiguration.persistenceEnabled)" + U.nl() +
                 "  ^-- Enable eviction or expiration policies"
-            ).initCause(oom);
+            );
+
+            e.initCause(oom);
+
+            ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+            throw e;
         }
         finally {
             seg.writeLock().unlock();
@@ -745,6 +754,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             return absPtr;
         }
+        catch (IgniteOutOfMemoryException oom) {
+            ctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, oom));
+
+            throw oom;
+        }
         finally {
             seg.writeLock().unlock();
 
@@ -763,6 +777,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 try {
                     storeMgr.read(grpId, pageId, buf);
+
+                    memMetrics.onPageRead();
                 }
                 catch (IgniteDataIntegrityViolationException ignore) {
                     U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
@@ -771,6 +787,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                     buf.rewind();
 
                     tryToRestorePage(fullId, buf);
+
+                    memMetrics.onPageRead();
                 }
                 finally {
                     rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
@@ -832,7 +850,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * this method.
      *
      * @throws IgniteCheckedException If failed to start WAL iteration, if incorrect page type observed in data, etc.
-     * @throws AssertionError if it was not possible to restore page, page not found in WAL.
+     * @throws StorageException If it was not possible to restore page, page not found in WAL.
      */
     private void tryToRestorePage(FullPageId fullId, ByteBuffer buf) throws IgniteCheckedException {
         Long tmpAddr = null;
@@ -897,7 +915,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             ByteBuffer restored = curPage == null ? lastValidPage : curPage;
 
             if (restored == null)
-                throw new AssertionError(String.format(
+                throw new StorageException(String.format(
                     "Page is broken. Can't restore it from WAL. (grpId = %d, pageId = %X).",
                     fullId.groupId(), fullId.pageId()
                 ));
@@ -1130,7 +1148,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             assert success : "Page was pin when we resolve abs pointer, it can not be evicted";
 
-            if (tmpRelPtr != INVALID_REL_PTR){
+            if (tmpRelPtr != INVALID_REL_PTR) {
                 PageHeader.tempBufferPointer(absPtr, INVALID_REL_PTR);
 
                 long tmpAbsPtr = checkpointPool.absolute(tmpRelPtr);
@@ -1144,9 +1162,6 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 checkpointPool.releaseFreePage(tmpRelPtr);
 
-                // We pinned the page when allocated the temp buffer, release it now.
-                PageHeader.releasePage(absPtr);
-
                 // Need release again because we pin page when resolve abs pointer,
                 // and page did not have tmp buffer page.
                 if (!pageSingleAcquire)
@@ -1157,18 +1172,21 @@ public class PageMemoryImpl implements PageMemoryEx {
                 copyInBuffer(absPtr, outBuf);
 
                 PageHeader.dirty(absPtr, false);
-
-                // We pinned the page when resolve abs pointer.
-                PageHeader.releasePage(absPtr);
             }
 
             assert PageIO.getType(outBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
             assert PageIO.getVersion(outBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(fullId.pageId());
 
+            memMetrics.onPageWritten();
+
             return true;
         }
         finally {
             rwLock.writeUnlock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+
+            // We pinned the page either when allocated the temp buffer, or when resolved abs pointer.
+            // Must release the page only after write unlock.
+            PageHeader.releasePage(absPtr);
         }
     }
 

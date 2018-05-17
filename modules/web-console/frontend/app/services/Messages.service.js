@@ -16,6 +16,8 @@
  */
 
 import {CancellationError} from 'app/errors/CancellationError';
+import isEmpty from 'lodash/isEmpty';
+import {nonEmpty} from 'app/utils/lodashMixins';
 
 // Service to show various information and error messages.
 export default ['IgniteMessages', ['$alert', ($alert) => {
@@ -31,14 +33,13 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
 
             if (err.hasOwnProperty('message')) {
                 const msg = err.message;
+                const lastIdx = msg.lastIndexOf(' err=');
 
-                const errIndex = msg.indexOf(' err=');
-
-                return prefix + (errIndex >= 0 ? msg.substring(errIndex + 5, msg.length - 1) : msg);
+                return prefix + (lastIdx >= 0 ? msg.substring(lastIdx + 5, msg.indexOf(']', lastIdx)) : msg);
             }
 
-            if (_.nonEmpty(err.className)) {
-                if (_.isEmpty(prefix))
+            if (nonEmpty(err.className)) {
+                if (isEmpty(prefix))
                     prefix = 'Internal cluster error: ';
 
                 return prefix + err.className;

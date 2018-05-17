@@ -22,14 +22,14 @@ import java.util.Arrays;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
-import org.apache.ignite.ml.math.isolve.LinSysPartitionDataOnHeap;
+import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 
 /**
  * Distributed implementation of LSQR algorithm based on {@link AbstractLSQR} and {@link Dataset}.
  */
 public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
     /** Dataset. */
-    private final Dataset<LSQRPartitionContext, LinSysPartitionDataOnHeap> dataset;
+    private final Dataset<LSQRPartitionContext, SimpleLabeledDatasetData> dataset;
 
     /**
      * Constructs a new instance of OnHeap LSQR algorithm implementation.
@@ -38,7 +38,7 @@ public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
      * @param partDataBuilder Partition data builder.
      */
     public LSQROnHeap(DatasetBuilder<K, V> datasetBuilder,
-        PartitionDataBuilder<K, V, LSQRPartitionContext, LinSysPartitionDataOnHeap> partDataBuilder) {
+        PartitionDataBuilder<K, V, LSQRPartitionContext, SimpleLabeledDatasetData> partDataBuilder) {
         this.dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new LSQRPartitionContext(),
             partDataBuilder
@@ -48,37 +48,46 @@ public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
     /** {@inheritDoc} */
     @Override protected double bnorm() {
         return dataset.computeWithCtx((ctx, data) -> {
-            ctx.setU(Arrays.copyOf(data.getY(), data.getY().length));
+            ctx.setU(Arrays.copyOf(data.getLabels(), data.getLabels().length));
 
-            return BLAS.getInstance().dnrm2(data.getY().length, data.getY(), 1);
-        }, (a, b) -> a == null ? b : Math.sqrt(a * a + b * b));
+            return BLAS.getInstance().dnrm2(data.getLabels().length, data.getLabels(), 1);
+        }, (a, b) -> a == null ? b : b == null ? a : Math.sqrt(a * a + b * b));
     }
 
     /** {@inheritDoc} */
     @Override protected double beta(double[] x, double alfa, double beta) {
         return dataset.computeWithCtx((ctx, data) -> {
-            BLAS.getInstance().dgemv("N", data.getRows(), data.getCols(), alfa, data.getX(),
+            if (data.getFeatures() == null)
+                return null;
+
+            int cols = data.getFeatures().length / data.getRows();
+            BLAS.getInstance().dgemv("N", data.getRows(), cols, alfa, data.getFeatures(),
                 Math.max(1, data.getRows()), x, 1, beta, ctx.getU(), 1);
 
             return BLAS.getInstance().dnrm2(ctx.getU().length, ctx.getU(), 1);
-        }, (a, b) -> a == null ? b : Math.sqrt(a * a + b * b));
+        }, (a, b) -> a == null ? b : b == null ? a : Math.sqrt(a * a + b * b));
     }
 
     /** {@inheritDoc} */
     @Override protected double[] iter(double bnorm, double[] target) {
         double[] res = dataset.computeWithCtx((ctx, data) -> {
+            if (data.getFeatures() == null)
+                return null;
+
+            int cols =  data.getFeatures().length / data.getRows();
             BLAS.getInstance().dscal(ctx.getU().length, 1 / bnorm, ctx.getU(), 1);
-            double[] v = new double[data.getCols()];
-            BLAS.getInstance().dgemv("T", data.getRows(), data.getCols(), 1.0, data.getX(),
+            double[] v = new double[cols];
+            BLAS.getInstance().dgemv("T", data.getRows(), cols, 1.0, data.getFeatures(),
                 Math.max(1, data.getRows()), ctx.getU(), 1, 0, v, 1);
 
             return v;
         }, (a, b) -> {
             if (a == null)
                 return b;
+            else if (b == null)
+                return a;
             else {
                 BLAS.getInstance().daxpy(a.length, 1.0, a, 1, b, 1);
-
                 return b;
             }
         });
@@ -92,7 +101,10 @@ public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
      * @return number of columns
      */
     @Override protected int getColumns() {
-        return dataset.compute(LinSysPartitionDataOnHeap::getCols, (a, b) -> a == null ? b : a);
+        return dataset.compute(
+            data -> data.getFeatures() == null ? null : data.getFeatures().length / data.getRows(),
+            (a, b) -> a == null ? b : a
+        );
     }
 
     /** {@inheritDoc} */

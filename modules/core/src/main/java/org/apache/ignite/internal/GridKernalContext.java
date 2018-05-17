@@ -32,7 +32,9 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -42,6 +44,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
@@ -255,6 +258,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public <K, V> DataStreamProcessor<K, V> dataStream();
 
     /**
+     * Gets authentication processor.
+     *
+     * @return Authentication processor.
+     */
+    public IgniteAuthenticationProcessor authentication();
+
+    /**
      * Gets file system processor.
      *
      * @return File system processor.
@@ -414,6 +424,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridIndexingManager indexing();
 
     /**
+     * Gets workers registry.
+     *
+     * @return Workers registry.
+     */
+    public WorkersRegistry workersRegistry();
+
+    /**
      * Gets data structures processor.
      *
      * @return Data structures processor.
@@ -421,16 +438,16 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public DataStructuresProcessor dataStructures();
 
     /**
-     * Sets segmented flag to {@code true} when node is stopped due to segmentation issues.
+     * Checks whether this node is invalid due to a critical error or not.
+     *
+     * @return {@code True} if this node is invalid, {@code false} otherwise.
      */
-    public void markSegmented();
+    public boolean invalid();
 
     /**
-     * Gets segmented flag.
-     *
-     * @return {@code True} if network is currently segmented, {@code false} otherwise.
+     * Gets failure processor.
      */
-    public boolean segmented();
+    public FailureProcessor failure();
 
     /**
      * Print grid kernal memory stats (sizes of internal structures, etc.).
@@ -655,18 +672,4 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return subscription processor to manage internal-only (strict node-local) subscriptions between components.
      */
     public GridInternalSubscriptionProcessor internalSubscriptionProcessor();
-
-    /**
-     * TODO: Should be replaced with proper implementation in https://issues.apache.org/jira/browse/IGNITE-6891
-     *
-     * @return {@code true} if node was invalidated, false in other case.
-     */
-    public boolean invalidated();
-
-    /**
-     * Invalidates node.
-     *
-     * TODO: Should be replaced with proper implementation in https://issues.apache.org/jira/browse/IGNITE-6891
-     */
-    public void invalidate();
 }

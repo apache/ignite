@@ -23,6 +23,7 @@
 #include "ignite/odbc/system/tcp_socket_client.h"
 #include "ignite/odbc/ssl/secure_socket_client.h"
 #include "ignite/odbc/ssl/ssl_bindings.h"
+#include "ignite/common/utils.h"
 
 #ifndef SOCKET_ERROR
 #   define SOCKET_ERROR (-1)
@@ -40,7 +41,7 @@ namespace ignite
                 keyPath(keyPath),
                 caPath(caPath),
                 context(0),
-                sslBio(0),
+                ssl(0),
                 blocking(true)
             {
                 // No-op.
@@ -54,7 +55,8 @@ namespace ignite
                     ssl::SSL_CTX_free(reinterpret_cast<SSL_CTX*>(context));
             }
 
-            bool SecureSocketClient::Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag)
+            bool SecureSocketClient::Connect(const char* hostname, uint16_t port, int32_t,
+                diagnostic::Diagnosable& diag)
             {
                 assert(SslGateway::GetInstance().Loaded());
 
@@ -71,115 +73,60 @@ namespace ignite
                     }
                 }
 
-                BIO* bio = ssl::BIO_new_ssl_connect(reinterpret_cast<SSL_CTX*>(context));
-                if (!bio)
+                SSL* ssl0 = reinterpret_cast<SSL*>(MakeSsl(context, hostname, port, blocking, diag));
+                if (!ssl0)
+                    return false;
+
+                int res = ssl::SSL_set_tlsext_host_name_(ssl0, hostname);
+                if (res != OPERATION_SUCCESS)
                 {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not create SSL connection.");
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
+                        "Can not set host name for secure connection: " + GetSslError(ssl0, res));
+
+                    ssl::SSL_free_(ssl0);
 
                     return false;
                 }
 
-                blocking = false;
-                long res = ssl::BIO_set_nbio_(bio, 1);
-                if (res != OPERATION_SUCCESS)
+                ssl::SSL_set_connect_state_(ssl0);
+
+                bool connected = CompleteConnectInternal(ssl0, DEFALT_CONNECT_TIMEOUT, diag);
+
+                if (!connected)
                 {
-                    blocking = true;
-
-                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                        "Can not set up non-blocking mode. Timeouts are not available.");
-                }
-
-                std::stringstream stream;
-                stream << hostname << ":" << port;
-
-                std::string address = stream.str();
-
-                res = ssl::BIO_set_conn_hostname_(bio, address.c_str());
-                if (res != OPERATION_SUCCESS)
-                {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not set SSL connection hostname.");
-
-                    ssl::BIO_free_all(bio);
-
-                    return false;
-                }
-
-                SSL* ssl = 0;
-                ssl::BIO_get_ssl_(bio, &ssl);
-                if (!ssl)
-                {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not get SSL instance from BIO.");
-
-                    ssl::BIO_free_all(bio);
-
-                    return false;
-                }
-
-                res = ssl::SSL_set_tlsext_host_name_(ssl, hostname);
-                if (res != OPERATION_SUCCESS)
-                {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not set host name for secure connection");
-
-                    ssl::BIO_free_all(bio);
-
-                    return false;
-                }
-
-                do
-                {
-                    res = ssl::BIO_do_connect_(bio);
-                } while (ssl::BIO_should_retry_(bio));
-
-                if (res != OPERATION_SUCCESS)
-                {
-                    diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT,
-                        "Failed to establish secure connection with the host.");
-
-                    ssl::BIO_free_all(bio);
-
-                    return false;
-                }
-
-                do
-                {
-                    res = ssl::BIO_do_handshake_(bio);
-                } while (ssl::BIO_should_retry_(bio));
-
-                if (res != OPERATION_SUCCESS)
-                {
-                    diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, "SSL handshake failed.");
-
-                    ssl::BIO_free_all(bio);
+                    ssl::SSL_free_(ssl0);
 
                     return false;
                 }
 
                 // Verify a server certificate was presented during the negotiation
-                X509* cert = ssl::SSL_get_peer_certificate(ssl);
+                X509* cert = ssl::SSL_get_peer_certificate(ssl0);
                 if (cert)
                     ssl::X509_free(cert);
                 else
                 {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Remote host did not provide certificate.");
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
+                        "Remote host did not provide certificate: " + GetSslError(ssl0, res));
 
-                    ssl::BIO_free_all(bio);
+                    ssl::SSL_free_(ssl0);
 
                     return false;
                 }
 
                 // Verify the result of chain verification
                 // Verification performed according to RFC 4158
-                res = ssl::SSL_get_verify_result(ssl);
+                res = ssl::SSL_get_verify_result(ssl0);
                 if (X509_V_OK != res)
                 {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Certificate chain verification failed.");
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
+                        "Certificate chain verification failed: " + GetSslError(ssl0, res));
 
-                    ssl::BIO_free_all(bio);
+                    ssl::SSL_free_(ssl0);
 
                     return false;
                 }
 
-                sslBio = reinterpret_cast<void*>(bio);
+                ssl = reinterpret_cast<void*>(ssl0);
 
                 return true;
             }
@@ -193,22 +140,16 @@ namespace ignite
             {
                 assert(SslGateway::GetInstance().Loaded());
 
-                if (!sslBio)
+                if (!ssl)
                 {
                     LOG_MSG("Trying to send data using closed connection");
 
                     return -1;
                 }
 
-                BIO* sslBio0 = reinterpret_cast<BIO*>(sslBio);
+                SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
-                int res = 0;
-
-                do
-                {
-                    res = ssl::BIO_write(sslBio0, data, static_cast<int>(size));
-                }
-                while (ssl::BIO_should_retry_(sslBio0));
+                int res = ssl::SSL_write_(ssl0, data, static_cast<int>(size));
 
                 return res;
             }
@@ -217,30 +158,26 @@ namespace ignite
             {
                 assert(SslGateway::GetInstance().Loaded());
 
-                if (!sslBio)
+                if (!ssl)
                 {
                     LOG_MSG("Trying to receive data using closed connection");
 
                     return -1;
                 }
 
-                BIO* sslBio0 = reinterpret_cast<BIO*>(sslBio);
+                SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
                 int res = 0;
 
-                if (!blocking && BIO_pending_(sslBio0) == 0)
+                if (!blocking && ssl::SSL_pending_(ssl0) == 0)
                 {
-                    res = WaitOnSocket(timeout, true);
+                    res = WaitOnSocket(ssl, timeout, true);
 
                     if (res < 0 || res == WaitResult::TIMEOUT)
                         return res;
                 }
 
-                do
-                {
-                    res = ssl::BIO_read(sslBio0, buffer, static_cast<int>(size));
-                }
-                while (ssl::BIO_should_retry_(sslBio0));
+                res = ssl::SSL_read_(ssl0, buffer, static_cast<int>(size));
 
                 return res;
             }
@@ -276,10 +213,10 @@ namespace ignite
                     }
                 }
 
-                const SSL_METHOD* method = SSLv23_method();
+                const SSL_METHOD* method = ssl::SSLv23_client_method_();
                 if (!method)
                 {
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not create new SSL method.");
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not get SSL method.");
 
                     return 0;
                 }
@@ -349,34 +286,180 @@ namespace ignite
                 return ctx;
             }
 
+            void* SecureSocketClient::MakeSsl(void* context, const char* hostname, uint16_t port,
+                bool& blocking, diagnostic::Diagnosable& diag)
+            {
+                BIO* bio = ssl::BIO_new_ssl_connect(reinterpret_cast<SSL_CTX*>(context));
+                if (!bio)
+                {
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not create SSL connection.");
+
+                    return 0;
+                }
+
+                blocking = false;
+                long res = ssl::BIO_set_nbio_(bio, 1);
+                if (res != OPERATION_SUCCESS)
+                {
+                    blocking = true;
+
+                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                        "Can not set up non-blocking mode. Timeouts are not available.");
+                }
+
+                std::stringstream stream;
+                stream << hostname << ":" << port;
+
+                std::string address = stream.str();
+
+                res = ssl::BIO_set_conn_hostname_(bio, address.c_str());
+                if (res != OPERATION_SUCCESS)
+                {
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not set SSL connection hostname.");
+
+                    ssl::BIO_free_all(bio);
+
+                    return 0;
+                }
+
+                SSL* ssl = 0;
+                ssl::BIO_get_ssl_(bio, &ssl);
+                if (!ssl)
+                {
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not get SSL instance from BIO.");
+
+                    ssl::BIO_free_all(bio);
+
+                    return 0;
+                }
+
+                return ssl;
+            }
+
+            bool SecureSocketClient::CompleteConnectInternal(void* ssl, int timeout, diagnostic::Diagnosable& diag)
+            {
+                SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
+
+                while (true)
+                {
+                    int res = ssl::SSL_connect_(ssl0);
+
+                    if (res == OPERATION_SUCCESS)
+                        return true;
+
+                    int sslError = ssl::SSL_get_error_(ssl0, res);
+
+                    LOG_MSG("wait res=" << res << ", sslError=" << sslError);
+
+                    if (IsActualError(sslError))
+                    {
+                        diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT,
+                            "Can not establish secure connection: " + GetSslError(ssl0, res));
+
+                        return false;
+                    }
+
+                    int want = ssl::SSL_want_(ssl0);
+
+                    res = WaitOnSocket(ssl, timeout, want == SSL_READING);
+
+                    LOG_MSG("wait res=" << res << ", want=" << want);
+
+                    if (res == WaitResult::TIMEOUT)
+                    {
+                        diag.AddStatusRecord(SqlState::SHYT01_CONNECTION_TIMEOUT,
+                            "Can not establish secure connection: Timeout expired (" +
+                                common::LexicalCast<std::string>(timeout) + " seconds)");
+
+                        return false;
+                    }
+
+                    if (res != WaitResult::SUCCESS)
+                    {
+                        diag.AddStatusRecord(SqlState::S08001_CANNOT_CONNECT,
+                            "Can not establish secure connection due to internal error");
+
+                        return false;
+                    }
+                }
+            }
+
+            std::string SecureSocketClient::GetSslError(void* ssl, int ret)
+            {
+                SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
+
+                int sslError = ssl::SSL_get_error_(ssl0, ret);
+
+                LOG_MSG("ssl_error: " << sslError);
+
+                switch (sslError)
+                {
+                    case SSL_ERROR_NONE:
+                        break;
+
+                    case SSL_ERROR_WANT_WRITE:
+                        return std::string("SSL_connect wants write");
+                        
+                    case SSL_ERROR_WANT_READ:
+                        return std::string("SSL_connect wants read");
+
+                    default:
+                        return std::string("SSL error: ") + common::LexicalCast<std::string>(sslError);
+                }
+
+                long error = ssl::ERR_get_error_();
+
+                char errBuf[1024] = { 0 };
+
+                ssl::ERR_error_string_n_(error, errBuf, sizeof(errBuf));
+
+                return std::string(errBuf);
+            }
+
+            bool SecureSocketClient::IsActualError(int err)
+            {
+                switch (err)
+                {
+                    case SSL_ERROR_NONE:
+                    case SSL_ERROR_WANT_WRITE:
+                    case SSL_ERROR_WANT_READ:
+                    case SSL_ERROR_WANT_CONNECT:
+                    case SSL_ERROR_WANT_ACCEPT:
+                    case SSL_ERROR_WANT_X509_LOOKUP:
+                        return false;
+
+                    default:
+                        return true;
+                }
+            }
+
             void SecureSocketClient::CloseInteral()
             {
                 assert(SslGateway::GetInstance().Loaded());
 
-                if (sslBio)
+                if (ssl)
                 {
-                    ssl::BIO_free_all(reinterpret_cast<BIO*>(sslBio));
+                    ssl::SSL_free_(reinterpret_cast<SSL*>(ssl));
 
-                    sslBio = 0;
+                    ssl = 0;
                 }
             }
 
-            int SecureSocketClient::WaitOnSocket(int32_t timeout, bool rd)
+            int SecureSocketClient::WaitOnSocket(void* ssl, int32_t timeout, bool rd)
             {
                 int ready = 0;
                 int lastError = 0;
-                int fdSocket = 0;
-                BIO* sslBio0 = reinterpret_cast<BIO*>(sslBio);
+                SSL* ssl0 = reinterpret_cast<SSL*>(ssl);
 
                 fd_set fds;
 
-                long res = ssl::BIO_get_fd_(sslBio0, &fdSocket);
+                int fd = ssl::SSL_get_fd_(ssl0);
 
-                if (res < 0)
+                if (fd < 0)
                 {
-                    LOG_MSG("Can not get file descriptor from the SSL socket: " << res);
+                    LOG_MSG("Can not get file descriptor from the SSL socket: " << fd << ", " << GetSslError(ssl, fd));
 
-                    return res;
+                    return fd;
                 }
 
                 do {
@@ -384,7 +467,7 @@ namespace ignite
                     tv.tv_sec = timeout;
 
                     FD_ZERO(&fds);
-                    FD_SET(static_cast<long>(fdSocket), &fds);
+                    FD_SET(static_cast<long>(fd), &fds);
 
                     fd_set* readFds = 0;
                     fd_set* writeFds = 0;
@@ -394,7 +477,7 @@ namespace ignite
                     else
                         writeFds = &fds;
 
-                    ready = select(fdSocket + 1, readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
+                    ready = select(fd + 1, readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
 
                     if (ready == SOCKET_ERROR)
                         lastError = system::TcpSocketClient::GetLastSocketError();
@@ -404,7 +487,7 @@ namespace ignite
                 if (ready == SOCKET_ERROR)
                     return -lastError;
 
-                lastError = system::TcpSocketClient::GetLastSocketError(fdSocket);
+                lastError = system::TcpSocketClient::GetLastSocketError(fd);
 
                 if (lastError != 0)
                     return -lastError;

@@ -47,6 +47,7 @@ suite('progress-line', () => {
             el[0].classList.contains(INDETERMINATE_CLASS),
             'Adds indeterminate class for indeterminate state'
         );
+
         assert.isFalse(
             el[0].classList.contains(COMPLETE_CLASS),
             'Does not have complete class when in indeterminate state'
@@ -59,6 +60,7 @@ suite('progress-line', () => {
             el[0].classList.contains(INDETERMINATE_CLASS),
             'Does not has indeterminate class when in finished state'
         );
+
         assert.isTrue(
             el[0].classList.contains(COMPLETE_CLASS),
             'Adds complete class when in finished state'

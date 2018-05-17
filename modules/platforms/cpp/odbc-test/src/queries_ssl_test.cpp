@@ -15,16 +15,11 @@
  * limitations under the License.
  */
 
-#ifdef _WIN32
-#   include <windows.h>
-#endif
-
-#include <sql.h>
-#include <sqlext.h>
+#include "ignite/odbc/system/odbc_constants.h"
 
 #include <vector>
 #include <string>
-#include <algorithm>
+#include <sstream>
 
 #ifndef _MSC_VER
 #   define BOOST_TEST_DYN_LINK
@@ -34,28 +29,16 @@
 #include <boost/test/unit_test.hpp>
 
 #include "ignite/ignite.h"
-#include "ignite/common/fixed_size_array.h"
 #include "ignite/ignition.h"
-#include "ignite/impl/binary/binary_utils.h"
-#include "ignite/binary/binary_object.h"
 
-#include "test_type.h"
-#include "complex_type.h"
 #include "test_utils.h"
 #include "odbc_test_suite.h"
 
 using namespace ignite;
-using namespace ignite::cache;
-using namespace ignite::cache::query;
 using namespace ignite::common;
 using namespace ignite_test;
-using namespace ignite::binary;
-using namespace ignite::impl::binary;
-using namespace ignite::impl::interop;
 
 using namespace boost::unit_test;
-
-using ignite::impl::binary::BinaryUtils;
 
 /**
  * Test setup fixture.
@@ -71,14 +54,9 @@ struct SslQueriesTestSuiteFixture : odbc::OdbcTestSuite
      * Constructor.
      */
     SslQueriesTestSuiteFixture() :
-        OdbcTestSuite(),
-        cache1(0),
-        cache2(0)
+        OdbcTestSuite()
     {
         grid = StartAdditionalNode("NodeMain");
-
-        cache1 = grid.GetCache<int64_t, TestType>("cache");
-        cache2 = grid.GetCache<int64_t, ComplexType>("cache2");
     }
 
     /**
@@ -113,12 +91,6 @@ struct SslQueriesTestSuiteFixture : odbc::OdbcTestSuite
 
     /** Node started during the test. */
     Ignite grid;
-
-    /** Frist cache instance. */
-    Cache<int64_t, TestType> cache1;
-
-    /** Second cache instance. */
-    Cache<int64_t, ComplexType> cache2;
 };
 
 BOOST_FIXTURE_TEST_SUITE(SslQueriesTestSuite, SslQueriesTestSuiteFixture)
@@ -164,6 +136,28 @@ BOOST_AUTO_TEST_CASE(TestConnectionSslReject)
 
     // Checking that error is the connection error.
     BOOST_CHECK_EQUAL(std::string("08001"), GetOdbcErrorState(SQL_HANDLE_DBC, dbc));
+}
+
+BOOST_AUTO_TEST_CASE(TestLoginTimeout)
+{
+    Prepare();
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_LOGIN_TIMEOUT, reinterpret_cast<SQLPOINTER>(1), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    std::string connectStr0 = MakeDefaultConnectionString();
+    std::vector<SQLCHAR> connectStr(connectStr0.begin(), connectStr0.end());
+
+    SQLCHAR outstr[ODBC_BUFFER_SIZE];
+    SQLSMALLINT outstrlen;
+
+    // Connecting to ODBC server.
+    ret = SQLDriverConnect(dbc, NULL, &connectStr[0], static_cast<SQLSMALLINT>(connectStr.size()),
+        outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectionTimeoutQuery)

@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVer
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridSetWrapper;
@@ -490,7 +491,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     @Override public AffinityTopologyVersion topologyVersion() {
         AffinityTopologyVersion res = topVer;
 
-        if (res.equals(AffinityTopologyVersion.NONE)) {
+        if (res == null || res.equals(AffinityTopologyVersion.NONE)) {
             if (system()) {
                 AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), this);
 
@@ -706,7 +707,15 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     public final IgniteCheckedException timeoutException() {
         return new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
-            "for transaction [timeout=" + timeout() + ", tx=" + this + ']');
+            "for transaction [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
+    }
+
+    /**
+     * @return Rollback exception.
+     */
+    public final IgniteCheckedException rollbackException() {
+        return new IgniteTxRollbackCheckedException("Failed to finish transaction because it has been rolled back " +
+            "[timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
     }
 
     /** {@inheritDoc} */
@@ -993,9 +1002,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      *
      * @param state State to set.
      * @param timedOut Timeout flag.
+     *
      * @return {@code True} if state changed.
      */
-    @SuppressWarnings({"TooBroadScope"})
     protected final boolean state(TransactionState state, boolean timedOut) {
         boolean valid = false;
 
@@ -1058,7 +1067,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
 
                 case MARKED_ROLLBACK: {
-                    valid = prev == ACTIVE || prev == PREPARING || prev == PREPARED || prev == SUSPENDED;
+                    valid = prev == ACTIVE  || prev == PREPARING || prev == PREPARED || prev == SUSPENDED;
 
                     break;
                 }
@@ -1099,11 +1108,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 if (state != ACTIVE && state != SUSPENDED)
                     seal();
 
-                if (cctx.wal() != null && cctx.tm().logTxRecords()) {
+                if (cctx.wal() != null && cctx.tm().logTxRecords() && txNodes != null) {
                     // Log tx state change to WAL.
                     if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
-                        assert txNodes != null || state == ROLLED_BACK : "txNodes=" + txNodes + " state=" + state;
-
                         BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
 
                         Map<Short, Collection<Short>> participatingNodes = consistentIdMapper
@@ -1132,7 +1139,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         if (valid) {
             if (ptr != null && (state == COMMITTED || state == ROLLED_BACK))
                 try {
-                    cctx.wal().fsync(ptr);
+                    cctx.wal().flush(ptr, false);
                 }
                 catch (IgniteCheckedException e) {
                     String msg = "Failed to fsync ptr: " + ptr;

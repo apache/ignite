@@ -73,7 +73,7 @@ public class RestExecutor implements AutoCloseable {
         
         dispatcher.setMaxRequests(Integer.MAX_VALUE);
         dispatcher.setMaxRequestsPerHost(Integer.MAX_VALUE);
-        
+
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
             .readTimeout(0, TimeUnit.MILLISECONDS)
             .dispatcher(dispatcher);
@@ -166,12 +166,12 @@ public class RestExecutor implements AutoCloseable {
         try (Response resp = httpClient.newCall(reqBuilder.build()).execute()) {
             return parseResponse(resp);
         }
-        catch (ConnectException ignored) {
+        catch (ConnectException ce) {
             LT.warn(log, "Failed connect to cluster. " +
                 "Please ensure that nodes have [ignite-rest-http] module in classpath " +
                 "(was copied from libs/optional to libs folder).");
 
-            throw new ConnectException("Failed connect to cluster [url=" + urlBuilder + ", parameters=" + params + "]");
+            throw ce;
         }
     }
 

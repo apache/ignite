@@ -68,6 +68,12 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** A request to send file from client to server. */
     static final byte BULK_LOAD_ACK = 16;
 
+    /** Columns metadata result V4. */
+    static final byte META_COLUMNS_V4 = 17;
+
+    /** A result of the processing ordered batch request. */
+    static final byte BATCH_EXEC_ORDERED = 18;
+
     /** Success status. */
     private byte type;
 
@@ -168,6 +174,16 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case BULK_LOAD_ACK:
                 res = new JdbcBulkLoadAckResult();
+
+                break;
+
+            case META_COLUMNS_V4:
+                res = new JdbcMetaColumnsResultV4();
+
+                break;
+
+            case BATCH_EXEC_ORDERED:
+                res = new JdbcOrderedBatchExecuteResult();
 
                 break;
 

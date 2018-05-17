@@ -17,14 +17,14 @@
 
 package org.apache.ignite.ml.svm;
 
+import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.junit.Test;
 
 /**
  * Tests for {@link SVMLinearBinaryClassificationTrainer}.
@@ -36,13 +36,15 @@ public class SVMBinaryTrainerTest {
     /** Fixed size of columns in Dataset. */
     private static final int AMOUNT_OF_FEATURES = 2;
 
+    /** Precision in test checks. */
+    private static final double PRECISION = 1e-2;
+
     /**
      * Test trainer on classification model y = x.
      */
     @Test
     public void testTrainWithTheLinearlySeparableCase() {
         Map<Integer, double[]> data = new HashMap<>();
-
 
         ThreadLocalRandom rndX = ThreadLocalRandom.current();
         ThreadLocalRandom rndY = ThreadLocalRandom.current();
@@ -57,18 +59,16 @@ public class SVMBinaryTrainerTest {
             data.put(i, vec);
         }
 
-
-        SVMLinearBinaryClassificationTrainer<Integer, double[]> trainer = new SVMLinearBinaryClassificationTrainer<>();
+        SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer();
 
         SVMLinearBinaryClassificationModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 10),
+            data,
+            10,
             (k, v) -> Arrays.copyOfRange(v, 1, v.length),
-            (k, v) -> v[0],
-            AMOUNT_OF_FEATURES);
+            (k, v) -> v[0]
+        );
 
-        double precision = 1e-2;
-
-        TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[]{100, 10})), precision);
-        TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[]{10, 100})), precision);
+        TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[]{100, 10})), PRECISION);
+        TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[]{10, 100})), PRECISION);
     }
 }
