@@ -272,6 +272,8 @@ public interface CacheMetrics {
      * Gets current size of evict queue used to batch up evictions.
      *
      * @return Current size of evict queue.
+     *
+     * @deprecated Should be removed in Apache Ignite 2.0.
      */
     @Deprecated
     public int getDhtEvictQueueCurrentSize();
@@ -294,6 +296,8 @@ public interface CacheMetrics {
      * Gets committed transaction queue size.
      *
      * @return Committed transaction queue size.
+     *
+     * @deprecated Should be removed in Apache Ignite 2.0.
      */
     @Deprecated
     public int getTxCommitQueueSize();
@@ -302,6 +306,8 @@ public interface CacheMetrics {
      * Gets prepared transaction queue size.
      *
      * @return Prepared transaction queue size.
+     *
+     * @deprecated Should be removed in Apache Ignite 2.0.
      */
     @Deprecated
     public int getTxPrepareQueueSize();
@@ -310,6 +316,8 @@ public interface CacheMetrics {
      * Gets start version counts map size.
      *
      * @return Start version counts map size.
+     *
+     * @deprecated Should be removed in Apache Ignite 2.0.
      */
     @Deprecated
     public int getTxStartVersionCountsSize();
@@ -346,6 +354,8 @@ public interface CacheMetrics {
      * Gets committed DHT transaction queue size.
      *
      * @return Committed DHT transaction queue size.
+     *
+     * @deprecated Should be removed in Apache Ignite 2.0.
      */
     @Deprecated
     public int getTxDhtCommitQueueSize();
@@ -354,6 +364,8 @@ public interface CacheMetrics {
      * Gets prepared DHT transaction queue size.
      *
      * @return Prepared DHT transaction queue size.
+     *
+     * @deprecated Should be removed in Apache Ignite 2.0.
      */
     @Deprecated
     public int getTxDhtPrepareQueueSize();
@@ -362,6 +374,8 @@ public interface CacheMetrics {
      * Gets DHT start version counts map size.
      *
      * @return DHT start version counts map size.
+     *
+     * @deprecated Should be removed in Apache Ignite 2.0.
      */
     @Deprecated
     public int getTxDhtStartVersionCountsSize();
