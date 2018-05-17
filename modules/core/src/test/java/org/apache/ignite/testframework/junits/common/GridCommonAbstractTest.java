@@ -272,7 +272,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @return Cache allowed in transactions with default name - "{@value DEFAULT_CACHE_NAME}".
+     * @return Cache.
      */
     protected <K, V> IgniteCache<K, V> jcache() {
         return grid().cache(DEFAULT_CACHE_NAME).withAllowAtomicOpsInTx();
