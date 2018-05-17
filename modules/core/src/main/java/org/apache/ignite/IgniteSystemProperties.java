@@ -517,6 +517,8 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_SERVICES_COMPATIBILITY_MODE = "IGNITE_SERVICES_COMPATIBILITY_MODE";
 
+    public static final String IGNITE_SERVICE_REASSIGN_DELAY = "IGNITE_SERVICE_REASSIGN_DELAY";
+
     /**
      * When set to {@code true} tree-based data structures - {@code TreeMap} and {@code TreeSet} - will not be
      * wrapped into special holders introduced to overcome serialization issue caused by missing {@code Comparable}
