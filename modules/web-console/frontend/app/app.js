@@ -169,7 +169,6 @@ angular.module('ignite-console', [
     'dndLists',
     'gridster',
     'mgcrea.ngStrap',
-    'ngRetina',
     'nvd3',
     'pascalprecht.translate',
     'smart-table',
