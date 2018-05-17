@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 import java.util.Collections;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -28,51 +30,33 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  *
  */
 public class IgniteCachePutNotNullFieldTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrid(0);
-
-        jcache(
-            grid(0),
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testPutAllShouldThrowExceptionWhenPassedNullValue() throws Exception {
+        final IgniteCache<Integer, Address> cache = jcache(
+            startGrid(0),
             defaultCacheConfiguration()
+                .setAtomicityMode(CacheAtomicityMode.ATOMIC)
                 .setQueryEntities(
                     Collections.singleton(
-                        new QueryEntity(Organization.class.getName(), Address.class.getName())
+                        new QueryEntity(Integer.class.getName(), Address.class.getName())
                             .addQueryField("address", "java.lang.String", "address")
                             .setNotNullFields(Collections.singleton("address"))
                     )
                 ),
             "ORG_ADDRESS"
         );
-    }
 
-    /**
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("ThrowableNotThrown")
-    public void testPutAllShouldThrowExceptionWhenPassedNullValue() throws Exception {
         GridTestUtils.assertThrowsWithCause(
             () -> {
-                jcache(0, "ORG_ADDRESS")
-                    .putAll(Collections.singletonMap(new Organization("1"), new Address(null)));
+                cache.putAll(Collections.singletonMap(1, new Address(null)));
 
                 return null;
             },
             IgniteSQLException.class
         );
-    }
-
-    /** */
-    private static class Organization implements Serializable {
-        /** */
-        private final String name;
-
-        /**
-         * @param name Name.
-         */
-        private Organization(String name) {
-            this.name = name;
-        }
     }
 
     /** */
