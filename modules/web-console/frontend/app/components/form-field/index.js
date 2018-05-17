@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains some internal utility structures.
- */
-package org.apache.ignite.ml.structures;
+import angular from 'angular';
+import {directive as showValidationError} from './showValidationError.directive';
+
+export default angular
+    .module('ignite-console.form-field', [])
+    .directive('ngModel', showValidationError);

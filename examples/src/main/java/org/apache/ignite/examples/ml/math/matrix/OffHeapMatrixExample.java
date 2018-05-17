@@ -65,20 +65,6 @@ public final class OffHeapMatrixExample {
         System.out.println(">>> Matrix product: ");
         MatrixExampleUtil.print(mult);
 
-        System.out.println("\n>>> Calculating matrices determinants.");
-        double det1 = m1.determinant();
-        double det2 = m2.determinant();
-        double detMult = mult.determinant();
-        boolean detMultIsAsExp = Math.abs(detMult - det1 * det2) < 0.0001d;
-
-        System.out.println(">>> First matrix determinant: [" + det1 + "].");
-        System.out.println(">>> Second matrix determinant: [" + det2 + "].");
-        System.out.println(">>> Matrix product determinant: [" + detMult
-            + "], equals product of two other matrices determinants: [" + detMultIsAsExp + "].");
-
-        System.out.println("Determinant of product matrix [" + detMult
-            + "] should be equal to product of determinants [" + (det1 * det2) + "].");
-
         System.out.println("\n>>> Off-heap matrix API usage example completed.");
     }
 }
