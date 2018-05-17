@@ -111,6 +111,31 @@ public class CacheKeyConfiguration implements Serializable {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        CacheKeyConfiguration that = (CacheKeyConfiguration)o;
+
+        if (typeName != null ? !typeName.equals(that.typeName) : that.typeName != null)
+            return false;
+
+        return affKeyFieldName != null ? affKeyFieldName.equals(that.affKeyFieldName) : that.affKeyFieldName == null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = typeName != null ? typeName.hashCode() : 0;
+
+        result = 31 * result + (affKeyFieldName != null ? affKeyFieldName.hashCode() : 0);
+
+        return result;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheKeyConfiguration.class, this);
     }

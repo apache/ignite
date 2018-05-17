@@ -45,6 +45,7 @@ import org.apache.ignite.internal.managers.communication.IgniteCommunicationSslB
 import org.apache.ignite.internal.managers.communication.IgniteIoTestMessagesTest;
 import org.apache.ignite.internal.managers.communication.IgniteVariousConnectionNumberTest;
 import org.apache.ignite.internal.processors.cache.CacheAffinityCallSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheAffinityKeyConfigurationMismatchTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteQueueTest;
 import org.apache.ignite.internal.processors.cache.CacheDeferredDeleteSanitySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheFutureExceptionSelfTest;
@@ -233,6 +234,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         // suite.addTestSuite(GridCacheP2PUndeploySelfTest.class);
         suite.addTestSuite(GridCacheConfigurationValidationSelfTest.class);
         suite.addTestSuite(GridCacheConfigurationConsistencySelfTest.class);
+        suite.addTestSuite(CacheAffinityKeyConfigurationMismatchTest.class);
         suite.addTestSuite(GridDataStorageConfigurationConsistencySelfTest.class);
         suite.addTestSuite(DataStorageConfigurationValidationTest.class);
         suite.addTestSuite(GridCacheJdbcBlobStoreSelfTest.class);
