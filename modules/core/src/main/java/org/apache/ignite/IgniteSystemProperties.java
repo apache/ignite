@@ -888,6 +888,17 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_DISABLE_WAL_DURING_REBALANCING = "IGNITE_DISABLE_WAL_DURING_REBALANCING";
 
     /**
+     * When set to {@code true}, Ignite will skip partitions sizes check on partition validation after rebalance has finished.
+     * Partitions sizes may differs on nodes when Expiry Policy is in use and it is ok due to lazy entry eviction mechanics.
+     *
+     * There is no need to disable partition size validation either in normal case or when expiry policy is configured for cache.
+     * But it should be disabled manually when policy is used on per entry basis to hint Ignite to skip this check.
+     *
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_SKIP_PARTITION_SIZE_VALIDATION = "IGNITE_SKIP_PARTITION_SIZE_VALIDATION";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

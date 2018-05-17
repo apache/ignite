@@ -304,7 +304,7 @@ mixin paragraph-scan
 mixin paragraph-query
     .row.panel-heading(bs-collapse-toggle)
         +paragraph-rename
-    .panel-collapse(role='tabpanel' bs-collapse-target)
+    .panel-collapse.ng-animate-disabled(role='tabpanel' bs-collapse-target)
         .col-sm-12
             .col-xs-8.col-sm-9(style='border-right: 1px solid #eee')
                 .sql-editor(ignite-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "sql", require: ["ace/ext/language_tools"],' +
