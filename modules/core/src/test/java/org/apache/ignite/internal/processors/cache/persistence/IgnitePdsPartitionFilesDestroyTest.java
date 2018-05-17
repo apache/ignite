@@ -30,8 +30,6 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
@@ -42,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
@@ -104,11 +103,6 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
-        return new StopNodeFailureHandler();
     }
 
     /**
@@ -257,7 +251,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         }
 
         // Problem node should be stopped after failed checkpoint.
-        waitForTopology(3);
+        GridTestUtils.waitForCondition(() -> crd.cluster().nodes().size() == 3, getTestTimeout());
 
         problemNode = startGrid(1);
 
@@ -319,7 +313,7 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
         }
 
         // Problem node should be stopped after failed checkpoint.
-        waitForTopology(2);
+        GridTestUtils.waitForCondition(() -> crd.cluster().nodes().size() == 2, getTestTimeout());
 
         problemNode = startGrid(1);
 

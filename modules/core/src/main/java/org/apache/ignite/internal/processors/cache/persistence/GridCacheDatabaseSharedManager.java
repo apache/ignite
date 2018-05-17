@@ -3099,7 +3099,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     catch (IgniteCheckedException e) {
                         chp.progress.cpFinishFut.onDone(e);
 
-                        cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                        NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
 
                         return;
                     }

@@ -1037,7 +1037,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
 
             if (forceTestCheckpointOnEviction) {
-                if (partWhereTestCheckpointEnforced == null && cleared >= fullSize()) {
+                if (partWhereTestCheckpointEnforced == null) {
                     ctx.database().forceCheckpoint("test").finishFuture().get();
 
                     log.warning("Forced checkpoint by test reasons for partition: " + this);
