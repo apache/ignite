@@ -89,6 +89,16 @@ case $1 in
     2)
         # RPM postinst upgrade
         echoUpgradeMessage
+
+        # Workaround for upgrade from 2.4.0
+        if [ -d /usr/com/apache-ignite/ ]; then
+            for file in /usr/com/apache-ignite/*; do
+                if [ ! -h $file ]; then
+                    cp -rf $file %{_sharedstatedir}/%{name}/
+                fi
+            done
+            chown -vR %{user}:%{user} %{_sharedstatedir}/%{name} %{_log}/%{name}
+        fi
         ;;
 esac
 
