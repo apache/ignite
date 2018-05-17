@@ -906,7 +906,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     dumpedObjects++;
 
-                    if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
+                    if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, true))
                         U.dumpThreads(log);
                 }
             }
@@ -1000,7 +1000,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             U.error(log, "Failed to dump debug information: " + e, e);
         }
 
-        if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
+        if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, true))
             U.dumpThreads(log);
     }
 
