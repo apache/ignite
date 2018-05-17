@@ -15,10 +15,23 @@
  * limitations under the License.
  */
 
+#include "ignite/impl/thin/ignite_client_impl.h"
+
 namespace ignite
 {
-    namespace thin
+    namespace impl
     {
-        
+        namespace thin
+        {
+            IgniteClientImpl::IgniteClientImpl()
+            {
+                // No-op.
+            }
+
+            IgniteClientImpl::~IgniteClientImpl()
+            {
+                // No-op.
+            }
+        }   
     }
 }
