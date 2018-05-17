@@ -31,6 +31,12 @@ public class IgniteCacheFailoverTestSuite3 extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        return IgniteServiceConfigVariationsFullApiTestSuite.suite();
+        TestSuite suite = new TestSuite("Cache Failover Test Suite3");
+
+        suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
+        suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
+        suite.addTestSuite(CacheGetInsideLockChangingTopologyTest.class);
+
+        return suite;
     }
 }
