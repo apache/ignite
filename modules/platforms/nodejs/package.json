@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "jasmine": "latest",
-    "jasmine-expect": "latest"
+    "jasmine-expect": "latest",
+    "jasmine-reporters": "latest"
   }
 }

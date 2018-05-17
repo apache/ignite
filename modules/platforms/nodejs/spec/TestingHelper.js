@@ -18,6 +18,7 @@
 'use strict';
 
 require('jasmine-expect');
+const JasmineReporters = require('jasmine-reporters');
 
 const Util = require('util');
 const config = require('./config');
@@ -31,6 +32,8 @@ const BinaryObject = IgniteClient.BinaryObject;
 const ObjectType = IgniteClient.ObjectType;
 
 const TIMEOUT_MS = 20000;
+
+jasmine.getEnv().addReporter(new JasmineReporters.TeamCityReporter());
 
 const dateComparator = (date1, date2) => { return !date1 && !date2 || date1.value === date2.value; };
 const floatComparator = (date1, date2) => { return Math.abs(date1 - date2) < 0.00001; };
