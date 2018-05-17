@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.StreamCorruptedException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -131,6 +132,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** */
     private static final Object SPI_STOP = "SPI_STOP";
+
+    /** False if there are more than one unavailable IP address in IP finder. */
+    private boolean firstUnavailableAddr = true;
 
     /** */
     private static final Object SPI_RECONNECT_FAILED = "SPI_RECONNECT_FAILED";
@@ -692,6 +696,16 @@ class ClientImpl extends TcpDiscoveryImpl {
             }
             catch (IOException | IgniteCheckedException e) {
                 U.closeQuiet(sock);
+
+                if (U.isWindows() && firstUnavailableAddr &&
+                    (X.hasCause(e, SocketException.class, SocketTimeoutException.class))) {
+                    log.warning(String.format("Unavailable socket address in Windows OS [%s]." +
+                        " Connection can take a lot of time. Maybe the reason is that the node has not been " +
+                        "started yet on this address. If there are any other addresses, check your address list " +
+                        "in ipFinder.", addr.toString().substring(1)));
+
+                    firstUnavailableAddr = false;
+                }
 
                 if (log.isDebugEnabled())
                     log.error("Exception on joining: " + e.getMessage(), e);

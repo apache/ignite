@@ -185,6 +185,9 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private IgniteThreadPoolExecutor utilityPool;
 
+    /** False if there are more than one unavailable IP address in IP finder. */
+    private boolean firstUnavailableAddr = true;
+
     /** Nodes ring. */
     @GridToStringExclude
     private final TcpDiscoveryNodesRing ring = new TcpDiscoveryNodesRing();
@@ -1277,6 +1280,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                 errs.add(e);
             }
             catch (IOException | IgniteCheckedException e) {
+                if (U.isWindows() && firstUnavailableAddr &&
+                    (X.hasCause(e, SocketException.class, SocketTimeoutException.class))) {
+                    log.warning(String.format("Unavailable socket address in Windows OS [%s]." +
+                        " Connection can take a lot of time. Maybe the reason is that the node has not been " +
+                        "started yet on this address. If there are any other addresses, check your address list " +
+                        "in ipFinder.", addr.toString().substring(1)));
+
+                    firstUnavailableAddr = false;
+                }
+
                 if (log.isDebugEnabled())
                     log.error("Exception on direct send: " + e.getMessage(), e);
 
