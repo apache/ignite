@@ -33,11 +33,14 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.StoredRecord;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readExpectedStoredRecord;
 
 /**
  * Iterator over WAL segments. This abstract class provides most functionality for reading records in log.
@@ -265,11 +268,9 @@ public abstract class AbstractWalRecordsIterator
             FileIO fileIO = desc.isCompressed() ? new UnzipFileIO(desc.file()) : ioFactory.create(desc.file());
 
             try {
-                IgniteBiTuple<Integer, Boolean> tup = FileWriteAheadLogManager.readSerializerVersionAndCompactedFlag(fileIO);
+                StoredRecord storedRecord = readExpectedStoredRecord(fileIO, curWalSegmIdx);
 
-                int serVer = tup.get1();
-
-                boolean isCompacted = tup.get2();
+                boolean isCompacted = storedRecord.isCompacted();
 
                 if (isCompacted)
                     serializerFactory.skipPositionCheck(true);
@@ -288,6 +289,8 @@ public abstract class AbstractWalRecordsIterator
                         in.seek(startOff);
                     }
                 }
+
+                int serVer = storedRecord.getSerializerVersion();
 
                 return createReadFileHandle(fileIO, desc.idx(), serializerFactory.createSerializer(serVer), in);
             }
