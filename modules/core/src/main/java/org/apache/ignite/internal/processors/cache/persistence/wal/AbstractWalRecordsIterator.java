@@ -33,14 +33,14 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactor
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.StoredRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.SegmentHeader;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readExpectedStoredRecord;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 
 /**
  * Iterator over WAL segments. This abstract class provides most functionality for reading records in log.
@@ -268,9 +268,9 @@ public abstract class AbstractWalRecordsIterator
             FileIO fileIO = desc.isCompressed() ? new UnzipFileIO(desc.file()) : ioFactory.create(desc.file());
 
             try {
-                StoredRecord storedRecord = readExpectedStoredRecord(fileIO, curWalSegmIdx);
+                SegmentHeader segmentHeader = readSegmentHeader(fileIO, curWalSegmIdx);
 
-                boolean isCompacted = storedRecord.isCompacted();
+                boolean isCompacted = segmentHeader.isCompacted();
 
                 if (isCompacted)
                     serializerFactory.skipPositionCheck(true);
@@ -290,7 +290,7 @@ public abstract class AbstractWalRecordsIterator
                     }
                 }
 
-                int serVer = storedRecord.getSerializerVersion();
+                int serVer = segmentHeader.getSerializerVersion();
 
                 return createReadFileHandle(fileIO, desc.idx(), serializerFactory.createSerializer(serVer), in);
             }

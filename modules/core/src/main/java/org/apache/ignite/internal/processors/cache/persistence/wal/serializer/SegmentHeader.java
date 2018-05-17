@@ -20,21 +20,19 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Data of stored record in file.
+ * WAL segment header info.
  */
-public class StoredRecord {
+public class SegmentHeader {
     /** Serializer version. */
-    private Integer serializerVersion;
+    private int serializerVersion;
     /** Compacted flag. */
     private boolean isCompacted;
 
     /**
-     * Create record.
-     *
      * @param serializerVersion Serializer version.
      * @param isCompacted Compacted flag.
      */
-    public StoredRecord(Integer serializerVersion, Boolean isCompacted) {
+    public SegmentHeader(int serializerVersion, boolean isCompacted) {
         this.serializerVersion = serializerVersion;
         this.isCompacted = isCompacted;
     }
@@ -42,7 +40,7 @@ public class StoredRecord {
     /**
      * @return Record serializer version.
      */
-    public Integer getSerializerVersion() {
+    public int getSerializerVersion() {
         return serializerVersion;
     }
 
@@ -55,6 +53,6 @@ public class StoredRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(StoredRecord.class, this);
+        return S.toString(SegmentHeader.class, this);
     }
 }

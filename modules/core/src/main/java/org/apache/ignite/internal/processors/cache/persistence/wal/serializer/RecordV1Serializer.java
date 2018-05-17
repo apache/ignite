@@ -227,11 +227,11 @@ public class RecordV1Serializer implements RecordSerializer {
      * NOTE: Method mutates position of {@code io}.
      *
      * @param io I/O interface for file.
-     * @param expectedWalPointer Expected WAL pointer for readable record.
-     * @return Instance of {@link StoredRecord} extracted from the file.
+     * @param expectedIdx Expected WAL segment index for readable record.
+     * @return Instance of {@link SegmentHeader} extracted from the file.
      * @throws IgniteCheckedException If failed to read serializer version.
      */
-    public static StoredRecord readExpectedStoredRecord(FileIO io, long expectedWalPointer)
+    public static SegmentHeader readSegmentHeader(FileIO io, long expectedIdx)
         throws IgniteCheckedException, IOException {
         try (ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
             FileInput in = new FileInput(io, buf);
@@ -249,9 +249,9 @@ public class RecordV1Serializer implements RecordSerializer {
                 throw new IOException("Can't read serializer version", null);
 
             // Read file pointer.
-            FileWALPointer ptr = RecordV1Serializer.readPosition(in);
+            FileWALPointer ptr = readPosition(in);
 
-            if (expectedWalPointer != ptr.index())
+            if (expectedIdx != ptr.index())
                 throw new SegmentEofException("Reached logical end of the segment by pointer", null);
 
             assert ptr.fileOffset() == 0 : "Header record should be placed at the beginning of file " + ptr;
@@ -275,7 +275,7 @@ public class RecordV1Serializer implements RecordSerializer {
             // Read and skip CRC.
             in.readInt();
 
-            return new StoredRecord(ver, compacted);
+            return new SegmentHeader(ver, compacted);
         }
     }
 
