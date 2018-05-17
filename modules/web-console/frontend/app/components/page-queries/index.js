@@ -106,6 +106,12 @@ export default angular.module('ignite-console.sql', [
                 }
             });
     }])
+    .service('QueriesNavbar', class {
+        constructor() {
+            this.text = 'Queries';
+            this.sref = 'base.sql.tabs';
+        }
+    })
     .decorator('webConsoleNavbarDirective', ['$delegate', function($delegate) {
         $delegate[0].controller.$inject.push('QueriesNavbar');
         return $delegate;

@@ -232,7 +232,7 @@ export default class IgniteAgentManager {
     _useConnectedCluster() {
         const conn = this.connectionSbj.getValue();
 
-        if (_.nonEmpty(conn.clusters) && !conn.cluster.connected) {
+        if (nonEmpty(conn.clusters) && !conn.cluster.connected) {
             conn.cluster = _.head(conn.clusters);
 
             conn.cluster.connected = true;
