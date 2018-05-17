@@ -116,11 +116,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
 
-    /** Non collocated IgniteSet version will use spearate cache. */
-    private static final IgniteProductVersion SEPARATE_CACHE_SET_SINCE = IgniteProductVersion.fromString("2.5.0");
-
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
+
+    /** Non collocated IgniteSet version will use spearate cache. */
+    private final IgniteProductVersion SEPARATE_CACHE_SET_SINCE = IgniteProductVersion.fromString("2.5.0");
 
     /** Initialization latch. */
     private volatile CountDownLatch initLatch = new CountDownLatch(1);

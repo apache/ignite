@@ -132,7 +132,7 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
      * @param queue Ignite queue.
      * @return Cache context.
      */
-    protected static GridCacheContext cctx(IgniteQueue queue) {
+    protected GridCacheContext cctx(IgniteQueue queue) {
         return GridTestUtils.getFieldValue(queue, "cctx");
     }
 
@@ -140,7 +140,7 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
      * @param set Ignite set.
      * @return Cache context.
      */
-    protected static GridCacheContext cctx(IgniteSet set) {
+    protected GridCacheContext cctx(IgniteSet set) {
         if (set instanceof GridCacheSetProxy)
             return GridTestUtils.getFieldValue(set, GridCacheSetProxy.class, "cctx");
         else
@@ -151,7 +151,7 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
      * @param set Ignite set.
      * @return {@code True} if this instance of IgniteSet is compatible with older Ignite version.
      */
-    protected static boolean compatibilityMode(IgniteSet set) {
+    protected boolean compatibilityMode(IgniteSet set) {
         IgniteSet impl = set;
 
         if (set instanceof GridCacheSetProxy)
