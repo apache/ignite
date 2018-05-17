@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.ml.math;
-
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOffHeapMatrix;
-
 /**
- * Ignite benchmark that performs ML Grid operations.
+ * <!-- Package description. -->
+ * Contains internal APIs for dataset partitioned labeled datasets.
  */
-@SuppressWarnings("unused")
-public class IgniteDenseLocalOffHeapMatrixMulBenchmark extends IgniteAbstractMatrixMulBenchmark {
-    /** {@inheritDoc} */
-    @Override Matrix newMatrix(int rowSize, int colSize) {
-        return new DenseLocalOffHeapMatrix(rowSize, colSize);
-    }
-}
+package org.apache.ignite.ml.structures.partition;

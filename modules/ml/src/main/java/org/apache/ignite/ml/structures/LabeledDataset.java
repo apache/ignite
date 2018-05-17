@@ -22,7 +22,6 @@ import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NoDataException;
 import org.apache.ignite.ml.math.exceptions.knn.NoLabelVectorException;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 
 /**
  * Class for set of labeled vectors.
@@ -200,9 +199,6 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> i
 
     /** */
     public static Vector emptyVector(int size, boolean isDistributed) {
-        if(isDistributed)
-            return new SparseDistributedVector(size);
-        else
             return new DenseLocalOnHeapVector(size);
     }
 
