@@ -1015,7 +1015,14 @@ public abstract class GridAbstractTest extends TestCase {
             }
         }
 
-        return new IgniteProcessProxy(cfg, log, locNode, resetDiscovery);
+        return new IgniteProcessProxy(cfg, log, locNode, resetDiscovery, additionalRemoteJvmArgs());
+    }
+
+    /**
+     * @return Additional JVM args for remote instances.
+     */
+    protected List<String> additionalRemoteJvmArgs() {
+        return Collections.emptyList();
     }
 
     /**
