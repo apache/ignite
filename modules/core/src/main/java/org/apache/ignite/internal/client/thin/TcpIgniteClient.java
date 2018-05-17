@@ -126,7 +126,8 @@ public class TcpIgniteClient implements IgniteClient {
 
     /** {@inheritDoc} */
     @Override public Collection<String> cacheNames() throws ClientException {
-        return ch.service(ClientOperation.CACHE_GET_NAMES, res -> Arrays.asList(BinaryUtils.doReadStringArray(res)));
+        return ch.service(ClientOperation.CACHE_GET_NAMES, res -> Arrays.asList(
+            BinaryUtils.doReadStringArray(res, marsh.context().isUseVarintArrayLength())));
     }
 
     /** {@inheritDoc} */

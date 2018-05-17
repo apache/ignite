@@ -180,7 +180,7 @@ public class BinaryFieldImpl implements BinaryFieldEx {
                     break;
 
                 case GridBinaryMarshaller.STRING: {
-                    int dataLen = buf.getInt();
+                    int dataLen = BinaryUtils.doReadArrayLength(buf, ctx.isUseVarintArrayLength());
 
                     byte[] data = new byte[dataLen];
 
@@ -232,7 +232,7 @@ public class BinaryFieldImpl implements BinaryFieldEx {
                 case GridBinaryMarshaller.DECIMAL: {
                     int scale = buf.getInt();
 
-                    int dataLen = buf.getInt();
+                    int dataLen = BinaryUtils.doReadArrayLength(buf, ctx.isUseVarintArrayLength());
 
                     byte[] data = new byte[dataLen];
 

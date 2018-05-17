@@ -141,6 +141,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /** Object schema. */
     private final BinarySchema schema;
 
+    /** Varint array length flag. */
+    private final boolean useVarintArrayLength;
+
     /** Whether passed IDs matches schema order. Reset to false as soon as a single mismatch detected. */
     private boolean matching = true;
 
@@ -212,6 +215,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         start = in.position();
 
+        useVarintArrayLength = ctx.isUseVarintArrayLength();
+
         // Perform full header parsing in case of binary object.
         if (!skipHdrCheck && (in.readByte() == GridBinaryMarshaller.OBJ)) {
             // Ensure protocol is fine.
@@ -268,7 +273,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                     typeId = desc.typeId();
                 }
                 else
-                    typeId = ctx.typeId(BinaryUtils.doReadClassName(in));
+                    typeId = ctx.typeId(BinaryUtils.doReadClassName(in, useVarintArrayLength));
 
                 int clsNameLen = in.position() - off;
 
@@ -361,7 +366,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (checkFlag(BINARY_OBJ) == Flag.NULL)
                 return null;
 
-            return new BinaryObjectImpl(ctx, BinaryUtils.doReadByteArray(in), in.readInt());
+            return new BinaryObjectImpl(ctx, BinaryUtils.doReadByteArray(in, useVarintArrayLength), in.readInt());
         }
         else
             return null;
@@ -502,7 +507,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public byte[] readByteArray() throws BinaryObjectException {
         switch (checkFlag(BYTE_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadByteArray(in);
+                return BinaryUtils.doReadByteArray(in, useVarintArrayLength);
 
             case HANDLE:
                 return readHandleField();
@@ -568,7 +573,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public boolean[] readBooleanArray() throws BinaryObjectException {
         switch (checkFlag(BOOLEAN_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadBooleanArray(in);
+                return BinaryUtils.doReadBooleanArray(in, useVarintArrayLength);
 
             case HANDLE:
                 return readHandleField();
@@ -634,7 +639,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public short[] readShortArray() throws BinaryObjectException {
         switch (checkFlag(SHORT_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadShortArray(in);
+                return BinaryUtils.doReadShortArray(in, useVarintArrayLength);
 
             case HANDLE:
                 return readHandleField();
@@ -700,7 +705,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public char[] readCharArray() throws BinaryObjectException {
         switch (checkFlag(CHAR_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadCharArray(in);
+                return BinaryUtils.doReadCharArray(in, useVarintArrayLength);
 
             case HANDLE:
                 return readHandleField();
@@ -766,7 +771,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public int[] readIntArray() throws BinaryObjectException {
         switch (checkFlag(INT_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadIntArray(in);
+                return BinaryUtils.doReadIntArray(in, useVarintArrayLength);
 
             case HANDLE:
                 return readHandleField();
@@ -832,7 +837,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public long[] readLongArray() throws BinaryObjectException {
         switch (checkFlag(LONG_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadLongArray(in);
+                return BinaryUtils.doReadLongArray(in, useVarintArrayLength);
 
             case HANDLE:
                 return readHandleField();
@@ -898,7 +903,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public float[] readFloatArray() throws BinaryObjectException {
         switch (checkFlag(FLOAT_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadFloatArray(in);
+                return BinaryUtils.doReadFloatArray(in, useVarintArrayLength);
 
             case HANDLE:
                 return readHandleField();
@@ -964,7 +969,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable @Override public double[] readDoubleArray() throws BinaryObjectException {
         switch (checkFlag(DOUBLE_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadDoubleArray(in);
+                return BinaryUtils.doReadDoubleArray(in, useVarintArrayLength);
 
             case HANDLE:
                 return readHandleField();
@@ -995,7 +1000,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override @Nullable public BigDecimal readDecimal() throws BinaryObjectException {
-        return checkFlagNoHandles(DECIMAL) == Flag.NORMAL ? BinaryUtils.doReadDecimal(in) : null;
+        return checkFlagNoHandles(DECIMAL) == Flag.NORMAL ? BinaryUtils.doReadDecimal(in, useVarintArrayLength) : null;
     }
 
     /** {@inheritDoc} */
@@ -1021,7 +1026,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Override @Nullable public BigDecimal[] readDecimalArray() throws BinaryObjectException {
         switch (checkFlag(DECIMAL_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadDecimalArray(in);
+                return BinaryUtils.doReadDecimalArray(in, useVarintArrayLength);
 
             case HANDLE:
                 return readHandleField();
@@ -1052,7 +1057,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /** {@inheritDoc} */
     @Override @Nullable public String readString() throws BinaryObjectException {
-        return checkFlagNoHandles(STRING) == Flag.NORMAL ? BinaryUtils.doReadString(in) : null;
+        return checkFlagNoHandles(STRING) == Flag.NORMAL ? BinaryUtils.doReadString(in, useVarintArrayLength) : null;
     }
 
     /** {@inheritDoc} */
@@ -1078,7 +1083,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Override @Nullable public String[] readStringArray() throws BinaryObjectException {
         switch (checkFlag(STRING_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadStringArray(in);
+                return BinaryUtils.doReadStringArray(in, useVarintArrayLength);
 
             case HANDLE:
                 return readHandleField();
@@ -1135,7 +1140,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Override @Nullable public UUID[] readUuidArray() throws BinaryObjectException {
         switch (checkFlag(UUID_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadUuidArray(in);
+                return BinaryUtils.doReadUuidArray(in, useVarintArrayLength);
 
             case HANDLE:
                 return readHandleField();
@@ -1192,7 +1197,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Override @Nullable public Date[] readDateArray() throws BinaryObjectException {
         switch (checkFlag(DATE_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadDateArray(in);
+                return BinaryUtils.doReadDateArray(in, useVarintArrayLength);
 
             case HANDLE:
                 return readHandleField();
@@ -1249,7 +1254,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Override @Nullable public Timestamp[] readTimestampArray() throws BinaryObjectException {
         switch (checkFlag(TIMESTAMP_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadTimestampArray(in);
+                return BinaryUtils.doReadTimestampArray(in, useVarintArrayLength);
 
             case HANDLE:
                 return readHandleField();
@@ -1296,7 +1301,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Override @Nullable public Time[] readTimeArray() throws BinaryObjectException {
         switch (checkFlag(TIME_ARR)) {
             case NORMAL:
-                return BinaryUtils.doReadTimeArray(in);
+                return BinaryUtils.doReadTimeArray(in, useVarintArrayLength);
             case HANDLE:
                 return readHandleField();
             default:
@@ -1806,12 +1811,12 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case DECIMAL:
-                obj = BinaryUtils.doReadDecimal(in);
+                obj = BinaryUtils.doReadDecimal(in, useVarintArrayLength);
 
                 break;
 
             case STRING:
-                obj = BinaryUtils.doReadString(in);
+                obj = BinaryUtils.doReadString(in, useVarintArrayLength);
 
                 break;
 
@@ -1836,72 +1841,72 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case BYTE_ARR:
-                obj = BinaryUtils.doReadByteArray(in);
+                obj = BinaryUtils.doReadByteArray(in, useVarintArrayLength);
 
                 break;
 
             case SHORT_ARR:
-                obj = BinaryUtils.doReadShortArray(in);
+                obj = BinaryUtils.doReadShortArray(in, useVarintArrayLength);
 
                 break;
 
             case INT_ARR:
-                obj = BinaryUtils.doReadIntArray(in);
+                obj = BinaryUtils.doReadIntArray(in, useVarintArrayLength);
 
                 break;
 
             case LONG_ARR:
-                obj = BinaryUtils.doReadLongArray(in);
+                obj = BinaryUtils.doReadLongArray(in, useVarintArrayLength);
 
                 break;
 
             case FLOAT_ARR:
-                obj = BinaryUtils.doReadFloatArray(in);
+                obj = BinaryUtils.doReadFloatArray(in, useVarintArrayLength);
 
                 break;
 
             case DOUBLE_ARR:
-                obj = BinaryUtils.doReadDoubleArray(in);
+                obj = BinaryUtils.doReadDoubleArray(in, useVarintArrayLength);
 
                 break;
 
             case CHAR_ARR:
-                obj = BinaryUtils.doReadCharArray(in);
+                obj = BinaryUtils.doReadCharArray(in, useVarintArrayLength);
 
                 break;
 
             case BOOLEAN_ARR:
-                obj = BinaryUtils.doReadBooleanArray(in);
+                obj = BinaryUtils.doReadBooleanArray(in, useVarintArrayLength);
 
                 break;
 
             case DECIMAL_ARR:
-                obj = BinaryUtils.doReadDecimalArray(in);
+                obj = BinaryUtils.doReadDecimalArray(in, useVarintArrayLength);
 
                 break;
 
             case STRING_ARR:
-                obj = BinaryUtils.doReadStringArray(in);
+                obj = BinaryUtils.doReadStringArray(in, useVarintArrayLength);
 
                 break;
 
             case UUID_ARR:
-                obj = BinaryUtils.doReadUuidArray(in);
+                obj = BinaryUtils.doReadUuidArray(in, useVarintArrayLength);
 
                 break;
 
             case DATE_ARR:
-                obj = BinaryUtils.doReadDateArray(in);
+                obj = BinaryUtils.doReadDateArray(in, useVarintArrayLength);
 
                 break;
 
             case TIMESTAMP_ARR:
-                obj = BinaryUtils.doReadTimestampArray(in);
+                obj = BinaryUtils.doReadTimestampArray(in, useVarintArrayLength);
 
                 break;
 
             case TIME_ARR:
-                obj = BinaryUtils.doReadTimeArray(in);
+                obj = BinaryUtils.doReadTimeArray(in, useVarintArrayLength);
 
                 break;
 
@@ -2353,6 +2358,18 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      */
     public BinaryContext context() {
         return ctx;
+    }
+
+    /**
+     * Indicates whether to consider arrays lengths in varint encoding. When enabled, Ignite will consider arrays
+     * lengths in varint encoding.
+     *
+     * <a href="https://developers.google.com/protocol-buffers/docs/encoding#varints">Varint encoding description.</a>
+     *
+     * @return Whether to consider arrays lengths in varint encoding.
+     */
+    public boolean isUseVarintArrayLength() {
+        return useVarintArrayLength;
     }
 
     /**
