@@ -181,14 +181,12 @@ public class ClusterListener implements AutoCloseable {
      * Start broadcast topology to server-side.
      */
     public Emitter.Listener start() {
-        return new Emitter.Listener() {
-            @Override public void call(Object... args) {
-                safeStopRefresh();
+        return args -> {
+            safeStopRefresh();
 
-                final long timeout = args.length > 1 && args[1] instanceof Long ? (long)args[1] : DFLT_TIMEOUT;
+            final long timeout = args.length > 1 && args[1] instanceof Long ? (long)args[1] : DFLT_TIMEOUT;
 
-                refreshTask = pool.scheduleWithFixedDelay(broadcastTask, 0L, timeout, TimeUnit.MILLISECONDS);
-            }
+            refreshTask = pool.scheduleWithFixedDelay(broadcastTask, 0L, timeout, TimeUnit.MILLISECONDS);
         };
     }
 
@@ -265,7 +263,7 @@ public class ClusterListener implements AutoCloseable {
                 clients.put(nid, client);
 
                 Collection<String> nodeAddrs = client
-                    ? splitAddresses((String)attribute(attrs, ATTR_IPS))
+                    ? splitAddresses(attribute(attrs, ATTR_IPS))
                     : node.getTcpAddresses();
 
                 String firstIP = F.first(sortAddresses(nodeAddrs));
@@ -374,7 +372,7 @@ public class ClusterListener implements AutoCloseable {
         params.put("attr", true);
         params.put("mtr", full);
 
-        return restExecutor.sendRequest(this.cfg.nodeUri(), params, null);
+        return restExecutor.sendRequest(this.cfg.nodeURIs(), params, null);
     }
 
     /**
@@ -408,7 +406,7 @@ public class ClusterListener implements AutoCloseable {
             }
         }
 
-        RestResult res = restExecutor.sendRequest(this.cfg.nodeUri(), params, null);
+        RestResult res = restExecutor.sendRequest(this.cfg.nodeURIs(), params, null);
 
         switch (res.getStatus()) {
             case STATUS_SUCCESS:

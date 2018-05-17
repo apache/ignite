@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.ConnectException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
@@ -41,6 +42,7 @@ import okhttp3.Response;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +66,9 @@ public class RestExecutor implements AutoCloseable {
 
     /** */
     private final OkHttpClient httpClient;
+
+    /** Index of alive node URI. */
+    private Map<List<String>, Integer> startIdxs = U.newHashMap(2);
 
     /**
      * Default constructor.
@@ -108,6 +113,7 @@ public class RestExecutor implements AutoCloseable {
         }
     }
 
+    /** */
     private RestResult parseResponse(Response res) throws IOException {
         if (res.isSuccessful()) {
             RestResponseHolder holder = MAPPER.readValue(res.body().byteStream(), RestResponseHolder.class);
@@ -134,11 +140,8 @@ public class RestExecutor implements AutoCloseable {
     }
 
     /** */
-    public RestResult sendRequest(String url, Map<String, Object> params, Map<String, Object> headers) throws IOException {
+    private RestResult sendRequest(String url, Map<String, Object> params, Map<String, Object> headers) throws IOException {
         HttpUrl httpUrl = HttpUrl.parse(url);
-
-        if (httpUrl == null)
-            throw new IllegalStateException("Failed to send request because of node URL is invalid: " + url);
 
         HttpUrl.Builder urlBuilder = httpUrl.newBuilder()
             .addPathSegment("ignite");
@@ -166,13 +169,36 @@ public class RestExecutor implements AutoCloseable {
         try (Response resp = httpClient.newCall(reqBuilder.build()).execute()) {
             return parseResponse(resp);
         }
-        catch (ConnectException ce) {
-            LT.warn(log, "Failed connect to cluster. " +
-                "Please ensure that nodes have [ignite-rest-http] module in classpath " +
-                "(was copied from libs/optional to libs folder).");
+    }
 
-            throw ce;
+    /** */
+    public RestResult sendRequest(List<String> nodeURIs, Map<String, Object> params, Map<String, Object> headers) throws IOException {
+        Integer startIdx = startIdxs.getOrDefault(nodeURIs, 0);
+
+        for (int i = 0;  i < nodeURIs.size(); i++) {
+            Integer currIdx = (startIdx + i) % nodeURIs.size();
+
+            String nodeUrl = nodeURIs.get(currIdx);
+
+            try {
+                RestResult res = sendRequest(nodeUrl, params, headers);
+
+                log.info("Connected to cluster [url=" + nodeUrl + "]");
+
+                startIdxs.put(nodeURIs, currIdx);
+
+                return res;
+            }
+            catch (ConnectException ignored) {
+                // No-op.
+            }
         }
+
+        LT.warn(log, "Failed connect to cluster. " +
+            "Please ensure that nodes have [ignite-rest-http] module in classpath " +
+            "(was copied from libs/optional to libs folder).");
+
+        throw new ConnectException("Failed connect to cluster [urls=" + nodeURIs + ", parameters=" + params + "]");
     }
 
     /**

@@ -102,7 +102,7 @@ public class AgentLauncher {
     private static final String EVENT_NODE_REST = "node:rest";
 
     /** */
-    private static final String EVENT_RESET_TOKENS = "agent:reset:token";
+    private static final String EVENT_RESET_TOKEN = "agent:reset:token";
 
     /** */
     private static final String EVENT_LOG_WARNING = "log:warn";
@@ -118,66 +118,64 @@ public class AgentLauncher {
     /**
      * On error listener.
      */
-    private static final Emitter.Listener onError = new Emitter.Listener() {
-        @Override public void call(Object... args) {
-            Throwable e = (Throwable)args[0];
+    private static final Emitter.Listener onError = args -> {
+        Throwable e = (Throwable)args[0];
 
-            ConnectException ce = X.cause(e, ConnectException.class);
+        ConnectException ce = X.cause(e, ConnectException.class);
 
-            if (ce != null)
-                log.error("Failed to establish connection to server (connection refused).");
-            else {
-                Exception ignore = X.cause(e, SSLHandshakeException.class);
+        if (ce != null)
+            log.error("Failed to establish connection to server (connection refused).");
+        else {
+            Exception ignore = X.cause(e, SSLHandshakeException.class);
 
-                if (ignore != null) {
-                    log.error("Failed to establish SSL connection to server, due to errors with SSL handshake.");
-                    log.error("Add to environment variable JVM_OPTS parameter \"-Dtrust.all=true\" to skip certificate validation in case of using self-signed certificate.");
+            if (ignore != null) {
+                log.error("Failed to establish SSL connection to server, due to errors with SSL handshake.");
+                log.error("Add to environment variable JVM_OPTS parameter \"-Dtrust.all=true\" to skip certificate validation in case of using self-signed certificate.");
 
-                    System.exit(1);
-                }
-
-                ignore = X.cause(e, UnknownHostException.class);
-
-                if (ignore != null) {
-                    log.error("Failed to establish connection to server, due to errors with DNS or missing proxy settings.");
-                    log.error("Documentation for proxy configuration can be found here: http://apacheignite.readme.io/docs/web-agent#section-proxy-configuration");
-
-                    System.exit(1);
-                }
-
-                ignore = X.cause(e, IOException.class);
-
-                if (ignore != null && "404".equals(ignore.getMessage())) {
-                    log.error("Failed to receive response from server (connection refused).");
-
-                    return;
-                }
-
-                if (ignore != null && "407".equals(ignore.getMessage())) {
-                    log.error("Failed to establish connection to server, due to proxy requires authentication.");
-
-                    String userName = System.getProperty("https.proxyUsername", System.getProperty("http.proxyUsername"));
-
-                    if (userName == null || userName.trim().isEmpty())
-                        userName = readLine("Enter proxy user name: ");
-                    else
-                        System.out.println("Read username from system properties: " + userName);
-
-                    char[] pwd = readPassword("Enter proxy password: ");
-
-                    final PasswordAuthentication pwdAuth = new PasswordAuthentication(userName, pwd);
-
-                    Authenticator.setDefault(new Authenticator() {
-                        @Override protected PasswordAuthentication getPasswordAuthentication() {
-                            return pwdAuth;
-                        }
-                    });
-
-                    return;
-                }
-
-                log.error("Connection error.", e);
+                System.exit(1);
             }
+
+            ignore = X.cause(e, UnknownHostException.class);
+
+            if (ignore != null) {
+                log.error("Failed to establish connection to server, due to errors with DNS or missing proxy settings.");
+                log.error("Documentation for proxy configuration can be found here: http://apacheignite.readme.io/docs/web-agent#section-proxy-configuration");
+
+                System.exit(1);
+            }
+
+            ignore = X.cause(e, IOException.class);
+
+            if (ignore != null && "404".equals(ignore.getMessage())) {
+                log.error("Failed to receive response from server (connection refused).");
+
+                return;
+            }
+
+            if (ignore != null && "407".equals(ignore.getMessage())) {
+                log.error("Failed to establish connection to server, due to proxy requires authentication.");
+
+                String userName = System.getProperty("https.proxyUsername", System.getProperty("http.proxyUsername"));
+
+                if (userName == null || userName.trim().isEmpty())
+                    userName = readLine("Enter proxy user name: ");
+                else
+                    System.out.println("Read username from system properties: " + userName);
+
+                char[] pwd = readPassword("Enter proxy password: ");
+
+                final PasswordAuthentication pwdAuth = new PasswordAuthentication(userName, pwd);
+
+                Authenticator.setDefault(new Authenticator() {
+                    @Override protected PasswordAuthentication getPasswordAuthentication() {
+                        return pwdAuth;
+                    }
+                });
+
+                return;
+            }
+
+            log.error("Connection error.", e);
         }
     };
 
@@ -289,28 +287,26 @@ public class AgentLauncher {
         System.out.println(cfg);
         System.out.println();
 
+        URI uri;
+
+        try {
+            uri = new URI(cfg.serverUri());
+        }
+        catch (URISyntaxException e) {
+            log.error("Failed to parse Ignite Web Console uri", e);
+
+            return;
+        }
+
         if (cfg.tokens() == null) {
-            String webHost;
-
-            try {
-                webHost = new URI(cfg.serverUri()).getHost();
-            }
-            catch (URISyntaxException e) {
-                log.error("Failed to parse Ignite Web Console uri", e);
-
-                return;
-            }
-
             System.out.println("Security token is required to establish connection to the web console.");
-            System.out.println(String.format("It is available on the Profile page: https://%s/profile", webHost));
+            System.out.println(String.format("It is available on the Profile page: https://%s/profile", uri.getHost()));
 
             String tokens = String.valueOf(readPassword("Enter security tokens separated by comma: "));
 
             cfg.tokens(Arrays.asList(tokens.trim().split(",")));
         }
-
-        URI uri = URI.create(cfg.serverUri());
-
+        
         // Create proxy authenticator using passed properties.
         switch (uri.getScheme()) {
             case "http":
@@ -330,6 +326,29 @@ public class AgentLauncher {
                 // No-op.
         }
 
+        List<String> nodeURIs = cfg.nodeURIs();
+
+        for (int i = nodeURIs.size() - 1; i >= 0; i--) {
+            String nodeURI = nodeURIs.get(i);
+
+            try {
+                new URI(nodeURI);
+            }
+            catch (URISyntaxException ignored) {
+                log.warn("Failed to parse Ignite node URI: {}.", nodeURI);
+
+                nodeURIs.remove(i);
+            }
+        }
+
+        if (nodeURIs.isEmpty()) {
+            log.error("Failed to find valid URIs for connect to Ignite node via REST. Please check agent settings");
+
+            return;
+        }
+
+        cfg.nodeURIs(nodeURIs);
+
         IO.Options opts = new IO.Options();
 
         opts.path = "/agents";
@@ -348,85 +367,81 @@ public class AgentLauncher {
 
         try (RestExecutor restExecutor = new RestExecutorSecurity(cfg.nodeLogin(), cfg.nodePassword());
              ClusterListener clusterLsnr = new ClusterListener(cfg, client, restExecutor)) {
-            Emitter.Listener onConnect = new Emitter.Listener() {
-                @Override public void call(Object... args) {
-                    log.info("Connection established.");
+            Emitter.Listener onConnect = connectRes -> {
+                log.info("Connection established.");
 
-                    JSONObject authMsg = new JSONObject();
+                JSONObject authMsg = new JSONObject();
 
-                    try {
-                        authMsg.put("tokens", toJSON(cfg.tokens()));
-                        authMsg.put("disableDemo", cfg.disableDemo());
+                try {
+                    authMsg.put("tokens", toJSON(cfg.tokens()));
+                    authMsg.put("disableDemo", cfg.disableDemo());
 
-                        String clsName = AgentLauncher.class.getSimpleName() + ".class";
+                    String clsName = AgentLauncher.class.getSimpleName() + ".class";
 
-                        String clsPath = AgentLauncher.class.getResource(clsName).toString();
+                    String clsPath = AgentLauncher.class.getResource(clsName).toString();
 
-                        if (clsPath.startsWith("jar")) {
-                            String manifestPath = clsPath.substring(0, clsPath.lastIndexOf('!') + 1) +
-                                "/META-INF/MANIFEST.MF";
+                    if (clsPath.startsWith("jar")) {
+                        String manifestPath = clsPath.substring(0, clsPath.lastIndexOf('!') + 1) +
+                            "/META-INF/MANIFEST.MF";
 
-                            Manifest manifest = new Manifest(new URL(manifestPath).openStream());
+                        Manifest manifest = new Manifest(new URL(manifestPath).openStream());
 
-                            Attributes attr = manifest.getMainAttributes();
+                        Attributes attr = manifest.getMainAttributes();
 
-                            authMsg.put("ver", attr.getValue("Implementation-Version"));
-                            authMsg.put("bt", attr.getValue("Build-Time"));
-                        }
+                        authMsg.put("ver", attr.getValue("Implementation-Version"));
+                        authMsg.put("bt", attr.getValue("Build-Time"));
+                    }
 
-                        client.emit("agent:auth", authMsg, new Ack() {
-                            @Override public void call(Object... args) {
-                                if (args != null) {
-                                    if (args[0] instanceof String) {
-                                        log.error((String)args[0]);
-
-                                        System.exit(1);
-                                    }
-
-                                    if (args[0] == null && args[1] instanceof JSONArray) {
-                                        try {
-                                            List<String> activeTokens = fromJSON(args[1], List.class);
-
-                                            if (!F.isEmpty(activeTokens)) {
-                                                Collection<String> missedTokens = cfg.tokens();
-
-                                                cfg.tokens(activeTokens);
-
-                                                missedTokens.removeAll(activeTokens);
-
-                                                if (!F.isEmpty(missedTokens)) {
-                                                    String tokens = F.concat(missedTokens, ", ");
-
-                                                    log.warn("Failed to authenticate with token(s): {}. " +
-                                                        "Please reload agent archive or check settings", tokens);
-                                                }
-
-                                                log.info("Authentication success.");
-
-                                                clusterLsnr.watch();
-
-                                                return;
-                                            }
-                                        }
-                                        catch (Exception e) {
-                                            log.error("Failed to authenticate agent. Please check agent\'s tokens", e);
-
-                                            System.exit(1);
-                                        }
-                                    }
-                                }
-
-                                log.error("Failed to authenticate agent. Please check agent\'s tokens");
+                    client.emit("agent:auth", authMsg, (Ack) authRes -> {
+                        if (authRes != null) {
+                            if (authRes[0] instanceof String) {
+                                log.error((String)authRes[0]);
 
                                 System.exit(1);
                             }
-                        });
-                    }
-                    catch (JSONException | IOException e) {
-                        log.error("Failed to construct authentication message", e);
 
-                        client.close();
-                    }
+                            if (authRes[0] == null && authRes[1] instanceof JSONArray) {
+                                try {
+                                    List<String> activeTokens = fromJSON(authRes[1], List.class);
+
+                                    if (!F.isEmpty(activeTokens)) {
+                                        Collection<String> missedTokens = cfg.tokens();
+
+                                        cfg.tokens(activeTokens);
+
+                                        missedTokens.removeAll(activeTokens);
+
+                                        if (!F.isEmpty(missedTokens)) {
+                                            String tokens = F.concat(missedTokens, ", ");
+
+                                            log.warn("Failed to authenticate with token(s): {}. " +
+                                                "Please reload agent archive or check settings", tokens);
+                                        }
+
+                                        log.info("Authentication success.");
+
+                                        clusterLsnr.watch();
+
+                                        return;
+                                    }
+                                }
+                                catch (Exception e) {
+                                    log.error("Failed to authenticate agent. Please check agent\'s tokens", e);
+
+                                    System.exit(1);
+                                }
+                            }
+                        }
+
+                        log.error("Failed to authenticate agent. Please check agent\'s tokens");
+
+                        System.exit(1);
+                    });
+                }
+                catch (JSONException | IOException e) {
+                    log.error("Failed to construct authentication message", e);
+
+                    client.close();
                 }
             };
 
@@ -443,19 +458,17 @@ public class AgentLauncher {
                 .on(EVENT_ERROR, onError)
                 .on(EVENT_DISCONNECT, onDisconnect)
                 .on(EVENT_LOG_WARNING, onLogWarning)
-                .on(EVENT_RESET_TOKENS, new Emitter.Listener() {
-                    @Override public void call(Object... args) {
-                        String tok = String.valueOf(args[0]);
+                .on(EVENT_RESET_TOKEN, res -> {
+                    String tok = String.valueOf(res[0]);
 
-                        log.warn("Security token has been reset: {}", tok);
+                    log.warn("Security token has been reset: {}", tok);
 
-                        cfg.tokens().remove(tok);
+                    cfg.tokens().remove(tok);
 
-                        if (cfg.tokens().isEmpty()) {
-                            client.off();
+                    if (cfg.tokens().isEmpty()) {
+                        client.off();
 
-                            latch.countDown();
-                        }
+                        latch.countDown();
                     }
                 })
                 .on(EVENT_SCHEMA_IMPORT_DRIVERS, dbHnd.availableDriversListener())

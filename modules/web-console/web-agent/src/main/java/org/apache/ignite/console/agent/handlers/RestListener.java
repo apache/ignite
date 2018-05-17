@@ -70,19 +70,24 @@ public class RestListener extends AbstractListener {
         if (args.containsKey("headers"))
             headers = (Map<String, Object>)args.get("headers");
 
-        if (demo && AgentClusterDemo.getDemoUrl() == null) {
-            try {
-                AgentClusterDemo.tryStart().await();
-            }
-            catch (InterruptedException ignore) {
-                RestResult.fail(404, "Failed to send request because of embedded node for demo mode is not started yet.");
-            }
-        }
-
-        String url = demo ? AgentClusterDemo.getDemoUrl() : this.cfg.nodeUri();
-
         try {
-            return restExecutor.sendRequest(url, params, headers);
+            if (demo) {
+                if (AgentClusterDemo.getDemoUrl() == null) {
+                    try {
+                        AgentClusterDemo.tryStart().await();
+
+                        if (AgentClusterDemo.getDemoUrl() == null)
+                            throw new InterruptedException();
+                    }
+                    catch (InterruptedException ignore) {
+                        return RestResult.fail(404, "Failed to send request because of embedded node for demo mode is not started yet.");
+                    }
+                }
+
+                return restExecutor.sendRequest(AgentClusterDemo.getDemoUrl(), params, headers);
+            }
+            
+            return restExecutor.sendRequest(this.cfg.nodeURIs(), params, headers);
         }
         catch (Exception e) {
             U.error(log, "Failed to execute REST command with parameters: " + params, e);

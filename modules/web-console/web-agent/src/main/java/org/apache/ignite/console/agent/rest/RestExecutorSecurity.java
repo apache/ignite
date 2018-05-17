@@ -18,6 +18,7 @@
 package org.apache.ignite.console.agent.rest;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -52,7 +53,7 @@ public class RestExecutorSecurity extends RestExecutor {
     }
 
     /** {@inheritDoc} */
-    @Override public RestResult sendRequest(String url, Map<String, Object> params,
+    @Override public RestResult sendRequest(List<String> url, Map<String, Object> params,
         Map<String, Object> headers) throws IOException {
 
         if (!F.isEmpty(sesTok))
