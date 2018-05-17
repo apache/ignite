@@ -1028,7 +1028,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** {@inheritDoc} */
     @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
-        if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getDataStorageConfiguration() == null)
+        if (cctx.kernalContext().clientNode())
             return;
 
         DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
