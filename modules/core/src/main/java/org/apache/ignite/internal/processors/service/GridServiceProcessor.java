@@ -114,6 +114,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBI
 import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
+import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -1947,6 +1950,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                                     GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
+                                    if(!isReassignRequired(dep, evt)) {
+                                        log.info(String.format("Skip reassigment for:\n %s\nevent:\n%s", dep, evt));
+                                        continue;
+                                    }
+
+
                                     try {
                                         svcName.set(dep.configuration().getName());
 
@@ -2001,6 +2010,16 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             finally {
                 busyLock.leaveBusy();
             }
+        }
+
+        private boolean isReassignRequired(GridServiceDeployment dep, DiscoveryEvent evt) {
+            if(evt.type() == EVT_NODE_FAILED || evt.type() == EVT_NODE_LEFT)
+                return dep.configuration().getTotalCount() != 0;
+            else if(evt.type() == EVT_NODE_JOINED) {
+                return !(dep.configuration().getTotalCount() == 1 && dep.configuration().getNodeFilter() == null);
+            }
+
+            return false;
         }
 
         /**
