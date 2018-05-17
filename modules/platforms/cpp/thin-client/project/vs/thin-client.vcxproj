@@ -156,7 +156,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\IgniteClient.cpp" />
+    <ClCompile Include="..\..\src\ignite_client.cpp" />
+    <ClCompile Include="..\..\src\impl\ignite_client_impl.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\impl\thin\ignite_client_impl.h" />
+    <ClInclude Include="..\..\include\ignite\thin\ignite_client.h" />
+    <ClInclude Include="..\..\include\ignite\thin\ignite_client_configuration.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
