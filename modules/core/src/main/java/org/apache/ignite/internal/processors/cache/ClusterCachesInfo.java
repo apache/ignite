@@ -381,6 +381,9 @@ class ClusterCachesInfo {
                 "Affinity partitions count", locAttr.affinityPartitionsCount(),
                 rmtAttr.affinityPartitionsCount(), true);
 
+            CU.validateAffinityKeyConfiguration(rmtAttr.cacheName(), rmt, rmtAttr.configuration().getKeyConfiguration(),
+                locAttr.configuration().getKeyConfiguration());
+
             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionFilter", "Eviction filter",
                 locAttr.evictionFilterClassName(), rmtAttr.evictionFilterClassName(), true);
 

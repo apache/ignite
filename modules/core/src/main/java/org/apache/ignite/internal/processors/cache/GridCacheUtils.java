@@ -47,6 +47,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CacheServerNotFoundException;
 import org.apache.ignite.cache.QueryEntity;
@@ -1627,6 +1628,89 @@ public class GridCacheUtils {
     }
 
     /**
+     * Validate affinity key configurations.
+     * All items full (typeName and affKeyFieldName is defined).
+     * Definition for the type does not repeat.
+     *
+     * @param cacheKeyCfgs keyConfiguration to validate.
+     * @return Affinity key maps (typeName -> fieldName)
+     * @throws IgniteCheckedException In case the affinity key configurations is not valid.
+     */
+    public static Map<String, String> validateAffinityKeyConfiguration(
+        CacheKeyConfiguration cacheKeyCfgs[]
+    ) throws IgniteCheckedException {
+        Map<String, String> keyConfigurations = new HashMap<>();
+
+        if (cacheKeyCfgs != null) {
+            for (CacheKeyConfiguration cacheKeyCfg : cacheKeyCfgs) {
+                String typeName = cacheKeyCfg.getTypeName();
+
+                A.notNullOrEmpty(typeName, "typeName");
+
+                String fieldName = cacheKeyCfg.getAffinityKeyFieldName();
+
+                A.notNullOrEmpty(fieldName, "affKeyFieldName");
+
+                String oldFieldName = keyConfigurations.put(typeName, fieldName);
+
+                if (oldFieldName != null && !oldFieldName.equals(fieldName)) {
+                    throw new IgniteCheckedException("Affinity key configuration constraint unique for type " +
+                        "(fix property \"keyConfiguration\" in cache configuration) [typeName=" + typeName +
+                        ", one affKeyFieldName=" + oldFieldName + ", two affKeyFieldName=" + fieldName + "]");
+                }
+            }
+        }
+
+        return keyConfigurations;
+    }
+
+    /**
+     * Validate and compare affinity key configurations.
+     *
+     * @param cacheName Cache name.
+     * @param rmtNodeId Remote node.
+     * @param oldCacheKeyCfgs Exist affinity key configurations.
+     * @param newCacheKeyCfgs New affinity key configurations.
+     * @throws IgniteCheckedException In case the affinity key configurations is not valid.
+     */
+    public static void validateAffinityKeyConfiguration(String cacheName, UUID rmtNodeId,
+        CacheKeyConfiguration oldCacheKeyCfgs[],
+        CacheKeyConfiguration newCacheKeyCfgs[]
+    ) throws IgniteCheckedException {
+        Map<String, String> oldAffinityKeys = CU.validateAffinityKeyConfiguration(oldCacheKeyCfgs);
+
+        Map<String, String> newAffinityKey = CU.validateAffinityKeyConfiguration(newCacheKeyCfgs);
+
+        if(oldAffinityKeys.size()!=newAffinityKey.size()){
+            throw new IgniteCheckedException("Affinity key configuration mismatch (fix property \"keyConfiguration\" in cache " +
+                "configuration or set -D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property) " +
+                "[cacheName=" + cacheName+
+                ", exist keyConfiguration.length="+oldAffinityKeys.size()+
+                ", init keyConfiguration.length="+newAffinityKey.size()+
+                (rmtNodeId!=null?", rmtNodeId="+rmtNodeId:"")+
+                ']');
+        }
+
+        for (Map.Entry<String,String> oldAffinityKey : oldAffinityKeys.entrySet()) {
+            String oldTypeName = oldAffinityKey.getKey();
+
+            String oldFieldName = oldAffinityKey.getValue();
+
+            String newFieldName = newAffinityKey.get(oldTypeName);
+
+            if (!oldFieldName.equals(newFieldName)) {
+                throw new IgniteCheckedException("Affinity key configuration mismatch (fix property \"keyConfiguration\" in cache " +
+                    "configuration or set -D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                    "system property) [cacheName=" + cacheName+", typeName=" + oldTypeName +
+                    ", exist affinityKeyFieldName=" + oldFieldName +
+                    ", init affinityKeyFieldName=" + newFieldName +
+                    (rmtNodeId!=null?", rmtNodeId="+rmtNodeId:"")+
+                    ']');
+            }
+        }
+    }
+
+    /**
      * @param cfg Initializes cache configuration with proper defaults.
      * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If configuration is not valid.
@@ -1664,6 +1748,8 @@ public class GridCacheUtils {
                     " [cacheName=" + U.maskName(cfg.getName()) + ']');
             }
         }
+
+        validateAffinityKeyConfiguration(cfg.getKeyConfiguration());
 
         if (cfg.getCacheMode() == REPLICATED)
             cfg.setBackups(Integer.MAX_VALUE);
