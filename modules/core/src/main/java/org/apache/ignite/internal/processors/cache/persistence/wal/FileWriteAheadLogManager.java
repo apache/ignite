@@ -2131,11 +2131,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 Long segmentToDecompress = null;
 
                 try {
-                    while (!Thread.currentThread().isInterrupted() && !stopped && segmentToDecompress == null) {
-                        worker.updateHeartbeat();
+                    worker.updateHeartbeat();
 
-                        segmentToDecompress = segmentsQueue.poll(waitTimeoutMs, TimeUnit.MILLISECONDS);
-                    }
+                    segmentToDecompress = segmentsQueue.poll(waitTimeoutMs, TimeUnit.MILLISECONDS);
+
+                    if (segmentToDecompress == null)
+                        continue;
 
                     if (stopped)
                         break;

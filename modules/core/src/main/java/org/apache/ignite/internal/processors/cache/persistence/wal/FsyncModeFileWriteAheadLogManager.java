@@ -1948,11 +1948,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
                     segmentToDecompress = segmentsQueue.poll(pollTimeoutMs, TimeUnit.MILLISECONDS);
 
-                    if (stopped)
-                        break;
-
                     if (segmentToDecompress == null)
                         continue;
+
+                    if (stopped)
+                        break;
 
                     File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".zip");
                     File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".tmp");
