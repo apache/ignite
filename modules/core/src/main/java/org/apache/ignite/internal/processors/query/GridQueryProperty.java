@@ -72,6 +72,13 @@ public interface GridQueryProperty {
     public boolean notNull();
 
     /**
+     * Gets the flag indicating case insensitivity for this property.
+     *
+     * @return {@code true} if case insensitive.
+     */
+    public boolean caseInsensitive();
+
+    /**
      * Gets the default value for this property.
      *
      * @return {@code null} if a default value is not set for the property.

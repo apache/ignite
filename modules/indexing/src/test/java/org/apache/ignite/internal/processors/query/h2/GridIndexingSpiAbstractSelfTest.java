@@ -562,6 +562,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                 }
 
                 /** */
+                @Override public boolean caseInsensitive() {
+                    return false;
+                }
+
+                /** */
                 @Override public Object defaultValue() {
                     return null;
                 }

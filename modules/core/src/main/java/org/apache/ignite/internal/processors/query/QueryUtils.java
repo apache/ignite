@@ -106,21 +106,21 @@ public class QueryUtils {
      */
     @NotNull private static Set<Class<?>> createSqlTypes() {
         Set<Class<?>> sqlClasses = new HashSet<>(Arrays.<Class<?>>asList(
-            Integer.class,
-            Boolean.class,
-            Byte.class,
-            Short.class,
-            Long.class,
-            BigDecimal.class,
-            Double.class,
-            Float.class,
-            Time.class,
-            Timestamp.class,
-            Date.class,
-            java.sql.Date.class,
-            String.class,
-            UUID.class,
-            byte[].class
+                Integer.class,
+                Boolean.class,
+                Byte.class,
+                Short.class,
+                Long.class,
+                BigDecimal.class,
+                Double.class,
+                Float.class,
+                Time.class,
+                Timestamp.class,
+                Date.class,
+                java.sql.Date.class,
+                String.class,
+                UUID.class,
+                byte[].class
         ));
 
         sqlClasses.addAll(Jsr310Java8DateTimeApiUtils.jsr310ApiClasses());
@@ -205,7 +205,7 @@ public class QueryUtils {
      * @return Normalized query entities.
      */
     public static Collection<QueryEntity> normalizeQueryEntities(Collection<QueryEntity> entities,
-        CacheConfiguration<?, ?> cfg) {
+                                                                 CacheConfiguration<?, ?> cfg) {
         Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
 
         for (QueryEntity entity : entities) {
@@ -264,6 +264,7 @@ public class QueryUtils {
         normalEntity.setKeyFieldName(entity.getKeyFieldName());
         normalEntity.setValueFieldName(entity.getValueFieldName());
         normalEntity.setNotNullFields(entity.getNotNullFields());
+        normalEntity.setCaseInsensitiveFields(entity.getCaseInsensitiveFields());
         normalEntity.setDefaultFieldValues(entity.getDefaultFieldValues());
         normalEntity.setDecimalInfo(entity.getDecimalInfo());
 
@@ -396,7 +397,7 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static QueryTypeCandidate typeForQueryEntity(String cacheName, String schemaName, GridCacheContext cctx,
-        QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
+                                                        QueryEntity qryEntity, List<Class<?>> mustDeserializeClss, boolean escape) throws IgniteCheckedException {
         GridKernalContext ctx = cctx.kernalContext();
         CacheConfiguration<?,?> ccfg = cctx.config();
 
@@ -447,7 +448,7 @@ public class QueryUtils {
         else {
             if (valCls == null)
                 throw new IgniteCheckedException("Failed to find value class in the node classpath " +
-                    "(use default marshaller to enable binary objects) : " + qryEntity.findValueType());
+                        "(use default marshaller to enable binary objects) : " + qryEntity.findValueType());
 
             desc.valueClass(valCls);
             desc.keyClass(keyCls);
@@ -488,7 +489,7 @@ public class QueryUtils {
             if (!cctx.customAffinityMapper() && keyType != null) {
                 if (coCtx != null) {
                     CacheDefaultBinaryAffinityKeyMapper mapper =
-                        (CacheDefaultBinaryAffinityKeyMapper)coCtx.defaultAffMapper();
+                            (CacheDefaultBinaryAffinityKeyMapper)coCtx.defaultAffMapper();
 
                     BinaryField field = mapper.affinityKeyField(keyType);
 
@@ -511,7 +512,7 @@ public class QueryUtils {
 
             if (keyMapper instanceof GridCacheDefaultAffinityKeyMapper) {
                 String affField =
-                    ((GridCacheDefaultAffinityKeyMapper)keyMapper).affinityKeyPropertyName(desc.keyClass());
+                        ((GridCacheDefaultAffinityKeyMapper)keyMapper).affinityKeyPropertyName(desc.keyClass());
 
                 if (affField != null) {
                     if (!escape)
@@ -539,9 +540,10 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static void processBinaryMeta(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d)
-        throws IgniteCheckedException {
+            throws IgniteCheckedException {
         Set<String> keyFields = qryEntity.getKeyFields();
         Set<String> notNulls = qryEntity.getNotNullFields();
+        Set<String> caseInsensitives = qryEntity.getCaseInsensitiveFields();
         Map<String, Object> dlftVals = qryEntity.getDefaultFieldValues();
         Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo  = qryEntity.getDecimalInfo();
 
@@ -558,7 +560,7 @@ public class QueryUtils {
             for (String keyField : keyFields) {
                 if (!qryEntity.getFields().containsKey(keyField))
                     throw new IgniteCheckedException("QueryEntity 'keyFields' property must be a subset of keys " +
-                        "from 'fields' property (case sensitive): " + keyField);
+                            "from 'fields' property (case sensitive): " + keyField);
             }
         }
 
@@ -572,16 +574,18 @@ public class QueryUtils {
 
             boolean notNull = notNulls != null && notNulls.contains(entry.getKey());
 
+            boolean caseInsensitive = caseInsensitives != null && caseInsensitives.contains(entry.getKey());
+
             Object dfltVal = dlftVals != null ? dlftVals.get(entry.getKey()) : null;
 
             IgniteBiTuple<Integer, Integer> precisionAndScale =
-                decimalInfo != null ? decimalInfo.get(entry.getKey()) : null;
+                    decimalInfo != null ? decimalInfo.get(entry.getKey()) : null;
 
             QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(),
-                U.classForName(entry.getValue(), Object.class, true),
-                d.aliases(), isKeyField, notNull, dfltVal,
-                precisionAndScale != null ? precisionAndScale.get1() : -1,
-                precisionAndScale != null ? precisionAndScale.get2() : -1);
+                    U.classForName(entry.getValue(), Object.class, true),
+                    d.aliases(), isKeyField, notNull, caseInsensitive, dfltVal,
+                    precisionAndScale != null ? precisionAndScale.get1() : -1,
+                    precisionAndScale != null ? precisionAndScale.get2() : -1);
 
             d.addProperty(prop, false);
         }
@@ -597,20 +601,22 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static void processClassMeta(QueryEntity qryEntity, QueryTypeDescriptorImpl d, CacheObjectContext coCtx)
-        throws IgniteCheckedException {
+            throws IgniteCheckedException {
         Set<String> notNulls = qryEntity.getNotNullFields();
+        Set<String> caseInsensitive = qryEntity.getCaseInsensitiveFields();
 
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
             GridQueryProperty prop = buildProperty(
-                d.keyClass(),
-                d.valueClass(),
-                d.keyFieldName(),
-                d.valueFieldName(),
-                entry.getKey(),
-                U.classForName(entry.getValue(), Object.class),
-                d.aliases(),
-                notNulls != null && notNulls.contains(entry.getKey()),
-                coCtx);
+                    d.keyClass(),
+                    d.valueClass(),
+                    d.keyFieldName(),
+                    d.valueFieldName(),
+                    entry.getKey(),
+                    U.classForName(entry.getValue(), Object.class),
+                    d.aliases(),
+                    notNulls != null && notNulls.contains(entry.getKey()),
+                    caseInsensitive != null && caseInsensitive.contains(entry.getKey()),
+                    coCtx);
 
             d.addProperty(prop, false);
         }
@@ -640,7 +646,7 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed to build index information.
      */
     public static void processDynamicIndexChange(String idxName, @Nullable QueryIndex idx, QueryTypeDescriptorImpl d)
-        throws IgniteCheckedException {
+            throws IgniteCheckedException {
         d.dropIndex(idxName);
 
         if (idx != null)
@@ -656,7 +662,7 @@ public class QueryUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static QueryIndexDescriptorImpl createIndexDescriptor(QueryTypeDescriptorImpl typeDesc, QueryIndex idx)
-        throws IgniteCheckedException {
+            throws IgniteCheckedException {
         String idxName = indexName(typeDesc.tableName(), idx);
         QueryIndexType idxTyp = idx.getIndexType();
 
@@ -708,7 +714,7 @@ public class QueryUtils {
         }
         else if (idxTyp != null)
             throw new IllegalArgumentException("Unsupported index type [idx=" + idx.getName() +
-                ", typ=" + idxTyp + ']');
+                    ", typ=" + idxTyp + ']');
         else
             throw new IllegalArgumentException("Index type is not set: " + idx.getName());
     }
@@ -724,6 +730,7 @@ public class QueryUtils {
      * @param isKeyField Key ownership flag, as defined in {@link QueryEntity#keyFields}: {@code true} if field belongs
      *      to key, {@code false} if it belongs to value, {@code null} if QueryEntity#keyFields is null.
      * @param notNull {@code true} if {@code null} value is not allowed.
+     * @param caseInsensitive {@code true} if field is case insensitive.
      * @param dlftVal Default value.
      * @param precision Precision.
      * @param scale Scale.
@@ -731,8 +738,8 @@ public class QueryUtils {
      * @throws IgniteCheckedException On error.
      */
     public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr, Class<?> resType,
-        Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal,
-        int precision, int scale) throws IgniteCheckedException {
+                                                          Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, boolean caseInsensitive, Object dlftVal,
+                                                          int precision, int scale) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
@@ -748,8 +755,8 @@ public class QueryUtils {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
-                precision, scale);
+            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, caseInsensitive, dlftVal,
+                    precision, scale);
         }
 
         return res;
@@ -762,24 +769,26 @@ public class QueryUtils {
      * @param resType Result type.
      * @param aliases Aliases.
      * @param notNull {@code true} if {@code null} value is not allowed.
+     * @param caseInsensitive {@code true} if field is case insensitive.
      * @param coCtx Cache object context.
      * @return Class property.
      * @throws IgniteCheckedException If failed.
      */
     public static QueryClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr,
-        Class<?> resType, Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx)
-        throws IgniteCheckedException {
+                                                        Class<?> resType, Map<String,String> aliases, boolean notNull, boolean caseInsensitive, CacheObjectContext coCtx)
+            throws IgniteCheckedException {
         QueryClassProperty res = buildClassProperty(
-            true,
-            keyCls,
-            pathStr,
-            resType,
-            aliases,
-            notNull,
-            coCtx);
+                true,
+                keyCls,
+                pathStr,
+                resType,
+                aliases,
+                notNull,
+                caseInsensitive,
+                coCtx);
 
         if (res == null) // We check key before value consistently with BinaryProperty.
-            res = buildClassProperty(false, valCls, pathStr, resType, aliases, notNull, coCtx);
+            res = buildClassProperty(false, valCls, pathStr, resType, aliases, notNull, caseInsensitive, coCtx);
 
         if (res == null)
             throw new IgniteCheckedException(propertyInitializationExceptionMessage(keyCls, valCls, pathStr, resType));
@@ -796,13 +805,14 @@ public class QueryUtils {
      * @param resType Result type.
      * @param aliases Aliases.
      * @param notNull {@code true} if {@code null} value is not allowed.
+     * @param caseInsensitive {@code true} if field is case insensitive.
      * @param coCtx Cache object context.
      * @return Class property.
      * @throws IgniteCheckedException If failed.
      */
     public static GridQueryProperty buildProperty(Class<?> keyCls, Class<?> valCls, String keyFieldName,
-        String valueFieldName, String pathStr, Class<?> resType, Map<String,String> aliases, boolean notNull,
-        CacheObjectContext coCtx) throws IgniteCheckedException {
+                                                  String valueFieldName, String pathStr, Class<?> resType, Map<String,String> aliases, boolean notNull,
+                                                  boolean caseInsensitive, CacheObjectContext coCtx) throws IgniteCheckedException {
         if (pathStr.equals(keyFieldName))
             return new KeyOrValProperty(true, pathStr, keyCls);
 
@@ -815,6 +825,7 @@ public class QueryUtils {
                 resType,
                 aliases,
                 notNull,
+                caseInsensitive,
                 coCtx);
     }
 
@@ -828,10 +839,10 @@ public class QueryUtils {
      * @return Exception message.
      */
     public static String propertyInitializationExceptionMessage(Class<?> keyCls, Class<?> valCls, String pathStr,
-        Class<?> resType) {
+                                                                Class<?> resType) {
         return "Failed to initialize property '" + pathStr + "' of type '" +
-            resType.getName() + "' for key class '" + keyCls + "' and value class '" + valCls + "'. " +
-            "Make sure that one of these classes contains respective getter method or field.";
+                resType.getName() + "' for key class '" + keyCls + "' and value class '" + valCls + "'. " +
+                "Make sure that one of these classes contains respective getter method or field.";
     }
 
     /**
@@ -841,12 +852,13 @@ public class QueryUtils {
      * @param resType Expected result type.
      * @param aliases Aliases.
      * @param notNull {@code true} if {@code null} value is not allowed.
+     * @param caseInsensitive {@code true} if field is case insensitive.
      * @param coCtx Cache object context.
      * @return Property instance corresponding to the given path.
      */
     @SuppressWarnings("ConstantConditions")
     public static QueryClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
-        Map<String,String> aliases, boolean notNull, CacheObjectContext coCtx) {
+                                                        Map<String,String> aliases, boolean notNull, boolean caseInsensitive, CacheObjectContext coCtx) {
         String[] path = pathStr.split("\\.");
 
         QueryClassProperty res = null;
@@ -866,7 +878,7 @@ public class QueryUtils {
             if (accessor == null)
                 return null;
 
-            QueryClassProperty tmp = new QueryClassProperty(accessor, key, alias, notNull, coCtx);
+            QueryClassProperty tmp = new QueryClassProperty(accessor, key, alias, notNull, caseInsensitive, coCtx);
 
             tmp.parent(res);
 
@@ -1078,7 +1090,7 @@ public class QueryUtils {
      */
     public static int validateTimeout(int timeout, TimeUnit timeUnit) {
         A.ensure(timeUnit != TimeUnit.MICROSECONDS && timeUnit != TimeUnit.NANOSECONDS,
-            "timeUnit minimal resolution is millisecond.");
+                "timeUnit minimal resolution is millisecond.");
 
         A.ensure(timeout >= 0, "timeout value should be non-negative.");
 
@@ -1093,7 +1105,7 @@ public class QueryUtils {
      */
     public static boolean isEnabled(CacheConfiguration<?,?> ccfg) {
         return !F.isEmpty(ccfg.getIndexedTypes()) ||
-            !F.isEmpty(ccfg.getQueryEntities());
+                !F.isEmpty(ccfg.getQueryEntities());
     }
 
     /**
@@ -1130,7 +1142,7 @@ public class QueryUtils {
      * @return Exception message describing found conflict or {@code null} if none found.
      */
     public static SchemaOperationException checkQueryEntityConflicts(CacheConfiguration<?, ?> ccfg,
-        Collection<DynamicCacheDescriptor> descs) {
+                                                                     Collection<DynamicCacheDescriptor> descs) {
         String schema = QueryUtils.normalizeSchemaName(ccfg.getName(), ccfg.getSqlSchema());
 
         Set<String> idxNames = new HashSet<>();
@@ -1142,7 +1154,7 @@ public class QueryUtils {
                 continue;
 
             String descSchema = QueryUtils.normalizeSchemaName(desc.cacheName(),
-                desc.cacheConfiguration().getSqlSchema());
+                    desc.cacheConfiguration().getSqlSchema());
 
             if (!F.eq(schema, descSchema))
                 continue;
@@ -1180,14 +1192,14 @@ public class QueryUtils {
 
         if (keyFieldName != null && !entity.getFields().containsKey(keyFieldName)) {
             throw new IgniteException("Key field is not in the field list [queryEntity=" + entity +
-                ", keyFieldName=" + keyFieldName + "]");
+                    ", keyFieldName=" + keyFieldName + "]");
         }
 
         String valFieldName = entity.getValueFieldName();
 
         if (valFieldName != null && !entity.getFields().containsKey(valFieldName)) {
             throw new IgniteException("Value field is not in the field list [queryEntity=" + entity +
-                ", valFieldName=" + valFieldName + "]");
+                    ", valFieldName=" + valFieldName + "]");
         }
 
         Collection<QueryIndex> idxs = entity.getIndexes();
@@ -1205,11 +1217,11 @@ public class QueryUtils {
 
                 if (!idxNames.add(idxName))
                     throw new IgniteException("Duplicate index name [queryEntity=" + entity +
-                        ", queryIdx=" + idx + ']');
+                            ", queryIdx=" + idx + ']');
 
                 if (idx.getIndexType() == null)
                     throw new IgniteException("Index type is not set [queryEntity=" + entity +
-                        ", queryIdx=" + idx + ']');
+                            ", queryIdx=" + idx + ']');
             }
         }
     }
@@ -1272,11 +1284,11 @@ public class QueryUtils {
     public static void checkNotNullAllowed(CacheConfiguration cfg) {
         if (cfg.isReadThrough())
             throw new IgniteSQLException("NOT NULL constraint is not supported when CacheConfiguration.readThrough " +
-                "is enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                    "is enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         if (cfg.getInterceptor() != null)
             throw new IgniteSQLException("NOT NULL constraint is not supported when CacheConfiguration.interceptor " +
-                "is set.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                    "is set.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
@@ -1290,17 +1302,17 @@ public class QueryUtils {
     public static SchemaOperationException validateDropColumn(QueryEntity entity, String fieldName, String colName) {
         if (F.eq(fieldName, entity.getKeyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(fieldName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
-                "\" because it represents an entire cache key");
+                    "\" because it represents an entire cache key");
 
         if (F.eq(fieldName, entity.getValueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(fieldName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
-                "\" because it represents an entire cache value");
+                    "\" because it represents an entire cache value");
 
         Set<String> keyFields = entity.getKeyFields();
 
         if (keyFields != null && keyFields.contains(fieldName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
-                "\" because it is a part of a cache key");
+                    "\" because it is a part of a cache key");
 
         Collection<QueryIndex> indexes = entity.getIndexes();
 
@@ -1308,7 +1320,7 @@ public class QueryUtils {
             for (QueryIndex idxDesc : indexes) {
                 if (idxDesc.getFields().containsKey(fieldName))
                     return new SchemaOperationException("Cannot drop column \"" + colName +
-                        "\" because an index exists (\"" + idxDesc.getName() + "\") that uses the column.");
+                            "\" because an index exists (\"" + idxDesc.getName() + "\") that uses the column.");
             }
         }
 
@@ -1325,24 +1337,24 @@ public class QueryUtils {
     public static SchemaOperationException validateDropColumn(GridQueryTypeDescriptor type, String colName) {
         if (F.eq(colName, type.keyFieldName()) || KEY_FIELD_NAME.equalsIgnoreCase(colName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
-                "\" because it represents an entire cache key");
+                    "\" because it represents an entire cache key");
 
         if (F.eq(colName, type.valueFieldName()) || VAL_FIELD_NAME.equalsIgnoreCase(colName))
             return new SchemaOperationException("Cannot drop column \"" + colName +
-                "\" because it represents an entire cache value");
+                    "\" because it represents an entire cache value");
 
         GridQueryProperty prop = type.property(colName);
 
         if (prop != null && prop.key())
             return new SchemaOperationException("Cannot drop column \"" + colName +
-                "\" because it is a part of a cache key");
+                    "\" because it is a part of a cache key");
 
         Collection<GridQueryIndexDescriptor> indexes = type.indexes().values();
 
         for (GridQueryIndexDescriptor idxDesc : indexes) {
             if (idxDesc.fields().contains(colName))
                 return new SchemaOperationException("Cannot drop column \"" + colName +
-                    "\" because an index exists (\"" + idxDesc.name() + "\") that uses the column.");
+                        "\" because an index exists (\"" + idxDesc.name() + "\") that uses the column.");
         }
 
         return null;
@@ -1406,6 +1418,11 @@ public class QueryUtils {
         /** {@inheritDoc} */
         @Override public boolean notNull() {
             return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean caseInsensitive() {
+            return false;
         }
 
         /** {@inheritDoc} */

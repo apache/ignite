@@ -37,6 +37,9 @@ public class QueryField implements Serializable {
     /** Nullable flag. */
     private final boolean nullable;
 
+    /** Case insensitive flag. */
+    private final boolean caseInsensitive;
+
     /** Default value. */
     private final Object dfltValue;
 
@@ -52,29 +55,32 @@ public class QueryField implements Serializable {
      * @param nullable Nullable flag.
      */
     public QueryField(String name, String typeName, boolean nullable) {
-        this(name, typeName, nullable, null, -1, -1);
+        this(name, typeName, nullable, false, null, -1, -1);
     }
 
     /**
      * @param name Field name.
      * @param typeName Class name for this field's values.
      * @param nullable Nullable flag.
+     * @param caseInsensitive Case insensitive flag.
      * @param dfltValue Default value.
      */
-    public QueryField(String name, String typeName, boolean nullable, Object dfltValue) {
-        this(name, typeName, nullable, dfltValue, -1, -1);
+    public QueryField(String name, String typeName, boolean nullable, boolean caseInsensitive, Object dfltValue) {
+        this(name, typeName, nullable, caseInsensitive, dfltValue, -1, -1);
     }
 
     /**
      * @param name Field name.
      * @param typeName Class name for this field's values.
      * @param nullable Nullable flag.
+     * @param caseInsensitive Case insensitive flag.
      * @param dfltValue Default value.
      */
-    public QueryField(String name, String typeName, boolean nullable, Object dfltValue, int precision, int scale) {
+    public QueryField(String name, String typeName, boolean nullable, boolean caseInsensitive, Object dfltValue, int precision, int scale) {
         this.name = name;
         this.typeName = typeName;
         this.nullable = nullable;
+        this.caseInsensitive = caseInsensitive;
         this.dfltValue = dfltValue;
         this.precision = precision;
         this.scale = scale;
@@ -99,6 +105,13 @@ public class QueryField implements Serializable {
      */
     public boolean isNullable() {
         return nullable;
+    }
+
+    /**
+     * @return {@code true}, if field is case insensitive.
+     */
+    public boolean isCaseInsensitive() {
+        return caseInsensitive;
     }
 
     /**

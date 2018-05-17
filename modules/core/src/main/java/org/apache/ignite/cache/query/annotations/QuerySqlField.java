@@ -64,6 +64,13 @@ public @interface QuerySqlField {
     boolean notNull() default false;
 
     /**
+     * Specifies whether the specified field is case insensitive.
+     *
+     * @return {@code True} if the field is case insensitive.
+     */
+    boolean caseInsensitive() default false;
+
+    /**
      * Specifies precision for a decimal field.
      *
      * @return precision for a decimal field.

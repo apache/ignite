@@ -55,6 +55,9 @@ public class QueryEntityTypeDescriptor {
     /** */
     private Set<String> notNullFields = new HashSet<>();
 
+    /** */
+    private Set<String> caseInsensitiveFields = new HashSet<>();
+
     /** Decimal fields information. */
     private Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
 
@@ -106,7 +109,7 @@ public class QueryEntityTypeDescriptor {
      * @param descending Sorting order.
      */
     public void addFieldToIndex(String idxName, String field, int orderNum,
-        boolean descending) {
+                                boolean descending) {
         QueryEntityIndexDescriptor desc = indexes.get(idxName);
 
         if (desc == null)
@@ -191,6 +194,29 @@ public class QueryEntityTypeDescriptor {
     }
 
     /**
+     * @return notNull fields.
+     */
+    public Set<String> notNullFields() {
+        return notNullFields;
+    }
+
+    /**
+     * Adds a case insensitive field.
+     *
+     * @param field case insensitive field.
+     */
+    public void addCaseInsensitiveField(String field) {
+        caseInsensitiveFields.add(field);
+    }
+
+    /**
+     * @return case insensitive fields.
+     */
+    public Set<String> caseInsensitiveFields() {
+        return caseInsensitiveFields;
+    }
+
+    /**
      * Adds decimal info.
      *
      * @param field Field.
@@ -198,13 +224,6 @@ public class QueryEntityTypeDescriptor {
      */
     public void addDecimalInfo(String field, IgniteBiTuple<Integer, Integer> info) {
         decimalInfo.put(field, info);
-    }
-
-    /**
-     * @return notNull fields.
-     */
-    public Set<String> notNullFields() {
-        return notNullFields;
     }
 
     /**

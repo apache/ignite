@@ -68,6 +68,9 @@ public enum H2DatabaseType {
     VARCHAR("VARCHAR"),
 
     /** */
+    VARCHAR_IGNORECASE("VARCHAR_IGNORECASE"),
+
+    /** */
     CHAR("CHAR"),
 
     /** */
