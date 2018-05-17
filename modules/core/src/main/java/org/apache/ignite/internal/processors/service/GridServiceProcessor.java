@@ -111,6 +111,8 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICE_REASSIGN_DELAY;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
@@ -130,6 +132,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 public class GridServiceProcessor extends GridProcessorAdapter {
     /** */
     public static final IgniteProductVersion LAZY_SERVICES_CFG_SINCE = IgniteProductVersion.fromString("1.5.22");
+
+    /** */
+    private static final int REASSIGN_DELAY = getInteger(IGNITE_SERVICE_REASSIGN_DELAY, 30_000);
 
     /** Versions that only compatible with each other, and from 1.5.33. */
     private static final Set<IgniteProductVersion> SERVICE_TOP_CALLABLE_VER1;
@@ -601,12 +606,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> deployAll(ClusterGroup prj, Collection<ServiceConfiguration> cfgs) {
         if (prj == null)
             // Deploy to servers by default if no projection specified.
-            return deployAll(cfgs,  ctx.cluster().get().forServers().predicate());
+            return deployAll(cfgs, ctx.cluster().get().forServers().predicate());
         else if (prj.predicate() == F.<ClusterNode>alwaysTrue())
-            return deployAll(cfgs,  null);
+            return deployAll(cfgs, null);
         else
             // Deploy to predicate nodes by default.
-            return deployAll(cfgs,  prj.predicate());
+            return deployAll(cfgs, prj.predicate());
     }
 
     /**
@@ -1904,8 +1909,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 currTopVer = topVer;
 
-                depExe.execute(new DepRunnable() {
-                    @Override public void run0() {
+                DepRunnable depRunnable = new DepRunnable() {
+                    @Override
+                    public void run0() {
                         // In case the cache instance isn't tracked by DiscoveryManager anymore.
                         discoCache.updateAlives(ctx.discovery());
 
@@ -2005,7 +2011,17 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             }
                         }
                     }
-                });
+                };
+
+                if (REASSIGN_DELAY > 0 || evt.type() != EVT_NODE_JOINED)
+                    depExe.execute(depRunnable);
+                else
+                    ctx.timeout().schedule(new Runnable() {
+                        @Override
+                        public void run() {
+                            depExe.execute(depRunnable);
+                        }
+                    }, REASSIGN_DELAY, -1);
             }
             finally {
                 busyLock.leaveBusy();
