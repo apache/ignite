@@ -1198,8 +1198,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (super.onDone(res, err) && realExchange) {
             if (log.isDebugEnabled())
-                log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
+                log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange=" + this +
                     "duration=" + duration() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
+            else if(log.isInfoEnabled())
+                log.info("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange=" + shortInfo() +
+                    ", topVer=" + topologyVersion() + "duration=" + duration() +
+                    ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
 
             initFut.onDone(err == null);
 
@@ -2051,6 +2055,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return exchId.hashCode();
+    }
+
+    /**
+     * @return Short information string.
+     */
+    public String shortInfo() {
+        return "GridDhtPartitionsExchangeFuture [topVer=" + topologyVersion() +
+            ", evt=" + (discoveryEvent() != null ? IgniteUtils.gridEventName(discoveryEvent().type()) : -1) +
+            ", evtNode=" + (discoveryEvent() != null ? discoveryEvent().eventNode() : null) +
+            ", done=" + isDone() + ']';
     }
 
     /**
