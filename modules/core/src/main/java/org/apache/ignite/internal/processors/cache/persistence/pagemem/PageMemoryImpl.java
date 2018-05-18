@@ -2199,8 +2199,6 @@ public class PageMemoryImpl implements PageMemoryEx {
                         relRmvAddr = metaAddr;
                 }
 
-                assert relRmvAddr != INVALID_REL_PTR;
-
                 final long absRmvAddr = absolute(relRmvAddr);
 
                 final FullPageId fullPageId = PageHeader.fullPageId(absRmvAddr);
