@@ -1206,7 +1206,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeExchange(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
+    @Override public boolean beforeExchange(GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException {
         DiscoveryEvent discoEvt = fut.firstEvent();
 
         boolean joinEvt = discoEvt.type() == EventType.EVT_NODE_JOINED;
@@ -1217,9 +1217,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         boolean clusterInTransitionStateToActive = fut.activateCluster();
 
+        boolean restored = false;
+
         // In case of cluster activation or local join restore, restore whole manager state.
         if (clusterInTransitionStateToActive || (joinEvt && locNode && isSrvNode)) {
             restoreState();
+
+            restored = true;
         }
         // In case of starting groups, restore partition states only for these groups.
         else if (fut.exchangeActions() != null && !F.isEmpty(fut.exchangeActions().cacheGroupsToStart())) {
@@ -1244,6 +1248,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
         }
+
+        return restored;
     }
 
     /**
@@ -1486,17 +1492,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             snapshotMgr.restoreState();
-
-            new IgniteThread(cctx.igniteInstanceName(), "db-checkpoint-thread", checkpointer).start();
-
-            CheckpointProgressSnapshot chp = checkpointer.wakeupForCheckpoint(0, "node started");
-
-            if (chp != null)
-                chp.cpBeginFut.get();
         }
         catch (StorageException e) {
             throw new IgniteCheckedException(e);
         }
+    }
+
+    /**
+     * Called when all partitions have been fully restored and pre-created on node start.
+     *
+     * Starts checkpointing process and initiates first checkpoint.
+     *
+     * @throws IgniteCheckedException If first checkpoint has failed.
+     */
+    @Override public void onStateRestored() throws IgniteCheckedException {
+        new IgniteThread(cctx.igniteInstanceName(), "db-checkpoint-thread", checkpointer).start();
+
+        CheckpointProgressSnapshot chp = checkpointer.wakeupForCheckpoint(0, "node started");
+
+        if (chp != null)
+            chp.cpBeginFut.get();
     }
 
     /** {@inheritDoc} */

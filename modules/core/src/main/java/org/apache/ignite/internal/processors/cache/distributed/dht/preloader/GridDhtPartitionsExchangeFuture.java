@@ -1136,8 +1136,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
            In case of persistent store is enabled we first restore partitions presented on disk.
            We need to guarantee that there are no partition state changes logged to WAL before this callback
            to make sure that we correctly restored last actual states. */
-        cctx.database().beforeExchange(this);
+        boolean restored = cctx.database().beforeExchange(this);
 
+        // Pre-create missing partitions using current affinity.
         if (!exchCtx.mergeExchanges()) {
             for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                 if (grp.isLocal() || cacheGroupStopping(grp.groupId()))
@@ -1148,6 +1149,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grp.topology().beforeExchange(this, !centralizedAff && !forceAffReassignment, false);
             }
         }
+
+        // After all partitions have been restored and pre-created it's safe to make first checkpoint.
+        if (restored)
+            cctx.database().onStateRestored();
 
         changeWalModeIfNeeded();
 

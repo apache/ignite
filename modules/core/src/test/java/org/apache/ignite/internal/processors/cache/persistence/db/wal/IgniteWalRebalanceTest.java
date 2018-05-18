@@ -17,22 +17,35 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
+import java.util.Collections;
+import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 
@@ -69,6 +82,8 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
                     .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true));
 
         cfg.setDataStorageConfiguration(dbCfg);
+
+        cfg.setCommunicationSpi(new WalRebalanceCheckingCommunicationSpi());
 
         return cfg;
     }
@@ -174,6 +189,74 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test that cache entry removes are rebalanced properly using WAL.
+     *
+     * @throws Exception If failed.
+     */
+    public void testWalHistoryWorksCorrectly() throws Exception {
+        final int entryCnt = 10_000;
+
+        IgniteEx ig0 = (IgniteEx) startGrids(2);
+
+        ig0.cluster().active(true);
+
+        IgniteCache<Object, Object> cache = ig0.cache(CACHE_NAME);
+
+        for (int k = 0; k < entryCnt; k++)
+            cache.put(k, new IndexedObject(k));
+
+        // This node should rebalance data from other nodes and shouldn't have WAL history.
+        Ignite ignite = startGrid(2);
+
+        resetBaselineTopology();
+
+        awaitPartitionMapExchange();
+
+        Set<Long> topVers = ((WalRebalanceCheckingCommunicationSpi) ignite.configuration().getCommunicationSpi())
+            .walRebalanceVersions();
+
+        Assert.assertTrue(topVers.contains(ignite.cluster().topologyVersion()));
+
+        // Rewrite some data.
+        for (int k = 0; k < entryCnt; k++) {
+            if (k % 3 == 0)
+                cache.put(k, new IndexedObject(k + 1));
+            else if (k % 3 == 1) // Spread removes across all partitions.
+                cache.remove(k);
+        }
+
+        // Stop grids which have actual WAL history.
+        stopGrid(0);
+
+        stopGrid(1);
+
+        // Start new node which should rebalance all data from node(2) without using WAL.
+        ignite = startGrid(3);
+
+        resetBaselineTopology();
+
+        awaitPartitionMapExchange();
+
+        Set<Long> topVers2 = ((WalRebalanceCheckingCommunicationSpi) ignite.configuration().getCommunicationSpi())
+            .walRebalanceVersions();
+
+        Assert.assertFalse(topVers2.contains(ignite.cluster().topologyVersion()));
+
+        for (Ignite ig : G.allGrids()) {
+            IgniteCache<Object, Object> cache1 = ig.cache(CACHE_NAME);
+
+            for (int k = 0; k < entryCnt; k++) {
+                if (k % 3 == 0)
+                    assertEquals(new IndexedObject(k + 1), cache1.get(k));
+                else if (k % 3 == 1)
+                    assertNull(cache1.get(k));
+                else
+                    assertEquals(new IndexedObject(k), cache1.get(k));
+            }
+        }
+    }
+
+    /**
      *
      */
     private static class IndexedObject {
@@ -212,6 +295,35 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(IndexedObject.class, this);
+        }
+    }
+
+    /**
+     * Wrapper of communication spi to detect on what topology versions WAL rebalance has happened.
+     */
+    public static class WalRebalanceCheckingCommunicationSpi extends TcpCommunicationSpi {
+        /** Topology vers. */
+        private final Set<Long> topVers = new GridConcurrentHashSet<>();
+
+        /**
+         *
+         */
+        public Set<Long> walRebalanceVersions() {
+            return Collections.unmodifiableSet(topVers);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
+            if (((GridIoMessage)msg).message() instanceof GridDhtPartitionDemandMessage) {
+                GridDhtPartitionDemandMessage demandMsg = (GridDhtPartitionDemandMessage) ((GridIoMessage)msg).message();
+
+                IgniteDhtDemandedPartitionsMap map = demandMsg.partitions();
+
+                if (!map.historicalMap().isEmpty())
+                    topVers.add(demandMsg.topologyVersion().topologyVersion());
+            }
+
+            super.sendMessage(node, msg, ackC);
         }
     }
 }
