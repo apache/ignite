@@ -272,6 +272,10 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
 
             srv.start();
 
+            Map<Long, String> nioServerWorkers = srv.getStripeThreadIds();
+            for (Long id  : nioServerWorkers.keySet())
+                ctx.registerSysThread(id, nioServerWorkers.get(id));
+
             ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
 
             return true;

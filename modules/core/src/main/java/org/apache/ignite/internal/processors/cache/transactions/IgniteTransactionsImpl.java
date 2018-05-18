@@ -148,6 +148,9 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         int txSize,
         @Nullable GridCacheContext sysCacheCtx
     ) {
+        if (cctx.kernalContext().igniteSysThreads().containsKey(Thread.currentThread().getId()))
+            throw new IgniteException("Failed to start Ignite transaction in Ignite system thread.");
+
         cctx.kernalContext().gateway().readLock();
 
         try {

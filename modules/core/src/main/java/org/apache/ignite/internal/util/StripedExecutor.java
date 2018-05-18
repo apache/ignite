@@ -20,7 +20,9 @@ package org.apache.ignite.internal.util;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -378,6 +380,18 @@ public class StripedExecutor implements ExecutorService {
         @NotNull TimeUnit unit
     ) throws InterruptedException, ExecutionException, TimeoutException {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return Stripe thread attributes.
+     */
+    public Map<Long, String> getStripeThreadIds() {
+        Map<Long, String> stripeThreads = new HashMap<>(stripes());
+
+        for (Stripe s : stripes)
+            stripeThreads.put(s.thread.getId(), s.thread.getName());
+
+        return stripeThreads;
     }
 
     /** {@inheritDoc} */

@@ -412,7 +412,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
         }
 
-        new IgniteThread(cctx.gridName(), "exchange-worker", exchWorker).start();
+        IgniteThread exchWorkerThread = new IgniteThread(cctx.gridName(), "exchange-worker", exchWorker);
+
+        exchWorkerThread.start();
+
+        cctx.kernalContext().registerSysThread(exchWorkerThread.getId(), exchWorkerThread.getName());
 
         if (reconnect) {
             fut.listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
