@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.io.Serializable;
 import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -86,7 +85,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
-import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -302,6 +300,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     };
 
+    /** Timeout between partition file destroy and checkpoint to handle it. */
+    private static final long PARTITION_DESTROY_CHECKPOINT_TIMEOUT = 30 * 1000; // 30 Seconds.
+
     /** Checkpoint thread. Needs to be volatile because it is created in exchange worker. */
     private volatile Checkpointer checkpointer;
 
@@ -395,6 +396,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Initially disabled cache groups. */
     private Collection<Integer> initiallyGlobalWalDisabledGrps = new HashSet<>();
 
+    /** Initially local wal disabled groups. */
     private Collection<Integer> initiallyLocalWalDisabledGrps = new HashSet<>();
 
     /** File I/O factory for writing checkpoint markers. */
@@ -509,6 +511,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         final GridKernalContext kernalCtx = cctx.kernalContext();
 
         if (!kernalCtx.clientNode()) {
+            checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
+
             IgnitePageStoreManager store = cctx.pageStore();
 
             assert store instanceof FilePageStoreManager : "Invalid page store manager was created: " + store;
@@ -664,6 +668,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             registrateMetricsMBean();
         }
+
+        if (checkpointer == null)
+            checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
 
         super.onActivate(ctx);
     }
@@ -1480,8 +1487,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             snapshotMgr.restoreState();
 
-            checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
-
             new IgniteThread(cctx.igniteInstanceName(), "db-checkpoint-thread", checkpointer).start();
 
             CheckpointProgressSnapshot chp = checkpointer.wakeupForCheckpoint(0, "node started");
@@ -1959,20 +1964,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @throws IgniteCheckedException If failed.
      * @throws StorageException In case I/O error occurred during operations with storage.
      */
-    private @Nullable WALPointer restoreMemory(CheckpointStatus status) throws IgniteCheckedException {
+    @Nullable private WALPointer restoreMemory(CheckpointStatus status) throws IgniteCheckedException {
         return restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory());
     }
 
     /**
      * @param status Checkpoint status.
-     * @param storeOnly If {@code True} restores Metastorage only.
+     * @param metastoreOnly If {@code True} restores Metastorage only.
      * @param storePageMem Metastore page memory.
      * @throws IgniteCheckedException If failed.
      * @throws StorageException In case I/O error occurred during operations with storage.
      */
-    private @Nullable WALPointer restoreMemory(CheckpointStatus status, boolean storeOnly,
-        PageMemoryEx storePageMem) throws IgniteCheckedException {
-        assert !storeOnly || storePageMem != null;
+    @Nullable private WALPointer restoreMemory(
+        CheckpointStatus status,
+        boolean metastoreOnly,
+        PageMemoryEx storePageMem
+    ) throws IgniteCheckedException {
+        assert !metastoreOnly || storePageMem != null;
 
         if (log.isInfoEnabled())
             log.info("Checking memory state [lastValidPos=" + status.endPtr + ", lastMarked="
@@ -1993,7 +2001,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         int applied = 0;
         WALPointer lastRead = null;
 
-        Collection<Integer> ignoreGrps = storeOnly ? Collections.emptySet() :
+        Collection<Integer> ignoreGrps = metastoreOnly ? Collections.emptySet() :
             F.concat(false, initiallyGlobalWalDisabledGrps, initiallyLocalWalDisabledGrps);
 
         try (WALIterator it = cctx.wal().replay(status.endPtr)) {
@@ -2029,7 +2037,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             // several repetitive restarts and the same pages may have changed several times.
                             int grpId = pageRec.fullPageId().groupId();
 
-                            if (storeOnly && grpId != METASTORAGE_CACHE_ID)
+                            if (metastoreOnly && grpId != METASTORAGE_CACHE_ID)
                                 continue;
 
                             if (!ignoreGrps.contains(grpId)) {
@@ -2059,22 +2067,47 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                         break;
 
+                    case PART_META_UPDATE_STATE:
+                        PartitionMetaStateRecord metaStateRecord = (PartitionMetaStateRecord)rec;
+
+                        {
+                            int grpId = metaStateRecord.groupId();
+
+                            if (metastoreOnly && grpId != METASTORAGE_CACHE_ID)
+                                continue;
+
+                            if (ignoreGrps.contains(grpId))
+                                continue;
+
+                            int partId = metaStateRecord.partitionId();
+
+                            GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal(metaStateRecord.state());
+
+                            if (state == null || state == GridDhtPartitionState.EVICTED)
+                                schedulePartitionDestroy(grpId, partId);
+                            else
+                                cancelOrWaitPartitionDestroy(grpId, partId);
+                        }
+
+                        break;
+
                     case PARTITION_DESTROY:
-                        PartitionDestroyRecord destroyRec = (PartitionDestroyRecord)rec;
+                        PartitionDestroyRecord destroyRecord = (PartitionDestroyRecord)rec;
 
-                        final int gId = destroyRec.groupId();
+                        {
+                            int grpId = destroyRecord.groupId();
 
-                        if (storeOnly && gId != METASTORAGE_CACHE_ID)
-                            continue;
+                            if (metastoreOnly && grpId != METASTORAGE_CACHE_ID)
+                                continue;
 
-                        if (!ignoreGrps.contains(gId)) {
-                            final int pId = destroyRec.partitionId();
+                            if (ignoreGrps.contains(grpId))
+                                continue;
 
-                            PageMemoryEx pageMem = gId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(gId);
+                            PageMemoryEx pageMem = grpId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(grpId);
 
-                            pageMem.clearAsync(
-                                (grpId, pageId) -> grpId == gId && PageIdUtils.partId(pageId) == pId,
-                                true).get();
+                            pageMem.invalidate(grpId, destroyRecord.partitionId());
+
+                            schedulePartitionDestroy(grpId, destroyRecord.partitionId());
                         }
 
                         break;
@@ -2085,7 +2118,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             int grpId = r.groupId();
 
-                            if (storeOnly && grpId != METASTORAGE_CACHE_ID)
+                            if (metastoreOnly && grpId != METASTORAGE_CACHE_ID)
                                 continue;
 
                             if (!ignoreGrps.contains(grpId)) {
@@ -2118,7 +2151,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
-        if (storeOnly)
+        if (metastoreOnly)
             return null;
 
         if (status.needRestoreMemory()) {
@@ -2740,6 +2773,170 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * Adds given partition to checkpointer destroy queue.
+     *
+     * @param grpId Group ID.
+     * @param partId Partition ID.
+     */
+    public void schedulePartitionDestroy(int grpId, int partId) {
+        Checkpointer cp = checkpointer;
+
+        if (cp != null)
+            cp.schedulePartitionDestroy(cctx.cache().cacheGroup(grpId), grpId, partId);
+    }
+
+    /**
+     * Cancels or wait for partition destroy.
+     *
+     * @param grpId Group ID.
+     * @param partId Partition ID.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
+        Checkpointer cp = checkpointer;
+
+        if (cp != null)
+            cp.cancelOrWaitPartitionDestroy(grpId, partId);
+    }
+
+    /**
+     * Partition destroy queue.
+     */
+    private static class PartitionDestroyQueue {
+        /** */
+        private final ConcurrentMap<T2<Integer, Integer>, PartitionDestroyRequest> pendingReqs =
+            new ConcurrentHashMap<>();
+
+        /**
+         * @param grpCtx Group context.
+         * @param partId Partition ID to destroy.
+         */
+        private void addDestroyRequest(@Nullable CacheGroupContext grpCtx, int grpId, int partId) {
+            PartitionDestroyRequest req = new PartitionDestroyRequest(grpId, partId);
+
+            PartitionDestroyRequest old = pendingReqs.putIfAbsent(new T2<>(grpId, partId), req);
+
+            assert old == null || grpCtx == null : "Must wait for old destroy request to finish before adding a new one "
+                + "[grpId=" + grpId
+                + ", grpName=" + grpCtx.cacheOrGroupName()
+                + ", partId=" + partId + ']';
+        }
+
+        /**
+         * @param destroyId Destroy ID.
+         * @return Destroy request to complete if was not concurrently cancelled.
+         */
+        private PartitionDestroyRequest beginDestroy(T2<Integer, Integer> destroyId) {
+            PartitionDestroyRequest rmvd = pendingReqs.remove(destroyId);
+
+            return rmvd == null ? null : rmvd.beginDestroy() ? rmvd : null;
+        }
+
+        /**
+         * @param grpId Group ID.
+         * @param partId Partition ID.
+         * @return Destroy request to wait for if destroy has begun.
+         */
+        private PartitionDestroyRequest cancelDestroy(int grpId, int partId) {
+            PartitionDestroyRequest rmvd = pendingReqs.remove(new T2<>(grpId, partId));
+
+            return rmvd == null ? null : !rmvd.cancel() ? rmvd : null;
+        }
+    }
+
+    /**
+     * Partition destroy request.
+     */
+    private static class PartitionDestroyRequest {
+        /** */
+        private final int grpId;
+
+        /** */
+        private final int partId;
+
+        /** Destroy cancelled flag. */
+        private boolean cancelled;
+
+        /** Destroy future. Not null if partition destroy has begun. */
+        private GridFutureAdapter<Void> destroyFut;
+
+        /**
+         * @param grpId Group ID.
+         * @param partId Partition ID.
+         */
+        private PartitionDestroyRequest(int grpId, int partId) {
+            this.grpId = grpId;
+            this.partId = partId;
+        }
+
+        /**
+         * Cancels partition destroy request.
+         *
+         * @return {@code False} if this request needs to be waited for.
+         */
+        private synchronized boolean cancel() {
+            if (destroyFut != null) {
+                assert !cancelled;
+
+                return false;
+            }
+
+            cancelled = true;
+
+            return true;
+        }
+
+        /**
+         * Initiates partition destroy.
+         *
+         * @return {@code True} if destroy request should be executed, {@code false} otherwise.
+         */
+        private synchronized boolean beginDestroy() {
+            if (cancelled) {
+                assert destroyFut == null;
+
+                return false;
+            }
+
+            if (destroyFut != null)
+                return false;
+
+            destroyFut = new GridFutureAdapter<>();
+
+            return true;
+        }
+
+        /**
+         *
+         */
+        private synchronized void onDone(Throwable err) {
+            assert destroyFut != null;
+
+            destroyFut.onDone(err);
+        }
+
+        /**
+         *
+         */
+        private void waitCompleted() throws IgniteCheckedException {
+            GridFutureAdapter<Void> fut;
+
+            synchronized (this) {
+                assert destroyFut != null;
+
+                fut = destroyFut;
+            }
+
+            fut.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "PartitionDestroyRequest [grpId=" + grpId + ", partId=" + partId + ']';
+        }
+    }
+
+    /**
      * Checkpointer object is used for notification on checkpoint begin, predicate is {@link #scheduledCp}<code>.nextCpTs - now
      * > 0 </code>. Method {@link #wakeupForCheckpoint} uses notify, {@link #waitCheckpointEvent} uses wait
      */
@@ -2752,7 +2949,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         private volatile CheckpointProgress scheduledCp;
 
         /** Current checkpoint. This field is updated only by checkpoint thread. */
-        private volatile CheckpointProgress curCpProgress;
+        @Nullable private volatile CheckpointProgress curCpProgress;
 
         /** Shutdown now. */
         private volatile boolean shutdownNow;
@@ -2911,7 +3108,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 syncedPagesCntr = new AtomicInteger();
                 evictedPagesCntr = new AtomicInteger();
 
-                boolean interrupted = true;
+                boolean success = false;
 
                 try {
                     if (chp.hasDelta()) {
@@ -2998,11 +3195,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     snapshotMgr.afterCheckpointPageWritten();
 
+                    try {
+                        destroyEvictedPartitions();
+                    }
+                    catch (IgniteCheckedException e) {
+                        chp.progress.cpFinishFut.onDone(e);
+
+                        cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+                        return;
+                    }
+
                     // Must mark successful checkpoint only if there are no exceptions or interrupts.
-                    interrupted = false;
+                    success = true;
                 }
                 finally {
-                    if (!interrupted)
+                    if (success)
                         markCheckpointEnd(chp);
                 }
 
@@ -3050,6 +3258,122 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 // TODO-ignite-db how to handle exception?
                 U.error(log, "Failed to create checkpoint.", e);
             }
+        }
+
+        /**
+         * Processes all evicted partitions scheduled for destroy.
+         *
+         * @throws IgniteCheckedException If failed.
+         */
+        private void destroyEvictedPartitions() throws IgniteCheckedException {
+            PartitionDestroyQueue destroyQueue = curCpProgress.destroyQueue;
+
+            if (destroyQueue.pendingReqs.isEmpty())
+                return;
+
+            List<PartitionDestroyRequest> reqs = null;
+
+            for (final PartitionDestroyRequest req : destroyQueue.pendingReqs.values()) {
+                if (!req.beginDestroy())
+                    continue;
+
+                final int grpId = req.grpId;
+                final int partId = req.partId;
+
+                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+                assert grp != null
+                    : "Cache group is not initialized [grpId=" + grpId + "]";
+                assert grp.offheap() instanceof GridCacheOffheapManager
+                    : "Destroying partition files when persistence is off " + grp.offheap();
+
+                final GridCacheOffheapManager offheap = (GridCacheOffheapManager) grp.offheap();
+
+                Runnable destroyPartTask = () -> {
+                    try {
+                        offheap.destroyPartitionStore(grpId, partId);
+
+                        req.onDone(null);
+
+                        if (log.isDebugEnabled())
+                            log.debug("Partition file has destroyed [grpId=" + grpId + ", partId=" + partId + "]");
+                    }
+                    catch (Exception e) {
+                        req.onDone(new IgniteCheckedException(
+                            "Partition file destroy has failed [grpId=" + grpId + ", partId=" + partId + "]", e));
+                    }
+                };
+
+                if (asyncRunner != null) {
+                    try {
+                        asyncRunner.execute(destroyPartTask);
+                    }
+                    catch (RejectedExecutionException ignore) {
+                        // Run the task synchronously.
+                        destroyPartTask.run();
+                    }
+                }
+                else
+                    destroyPartTask.run();
+
+                if (reqs == null)
+                    reqs = new ArrayList<>();
+
+                reqs.add(req);
+            }
+
+            if (reqs != null)
+                for (PartitionDestroyRequest req : reqs)
+                    req.waitCompleted();
+
+            destroyQueue.pendingReqs.clear();
+        }
+
+        /**
+         * @param grpCtx Group context. Can be {@code null} in case of crash recovery.
+         * @param grpId Group ID.
+         * @param partId Partition ID.
+         */
+        private void schedulePartitionDestroy(@Nullable CacheGroupContext grpCtx, int grpId, int partId) {
+            synchronized (this) {
+                scheduledCp.destroyQueue.addDestroyRequest(grpCtx, grpId, partId);
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Partition file has been scheduled to destroy [grpId=" + grpId + ", partId=" + partId + "]");
+
+            if (grpCtx != null)
+                wakeupForCheckpoint(PARTITION_DESTROY_CHECKPOINT_TIMEOUT, "partition destroy");
+        }
+
+        /**
+         * @param grpId Group ID.
+         * @param partId Partition ID.
+         */
+        private void cancelOrWaitPartitionDestroy(int grpId, int partId) throws IgniteCheckedException {
+            PartitionDestroyRequest req;
+
+            synchronized (this) {
+                req = scheduledCp.destroyQueue.cancelDestroy(grpId, partId);
+            }
+
+            if (req != null)
+                req.waitCompleted();
+
+            CheckpointProgress cur;
+
+            synchronized (this) {
+                cur = curCpProgress;
+
+                if (cur != null)
+                    req = cur.destroyQueue.cancelDestroy(grpId, partId);
+            }
+
+            if (req != null)
+                req.waitCompleted();
+
+            if (log.isDebugEnabled())
+                log.debug("Partition file destroy has cancelled [grpId=" + grpId + ", partId=" + partId + "]");
         }
 
         /**
@@ -3197,7 +3521,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
 
-            if (hasPages) {
+            if (hasPages || !curr.destroyQueue.pendingReqs.isEmpty()) {
                 assert cpPtr != null;
 
                 tracker.onWalCpRecordFsyncStart();
@@ -3671,6 +3995,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /** */
         private volatile SnapshotOperation snapshotOperation;
+
+        /** Partitions destroy queue. */
+        private final PartitionDestroyQueue destroyQueue = new PartitionDestroyQueue();
 
         /** Wakeup reason. */
         private String reason;

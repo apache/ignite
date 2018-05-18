@@ -15,43 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Exchange task to handle node leave for WAL state manager.
+ * WAL segment header info.
  */
-public class WalStateNodeLeaveExchangeTask implements CachePartitionExchangeWorkerTask {
-    /** Node that has left the grid. */
-    private final ClusterNode node;
+public class SegmentHeader {
+    /** Serializer version. */
+    private int serializerVersion;
+    /** Compacted flag. */
+    private boolean isCompacted;
 
     /**
-     * Constructor.
-     *
-     * @param node Node that has left the grid.
+     * @param serializerVersion Serializer version.
+     * @param isCompacted Compacted flag.
      */
-    public WalStateNodeLeaveExchangeTask(ClusterNode node) {
-        assert node != null;
-
-        this.node = node;
+    public SegmentHeader(int serializerVersion, boolean isCompacted) {
+        this.serializerVersion = serializerVersion;
+        this.isCompacted = isCompacted;
     }
 
     /**
-     * @return Node that has left the grid.
+     * @return Record serializer version.
      */
-    public ClusterNode node() {
-        return node;
+    public int getSerializerVersion() {
+        return serializerVersion;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean skipForExchangeMerge() {
-        return true;
+    /**
+     * @return Comacted flag.
+     */
+    public boolean isCompacted() {
+        return isCompacted;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(WalStateNodeLeaveExchangeTask.class, this);
+        return S.toString(SegmentHeader.class, this);
     }
 }

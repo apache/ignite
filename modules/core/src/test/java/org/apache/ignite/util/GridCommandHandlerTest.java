@@ -381,69 +381,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         for (Ignite ig : G.allGrids())
             assertNotNull(ig.cache(DEFAULT_CACHE_NAME));
 
-        AtomicInteger idx = new AtomicInteger();
-
         CountDownLatch lockLatch = new CountDownLatch(1);
         CountDownLatch unlockLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                int id = idx.getAndIncrement();
-
-                switch (id) {
-                    case 0:
-                        try (Transaction tx = grid(0).transactions().txStart()) {
-                            grid(0).cache(DEFAULT_CACHE_NAME).putAll(generate(0, 100));
-
-                            lockLatch.countDown();
-
-                            U.awaitQuiet(unlockLatch);
-
-                            tx.commit();
-
-                            fail("Commit must fail");
-                        }
-                        catch (Exception e) {
-                            // No-op.
-                            assertTrue(X.hasCause(e, TransactionRollbackException.class));
-                        }
-
-                        break;
-                    case 1:
-                        U.awaitQuiet(lockLatch);
-
-                        doSleep(3000);
-
-                        try (Transaction tx = grid(0).transactions().withLabel("label1").txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0)) {
-                            grid(0).cache(DEFAULT_CACHE_NAME).putAll(generate(200, 110));
-
-                            grid(0).cache(DEFAULT_CACHE_NAME).put(0, 0);
-                        }
-
-                        break;
-                    case 2:
-                        try (Transaction tx = grid(1).transactions().txStart()) {
-                            U.awaitQuiet(lockLatch);
-
-                            grid(1).cache(DEFAULT_CACHE_NAME).put(0, 0);
-                        }
-
-                        break;
-                    case 3:
-                        try (Transaction tx = client.transactions().withLabel("label2").txStart(OPTIMISTIC, READ_COMMITTED, 0, 0)) {
-                            U.awaitQuiet(lockLatch);
-
-                            client.cache(DEFAULT_CACHE_NAME).putAll(generate(100, 10));
-
-                            client.cache(DEFAULT_CACHE_NAME).put(0, 0);
-
-                            tx.commit();
-                        }
-
-                        break;
-                }
-            }
-        }, 4, "tx-thread");
+        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch);
 
         U.awaitQuiet(lockLatch);
 
@@ -518,6 +459,23 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         }, "--tx", "order", "DURATION");
 
+        // Trigger topology change and test connection.
+        IgniteInternalFuture<?> startFut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    startGrid(2);
+                }
+                catch (Exception e) {
+                    fail();
+                }
+            }
+        }, 1, "start-node-thread");
+
+        doSleep(5000);
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--host", "127.0.0.1", "--port", "11211", "--tx"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--host", "127.0.0.1", "--port", "11212", "--tx"));
+
         // Test kill by xid.
         validate(h, map -> {
                 assertEquals(1, map.size());
@@ -532,6 +490,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             "nodes", grid(0).localNode().consistentId().toString());
 
         unlockLatch.countDown();
+
+        startFut.get();
 
         fut.get();
     }
@@ -849,5 +809,75 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertTrue(!testOut.toString().contains(nodes.get(1)));
 
         assertTrue(!testOut.toString().contains("error"));
+    }
+
+    /**
+     *
+     * @param lockLatch Lock latch.
+     * @param unlockLatch Unlock latch.
+     */
+    private IgniteInternalFuture<?> startTransactions(CountDownLatch lockLatch, CountDownLatch unlockLatch) throws Exception {
+        IgniteEx client = grid("client");
+
+        AtomicInteger idx = new AtomicInteger();
+
+        return multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                int id = idx.getAndIncrement();
+
+                switch (id) {
+                    case 0:
+                        try (Transaction tx = grid(0).transactions().txStart()) {
+                            grid(0).cache(DEFAULT_CACHE_NAME).putAll(generate(0, 100));
+
+                            lockLatch.countDown();
+
+                            U.awaitQuiet(unlockLatch);
+
+                            tx.commit();
+
+                            fail("Commit must fail");
+                        }
+                        catch (Exception e) {
+                            // No-op.
+                            assertTrue(X.hasCause(e, TransactionRollbackException.class));
+                        }
+
+                        break;
+                    case 1:
+                        U.awaitQuiet(lockLatch);
+
+                        doSleep(3000);
+
+                        try (Transaction tx = grid(0).transactions().withLabel("label1").txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0)) {
+                            grid(0).cache(DEFAULT_CACHE_NAME).putAll(generate(200, 110));
+
+                            grid(0).cache(DEFAULT_CACHE_NAME).put(0, 0);
+                        }
+
+                        break;
+                    case 2:
+                        try (Transaction tx = grid(1).transactions().txStart()) {
+                            U.awaitQuiet(lockLatch);
+
+                            grid(1).cache(DEFAULT_CACHE_NAME).put(0, 0);
+                        }
+
+                        break;
+                    case 3:
+                        try (Transaction tx = client.transactions().withLabel("label2").txStart(OPTIMISTIC, READ_COMMITTED, 0, 0)) {
+                            U.awaitQuiet(lockLatch);
+
+                            client.cache(DEFAULT_CACHE_NAME).putAll(generate(100, 10));
+
+                            client.cache(DEFAULT_CACHE_NAME).put(0, 0);
+
+                            tx.commit();
+                        }
+
+                        break;
+                }
+            }
+        }, 4, "tx-thread");
     }
 }
