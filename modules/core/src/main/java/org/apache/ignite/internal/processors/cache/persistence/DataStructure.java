@@ -376,6 +376,8 @@ public abstract class DataStructure implements PageLockListener {
         if (recycled == 0)
             recycled = PageIdUtils.rotatePageId(pageId);
 
+        assert PageIdUtils.itemId(recycled) > 0 && PageIdUtils.itemId(recycled) <= MAX_ITEMID_NUM : U.hexLong(recycled);
+
         PageIO.setPageId(pageAddr, recycled);
 
         if (needWalDeltaRecord)
