@@ -39,6 +39,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -101,6 +102,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -200,6 +202,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /** */
     private boolean skipFieldLookup;
+
+    /** Cache name - value typeId pairs for which type mismatch message was logged. */
+    private volatile Set<IgniteBiTuple<String, Integer>> cacheNamesTypeIdsMismatchLogged = Collections.emptySet();
 
     /**
      * @param ctx Kernal context.
@@ -1689,6 +1694,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             cacheNames.remove(cacheName);
+
+            Set<IgniteBiTuple<String, Integer>> cacheNamesTypeIdsMismatchLoggedCopy = new HashSet<>();
+
+            boolean cacheNameTypeIdDeleted = false;
+
+            for (IgniteBiTuple<String, Integer> cacheNameTypeId : cacheNamesTypeIdsMismatchLogged) {
+                if (!cacheName.equals(cacheNameTypeId.get1()))
+                    cacheNamesTypeIdsMismatchLoggedCopy.add(cacheNameTypeId);
+                else
+                    cacheNameTypeIdDeleted = true;
+            }
+
+            if (cacheNameTypeIdDeleted)
+                cacheNamesTypeIdsMismatchLogged = cacheNamesTypeIdsMismatchLoggedCopy;
         }
     }
 
@@ -1827,9 +1846,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert prevRowAvailable || prevRow == null;
 
         KeyCacheObject key = newRow.key();
+        CacheObject val = newRow.value();
 
         if (log.isDebugEnabled())
-            log.debug("Store [cache=" + cctx.name() + ", key=" + key + ", val=" + newRow.value() + "]");
+            log.debug("Store [cache=" + cctx.name() + ", key=" + key + ", val=" + val + "]");
 
         if (idx == null)
             return;
@@ -1842,7 +1862,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             CacheObjectContext coctx = cctx.cacheObjectContext();
 
-            QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, newRow.value(), true);
+            QueryTypeDescriptorImpl desc = typeByValue(cacheName, coctx, key, val, true);
 
             if (prevRowAvailable && prevRow != null) {
                 QueryTypeDescriptorImpl prevValDesc = typeByValue(cacheName,
@@ -1860,13 +1880,75 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 }
             }
 
-            if (desc == null)
+            if (desc == null) {
+                IgniteBiTuple<String, Integer> cacheNameTypeId = new IgniteBiTuple<>(cacheName,
+                    ctx.cacheObjects().typeId(val));
+
+                if (!cacheNamesTypeIdsMismatchLogged.contains(cacheNameTypeId)) {
+                    synchronized (stateMux) {
+                        Set<IgniteBiTuple<String, Integer>> copy = new HashSet<>(cacheNamesTypeIdsMismatchLogged);
+
+                        if (copy.add(cacheNameTypeId)) {
+                            LT.warn(log, "Rejected row(s) for indexing [cacheName=" + cacheName + ", " +
+                                describeTypeMismatch(cacheName, val) + "]");
+
+                            LT.warn(log, "  ^-- Make sure that declared Indexed Type names match actual Type names exactly.");
+                            LT.warn(log, "  ^-- If Java package names present in Type names, they should be used consistently.");
+                            LT.warn(log, "  ^-- Otherwise, entries will be stored in cache, but not appear as SQL Table rows.");
+
+                            this.cacheNamesTypeIdsMismatchLogged = copy;
+                        }
+                    }
+                }
+
                 return;
+            }
 
             idx.store(cctx, desc, newRow, prevRow, prevRowAvailable);
         }
         finally {
             busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * Pretty-prints difference between expected and actual value types.
+     *
+     * @param cacheName Cache name.
+     * @param val Value object.
+     * @return Human readable type difference.
+     */
+    private String describeTypeMismatch(String cacheName, Object val) {
+        try {
+            QueryTypeDescriptorImpl indexedType = null;
+
+            for (QueryTypeIdKey typeKey : types.keySet()) {
+                if (typeKey.cacheName().equals(cacheName)) {
+                    if (indexedType != null) {
+                        // More than one type for table - simplified message.
+                        indexedType = null;
+                        break;
+                    }
+
+                    indexedType = types.get(typeKey);
+                }
+            }
+
+            boolean bin = ctx.cacheObjects().isBinaryObject(val);
+
+            if (indexedType != null && bin &&
+                !indexedType.valueTypeName().equals(((BinaryObject)val).type().typeName())) {
+
+                return "expValType=" + indexedType.valueTypeName()
+                    + ", actualValType=" + ((BinaryObject)val).type().typeName();
+            }
+            else if (bin)
+                return "valType=" + ((BinaryObject)val).type().typeName();
+            else
+                return "val=" + val.toString();
+        }
+        catch (Exception e) {
+            return val.getClass().getName();
         }
     }
 
