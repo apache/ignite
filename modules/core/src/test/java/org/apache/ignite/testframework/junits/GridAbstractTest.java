@@ -553,6 +553,8 @@ public abstract class GridAbstractTest extends TestCase {
      *
      */
     protected void cleanPersistenceDir() throws Exception {
+        info("--> Clean persistence directories. [workDir=" + U.defaultWorkDirectory() + ']');
+
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
@@ -600,7 +602,9 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
-           info(">>> Starting test class: " + testClassDescription() + " <<<");
+            cleanPersistenceDir();
+
+            info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if(isSafeTopology())
                 assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution";
