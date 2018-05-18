@@ -142,7 +142,7 @@ const primitiveValues = {
         modificator : timestampValueModificator
     },
     [ObjectType.PRIMITIVE_TYPE.TIME] : {
-        values : [new Date(), new Date('1995-12-17T03:24:00'), new Date(0)],
+        values : [new Date(), new Date('1995-12-17T03:24:00'), new Date(123)],
         isMapKey : false,
         modificator : dateValueModificator
     }
