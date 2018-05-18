@@ -548,20 +548,20 @@ describe('cache put get test suite >', () => {
             setKeyType(keyType).
             setValueType(valueType);
         try {
-            await putGetPrimitive(cache, key, value, valueType);
+            await putGetPrimitive(cache, key, keyType, value, valueType);
             const newValue = modificator(value);
-            await putGetPrimitive(cache, key, newValue, valueType);
+            await putGetPrimitive(cache, key, keyType, newValue, valueType);
         }
         finally {
             await cache.removeAll();
         }
     }
 
-    async function putGetPrimitive(cache, key, value, valueType) {
+    async function putGetPrimitive(cache, key, keyType, value, valueType) {
         await cache.put(key, value);
         let result = await cache.get(key);
         expect(await TestingHelper.compare(value, result)).toBe(true,
-            `values are not equal: valueType=${valueType}, put value=${value}, get value=${result}`);
+            `values are not equal: keyType=${keyType}, key=${key}, valueType=${valueType}, put value=${value}, get value=${result}`);
     }
 
     async function putGetArrays(keyType, valueType, key, value) {
