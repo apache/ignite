@@ -21,9 +21,6 @@ import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 import javax.cache.Cache;
-import javax.cache.configuration.Factory;
-import javax.cache.configuration.FactoryBuilder;
-import javax.cache.event.CacheEntryEvent;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -34,8 +31,6 @@ import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.model.Address;
 import org.apache.ignite.examples.model.Organization;
 import org.apache.ignite.examples.model.OrganizationType;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.lang.IgniteClosure;
 
 /**
  * This example demonstrates how to use continuous queries together with the transformer APIs.
