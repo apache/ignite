@@ -654,6 +654,27 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testTxPutAllForSingleValue() throws Exception {
+        executeWithAllTxCaches(new TestClosure() {
+            @Override public void run() throws Exception {
+                GridTestUtils.assertThrows(log, new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
+                            cache.putAll(F.asMap(key1, badValue));
+
+                            tx.commit();
+                        }
+
+                        assertEquals(0, cache.size());
+
+                        return null;
+                    }
+                }, CacheException.class, ERR_MSG);
+            }
+        });
+    }
+
+    /** */
     public void testTxInvoke() throws Exception {
         executeWithAllTxCaches(new TestClosure() {
             @Override public void run() throws Exception {
