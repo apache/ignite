@@ -31,7 +31,7 @@ const Decimal = IgniteClient.Decimal;
 const BinaryObject = IgniteClient.BinaryObject;
 const ObjectType = IgniteClient.ObjectType;
 
-const TIMEOUT_MS = 20000;
+const TIMEOUT_MS = 60000;
 
 jasmine.getEnv().addReporter(new JasmineReporters.TeamCityReporter());
 
