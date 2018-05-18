@@ -118,6 +118,7 @@
                             <outputDirectory>target/libs</outputDirectory>
                             <includeScope>runtime</includeScope>
                             <excludeTransitive>false</excludeTransitive>
+                            <excludeArtifactIds>ignite-shmem</excludeArtifactIds>
                         </configuration>
                     </execution>
                 </executions>
