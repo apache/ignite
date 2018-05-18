@@ -508,8 +508,8 @@ public class GridDhtPartitionDemander {
                                     fut.cleanupRemoteContexts(node.id());
                             }
 
-                            if (log.isDebugEnabled())
-                                log.debug("Requested rebalancing [from node=" + node.id() + ", listener index=" +
+                            if (log.isInfoEnabled())
+                                log.info("Requested rebalancing [grp=" + grp.cacheOrGroupName() + ", from node=" + node.id() + ", listener index=" +
                                     topicId + " " + demandMsg.rebalanceId() + ", partitions count=" + stripePartitions.get(topicId).size() +
                                     " (" + stripePartitions.get(topicId).partitionsList() + ")]");
                         }
