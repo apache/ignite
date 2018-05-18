@@ -439,6 +439,14 @@ public interface IgniteMXBean {
     public String getCurrentCoordinatorFormatted();
 
     /**
+     * Gets a flag is node in baseline.
+     *
+     * @return Return a baseline flag.
+     */
+    @MXBeanDescription("Baseline node flag.")
+    public boolean isNodeInBaseline();
+
+    /**
      * Runs IO latency test against all remote server nodes in cluster.
      *
      * @param warmup Warmup duration in milliseconds.
