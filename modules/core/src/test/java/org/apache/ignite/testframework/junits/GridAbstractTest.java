@@ -600,9 +600,7 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
-            cleanPersistenceDir();
-
-            info(">>> Starting test class: " + testClassDescription() + " <<<");
+           info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if(isSafeTopology())
                 assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution";
