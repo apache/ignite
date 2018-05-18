@@ -58,7 +58,7 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0"); //to make all rebalance wal-based
+        System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "-1"); //to make all rebalance wal-based
 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -194,7 +194,20 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWalHistoryWorksCorrectly() throws Exception {
+        IgniteEx crd = (IgniteEx) startGrids(4);
+
+        crd.cluster().active(true);
+
         final int entryCnt = 10_000;
+
+        {
+            IgniteCache<Object, Object> cache = crd.cache(CACHE_NAME);
+
+            for (int k = 0; k < 32; k++)
+                cache.put(k, new IndexedObject(k - 1));
+        }
+
+        stopAllGrids();
 
         IgniteEx ig0 = (IgniteEx) startGrids(2);
 
@@ -207,8 +220,6 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         // This node should rebalance data from other nodes and shouldn't have WAL history.
         Ignite ignite = startGrid(2);
-
-        resetBaselineTopology();
 
         awaitPartitionMapExchange();
 
@@ -230,17 +241,16 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         stopGrid(1);
 
-        // Start new node which should rebalance all data from node(2) without using WAL.
+        // Start new node which should rebalance all data from node(2) without using WAL,
+        // because node(2) don't have full history for rebalance.
         ignite = startGrid(3);
-
-        resetBaselineTopology();
 
         awaitPartitionMapExchange();
 
         Set<Long> topVers2 = ((WalRebalanceCheckingCommunicationSpi) ignite.configuration().getCommunicationSpi())
             .walRebalanceVersions();
 
-        Assert.assertFalse(topVers2.contains(ignite.cluster().topologyVersion()));
+//        Assert.assertFalse(topVers2.contains(ignite.cluster().topologyVersion()));
 
         for (Ignite ig : G.allGrids()) {
             IgniteCache<Object, Object> cache1 = ig.cache(CACHE_NAME);
