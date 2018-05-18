@@ -333,7 +333,7 @@ describe('complex object test suite >', () => {
             await cache.put(key, value);
             const result = await cache.get(key);
             expect(await TestingHelper.compare(valuePattern, result)).toBe(true,
-                `values are not equal: put value=${JSON.stringify(valuePattern)}, get value=${JSON.stringify(result)}`);
+                `values are not equal: put value=${TestingHelper.printValue(valuePattern)}, get value=${TestingHelper.printValue(result)}`);
         }
         finally {
             await cache.removeAll();
@@ -342,20 +342,21 @@ describe('complex object test suite >', () => {
 
     async function binaryObjectEquals(binaryObj, valuePattern, valueType) {
         expect(await TestingHelper.compare(valuePattern, binaryObj)).toBe(true,
-            `binary values are not equal: put value=${JSON.stringify(valuePattern)}, get value=${JSON.stringify(binaryObj)}`);
+            `binary values are not equal: put value=${TestingHelper.printValue(valuePattern)}, get value=${TestingHelper.printValue(binaryObj)}`);
 
         let value1, value2;
         for (let key of Object.keys(valuePattern)) {
             value1 = valuePattern[key];
             value2 = await binaryObj.getField(key, valueType ? valueType._getFieldType(key) : null);
             expect(await TestingHelper.compare(value1, value2)).toBe(true,
-                `values for key ${key} are not equal: put value=${value1}, get value=${value2}`);
+                `values for key ${key} are not equal: put value=${TestingHelper.printValue(value1)
+                }, get value=${TestingHelper.printValue(value2)}`);
         }
 
         if (valueType) {
             const toObject = await binaryObj.toObject(valueType);
             expect(await TestingHelper.compare(valuePattern, toObject)).toBe(true,
-                `values are not equal: put value=${JSON.stringify(valuePattern)}, get value=${JSON.stringify(toObject)}`);
+                `values are not equal: put value=${TestingHelper.printValue(valuePattern)}, get value=${TestingHelper.printValue(toObject)}`);
         }
     }
 

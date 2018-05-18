@@ -263,7 +263,7 @@ describe('cache put get test suite >', () => {
                 for (let type1 of Object.keys(TestingHelper.primitiveValues)) {
                     type1 = parseInt(type1);
                     const typeInfo1 = TestingHelper.primitiveValues[type1];
-                    if (typeInfo1.isMapKey) {
+                    if (!typeInfo1.isMapKey) {
                         continue;
                     }
                     for (let type2 of Object.keys(TestingHelper.primitiveValues)) {
@@ -575,7 +575,8 @@ describe('cache put get test suite >', () => {
             expect(result instanceof Array).toBe(true,
                 `result is not Array: arrayType=${valueType}, result=${result}`);
             expect(await TestingHelper.compare(value, result)).toBe(true, 
-                `Arrays are not equal: arrayType=${valueType}, put array=${value}, get array=${result}`);
+                `Arrays are not equal: arrayType=${valueType}, put array=${TestingHelper.printValue(value)
+                }, get array=${TestingHelper.printValue(result)}`);
         }
         finally {
             await cache.removeAll();
@@ -591,7 +592,8 @@ describe('cache put get test suite >', () => {
         expect(result instanceof Map).toBe(true,
             `result is not Map: mapType=${mapType}, result=${result}`);
         expect(await TestingHelper.compare(value, result)).toBe(true, 
-            `Maps are not equal: valueType=${mapType._valueType}, put value=${value}, get value=${result}`);
+            `Maps are not equal: valueType=${mapType._valueType}, put value=${TestingHelper.printValue(value)
+            }, get value=${TestingHelper.printValue(result)}`);
     }
 
     async function putGetSets(setType, value) {
@@ -607,11 +609,11 @@ describe('cache put get test suite >', () => {
             const valueArr = [...value].sort();
             const resultArr = [...result].sort();
             expect(await TestingHelper.compare(valueArr, resultArr)).toBe(true, `Sets are not equal: valueType=${setType ? setType._elementType : 
-                            null}, put value=${valueArr}, get value=${resultArr}`);
+                            null}, put value=${TestingHelper.printValue(valueArr)}, get value=${TestingHelper.printValue(resultArr)}`);
         }
         else {
             expect(await TestingHelper.compare(value, result)).toBe(true, `Sets are not equal: valueType=${setType ? setType._elementType : 
-                            null}, put value=${[...value]}, get value=${[...result]}`);
+                            null}, put value=${TestingHelper.printValue(value)}, get value=${TestingHelper.printValue(result)}`);
         }
     }
 
@@ -624,7 +626,7 @@ describe('cache put get test suite >', () => {
         expect(result instanceof Array).toBe(true,
             `result is not Array: listType=${listType}, result=${result}`);
         expect(await TestingHelper.compare(value, result)).toBe(true, `Lists are not equal: valueType=${listType ? listType._elementType : 
-                        null}, put value=${value}, get value=${result}`);
+                        null}, put value=${TestingHelper.printValue(value)}, get value=${TestingHelper.printValue(result)}`);
     }
 
     async function putGetObjectArrays(arrayType, value) {
@@ -636,7 +638,7 @@ describe('cache put get test suite >', () => {
         expect(result instanceof Array).toBe(true,
             `result is not Array: arrayType=${arrayType}, result=${result}`);
         expect(await TestingHelper.compare(value, result)).toBe(true, `Arrays are not equal: valueType=${arrayType ? arrayType._elementType : 
-                        null}, put value=${value}, get value=${result}`);
+                        null}, put value=${TestingHelper.printValue(value)}, get value=${TestingHelper.printValue(result)}`);
     }
 
     async function testSuiteCleanup(done) {

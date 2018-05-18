@@ -230,8 +230,12 @@ class TestingHelper {
         }
     }
 
+    static printValue(value) {
+        return Util.inspect(value, false, null);
+    }
+
     static async compare(value1, value2) {
-        TestingHelper.logDebug(Util.format('compare: %s, %s', JSON.stringify(value1), JSON.stringify(value2)));
+        TestingHelper.logDebug(Util.format('compare: %s and %s', TestingHelper.printValue(value1), TestingHelper.printValue(value2)));
         if (value1 === undefined || value2 === undefined) {
             TestingHelper.logDebug(Util.format('compare: unexpected "undefined" value'));
             return false;
@@ -243,7 +247,8 @@ class TestingHelper {
             return false;
         }
         if (typeof value1 !== typeof value2) {
-            TestingHelper.logDebug(Util.format('compare: value types are different'));
+            TestingHelper.logDebug(Util.format('compare: value types are different: %s and %s',
+                typeof value1, typeof value2));
             return false;
         }
         if (typeof value1 === 'number') {
@@ -253,7 +258,8 @@ class TestingHelper {
             return defaultComparator(value1, value2);
         }
         else if (value1.constructor.name !== value2.constructor.name && !value2 instanceof BinaryObject) {
-            TestingHelper.logDebug(Util.format('compare: value types are different'));
+            TestingHelper.logDebug(Util.format('compare: value types are different: %s and %s',
+                value1.constructor.name, value2.constructor.name));
             return false;
         }
         else if (value1 instanceof Date && value2 instanceof Date) {
@@ -273,7 +279,14 @@ class TestingHelper {
                 TestingHelper.logDebug(Util.format('compare: array lengths are different'));
                 return false;
             }
-            return value1.every((elem, i) => { return TestingHelper.compare(elem, value2[i]); });
+            for (var i = 0; i < value1.length; i++) {
+                if (!await TestingHelper.compare(value1[i], value2[i])) {
+                    TestingHelper.logDebug(Util.format('compare: array elements are different: %s, %s',
+                        TestingHelper.printValue(value1[i]), TestingHelper.printValue(value2[i])));
+                    return false;
+                }
+            }
+            return true;
         }
         else if (value1 instanceof Map && value2 instanceof Map) {
             if (value1.size !== value2.size) {
@@ -281,9 +294,13 @@ class TestingHelper {
                 return false;
             }
             for (var [key, val] of value1) {
+                if (!value2.has(key)) {
+                    TestingHelper.logDebug(Util.format('compare: maps are different: %s key is absent', TestingHelper.printValue(key)));
+                    return false;
+                }
                 if (!(await TestingHelper.compare(val, value2.get(key)))) {
                     TestingHelper.logDebug(Util.format('compare: map values are different: %s, %s',
-                        JSON.stringify(val), JSON.stringify(value2.get(key))));
+                        TestingHelper.printValue(val), TestingHelper.printValue(value2.get(key))));
                     return false;
                 }
             }
@@ -294,13 +311,12 @@ class TestingHelper {
                 TestingHelper.logDebug(Util.format('compare: set sizes are different'));
                 return false;
             }
-            const iter2 = value2.values();
-            for (var val1 of value1) {
-                if (!(await TestingHelper.compare(val1, iter2.next().value))) {
-                    TestingHelper.logDebug(Util.format('compare: sets are different: %s, %s',
-                        [...value1], [...value2]));
-                    return false;
-                }
+            const value1Arr = [...value1].sort();
+            const value2Arr = [...value2].sort();
+            if (!await TestingHelper.compare(value1Arr, value2Arr)) {
+                TestingHelper.logDebug(Util.format('compare: sets are different: %s and %s',
+                    TestingHelper.printValue(value1Arr), TestingHelper.printValue(value2Arr)));
+                return false;
             }
             return true;
         }
@@ -328,8 +344,8 @@ class TestingHelper {
                 for (let key of Object.keys(value1)) {
                     value = await value2.getField(key);
                     if (!(await TestingHelper.compare(value1[key], value))) {
-                        TestingHelper.logDebug(Util.format('compare: binary object values are different: %s, %s',
-                            JSON.stringify(value1[key]), JSON.stringify(value)));
+                        TestingHelper.logDebug(Util.format('compare: binary object values for key %s are different: %s and %s',
+                            TestingHelper.printValue(key), TestingHelper.printValue(value1[key]), TestingHelper.printValue(value)));
                         return false;
                     }
                 }
@@ -339,8 +355,8 @@ class TestingHelper {
         else {
             for (let key of Object.keys(value1)) {
                 if (!(await TestingHelper.compare(value1[key], value2[key]))) {
-                    TestingHelper.logDebug(Util.format('compare: object values are different: %s, %s',
-                        JSON.stringify(value1[key]), JSON.stringify(value2[key])));
+                    TestingHelper.logDebug(Util.format('compare: object values for key %s are different: %s and %s',
+                        TestingHelper.printValue(key), TestingHelper.printValue(value1[key]), TestingHelper.printValue(value2[key])));
                     return false;
                 }
             }
