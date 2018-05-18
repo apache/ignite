@@ -169,6 +169,7 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
             cfg.setSslContextFactory(GridBenchmarkUtils.sslFactory());
 
         cfg.setNetworkCompressionFactory(compressionEngineFactory());
+        cfg.setNetworkCompressionEnabled(true);
 
         return cfg;
     }
