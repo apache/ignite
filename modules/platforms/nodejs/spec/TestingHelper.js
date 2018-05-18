@@ -21,6 +21,7 @@ require('jasmine-expect');
 const JasmineReporters = require('jasmine-reporters');
 
 const Util = require('util');
+const exec = require('child_process').exec;
 const config = require('./config');
 const IgniteClient = require('apache-ignite-client');
 const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
@@ -208,6 +209,19 @@ class TestingHelper {
         catch (err) {
             TestingHelper.checkOperationError(err, done);
         }
+    }
+
+    static executeExample(name, outputChecker) {
+        return new Promise((resolve, reject) => {
+                exec('node ' + name, (error, stdout, stderr) => {
+                    TestingHelper.logDebug(stdout);
+                    resolve(stdout);
+                })
+            }).
+            then(output => {
+                expect(output).not.toMatch('ERROR:');
+                expect(output).toMatch('Client is started');
+            });
     }
 
     static checkOperationError(error, done) {

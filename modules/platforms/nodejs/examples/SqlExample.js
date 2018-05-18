@@ -63,7 +63,7 @@ class SqlExample {
             await igniteClient.destroyCache(DUMMY_CACHE_NAME);
         }
         catch (err) {
-            console.log(err.message);
+            console.log('ERROR: ' + err.message);
         }
         finally {
             igniteClient.disconnect();

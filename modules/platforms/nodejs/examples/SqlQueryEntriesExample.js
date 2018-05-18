@@ -96,7 +96,7 @@ class SqlQueryEntriesExample {
             await igniteClient.destroyCache(PERSON_CACHE_NAME);
         }
         catch (err) {
-            console.log(err.message);
+            console.log('ERROR: ' + err.message);
         }
         finally {
             igniteClient.disconnect();

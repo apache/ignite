@@ -28,9 +28,9 @@ const ENDPOINT = 'localhost:10800';
 const USER_NAME = 'ignite';
 const PASSWORD = 'ignite';
 
-const TLS_KEY_FILE_NAME = './certs/client.key';
-const TLS_CERT_FILE_NAME = './certs/client.crt';
-const TLS_CA_FILE_NAME = './certs/ca.crt';
+const TLS_KEY_FILE_NAME = __dirname + '/certs/client.key';
+const TLS_CERT_FILE_NAME = __dirname + '/certs/client.crt';
+const TLS_CA_FILE_NAME = __dirname + '/certs/ca.crt';
 
 const CACHE_NAME = 'AuthTlsExample_cache';
 
@@ -66,7 +66,7 @@ class AuthTlsExample {
             await igniteClient.destroyCache(CACHE_NAME);
         }
         catch (err) {
-            console.log(err.message);
+            console.log('ERROR: ' + err.message);
         }
         finally {
             igniteClient.disconnect();
