@@ -1894,6 +1894,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (isDone() || !enterBusy())
             return;
 
+        if(log.isDebugEnabled())
+            log.debug(String.format("Node left during exchange: exchFut: %s node: %s", this.shortInfo(), node));
+
         cctx.mvcc().removeExplicitNodeLocks(node.id(), topologyVersion());
 
         try {
@@ -1915,8 +1918,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         discoCache.updateAlives(node);
 
                         synchronized (mux) {
-                            if (!srvNodes.remove(node))
+                            if (!srvNodes.remove(node)) {
+                                if(log.isDebugEnabled())
+                                    log.debug(String.format("Left node is not in srvNodes list, node: %s", node));
+
                                 return;
+                            }
 
                             boolean rmvd = remaining.remove(node.id());
 
@@ -1935,6 +1942,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             }
 
                             crd0 = crd;
+
+                            if(log.isDebugEnabled())
+                                log.debug(String.format("Crd changed: %s, local node crd: ",
+                                    crdChanged,
+                                    crd0 == null ? null : crd0.isLocal()));
                         }
 
                         if (crd0 == null) {
@@ -2055,6 +2067,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return exchId.hashCode();
+    }
+
+    /**
+     * @return Short information string.
+     */
+    public String shortInfo() {
+        return "GridDhtPartitionsExchangeFuture [topVer=" + topologyVersion() +
+            ", evt=" + (discoveryEvent() != null ? IgniteUtils.gridEventName(discoveryEvent().type()) : -1) +
+            ", evtNode=" + (discoveryEvent() != null ? discoveryEvent().eventNode() : null) +
+            ", done=" + isDone() + ']';
     }
 
     /**
