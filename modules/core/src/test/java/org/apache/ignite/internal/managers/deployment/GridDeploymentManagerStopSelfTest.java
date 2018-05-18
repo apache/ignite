@@ -105,5 +105,9 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void onClientReconnected(boolean clusterRestarted) { /* No-op. */ }
+
+        @Override public void setCtxSysThreads(Map<Long, String> threadMap)  { /* No-op. */ }
+
+        @Override public void registerSysThread(Long id, String name)  { /* No-op. */ }
     }
 }

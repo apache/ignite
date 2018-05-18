@@ -1909,7 +1909,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 currTopVer = topVer;
 
-                DepRunnable depRunnable = new DepRunnable() {
+                final DepRunnable depRunnable = new DepRunnable() {
                     @Override
                     public void run0() {
                         // In case the cache instance isn't tracked by DiscoveryManager anymore.

@@ -82,6 +82,9 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     /** Grid instance name. */
     protected String gridName;
 
+    /** Map to store threads created by this SPI. */
+    protected Map<Long, String> spiThreadMap;
+
     /** SPI name. */
     private String name;
 
@@ -696,6 +699,16 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      */
     public long failureDetectionTimeout() {
         return failureDetectionTimeout;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setCtxSysThreads(Map<Long, String> threadMap) {
+        spiThreadMap = threadMap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void registerSysThread(Long id, String name) {
+        spiThreadMap.put(id, name);
     }
 
     /**

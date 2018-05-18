@@ -30,6 +30,7 @@ import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDeploymentException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
@@ -656,6 +657,9 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      * <tt>ctx.gateway().readLock()</tt>
      */
     private void guard() {
+        if (ctx.igniteSysThreads().containsKey(Thread.currentThread().getId()))
+            throw new IgniteException("Failed to execute Ignite compute operation in Ignite system thread.");
+
         ctx.gateway().readLock();
     }
 

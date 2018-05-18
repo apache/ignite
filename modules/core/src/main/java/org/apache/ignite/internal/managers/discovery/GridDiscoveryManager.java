@@ -712,7 +712,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ctx.service().initCompatibilityMode(discoCache().remoteNodes());
 
         // Start discovery worker.
-        new IgniteThread(discoWrk).start();
+        IgniteThread discoWrkThread = new IgniteThread(discoWrk);
+
+        ctx.registerSysThread(discoWrkThread.getId(), discoWrkThread.getName());
+
+        discoWrkThread.start();
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
@@ -1619,7 +1623,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /**
      * @param topVer Topology version.
-     * @return All server nodes for given topology version.
+     * @return All server nodes for given topology version.disco-event-worker
      */
     public List<ClusterNode> serverNodes(AffinityTopologyVersion topVer) {
         return resolveDiscoCache(CU.cacheId(null), topVer).serverNodes();
