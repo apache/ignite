@@ -256,6 +256,9 @@ public class CommandHandler {
     /** */
     private Object lastOperationRes;
 
+    /** */
+    private GridClientConfiguration clientCfg;
+
     /** Check if experimental commands are enabled. Default {@code false}. */
     private final boolean enableExperimental = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false);
 
@@ -447,18 +450,6 @@ public class CommandHandler {
     }
 
     /**
-     * @param client Client.
-     * @param arg Task argument.
-     * @return Task result.
-     * @throws GridClientException If failed to execute task.
-     */
-    private Map<UUID, VisorTxTaskResult> executeTransactionsTask(GridClient client,
-        VisorTxTaskArg arg) throws GridClientException {
-
-        return executeTask(client, VisorTxTask.class, arg);
-    }
-
-    /**
      *
      * @param client Client.
      * @param taskCls Task class.
@@ -497,8 +488,28 @@ public class CommandHandler {
 
         GridClientNode node = null;
 
-        if (nodeId == null)
-            node = getBalancedNode(compute);
+        if (nodeId == null) {
+            Collection<GridClientNode> nodes = compute.nodes(GridClientNode::connectable);
+
+            // Prefer node from connect string.
+            String origAddr = clientCfg.getServers().iterator().next();
+
+            for (GridClientNode clientNode : nodes) {
+                Iterator<String> it = F.concat(clientNode.tcpAddresses().iterator(), clientNode.tcpHostNames().iterator());
+
+                while (it.hasNext()) {
+                    if (origAddr.equals(it.next() + ":" + clientNode.tcpPort())) {
+                        node = clientNode;
+
+                        break;
+                    }
+                }
+            }
+
+            // Otherwise choose random node.
+            if (node == null)
+                node = getBalancedNode(compute);
+        }
         else {
             for (GridClientNode n : compute.nodes()) {
                 if (n.connectable() && nodeId.equals(n.nodeId())) {
@@ -1677,12 +1688,12 @@ public class CommandHandler {
                             " delete [consistentId1,consistentId2,....,consistentIdN] [--force]");
                 }
 
-                log("The utility has --cache subcommand to view and control state of caches in cluster.");
-                log("  More info:    control.sh --cache help");
+                log("  View caches information in a cluster. For more details type:");
+                log("    control.sh --cache help");
                 nl();
 
-                log("By default commands affecting the cluster require interactive confirmation. ");
-                log("  --force option can be used to execute commands without prompting for confirmation.");
+                log("By default commands affecting the cluster require interactive confirmation.");
+                log("Use --force option to disable it.");
                 nl();
 
                 log("Default values:");
@@ -1710,20 +1721,20 @@ public class CommandHandler {
                 return EXIT_CODE_OK;
             }
 
-            GridClientConfiguration cfg = new GridClientConfiguration();
+            clientCfg = new GridClientConfiguration();
 
-            cfg.setPingInterval(args.pingInterval());
+            clientCfg.setPingInterval(args.pingInterval());
 
-            cfg.setPingTimeout(args.pingTimeout());
+            clientCfg.setPingTimeout(args.pingTimeout());
 
-            cfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
+            clientCfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
 
             if (!F.isEmpty(args.user())) {
-                cfg.setSecurityCredentialsProvider(
+                clientCfg.setSecurityCredentialsProvider(
                     new SecurityCredentialsBasicProvider(new SecurityCredentials(args.user(), args.password())));
             }
 
-            try (GridClient client = GridClientFactory.start(cfg)) {
+            try (GridClient client = GridClientFactory.start(clientCfg)) {
                 switch (args.command()) {
                     case ACTIVATE:
                         activate(client);

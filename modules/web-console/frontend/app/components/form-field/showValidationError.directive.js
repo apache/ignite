@@ -34,7 +34,9 @@ export function directive($timeout) {
                     else
                         el[0].scrollIntoView();
 
-                    if (!attr.bsSelect) $timeout(() => el[0].focus());
+                    if (!attr.bsSelect)
+                        $timeout(() => el[0].focus());
+
                     igniteFormField && igniteFormField.notifyAboutError();
                 });
             });

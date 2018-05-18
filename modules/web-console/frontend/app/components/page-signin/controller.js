@@ -56,8 +56,12 @@ export default class {
 
     signin() {
         this.IgniteFormUtils.triggerValidation(this.form);
+
         this.setServerError(null);
-        if (!this.canSubmitForm(this.form)) return;
+
+        if (!this.canSubmitForm(this.form))
+            return;
+
         return this.Auth.signin(this.data.email, this.data.password).catch((res) => {
             this.IgniteMessages.showError(null, res.data);
             this.setServerError(res.data);

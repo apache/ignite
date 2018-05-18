@@ -59,8 +59,12 @@ export default class PageSignup {
 
     signup() {
         this.IgniteFormUtils.triggerValidation(this.form);
+
         this.setServerError(null);
-        if (!this.canSubmitForm(this.form)) return;
+
+        if (!this.canSubmitForm(this.form))
+            return;
+
         return this.Auth.signnup(this.data).catch((res) => {
             this.IgniteMessages.showError(null, res.data);
             this.setServerError(res.data);
