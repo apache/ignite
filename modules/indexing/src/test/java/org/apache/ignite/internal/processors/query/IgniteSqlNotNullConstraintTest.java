@@ -418,6 +418,29 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
     }
 
     /** */
+    public void testAtomicOrImplicitTxPutAllForSingleValue() throws Exception {
+        executeWithAllCaches(new TestClosure() {
+            @Override public void run() throws Exception {
+                Throwable t = GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        cache.putAll(F.asMap(key1, badValue));
+
+                        return null;
+                    }
+                }, IgniteSQLException.class);
+
+                IgniteSQLException ex = X.cause(t, IgniteSQLException.class);
+
+                assertNotNull(ex);
+
+                assertTrue(ex.getMessage().contains(ERR_MSG));
+
+                assertEquals(0, cache.size());
+            }
+        });
+    }
+
+    /** */
     public void testAtomicOrImplicitTxInvoke() throws Exception {
         executeWithAllCaches(new TestClosure() {
             @Override public void run() throws Exception {

@@ -22,7 +22,6 @@ import org.apache.ignite.internal.processors.cache.CacheScanPartitionQueryFallba
 import org.apache.ignite.internal.processors.cache.IgniteCacheCrossCacheJoinRandomTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheObjectKeyIndexingSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCachePartitionedQueryMultiThreadedSelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteCachePutNotNullFieldTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryEvictsMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheQueryMultiThreadedSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheSqlQueryMultiThreadedSelfTest;
@@ -99,7 +98,6 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
         suite.addTestSuite(CacheScanPartitionQueryFallbackSelfTest.class);
         suite.addTestSuite(IgniteCacheDistributedQueryStopOnCancelOrTimeoutSelfTest.class);
         suite.addTestSuite(IgniteCacheObjectKeyIndexingSelfTest.class);
-        suite.addTestSuite(IgniteCachePutNotNullFieldTest.class);
 
         suite.addTestSuite(IgniteCacheGroupsCompareQueryTest.class);
         suite.addTestSuite(IgniteCacheGroupsSqlSegmentedIndexSelfTest.class);
