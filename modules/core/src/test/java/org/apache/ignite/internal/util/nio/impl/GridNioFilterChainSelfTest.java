@@ -399,5 +399,15 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
         @Override public void systemMessage(Object msg) {
             // No-op.
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean isCompressed() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setCompressed(boolean isCompressed) {
+
+        }
     }
 }

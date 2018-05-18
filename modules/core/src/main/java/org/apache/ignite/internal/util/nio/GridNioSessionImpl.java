@@ -77,6 +77,9 @@ public class GridNioSessionImpl implements GridNioSession {
     /** Accepted flag. */
     private final boolean accepted;
 
+    /** Compression flag. */
+    private boolean isCompressed = false;
+
     /**
      * @param filterChain Chain.
      * @param locAddr Local address.
@@ -363,6 +366,16 @@ public class GridNioSessionImpl implements GridNioSession {
     /** {@inheritDoc} */
     @Override public void systemMessage(Object msg) {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isCompressed() {
+        return isCompressed;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setCompressed(boolean isCompressed) {
+        this.isCompressed = isCompressed;
     }
 
     /** {@inheritDoc} */
