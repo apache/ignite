@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.bulkload;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 
-/** A proxy, which stores given key+value pair to a cache. */
+/**
+ * A proxy, which stores given key+value pair to a cache.
+ */
 public abstract class BulkLoadCacheWriter implements IgniteInClosure<IgniteBiTuple<?, ?>>, AutoCloseable {
     /**
      * Returns number of entry updates made by the writer.

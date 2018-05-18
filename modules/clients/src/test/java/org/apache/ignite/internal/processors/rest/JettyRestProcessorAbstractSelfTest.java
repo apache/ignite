@@ -978,27 +978,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertCacheOperation(ret, true);
     }
 
-    /** */
-    private void failIgnite_5874() {
-        DataStorageConfiguration dsCfg = ignite(0).configuration().getDataStorageConfiguration();
-
-        if (dsCfg.getDefaultDataRegionConfiguration().isPersistenceEnabled())
-            fail("IGNITE-5874");
-
-        if (!F.isEmpty(dsCfg.getDataRegionConfigurations())) {
-            for (DataRegionConfiguration dataRegCfg : dsCfg.getDataRegionConfigurations()) {
-                if (dataRegCfg.isPersistenceEnabled())
-                    fail("IGNITE-5874");
-            }
-        }
-    }
-
     /**
      * @throws Exception If failed.
      */
     public void testPutWithExpiration() throws Exception {
-        failIgnite_5874();
-
         String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_PUT,
             "key", "putKey",
             "val", "putVal",
@@ -1035,8 +1018,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testAddWithExpiration() throws Exception {
-        failIgnite_5874();
-
         String ret = content(DEFAULT_CACHE_NAME, GridRestCommand.CACHE_ADD,
             "key", "addKey",
             "val", "addVal",
@@ -1176,8 +1157,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws Exception If failed.
      */
     public void testReplaceWithExpiration() throws Exception {
-        failIgnite_5874();
-
         jcache().put("replaceKey", "replaceVal");
 
         assertEquals("replaceVal", jcache().get("replaceKey"));

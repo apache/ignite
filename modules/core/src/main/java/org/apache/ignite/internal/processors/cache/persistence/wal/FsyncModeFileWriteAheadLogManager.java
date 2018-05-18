@@ -28,15 +28,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -112,6 +115,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 
 /**
  * File WAL manager.
@@ -846,6 +850,36 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
+    @Override public int reserved(WALPointer low, WALPointer high) {
+        // It is not clear now how to get the highest WAL pointer. So when high is null method returns 0.
+        if (high == null)
+            return 0;
+
+        assert high instanceof FileWALPointer : high;
+
+        assert low == null || low instanceof FileWALPointer : low;
+
+        FileWALPointer lowPtr = (FileWALPointer)low;
+
+        FileWALPointer highPtr = (FileWALPointer)high;
+
+        FileArchiver archiver0 = archiver;
+
+        long lowIdx = lowPtr != null ? lowPtr.index() : 0;
+
+        long highIdx = highPtr.index();
+
+        while (lowIdx < highIdx) {
+            if(archiver0 != null && archiver0.reserved(lowIdx))
+                break;
+
+            lowIdx++;
+        }
+
+        return (int)(highIdx - lowIdx + 1);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean disabled(int grpId) {
         CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
 
@@ -1004,7 +1038,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 // If we have existing segment, try to read version from it.
                 if (lastReadPtr != null) {
                     try {
-                        serVer = readSerializerVersionAndCompactedFlag(fileIO).get1();
+                        serVer = readSegmentHeader(fileIO, absIdx).getSerializerVersion();
                     }
                     catch (SegmentEofException | EOFException ignore) {
                         serVer = serializerVersion;
@@ -1118,16 +1152,28 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /**
-     * Clears the file with zeros.
+     * Clears whole the file, fills with zeros for Default mode.
      *
      * @param file File to format.
+     * @throws IgniteCheckedException if formatting failed
      */
     private void formatFile(File file) throws IgniteCheckedException {
+        formatFile(file, dsCfg.getWalSegmentSize());
+    }
+
+    /**
+     * Clears the file, fills with zeros for Default mode.
+     *
+     * @param file File to format.
+     * @param bytesCntToFormat Count of first bytes to format.
+     * @throws IgniteCheckedException if formatting failed
+     */
+    private void formatFile(File file, int bytesCntToFormat) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Formatting file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
 
         try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
-            int left = dsCfg.getWalSegmentSize();
+            int left = bytesCntToFormat;
 
             if (mode == WALMode.FSYNC) {
                 while (left > 0) {
@@ -1391,13 +1437,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         synchronized (this) {
                             while (locked.containsKey(toArchive) && !stopped)
                                 wait();
-                        }
 
-                        // Firstly, format working file
-                        if (!stopped)
-                            formatFile(res.getOrigWorkFile());
-
-                        synchronized (this) {
                             // Then increase counter to allow rollover on clean working file
                             changeLastArchivedIndexAndWakeupCompressor(toArchive);
 
@@ -1703,19 +1743,30 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         }
 
         /**
-         *
+         * Deletes raw WAL segments if they aren't locked and already have compressed copies of themselves.
          */
         private void deleteObsoleteRawSegments() {
-            FileDescriptor[] descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_FILE_FILTER));
+            FsyncModeFileWriteAheadLogManager.FileDescriptor[] descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
+
+            Set<Long> indices = new HashSet<>();
+            Set<Long> duplicateIndices = new HashSet<>();
+
+            for (FsyncModeFileWriteAheadLogManager.FileDescriptor desc : descs) {
+                if (!indices.add(desc.idx))
+                    duplicateIndices.add(desc.idx);
+            }
 
             FileArchiver archiver0 = archiver;
 
-            for (FileDescriptor desc : descs) {
+            for (FsyncModeFileWriteAheadLogManager.FileDescriptor desc : descs) {
+                if (desc.isCompressed())
+                    continue;
+
                 // Do not delete reserved or locked segment and any segment after it.
                 if (archiver0 != null && archiver0.reserved(desc.idx))
                     return;
 
-                if (desc.idx < lastCompressedIdx) {
+                if (desc.idx < lastCompressedIdx && duplicateIndices.contains(desc.idx)) {
                     if (!desc.file.delete())
                         U.warn(log, "Failed to remove obsolete WAL segment (make sure the process has enough rights): " +
                             desc.file.getAbsolutePath() + ", exists: " + desc.file.exists());
@@ -1728,38 +1779,53 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             init();
 
             while (!Thread.currentThread().isInterrupted() && !stopped) {
+                long currReservedSegment = -1;
+
                 try {
                     deleteObsoleteRawSegments();
 
-                    long nextSegment = tryReserveNextSegmentOrWait();
-                    if (nextSegment == -1)
+                    currReservedSegment = tryReserveNextSegmentOrWait();
+                    if (currReservedSegment == -1)
                         continue;
 
-                    File tmpZip = new File(walArchiveDir, FileDescriptor.fileName(nextSegment) + ".zip" + ".tmp");
+                    File tmpZip = new File(walArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(currReservedSegment) + ".zip" + ".tmp");
 
-                    File zip = new File(walArchiveDir, FileDescriptor.fileName(nextSegment) + ".zip");
+                    File zip = new File(walArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(currReservedSegment) + ".zip");
 
-                    File raw = new File(walArchiveDir, FileDescriptor.fileName(nextSegment));
+                    File raw = new File(walArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(currReservedSegment));
                     if (!Files.exists(raw.toPath()))
                         throw new IgniteCheckedException("WAL archive segment is missing: " + raw);
 
-                    compressSegmentToFile(nextSegment, raw, tmpZip);
+                    compressSegmentToFile(currReservedSegment, raw, tmpZip);
 
                     Files.move(tmpZip.toPath(), zip.toPath());
 
-                    if (mode == WALMode.FSYNC) {
+                    if (mode != WALMode.NONE) {
                         try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
                             f0.force();
                         }
                     }
 
-                    lastCompressedIdx = nextSegment;
+                    lastCompressedIdx = currReservedSegment;
                 }
                 catch (IgniteCheckedException | IOException e) {
-                    U.error(log, "Unexpected error during WAL compression", e);
+                    U.error(log, "Compression of WAL segment [idx=" + currReservedSegment +
+                        "] was skipped due to unexpected error", e);
+
+                    lastCompressedIdx++;
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException ignore) {
                     Thread.currentThread().interrupt();
+                }
+                finally {
+                    try {
+                        if (currReservedSegment != -1)
+                            release(new FileWALPointer(currReservedSegment, 0, 0));
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Can't release raw WAL segment [idx=" + currReservedSegment +
+                            "] after compression", e);
+                    }
                 }
             }
         }
@@ -1774,9 +1840,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             int segmentSerializerVer;
 
             try (FileIO fileIO = ioFactory.create(raw)) {
-                IgniteBiTuple<Integer, Boolean> tup = readSerializerVersionAndCompactedFlag(fileIO);
-
-                segmentSerializerVer = tup.get1();
+                segmentSerializerVer = readSegmentHeader(fileIO, nextSegment).getSerializerVersion();
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
@@ -1803,9 +1867,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     while (iter.hasNextX())
                         iter.nextX();
                 }
-            }
-            finally {
-                release(new FileWALPointer(nextSegment, 0, 0));
             }
         }
 
@@ -1848,11 +1909,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /** {@inheritDoc} */
         @Override public void run() {
-            Throwable err = null;
-
             while (!Thread.currentThread().isInterrupted() && !stopped) {
+                long segmentToDecompress = -1L;
+
                 try {
-                    long segmentToDecompress = segmentsQueue.take();
+                    segmentToDecompress = segmentsQueue.take();
 
                     if (stopped)
                         break;
@@ -1870,7 +1931,16 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                             io.write(arr, 0, bytesRead);
                     }
 
-                    Files.move(unzipTmp.toPath(), unzip.toPath());
+                    try {
+                        Files.move(unzipTmp.toPath(), unzip.toPath());
+                    }
+                    catch (FileAlreadyExistsException e) {
+                        U.error(log, "Can't rename temporary unzipped segment: raw segment is already present " +
+                            "[tmp=" + unzipTmp + ", raw=" + unzip + ']', e);
+
+                        if (!unzipTmp.delete())
+                            U.error(log, "Can't delete temporary unzipped segment [tmp=" + unzipTmp + ']');
+                    }
 
                     synchronized (this) {
                         decompressionFutures.remove(segmentToDecompress).onDone();
@@ -1880,16 +1950,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     Thread.currentThread().interrupt();
                 }
                 catch (Throwable t) {
-                    err = t;
-                }
-                finally {
-                    if (err == null && !stopped)
-                        err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
+                    if (!stopped && segmentToDecompress != -1L) {
+                        IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
+                            "decompression [segmentIdx=" + segmentToDecompress + ']', t);
 
-                    if (err instanceof OutOfMemoryError)
-                        cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
-                    else if (err != null)
-                        cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                        synchronized (this) {
+                            decompressionFutures.remove(segmentToDecompress).onDone(e);
+                        }
+                    }
                 }
             }
         }
@@ -1963,58 +2031,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             if (completionCallback != null)
                 completionCallback.apply(i);
-        }
-    }
-
-    /**
-     * Reads record serializer version from provided {@code io} along with compacted flag.
-     * NOTE: Method mutates position of {@code io}.
-     *
-     * @param io I/O interface for file.
-     * @return Serializer version stored in the file.
-     * @throws IgniteCheckedException If failed to read serializer version.
-     */
-    public static IgniteBiTuple<Integer, Boolean> readSerializerVersionAndCompactedFlag(FileIO io)
-            throws IgniteCheckedException, IOException {
-        try (ByteBufferExpander buf = new ByteBufferExpander(RecordV1Serializer.HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
-            FileInput in = new FileInput(io, buf);
-
-            in.ensure(RecordV1Serializer.HEADER_RECORD_SIZE);
-
-            int recordType = in.readUnsignedByte();
-
-            if (recordType == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
-                throw new SegmentEofException("Reached logical end of the segment", null);
-
-            WALRecord.RecordType type = WALRecord.RecordType.fromOrdinal(recordType - 1);
-
-            if (type != WALRecord.RecordType.HEADER_RECORD)
-                throw new IOException("Can't read serializer version", null);
-
-            // Read file pointer.
-            FileWALPointer ptr = RecordV1Serializer.readPosition(in);
-
-            assert ptr.fileOffset() == 0 : "Header record should be placed at the beginning of file " + ptr;
-
-            long hdrMagicNum = in.readLong();
-
-            boolean compacted;
-            if (hdrMagicNum == HeaderRecord.REGULAR_MAGIC)
-                compacted = false;
-            else if (hdrMagicNum == HeaderRecord.COMPACTED_MAGIC)
-                compacted = true;
-            else {
-                throw new IOException("Magic is corrupted [exp=" + U.hexLong(HeaderRecord.REGULAR_MAGIC) +
-                    ", actual=" + U.hexLong(hdrMagicNum) + ']');
-            }
-
-            // Read serializer version.
-            int ver = in.readInt();
-
-            // Read and skip CRC.
-            in.readInt();
-
-            return new IgniteBiTuple<>(ver, compacted);
         }
     }
 

@@ -633,7 +633,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> rebalance() {
+    @Override public IgniteFuture<Boolean> rebalance() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 

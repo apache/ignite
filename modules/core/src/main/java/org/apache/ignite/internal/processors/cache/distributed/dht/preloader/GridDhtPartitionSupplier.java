@@ -32,10 +32,10 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -378,7 +378,7 @@ class GridDhtPartitionSupplier {
                 info.cacheId(row.cacheId());
 
                 if (preloadPred == null || preloadPred.apply(info))
-                    s.addEntry0(part, info, grp.shared(), grp.cacheObjectContext());
+                    s.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
                 else {
                     if (log.isDebugEnabled())
                         log.debug("Rebalance predicate evaluated to false (will not send " +
