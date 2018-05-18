@@ -356,28 +356,14 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        IgniteFuture<Boolean> destroyFut = null;
-
         gate.enter();
 
         try {
             delegate.close();
-
-            if (!delegate.collocated() && delegate instanceof IgniteCacheSetImpl) {
-                IgniteInternalFuture<Boolean> fut = cctx.kernalContext().cache().dynamicDestroyCache(
-                    cctx.cache().name(), false, true, false);
-
-                ((GridFutureAdapter)fut).ignoreInterrupts();
-
-                destroyFut = new IgniteFutureImpl<>(fut);
-            }
         }
         finally {
             gate.leave();
         }
-
-        if (destroyFut != null)
-            destroyFut.get();
     }
 
     /** {@inheritDoc} */

@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -64,7 +65,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  * Non-collocated version uses separate cache for each instance.<br>
  * Collocated version uses shared cache.
  */
-public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements IgniteInternalSet<T> {
+public class GridCacheSetImplV2<T> extends AbstractCollection<T> implements IgniteInternalSet<T> {
     /** */
     private static final int BATCH_SIZE = 100;
 
@@ -101,34 +102,19 @@ public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements Igni
     /**
      * @param ctx Cache context.
      * @param name Set name.
-     */
-    public IgniteCacheSetImpl(GridCacheContext ctx, String name) {
-        this(ctx, name, null);
-    }
-
-    /**
-     * @param ctx Cache context.
-     * @param name Set name.
      * @param hdr Set header.
      */
     @SuppressWarnings("unchecked")
-    public IgniteCacheSetImpl(GridCacheContext ctx, String name, GridCacheSetHeader hdr) {
+    public GridCacheSetImplV2(GridCacheContext ctx, String name, GridCacheSetHeaderV2 hdr) {
         this.ctx = ctx;
         this.name = name;
-
-        collocated = hdr != null;
-
-        id = hdr == null ? null : hdr.id();
-
-        compute = ctx.kernalContext().grid().compute();
-
-        cache = ctx.cache();
-
-        setKey = new GridCacheSetHeaderKey(name);
-
-        log = ctx.logger(IgniteCacheSetImpl.class);
-
-        hdrPart = ctx.affinity().partition(setKey);
+        this.collocated = hdr.collocated();
+        this.id = hdr.id();
+        this.compute = ctx.kernalContext().grid().compute();
+        this.cache = ctx.cache();
+        this.setKey = new GridCacheSetHeaderKey(name);
+        this.log = ctx.logger(GridCacheSetImplV2.class);
+        this.hdrPart = ctx.affinity().partition(setKey);
     }
 
     /** {@inheritDoc} */
@@ -151,9 +137,9 @@ public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements Igni
     @Override public boolean checkHeader() throws IgniteCheckedException {
         assert id != null;
 
-        IgniteInternalCache<GridCacheSetHeaderKey, GridCacheSetHeader> cache0 = ctx.cache();
+        IgniteInternalCache<GridCacheSetHeaderKey, GridCacheSetHeaderV2> cache0 = ctx.cache();
 
-        GridCacheSetHeader hdr = cache0.get(new GridCacheSetHeaderKey(name));
+        GridCacheSetHeaderV2 hdr = cache0.get(new GridCacheSetHeaderKey(name));
 
         return hdr != null && id.equals(hdr.id());
     }
@@ -164,8 +150,10 @@ public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements Igni
         try {
             onAccess();
 
-            if (!collocated)
-                return cache.sizeAsync(new CachePeekMode[] {CachePeekMode.PRIMARY}).get();
+            if (!collocated) {
+                // Non collocated IgniteSet uses a separate cache which contains additional header element.
+                return cache.sizeAsync(new CachePeekMode[] {}).get() - 1;
+            }
 
             if (ctx.isLocal() || ctx.isReplicated()) {
                 GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
@@ -180,7 +168,7 @@ public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements Igni
 
             qry.projection(ctx.grid().cluster().forNodes(nodes));
 
-            Iterable<Integer> col = (Iterable<Integer>)qry.execute(new IgniteCacheSetImpl.SumReducer()).get();
+            Iterable<Integer> col = (Iterable<Integer>)qry.execute(new GridCacheSetImplV2.SumReducer()).get();
 
             int sum = 0;
 
@@ -283,6 +271,7 @@ public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements Igni
 
         if (!F.isEmpty(addKeys))
             retryPutAll(addKeys);
+
 
         return add;
     }
@@ -416,7 +405,10 @@ public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements Igni
             if (rmvd)
                 return;
 
-            ctx.kernalContext().dataStructures().removeSet(name, ctx);
+            ctx.kernalContext().dataStructures().removeSet(name, ctx, collocated);
+
+            if (!collocated)
+                ctx.kernalContext().cache().dynamicDestroyCache(ctx.cache().name(), false, true, false);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -452,7 +444,7 @@ public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements Igni
                     }
 
                     @Override protected void remove(T item) {
-                        IgniteCacheSetImpl.this.remove(item);
+                        GridCacheSetImplV2.this.remove(item);
                     }
                 });
 
@@ -482,7 +474,11 @@ public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements Igni
 
         try {
             GridCloseableIterator<Map.Entry<T, Object>> iter = ctx0.queries()
-                .createScanQuery(null, null, true)
+                .createScanQuery(new IgniteBiPredicate() {
+                    @Override public boolean apply(Object k, Object v) {
+                        return k instanceof SetItemKey;
+                    }
+                }, null, true)
                 .keepAll(false)
                 .executeScanQuery();
 
@@ -627,7 +623,7 @@ public class IgniteCacheSetImpl<T> extends AbstractCollection<T> implements Igni
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteCacheSetImpl.class, this);
+        return S.toString(GridCacheSetImplV2.class, this);
     }
 
     /**

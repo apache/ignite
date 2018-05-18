@@ -243,7 +243,7 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
         assertNull(creator.set("set1", null));
         assertNull(other.set("set1", null));
 
-        CollectionConfiguration colCfg = new CollectionConfiguration();
+        CollectionConfiguration colCfg = new CollectionConfiguration().setCollocated(true);
 
         try (IgniteSet<Integer> set = creator.set("set1", colCfg)) {
             assertNotNull(set);

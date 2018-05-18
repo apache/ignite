@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.datastructures.CacheSetHeader;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader;
@@ -56,10 +58,11 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueProxy;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeaderKey;
+import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeaderV2;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
+import org.apache.ignite.internal.processors.datastructures.GridCacheSetImplV2;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.internal.processors.datastructures.GridTransactionalCacheQueueImpl;
-import org.apache.ignite.internal.processors.datastructures.IgniteCacheSetImpl;
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -71,7 +74,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
@@ -406,7 +408,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         throws IgniteCheckedException
     {
         // Non collocated mode enabled only for PARTITIONED cache.
-        final boolean colloc0 = cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc;
+        final boolean colloc0 =
+            create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
 
         return set0(name, colloc0, create, compatibilityMode);
     }
@@ -431,40 +434,32 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         try {
             GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
-            GridCacheSetHeader hdr;
+            CacheSetHeader hdr;
 
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
-            if (!compatibilityMode && !collocated) {
-                // For backward compatibility try to find header.
-                hdr = (GridCacheSetHeader)cache.get(key);
+            if (create) {
+                hdr = compatibilityMode ? new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated) :
+                    new GridCacheSetHeaderV2(IgniteUuid.randomUuid(), collocated);
 
-                if (hdr == null)
-                    return new GridCacheSetProxy<>(cctx, new IgniteCacheSetImpl<T>(cctx, name));
-                else
-                    compatibilityMode = true;
-            }
-            else if (create) {
-                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
-
-                GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
+                CacheSetHeader old = (CacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
 
                 if (old != null)
                     hdr = old;
             }
-            else {
-                hdr = (GridCacheSetHeader)cache.get(key);
+            else
+                hdr = (CacheSetHeader)cache.get(key);
 
-                if (hdr == null)
-                    return null;
-            }
+            if (hdr == null)
+                return null;
 
             GridCacheSetProxy<T> set = setsMap.get(hdr.id());
 
             if (set == null) {
                 GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
-                    set = new GridCacheSetProxy<>(cctx, compatibilityMode ?
-                        new GridCacheSetImpl<T>(cctx, name, hdr) : new IgniteCacheSetImpl<T>(cctx, name, hdr)));
+                    set = new GridCacheSetProxy<>(cctx, hdr instanceof GridCacheSetHeader ?
+                        new GridCacheSetImpl<T>(cctx, name, (GridCacheSetHeader)hdr) :
+                        new GridCacheSetImplV2<T>(cctx, name, (GridCacheSetHeaderV2)hdr)));
 
                 if (old != null)
                     set = old;

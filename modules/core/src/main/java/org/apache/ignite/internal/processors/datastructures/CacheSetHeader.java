@@ -17,27 +17,21 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteSet;
+import java.io.Externalizable;
+import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Internal service methods used by proxy.
+ * Cache set header.
  */
-public interface IgniteInternalSet<T> extends IgniteSet<T> {
+public interface CacheSetHeader extends GridCacheInternal, Externalizable {
     /**
-     * @return Set ID.
+     * @return Set unique ID.
      */
     public IgniteUuid id();
 
     /**
-     * @return {@code True} if set header found in cache.
-     * @throws IgniteCheckedException If failed.
+     * @return Collocation flag.
      */
-    public boolean checkHeader() throws IgniteCheckedException;
-
-    /**
-     * @param rmvd {@code True} to set state as removed.
-     */
-    public void removed(boolean rmvd);
+    public boolean collocated();
 }

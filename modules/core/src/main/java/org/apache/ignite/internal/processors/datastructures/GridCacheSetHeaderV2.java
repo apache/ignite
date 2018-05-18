@@ -27,11 +27,8 @@ import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Cache set header.
- *
- * @deprecated Replaced by {@link GridCacheSetHeaderV2}.
  */
-@Deprecated
-public class GridCacheSetHeader implements CacheSetHeader {
+public class GridCacheSetHeaderV2 implements CacheSetHeader {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -44,7 +41,7 @@ public class GridCacheSetHeader implements CacheSetHeader {
     /**
      * Required by {@link Externalizable}.
      */
-    public GridCacheSetHeader() {
+    public GridCacheSetHeaderV2() {
         // No-op.
     }
 
@@ -52,7 +49,7 @@ public class GridCacheSetHeader implements CacheSetHeader {
      * @param id Set UUID.
      * @param collocated Collocation flag.
      */
-    public GridCacheSetHeader(IgniteUuid id, boolean collocated) {
+    public GridCacheSetHeaderV2(IgniteUuid id, boolean collocated) {
         this.id = id;
         this.collocated = collocated;
     }
@@ -85,6 +82,6 @@ public class GridCacheSetHeader implements CacheSetHeader {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheSetHeader.class, this);
+        return S.toString(GridCacheSetHeaderV2.class, this);
     }
 }

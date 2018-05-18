@@ -34,7 +34,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
@@ -61,7 +60,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 /**
  * Cache set implementation.
  *
- * @deprecated Replaced by {@link IgniteCacheSetImpl}.
+ * @deprecated Replaced by {@link GridCacheSetImplV2}.
  */
 @Deprecated
 public class GridCacheSetImpl<T> extends AbstractCollection<T> implements IgniteInternalSet<T> {
@@ -402,7 +401,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             if (rmvd)
                 return;
 
-            ctx.kernalContext().dataStructures().removeSet(name, ctx);
+            ctx.kernalContext().dataStructures().removeSet(name, ctx, true);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
