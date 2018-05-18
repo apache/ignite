@@ -66,8 +66,6 @@ public class IgniteCacheLargeResultSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridsMultiThreaded(3);
     }
 

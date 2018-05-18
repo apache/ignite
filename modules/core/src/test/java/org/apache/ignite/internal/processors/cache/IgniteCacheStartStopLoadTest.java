@@ -70,8 +70,6 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridsMultiThreaded(nodeCount());
     }
 

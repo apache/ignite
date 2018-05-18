@@ -546,14 +546,14 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
     protected void beforeTestsStarted() throws Exception {
-        cleanPersistenceDir();
+        // No-op.
     }
 
     /**
      *
      */
     protected void cleanPersistenceDir() throws Exception {
-        info("--> Clean persistence directories. [workDir=" + U.defaultWorkDirectory() + ']');
+        info("Clean persistence directories. [workDir=" + U.defaultWorkDirectory() + ']');
 
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));

@@ -199,8 +199,6 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         chunk = new byte[128];
 
         for (int i = 0; i < chunk.length; i++)

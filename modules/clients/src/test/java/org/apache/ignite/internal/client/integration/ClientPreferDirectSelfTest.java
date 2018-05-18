@@ -57,8 +57,6 @@ public class ClientPreferDirectSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGrids(NODES_CNT);
     }
 

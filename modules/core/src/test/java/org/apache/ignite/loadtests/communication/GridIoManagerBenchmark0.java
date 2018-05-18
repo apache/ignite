@@ -68,8 +68,6 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridsMultiThreaded(2);
     }
 

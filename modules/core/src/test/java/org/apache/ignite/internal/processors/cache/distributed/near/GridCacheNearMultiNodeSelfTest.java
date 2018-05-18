@@ -146,8 +146,6 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGrids(GRID_CNT);
 
         awaitPartitionMapExchange();

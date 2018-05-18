@@ -95,8 +95,6 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGrid();
     }
 

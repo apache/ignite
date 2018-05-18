@@ -77,8 +77,6 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGrids(NODES_CNT);
     }
 

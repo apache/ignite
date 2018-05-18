@@ -112,8 +112,6 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridsMultiThreaded(gridCount());
     }
 

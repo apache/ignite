@@ -74,8 +74,6 @@ public abstract class IgniteAtomicsAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridsMultiThreaded(gridCount());
     }
 

@@ -123,11 +123,6 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         tests.put(getClass(), new TestData<T>());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        // No-op.
-    }
-
     /**
      * @throws Exception If failed.
      */

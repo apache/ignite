@@ -48,8 +48,6 @@ public class CacheDhtLocalPartitionAfterRemoveSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGrids(GRID_CNT);
     }
 

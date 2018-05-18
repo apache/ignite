@@ -87,8 +87,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         int gridCnt = gridCount();
 
         assert gridCnt > 0;

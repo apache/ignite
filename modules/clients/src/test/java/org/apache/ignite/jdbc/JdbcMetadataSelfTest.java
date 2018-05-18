@@ -85,8 +85,6 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridsMultiThreaded(3);
 
         IgniteCache<String, Organization> orgCache = jcache(grid(0), cacheConfiguration(), "org",

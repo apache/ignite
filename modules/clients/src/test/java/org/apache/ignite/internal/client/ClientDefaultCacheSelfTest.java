@@ -77,8 +77,6 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         System.setProperty(IGNITE_JETTY_PORT, String.valueOf(HTTP_PORT));
 
         startGrid();

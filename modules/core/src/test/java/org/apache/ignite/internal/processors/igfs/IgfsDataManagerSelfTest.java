@@ -142,8 +142,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGrids(NODES_CNT);
     }
 

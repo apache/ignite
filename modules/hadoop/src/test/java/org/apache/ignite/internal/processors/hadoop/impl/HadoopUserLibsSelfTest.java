@@ -56,8 +56,6 @@ public class HadoopUserLibsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         HadoopTestUtils.clearBaseTestDir();
 
         assert DIR_1.mkdirs();

@@ -96,8 +96,6 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridsMultiThreaded(3);
 
         IgniteCache<Integer, TestObject> cache = grid(0).cache(DEFAULT_CACHE_NAME);

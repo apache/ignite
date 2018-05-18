@@ -83,8 +83,6 @@ public abstract class CacheJdbcStoreAbstractMultithreadedSelfTest<T extends Cach
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         store = store();
 
         URL cfgUrl;

@@ -90,8 +90,6 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGrids(SRV_CNT);
     }
 

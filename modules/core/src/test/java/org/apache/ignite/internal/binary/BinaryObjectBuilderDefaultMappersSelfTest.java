@@ -98,8 +98,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGrids(1);
     }
 

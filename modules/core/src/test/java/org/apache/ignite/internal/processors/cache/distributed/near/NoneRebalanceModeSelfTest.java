@@ -46,8 +46,6 @@ public class NoneRebalanceModeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGrid(0);
     }
 

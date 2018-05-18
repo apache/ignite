@@ -109,8 +109,6 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
     @Override protected void beforeTestsStarted() throws Exception {
         assert nodeCount() >= 1;
 
-        super.beforeTestsStarted();
-
         for (int i = 0; i < nodeCount(); i++)
             startGrid(i);
     }

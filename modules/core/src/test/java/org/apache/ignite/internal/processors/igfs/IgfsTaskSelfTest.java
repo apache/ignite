@@ -85,8 +85,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         for (int i = 0; i < NODE_CNT; i++) {
             Ignite g = G.start(config(i));
 

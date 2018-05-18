@@ -50,8 +50,6 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         ldr = getExternalClassLoader();
 
         startGrids(3);

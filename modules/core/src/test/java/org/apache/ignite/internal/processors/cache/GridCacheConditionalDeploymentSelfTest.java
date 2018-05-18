@@ -88,8 +88,6 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         Ignite ignite0 = startGrid(0);
 
         startGrid(1);

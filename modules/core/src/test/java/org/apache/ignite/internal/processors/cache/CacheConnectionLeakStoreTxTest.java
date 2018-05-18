@@ -83,8 +83,6 @@ public class CacheConnectionLeakStoreTxTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGrid(0);
 
         client = true;

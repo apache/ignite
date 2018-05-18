@@ -91,8 +91,6 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGrids(GRIDS);
     }
 

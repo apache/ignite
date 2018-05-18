@@ -99,8 +99,6 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
     @Override protected void beforeTestsStarted() throws Exception {
         assert GRID_CNT >= 2 : "Constant GRID_CNT must be greater than or equal to 2.";
 
-        super.beforeTestsStarted();
-
         startGridsMultiThreaded(GRID_CNT);
     }
 

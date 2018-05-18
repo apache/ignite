@@ -62,8 +62,6 @@ public class GridCacheTxLoadFromStoreOnLockSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridsMultiThreaded(4);
     }
 

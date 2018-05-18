@@ -72,8 +72,6 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     @Override protected void beforeTestsStarted() throws Exception {
         assert GRID_CNT > 1;
 
-        super.beforeTestsStarted();
-
         startGrids(GRID_CNT);
     }
 

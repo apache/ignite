@@ -58,8 +58,6 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridsMultiThreaded(3);
 
         Ignition.setClientMode(true);

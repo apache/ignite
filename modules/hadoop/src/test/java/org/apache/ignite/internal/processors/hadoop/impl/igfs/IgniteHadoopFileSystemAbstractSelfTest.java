@@ -206,8 +206,6 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         Configuration secondaryConf = configurationSecondary(SECONDARY_AUTHORITY);
 
         secondaryConf.setInt("fs.igfs.block.size", 1024);

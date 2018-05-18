@@ -86,8 +86,6 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         assert NODES_CNT >= 2;
 
-        super.beforeTestsStarted();
-
         startGrids(NODES_CNT);
     }
 

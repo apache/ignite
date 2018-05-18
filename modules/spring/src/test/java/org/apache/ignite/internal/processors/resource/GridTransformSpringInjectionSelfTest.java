@@ -53,8 +53,6 @@ public class GridTransformSpringInjectionSelfTest extends GridCacheAbstractSelfT
 
     /** {@inheritDoc} */
     @Override public void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         IgniteSpring.start(getConfiguration(getTestIgniteInstanceName(0)),
             new ClassPathXmlApplicationContext("/org/apache/ignite/internal/processors/resource/spring-resource.xml"));
     }

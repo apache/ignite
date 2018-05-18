@@ -57,8 +57,6 @@ public class JdbcSpringSelfTest extends JdbcConnectionSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        cleanPersistenceDir();
-
         startGridsWithSpringCtx(GRID_CNT, false, configURL());
     }
 

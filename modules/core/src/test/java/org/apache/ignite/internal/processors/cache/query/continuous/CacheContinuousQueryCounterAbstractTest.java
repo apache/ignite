@@ -134,8 +134,6 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridsMultiThreaded(gridCount());
     }
 

@@ -108,8 +108,6 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         ignite1 = startGrid(1);
         ignite2 = startGrid(2);
 

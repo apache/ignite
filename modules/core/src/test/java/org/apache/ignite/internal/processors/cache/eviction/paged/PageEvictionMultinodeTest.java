@@ -46,8 +46,6 @@ public abstract class PageEvictionMultinodeTest extends PageEvictionAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridsMultiThreaded(4, false);
 
         clientGrid = startGrid("client");

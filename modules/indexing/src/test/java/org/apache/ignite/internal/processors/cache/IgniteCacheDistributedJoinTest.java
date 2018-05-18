@@ -91,8 +91,6 @@ public class IgniteCacheDistributedJoinTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridsMultiThreaded(4);
 
         awaitPartitionMapExchange();

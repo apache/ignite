@@ -56,8 +56,6 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         for (int i = 0; i < GRID_COUNT; i++)
             IGNITEs.add(startGrid(i));
     }

@@ -161,8 +161,6 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         Ignite ignite = startGrid(1);
 
         igfs = (IgfsImpl) ignite.fileSystems().iterator().next();

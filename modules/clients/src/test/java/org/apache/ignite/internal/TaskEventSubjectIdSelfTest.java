@@ -81,8 +81,6 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         Ignite g = startGrid();
 
         g.events().localListen(new IgnitePredicate<Event>() {

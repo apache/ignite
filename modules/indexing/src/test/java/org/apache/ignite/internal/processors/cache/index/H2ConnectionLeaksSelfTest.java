@@ -48,8 +48,6 @@ public class H2ConnectionLeaksSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         Ignite node = startGrids(NODE_CNT);
 
         IgniteCache<Long, String> cache = node.cache(CACHE_NAME);

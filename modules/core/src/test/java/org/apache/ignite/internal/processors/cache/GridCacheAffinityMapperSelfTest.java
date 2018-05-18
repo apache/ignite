@@ -31,8 +31,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGrid();
     }
 

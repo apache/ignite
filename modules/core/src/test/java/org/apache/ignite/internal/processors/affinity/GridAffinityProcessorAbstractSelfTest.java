@@ -89,8 +89,6 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         assert NODES_CNT >= 1;
 
         withCache = true;

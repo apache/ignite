@@ -81,8 +81,6 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_REST_MAX_TASK_RESULTS, String.valueOf(MAX_TASK_RESULTS));
 
-        super.beforeTestsStarted();
-
         startGrid(0);
     }
 

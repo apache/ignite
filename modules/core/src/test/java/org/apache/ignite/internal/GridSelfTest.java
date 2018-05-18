@@ -43,8 +43,6 @@ public class GridSelfTest extends ClusterGroupAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         assert NODES_CNT > 2;
 
-        super.beforeTestsStarted();
-
         for (int i = 0; i < NODES_CNT; i++)
             startGrid(i);
 

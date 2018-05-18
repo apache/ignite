@@ -67,8 +67,6 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         ignite = startGrid(1);
 
         cache = ignite.cache(CACHE_REGULAR);

@@ -77,8 +77,6 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         for (int i = 0; i < GRID_CNT; i++)
             startGrid(i);
     }

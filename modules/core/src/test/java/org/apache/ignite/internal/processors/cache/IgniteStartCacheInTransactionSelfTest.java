@@ -83,8 +83,6 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGrids(2);
     }
 

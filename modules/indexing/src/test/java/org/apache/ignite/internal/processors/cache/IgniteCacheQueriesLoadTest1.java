@@ -206,8 +206,6 @@ public class IgniteCacheQueriesLoadTest1 extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGridsMultiThreaded(NODES);
 
         partitionsMap = traderCachePartitions(ignite(0));

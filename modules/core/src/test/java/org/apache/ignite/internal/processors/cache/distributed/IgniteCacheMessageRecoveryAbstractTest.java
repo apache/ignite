@@ -88,8 +88,6 @@ public abstract class IgniteCacheMessageRecoveryAbstractTest extends GridCommonA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startGrids(GRID_CNT);
     }
 

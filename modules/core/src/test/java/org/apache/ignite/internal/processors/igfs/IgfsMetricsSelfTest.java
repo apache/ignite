@@ -85,8 +85,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         startSecondary();
         startPrimary();
     }

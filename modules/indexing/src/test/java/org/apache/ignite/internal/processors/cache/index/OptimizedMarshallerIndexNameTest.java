@@ -101,8 +101,6 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), workSubdir(), true));
 
         startGrid(getTestIgniteInstanceName());

@@ -387,8 +387,6 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         try {
             for (int i = 0; i < getSpiCount(); i++) {
                 DiscoverySpi spi = getSpi(i);

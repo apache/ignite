@@ -101,8 +101,6 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
         System.setProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, Long.toString(STMT_CACHE_CLEANUP_TIMEOUT));
         System.setProperty(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, Long.toString(STMT_CACHE_CLEANUP_TIMEOUT));
 
-        super.beforeTestsStarted();
-
         startGrid(0);
     }
 

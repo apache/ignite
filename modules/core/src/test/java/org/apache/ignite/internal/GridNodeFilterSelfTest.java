@@ -42,8 +42,6 @@ public class GridNodeFilterSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
         ignite = startGrid(1);
 
         rmtIgnite = startGrid(2);
