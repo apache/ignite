@@ -2322,7 +2322,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (storeMgr.pages(grpId, i) <= 1)
                         continue;
 
-                    GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
+                    GridDhtLocalPartition part = grp.topology().localPartition(i);
+
+                    if (part == null)
+                        part = grp.topology().forceCreatePartition(i);
 
                     assert part != null;
 
@@ -2375,7 +2378,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     }
                 }
                 else if (restore != null) {
-                    GridDhtLocalPartition part = grp.topology().forceCreatePartition(i);
+                    GridDhtLocalPartition part = grp.topology().localPartition(i);
+
+                    if (part == null)
+                        part = grp.topology().forceCreatePartition(i);
 
                     assert part != null;
 
