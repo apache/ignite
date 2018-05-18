@@ -305,11 +305,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             final GridCacheContext cctx = ctx.cache().context().cacheContext(req.descriptor().cacheId());
 
             if (cctx.dataStructuresCache() && cctx.group().persistenceEnabled() &&
-                cctx.name().startsWith(DS_CACHE_NAME_PREFIX)) {
-                ctx.closure().runLocalSafe(() -> {
-                    cctx.dataStructures().onAfterCacheStarted();
-                });
-            }
+                cctx.name().startsWith(DS_CACHE_NAME_PREFIX))
+                cctx.dataStructures().onAfterCacheStarted();
         }
     }
 
