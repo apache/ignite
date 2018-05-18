@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.function.Consumer;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -66,17 +65,87 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Checks that atomic cache works inside a transaction.
+     * @throws Exception If failed.
      */
-    public void testPutInAllowedCache() {
-        checkPut(true);
+    public void testAllowedAtomicOperations() throws Exception {
+        checkOperations(true);
     }
 
     /**
-     * Checks that operation throws exception inside a transaction.
+     * @throws Exception If failed.
      */
-    public void testPutInNotAllowedCache() {
-        checkPut(false);
+    public void testNotAllowedAtomicOperations() throws Exception {
+        checkOperations(false);
+    }
+
+    /**
+     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
+     * Otherwise - it should throw exception.
+     */
+    private void checkOperations(boolean isAtomicCacheAllowedInTx) {
+        HashMap<Integer, Integer> map = new HashMap<>();
+
+        map.put(1, 1);
+        map.put(2, 1);
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.put(1, 1));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.putAsync(1, 1).get());
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.putAll(map));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.putAllAsync(map).get());
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.putIfAbsent(1, 1));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.putIfAbsentAsync(1, 1).get());
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.get(1));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAll(map.keySet()));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAllAsync(map.keySet()).get());
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndPut(1, 2));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndPutAsync(1, 2).get());
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndPutIfAbsent(1, 2));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndPutIfAbsentAsync(1, 2).get());
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndRemove(1));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndRemoveAsync(1));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndReplace(1, 2));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndReplaceAsync(1, 2).get());
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.remove(1, 1));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.removeAsync(1, 1).get());
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.removeAll(map.keySet()));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.removeAllAsync(map.keySet()).get());
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.containsKey(1));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.containsKeyAsync(1).get());
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.containsKeys(map.keySet()));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.containsKeysAsync(map.keySet()).get());
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.invoke(1, new SetEntryProcessor()));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.invokeAsync(1, new SetEntryProcessor()).get());
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.invokeAll(map.keySet(), new SetEntryProcessor()));
+
+        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.invokeAllAsync(map.keySet(),
+            new SetEntryProcessor()).get());
     }
 
     /**
@@ -109,598 +178,6 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
                 .startsWith("Transaction spans operations on atomic cache"));
     }
 
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkPut(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.put(1, 1));
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testPutAsyncInAllowedCache() {
-        checkPutAsync(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testPutAsyncInNotAllowedCache() {
-        checkPutAsync(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkPutAsync(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.putAsync(1, 1).get());
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testPutAllInAllowedCache() {
-        checkPutAll(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testPutAllInNotAllowedCache() {
-        checkPutAll(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkPutAll(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> {
-            HashMap<Integer, Integer> map = new HashMap<>();
-
-            map.put(1, 1);
-            map.put(2, 1);
-
-            cache.putAll(map);
-        });
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testPutAllAsyncInAllowedCache() {
-        checkPutAllAsync(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testPutAllAsyncInNotAllowedCache() {
-        checkPutAllAsync(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkPutAllAsync(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> {
-            HashMap<Integer, Integer> map = new HashMap<>();
-
-            map.put(1, 1);
-            map.put(2, 1);
-
-            cache.putAllAsync(map).get();
-        });
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testPutIfAbsentInAllowedCache() {
-        checkPutIfAbsentIn(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testPutIfAbsentInNotAllowedCache() {
-        checkPutIfAbsentIn(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkPutIfAbsentIn(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.putIfAbsent(1, 1));
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testPutIfAbsentAsyncInAllowedCache() {
-        checkPutIfAbsentAsyncIn(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testPutIfAbsentAsyncInNotAllowedCache() {
-        checkPutIfAbsentAsyncIn(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkPutIfAbsentAsyncIn(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.putIfAbsentAsync(1, 1).get());
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testGetInAllowedCache() {
-        checkGet(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testGetInNotAllowedCache() {
-        checkGet(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkGet(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.get(1));
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testGetAllInAllowedCache() {
-        checkGetAll(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testGetAllInNotAllowedCache() {
-        checkGetAll(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkGetAll(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> {
-            HashSet<Integer> set = new HashSet<>();
-
-            set.add(1);
-            set.add(2);
-
-            cache.getAll(set);
-        });
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testGetAllAsyncInAllowedCache() {
-        checkGetAllAsync(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testGetAllAsyncInNotAllowedCache() {
-        checkGetAllAsync(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkGetAllAsync(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> {
-            HashSet<Integer> keys = new HashSet<>();
-
-            keys.add(1);
-            keys.add(2);
-
-            cache.getAllAsync(keys).get();
-        });
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testGetAndPutInAllowedCache() {
-        checkGetAndPut(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testGetAndPutInNotAllowedCache() {
-        checkGetAndPut(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkGetAndPut(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndPut(1, 2));
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testGetAndPutAsyncInAllowedCache() {
-        checkGetAndPutAsync(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testGetAndPutAsyncInNotAllowedCache() {
-        checkGetAndPutAsync(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkGetAndPutAsync(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndPutAsync(1, 2).get());
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testGetAndPutIfAbsentInAllowedCache() {
-        checkGetAndPutIfAbsent(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testGetAndPutIfAbsentInNotAllowedCache() {
-        checkGetAndPutIfAbsent(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkGetAndPutIfAbsent(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndPutIfAbsent(1, 2));
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testGetAndPutIfAbsentAsyncInAllowedCache() {
-        checkGetAndPutIfAbsentAsync(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testGetAndPutIfAbsentAsyncInNotAllowedCache() {
-        checkGetAndPutIfAbsentAsync(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkGetAndPutIfAbsentAsync(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndPutIfAbsentAsync(1, 2).get());
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testGetAndRemoveInAllowedCache() {
-        checkGetAndRemove(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testGetAndRemoveInNotAllowedCache() {
-        checkGetAndRemove(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkGetAndRemove(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndRemove(1));
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testGetAndRemoveAsyncInAllowedCache() {
-        checkGetAndRemoveAsync(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testGetAndRemoveAsyncInNotAllowedCache() {
-        checkGetAndRemoveAsync(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkGetAndRemoveAsync(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndRemoveAsync(1));
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testGetAndReplaceInAllowedCache() {
-        checkGetAndReplace(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testGetAndReplaceInNotAllowedCache() {
-        checkGetAndReplace(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkGetAndReplace(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndReplace(1, 2));
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testGetAndReplaceAsyncInAllowedCache() {
-        checkGetAndReplaceAsync(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testGetAndReplaceAsyncInNotAllowedCache() {
-        checkGetAndReplaceAsync(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkGetAndReplaceAsync(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.getAndReplaceAsync(1, 2).get());
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testRemoveInAllowedCache() {
-        checkRemove(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testRemoveInNotAllowedCache() {
-        checkRemove(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkRemove(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.remove(1, 1));
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testRemoveAsyncInAllowedCache() {
-        checkRemoveAsync(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testRemoveAsyncInNotAllowedCache() {
-        checkRemoveAsync(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkRemoveAsync(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.removeAsync(1, 1).get());
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testRemoveAllInAllowedCache() {
-        checkRemoveAll(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testRemoveAllInNotAllowedCache() {
-        checkRemoveAll(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkRemoveAll(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> {
-            HashSet<Integer> set = new HashSet<>();
-
-            set.add(1);
-            set.add(2);
-
-            cache.removeAll(set);
-        });
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testRemoveAllAsyncInAllowedCache() {
-        checkRemoveAllAsync(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testRemoveAllAsyncInNotAllowedCache() {
-        checkRemoveAllAsync(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkRemoveAllAsync(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> {
-            HashSet<Integer> set = new HashSet<>();
-
-            set.add(1);
-            set.add(2);
-
-            cache.removeAllAsync(set).get();
-        });
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testContainsKeyInAllowedCache() {
-        checkContainsKey(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testContainsKeyInNotAllowedcache() {
-        checkContainsKey(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkContainsKey(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.containsKey(1));
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testContainsKeyAsyncInAllowedCache() {
-        checkContainsKeyAsync(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testContainsKeyAsyncInNotAllowedcache() {
-        checkContainsKeyAsync(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkContainsKeyAsync(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.containsKeyAsync(1).get());
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testContainsKeysInAllowedCache() {
-        checkContainsKeys(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testContainsKeysInNotAllowedcache() {
-        checkContainsKeys(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkContainsKeys(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> {
-            HashSet<Integer> set = new HashSet<>();
-
-            set.add(1);
-            set.add(2);
-
-            cache.containsKeys(set);
-        });
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testContainsKeysAsyncInAllowedCache() {
-        checkContainsKeysAsync(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testContainsKeysAsyncInNotAllowedcache() {
-        checkContainsKeysAsync(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkContainsKeysAsync(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> {
-            HashSet<Integer> set = new HashSet<>();
-
-            set.add(1);
-            set.add(2);
-
-            cache.containsKeysAsync(set).get();
-        });
-    }
-
     /** */
     private class SetEntryProcessor implements EntryProcessor<Integer, Integer, Object> {
         /** {@inheritDoc} */
@@ -710,107 +187,5 @@ public class AtomicOperationsInTxTest extends GridCommonAbstractTest {
 
             return null;
         }
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testInvokeInAllowedCache() {
-        checkInvoke(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testInvokeInNotAllowedcache() {
-        checkInvoke(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkInvoke(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.invoke(1, new SetEntryProcessor()));
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testInvokeAsyncInAllowedCache() {
-        checkInvokeAsync(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testInvokeAsyncInNotAllowedcache() {
-        checkInvokeAsync(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkInvokeAsync(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> cache.invokeAsync(1, new SetEntryProcessor()).get());
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testInvokeAllInAllowedCache() {
-        checkInvokeAll(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testInvokeAllInNotAllowedcache() {
-        checkInvokeAll(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkInvokeAll(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> {
-            HashSet<Integer> set = new HashSet<>();
-
-            set.add(1);
-            set.add(2);
-
-            cache.invokeAll(set, new SetEntryProcessor());
-        });
-    }
-
-    /**
-     * Checks that atomic cache works inside a transaction.
-     */
-    public void testInvokeAllAsyncInAllowedCache() {
-        checkInvokeAllAsync(true);
-    }
-
-    /**
-     * Checks that operation throws exception inside a transaction.
-     */
-    public void testInvokeAllAsyncInNotAllowedcache() {
-        checkInvokeAllAsync(false);
-    }
-
-    /**
-     * @param isAtomicCacheAllowedInTx If true - atomic operation allowed.
-     * Otherwise - it should throw exception.
-     */
-    private void checkInvokeAllAsync(boolean isAtomicCacheAllowedInTx) {
-        checkOperation(isAtomicCacheAllowedInTx, cache -> {
-            HashSet<Integer> set = new HashSet<>();
-
-            set.add(1);
-            set.add(2);
-
-            cache.invokeAllAsync(set, new SetEntryProcessor()).get();
-        });
     }
 }
