@@ -959,7 +959,7 @@ public class IgniteSqlNotNullConstraintTest extends GridCommonAbstractTest {
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return executeSql("CREATE TABLE test(id INT PRIMARY KEY, name char NOT NULL) " +
-                    "WITH \"template=" + CACHE_READ_THROUGH + "\"");
+                    "WITH \"template=" + CACHE_READ_THROUGH+ "\"");
             }
         }, IgniteSQLException.class, READ_THROUGH_ERR_MSG);
     }
