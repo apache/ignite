@@ -35,6 +35,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -83,6 +84,7 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.IgniteSystemProperties.FORCE_IGNITE_STOP_ON_PME_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -102,6 +104,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** flag to force node stop if it blocks PME */
+    private static final boolean FORCE_IGNITE_STOP_OM_PME_TIMEOUT =
+        IgniteSystemProperties.getBoolean(FORCE_IGNITE_STOP_ON_PME_TIMEOUT);
 
     /** Dummy flag. */
     private final boolean dummy;
@@ -856,6 +862,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         int dumpedObjects = 0;
 
+        int timeoutCnt = 0;
+
         while (true) {
             try {
                 partReleaseFut.get(2 * cctx.gridConfig().getNetworkTimeout(), TimeUnit.MILLISECONDS);
@@ -863,11 +871,19 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 break;
             }
             catch (IgniteFutureTimeoutCheckedException ignored) {
+                timeoutCnt++;
+
                 // Print pending transactions and locks that might have led to hang.
                 if (dumpedObjects < DUMP_PENDING_OBJECTS_THRESHOLD) {
                     dumpPendingObjects();
 
                     dumpedObjects++;
+                }
+
+                if (timeoutCnt >= 3 && FORCE_IGNITE_STOP_OM_PME_TIMEOUT) {
+                    U.warn(log, "FORCE_IGNITE_STOP_ON_PME_TIMEOUT flag is enabled. Force ignite stop.");
+
+                    Ignition.stop(cctx.kernalContext().gridName(), true);
                 }
             }
         }
@@ -879,6 +895,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         dumpedObjects = 0;
 
+        timeoutCnt = 0;
+
         while (true) {
             try {
                 locksFut.get(2 * cctx.gridConfig().getNetworkTimeout(), TimeUnit.MILLISECONDS);
@@ -886,6 +904,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 break;
             }
             catch (IgniteFutureTimeoutCheckedException ignored) {
+                timeoutCnt++;
+
                 if (dumpedObjects < DUMP_PENDING_OBJECTS_THRESHOLD) {
                     U.warn(log, "Failed to wait for locks release future. Dumping pending objects that might be the " +
                         "cause [topVer=" + topologyVersion() + ", nodeId=" + cctx.localNodeId() + "]: ");
@@ -908,6 +928,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
                         U.dumpThreads(log);
+                }
+
+                if (timeoutCnt >= 3 && FORCE_IGNITE_STOP_OM_PME_TIMEOUT) {
+                    U.warn(log, "FORCE_IGNITE_STOP_ON_PME_TIMEOUT flag is enabled. Force ignite stop.");
+
+                    Ignition.stop(cctx.kernalContext().gridName(), true);
                 }
             }
         }
@@ -1883,6 +1909,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
 
         initFut.onDone(true);
+    }
+
+    public boolean isCoordinator() {
+        synchronized (mux) {
+            return crd != null ? crd.isLocal() : false;
+        }
+    }
+
+    public Set<UUID> getRemaining() {
+        synchronized (mux) {
+            return new HashSet<>(remaining);
+        }
     }
 
     /**

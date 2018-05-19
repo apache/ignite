@@ -30,11 +30,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,9 +45,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -95,12 +101,15 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.IgniteSystemProperties.FORCE_IGNITE_STOP_ON_PME_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
@@ -222,7 +231,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         affinityTopologyVersion(evt),
                         evt.type());
 
-                    exchFut = exchangeFuture(exchId, evt, cache,null, null);
+                    exchFut = exchangeFuture(exchId, evt, cache, null, null);
                 }
                 else {
                     DiscoveryCustomEvent customEvt = (DiscoveryCustomEvent)evt;
@@ -851,8 +860,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         @Nullable GridCacheVersion lastVer,
         boolean compress) {
         GridDhtPartitionsFullMessage m = new GridDhtPartitionsFullMessage(exchId,
-                lastVer,
-                exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE);
+            lastVer,
+            exchId != null ? exchId.topologyVersion() : AffinityTopologyVersion.NONE);
 
         boolean useOldApi = false;
 
@@ -1006,8 +1015,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     public GridDhtPartitionsSingleMessage createPartitionsSingleMessage(ClusterNode targetNode,
         @Nullable GridDhtPartitionExchangeId exchangeId,
         boolean clientOnlyExchange,
-        boolean sndCounters)
-    {
+        boolean sndCounters) {
         boolean compress = canUsePartitionMapCompression(targetNode);
 
         GridDhtPartitionsSingleMessage m = new GridDhtPartitionsSingleMessage(exchangeId,
@@ -1015,7 +1023,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             cctx.versions().last(),
             compress);
 
-        Map<Object, T2<Integer,Map<Integer, GridDhtPartitionState>>> dupData = new HashMap<>();
+        Map<Object, T2<Integer, Map<Integer, GridDhtPartitionState>>> dupData = new HashMap<>();
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (!cacheCtx.isLocal()) {
@@ -1720,6 +1728,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             int dumpedObjects = 0;
 
+                            int timeoutCnt = 0;
+
                             while (true) {
                                 try {
                                     exchFut.get(2 * cctx.gridConfig().getNetworkTimeout(), TimeUnit.MILLISECONDS);
@@ -1727,6 +1737,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     break;
                                 }
                                 catch (IgniteFutureTimeoutCheckedException ignored) {
+                                    timeoutCnt++;
+
                                     U.warn(log, "Failed to wait for partition map exchange [" +
                                         "topVer=" + exchFut.topologyVersion() +
                                         ", node=" + cctx.localNodeId() + "]. " +
@@ -1745,6 +1757,30 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                         dumpedObjects++;
                                     }
+
+                                    if (timeoutCnt >= 3 && IgniteSystemProperties.getBoolean(FORCE_IGNITE_STOP_ON_PME_TIMEOUT)) {
+                                        if (exchFut.isCoordinator()) {
+                                            Set<UUID> remaining = exchFut.getRemaining();
+                                            if (remaining.isEmpty()) {
+                                                U.warn(log, "FORCE_IGNITE_STOP_ON_PME_TIMEOUT flag is enabled. Force ignite stop.");
+
+                                                Ignition.stop(cctx.kernalContext().gridName(), true);
+                                            }
+                                            else {
+                                                if (remaining.size() == 1) {
+                                                    UUID nodeToKill = remaining.iterator().next();
+
+                                                    U.warn(log, "FORCE_IGNITE_STOP_ON_PME_TIMEOUT flag is enabled. Force remote node stop: " + nodeToKill);
+
+                                                    Ignite ignite = Ignition.localIgnite();
+
+                                                    ignite.compute(ignite.cluster().forNodeId(nodeToKill)).withNoFailover().withAsync().run(
+                                                        new PoisonTask()
+                                                    );
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                                 catch (Exception e) {
                                     if (exchFut.reconnectOnError(e))
@@ -1753,7 +1789,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     throw e;
                                 }
                             }
-
 
                             if (log.isDebugEnabled())
                                 log.debug("After waiting for exchange future [exchFut=" + exchFut + ", worker=" +
@@ -1898,7 +1933,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 catch (IgniteClientDisconnectedCheckedException | IgniteNeedReconnectException e) {
                     assert cctx.discovery().reconnectSupported();
 
-                    U.warn(log,"Local node failed to complete partition map exchange due to " +
+                    U.warn(log, "Local node failed to complete partition map exchange due to " +
                         "network issues, will try to reconnect to cluster", e);
 
                     cctx.discovery().reconnect();
@@ -2056,7 +2091,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (log.isDebugEnabled())
                 log.debug("Received message from node [node=" + nodeId + ", msg=" + msg + ']');
 
-            onMessage(node , msg);
+            onMessage(node, msg);
         }
 
         /**
@@ -2099,6 +2134,31 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(AffinityReadyFuture.class, this, super.toString());
+        }
+    }
+
+    /** Poison task to stop node */
+    private static class PoisonTask implements IgniteRunnable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        @IgniteInstanceResource
+        Ignite ign;
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            ExecutorService exec = Executors.newSingleThreadExecutor();
+
+            final Ignite ign0 = ign;
+
+            exec.submit(new Runnable() {
+                @Override public void run() {
+                    ign0.close();
+                }
+            });
+
+            exec.shutdown();
         }
     }
 }

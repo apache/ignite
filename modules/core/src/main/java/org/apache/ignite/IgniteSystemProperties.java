@@ -524,7 +524,11 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_SERVICES_COMPATIBILITY_MODE = "IGNITE_SERVICES_COMPATIBILITY_MODE";
 
+    /** Sets service re-assignment delay on node join in ms */
     public static final String IGNITE_SERVICE_REASSIGN_DELAY = "IGNITE_SERVICE_REASSIGN_DELAY";
+
+    /** Enables node kill if it blocks PME(experimental feature, disabled by default) */
+    public static final String FORCE_IGNITE_STOP_ON_PME_TIMEOUT = "FORCE_IGNITE_STOP_ON_PME_TIMEOUT";
 
     /**
      * When set to {@code true} tree-based data structures - {@code TreeMap} and {@code TreeSet} - will not be
