@@ -525,6 +525,8 @@ public final class IgniteSystemProperties {
 
     public static final String IGNITE_SERVICE_REASSIGN_DELAY = "IGNITE_SERVICE_REASSIGN_DELAY";
 
+    public static final String FORCE_IGNITE_STOP_ON_PME_TIMEOUT = "FORCE_IGNITE_STOP_ON_PME_TIMEOUT";
+
     /**
      * When set to {@code true} tree-based data structures - {@code TreeMap} and {@code TreeSet} - will not be
      * wrapped into special holders introduced to overcome serialization issue caused by missing {@code Comparable}

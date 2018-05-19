@@ -44,6 +44,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -101,6 +102,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.IgniteSystemProperties.FORCE_IGNITE_STOP_ON_PME_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
@@ -1724,6 +1726,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             int dumpedObjects = 0;
 
+                            int timeoutCnt = 0;
+
                             while (true) {
                                 try {
                                     exchFut.get(2 * cctx.gridConfig().getNetworkTimeout(), TimeUnit.MILLISECONDS);
@@ -1731,6 +1735,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     break;
                                 }
                                 catch (IgniteFutureTimeoutCheckedException ignored) {
+                                    timeoutCnt++;
+                                    
                                     U.warn(log, "Failed to wait for partition map exchange [" +
                                         "topVer=" + exchFut.topologyVersion() +
                                         ", node=" + cctx.localNodeId() + "]. " +
@@ -1748,6 +1754,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                             U.dumpThreads(log);
 
                                         dumpedObjects++;
+                                    }
+
+                                    if (timeoutCnt >= 3 && IgniteSystemProperties.getBoolean(FORCE_IGNITE_STOP_ON_PME_TIMEOUT)) {
+                                        if(exchFut.isCoordinator() && exchFut.getRemaining().isEmpty()) {
+                                            U.warn(log, "FORCE_IGNITE_STOP_ON_PME_TIMEOUT flag is enabled. Force ignite stop.");
+
+                                            Ignition.stop(cctx.kernalContext().gridName(), true);
+                                        }
                                     }
                                 }
                                 catch (Exception e) {
