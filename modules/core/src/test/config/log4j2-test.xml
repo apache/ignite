@@ -48,6 +48,10 @@
         <Logger name="org" level="INFO"/>
         <Logger name="org.eclipse.jetty" level="INFO"/>
 
+        <!-- Debug https://issues.apache.org/jira/browse/IGNITE-5883 -->
+        <Logger name="com.jcraft.jsch" level="DEBUG"/>
+        <Logger name="org.apache.ignite.internal.util.nodestart" level="DEBUG"/>
+
         <Root level="INFO">
             <AppenderRef ref="CONSOLE" level="DEBUG"/>
             <AppenderRef ref="CONSOLE_ERR" level="WARN"/>
