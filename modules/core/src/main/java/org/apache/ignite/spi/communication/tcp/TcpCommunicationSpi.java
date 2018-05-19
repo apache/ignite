@@ -365,7 +365,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** */
     private boolean enableTroubleshootingLog = IgniteSystemProperties
-        .getBoolean(IgniteSystemProperties.IGNITE_TROUBLESHOOTING_LOGGER);
+        .getBoolean(IgniteSystemProperties.IGNITE_TROUBLESHOOTING_LOGGER, true);
 
     /** Server listener. */
     private final GridNioServerListener<Message> srvLsnr =
@@ -669,6 +669,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     if (!connectGate.tryEnter()) {
                         if (log.isDebugEnabled())
                             log.debug("Close incoming connection, failed to enter gateway.");
+                        else
+                            LT.warn(log, "Close incoming connection, failed to enter gateway.");
 
                         ses.close();
 
@@ -865,6 +867,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                         if (log.isDebugEnabled())
                                             log.debug("Failed to send recovery handshake " +
                                                     "[rmtNode=" + rmtNode.id() + ", err=" + e + ']');
+                                        else
+                                            LT.warn(log, "Failed to send recovery handshake " +
+                                                "[rmtNode=" + rmtNode.id() + ", err=" + e + ']');
 
                                         recoveryDesc.release();
                                     }
@@ -954,6 +959,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                                         if (log.isDebugEnabled())
                                             log.debug("Failed to send recovery handshake " +
                                                     "[rmtNode=" + rmtNode.id() + ", err=" + e + ']');
+                                        else
+                                            LT.warn(log, "Failed to send recovery handshake " +
+                                                "[rmtNode=" + rmtNode.id() + ", err=" + e + ']');
 
                                         recoveryDesc.release();
 
@@ -3049,6 +3057,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         if (log.isDebugEnabled())
                             log.debug(msg);
+                        else
+                            LT.warn(log, msg);
 
                         if (errs == null)
                             errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
@@ -3994,12 +4004,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         if (log.isDebugEnabled())
                             log.debug("Recovery reconnect failed, will retry " +
                                 "[rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
+                        else
+                            LT.warn(log, "Recovery reconnect failed, will retry " +
+                                "[rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
 
                         addProcessDisconnectRequest(sesInfo);
                     }
                     else {
                         if (log.isDebugEnabled())
                             log.debug("Recovery reconnect failed, " +
+                                "node left [rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
+                        else
+                            LT.warn(log, "Recovery reconnect failed, " +
                                 "node left [rmtNode=" + recoveryDesc.node().id() + ", err=" + e + ']');
 
                         onException("Recovery reconnect failed, node left [rmtNode=" + recoveryDesc.node().id() + "]",
