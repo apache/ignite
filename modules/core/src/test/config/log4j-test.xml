@@ -105,6 +105,15 @@
         <level value="INFO"/>
     </category>
 
+    <!-- Debug https://issues.apache.org/jira/browse/IGNITE-5883 -->
+    <category name="com.jcraft.jsch">
+        <level value="DEBUG"/>
+    </category>
+
+    <category name="org.apache.ignite.internal.util.nodestart">
+        <level value="DEBUG"/>
+    </category>
+
     <!-- Default settings. -->
     <root>
         <!-- Print at info by default. -->
