@@ -245,7 +245,9 @@ class TestingHelper {
     }
 
     static printValue(value) {
-        return Util.inspect(value, false, null);
+        const val = Util.inspect(value, false, null);
+        const length = 500;
+        return val.length > length ? val.substr(0, length) + '...' : val;
     }
 
     static async compare(value1, value2) {
