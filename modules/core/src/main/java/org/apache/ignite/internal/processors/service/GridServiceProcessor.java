@@ -2013,7 +2013,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     }
                 };
 
-                if (REASSIGN_DELAY > 0 || evt.type() != EVT_NODE_JOINED)
+                if (REASSIGN_DELAY <= 0 || evt.type() != EVT_NODE_JOINED)
                     depExe.execute(depRunnable);
                 else
                     ctx.timeout().schedule(new Runnable() {
