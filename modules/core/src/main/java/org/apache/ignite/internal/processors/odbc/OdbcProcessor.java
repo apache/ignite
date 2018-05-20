@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
-import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
@@ -151,10 +150,6 @@ public class OdbcProcessor extends GridProcessorAdapter {
                             .build();
 
                         srv0.start();
-
-                        Map<Long, String> nioServerWorkers = srv0.getStripeThreadIds();
-                        for (Long id  : nioServerWorkers.keySet())
-                            ctx.registerSysThread(id, nioServerWorkers.get(id));
 
                         srv = srv0;
 

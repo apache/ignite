@@ -326,8 +326,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         msgWorker = new RingMessageWorker();
         msgWorker.start();
 
-        spi.registerSysThread(msgWorker.getId(), msgWorker.getName());
-
         tcpSrvr = new TcpServer();
 
         spi.initLocalNode(tcpSrvr.port, true);
@@ -336,8 +334,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         // Start TCP server thread after local node is initialized.
         tcpSrvr.start();
-
-        spi.registerSysThread(tcpSrvr.getId(), tcpSrvr.getName());
 
         ring.localNode(locNode);
 

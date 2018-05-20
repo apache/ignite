@@ -341,10 +341,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private Map<String, Object> attrs = new HashMap<>();
 
     /** */
-    @GridToStringExclude
-    private Map<Long, String> igniteSysThreads = new HashMap<>();
-
-    /** */
     private IgniteEx grid;
 
     /** */
@@ -1033,11 +1029,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public Map<Long, String> igniteSysThreads() {
-        return igniteSysThreads;
-    }
-
-    /** {@inheritDoc} */
     @Override public ClusterProcessor cluster() {
         return cluster;
     }
@@ -1063,11 +1054,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public PlatformProcessor platform() {
         return platformProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String registerSysThread(Long id, String name) {
-        return igniteSysThreads.put(id, name);
     }
 
     /**

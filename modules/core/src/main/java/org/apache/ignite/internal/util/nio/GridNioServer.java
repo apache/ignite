@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -420,21 +419,6 @@ public class GridNioServer<T> {
 
         for (IgniteThread thread : clientThreads)
             thread.start();
-    }
-
-    /**
-     * @return Stripe thread attributes.
-     */
-    public Map<Long, String> getStripeThreadIds() {
-        Map<Long, String> stripeThreads = new HashMap<>();
-
-        if (acceptThread != null)
-            stripeThreads.put(acceptThread.getId(), acceptThread.getName());
-
-        for (IgniteThread thread : clientThreads)
-            stripeThreads.put(thread.getId(), thread.getName());
-
-        return stripeThreads;
     }
 
     /**

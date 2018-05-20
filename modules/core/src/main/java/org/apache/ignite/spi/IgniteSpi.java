@@ -120,19 +120,4 @@ public interface IgniteSpi {
      * @param clusterRestarted {@code True} if all cluster nodes restarted while client was disconnected.
      */
     public void onClientReconnected(boolean clusterRestarted);
-
-    /**
-     * Map to store sys threads id-name.
-     *
-     * @param threadMap Map to store thread attributes.
-     */
-    public void setCtxSysThreads(Map<Long, String> threadMap);
-
-    /**
-     * Registers sys thread.
-     *
-     * @param id Thread id.
-     * @param name Thread name.
-     */
-    public void registerSysThread(Long id, String name);
 }

@@ -85,11 +85,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
     private void startCleanupWorker() {
         cleanupWorker = new CleanupWorker();
 
-        IgniteThread cleanupWorkerThread = new IgniteThread(cleanupWorker);
-
-        cleanupWorkerThread.start();
-
-        cctx.kernalContext().registerSysThread(cleanupWorkerThread.getId(), cleanupWorkerThread.getName());
+        new IgniteThread(cleanupWorker).start();
     }
 
     /**

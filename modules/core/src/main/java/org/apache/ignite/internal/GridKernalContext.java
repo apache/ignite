@@ -610,11 +610,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public Map<String, Object> nodeAttributes();
 
     /**
-     * @return Ignite system threads id-name pairs.
-     */
-    public Map<Long, String> igniteSysThreads();
-
-    /**
      * Gets Cluster processor.
      *
      * @return Cluster processor.
@@ -642,11 +637,4 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Platform processor.
      */
     public PlatformProcessor platform();
-
-    /**
-     * @param id Thread id.
-     * @param name Thread name.
-     * @return Thread name.
-     */
-    public String registerSysThread(Long id, String name);
 }

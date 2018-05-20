@@ -67,11 +67,7 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() {
-        IgniteThread timeoutWorkerThread = new IgniteThread(timeoutWorker);
-
-        timeoutWorkerThread.start();
-
-        ctx.registerSysThread(timeoutWorkerThread.getId(), timeoutWorkerThread.getName());
+        new IgniteThread(timeoutWorker).start();
 
         if (log.isDebugEnabled())
             log.debug("Timeout processor started.");

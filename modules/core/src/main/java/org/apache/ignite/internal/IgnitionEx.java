@@ -1833,11 +1833,6 @@ public class IgnitionEx {
                     }
                 );
 
-                Map<Long, String> threadIds = stripedExecSvc.getStripeThreadIds();
-
-                for (Long id : threadIds.keySet())
-                    grid.context().registerSysThread(id, threadIds.get(id));
-
                 state = STARTED;
 
                 if (log.isDebugEnabled())

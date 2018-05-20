@@ -1983,15 +1983,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         nioSrvr.start();
 
-        Map<Long, String> nioServerWorkers = nioSrvr.getStripeThreadIds();
-        for (Long id  : nioServerWorkers.keySet())
-            registerSysThread(id, nioServerWorkers.get(id));
-
         commWorker = new CommunicationWorker(gridName);
 
         commWorker.start();
-
-        registerSysThread(commWorker.getId(), commWorker.getName());
 
         // Ack start.
         if (log.isDebugEnabled())
