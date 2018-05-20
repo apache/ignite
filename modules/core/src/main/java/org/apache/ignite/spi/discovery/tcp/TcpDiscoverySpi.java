@@ -2023,7 +2023,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
             log.debug(configInfo("ipFinderCleanFreq", ipFinderCleanFreq));
             log.debug(configInfo("metricsUpdateFreq", metricsUpdateFreq));
             log.debug(configInfo("statsPrintFreq", statsPrintFreq));
-        }else
+        }else if(!log.isInfoEnabled())
         {
             log.info("Failure detection timeout is ignored, because at least one of the parameters from this list" +
                     "has been set explicitly to default : 'sockTimeout', 'ackTimeout', 'maxAckTimeout', 'reconnectCount'.");
