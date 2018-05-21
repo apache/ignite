@@ -58,6 +58,12 @@ public class BinaryTreeSelfTest extends GridCommonAbstractTest {
         Ignition.start(configuration(NODE_CLI, true));
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        G.stop(NODE_CLI, true);
+        G.stop(NODE_SRV, true);
+    }
+
     /**
      * Test {@code TreeMap} data structure.
      *
