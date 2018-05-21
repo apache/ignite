@@ -55,7 +55,7 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider {
     /** */
     private List<MappedFile> mappedFiles;
 
-    /** */
+    /** Flag shows if current memory provider have been already initialized. */
     private boolean isInit;
 
     /**
@@ -68,7 +68,7 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider {
 
     /** {@inheritDoc} */
     @Override public void initialize(long[] sizes) {
-        if(isInit)
+        if (isInit)
             throw new IgniteException("Second initialization does not allowed for current provider");
 
         this.sizes = sizes;

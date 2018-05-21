@@ -231,7 +231,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         if (lastIdx != SEG_CNT - 1)
             chunks = Arrays.copyOf(chunks, lastIdx + 1);
 
-        if(segments == null)
+        if (segments == null)
             directMemoryProvider.initialize(chunks);
 
         addSegment(null);
