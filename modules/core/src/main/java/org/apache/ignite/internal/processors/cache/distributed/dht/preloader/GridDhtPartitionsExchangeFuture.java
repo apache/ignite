@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -818,8 +819,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (!notStartedCacheConfigs.isEmpty()) {
             cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false, false);
         }
-        if (!notStartedCacheConfigs.isEmpty())
-            cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false);
     }
 
     /**
