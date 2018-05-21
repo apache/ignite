@@ -17,14 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteEvents;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.TransactionEvent;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.transactions.Transaction;
+
+import static org.apache.ignite.events.EventType.EVTS_TX;
+import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 
 /**
  * Tests transaction labels.
  */
 public class TxLabelTest extends GridCacheAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
+    }
+
     /**
      * Tests transaction labels.
      */
@@ -47,7 +61,7 @@ public class TxLabelTest extends GridCacheAbstractSelfTest {
      * @param lbl Label.
      */
     private void testLabel0(Ignite ignite, String lbl) {
-        try(Transaction tx = ignite.transactions().withLabel(lbl).txStart()) {
+        try (Transaction tx = ignite.transactions().withLabel(lbl).txStart()) {
             assertEquals(lbl, tx.label());
 
             ignite.cache(DEFAULT_CACHE_NAME).put(0, 0);
@@ -56,8 +70,80 @@ public class TxLabelTest extends GridCacheAbstractSelfTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
+    /**
+     *
+     */
+    public void testLabelFilledCheck() {
+        Ignite ignite = grid(0);
+
+        final IgniteEvents evts = ignite.events();
+
+        evts.enableLocal(EVTS_TX);
+
+        AtomicReference<Throwable> ref = new AtomicReference<>();
+
+        evts.localListen((IgnitePredicate<Event>)e -> {
+            assert e instanceof TransactionEvent;
+
+            TransactionEvent evt = (TransactionEvent)e;
+
+            if (((GridNearTxLocal)(evt.tx())).label() == null)
+                ref.set(new IllegalStateException("Label should be filled!"));
+
+            return true;
+        }, EVT_TX_STARTED);
+
+        assertNull(ref.get());
+
+        try (Transaction tx = ignite.transactions().withLabel("test").txStart()) {
+            // No-op.
+        }
+
+        assertNull(ref.get());
+
+        try (Transaction tx = ignite.transactions().txStart()) {
+            // No-op.
+        }
+
+        assertNotNull(ref.get());
+    }
+
+    /**
+     *
+     */
+    public void testLabelFilledGuarantee() {
+        Ignite ignite = grid(0);
+
+        final IgniteEvents evts = ignite.events();
+
+        evts.enableLocal(EVTS_TX);
+
+        class LabelNotFilledError extends Error {
+            private LabelNotFilledError(String msg) {
+                super(msg);
+            }
+        }
+
+        evts.localListen((IgnitePredicate<Event>)e -> {
+            assert e instanceof TransactionEvent;
+
+            TransactionEvent evt = (TransactionEvent)e;
+
+            if (((GridNearTxLocal)(evt.tx())).label() == null)
+                throw new LabelNotFilledError("Label should be filled!");
+
+            return true;
+        }, EVT_TX_STARTED);
+
+        try (Transaction tx = ignite.transactions().withLabel("test").txStart()) {
+            // No-op.
+        }
+
+        try (Transaction tx = ignite.transactions().txStart()) {
+            fail("Should fail prior this line.");
+        }
+        catch (LabelNotFilledError e) {
+            // No-op.
+        }
     }
 }

@@ -781,6 +781,18 @@ public interface EventType {
     public static final int EVT_WAL_SEGMENT_ARCHIVED = 128;
 
     /**
+     * Built-in event type: Transaction has been started.
+     * <p>
+     * Fired for each started transactions except system transactions.
+     * <p>
+     * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
+     * internal Ignite events and should not be used by user-defined events.
+     *
+     * @see WalSegmentArchivedEvent
+     */
+    public static final int EVT_TX_STARTED = 129;
+
+    /**
      * All checkpoint events. This array can be directly passed into
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all checkpoint events.
@@ -976,6 +988,17 @@ public interface EventType {
         EVT_IGFS_DIR_CREATED,
         EVT_IGFS_DIR_RENAMED,
         EVT_IGFS_DIR_DELETED,
+    };
+
+    /**
+     * All Transaction events. This array can be directly passed into
+     * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
+     * subscribe to all transaction events.
+     *
+     * @see TransactionEvent
+     */
+    public static final int[] EVTS_TX = {
+        EVT_TX_STARTED
     };
 
     /**
