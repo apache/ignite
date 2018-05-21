@@ -24,11 +24,13 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.UpdatesStrategy;
+import org.apache.ignite.ml.optimization.SmoothParametrized;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassModel;
 import org.apache.ignite.ml.regressions.logistic.multiclass.LogRegressionMultiClassTrainer;
 import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
+import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -64,17 +66,24 @@ public class LogRegMultiClassTrainerTest {
             data.put(i, vec);
         }
 
+        final UpdatesStrategy<SmoothParametrized, SimpleGDParameterUpdate> stgy = new UpdatesStrategy<>(
+            new SimpleGDUpdateCalculator(0.2),
+            SimpleGDParameterUpdate::sumLocal,
+            SimpleGDParameterUpdate::avg
+        );
 
         LogRegressionMultiClassTrainer<?> trainer = new LogRegressionMultiClassTrainer<>()
-            .withUpdatesStgy(new UpdatesStrategy<>(
-                new SimpleGDUpdateCalculator(0.2),
-                SimpleGDParameterUpdate::sumLocal,
-                SimpleGDParameterUpdate::avg
-            ))
+            .withUpdatesStgy(stgy)
             .withAmountOfIterations(1000)
             .withAmountOfLocIterations(10)
             .withBatchSize(100)
             .withSeed(123L);
+
+        Assert.assertEquals(trainer.amountOfIterations(), 1000);
+        Assert.assertEquals(trainer.amountOfLocIterations(), 10);
+        Assert.assertEquals(trainer.batchSize(), 100, PRECISION);
+        Assert.assertEquals(trainer.seed(), 123L);
+        Assert.assertEquals(trainer.updatesStgy(), stgy);
 
         LogRegressionMultiClassModel mdl = trainer.fit(
             data,

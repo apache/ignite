@@ -35,7 +35,6 @@ import org.apache.ignite.ml.nn.UpdatesStrategy;
 import org.apache.ignite.ml.regressions.logistic.binomial.LogisticRegressionSGDTrainer;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.structures.partition.LabelPartitionDataOnHeap;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
 import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 
 /**
@@ -197,7 +196,7 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
      *
      * @return The parameter value.
      */
-    public double seed() {
+    public long seed() {
         return seed;
     }
 
