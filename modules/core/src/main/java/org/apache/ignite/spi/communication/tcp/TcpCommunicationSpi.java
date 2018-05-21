@@ -2392,6 +2392,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         .skipRecoveryPredicate(skipRecoveryPred)
                         .messageQueueSizeListener(queueSizeMonitor)
                         .readWriteSelectorsAssign(usePairedConnections)
+                        .workerListener(((IgniteEx)ignite).context().workersRegistry())
                         .build();
 
                 boundTcpPort = port;
