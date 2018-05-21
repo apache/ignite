@@ -333,7 +333,14 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public Lock lock(K key) {
-        return delegate.lock(key);
+        CacheOperationGate opGate = onEnter();
+
+        try {
+            return delegate.lock(key);
+        }
+        finally {
+            onLeave(opGate);
+        }
     }
 
     /** {@inheritDoc} */
