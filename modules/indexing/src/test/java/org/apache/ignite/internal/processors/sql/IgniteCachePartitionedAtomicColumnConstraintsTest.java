@@ -48,6 +48,9 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     private static final String STR_CACHE_NAME = "STR_STR";
 
     /** */
+    private static final String STR_ORG_CACHE_NAME = "STR_ORG";
+
+    /** */
     private static final String OBJ_CACHE_NAME = "ORG_ADDRESS";
 
     /** */
@@ -57,10 +60,13 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     private IgniteBiTuple<String, String> tooLongKey = t("123456", "2");
 
     /** */
-    private IgniteBiTuple<Organization, Address> tooLongVal2 = t(new Organization("3"), new Address("123456"));
+    private IgniteBiTuple<String, Organization> tooLongKey2 = t("123456", new Organization("1"));
 
     /** */
-    private IgniteBiTuple<Organization, Address> tooLongKey2 = t(new Organization("123456"), new Address("2"));
+    private IgniteBiTuple<Organization, Address> tooLongAddrVal = t(new Organization("3"), new Address("123456"));
+
+    /** */
+    private IgniteBiTuple<Organization, Address> tooLongOrgKey = t(new Organization("123456"), new Address("2"));
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -83,6 +89,13 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
                     .addQueryField("name", "java.lang.String", "name")
                     .addQueryField("address", "java.lang.String", "address")
                     .setMaxLengthInfo(orgAddressMaxLengthInfo)), OBJ_CACHE_NAME);
+
+        Map<String, Integer> strOrgMaxLengthInfo = new HashMap<>();
+
+        strOrgMaxLengthInfo.put(KEY_FIELD_NAME, 5);
+
+        jcache(grid(0), cacheConfiguration(new QueryEntity(String.class.getName(), Organization.class.getName())
+            .setMaxLengthInfo(strOrgMaxLengthInfo)), STR_ORG_CACHE_NAME);
     }
 
     /**
@@ -112,11 +125,23 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    public void testPutAllTooLongKey2() throws Exception {
+        Map<String, Organization> entries = new HashMap<>();
+
+        entries.put("1", new Organization("1"));
+        entries.put(tooLongKey2.getKey(), tooLongKey2.getValue());
+
+        putAll(jcache(0, STR_ORG_CACHE_NAME), entries);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPutAllTooLongValueField() throws Exception {
         Map<Organization, Address> entries = new HashMap<>();
 
         entries.put(new Organization("1"), new Address("1"));
-        entries.put(tooLongVal2.getKey(), tooLongVal2.getValue());
+        entries.put(tooLongAddrVal.getKey(), tooLongAddrVal.getValue());
 
         putAll(jcache(0, OBJ_CACHE_NAME), entries);
     }
@@ -128,7 +153,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
         Map<Organization, Address> entries = new HashMap<>();
 
         entries.put(new Organization("1"), new Address("1"));
-        entries.put(tooLongKey2.getKey(), tooLongKey2.getValue());
+        entries.put(tooLongOrgKey.getKey(), tooLongOrgKey.getValue());
 
         putAll(jcache(0, OBJ_CACHE_NAME), entries);
     }
@@ -137,14 +162,14 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testPutTooLongValueField() throws Exception {
-        put(jcache(0, OBJ_CACHE_NAME), tooLongVal2);
+        put(jcache(0, OBJ_CACHE_NAME), tooLongAddrVal);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutTooLongKeyField() throws Exception {
-        put(jcache(0, OBJ_CACHE_NAME), tooLongKey2);
+        put(jcache(0, OBJ_CACHE_NAME), tooLongOrgKey);
     }
 
     /**
@@ -164,15 +189,22 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    public void testPutTooLongKey2() throws Exception {
+        put(jcache(0, STR_ORG_CACHE_NAME), tooLongKey2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPutIfAbsentTooLongValueField() throws Exception {
-        putIfAbsent(jcache(0, OBJ_CACHE_NAME), tooLongVal2);
+        putIfAbsent(jcache(0, OBJ_CACHE_NAME), tooLongAddrVal);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testPutIfAbsentTooLongKeyField() throws Exception {
-        putIfAbsent(jcache(0, OBJ_CACHE_NAME), tooLongKey2);
+        putIfAbsent(jcache(0, OBJ_CACHE_NAME), tooLongOrgKey);
     }
 
     /**
@@ -192,15 +224,22 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    public void testPutIfAbsentTooLongKey2() throws Exception {
+        putIfAbsent(jcache(0, STR_ORG_CACHE_NAME), tooLongKey2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetAndPutTooLongValueField() throws Exception {
-        getAndPut(jcache(0, OBJ_CACHE_NAME), tooLongVal2);
+        getAndPut(jcache(0, OBJ_CACHE_NAME), tooLongAddrVal);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetAndPutTooLongKeyField() throws Exception {
-        getAndPut(jcache(0, OBJ_CACHE_NAME), tooLongKey2);
+        getAndPut(jcache(0, OBJ_CACHE_NAME), tooLongOrgKey);
     }
 
     /**
@@ -220,15 +259,22 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    public void testGetAndPutTooLongKey2() throws Exception {
+        getAndPut(jcache(0, STR_ORG_CACHE_NAME), tooLongKey2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetAndPutIfAbsentTooLongValueField() throws Exception {
-        getAndPutIfAbsent(jcache(0, OBJ_CACHE_NAME), tooLongVal2);
+        getAndPutIfAbsent(jcache(0, OBJ_CACHE_NAME), tooLongAddrVal);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGetAndPutIfAbsentTooLongKeyField() throws Exception {
-        getAndPutIfAbsent(jcache(0, OBJ_CACHE_NAME), tooLongKey2);
+        getAndPutIfAbsent(jcache(0, OBJ_CACHE_NAME), tooLongOrgKey);
     }
 
     /**
@@ -248,8 +294,15 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    public void testGetAndPutIfAbsentTooLongKey2() throws Exception {
+        getAndPutIfAbsent(jcache(0, STR_ORG_CACHE_NAME), tooLongKey2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testReplaceTooLongValueField() throws Exception {
-        replace(jcache(0, OBJ_CACHE_NAME), tooLongVal2.getKey(), new Address("1"), tooLongVal2.getValue());
+        replace(jcache(0, OBJ_CACHE_NAME), tooLongAddrVal.getKey(), new Address("1"), tooLongAddrVal.getValue());
     }
 
     /**
@@ -263,8 +316,8 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testGetAndReplaceTooLongValueField() throws Exception {
-        getAndReplace(jcache(0, OBJ_CACHE_NAME), tooLongVal2.getKey(), new Address("1"), 
-            tooLongVal2.getValue());
+        getAndReplace(jcache(0, OBJ_CACHE_NAME), tooLongAddrVal.getKey(), new Address("1"), 
+            tooLongAddrVal.getValue());
     }
 
     /**
@@ -278,7 +331,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testReplace3TooLongValueField() throws Exception {
-        replace3(jcache(0, OBJ_CACHE_NAME), tooLongVal2.getKey(), new Address("1"), tooLongVal2.getValue());
+        replace3(jcache(0, OBJ_CACHE_NAME), tooLongAddrVal.getKey(), new Address("1"), tooLongAddrVal.getValue());
     }
 
     /**
