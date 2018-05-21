@@ -1723,7 +1723,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
             }
 
-            cctx.walState().changeLocalStatesOnExchangeDone(exchId.topologyVersion());
+            cctx.walState().changeLocalStatesOnExchangeDone(res);
         }
 
         if (super.onDone(res, err)) {
