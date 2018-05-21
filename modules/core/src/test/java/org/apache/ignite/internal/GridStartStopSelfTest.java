@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -53,9 +54,8 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
      */
-    public void testStartStop() throws Exception {
+    public void testStartStop() {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setConnectorConfiguration(null);
@@ -148,7 +148,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(null);
 
-        IgniteEx ignite =  startGrid(cfg);
+        IgniteEx ignite = startGrid(cfg);
 
         assert ignite != null;
 
@@ -191,25 +191,29 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
         //check all executors are terminated
         GridKernalContext ctx = ignite.context();
 
-        Map<String,ExecutorService> executors = new HashMap<>();
+        Map<String, ExecutorService> executors =
+            Arrays.stream(GridKernalContext.class.getMethods())
+                .filter(method -> method.getReturnType().equals(ExecutorService.class))
+                .collect(
+                    HashMap::new,
+                    (map, method) -> {
+                        try {
+                            String mtdName = method.getName();
+                            String executorSvcKey = mtdName.startsWith("get") ? mtdName.substring(3) : mtdName;
+                            map.put(executorSvcKey, (ExecutorService)method.invoke(ctx));
+                        }
+                        catch (Exception e) {
+                            // No-op.
+                        }
+                    },
+                    HashMap::putAll
+                );
 
-        executors.put("igfs", ctx.getIgfsExecutorService());
-        executors.put("affinity", ctx.getAffinityExecutorService());
-        executors.put("datastream", ctx.getDataStreamerExecutorService());
-        executors.put("grid", ctx.getExecutorService());
-        executors.put("indexing", ctx.getIndexingExecutorService());
-        executors.put("management", ctx.getManagementExecutorService());
-        executors.put("peerclass", ctx.getPeerClassLoadingExecutorService());
-        executors.put("query", ctx.getQueryExecutorService());
-        executors.put("rest", ctx.getRestExecutorService());
-        executors.put("schema", ctx.getSchemaExecutorService());
-        executors.put("service", ctx.getServiceExecutorService());
-        executors.put("striped", ctx.getStripedExecutorService());
-        executors.put("system", ctx.getSystemExecutorService());
-        if( ctx.customExecutors() != null ) {
-            executors.putAll(ctx.customExecutors());
-        }
+        if (ctx.customExecutors() != null)
+            executors.putAll(Objects.requireNonNull(ctx.customExecutors()));
 
-        executors.forEach((name, executor) ->  { assert executor == null || executor.isTerminated() : name + " executor not terminated" ; });
+        executors.forEach((name, executor) -> {
+            assert executor == null || executor.isTerminated() : name + " ExecutorService not terminated.";
+        });
     }
 }
