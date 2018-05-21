@@ -55,14 +55,14 @@ private[optimization] object StringExpressions extends SupportedExpressions {
         case StringRPad(str, len, pad) ⇒
             checkChild(str) && checkChild(len) && checkChild(pad)
 
-        case StringTrimLeft(child) ⇒
-            checkChild(child)
+        case StringTrimLeft(child, trimStr) ⇒
+            checkChild(child) && checkChild(trimStr.get)
 
-        case StringTrimRight(child) ⇒
-            checkChild(child)
+        case StringTrimRight(child, trimStr) ⇒
+            checkChild(child) && checkChild(trimStr.get)
 
-        case StringTrim(child) ⇒
-            checkChild(child)
+        case StringTrim(child, trimStr) ⇒
+            checkChild(child) && checkChild(trimStr.get)
 
         case RegExpReplace(subject, regexp, rep) ⇒
             checkChild(subject) && checkChild(regexp) && checkChild(rep)
@@ -121,14 +121,14 @@ private[optimization] object StringExpressions extends SupportedExpressions {
         case StringRPad(str, len, pad) ⇒
             Some(s"RPAD(${childToString(str)}, ${childToString(len)}, ${childToString(pad)})")
 
-        case StringTrimLeft(child) ⇒
-            Some(s"LTRIM(${childToString(child)})")
+        case StringTrimLeft(child, trimStr) ⇒
+            Some(s"LTRIM(${childToString(child)}, ${childToString(trimStr.get)})")
 
-        case StringTrimRight(child) ⇒
-            Some(s"RTRIM(${childToString(child)})")
+        case StringTrimRight(child, trimStr) ⇒
+            Some(s"RTRIM(${childToString(child)}, ${childToString(trimStr.get)})")
 
-        case StringTrim(child) ⇒
-            Some(s"TRIM(${childToString(child)})")
+        case StringTrim(child, trimStr) ⇒
+            Some(s"TRIM(${childToString(child)}, ${childToString(trimStr.get)})")
 
         case RegExpReplace(subject, regexp, rep) ⇒
             Some(s"REGEXP_REPLACE(${childToString(subject)}, ${childToString(regexp)}, ${childToString(rep)})")
