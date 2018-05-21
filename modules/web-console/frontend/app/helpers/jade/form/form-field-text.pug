@@ -51,21 +51,3 @@ mixin sane-ignite-form-field-text({label, model, name, disabled, required, place
     +ignite-form-field-text(label, model, name, disabled, required, placeholder, tip)&attributes(attributes)
         if block
             block
-
-mixin ignite-form-field-text-2(lbl, model, name, disabled, required, placeholder, tip)
-    -var errLbl = lbl.substring(0, lbl.length - 1)
-
-    .ignite-form-field
-        +ignite-form-field__label(lbl, name, required)
-        .ignite-form-field__control
-            +tooltip(tip, tipOpts)
-
-            if block
-                block
-
-            if required
-                +form-field-feedback-2(name, 'required', `${errLbl} could not be empty!`)
-
-            .input-tip
-                +ignite-form-field-input(name, model, disabled, required, placeholder)(attributes=attributes)
-
