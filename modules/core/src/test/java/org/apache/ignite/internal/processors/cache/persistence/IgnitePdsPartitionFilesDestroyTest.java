@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -330,6 +331,33 @@ public class IgnitePdsPartitionFilesDestroyTest extends GridCommonAbstractTest {
 
         for (Ignite ignite : G.allGrids())
             checkData((IgniteEx) ignite, keysCnt, 1);
+    }
+
+    /**
+     * Test destroy when partition files are empty and there are no pages for checkpoint.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDestroyWhenPartitionsAreEmpty() throws Exception {
+        IgniteEx crd = (IgniteEx) startGrids(2);
+
+        crd.cluster().active(true);
+
+        forceCheckpoint();
+
+        // Evict arbitrary partition.
+        List<GridDhtLocalPartition> parts = crd.cachex(CACHE).context().topology().localPartitions();
+        for (GridDhtLocalPartition part : parts)
+            if (part.state() != GridDhtPartitionState.EVICTED) {
+                part.rent(false).get();
+
+                break;
+            }
+
+        // This checkpoint has no pages to write, but has one partition file to destroy.
+        forceCheckpoint(crd);
+
+        checkPartitionFiles(crd, false);
     }
 
     /**
