@@ -34,6 +34,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         private readonly string _tempDir = IgniteUtils.GetTempDirectoryName();
 
         /// <summary>
+        /// Sets up the test.
+        /// </summary>
+        [SetUp]
+        public void SetUp()
+        {
+            TestUtils.ClearWorkDir();
+        }
+
+        /// <summary>
         /// Tears down the test.
         /// </summary>
         [TearDown]
