@@ -2268,7 +2268,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      */
     private CacheOperationContext onEnter(GridCacheGateway<K, V> gate, CacheOperationContext opCtx) {
         if ( ctx.kernalContext().igniteSysThreads().containsKey(Thread.currentThread().getId()) )
-            throw new CacheException("Failed to execute cache operation in Ignite system thread.");
+            throw new CacheException("Failed to execute cache operation in Ignite system thread "
+                + Thread.currentThread().getName() + ".");
 
         if (lock)
             return gate.enter(opCtx);

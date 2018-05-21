@@ -658,8 +658,8 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
      */
     private void guard() {
         if (ctx.igniteSysThreads().containsKey(Thread.currentThread().getId()))
-            throw new IgniteException("Failed to execute Ignite compute operation in Ignite system thread.");
-
+            throw new IgniteException("Failed to execute Ignite compute operation in Ignite system thread "
+                + Thread.currentThread().getName() + ".");
         ctx.gateway().readLock();
     }
 
