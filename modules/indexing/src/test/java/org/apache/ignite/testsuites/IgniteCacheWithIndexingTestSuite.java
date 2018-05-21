@@ -52,37 +52,37 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Cache With Indexing Test Suite");
 
-//        suite.addTestSuite(InlineIndexHelperTest.class);
-//
-//        suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
-//        suite.addTestSuite(GridCacheOffHeapSelfTest.class);
-//
-//        suite.addTestSuite(CacheTtlTransactionalLocalSelfTest.class);
-//        suite.addTestSuite(CacheTtlTransactionalPartitionedSelfTest.class);
-//        suite.addTestSuite(CacheTtlAtomicLocalSelfTest.class);
-//        suite.addTestSuite(CacheTtlAtomicPartitionedSelfTest.class);
-//
-//        suite.addTestSuite(GridCacheOffheapIndexGetSelfTest.class);
-//        suite.addTestSuite(GridCacheOffheapIndexEntryEvictTest.class);
-//        suite.addTestSuite(CacheIndexStreamerTest.class);
-//
-//        suite.addTestSuite(CacheConfigurationP2PTest.class);
-//
-//        suite.addTestSuite(IgniteCacheConfigurationPrimitiveTypesSelfTest.class);
-//        suite.addTestSuite(IgniteClientReconnectQueriesTest.class);
-//        suite.addTestSuite(CacheRandomOperationsMultithreadedTest.class);
-//        suite.addTestSuite(IgniteCacheStarvationOnRebalanceTest.class);
-//        suite.addTestSuite(CacheOperationsWithExpirationTest.class);
-//        suite.addTestSuite(CacheBinaryKeyConcurrentQueryTest.class);
-//        suite.addTestSuite(CacheQueryFilterExpiredTest.class);
-//
-//        suite.addTestSuite(ClientReconnectAfterClusterRestartTest.class);
-//
-//        suite.addTestSuite(IgniteCacheGroupsSqlTest.class);
-//
-//        suite.addTestSuite(IgniteDataStreamerTest.class);
-//
-//        suite.addTestSuite(GridCommandHandlerIndexingTest.class);
+        suite.addTestSuite(InlineIndexHelperTest.class);
+
+        suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapSelfTest.class);
+
+        suite.addTestSuite(CacheTtlTransactionalLocalSelfTest.class);
+        suite.addTestSuite(CacheTtlTransactionalPartitionedSelfTest.class);
+        suite.addTestSuite(CacheTtlAtomicLocalSelfTest.class);
+        suite.addTestSuite(CacheTtlAtomicPartitionedSelfTest.class);
+
+        suite.addTestSuite(GridCacheOffheapIndexGetSelfTest.class);
+        suite.addTestSuite(GridCacheOffheapIndexEntryEvictTest.class);
+        suite.addTestSuite(CacheIndexStreamerTest.class);
+
+        suite.addTestSuite(CacheConfigurationP2PTest.class);
+
+        suite.addTestSuite(IgniteCacheConfigurationPrimitiveTypesSelfTest.class);
+        suite.addTestSuite(IgniteClientReconnectQueriesTest.class);
+        suite.addTestSuite(CacheRandomOperationsMultithreadedTest.class);
+        suite.addTestSuite(IgniteCacheStarvationOnRebalanceTest.class);
+        suite.addTestSuite(CacheOperationsWithExpirationTest.class);
+        suite.addTestSuite(CacheBinaryKeyConcurrentQueryTest.class);
+        suite.addTestSuite(CacheQueryFilterExpiredTest.class);
+
+        suite.addTestSuite(ClientReconnectAfterClusterRestartTest.class);
+
+        suite.addTestSuite(IgniteCacheGroupsSqlTest.class);
+
+        suite.addTestSuite(IgniteDataStreamerTest.class);
+
+        suite.addTestSuite(GridCommandHandlerIndexingTest.class);
 
         return suite;
     }

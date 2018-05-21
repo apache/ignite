@@ -119,37 +119,37 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPutAllPrimaryFailure1() throws Exception {
-//        putAllPrimaryFailure(true, false);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPutAllPrimaryFailure1_UnstableTopology() throws Exception {
-//        blockRebalance = true;
-//
-//        putAllPrimaryFailure(true, false);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPutAllPrimaryFailure2() throws Exception {
-//        putAllPrimaryFailure(true, true);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPutAllPrimaryFailure2_UnstableTopology() throws Exception {
-//        blockRebalance = true;
-//
-//        putAllPrimaryFailure(true, true);
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllPrimaryFailure1() throws Exception {
+        putAllPrimaryFailure(true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllPrimaryFailure1_UnstableTopology() throws Exception {
+        blockRebalance = true;
+
+        putAllPrimaryFailure(true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllPrimaryFailure2() throws Exception {
+        putAllPrimaryFailure(true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllPrimaryFailure2_UnstableTopology() throws Exception {
+        blockRebalance = true;
+
+        putAllPrimaryFailure(true, true);
+    }
 
     /**
      * @param fail0 Fail node 0 flag.
@@ -211,21 +211,21 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         checkData(map);
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPutAllBackupFailure1() throws Exception {
-//        putAllBackupFailure1();
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPutAllBackupFailure1_UnstableTopology() throws Exception {
-//        blockRebalance = true;
-//
-//        putAllBackupFailure1();
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllBackupFailure1() throws Exception {
+        putAllBackupFailure1();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllBackupFailure1_UnstableTopology() throws Exception {
+        blockRebalance = true;
+
+        putAllBackupFailure1();
+    }
 
     /**
      * @throws Exception If failed.
@@ -272,21 +272,21 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         checkData(map);
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPutBackupFailure1() throws Exception {
-//        putBackupFailure1();
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPutBackupFailure1_UnstableTopology() throws Exception {
-//        blockRebalance = true;
-//
-//        putBackupFailure1();
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutBackupFailure1() throws Exception {
+        putBackupFailure1();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutBackupFailure1_UnstableTopology() throws Exception {
+        blockRebalance = true;
+
+        putBackupFailure1();
+    }
 
     /**
      * @throws Exception If failed.
@@ -328,19 +328,19 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         checkData(F.asMap(key, key));
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testFullAsyncPutRemap() throws Exception {
-//        fullAsyncRemap(false);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testFullAsyncPutAllRemap() throws Exception {
-//        fullAsyncRemap(true);
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFullAsyncPutRemap() throws Exception {
+        fullAsyncRemap(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFullAsyncPutAllRemap() throws Exception {
+        fullAsyncRemap(true);
+    }
 
     /**
      * @param putAll Test putAll flag.
@@ -403,192 +403,192 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         checkData(map);
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPutPrimarySync() throws Exception {
-//        startGrids(2);
-//
-//        client = true;
-//
-//        Ignite clientNode = startGrid(2);
-//
-//        client = false;
-//
-//        final IgniteCache<Integer, Integer> nearCache = clientNode.createCache(cacheConfiguration(1, PRIMARY_SYNC));
-//
-//        awaitPartitionMapExchange();
-//
-//        Ignite srv0 = grid(0);
-//        final Ignite srv1 = grid(1);
-//
-//        final Integer key = primaryKey(srv0.cache(TEST_CACHE));
-//
-//        testSpi(srv0).blockMessages(GridDhtAtomicSingleUpdateRequest.class, srv1.name());
-//
-//        IgniteFuture<?> fut = nearCache.putAsync(key, key);
-//
-//        fut.get(5, TimeUnit.SECONDS);
-//
-//        assertEquals(key, srv0.cache(TEST_CACHE).get(key));
-//
-//        assertNull(srv1.cache(TEST_CACHE).localPeek(key));
-//
-//        testSpi(srv0).stopBlock(true);
-//
-//        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-//            @Override public boolean apply() {
-//                return srv1.cache(TEST_CACHE).localPeek(key) != null;
-//            }
-//        }, 5000);
-//
-//        checkData(F.asMap(key, key));
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPutNearNodeFailure() throws Exception {
-//        startGrids(2);
-//
-//        client = true;
-//
-//        Ignite clientNode = startGrid(2);
-//
-//        final IgniteCache<Integer, Integer> nearCache = clientNode.createCache(cacheConfiguration(1, FULL_SYNC));
-//
-//        awaitPartitionMapExchange();
-//
-//        final Ignite srv0 = grid(0);
-//        final Ignite srv1 = grid(1);
-//
-//        final Integer key = primaryKey(srv0.cache(TEST_CACHE));
-//
-//        nearCache.putAsync(key, key);
-//
-//        testSpi(srv1).blockMessages(GridDhtAtomicNearResponse.class, clientNode.name());
-//
-//        stopGrid(2);
-//
-//        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-//            @Override public boolean apply() {
-//                return ((IgniteKernal)srv0).context().cache().context().mvcc().atomicFuturesCount() == 0;
-//            }
-//        }, 5000);
-//
-//        assertEquals(0, ((IgniteKernal)srv0).context().cache().context().mvcc().atomicFuturesCount());
-//        assertEquals(0, ((IgniteKernal)srv1).context().cache().context().mvcc().atomicFuturesCount());
-//
-//        checkData(F.asMap(key, key));
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPutAllNearNodeFailure() throws Exception {
-//        final int SRVS = 4;
-//
-//        startGrids(SRVS);
-//
-//        client = true;
-//
-//        Ignite clientNode = startGrid(SRVS);
-//
-//        final IgniteCache<Integer, Integer> nearCache = clientNode.createCache(cacheConfiguration(1, FULL_SYNC));
-//
-//        awaitPartitionMapExchange();
-//
-//        for (int i = 0; i < SRVS; i++)
-//            testSpi(grid(i)).blockMessages(GridDhtAtomicNearResponse.class, clientNode.name());
-//
-//        final Map<Integer, Integer> map = new HashMap<>();
-//
-//        for (int i = 0; i < 100; i++)
-//            map.put(i, i);
-//
-//        nearCache.putAllAsync(map);
-//
-//        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-//            @Override public boolean apply() {
-//                IgniteCache cache = ignite(0).cache(TEST_CACHE);
-//
-//                for (Integer key : map.keySet()) {
-//                    if (cache.get(key) == null)
-//                        return false;
-//                }
-//
-//                return true;
-//            }
-//        }, 5000);
-//
-//        assertTrue(wait);
-//
-//        stopGrid(SRVS);
-//
-//        GridTestUtils.waitForCondition(new GridAbsPredicate() {
-//            @Override public boolean apply() {
-//                for (int i = 0; i < SRVS; i++) {
-//                    if (grid(i).context().cache().context().mvcc().atomicFuturesCount() != 0)
-//                        return false;
-//                }
-//
-//                return true;
-//            }
-//        }, 5000);
-//
-//        for (int i = 0; i < SRVS; i++)
-//            assertEquals(0, grid(i).context().cache().context().mvcc().atomicFuturesCount());
-//
-//        checkData(map);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testCacheOperations0() throws Exception {
-//        cacheOperations(0);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testCacheOperations_UnstableTopology0() throws Exception {
-//        blockRebalance = true;
-//
-//        cacheOperations(0);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testCacheOperations1() throws Exception {
-//        cacheOperations(1);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testCacheOperations_UnstableTopology1() throws Exception {
-//        blockRebalance = true;
-//
-//        cacheOperations(1);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testCacheOperations2() throws Exception {
-//        cacheOperations(2);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testCacheOperations_UnstableTopology2() throws Exception {
-//        blockRebalance = true;
-//
-//        cacheOperations(2);
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutPrimarySync() throws Exception {
+        startGrids(2);
+
+        client = true;
+
+        Ignite clientNode = startGrid(2);
+
+        client = false;
+
+        final IgniteCache<Integer, Integer> nearCache = clientNode.createCache(cacheConfiguration(1, PRIMARY_SYNC));
+
+        awaitPartitionMapExchange();
+
+        Ignite srv0 = grid(0);
+        final Ignite srv1 = grid(1);
+
+        final Integer key = primaryKey(srv0.cache(TEST_CACHE));
+
+        testSpi(srv0).blockMessages(GridDhtAtomicSingleUpdateRequest.class, srv1.name());
+
+        IgniteFuture<?> fut = nearCache.putAsync(key, key);
+
+        fut.get(5, TimeUnit.SECONDS);
+
+        assertEquals(key, srv0.cache(TEST_CACHE).get(key));
+
+        assertNull(srv1.cache(TEST_CACHE).localPeek(key));
+
+        testSpi(srv0).stopBlock(true);
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return srv1.cache(TEST_CACHE).localPeek(key) != null;
+            }
+        }, 5000);
+
+        checkData(F.asMap(key, key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutNearNodeFailure() throws Exception {
+        startGrids(2);
+
+        client = true;
+
+        Ignite clientNode = startGrid(2);
+
+        final IgniteCache<Integer, Integer> nearCache = clientNode.createCache(cacheConfiguration(1, FULL_SYNC));
+
+        awaitPartitionMapExchange();
+
+        final Ignite srv0 = grid(0);
+        final Ignite srv1 = grid(1);
+
+        final Integer key = primaryKey(srv0.cache(TEST_CACHE));
+
+        nearCache.putAsync(key, key);
+
+        testSpi(srv1).blockMessages(GridDhtAtomicNearResponse.class, clientNode.name());
+
+        stopGrid(2);
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return ((IgniteKernal)srv0).context().cache().context().mvcc().atomicFuturesCount() == 0;
+            }
+        }, 5000);
+
+        assertEquals(0, ((IgniteKernal)srv0).context().cache().context().mvcc().atomicFuturesCount());
+        assertEquals(0, ((IgniteKernal)srv1).context().cache().context().mvcc().atomicFuturesCount());
+
+        checkData(F.asMap(key, key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllNearNodeFailure() throws Exception {
+        final int SRVS = 4;
+
+        startGrids(SRVS);
+
+        client = true;
+
+        Ignite clientNode = startGrid(SRVS);
+
+        final IgniteCache<Integer, Integer> nearCache = clientNode.createCache(cacheConfiguration(1, FULL_SYNC));
+
+        awaitPartitionMapExchange();
+
+        for (int i = 0; i < SRVS; i++)
+            testSpi(grid(i)).blockMessages(GridDhtAtomicNearResponse.class, clientNode.name());
+
+        final Map<Integer, Integer> map = new HashMap<>();
+
+        for (int i = 0; i < 100; i++)
+            map.put(i, i);
+
+        nearCache.putAllAsync(map);
+
+        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                IgniteCache cache = ignite(0).cache(TEST_CACHE);
+
+                for (Integer key : map.keySet()) {
+                    if (cache.get(key) == null)
+                        return false;
+                }
+
+                return true;
+            }
+        }, 5000);
+
+        assertTrue(wait);
+
+        stopGrid(SRVS);
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (int i = 0; i < SRVS; i++) {
+                    if (grid(i).context().cache().context().mvcc().atomicFuturesCount() != 0)
+                        return false;
+                }
+
+                return true;
+            }
+        }, 5000);
+
+        for (int i = 0; i < SRVS; i++)
+            assertEquals(0, grid(i).context().cache().context().mvcc().atomicFuturesCount());
+
+        checkData(map);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheOperations0() throws Exception {
+        cacheOperations(0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheOperations_UnstableTopology0() throws Exception {
+        blockRebalance = true;
+
+        cacheOperations(0);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheOperations1() throws Exception {
+        cacheOperations(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheOperations_UnstableTopology1() throws Exception {
+        blockRebalance = true;
+
+        cacheOperations(1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheOperations2() throws Exception {
+        cacheOperations(2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheOperations_UnstableTopology2() throws Exception {
+        blockRebalance = true;
+
+        cacheOperations(2);
+    }
 
     /**
      * @param backups Number of backups.
@@ -636,58 +636,58 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
         nearCache.removeAll(rmvAllKeys);
     }
 
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPutMissedDhtRequest_UnstableTopology() throws Exception {
-//        blockRebalance = true;
-//
-//        ccfg = cacheConfiguration(1, FULL_SYNC);
-//
-//        startServers(4);
-//
-//        client = true;
-//
-//        Ignite client = startGrid(4);
-//
-//        IgniteCache<Integer, Integer> nearCache = client.cache(TEST_CACHE);
-//
-//        testSpi(ignite(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
-//            @Override public boolean apply(ClusterNode node, Message msg) {
-//                return msg instanceof GridDhtAtomicAbstractUpdateRequest;
-//            }
-//        });
-//
-//        Integer key = primaryKey(ignite(0).cache(TEST_CACHE));
-//
-//        log.info("Start put [key=" + key + ']');
-//
-//        IgniteFuture<?> fut = nearCache.putAsync(key, key);
-//
-//        U.sleep(500);
-//
-//        assertFalse(fut.isDone());
-//
-//        stopGrid(0);
-//
-//        fut.get();
-//
-//        checkData(F.asMap(key, key));
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPutAllMissedDhtRequest_UnstableTopology1() throws Exception {
-//        putAllMissedDhtRequest_UnstableTopology(true, false);
-//    }
-//
-//    /**
-//     * @throws Exception If failed.
-//     */
-//    public void testPutAllMissedDhtRequest_UnstableTopology2() throws Exception {
-//        putAllMissedDhtRequest_UnstableTopology(true, true);
-//    }
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutMissedDhtRequest_UnstableTopology() throws Exception {
+        blockRebalance = true;
+
+        ccfg = cacheConfiguration(1, FULL_SYNC);
+
+        startServers(4);
+
+        client = true;
+
+        Ignite client = startGrid(4);
+
+        IgniteCache<Integer, Integer> nearCache = client.cache(TEST_CACHE);
+
+        testSpi(ignite(0)).blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
+            @Override public boolean apply(ClusterNode node, Message msg) {
+                return msg instanceof GridDhtAtomicAbstractUpdateRequest;
+            }
+        });
+
+        Integer key = primaryKey(ignite(0).cache(TEST_CACHE));
+
+        log.info("Start put [key=" + key + ']');
+
+        IgniteFuture<?> fut = nearCache.putAsync(key, key);
+
+        U.sleep(500);
+
+        assertFalse(fut.isDone());
+
+        stopGrid(0);
+
+        fut.get();
+
+        checkData(F.asMap(key, key));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllMissedDhtRequest_UnstableTopology1() throws Exception {
+        putAllMissedDhtRequest_UnstableTopology(true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAllMissedDhtRequest_UnstableTopology2() throws Exception {
+        putAllMissedDhtRequest_UnstableTopology(true, true);
+    }
 
     /**
      * @param fail0 Fail node 0 flag.
