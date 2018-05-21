@@ -85,7 +85,7 @@ public class LogRegressionMultiClassModel implements Model<Vector, Double>, Expo
     }
 
     /**
-     * Adds a specific SVM binary classifier to the bunch of same classifiers.
+     * Adds a specific Log Regression binary classifier to the bunch of same classifiers.
      *
      * @param clsLb The class label for the added model.
      * @param mdl The model.

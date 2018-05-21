@@ -150,7 +150,7 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /**
-     * Set up the amount of outer iterations of SGD algorithm.
+     * Set up the amount of outer iterations.
      *
      * @param amountOfIterations The parameter value.
      * @return Trainer with new amountOfIterations parameter value.
@@ -161,7 +161,7 @@ public class LogRegressionMultiClassTrainer<P extends Serializable>
     }
 
     /**
-     * Gets the amount of local iterations of SGD algorithm.
+     * Gets the amount of local iterations.
      *
      * @return The parameter value.
      */
