@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCache;
@@ -57,6 +58,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_ENABLE_EXPERIMENTAL_COMMAND;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_OK;
@@ -85,6 +87,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        System.setProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, "true");
+
         cleanPersistenceDir();
 
         stopAllGrids();
@@ -99,6 +103,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        System.clearProperty(IGNITE_ENABLE_EXPERIMENTAL_COMMAND);
 
         System.setOut(sysOut);
 
@@ -375,69 +381,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         for (Ignite ig : G.allGrids())
             assertNotNull(ig.cache(DEFAULT_CACHE_NAME));
 
-        AtomicInteger idx = new AtomicInteger();
-
         CountDownLatch lockLatch = new CountDownLatch(1);
         CountDownLatch unlockLatch = new CountDownLatch(1);
 
-        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                int id = idx.getAndIncrement();
-
-                switch (id) {
-                    case 0:
-                        try (Transaction tx = grid(0).transactions().txStart()) {
-                            grid(0).cache(DEFAULT_CACHE_NAME).putAll(generate(0, 100));
-
-                            lockLatch.countDown();
-
-                            U.awaitQuiet(unlockLatch);
-
-                            tx.commit();
-
-                            fail("Commit must fail");
-                        }
-                        catch (Exception e) {
-                            // No-op.
-                            assertTrue(X.hasCause(e, TransactionRollbackException.class));
-                        }
-
-                        break;
-                    case 1:
-                        U.awaitQuiet(lockLatch);
-
-                        doSleep(3000);
-
-                        try (Transaction tx = grid(0).transactions().withLabel("label1").txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0)) {
-                            grid(0).cache(DEFAULT_CACHE_NAME).putAll(generate(200, 110));
-
-                            grid(0).cache(DEFAULT_CACHE_NAME).put(0, 0);
-                        }
-
-                        break;
-                    case 2:
-                        try (Transaction tx = grid(1).transactions().txStart()) {
-                            U.awaitQuiet(lockLatch);
-
-                            grid(1).cache(DEFAULT_CACHE_NAME).put(0, 0);
-                        }
-
-                        break;
-                    case 3:
-                        try (Transaction tx = client.transactions().withLabel("label2").txStart(OPTIMISTIC, READ_COMMITTED, 0, 0)) {
-                            U.awaitQuiet(lockLatch);
-
-                            client.cache(DEFAULT_CACHE_NAME).putAll(generate(100, 10));
-
-                            client.cache(DEFAULT_CACHE_NAME).put(0, 0);
-
-                            tx.commit();
-                        }
-
-                        break;
-                }
-            }
-        }, 4, "tx-thread");
+        IgniteInternalFuture<?> fut = startTransactions(lockLatch, unlockLatch);
 
         U.awaitQuiet(lockLatch);
 
@@ -512,6 +459,23 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         }, "--tx", "order", "DURATION");
 
+        // Trigger topology change and test connection.
+        IgniteInternalFuture<?> startFut = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    startGrid(2);
+                }
+                catch (Exception e) {
+                    fail();
+                }
+            }
+        }, 1, "start-node-thread");
+
+        doSleep(5000);
+
+        assertEquals(EXIT_CODE_OK, execute(h, "--host", "127.0.0.1", "--port", "11211", "--tx"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--host", "127.0.0.1", "--port", "11212", "--tx"));
+
         // Test kill by xid.
         validate(h, map -> {
                 assertEquals(1, map.size());
@@ -526,6 +490,8 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             "nodes", grid(0).localNode().consistentId().toString());
 
         unlockLatch.countDown();
+
+        startFut.get();
 
         fut.get();
     }
@@ -777,5 +743,141 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             map.put(i + from, i + from);
 
         return map;
+    }
+
+    /**
+     *  Test execution of --wal print command.
+     *
+     *  @throws Exception if failed.
+     */
+    public void testUnusedWalPrint() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        List<String> nodes = new ArrayList<>(2);
+
+        for (ClusterNode node: ignite.cluster().forServers().nodes())
+            nodes.add(node.consistentId().toString());
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "print"));
+
+        for(String id: nodes)
+            assertTrue(testOut.toString().contains(id));
+
+        assertTrue(!testOut.toString().contains("error"));
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "print", nodes.get(0)));
+
+        assertTrue(!testOut.toString().contains(nodes.get(1)));
+
+        assertTrue(!testOut.toString().contains("error"));
+    }
+
+    /**
+     *  Test execution of --wal delete command.
+     *
+     *  @throws Exception if failed.
+     */
+    public void testUnusedWalDelete() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        List<String> nodes = new ArrayList<>(2);
+
+        for (ClusterNode node: ignite.cluster().forServers().nodes())
+            nodes.add(node.consistentId().toString());
+
+        injectTestSystemOut();
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "delete"));
+
+        for(String id: nodes)
+            assertTrue(testOut.toString().contains(id));
+
+        assertTrue(!testOut.toString().contains("error"));
+
+        testOut.reset();
+
+        assertEquals(EXIT_CODE_OK, execute("--wal", "delete", nodes.get(0)));
+
+        assertTrue(!testOut.toString().contains(nodes.get(1)));
+
+        assertTrue(!testOut.toString().contains("error"));
+    }
+
+    /**
+     *
+     * @param lockLatch Lock latch.
+     * @param unlockLatch Unlock latch.
+     */
+    private IgniteInternalFuture<?> startTransactions(CountDownLatch lockLatch, CountDownLatch unlockLatch) throws Exception {
+        IgniteEx client = grid("client");
+
+        AtomicInteger idx = new AtomicInteger();
+
+        return multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                int id = idx.getAndIncrement();
+
+                switch (id) {
+                    case 0:
+                        try (Transaction tx = grid(0).transactions().txStart()) {
+                            grid(0).cache(DEFAULT_CACHE_NAME).putAll(generate(0, 100));
+
+                            lockLatch.countDown();
+
+                            U.awaitQuiet(unlockLatch);
+
+                            tx.commit();
+
+                            fail("Commit must fail");
+                        }
+                        catch (Exception e) {
+                            // No-op.
+                            assertTrue(X.hasCause(e, TransactionRollbackException.class));
+                        }
+
+                        break;
+                    case 1:
+                        U.awaitQuiet(lockLatch);
+
+                        doSleep(3000);
+
+                        try (Transaction tx = grid(0).transactions().withLabel("label1").txStart(PESSIMISTIC, READ_COMMITTED, Integer.MAX_VALUE, 0)) {
+                            grid(0).cache(DEFAULT_CACHE_NAME).putAll(generate(200, 110));
+
+                            grid(0).cache(DEFAULT_CACHE_NAME).put(0, 0);
+                        }
+
+                        break;
+                    case 2:
+                        try (Transaction tx = grid(1).transactions().txStart()) {
+                            U.awaitQuiet(lockLatch);
+
+                            grid(1).cache(DEFAULT_CACHE_NAME).put(0, 0);
+                        }
+
+                        break;
+                    case 3:
+                        try (Transaction tx = client.transactions().withLabel("label2").txStart(OPTIMISTIC, READ_COMMITTED, 0, 0)) {
+                            U.awaitQuiet(lockLatch);
+
+                            client.cache(DEFAULT_CACHE_NAME).putAll(generate(100, 10));
+
+                            client.cache(DEFAULT_CACHE_NAME).put(0, 0);
+
+                            tx.commit();
+                        }
+
+                        break;
+                }
+            }
+        }, 4, "tx-thread");
     }
 }

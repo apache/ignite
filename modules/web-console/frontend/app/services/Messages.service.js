@@ -33,10 +33,9 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
 
             if (err.hasOwnProperty('message')) {
                 const msg = err.message;
+                const lastIdx = msg.lastIndexOf(' err=');
 
-                const errIndex = msg.indexOf(' err=');
-
-                return prefix + (errIndex >= 0 ? msg.substring(errIndex + 5, msg.length - 1) : msg);
+                return prefix + (lastIdx >= 0 ? msg.substring(lastIdx + 5, msg.indexOf(']', lastIdx)) : msg);
             }
 
             if (nonEmpty(err.className)) {
@@ -73,16 +72,16 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
     return {
         errorMessage,
         hideAlert,
-        showError(message, err) {
+        showError(message, err, duration = 10) {
             if (message instanceof CancellationError)
                 return false;
 
-            _showMessage(message, err, 'danger', 10);
+            _showMessage(message, err, 'danger', duration);
 
             return false;
         },
-        showInfo(message) {
-            _showMessage(message, null, 'success', 3);
+        showInfo(message, duration = 5) {
+            _showMessage(message, null, 'success', duration);
         }
     };
 }]];

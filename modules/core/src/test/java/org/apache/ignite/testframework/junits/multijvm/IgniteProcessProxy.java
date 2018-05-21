@@ -19,6 +19,8 @@ package org.apache.ignite.testframework.junits.multijvm;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -139,10 +141,28 @@ public class IgniteProcessProxy implements IgniteEx {
      * @param cfg Configuration.
      * @param log Logger.
      * @param locJvmGrid Local JVM grid.
+     * @throws Exception On error.
+     */
+    public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean discovery)
+        throws Exception {
+        this(cfg, log, locJvmGrid, discovery, Collections.emptyList());
+    }
+
+
+    /**
+     * @param cfg Configuration.
+     * @param log Logger.
+     * @param locJvmGrid Local JVM grid.
      * @param resetDiscovery Reset DiscoverySpi at the configuration.
      * @throws Exception On error.
      */
-    public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean resetDiscovery)
+    public IgniteProcessProxy(
+        IgniteConfiguration cfg,
+        IgniteLogger log,
+        Ignite locJvmGrid,
+        boolean resetDiscovery,
+        List<String> additionalArgs
+    )
         throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
@@ -151,6 +171,7 @@ public class IgniteProcessProxy implements IgniteEx {
         String params = params(cfg, resetDiscovery);
 
         Collection<String> filteredJvmArgs = filteredJvmArgs();
+        filteredJvmArgs.addAll(additionalArgs);
 
         final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
 
