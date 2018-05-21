@@ -1726,7 +1726,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     assert cur != null;
 
                     String msg = "Stale update for single partition map update (will ignore) [" +
-                        "grp=" + grp.cacheOrGroupName() +
+                        "nodeId=" + parts.nodeId() +
+                        ", grp=" + grp.cacheOrGroupName() +
                         ", exchId=" + exchId +
                         ", curMap=" + cur +
                         ", newMap=" + parts + ']';

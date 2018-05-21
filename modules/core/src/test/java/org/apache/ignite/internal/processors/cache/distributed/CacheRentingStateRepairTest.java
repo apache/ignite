@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import java.util.List;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -30,8 +28,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -41,8 +37,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
     /** */
-    private boolean persistenceEnabled;
-
     public static final int PARTS = 1024;
 
     /** {@inheritDoc} */
@@ -71,14 +65,12 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
         long sz = 100 * 1024 * 1024;
 
-        if (persistenceEnabled) {
             DataStorageConfiguration memCfg = new DataStorageConfiguration().setPageSize(1024)
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration().setPersistenceEnabled(true).setInitialSize(sz).setMaxSize(sz))
                 .setWalMode(WALMode.LOG_ONLY).setCheckpointFrequency(24L * 60 * 60 * 1000);
 
             cfg.setDataStorageConfiguration(memCfg);
-        }
 
         return cfg;
     }
@@ -91,9 +83,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testRentingStateRepairWithPersistence() throws Exception {
-        persistenceEnabled = true;
-
+    public void testRentingStateRepairAfterRestart() throws Exception {
         try {
             IgniteEx g0 = startGrid(0);
 
@@ -103,7 +93,7 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            int toEvictPart = 12;
+            int toEvictPart = evictingPartitionsAfterJoin(g0, g0.cache(DEFAULT_CACHE_NAME), 20).get(0);
 
             int k = 0;
 
