@@ -45,11 +45,11 @@ namespace Apache.Ignite.Core.Tests.Cache
             var metrics = ignite.GetDataRegionMetrics().OrderBy(x => x.Name).ToArray();
             Assert.AreEqual(4, metrics.Length);  // two defined plus system.
 
-            var emptyMetrics = metrics[0];
+            var emptyMetrics = metrics[1];
             Assert.AreEqual(RegionNoMetrics, emptyMetrics.Name);
             AssertMetricsAreEmpty(emptyMetrics);
 
-            var memMetrics = metrics[1];
+            var memMetrics = metrics[2];
             Assert.AreEqual(RegionWithMetrics, memMetrics.Name);
             Assert.Greater(memMetrics.AllocationRate, 0);
             Assert.AreEqual(0, memMetrics.EvictionRate);
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(memMetrics.TotalAllocatedSize, memMetrics.TotalAllocatedPages * memMetrics.PageSize);
             Assert.AreEqual(memMetrics.PhysicalMemorySize, memMetrics.PhysicalMemoryPages * memMetrics.PageSize);
 
-            var sysMetrics = metrics[2];
+            var sysMetrics = metrics[3];
             Assert.AreEqual("sysMemPlc", sysMetrics.Name);
             AssertMetricsAreEmpty(sysMetrics);
 
