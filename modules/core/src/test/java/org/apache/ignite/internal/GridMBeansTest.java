@@ -21,9 +21,7 @@ import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
 import javax.management.ObjectName;
-
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MBEAN_APPEND_CLASS_LOADER_ID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MBEAN_APPEND_JVM_ID;
 import static org.apache.ignite.internal.util.IgniteUtils.JMX_DOMAIN;
@@ -32,10 +30,10 @@ import static org.apache.ignite.internal.util.IgniteUtils.JMX_DOMAIN;
  * Tests for the standard JMX beans registered by the kernal.
  */
 public class GridMBeansTest extends GridCommonAbstractTest {
-    /** Executor name for setExecutorConfiguration */
+    /** Executor name for setExecutorConfiguration. */
     private static final String CUSTOM_EXECUTOR_0 = "Custom executor 0";
 
-    /** Executor name for setExecutorConfiguration */
+    /** Executor name for setExecutorConfiguration. */
     private static final String CUSTOM_EXECUTOR_1 = "Custom executor 1";
 
     /** For storing original value of IGNITE_MBEAN_APPEND_CLASS_LOADER_ID. */
@@ -43,11 +41,6 @@ public class GridMBeansTest extends GridCommonAbstractTest {
 
     /** For storing original value of IGNITE_MBEAN_APPEND_JVM_ID. */
     private String jvmIdProp;
-
-    /** Create test and auto-start the grid */
-    public GridMBeansTest() {
-        super(false);
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -87,14 +80,22 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** Check that kernal bean is available */
+    /**
+     * Check that kernal bean is available.
+     *
+     * @throws Exception Thrown if test fails.
+     */
     public void testKernalBeans() throws Exception {
         checkBean("Kernal", "IgniteKernal", "InstanceName", grid().name());
         checkBean("Kernal", "ClusterLocalNodeMetricsMXBeanImpl", "TotalServerNodes", 1);
         checkBean("Kernal", "ClusterMetricsMXBeanImpl", "TotalServerNodes", 1);
     }
 
-    /** Check that kernal bean is available */
+    /**
+     * Check that kernal bean is available.
+     *
+     * @throws Exception Thrown if test fails.
+     */
     public void testExecutorBeans() throws Exception {
         // Standard executors.
         checkBean("Thread Pools", "GridExecutionExecutor", "Terminated", false);
@@ -110,7 +111,11 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         checkBean("Thread Pools", CUSTOM_EXECUTOR_1, "Terminated", false);
     }
 
-    /** Check that kernal beans have expected names */
+    /**
+     * Check that kernal beans have expected names.
+     *
+     * @throws Exception Thrown if test fails.
+     */
     public void testIgniteKernalBeansNames() throws Exception {
         // Standard executors.
         checkBeanName("Thread Pools", "GridExecutionExecutor");
@@ -127,7 +132,11 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         checkBeanName("Kernal", "ClusterMetricsMXBeanImpl");
     }
 
-    /** Check that kernal beans were successfully registered by their expected names */
+    /**
+     * Check that kernal beans were successfully registered by their expected names.
+     *
+     * @throws Exception Thrown if test fails.
+     */
     public void testIgniteKernalBeansRegistration() throws Exception {
         // Standard executors.
         checkBeanRegistrationByName("Thread Pools", "GridExecutionExecutor");
@@ -144,7 +153,15 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         checkBeanRegistrationByName("Kernal", "ClusterMetricsMXBeanImpl");
     }
 
-    /** Checks that a bean with the specified group and name is available and has the expected attribute */
+    /**
+     * Checks that a bean with the specified group and name is available and has the expected attribute.
+     *
+     * @param grp group name.
+     * @param name mbean name.
+     * @param attributeName mbean attribute name.
+     * @param expAttributeVal expected attribute name.
+     * @throws Exception Thrown if test fails.
+     */
     private void checkBean(String grp, String name, String attributeName, Object expAttributeVal) throws Exception {
         ObjectName mBeanName = IgniteUtils.makeMBeanName(grid().name(), grp, name);
 
@@ -153,7 +170,13 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         assertEquals(expAttributeVal, attributeVal);
     }
 
-    /** Checks that a bean name generation returns the expected value */
+    /**
+     * Checks that a bean name generation returns the expected value.
+     *
+     * @param grp group name.
+     * @param name mbean name.
+     * @throws Exception Thrown if test fails.
+     */
     private void checkBeanName(String grp, String name) throws Exception {
         final String EXPECTED_BEAN_NAME = getExpectedBeanName(JMX_DOMAIN, grid().name(), grp, name);
 
@@ -162,14 +185,28 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         assertTrue(EXPECTED_BEAN_NAME.equals(mBeanName.getCanonicalName()));
     }
 
-    /** Checks that a bean name generation returns the expected value */
+    /**
+     * Checks that a bean name generation returns the expected value.
+     *
+     * @param grp group name.
+     * @param name mbean name.
+     * @throws Exception Thrown if test fails.
+     */
     private void checkBeanRegistrationByName(String grp, String name) throws Exception {
         final String EXPECTED_BEAN_NAME = getExpectedBeanName(JMX_DOMAIN, grid().name(), grp, name);
 
         assertTrue(grid().configuration().getMBeanServer().isRegistered(new ObjectName(EXPECTED_BEAN_NAME)));
     }
 
-    /** Generates MBean name that is expected by user */
+    /**
+     * Generates MBean name that is expected by user.
+     *
+     * @param domain domain name.
+     * @param instanceName instance name.
+     * @param grp group name.
+     * @param name mbean name.
+     * @return generated mbean name.
+     */
     private String getExpectedBeanName(String domain, String instanceName, String grp, String name) {
         StringBuffer sb = new StringBuffer();
 
