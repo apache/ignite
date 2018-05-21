@@ -15,17 +15,8 @@
  * limitations under the License.
  */
 
-export default class {
-    static $inject = ['$scope'];
-
-    /**
-     * @param {ng.IScope} $scope
-     */
-    constructor($scope) {
-        this.$scope = $scope;
-    }
-
-    areAllSelected() {
-        return this.$scope.$matches.every(({index}) => this.$scope.$isActive(index));
-    }
-}
+/**
+ * <!-- Package description. -->
+ * ML multi-class logistic regression examples.
+ */
+package org.apache.ignite.examples.ml.regression.logistic.multiclass;

@@ -106,6 +106,7 @@ import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -522,6 +523,18 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             .append(COORDINATOR_PROPERTIES_SEPARATOR)
             .append(node.hostNames())
             .toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isNodeInBaseline() {
+        ClusterNode locNode = localNode();
+
+        if (locNode.isClient() || locNode.isDaemon())
+            return false;
+
+        DiscoveryDataClusterState clusterState = ctx.state().clusterState();
+
+        return clusterState.hasBaselineTopology() && CU.baselineNode(locNode, clusterState);
     }
 
     /** {@inheritDoc} */
