@@ -3111,6 +3111,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 boolean success = false;
 
+                int destroyedPartitionsCnt;
+
                 try {
                     if (chp.hasDelta()) {
                         // Identity stores set.
@@ -3197,7 +3199,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     snapshotMgr.afterCheckpointPageWritten();
 
                     try {
-                        destroyEvictedPartitions();
+                        destroyedPartitionsCnt = destroyEvictedPartitions();
                     }
                     catch (IgniteCheckedException e) {
                         chp.progress.cpFinishFut.onDone(e);
@@ -3217,15 +3219,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 tracker.onEnd();
 
-                if (chp.hasDelta()) {
+                if (chp.hasDelta() || destroyedPartitionsCnt > 0) {
                     if (printCheckpointStats) {
                         if (log.isInfoEnabled())
                             log.info(String.format("Checkpoint finished [cpId=%s, pages=%d, markPos=%s, " +
                                     "walSegmentsCleared=%d, markDuration=%dms, pagesWrite=%dms, fsync=%dms, " +
                                     "total=%dms]",
-                                chp.cpEntry.checkpointId(),
+                                chp.cpEntry != null ? chp.cpEntry.checkpointId() : "",
                                 chp.pagesSize,
-                                chp.cpEntry.checkpointMark(),
+                                chp.cpEntry != null ? chp.cpEntry.checkpointMark() : "",
                                 chp.walFilesDeleted,
                                 tracker.markDuration(),
                                 tracker.pagesWriteDuration(),
@@ -3265,12 +3267,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * Processes all evicted partitions scheduled for destroy.
          *
          * @throws IgniteCheckedException If failed.
+         *
+         * @return The number of destroyed partition files.
          */
-        private void destroyEvictedPartitions() throws IgniteCheckedException {
+        private int destroyEvictedPartitions() throws IgniteCheckedException {
             PartitionDestroyQueue destroyQueue = curCpProgress.destroyQueue;
 
             if (destroyQueue.pendingReqs.isEmpty())
-                return;
+                return 0;
 
             List<PartitionDestroyRequest> reqs = null;
 
@@ -3328,6 +3332,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     req.waitCompleted();
 
             destroyQueue.pendingReqs.clear();
+
+            return reqs != null ? reqs.size() : 0;
         }
 
         /**
@@ -3496,7 +3502,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 hasPages = hasPageForWrite(cpPagesTuple.get1());
 
-                if (hasPages || curr.nextSnapshot) {
+                if (hasPages || curr.nextSnapshot || !curr.destroyQueue.pendingReqs.isEmpty()) {
                     // No page updates for this checkpoint are allowed from now on.
                     cpPtr = cctx.wal().log(cpRec);
 
@@ -3875,7 +3881,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private static class Checkpoint {
         /** Checkpoint entry. */
-        private final CheckpointEntry cpEntry;
+        @Nullable private final CheckpointEntry cpEntry;
 
         /** Checkpoint pages. */
         private final GridMultiCollectionWrapper<FullPageId> cpPages;
@@ -3895,7 +3901,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param progress Checkpoint progress status.
          */
         private Checkpoint(
-            CheckpointEntry cpEntry,
+            @Nullable CheckpointEntry cpEntry,
             @NotNull GridMultiCollectionWrapper<FullPageId> cpPages,
             CheckpointProgress progress
         ) {
