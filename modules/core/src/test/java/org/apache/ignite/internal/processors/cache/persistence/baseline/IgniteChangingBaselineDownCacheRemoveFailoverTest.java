@@ -100,8 +100,6 @@ public class IgniteChangingBaselineDownCacheRemoveFailoverTest extends GridCache
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 

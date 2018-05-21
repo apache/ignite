@@ -138,13 +138,6 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         startGrid(getServerNodeCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

@@ -107,13 +107,6 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
         grid().active(true);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Verifies that BPlusTree are not erroneously shared between tables in the same cache
      * due to IGNITE-6915 bug.

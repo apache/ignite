@@ -101,11 +101,6 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
