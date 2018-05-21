@@ -156,8 +156,6 @@ public abstract class EvictionPolicyFactoryAbstractTest<T extends EvictionPolicy
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         filter = null;
-
-        super.afterTestsStopped();
     }
 
     /**

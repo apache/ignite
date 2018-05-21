@@ -69,13 +69,6 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
             .setInterceptor(new TestCacheInterceptor()));
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Test that H2 specific error codes get propagated to Ignite SQL exceptions.
      * @throws SQLException if failed.

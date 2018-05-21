@@ -150,8 +150,6 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
 
-        stopAllGrids();
-
         backUpCluster.clear();
 
         condId = 0;

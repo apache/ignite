@@ -60,11 +60,6 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
         startGrids(4);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

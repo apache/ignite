@@ -48,11 +48,6 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
             "/org/apache/ignite/internal/processors/resource/spring-resource.xml"));
     }
 
-    /** {@inheritDoc} */
-    @Override public void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

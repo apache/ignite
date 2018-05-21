@@ -106,11 +106,6 @@ public class AffinityClientNodeSelfTest extends GridCommonAbstractTest {
         startGrid(NODE_CNT - 1); // Start client after servers.
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
