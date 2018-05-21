@@ -119,6 +119,11 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
         super.beforeTestsStarted();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids(true);
+    }
+
     /**
      * @return Grid to run query on.
      * @throws Exception If failed.
