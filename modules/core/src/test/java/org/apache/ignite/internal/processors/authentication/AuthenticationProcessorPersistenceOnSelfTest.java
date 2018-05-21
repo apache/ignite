@@ -22,7 +22,7 @@ package org.apache.ignite.internal.processors.authentication;
  */
 public class AuthenticationProcessorPersistenceOnSelfTest extends AuthenticationProcessorAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean persistanceEnabled() {
+    @Override protected boolean persistenceEnabled() {
         return true;
     }
 }

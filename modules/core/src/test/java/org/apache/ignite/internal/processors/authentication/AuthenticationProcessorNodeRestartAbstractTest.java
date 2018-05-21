@@ -57,7 +57,7 @@ public abstract class AuthenticationProcessorNodeRestartAbstractTest extends Gri
     /**
      * @return {@code true} if persistence is enabled.
      */
-    protected abstract boolean persistanceEnabled();
+    protected abstract boolean persistenceEnabled();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -74,7 +74,7 @@ public abstract class AuthenticationProcessorNodeRestartAbstractTest extends Gri
 
         cfg.setAuthenticationEnabled(true);
 
-        if (persistanceEnabled()) {
+        if (persistenceEnabled()) {
             cfg.setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                     .setPersistenceEnabled(true)));
@@ -91,7 +91,7 @@ public abstract class AuthenticationProcessorNodeRestartAbstractTest extends Gri
 
         startGrids(NODES_COUNT);
 
-        if (persistanceEnabled())
+        if (persistenceEnabled())
             grid(0).cluster().active(true);
 
         actxDflt = grid(0).context().authentication().authenticate(User.DFAULT_USER_NAME, "ignite");
