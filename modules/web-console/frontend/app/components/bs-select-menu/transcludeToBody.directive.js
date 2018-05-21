@@ -15,17 +15,36 @@
  * limitations under the License.
  */
 
-export default class {
-    static $inject = ['$scope'];
+class Controller {
+    static $inject = ['$transclude', '$document'];
 
     /**
-     * @param {ng.IScope} $scope
+     * @param {ng.ITranscludeFunction} $transclude
+     * @param {JQLite} $document
      */
-    constructor($scope) {
-        this.$scope = $scope;
+    constructor($transclude, $document) {
+        this.$transclude = $transclude;
+        this.$document = $document;
     }
 
-    areAllSelected() {
-        return this.$scope.$matches.every(({index}) => this.$scope.$isActive(index));
+    $postLink() {
+        this.$transclude((clone) => {
+            this.clone = clone;
+            this.$document.find('body').append(clone);
+        });
     }
+
+    $onDestroy() {
+        this.clone.remove();
+        this.clone = this.$document = null;
+    }
+}
+
+export function directive() {
+    return {
+        restrict: 'E',
+        transclude: true,
+        controller: Controller,
+        scope: {}
+    };
 }
