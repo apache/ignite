@@ -51,6 +51,10 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
      */
     public void testInsertTooLongVarchar() throws Exception {
         checkSQLThrows("INSERT INTO varchar_table VALUES(?, ?)", 2, "123456");
+
+        checkSQLThrows("UPDATE varchar_table SET str = ? WHERE id = ?", "123456", 1);
+
+        checkSQLThrows("MERGE INTO varchar_table(id, str) VALUES(?, ?)", 1, "123456");
     }
 
     /**
@@ -58,34 +62,28 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
      */
     public void testInsertTooLongChar() throws Exception {
         checkSQLThrows("INSERT INTO char_table VALUES(?, ?)", 2, "123456");
-    }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testUpdateTooLongVarchar() throws Exception {
-        checkSQLThrows("UPDATE varchar_table SET str = ? WHERE id = ?", "123456", 1);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testUpdateTooLongChar() throws Exception {
         checkSQLThrows("UPDATE char_table SET str = ? WHERE id = ?", "123456", 1);
-    }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMergeTooLongVarchar() throws Exception {
-        checkSQLThrows("MERGE INTO varchar_table(id, str) VALUES(?, ?)", 1, "123456");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMergeTooLongChar() throws Exception {
         checkSQLThrows("MERGE INTO char_table(id, str) VALUES(?, ?)", 1, "123456");
+    }
+    
+    public void testConstraintsAfterAlterTable() throws Exception {
+        execSQL("CREATE TABLE char_table_2(id INT PRIMARY KEY, field INTEGER)");
+
+        execSQL("ALTER TABLE char_table_2 ADD COLUMN str CHAR(5) NOT NULL");
+        
+        execSQL("INSERT INTO char_table_2(id, str) VALUES(?, ?)", 1, "1");
+
+        checkSQLThrows("INSERT INTO char_table_2(id, str) VALUES(?, ?)", 2, "123456");
+
+        checkSQLThrows("UPDATE char_table_2 SET str = ? WHERE id = ?", "123456", 1);
+
+        checkSQLThrows("MERGE INTO char_table_2(id, str) VALUES(?, ?)", 1, "123456");
+    }
+
+    public void testUpdateAfterAlterTable() throws Exception {
+
     }
 
     /** */
