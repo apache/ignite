@@ -169,10 +169,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** {@inheritDoc} */
     public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException {
         try {
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(cacheWorkDir(cacheConfiguration).toPath(),
+            File cacheWorkDir = cacheWorkDir(cacheConfiguration);
+
+            if(!cacheWorkDir.exists())
+                return;
+
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(cacheWorkDir.toPath(),
                 new DirectoryStream.Filter<Path>() {
                     @Override public boolean accept(Path entry) throws IOException {
-                        return entry.toFile().getName().endsWith(FILE_SUFFIX);
+                        return entry.endsWith(FILE_SUFFIX);
                     }
                 })) {
                 for (Path path : files)

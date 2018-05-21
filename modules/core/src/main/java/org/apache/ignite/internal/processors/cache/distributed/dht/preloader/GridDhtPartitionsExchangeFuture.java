@@ -779,7 +779,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             cctx.database().cleanupCheckpointDirectory();
 
-            cctx.wal().cleanupWalDirectories();
+            if (cctx.wal() != null)
+                cctx.wal().cleanupWalDirectories();
         }
 
         cctx.activate();
