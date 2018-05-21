@@ -538,7 +538,7 @@ public class GridLongList implements Message, Externalizable {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLongArray("arr", arr))
+                if (!writer.writeLongArray("arr", arr, idx))
                     return false;
 
                 writer.incrementState();
