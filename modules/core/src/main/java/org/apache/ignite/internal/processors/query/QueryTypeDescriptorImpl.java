@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -402,6 +401,28 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         }
 
         fields.put(name, prop.type());
+    }
+
+    /**
+     * Adds validate property to the type descriptor.
+     *
+     * @param prop Property.
+     * @param failOnDuplicate Fail on duplicate flag.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void addValidateProperty(GridQueryProperty prop, boolean failOnDuplicate) throws IgniteCheckedException {
+        String name = prop.name();
+
+        if (props.put(name, prop) != null && failOnDuplicate)
+            throw new IgniteCheckedException("Property with name '" + name + "' already exists.");
+
+        if (uppercaseProps.put(name.toUpperCase(), prop) != null && failOnDuplicate)
+            throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
+
+        if (validateProps == null)
+            validateProps = new ArrayList<>();
+
+        validateProps.add(prop);
     }
 
     /**

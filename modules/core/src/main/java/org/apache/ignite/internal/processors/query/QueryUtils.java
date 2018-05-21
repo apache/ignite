@@ -583,7 +583,7 @@ public class QueryUtils {
             Integer maxLength = maxLengthInfo != null ? 
                 maxLengthInfo.getOrDefault(entry.getKey(), MAX_VALUE) : MAX_VALUE;
 
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(),
+            QueryBinaryProperty prop = buildBinaryProperty(ctx, d.cacheName(), entry.getKey(),
                 U.classForName(entry.getValue(), Object.class, true),
                 d.aliases(), isKeyField, notNull, dfltVal,
                 precisionAndScale != null ? precisionAndScale.get1() : -1,
@@ -593,7 +593,51 @@ public class QueryUtils {
             d.addProperty(prop, false);
         }
 
+        //Only if constraints applied to {@code _KEY} or {@code _VAL} field.
+        if (F.isEmpty(qryEntity.getFields()) && !F.isEmpty(maxLengthInfo)) {
+            addSpecialValidateProp(ctx, qryEntity, d, KEY_FIELD_NAME);
+            addSpecialValidateProp(ctx, qryEntity, d, VAL_FIELD_NAME);
+        }
+
         processIndexes(qryEntity, d);
+    }
+
+    /**
+     * Add validate property to QueryTypeDescriptor.
+     * 
+     * @param ctx
+     * @param qryEntity
+     * @param d
+     * @param name
+     * @throws IgniteCheckedException
+     */
+    private static void addSpecialValidateProp(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d, 
+        String name) throws IgniteCheckedException {
+
+        Map<String, Object> dfltVals = qryEntity.getDefaultFieldValues();
+        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo  = qryEntity.getDecimalInfo();
+        Map<String, Integer> maxLengthInfo = qryEntity.getMaxLengthInfo();
+        
+        Integer maxLength = F.getCaseInsensitive(maxLengthInfo, name);
+
+        IgniteBiTuple<Integer, Integer> precisionAndScale = F.getCaseInsensitive(decimalInfo, name);
+
+        if (maxLength != null || precisionAndScale != null) {
+            boolean isKey = name.equals(KEY_FIELD_NAME);
+
+            String typeName = isKey ? qryEntity.getKeyType() : qryEntity.getValueType();
+
+            Object dfltVal = F.getCaseInsensitive(dfltVals, name);
+
+            QueryBinaryProperty prop = buildBinaryProperty(ctx, d.cacheName(), name,
+                U.classForName(typeName, Object.class, true),
+                d.aliases(), isKey, true, dfltVal,
+                precisionAndScale != null ? precisionAndScale.get1() : -1,
+                precisionAndScale != null ? precisionAndScale.get2() : -1,
+                maxLength != null ? maxLength : Integer.MAX_VALUE);
+
+            d.addValidateProperty(prop, false);
+        }
     }
 
     /**
@@ -724,6 +768,7 @@ public class QueryUtils {
      * Builds binary object property.
      *
      * @param ctx Kernal context.
+     * @param cacheName Cache name.
      * @param pathStr String representing path to the property. May contains dots '.' to identify
      *      nested fields.
      * @param resType Result type.
@@ -738,8 +783,8 @@ public class QueryUtils {
      * @return Binary property.
      * @throws IgniteCheckedException On error.
      */
-    public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr, Class<?> resType,
-        Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal,
+    public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String cacheName, String pathStr, 
+        Class<?> resType, Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal,
         int precision, int scale, int maxLength) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
@@ -756,7 +801,7 @@ public class QueryUtils {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
+            res = new QueryBinaryProperty(ctx, cacheName, prop, res, resType, isKeyField, alias, notNull, dlftVal,
                 precision, scale, maxLength);
         }
 
