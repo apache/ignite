@@ -54,7 +54,7 @@ public class MarshallerUtils {
     public static JdkMarshaller jdkMarshaller(@Nullable String nodeName) {
         JdkMarshaller marsh = new JdkMarshaller();
 
-        setNodeName(new JdkMarshaller(), nodeName);
+        setNodeName(marsh, nodeName);
 
         return marsh;
     }

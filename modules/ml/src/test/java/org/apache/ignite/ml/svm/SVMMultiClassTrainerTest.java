@@ -17,14 +17,14 @@
 
 package org.apache.ignite.ml.svm;
 
+import org.apache.ignite.ml.TestUtils;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.ml.TestUtils;
-import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.junit.Test;
 
 /**
  * Tests for {@link SVMLinearBinaryClassificationTrainer}.
@@ -59,16 +59,17 @@ public class SVMMultiClassTrainerTest {
             data.put(i, vec);
         }
 
-        SVMLinearMultiClassClassificationTrainer<Integer, double[]> trainer = new SVMLinearMultiClassClassificationTrainer<Integer, double[]>()
+        SVMLinearMultiClassClassificationTrainer trainer = new SVMLinearMultiClassClassificationTrainer()
             .withLambda(0.3)
             .withAmountOfLocIterations(100)
             .withAmountOfIterations(20);
 
         SVMLinearMultiClassClassificationModel mdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 10),
+            data,
+            10,
             (k, v) -> Arrays.copyOfRange(v, 1, v.length),
-            (k, v) -> v[0],
-            AMOUNT_OF_FEATURES);
+            (k, v) -> v[0]
+        );
 
         TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[]{100, 10})), PRECISION);
         TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[]{10, 100})), PRECISION);

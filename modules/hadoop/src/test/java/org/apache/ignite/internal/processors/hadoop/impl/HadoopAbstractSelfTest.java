@@ -103,8 +103,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         // Restore classpath.
         System.setProperty("java.class.path", initCp);
 

@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
+import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
@@ -37,6 +40,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
 import static org.apache.ignite.internal.sql.SqlKeyword.STREAMING;
 import static org.apache.ignite.internal.sql.SqlKeyword.TABLE;
 import static org.apache.ignite.internal.sql.SqlKeyword.UNIQUE;
+import static org.apache.ignite.internal.sql.SqlKeyword.USER;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnsupportedIfMatchesKeyword;
 import static org.apache.ignite.internal.sql.SqlParserUtils.matchesKeyword;
@@ -109,9 +113,14 @@ public class SqlParser {
                             break;
 
                         case COPY:
-                            cmd = processCopy();
+                            try {
+                                cmd = processCopy();
 
-                            break;
+                                break;
+                            }
+                            catch (SqlParseException e) {
+                                throw new SqlStrictParseException(e);
+                            }
 
                         case SET:
                             cmd = processSet();
@@ -191,6 +200,12 @@ public class SqlParser {
                         throw errorUnexpectedToken(lex, INDEX);
 
                     break;
+
+                case USER:
+                    cmd = new SqlCreateUserCommand();
+
+                    break;
+
             }
 
             if (cmd != null)
@@ -216,6 +231,11 @@ public class SqlParser {
                     cmd = new SqlDropIndexCommand();
 
                     break;
+
+                case USER:
+                    cmd = new SqlDropUserCommand();
+
+                    break;
             }
 
             if (cmd != null)
@@ -237,6 +257,11 @@ public class SqlParser {
             switch (lex.token()) {
                 case TABLE:
                     cmd = new SqlAlterTableCommand();
+
+                    break;
+
+                case USER:
+                    cmd = new SqlAlterUserCommand();
 
                     break;
             }

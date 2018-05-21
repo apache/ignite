@@ -75,11 +75,6 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
         startGrids(NODE_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @return {@code True} if use client discovery.
      */
@@ -494,7 +489,8 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
         assertTrue(ignite.configuration().isClientMode());
 
-        assertEquals(clientDiscovery(), ignite.configuration().getDiscoverySpi().isClientMode());
+        if (tcpDiscovery())
+            assertEquals(clientDiscovery(), ignite.configuration().getDiscoverySpi().isClientMode());
 
         return ignite;
     }

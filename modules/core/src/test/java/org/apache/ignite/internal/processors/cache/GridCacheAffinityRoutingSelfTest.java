@@ -124,16 +124,6 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        for (int i = 0; i < GRID_CNT; i++)
-            stopGrid(i);
-
-        assert G.allGrids().isEmpty();
-    }
-
     /**
      * JUnit.
      *

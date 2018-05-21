@@ -19,7 +19,10 @@ package org.apache.ignite.testframework.junits.multijvm;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -53,6 +56,7 @@ import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.DataStorageMetrics;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -104,6 +108,9 @@ public class IgniteProcessProxy implements IgniteEx {
     /** Property that specify alternative {@code JAVA_HOME}. */
     private static final String TEST_MULTIJVM_JAVA_HOME = "test.multijvm.java.home";
 
+    /** Waiting milliseconds of the left of a node to topology. */
+    private static final long NODE_LEFT_TIMEOUT = 30_000L;
+
     /** Jvm process with ignite instance. */
     private final transient GridJavaProcess proc;
 
@@ -134,10 +141,28 @@ public class IgniteProcessProxy implements IgniteEx {
      * @param cfg Configuration.
      * @param log Logger.
      * @param locJvmGrid Local JVM grid.
+     * @throws Exception On error.
+     */
+    public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean discovery)
+        throws Exception {
+        this(cfg, log, locJvmGrid, discovery, Collections.emptyList());
+    }
+
+
+    /**
+     * @param cfg Configuration.
+     * @param log Logger.
+     * @param locJvmGrid Local JVM grid.
      * @param resetDiscovery Reset DiscoverySpi at the configuration.
      * @throws Exception On error.
      */
-    public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean resetDiscovery)
+    public IgniteProcessProxy(
+        IgniteConfiguration cfg,
+        IgniteLogger log,
+        Ignite locJvmGrid,
+        boolean resetDiscovery,
+        List<String> additionalArgs
+    )
         throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
@@ -146,6 +171,7 @@ public class IgniteProcessProxy implements IgniteEx {
         String params = params(cfg, resetDiscovery);
 
         Collection<String> filteredJvmArgs = filteredJvmArgs();
+        filteredJvmArgs.addAll(additionalArgs);
 
         final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
 
@@ -293,12 +319,39 @@ public class IgniteProcessProxy implements IgniteEx {
      *
      * @param igniteInstanceName Ignite instance name.
      * @param cancel If {@code true} then all jobs currently will be cancelled.
+     * @throws Exception In case of the node stopping error.
      */
-    public static void stop(String igniteInstanceName, boolean cancel) {
-        IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
+    public static void stop(String igniteInstanceName, boolean cancel) throws Exception {
+        final IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
 
         if (proxy != null) {
-            proxy.remoteCompute().run(new StopGridTask(igniteInstanceName, cancel));
+            final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
+            final UUID rmNodeId = proxy.getId();
+
+            proxy.locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
+                @Override public boolean applyx(Event e) {
+                    if (((DiscoveryEvent)e).eventNode().id().equals(rmNodeId)) {
+                        rmtNodeStoppedLatch.countDown();
+
+                        return false;
+                    }
+
+                    return true;
+                }
+            }, EventType.EVT_NODE_LEFT);
+
+            try {
+                proxy.remoteCompute().runAsync(new StopGridTask(igniteInstanceName, cancel));
+
+                if (!rmtNodeStoppedLatch.await(NODE_LEFT_TIMEOUT, TimeUnit.MILLISECONDS))
+                    throw new IllegalStateException("Remote node has not stopped [id=" + rmNodeId + ']');
+            }
+            catch (Throwable t) {
+                proxy.log().error("Failed to stop grid [igniteInstanceName=" + igniteInstanceName +
+                    ", cancel=" + cancel + ']', t);
+
+                throw t;
+            }
 
             gridProxies.remove(igniteInstanceName, proxy);
         }
@@ -848,7 +901,8 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
-     *
+     * Executes {@link Ignition#stop(String, boolean)} with given arguments in a separated thread, doesn't wait up the
+     * fulfillment.
      */
     private static class StopGridTask implements IgniteRunnable {
         /** Ignite instance name. */
@@ -868,7 +922,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            G.stop(igniteInstanceName, cancel);
+            CompletableFuture.runAsync(() -> G.stop(igniteInstanceName, cancel));
         }
     }
 
