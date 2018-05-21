@@ -70,6 +70,8 @@ namespace Apache.Ignite.Core.Tests.Services
         [SetUp]
         public void SetUp()
         {
+            TestUtils.ClearWorkDir();
+
             StartGrids();
         }
 
