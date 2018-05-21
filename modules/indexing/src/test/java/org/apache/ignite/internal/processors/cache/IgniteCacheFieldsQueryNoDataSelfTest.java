@@ -66,11 +66,6 @@ public class IgniteCacheFieldsQueryNoDataSelfTest extends GridCommonAbstractTest
         startGrid();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid();
-    }
-
     /**
      * @throws Exception If failed.
      */

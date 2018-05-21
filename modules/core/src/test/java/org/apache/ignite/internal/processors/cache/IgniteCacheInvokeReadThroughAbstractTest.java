@@ -96,13 +96,6 @@ public abstract class IgniteCacheInvokeReadThroughAbstractTest extends GridCommo
         ignite(0).destroyCache(DEFAULT_CACHE_NAME);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @return Store factory.
      */

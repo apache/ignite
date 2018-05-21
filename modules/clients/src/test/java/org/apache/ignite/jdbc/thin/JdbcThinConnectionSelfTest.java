@@ -116,11 +116,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         startGridsMultiThreaded(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

@@ -77,12 +77,6 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        for (int i = 0; i < NODES_CNT; i++)
-            stopGrid(i);
-    }
-
-    /** {@inheritDoc} */
     @Override protected ClusterGroup projection() {
         return grid(0).cluster().forPredicate(F.nodeForNodeIds(ids));
     }

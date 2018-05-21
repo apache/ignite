@@ -229,13 +229,6 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * Checks that new joined primary is not assigned immediately.
      *
