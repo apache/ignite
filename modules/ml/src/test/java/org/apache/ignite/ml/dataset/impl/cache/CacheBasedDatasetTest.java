@@ -206,7 +206,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
         long checkingStartTs = System.currentTimeMillis();
 
         while (!flag && (System.currentTimeMillis() - checkingStartTs) < 30_000) {
-            LockSupport.parkNanos(200 * 1000 * 1000);
+            LockSupport.parkNanos(200L * 1000 * 1000);
             flag = true;
 
             for (String cacheName : cacheNames) {

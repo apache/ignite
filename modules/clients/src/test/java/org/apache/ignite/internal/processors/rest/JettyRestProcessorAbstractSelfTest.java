@@ -3060,7 +3060,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         DataRegionConfiguration drCfg = new DataRegionConfiguration();
         drCfg.setName("testDataRegion");
-        drCfg.setMaxSize(100 * 1024 * 1024);
+        drCfg.setMaxSize(100L * 1024 * 1024);
 
         dsCfg.setDefaultDataRegionConfiguration(drCfg);
 

@@ -143,8 +143,8 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltDataRegion");
-        memPlcCfg.setInitialSize(1024 * 1024 * 1024);
-        memPlcCfg.setMaxSize(1024 * 1024 * 1024);
+        memPlcCfg.setInitialSize(1024L * 1024 * 1024);
+        memPlcCfg.setMaxSize(1024L * 1024 * 1024);
         memPlcCfg.setPersistenceEnabled(true);
 
         dbCfg.setDefaultDataRegionConfiguration(memPlcCfg);
@@ -534,7 +534,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
     private void checkWalRolloverMultithreaded() throws Exception {
         walSegmentSize = 2 * 1024 * 1024;
 
-        final long endTime = System.currentTimeMillis() + 2 * 60 * 1000;
+        final long endTime = System.currentTimeMillis() + 2L * 60 * 1000;
 
         try {
             IgniteEx ignite = startGrid(1);
