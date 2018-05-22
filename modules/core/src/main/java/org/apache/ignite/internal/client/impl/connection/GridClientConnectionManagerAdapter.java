@@ -38,6 +38,7 @@ import java.util.logging.Logger;
 import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.client.GridClientClosedException;
 import org.apache.ignite.internal.client.GridClientConfiguration;
 import org.apache.ignite.internal.client.GridClientException;
@@ -624,6 +625,11 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
         }
 
         /** {@inheritDoc} */
+        @Override public void onMessageSent(GridNioSession ses, Object msg) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void onMessage(GridNioSession ses, Object msg) {
             GridClientFutureAdapter<Boolean> handshakeFut =
                 ses.removeMeta(GridClientNioTcpConnection.SES_META_HANDSHAKE);
@@ -649,6 +655,11 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
                     }
                 }
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onFailure(FailureType failureType, Throwable failure) {
+            // No-op.
         }
 
         /**

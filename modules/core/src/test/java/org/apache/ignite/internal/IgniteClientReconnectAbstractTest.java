@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +39,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -143,6 +145,14 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
     /**
      * @param ignite Node.
+     * @return Discovery SPI.
+     */
+    protected static IgniteDiscoverySpi spi0(Ignite ignite) {
+        return ((IgniteDiscoverySpi)ignite.configuration().getDiscoverySpi());
+    }
+
+    /**
+     * @param ignite Node.
      * @return Communication SPI.
      */
     protected BlockTcpCommunicationSpi commSpi(Ignite ignite) {
@@ -173,11 +183,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
-
-        stopAllGrids();
     }
 
     /**
@@ -185,16 +191,28 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
      * @return Server node client connected to.
      */
     protected Ignite clientRouter(Ignite client) {
-        TcpDiscoveryNode node = (TcpDiscoveryNode)client.cluster().localNode();
+        if (tcpDiscovery()) {
+            TcpDiscoveryNode node = (TcpDiscoveryNode)client.cluster().localNode();
 
-        assertTrue(node.isClient());
-        assertNotNull(node.clientRouterNodeId());
+            assertTrue(node.isClient());
+            assertNotNull(node.clientRouterNodeId());
 
-        Ignite srv = G.ignite(node.clientRouterNodeId());
+            Ignite srv = G.ignite(node.clientRouterNodeId());
 
-        assertNotNull(srv);
+            assertNotNull(srv);
 
-        return srv;
+            return srv;
+        }
+        else {
+            for (Ignite node : G.allGrids()) {
+                if (!node.cluster().localNode().isClient())
+                    return node;
+            }
+
+            fail();
+
+            return null;
+        }
     }
 
     /**
@@ -251,15 +269,24 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         List<Ignite> clients, Ignite srv,
         @Nullable Runnable disconnectedC)
         throws Exception {
-        final TestTcpDiscoverySpi srvSpi = spi(srv);
+        final IgniteDiscoverySpi srvSpi = spi0(srv);
 
         final CountDownLatch disconnectLatch = new CountDownLatch(clients.size());
         final CountDownLatch reconnectLatch = new CountDownLatch(clients.size());
 
         log.info("Block reconnect.");
 
-        for (Ignite client : clients)
-            spi(client).writeLatch = new CountDownLatch(1);
+        List<DiscoverySpiTestListener> blockLsnrs = new ArrayList<>();
+
+        for (Ignite client : clients) {
+            DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
+
+            lsnr.startBlockJoin();
+
+            blockLsnrs.add(lsnr);
+
+            spi0(client).setInternalListener(lsnr);
+        }
 
         IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -291,8 +318,8 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
         log.info("Allow reconnect.");
 
-        for (Ignite client : clients)
-            spi(client).writeLatch.countDown();
+        for (DiscoverySpiTestListener blockLsnr : blockLsnrs)
+            blockLsnr.stopBlockJoin();
 
         waitReconnectEvent(log, reconnectLatch);
 

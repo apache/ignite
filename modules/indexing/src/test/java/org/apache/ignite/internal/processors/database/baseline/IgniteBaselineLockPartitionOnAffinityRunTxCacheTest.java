@@ -80,8 +80,6 @@ public class IgniteBaselineLockPartitionOnAffinityRunTxCacheTest extends IgniteC
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 }

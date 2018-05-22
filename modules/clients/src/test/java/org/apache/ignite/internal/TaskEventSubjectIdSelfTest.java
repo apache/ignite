@@ -107,8 +107,6 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         GridClientFactory.stop(client.id());
-
-        stopGrid();
     }
 
     /** {@inheritDoc} */

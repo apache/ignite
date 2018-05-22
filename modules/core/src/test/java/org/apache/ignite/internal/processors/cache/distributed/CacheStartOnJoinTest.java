@@ -123,8 +123,6 @@ public class CacheStartOnJoinTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         System.clearProperty(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN);
-
-        super.afterTestsStopped();
     }
 
     /**

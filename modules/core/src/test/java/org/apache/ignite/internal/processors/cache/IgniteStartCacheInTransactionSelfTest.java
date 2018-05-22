@@ -86,11 +86,6 @@ public class IgniteStartCacheInTransactionSelfTest extends GridCommonAbstractTes
         startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

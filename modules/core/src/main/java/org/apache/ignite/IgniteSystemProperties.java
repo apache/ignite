@@ -25,6 +25,7 @@ import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -65,7 +66,7 @@ public final class IgniteSystemProperties {
     /** Defines Ignite installation folder. */
     public static final String IGNITE_HOME = "IGNITE_HOME";
 
-    /** If this system property is set to {@code false} - no shutdown hook will be set. */
+    /** If this system property is set to {@code true} - no shutdown hook will be set. */
     public static final String IGNITE_NO_SHUTDOWN_HOOK = "IGNITE_NO_SHUTDOWN_HOOK";
 
     /**
@@ -195,11 +196,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SUCCESS_FILE = "IGNITE_SUCCESS_FILE";
 
     /**
-     * Name of system property to set system-wide local IP address or host. If provided it will
-     * override all default local bind settings within Ignite or any of its SPIs.
+     * The system property sets a system-wide local IP address or hostname to be used by Ignite networking components.
+     * Once provided, the property overrides all the default local binding settings for Ignite nodes.
      * <p>
-     * Note that system-wide local bind address can also be set via {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()}
-     * method. However, system properties have priority over configuration properties specified in
+     * Note, that the address can also be changed via
+     * {@link org.apache.ignite.configuration.IgniteConfiguration#setLocalHost(String)} method.
+     * However, this system property has bigger priority and overrides the settings set via
      * {@link org.apache.ignite.configuration.IgniteConfiguration}.
      */
     public static final String IGNITE_LOCAL_HOST = "IGNITE_LOCAL_HOST";
@@ -274,6 +276,9 @@ public final class IgniteSystemProperties {
 
     /** System property to hold SSH host for visor-started nodes. */
     public static final String IGNITE_SSH_HOST = "IGNITE_SSH_HOST";
+
+    /** System property to enable experimental commands in control.sh script. */
+    public static final String IGNITE_ENABLE_EXPERIMENTAL_COMMAND = "IGNITE_ENABLE_EXPERIMENTAL_COMMAND";
 
     /** System property to hold SSH user name for visor-started nodes. */
     public static final String IGNITE_SSH_USER_NAME = "IGNITE_SSH_USER_NAME";
@@ -421,6 +426,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MBEANS_DISABLED = "IGNITE_MBEANS_DISABLED";
 
     /**
+     * If property is set to {@code true}, then test features will be enabled.
+     *
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_TEST_FEATURES_ENABLED = "IGNITE_TEST_FEATURES_ENABLED";
+
+    /**
      * Property controlling size of buffer holding last exception. Default value of {@code 1000}.
      */
     public static final String IGNITE_EXCEPTION_REGISTRY_MAX_SIZE = "IGNITE_EXCEPTION_REGISTRY_MAX_SIZE";
@@ -452,6 +464,9 @@ public final class IgniteSystemProperties {
 
     /** Disable fallback to H2 SQL parser if the internal SQL parser fails to parse the statement. */
     public static final String IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK = "IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK";
+
+    /** Force all SQL queries to be processed lazily regardless of what clients request. */
+    public static final String IGNITE_SQL_FORCE_LAZY_RESULT_SET = "IGNITE_SQL_FORCE_LAZY_RESULT_SET";
 
     /** Maximum size for affinity assignment history. */
     public static final String IGNITE_AFFINITY_HISTORY_SIZE = "IGNITE_AFFINITY_HISTORY_SIZE";
@@ -815,12 +830,73 @@ public final class IgniteSystemProperties {
      * Because other thread may require exactly the same page to be loaded from store, reads are protected by locking.
      */
     public static final String IGNITE_DELAYED_REPLACED_PAGE_WRITE = "IGNITE_DELAYED_REPLACED_PAGE_WRITE";
+
     /**
      * When set to {@code true}, WAL implementation with dedicated worker will be used even in FSYNC mode.
      * Default is {@code false}.
      */
     public static final String IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER = "IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER";
 
+    /**
+     * When set to {@code true}, on-heap cache cannot be enabled - see
+     * {@link CacheConfiguration#setOnheapCacheEnabled(boolean)}.
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_DISABLE_ONHEAP_CACHE = "IGNITE_DISABLE_ONHEAP_CACHE";
+    /**
+     * When set to {@code false}, loaded pages implementation is switched to previous version of implementation,
+     * FullPageIdTable. {@code True} value enables 'Robin Hood hashing: backward shift deletion'.
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
+
+    /**
+     * Whenever read load balancing is enabled, that means 'get' requests will be distributed between primary and backup
+     * nodes if it is possible and {@link CacheConfiguration#readFromBackup} is {@code true}.
+     *
+     * Default is {@code true}.
+     *
+     * @see CacheConfiguration#readFromBackup
+     */
+    public static final String IGNITE_READ_LOAD_BALANCING = "IGNITE_READ_LOAD_BALANCING";
+
+    /**
+     * Number of repetitions to capture a lock in the B+Tree.
+     */
+    public static final String IGNITE_BPLUS_TREE_LOCK_RETRIES = "IGNITE_BPLUS_TREE_LOCK_RETRIES";
+
+    /**
+     * Amount of memory reserved in the heap at node start, which can be dropped to increase the chances of success when
+     * handling OutOfMemoryError.
+     *
+     * Default is {@code 64kb}.
+     */
+    public static final String IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE = "IGNITE_FAILURE_HANDLER_RESERVE_BUFFER_SIZE";
+
+    /**
+     * The threshold of uneven distribution above which partition distribution will be logged.
+     *
+     * The default is '50', that means: warn about nodes with 50+% difference.
+     */
+    public static final String IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD = "IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD";
+
+    /**
+     * When set to {@code true}, WAL will be automatically disabled during rebalancing if there is no partition in
+     * OWNING state.
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_DISABLE_WAL_DURING_REBALANCING = "IGNITE_DISABLE_WAL_DURING_REBALANCING";
+
+    /**
+     * When set to {@code true}, Ignite will skip partitions sizes check on partition validation after rebalance has finished.
+     * Partitions sizes may differs on nodes when Expiry Policy is in use and it is ok due to lazy entry eviction mechanics.
+     *
+     * There is no need to disable partition size validation either in normal case or when expiry policy is configured for cache.
+     * But it should be disabled manually when policy is used on per entry basis to hint Ignite to skip this check.
+     *
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_SKIP_PARTITION_SIZE_VALIDATION = "IGNITE_SKIP_PARTITION_SIZE_VALIDATION";
 
     /**
      * Enforces singleton.

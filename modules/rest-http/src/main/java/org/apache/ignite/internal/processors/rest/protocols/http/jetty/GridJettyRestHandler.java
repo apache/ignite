@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
@@ -54,6 +55,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
+import org.apache.ignite.internal.processors.rest.request.RestUserActionRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -66,6 +68,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES_MASK;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_ALL;
@@ -83,6 +86,12 @@ public class GridJettyRestHandler extends AbstractHandler {
     private static final String CHARSET = StandardCharsets.UTF_8.name();
 
     /** */
+    private static final String  USER_PARAM = "user";
+
+    /** */
+    private static final String  PWD_PARAM = "password";
+
+    /** */
     private static final String  CACHE_NAME_PARAM = "cacheName";
 
     /** */
@@ -97,8 +106,17 @@ public class GridJettyRestHandler extends AbstractHandler {
     /** */
     private static final String WRITE_SYNCHRONIZATION_MODE_PARAM = "writeSynchronizationMode";
 
+    /**@deprecated Should be replaced with AUTHENTICATION + token in IGNITE 3.0 */
+    private static final String IGNITE_LOGIN = "ignite.login";
+
+    /**@deprecated Should be replaced with AUTHENTICATION + token in IGNITE 3.0 */
+    private static final String IGNITE_PASSWORD = "ignite.password";
+
     /** */
     private static final String  TEMPLATE_NAME_PARAM = "templateName";
+
+    /** */
+    private static final NullOutputStream NULL_OUTPUT_STREAM = new NullOutputStream();
 
     /** Logger. */
     private final IgniteLogger log;
@@ -391,16 +409,17 @@ public class GridJettyRestHandler extends AbstractHandler {
             cmdRes = new GridRestResponse(STATUS_FAILED, e.getMessage());
         }
 
-        try {
-            ServletOutputStream os = res.getOutputStream();
-
+        try(ServletOutputStream os = res.getOutputStream()) {
             try {
+                // Try serialize.
+                jsonMapper.writeValue(NULL_OUTPUT_STREAM, cmdRes);
+
                 jsonMapper.writeValue(os, cmdRes);
             }
             catch (JsonProcessingException e) {
                 U.error(log, "Failed to convert response to JSON: " + cmdRes, e);
 
-                jsonMapper.writeValue(os, F.asMap("successStatus", STATUS_FAILED, "error", e.getMessage()));
+                jsonMapper.writeValue(os, new GridRestResponse(STATUS_FAILED, e.getMessage()));
             }
 
             if (log.isDebugEnabled())
@@ -525,10 +544,10 @@ public class GridJettyRestHandler extends AbstractHandler {
                 }
 
                 // Set cache group name.
-                String cacheGroup = (String)params.get(CACHE_GROUP_PARAM);
+                String cacheGrp = (String)params.get(CACHE_GROUP_PARAM);
 
-                if (!F.isEmpty(cacheGroup))
-                    cfg.cacheGroup(cacheGroup);
+                if (!F.isEmpty(cacheGrp))
+                    cfg.cacheGroup(cacheGrp);
 
                 // Set cache data region name.
                 String dataRegion = (String)params.get(DATA_REGION_PARAM);
@@ -620,7 +639,8 @@ public class GridJettyRestHandler extends AbstractHandler {
                 if (val1 != null)
                     restReq0.value(val1);
 
-                restReq0.cacheFlags(intValue("cacheFlags", params, 0));
+                // Cache operations via REST will use binary objects.
+                restReq0.cacheFlags(intValue("cacheFlags", params, KEEP_BINARIES_MASK));
                 restReq0.ttl(longValue("exp", params, null));
 
                 if (cmd == CACHE_GET_ALL || cmd == CACHE_PUT_ALL || cmd == CACHE_REMOVE_ALL ||
@@ -711,6 +731,25 @@ public class GridJettyRestHandler extends AbstractHandler {
                     restReq0.reqCurrentState();
                 else
                     restReq0.active(cmd == CLUSTER_ACTIVE);
+
+                restReq = restReq0;
+
+                break;
+            }
+
+            case AUTHENTICATE: {
+                restReq = new GridRestRequest();
+
+                break;
+            }
+
+            case ADD_USER:
+            case REMOVE_USER:
+            case UPDATE_USER: {
+                RestUserActionRequest restReq0 = new RestUserActionRequest();
+
+                restReq0.user((String)params.get("user"));
+                restReq0.password((String)params.get("password"));
 
                 restReq = restReq0;
 
@@ -813,12 +852,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         restReq.command(cmd);
 
-        if (params.containsKey("ignite.login") || params.containsKey("ignite.password")) {
-            SecurityCredentials cred = new SecurityCredentials(
-                (String)params.get("ignite.login"), (String)params.get("ignite.password"));
-
-            restReq.credentials(cred);
-        }
+        // TODO: In IGNITE 3.0 we should check credentials only for AUTHENTICATE command.
+        if (!credentials(params, IGNITE_LOGIN, IGNITE_PASSWORD, restReq))
+            credentials(params, USER_PARAM, PWD_PARAM, restReq);
 
         String clientId = (String)params.get("clientId");
 
@@ -843,14 +879,40 @@ public class GridJettyRestHandler extends AbstractHandler {
         String sesTokStr = (String)params.get("sessionToken");
 
         try {
-            if (sesTokStr != null)
-                restReq.sessionToken(U.hexString2ByteArray(sesTokStr));
+            if (sesTokStr != null) {
+                // Token is a UUID encoded as 16 bytes as HEX.
+                byte[] bytes = U.hexString2ByteArray(sesTokStr);
+
+                if (bytes.length == 16)
+                    restReq.sessionToken(bytes);
+            }
         }
         catch (IllegalArgumentException ignored) {
             // Ignore invalid session token.
         }
 
         return restReq;
+    }
+
+    /**
+     *
+     * @param params Parameters.
+     * @param userParam Parameter name to take user name.
+     * @param pwdParam Parameter name to take password.
+     * @param restReq Request to add credentials if any.
+     * @return {@code true} If params contains credentials.
+     */
+    private boolean credentials(Map<String, Object> params, String userParam, String pwdParam, GridRestRequest restReq) {
+        boolean hasCreds = params.containsKey(userParam) || params.containsKey(pwdParam);
+
+        if (hasCreds) {
+            SecurityCredentials cred = new SecurityCredentials((String)params.get(userParam),
+                (String)params.get(pwdParam));
+
+            restReq.credentials(cred);
+        }
+
+        return hasCreds;
     }
 
     /**
@@ -921,5 +983,25 @@ public class GridJettyRestHandler extends AbstractHandler {
             return ((String[])obj)[0];
 
         return null;
+    }
+
+    /**
+     * Special stream to check JSON serialization.
+     */
+    private static class NullOutputStream extends OutputStream {
+        /** {@inheritDoc} */
+        @Override public void write(byte[] b, int off, int len) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(int b) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(byte[] b) {
+            // No-op.
+        }
     }
 }

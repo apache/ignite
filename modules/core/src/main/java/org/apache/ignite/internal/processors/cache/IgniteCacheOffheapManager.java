@@ -21,11 +21,13 @@ import java.util.Map;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -46,7 +48,7 @@ public interface IgniteCacheOffheapManager {
      * @param grp Cache group.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(GridCacheSharedContext ctx, CacheGroupContext grp) throws IgniteCheckedException;;
+    public void start(GridCacheSharedContext ctx, CacheGroupContext grp) throws IgniteCheckedException;
 
     /**
      * @param cctx Cache context.
@@ -141,6 +143,8 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cctx Cache context.
      * @param c Closure.
+     * @param amount Limit of processed entries by single call, {@code -1} for no limit.
+     * @return {@code True} if unprocessed expired entries remains.
      * @throws IgniteCheckedException If failed.
      */
     public boolean expire(GridCacheContext cctx, IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c, int amount)
@@ -166,9 +170,9 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * @param cctx Cache context.
-     * @param key  Key.
-     * @param val  Value.
-     * @param ver  Version.
+     * @param key Key.
+     * @param val Value.
+     * @param ver Version.
      * @param expireTime Expire time.
      * @param oldRow Old row if available.
      * @param part Partition.
@@ -234,13 +238,20 @@ public interface IgniteCacheOffheapManager {
     public GridIterator<CacheDataRow> partitionIterator(final int part) throws IgniteCheckedException;
 
     /**
-     * @param part Partition.
+     * @param part Partition number.
      * @param topVer Topology version.
-     * @param partCntr Partition counter to get historical data if available.
+     * @return Iterator for given partition that will reserve partition state until it is closed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridCloseableIterator<CacheDataRow> reservedIterator(final int part, final AffinityTopologyVersion topVer)
+        throws IgniteCheckedException;
+
+    /**
+     * @param parts Partitions.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteRebalanceIterator rebalanceIterator(int part, AffinityTopologyVersion topVer, Long partCntr)
+    public IgniteRebalanceIterator rebalanceIterator(IgniteDhtDemandedPartitionsMap parts, AffinityTopologyVersion topVer)
         throws IgniteCheckedException;
 
     /**
@@ -336,7 +347,7 @@ public interface IgniteCacheOffheapManager {
      * @param part Partition.
      * @return Number of entries.
      */
-    public int totalPartitionEntriesCount(int part);
+    public long totalPartitionEntriesCount(int part);
 
     /**
      *
@@ -373,7 +384,7 @@ public interface IgniteCacheOffheapManager {
          * @param cacheId Cache ID.
          * @return Size.
          */
-        int cacheSize(int cacheId);
+        long cacheSize(int cacheId);
 
         /**
          * @return Cache sizes if store belongs to group containing multiple caches.
@@ -383,7 +394,7 @@ public interface IgniteCacheOffheapManager {
         /**
          * @return Total size.
          */
-        int fullSize();
+        long fullSize();
 
         /**
          * @return Update counter.
@@ -529,5 +540,13 @@ public interface IgniteCacheOffheapManager {
          * @param rowCacheCleaner Rows cache cleaner.
          */
         public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner);
+
+        /**
+         * Return PendingTree for data store.
+         *
+         * @return PendingTree instance.
+         * @throws IgniteCheckedException
+         */
+        PendingEntriesTree pendingTree();
     }
 }

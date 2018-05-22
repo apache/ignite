@@ -20,17 +20,27 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.junit.Assert;
 
 /**
  *
@@ -130,7 +140,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         checkNoCaches(srvs);
 
-        srv.active(true);
+        srv.cluster().active(true);
 
         final int CACHES = withNewCaches ? 4 : 2;
 
@@ -211,7 +221,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         }, "client-starter-thread");
 
         clientStartLatch.countDown();
-        srv.active(true);
+        srv.cluster().active(true);
 
         clStartFut.get();
     }
@@ -241,7 +251,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         Ignite srv = startGrids(SRVS);
 
-        srv.active(true);
+        srv.cluster().active(true);
 
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
@@ -253,22 +263,113 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         ccfg.setGroupName(DEFAULT_CACHE_NAME);
 
-        ccfgs = new CacheConfiguration[]{ccfg};
-
-        startGrids(SRVS);
+        ccfgs = new CacheConfiguration[] {ccfg};
 
         try {
-            ignite(0).active(true);
+            startGrids(SRVS);
 
             fail();
         }
-        catch (IgniteException e) {
-            // Expected error.
+        catch (IgniteCheckedException e) {
+            assertTrue(X.getCause(e).getMessage().contains("Failed to start configured cache."));
+        }
+    }
+
+    /**
+     * Test that after deactivation during eviction and rebalance and activation again after
+     * all data in cache is consistent.
+     *
+     * @throws Exception If failed.
+     */
+    public void testDeactivateDuringEvictionAndRebalance() throws Exception {
+        IgniteEx srv = (IgniteEx) startGrids(3);
+
+        srv.cluster().active(true);
+
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME)
+            .setBackups(1)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setIndexedTypes(Integer.class, Integer.class)
+            .setAffinity(new RendezvousAffinityFunction(false, 64));
+
+        IgniteCache cache = srv.createCache(ccfg);
+
+        // High number of keys triggers long partition eviction.
+        final int keysCount = 100_000;
+
+        try (IgniteDataStreamer ds = srv.dataStreamer(DEFAULT_CACHE_NAME)) {
+            log.info("Writing initial data...");
+
+            ds.allowOverwrite(true);
+            for (int k = 1; k <= keysCount; k++) {
+                ds.addData(k, k);
+
+                if (k % 50_000 == 0)
+                    log.info("Written " + k + " entities.");
+            }
+
+            log.info("Writing initial data finished.");
         }
 
-        for (int i = 0; i < SRVS; i++)
-            assertFalse(ignite(i).active());
+        AtomicInteger keyCounter = new AtomicInteger(keysCount);
+        AtomicBoolean stop = new AtomicBoolean(false);
 
-        checkNoCaches(SRVS);
+        Set<Integer> addedKeys = new GridConcurrentHashSet<>();
+
+        IgniteInternalFuture cacheLoadFuture = GridTestUtils.runMultiThreadedAsync(() -> {
+            while (!stop.get()) {
+                int key = keyCounter.incrementAndGet();
+                try {
+                    cache.put(key, key);
+
+                    addedKeys.add(key);
+
+                    Thread.sleep(10);
+                }
+                catch (Exception ignored) { }
+            }
+        }, 2, "cache-load");
+
+        stopGrid(2);
+
+        // Wait for some data.
+        Thread.sleep(3000);
+
+        startGrid(2);
+
+        log.info("Stop load...");
+
+        stop.set(true);
+
+        cacheLoadFuture.get();
+
+        // Deactivate and activate again.
+        srv.cluster().active(false);
+
+        srv.cluster().active(true);
+
+        awaitPartitionMapExchange();
+
+        log.info("Checking data...");
+
+        for (Ignite ignite : G.allGrids()) {
+            IgniteCache cache1 = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
+            for (int k = 1; k <= keysCount; k++) {
+                Object val = cache1.get(k);
+
+                Assert.assertNotNull("node=" + ignite.name() + ", key=" + k, val);
+
+                Assert.assertTrue("node=" + ignite.name() + ", key=" + k + ", val=" + val, (int) val == k);
+            }
+
+            for (int k : addedKeys) {
+                Object val = cache1.get(k);
+
+                Assert.assertNotNull("node=" + ignite.name() + ", key=" + k, val);
+
+                Assert.assertTrue("node=" + ignite.name() + ", key=" + k + ", val=" + val, (int) val == k);
+            }
+        }
     }
 }

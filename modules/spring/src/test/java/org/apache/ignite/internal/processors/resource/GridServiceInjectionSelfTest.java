@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.resource;
 
 import java.io.Serializable;
-import org.apache.ignite.IgniteException;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.ServiceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -50,13 +52,6 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
         assertEquals(2, grid(0).cluster().nodes().size());
         assertEquals(2, grid(1).cluster().nodes().size());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /**
@@ -124,23 +119,22 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
      * @throws Exception If failed.
      */
     public void testClosureFieldWithIncorrectType() throws Exception {
-        try {
-            grid(0).compute().call(new IgniteCallable<Object>() {
-                @ServiceResource(serviceName = SERVICE_NAME1)
-                private String svcName;
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() {
+                grid(0).compute().call(new IgniteCallable<Object>() {
+                    @ServiceResource(serviceName = SERVICE_NAME1)
+                    private String svcName;
 
-                @Override public Object call() throws Exception {
-                    fail();
+                    @Override public Object call() throws Exception {
+                        fail();
 
-                    return null;
-                }
-            });
+                        return null;
+                    }
+                });
 
-            fail();
-        }
-        catch (IgniteException e) {
-            assertTrue(e.getMessage().startsWith("Resource field is not assignable from the resource"));
-        }
+                return null;
+            }
+        }, IgniteCheckedException.class, "Resource field is not assignable from the resource");
     }
 
     /**
@@ -221,23 +215,22 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
      * @throws Exception If failed.
      */
     public void testClosureMethodWithIncorrectType() throws Exception {
-        try {
-            grid(0).compute().call(new IgniteCallable<Object>() {
-                @ServiceResource(serviceName = SERVICE_NAME1)
-                private void service(String svcs) {
-                    fail();
-                }
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+            @Override public Void call() {
+                grid(0).compute().call(new IgniteCallable<Object>() {
+                    @ServiceResource(serviceName = SERVICE_NAME1)
+                    private void service(String svcs) {
+                        fail();
+                    }
 
-                @Override public Object call() throws Exception {
-                    return null;
-                }
-            });
+                    @Override public Object call() throws Exception {
+                        return null;
+                    }
+                });
 
-            fail();
-        }
-        catch (IgniteException e) {
-            assertTrue(e.getMessage().startsWith("Setter does not have single parameter of required type"));
-        }
+                return null;
+            }
+        }, IgniteCheckedException.class, "Setter does not have single parameter of required type");
     }
 
     /**

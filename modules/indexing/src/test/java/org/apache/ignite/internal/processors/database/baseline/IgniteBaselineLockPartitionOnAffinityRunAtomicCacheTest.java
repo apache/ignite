@@ -89,8 +89,6 @@ public class IgniteBaselineLockPartitionOnAffinityRunAtomicCacheTest extends Ign
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 }

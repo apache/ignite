@@ -97,8 +97,6 @@ public class IgniteChangingBaselineUpCacheRemoveFailoverTest extends GridCacheAb
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 

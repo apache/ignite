@@ -56,9 +56,6 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     private static final String STREAMING_URL = CFG_URL_PREFIX +
         "cache=person@modules/clients/src/test/config/jdbc-config.xml";
 
-    /** */
-    protected transient IgniteLogger log;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         return getConfiguration0(gridName);
@@ -112,11 +109,6 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         }
 
         U.sleep(1000);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -260,6 +252,8 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     public void testOnlyInsertsAllowed() {
         assertStatementForbidden("CREATE TABLE PUBLIC.X (x int primary key, y int)");
 
+        assertStatementForbidden("CREATE INDEX idx_1 ON Person(name)");
+
         assertStatementForbidden("SELECT * from Person");
 
         assertStatementForbidden("insert into PUBLIC.Person(\"id\", \"name\") " +
@@ -287,7 +281,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, SQLException.class,"Only tuple based INSERT statements are supported in streaming mode");
+        }, SQLException.class,"Streaming mode supports only INSERT commands without subqueries.");
     }
 
     /**

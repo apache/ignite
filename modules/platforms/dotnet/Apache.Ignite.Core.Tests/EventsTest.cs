@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Events;
     using Apache.Ignite.Core.Resource;
     using Apache.Ignite.Core.Tests.Compute;
@@ -385,14 +386,14 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IEnumerable<Func<IEventFilter<IEvent>, int[], Task<IEvent>>> GetWaitTasks(IEvents events)
         {
-            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(types));
-            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(types.ToList()));
+            yield return (filter, types) => TaskRunner.Run(() => events.WaitForLocal(types));
+            yield return (filter, types) => TaskRunner.Run(() => events.WaitForLocal(types.ToList()));
 
             yield return (filter, types) => events.WaitForLocalAsync(types);
             yield return (filter, types) => events.WaitForLocalAsync(types.ToList());
 
-            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(filter, types));
-            yield return (filter, types) => Task.Factory.StartNew(() => events.WaitForLocal(filter, types.ToList()));
+            yield return (filter, types) => TaskRunner.Run(() => events.WaitForLocal(filter, types));
+            yield return (filter, types) => TaskRunner.Run(() => events.WaitForLocal(filter, types.ToList()));
 
             yield return (filter, types) => events.WaitForLocalAsync(filter, types);
             yield return (filter, types) => events.WaitForLocalAsync(filter, types.ToList());

@@ -280,21 +280,6 @@ public interface Matrix extends MetaAttributes, Externalizable, StorageOpsMetric
     public int rowSize();
 
     /**
-     * Returns matrix determinant using Laplace theorem.
-     *
-     * @return A determinant for this matrix.
-     * @throws CardinalityException Thrown if matrix is not square.
-     */
-    public double determinant();
-
-    /**
-     * Returns the inverse matrix of this matrix
-     *
-     * @return Inverse of this matrix
-     */
-    public Matrix inverse();
-
-    /**
      * Divides each value in this matrix by the argument.
      *
      * @param x Divider value.

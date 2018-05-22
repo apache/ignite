@@ -18,10 +18,8 @@
 package org.apache.ignite.spark.impl
 
 import org.apache.ignite.IgniteException
-import org.apache.ignite.cache.{CacheMode, QueryEntity}
-import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.configuration.CacheConfiguration
-import org.apache.ignite.spark.{IgniteContext, IgniteRDD}
+import org.apache.ignite.cache.QueryEntity
+import org.apache.ignite.spark.{IgniteContext, IgniteRDD, impl}
 import org.apache.spark.Partition
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
@@ -30,14 +28,13 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SQLContext}
 
 import scala.collection.JavaConversions._
-import scala.collection.mutable.ArrayBuffer
 
 /**
   * Apache Ignite implementation of Spark BaseRelation with PrunedFilteredScan for Ignite SQL Tables
   */
 class IgniteSQLRelation[K, V](
-    private[spark] val ic: IgniteContext,
-    private[spark] val tableName: String)
+    private[apache] val ic: IgniteContext,
+    private[apache] val tableName: String)
     (@transient val sqlContext: SQLContext) extends BaseRelation with PrunedFilteredScan with Logging {
 
     /**
@@ -92,41 +89,13 @@ class IgniteSQLRelation[K, V](
         qryAndArgs
     }
 
-    private def calcPartitions(filters: Array[Filter]): Array[Partition] = {
-        val cache = ic.ignite().cache[K, V](cacheName)
-
-        val ccfg = cache.getConfiguration(classOf[CacheConfiguration[K, V]])
-
-        if (ccfg.getCacheMode == CacheMode.REPLICATED) {
-            val serverNodes = ic.ignite().cluster().forCacheNodes(cacheName).forServers().nodes()
-
-            Array(IgniteDataFramePartition(0, serverNodes.head, Stream.from(0).take(1024).toList))
-        }
-        else {
-            val aff = ic.ignite().affinity(cacheName)
-
-            val parts = aff.partitions()
-
-            val nodesToParts = (0 until parts).foldLeft(Map[ClusterNode, ArrayBuffer[Int]]()) {
-                case (nodeToParts, ignitePartIdx) ⇒
-                    val primary = aff.mapPartitionToPrimaryAndBackups(ignitePartIdx).head
-
-                    if (nodeToParts.contains(primary)) {
-                        nodeToParts(primary) += ignitePartIdx
-
-                        nodeToParts
-                    }
-                    else
-                        nodeToParts + (primary → ArrayBuffer[Int](ignitePartIdx))
-            }
-
-            val partitions = nodesToParts.zipWithIndex.map { case ((node, nodesParts), i) ⇒
-                IgniteDataFramePartition(i, node, nodesParts.toList)
-            }
-
-            partitions.toArray
-        }
-    }
+    /**
+      * Computes spark partitions for this relation.
+      *
+      * @return Array of IgniteDataFramPartition.
+      */
+    private def calcPartitions(filters: Array[Filter]): Array[Partition] =
+        impl.calcPartitions(ic, cacheName)
 
     /**
       * Cache name for a table name.
@@ -134,20 +103,6 @@ class IgniteSQLRelation[K, V](
     private lazy val cacheName: String =
         sqlCacheName(ic.ignite(), tableName)
             .getOrElse(throw new IgniteException(s"Unknown table $tableName"))
-
-    /**
-      * Utility method to add clause to sql WHERE string.
-      *
-      * @param filterStr Current filter string
-      * @param clause Clause to add.
-      * @return Filter string.
-      */
-    private def addStrClause(filterStr: String, clause: String) =
-        if (filterStr.isEmpty)
-            clause
-        else
-            filterStr + " AND " + clause
-
 }
 
 object IgniteSQLRelation {

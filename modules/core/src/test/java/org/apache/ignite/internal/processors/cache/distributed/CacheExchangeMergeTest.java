@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -166,8 +167,6 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         if (executor != null)
             executor.shutdown();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -775,17 +774,37 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void mergeServersFail1(boolean waitRebalance) throws Exception {
-        final Ignite srv0 = startGrids(4);
+        final Ignite srv0 = startGrids(5);
 
         if (waitRebalance)
             awaitPartitionMapExchange();
 
-        mergeExchangeWaitVersion(srv0, 6);
+        final List<DiscoveryEvent> mergedEvts = new ArrayList<>();
 
+        mergeExchangeWaitVersion(srv0, 8, mergedEvts);
+
+        UUID grid3Id = grid(3).localNode().id();
+        UUID grid2Id = grid(2).localNode().id();
+
+        stopGrid(getTestIgniteInstanceName(4), true, false);
         stopGrid(getTestIgniteInstanceName(3), true, false);
         stopGrid(getTestIgniteInstanceName(2), true, false);
 
         checkCaches();
+
+        awaitPartitionMapExchange();
+
+        assertTrue("Unexpected number of merged disco events: " + mergedEvts.size(), mergedEvts.size() == 2);
+
+        for (DiscoveryEvent discoEvt : mergedEvts) {
+            ClusterNode evtNode = discoEvt.eventNode();
+
+            assertTrue("eventNode is null for DiscoEvent " + discoEvt, evtNode != null);
+
+            assertTrue("Unexpected eventNode ID: "
+                    + evtNode.id() + " while expecting " + grid2Id + " or " + grid3Id,
+                evtNode.id().equals(grid2Id) || evtNode.id().equals(grid3Id));
+        }
     }
 
     /**
@@ -1190,6 +1209,8 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
+        checkTopologiesConsistency();
+
         checkCaches0();
     }
 
@@ -1203,6 +1224,42 @@ public class CacheExchangeMergeTest extends GridCommonAbstractTest {
 
         for (Ignite node : nodes)
             checkNodeCaches(node);
+    }
+
+    /**
+     * Checks that after exchange all nodes have consistent state about partition owners.
+     *
+     * @throws Exception If failed.
+     */
+    private void checkTopologiesConsistency() throws Exception {
+        List<Ignite> nodes = G.allGrids();
+
+        IgniteEx crdNode = null;
+
+        for (Ignite node : nodes) {
+            ClusterNode locNode = node.cluster().localNode();
+
+            if (crdNode == null || locNode.order() < crdNode.localNode().order())
+                crdNode = (IgniteEx) node;
+        }
+
+        for (Ignite node : nodes) {
+            IgniteEx node0 = (IgniteEx) node;
+
+            if (node0.localNode().id().equals(crdNode.localNode().id()))
+                continue;
+
+            for (IgniteInternalCache cache : node0.context().cache().caches()) {
+                int partitions = cache.context().affinity().partitions();
+                for (int p = 0; p < partitions; p++) {
+                    List<ClusterNode> crdOwners = crdNode.cachex(cache.name()).cache().context().topology().owners(p);
+
+                    List<ClusterNode> owners = cache.context().topology().owners(p);
+
+                    assertEquals(crdOwners, owners);
+                }
+            }
+        }
     }
 
     /**

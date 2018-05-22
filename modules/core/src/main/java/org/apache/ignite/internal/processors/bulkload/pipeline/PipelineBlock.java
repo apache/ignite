@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class PipelineBlock<I, O> {
     /** The next block in pipeline or null if this block is a terminator. */
-    @Nullable protected PipelineBlock<O, ?> nextBlock;
+    @Nullable PipelineBlock<O, ?> nextBlock;
 
     /**
      * Creates a pipeline block.
@@ -35,7 +35,7 @@ public abstract class PipelineBlock<I, O> {
      * <p>(There is no nextBlock argument in the constructor: setting the next block using
      * {@link #append(PipelineBlock)} method is more convenient.
      */
-    protected PipelineBlock() {
+    PipelineBlock() {
         nextBlock = null;
     }
 
@@ -61,6 +61,7 @@ public abstract class PipelineBlock<I, O> {
      *
      * @param inputPortion Portion of input.
      * @param isLastPortion Is this the last portion.
+     * @throws IgniteCheckedException On error.
      */
     public abstract void accept(I inputPortion, boolean isLastPortion) throws IgniteCheckedException;
 }

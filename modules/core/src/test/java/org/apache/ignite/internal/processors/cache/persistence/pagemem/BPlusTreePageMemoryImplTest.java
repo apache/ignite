@@ -76,7 +76,7 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
             },
             () -> true,
             new DataRegionMetricsImpl(new DataRegionConfiguration()),
-            PageMemoryImpl.ThrottlingPolicy.NONE,
+            PageMemoryImpl.ThrottlingPolicy.DISABLED,
             null
         );
 

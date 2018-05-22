@@ -62,13 +62,6 @@ public class IgniteOutOfMemoryPropagationTest extends GridCommonAbstractTest {
     private IgniteEx client;
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        assert G.allGrids().isEmpty();
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 20 * 60 * 1000;
     }
