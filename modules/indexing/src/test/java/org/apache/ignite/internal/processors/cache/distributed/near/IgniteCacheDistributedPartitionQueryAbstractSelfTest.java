@@ -375,13 +375,6 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @param orig Originator.
      */

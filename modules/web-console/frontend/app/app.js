@@ -300,7 +300,6 @@ angular.module('ignite-console', [
 .service(CSV.name, CSV)
 .service('IGFSs', IGFSs)
 .service('Models', Models)
-// Controllers.
 // Filters.
 .filter('byName', byName)
 .filter('defaultName', defaultName)
