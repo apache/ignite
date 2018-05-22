@@ -144,7 +144,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
 
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(100 * 1024 * 1024)
+                .setMaxSize(100L * 1024 * 1024)
                 .setPersistenceEnabled(true)));
 
         cfg.setConsistentId(name);
