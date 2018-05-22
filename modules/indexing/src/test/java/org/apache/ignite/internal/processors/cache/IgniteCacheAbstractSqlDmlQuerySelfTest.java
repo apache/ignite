@@ -155,11 +155,6 @@ public abstract class IgniteCacheAbstractSqlDmlQuerySelfTest extends GridCommonA
             return ignite(0).cache("S2P-bin").withKeepBinary();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param name Cache name.
      * @param partitioned Partition or replicated cache.

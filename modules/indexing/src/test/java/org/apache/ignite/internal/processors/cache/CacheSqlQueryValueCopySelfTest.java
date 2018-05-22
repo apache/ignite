@@ -93,13 +93,6 @@ public class CacheSqlQueryValueCopySelfTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * Tests two step query from dedicated client.
      *

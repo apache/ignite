@@ -82,8 +82,6 @@ public class IgniteChangingBaselineUpCachePutAllFailoverTest extends CachePutAll
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 
