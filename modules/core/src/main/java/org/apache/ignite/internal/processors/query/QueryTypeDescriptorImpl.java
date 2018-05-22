@@ -579,7 +579,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             if (prop.maxLength() < MAX_VALUE && propVal != null &&
                 CharSequence.class.isAssignableFrom(propVal.getClass()) && 
                 ((CharSequence)propVal).length() > prop.maxLength()) {
-                throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'", 
+                throw new IgniteSQLException("Value for a column '" + prop.name() + "' is too long", 
                     isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
             }
         }
