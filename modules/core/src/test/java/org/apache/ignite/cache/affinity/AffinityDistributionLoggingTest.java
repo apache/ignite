@@ -71,8 +71,6 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         if (tempProp != null)
             System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, tempProp);
     }
@@ -111,7 +109,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
         parts = 2;
         backups = 1;
 
-        String testsLog = runAndGetExchangeLog();
+        String testsLog = runAndGetExchangeLog(false);
 
         assertFalse(testsLog.contains(LOG_MESSAGE_PREFIX));
     }
@@ -126,7 +124,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
         parts = 120;
         backups = 2;
 
-        String testsLog = runAndGetExchangeLog();
+        String testsLog = runAndGetExchangeLog(false);
 
         assertFalse(testsLog.contains(LOG_MESSAGE_PREFIX));
     }
@@ -141,9 +139,24 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
         parts = 5;
         backups = 3;
 
-        String testsLog = runAndGetExchangeLog();
+        String testsLog = runAndGetExchangeLog(false);
 
         assertTrue(testsLog.contains(LOG_MESSAGE_PREFIX));
+    }
+
+    /**
+     * @throws Exception In case of an error.
+     */
+    public void test5PartitionsNotIdealDistributionSuppressedLoggingOnClientNode() throws Exception {
+        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0.0");
+
+        nodes = 4;
+        parts = 5;
+        backups = 3;
+
+        String testsLog = runAndGetExchangeLog(true);
+
+        assertFalse(testsLog.contains(LOG_MESSAGE_PREFIX));
     }
 
     /**
@@ -156,7 +169,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
         parts = 7;
         backups = 0;
 
-        String testsLog = runAndGetExchangeLog();
+        String testsLog = runAndGetExchangeLog(false);
 
         assertFalse(testsLog.contains(LOG_MESSAGE_PREFIX));
     }
@@ -171,7 +184,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
         parts = 5;
         backups = 3;
 
-        String testsLog = runAndGetExchangeLog();
+        String testsLog = runAndGetExchangeLog(false);
 
         assertFalse(testsLog.contains(LOG_MESSAGE_PREFIX));
     }
@@ -179,10 +192,11 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     /**
      * Starts a specified number of Ignite nodes and log partition node exchange during a last node's startup.
      *
+     * @param testClientNode Whether it is necessary to get exchange log from the client node.
      * @return Log of latest partition map exchange.
      * @throws Exception In case of an error.
      */
-    private String runAndGetExchangeLog() throws Exception {
+    private String runAndGetExchangeLog(boolean testClientNode) throws Exception {
         assert nodes > 1;
 
         IgniteEx ignite = (IgniteEx)startGrids(nodes - 1);
@@ -199,7 +213,15 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
         GridTestUtils.setFieldValue(aff, "log", log);
 
-        startGrid(nodes);
+        if (testClientNode) {
+            IgniteConfiguration cfg = getConfiguration("client");
+
+            cfg.setClientMode(true);
+
+            startGrid(cfg);
+        }
+        else
+            startGrid(nodes);
 
         awaitPartitionMapExchange();
 

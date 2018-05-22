@@ -28,18 +28,25 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
      *
      */
     public void testParseSetStreaming() {
-        parseValidate("set streaming on", true, false, 2048, 0, 0, 0);
-        parseValidate("set streaming 1", true, false, 2048, 0, 0, 0);
-        parseValidate("set streaming off", false, false, 2048, 0, 0, 0);
-        parseValidate("set streaming 0", false, false, 2048, 0, 0, 0);
-        parseValidate("set streaming on batch_size 100", true, false, 100, 0, 0, 0);
-        parseValidate("set streaming on flush_frequency 500", true, false, 2048, 0, 0, 500);
-        parseValidate("set streaming on per_node_buffer_size 100", true, false, 2048, 0, 100, 0);
-        parseValidate("set streaming on per_node_parallel_operations 4", true, false, 2048, 4, 0, 0);
-        parseValidate("set streaming on allow_overwrite on", true, true, 2048, 0, 0, 0);
-        parseValidate("set streaming on allow_overwrite off", true, false, 2048, 0, 0, 0);
+        parseValidate("set streaming on", true, false, 2048, 0, 0, 0, false);
+        parseValidate("set streaming 1", true, false, 2048, 0, 0, 0, false);
+        parseValidate("set streaming off", false, false, 2048, 0, 0, 0, false);
+        parseValidate("set streaming 0", false, false, 2048, 0, 0, 0, false);
+        parseValidate("set streaming on batch_size 100", true, false, 100, 0, 0, 0, false);
+        parseValidate("set streaming on flush_frequency 500", true, false, 2048, 0, 0, 500, false);
+        parseValidate("set streaming on per_node_buffer_size 100", true, false, 2048, 0, 100, 0, false);
+        parseValidate("set streaming on per_node_parallel_operations 4", true, false, 2048, 4, 0, 0, false);
+        parseValidate("set streaming on allow_overwrite on", true, true, 2048, 0, 0, 0, false);
+        parseValidate("set streaming on allow_overwrite off", true, false, 2048, 0, 0, 0, false);
         parseValidate("set streaming on per_node_buffer_size 50 flush_frequency 500 " +
-            "per_node_parallel_operations 4 allow_overwrite on batch_size 100", true, true, 100, 4, 50, 500);
+            "per_node_parallel_operations 4 allow_overwrite on batch_size 100", true, true, 100, 4, 50, 500, false);
+
+        parseValidate("set streaming on ordered", true, false, 2048, 0, 0, 0, true);
+        parseValidate("set streaming 1 ordered", true, false, 2048, 0, 0, 0, true);
+        parseValidate("set streaming on batch_size 100 ordered", true, false, 100, 0, 0, 0, true);
+        parseValidate("set streaming on per_node_buffer_size 50 flush_frequency 500 " +
+            "per_node_parallel_operations 4 allow_overwrite on batch_size 100 ordered", true, true, 100, 4, 50, 500, true);
+
 
         assertParseError(QueryUtils.DFLT_SCHEMA, "set",
             "Failed to parse SQL statement \"set[*]\": Unexpected end of command (expected: \"STREAMING\")");
@@ -84,6 +91,10 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
             "Failed to parse SQL statement \"set streaming off [*]allow_overwrite\": Unexpected token: " +
                 "\"ALLOW_OVERWRITE\"");
 
+        assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming off ordered",
+            "Failed to parse SQL statement \"set streaming off [*]ordered\": Unexpected token: " +
+                "\"ORDERED\"");
+
         assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming off batch_size",
             "Failed to parse SQL statement \"set streaming off [*]batch_size\": Unexpected token: " +
                 "\"BATCH_SIZE\"");
@@ -102,6 +113,7 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
 
         assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming off table",
             "Failed to parse SQL statement \"set streaming off [*]table\": Unexpected token: \"TABLE\"");
+
     }
 
     /**
@@ -114,9 +126,10 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
      * @param expParOps Expected per-node parallael operations.
      * @param expBufSize Expected per node buffer size.
      * @param expFlushFreq Expected flush frequency.
+     * @param ordered Ordered stream flag.
      */
     private static void parseValidate(String sql, boolean expOn, boolean expAllowOverwrite, int expBatchSize,
-        int expParOps, int expBufSize, long expFlushFreq) {
+        int expParOps, int expBufSize, long expFlushFreq, boolean ordered) {
         SqlSetStreamingCommand cmd = (SqlSetStreamingCommand)new SqlParser(QueryUtils.DFLT_SCHEMA, sql).nextCommand();
 
         assertEquals(expOn, cmd.isTurnOn());
@@ -130,5 +143,7 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
         assertEquals(expBufSize, cmd.perNodeBufferSize());
 
         assertEquals(expFlushFreq, cmd.flushFrequency());
+
+        assertEquals(ordered, cmd.isOrdered());
     }
 }

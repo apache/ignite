@@ -17,7 +17,12 @@
 
 package org.apache.ignite.ml.regressions;
 
-import org.apache.ignite.ml.regressions.linear.*;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainerTest;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionModelTest;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainerTest;
+import org.apache.ignite.ml.regressions.logistic.LogRegMultiClassTrainerTest;
+import org.apache.ignite.ml.regressions.logistic.LogisticRegressionModelTest;
+import org.apache.ignite.ml.regressions.logistic.LogisticRegressionSGDTrainerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -28,7 +33,10 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     LinearRegressionModelTest.class,
     LinearRegressionLSQRTrainerTest.class,
-    LinearRegressionSGDTrainerTest.class
+    LinearRegressionSGDTrainerTest.class,
+    LogisticRegressionModelTest.class,
+    LogisticRegressionSGDTrainerTest.class,
+    LogRegMultiClassTrainerTest.class
 })
 public class RegressionsTestSuite {
     // No-op.

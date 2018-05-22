@@ -111,7 +111,7 @@ public class QueryFactory {
         if (packetSize != null)
             pSizeExpr = " packet_size " + packetSize;
 
-        return "COPY FROM \"" + csvFilePath + "\" " +
+        return "COPY FROM '" + csvFilePath + "' " +
             "INTO test_upload " + attributes() + " " +
             "FORMAT CSV" + pSizeExpr + ";";
     }
@@ -207,6 +207,8 @@ public class QueryFactory {
 
         if (p.streamerPerNodeBufferSize() != null)
             cmd.append(" PER_NODE_BUFFER_SIZE ").append(p.streamerPerNodeBufferSize());
+
+        cmd.append(" ORDERED ").append(p.streamerOrdered() ? "ON" : "OFF");
 
         return cmd.append(';').toString();
     }

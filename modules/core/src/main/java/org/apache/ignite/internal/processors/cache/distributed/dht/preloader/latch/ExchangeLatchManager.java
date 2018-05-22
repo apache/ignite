@@ -30,12 +30,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -64,21 +67,26 @@ public class ExchangeLatchManager {
     private final GridKernalContext ctx;
 
     /** Discovery manager. */
+    @GridToStringExclude
     private final GridDiscoveryManager discovery;
 
     /** IO manager. */
+    @GridToStringExclude
     private final GridIoManager io;
 
     /** Current coordinator. */
-    private volatile ClusterNode coordinator;
+    @GridToStringExclude
+    private volatile ClusterNode crd;
 
     /** Pending acks collection. */
     private final ConcurrentMap<T2<String, AffinityTopologyVersion>, Set<UUID>> pendingAcks = new ConcurrentHashMap<>();
 
     /** Server latches collection. */
+    @GridToStringInclude
     private final ConcurrentMap<T2<String, AffinityTopologyVersion>, ServerLatch> serverLatches = new ConcurrentHashMap<>();
 
     /** Client latches collection. */
+    @GridToStringInclude
     private final ConcurrentMap<T2<String, AffinityTopologyVersion>, ClientLatch> clientLatches = new ConcurrentHashMap<>();
 
     /** Lock. */
@@ -97,15 +105,14 @@ public class ExchangeLatchManager {
 
         if (!ctx.clientNode()) {
             ctx.io().addMessageListener(GridTopic.TOPIC_EXCHANGE, (nodeId, msg, plc) -> {
-                if (msg instanceof LatchAckMessage) {
+                if (msg instanceof LatchAckMessage)
                     processAck(nodeId, (LatchAckMessage) msg);
-                }
             });
 
             // First coordinator initialization.
             ctx.discovery().localJoinFuture().listen(f -> {
                 if (f.error() == null)
-                    this.coordinator = getLatchCoordinator(AffinityTopologyVersion.NONE);
+                    this.crd = getLatchCoordinator(AffinityTopologyVersion.NONE);
             });
 
             ctx.event().addDiscoveryEventListener((e, cache) -> {
@@ -225,13 +232,33 @@ public class ExchangeLatchManager {
     }
 
     /**
+     * Gets alive server nodes from disco cache for provided AffinityTopologyVersion.
+     *
+     * @param topVer Topology version.
+     * @return Collection of nodes with at least one cache configured.
+     */
+    private Collection<ClusterNode> aliveNodesForTopologyVer(AffinityTopologyVersion topVer) {
+        if (topVer == AffinityTopologyVersion.NONE)
+            return discovery.aliveServerNodes();
+        else {
+            DiscoCache discoCache = discovery.discoCache(topVer);
+
+            if (discoCache != null)
+                return discoCache.aliveServerNodes();
+            else
+                throw new IgniteException("DiscoCache not found for topology "
+                    + topVer
+                    + "; consider increasing IGNITE_DISCOVERY_HISTORY_SIZE property. Current value is "
+                    + IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE, -1));
+        }
+    }
+
+    /**
      * @param topVer Latch topology version.
      * @return Collection of alive server nodes with latch functionality.
      */
     private Collection<ClusterNode> getLatchParticipants(AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> aliveNodes = topVer == AffinityTopologyVersion.NONE
-                ? discovery.aliveServerNodes()
-                : discovery.discoCache(topVer).aliveServerNodes();
+        Collection<ClusterNode> aliveNodes = aliveNodesForTopologyVer(topVer);
 
         return aliveNodes
                 .stream()
@@ -244,9 +271,7 @@ public class ExchangeLatchManager {
      * @return Oldest alive server node with latch functionality.
      */
     @Nullable private ClusterNode getLatchCoordinator(AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> aliveNodes = topVer == AffinityTopologyVersion.NONE
-                ? discovery.aliveServerNodes()
-                : discovery.discoCache(topVer).aliveServerNodes();
+        Collection<ClusterNode> aliveNodes = aliveNodesForTopologyVer(topVer);
 
         return aliveNodes
                 .stream()
@@ -288,6 +313,8 @@ public class ExchangeLatchManager {
                     pendingAcks.computeIfAbsent(latchId, (id) -> new GridConcurrentHashSet<>());
                     pendingAcks.get(latchId).add(from);
                 }
+                else if (coordinator.isLocal())
+                    serverLatches.remove(latchId);
             } else {
                 if (log.isDebugEnabled())
                     log.debug("Process ack [latch=" + latchId + ", from=" + from + "]");
@@ -319,7 +346,7 @@ public class ExchangeLatchManager {
      */
     private void becomeNewCoordinator() {
         if (log.isInfoEnabled())
-            log.info("Become new coordinator " + coordinator.id());
+            log.info("Become new coordinator " + crd.id());
 
         List<T2<String, AffinityTopologyVersion>> latchesToRestore = new ArrayList<>();
         latchesToRestore.addAll(pendingAcks.keySet());
@@ -347,7 +374,7 @@ public class ExchangeLatchManager {
      * @param left Left node.
      */
     private void processNodeLeft(ClusterNode left) {
-        assert this.coordinator != null : "Coordinator is not initialized";
+        assert this.crd != null : "Coordinator is not initialized";
 
         lock.lock();
 
@@ -402,8 +429,8 @@ public class ExchangeLatchManager {
             }
 
             // Coordinator is changed.
-            if (coordinator.isLocal() && this.coordinator.id() != coordinator.id()) {
-                this.coordinator = coordinator;
+            if (coordinator.isLocal() && this.crd.id() != coordinator.id()) {
+                this.crd = coordinator;
 
                 becomeNewCoordinator();
             }
@@ -692,5 +719,10 @@ public class ExchangeLatchManager {
         @Override public String toString() {
             return S.toString(CompletableLatch.class, this);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ExchangeLatchManager.class, this);
     }
 }

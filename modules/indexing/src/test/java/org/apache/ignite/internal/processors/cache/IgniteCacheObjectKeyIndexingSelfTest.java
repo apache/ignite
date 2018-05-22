@@ -42,8 +42,6 @@ public class IgniteCacheObjectKeyIndexingSelfTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         Ignition.stopAll(true);
     }
 

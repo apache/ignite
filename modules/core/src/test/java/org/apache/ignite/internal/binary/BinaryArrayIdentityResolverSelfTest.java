@@ -52,13 +52,6 @@ public class BinaryArrayIdentityResolverSelfTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (Long ptr : ptrs)
             GridUnsafe.freeMemory(ptr);

@@ -56,9 +56,6 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     private static final String STREAMING_URL = CFG_URL_PREFIX +
         "cache=person@modules/clients/src/test/config/jdbc-config.xml";
 
-    /** */
-    protected transient IgniteLogger log;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         return getConfiguration0(gridName);
@@ -112,11 +109,6 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         }
 
         U.sleep(1000);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
