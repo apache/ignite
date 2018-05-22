@@ -2130,8 +2130,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private void workerBody() {
             long waitTimeoutMs = IgniteSystemProperties.getLong(WAIT_TIMEOUT_PROP, DFLT_WAIT_TIMEOUT);
 
-            Throwable err = null;
-
             while (!Thread.currentThread().isInterrupted() && !stopped) {
                 Long segmentToDecompress = null;
 
@@ -2178,8 +2176,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     Thread.currentThread().interrupt();
                 }
                 catch (Throwable t) {
-                    err = t;
-
                     if (!stopped && segmentToDecompress != null && segmentToDecompress != -1) {
                         IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
                             "decompression [segmentIdx=" + segmentToDecompress + "]", t);
@@ -2188,15 +2184,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                             decompressionFutures.remove(segmentToDecompress).onDone(e);
                         }
                     }
-                }
-                finally {
-                    if (err == null && !stopped)
-                        err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
-
-                    if (err instanceof OutOfMemoryError)
-                        cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
-                    else if (err != null)
-                        cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
                 }
             }
         }

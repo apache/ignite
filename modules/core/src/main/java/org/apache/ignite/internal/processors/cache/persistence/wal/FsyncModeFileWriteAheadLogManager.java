@@ -1940,8 +1940,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /** */
         private void workerBody() {
-            Throwable err = null;
-
             long pollTimeoutMs = IgniteSystemProperties.getLong(WAIT_TIMEOUT_PROP, DFLT_WAIT_TIMEOUT);
 
             while (!Thread.currentThread().isInterrupted() && !stopped) {
@@ -1990,8 +1988,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     Thread.currentThread().interrupt();
                 }
                 catch (Throwable t) {
-                    err = t;
-
                     if (!stopped && segmentToDecompress != null && segmentToDecompress != -1) {
                         IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
                             "decompression [segmentIdx=" + segmentToDecompress + ']', t);
@@ -2000,15 +1996,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                             decompressionFutures.remove(segmentToDecompress).onDone(e);
                         }
                     }
-                }
-                finally {
-                    if (err == null && !stopped)
-                        err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
-
-                    if (err instanceof OutOfMemoryError)
-                        cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
-                    else if (err != null)
-                        cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
                 }
             }
         }
