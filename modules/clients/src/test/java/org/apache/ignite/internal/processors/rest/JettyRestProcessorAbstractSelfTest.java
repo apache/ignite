@@ -294,14 +294,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
     /**
      * @param content Content to check.
+     * @return JSON node with actual response.
      */
-    private JsonNode jsonCacheOperationResponse(String content, boolean bulk) throws IOException {
+    protected JsonNode assertResponseSucceeded(String content, boolean bulk) throws IOException {
         assertNotNull(content);
         assertFalse(content.isEmpty());
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertEquals(bulk, node.get("affinityNodeId").isNull());
+        JsonNode affNode = node.get("affinityNodeId");
+
+        if (affNode != null)
+            assertEquals(bulk, affNode.isNull());
+
         assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
         assertTrue(node.get("error").isNull());
 
@@ -315,7 +320,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param res Response.
      */
     private void assertCacheOperation(String content, Object res) throws IOException {
-        JsonNode ret = jsonCacheOperationResponse(content, false);
+        JsonNode ret = assertResponseSucceeded(content, false);
 
         assertEquals(String.valueOf(res), ret.isObject() ? ret.toString() : ret.asText());
     }
@@ -325,7 +330,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param res Response.
      */
     private void assertCacheBulkOperation(String content, Object res) throws IOException {
-        JsonNode ret = jsonCacheOperationResponse(content, true);
+        JsonNode ret = assertResponseSucceeded(content, true);
 
         assertEquals(String.valueOf(res), ret.asText());
     }
@@ -334,7 +339,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param content Content to check.
      */
     private void assertCacheMetrics(String content) throws IOException {
-        JsonNode ret = jsonCacheOperationResponse(content, true);
+        JsonNode ret = assertResponseSucceeded(content, true);
 
         assertTrue(ret.isObject());
     }
@@ -349,7 +354,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertEquals(0, node.get("successStatus").asInt());
+        assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
         assertTrue(node.get("error").isNull());
 
         assertNotSame(securityEnabled(), node.get("sessionToken").isNull());
@@ -367,7 +372,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertEquals(0, node.get("successStatus").asInt());
+        assertEquals(STATUS_SUCCESS, node.get("successStatus").asInt());
         assertTrue(node.get("error").isNull());
         assertFalse(node.get("response").isNull());
 
@@ -403,7 +408,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @throws IOException If failed.
      */
     private void checkJson(String json, Person p) throws IOException {
-        JsonNode res = jsonCacheOperationResponse(json, false);
+        JsonNode res = assertResponseSucceeded(json, false);
 
         assertEquals(p.id.intValue(), res.get("id").asInt());
         assertEquals(p.getOrganizationId().intValue(), res.get("orgId").asInt());
@@ -455,7 +460,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, false);
+        JsonNode res = assertResponseSucceeded(ret, false);
 
         assertEquals("Alex", res.get("NAME").asText());
         assertEquals(300, res.get("SALARY").asInt());
@@ -476,7 +481,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get command result: " + ret);
 
-        JsonNode json = jsonCacheOperationResponse(ret, false);
+        JsonNode json = assertResponseSucceeded(ret, false);
         assertEquals(ref1.name, json.get("name").asText());
 
         ref2.ref(ref1);
@@ -552,7 +557,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, false);
+        JsonNode res = assertResponseSucceeded(ret, false);
 
         assertEquals(p.id, res.get("id").asInt());
         assertEquals(p.name, res.get("name").asText());
@@ -637,7 +642,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, false);
+        JsonNode res = assertResponseSucceeded(ret, false);
 
         assertEquals(t.getKey(), res.get("key").asText());
         assertEquals(t.getValue(), res.get("value").asText());
@@ -775,11 +780,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Get all command result: " + ret);
 
-        JsonNode res = jsonCacheOperationResponse(ret, true);
+        JsonNode res = assertResponseSucceeded(ret, true);
 
         assertTrue(res.isObject());
 
-        assertTrue(entries.equals(JSON_MAPPER.treeToValue(res, Map.class)));
+        assertEquals(entries, JSON_MAPPER.treeToValue(res, Map.class));
     }
 
     /**
@@ -1100,7 +1105,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertNull(jcache().localPeek("rmvKey2"));
         assertNull(jcache().localPeek("rmvKey3"));
         assertNull(jcache().localPeek("rmvKey4"));
-        assertTrue(jcache().localSize() == 0);
+        assertEquals(0, jcache().localSize());
 
         assertCacheBulkOperation(ret, true);
     }
@@ -1353,20 +1358,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             assertNotNull(keyClasses);
             assertFalse(keyClasses.isNull());
 
-            assertTrue(meta.keyClasses().equals(JSON_MAPPER.treeToValue(keyClasses, Map.class)));
+            assertEquals(meta.keyClasses(), JSON_MAPPER.treeToValue(keyClasses, Map.class));
 
             JsonNode valClasses = item.get("valClasses");
 
             assertNotNull(valClasses);
             assertFalse(valClasses.isNull());
 
-            assertTrue(meta.valClasses().equals(JSON_MAPPER.treeToValue(valClasses, Map.class)));
+            assertEquals(meta.valClasses(), JSON_MAPPER.treeToValue(valClasses, Map.class));
 
             JsonNode fields = item.get("fields");
 
             assertNotNull(fields);
             assertFalse(fields.isNull());
-            assertTrue(meta.fields().equals(JSON_MAPPER.treeToValue(fields, Map.class)));
+            assertEquals(meta.fields(), JSON_MAPPER.treeToValue(fields, Map.class));
 
             JsonNode indexesByType = item.get("indexes");
 

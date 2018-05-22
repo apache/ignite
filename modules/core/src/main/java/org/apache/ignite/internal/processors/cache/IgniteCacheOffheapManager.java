@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.tree.PendingEntriesTree;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccUpdateResult;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -149,6 +150,8 @@ public interface IgniteCacheOffheapManager {
     /**
      * @param cctx Cache context.
      * @param c Closure.
+     * @param amount Limit of processed entries by single call, {@code -1} for no limit.
+     * @return {@code True} if unprocessed expired entries remains.
      * @throws IgniteCheckedException If failed.
      */
     public boolean expire(GridCacheContext cctx, IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c, int amount)
@@ -307,9 +310,9 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * @param cctx Cache context.
-     * @param key  Key.
-     * @param val  Value.
-     * @param ver  Version.
+     * @param key Key.
+     * @param val Value.
+     * @param ver Version.
      * @param expireTime Expire time.
      * @param oldRow Old row if available.
      * @param part Partition.
@@ -867,5 +870,13 @@ public interface IgniteCacheOffheapManager {
          * @param rowCacheCleaner Rows cache cleaner.
          */
         public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner);
+
+        /**
+         * Return PendingTree for data store.
+         *
+         * @return PendingTree instance.
+         * @throws IgniteCheckedException
+         */
+        PendingEntriesTree pendingTree();
     }
 }

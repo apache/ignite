@@ -68,6 +68,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVer
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridSetWrapper;
@@ -752,7 +753,15 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     public final IgniteCheckedException timeoutException() {
         return new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
-            "for transaction [timeout=" + timeout() + ", tx=" + this + ']');
+            "for transaction [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
+    }
+
+    /**
+     * @return Rollback exception.
+     */
+    public final IgniteCheckedException rollbackException() {
+        return new IgniteTxRollbackCheckedException("Failed to finish transaction because it has been rolled back " +
+            "[timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
     }
 
     /** {@inheritDoc} */
@@ -1039,9 +1048,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      *
      * @param state State to set.
      * @param timedOut Timeout flag.
+     *
      * @return {@code True} if state changed.
      */
-    @SuppressWarnings({"TooBroadScope"})
     protected final boolean state(TransactionState state, boolean timedOut) {
         boolean valid = false;
 
@@ -1104,7 +1113,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
 
                 case MARKED_ROLLBACK: {
-                    valid = prev == ACTIVE || prev == PREPARING || prev == PREPARED || prev == SUSPENDED;
+                    valid = prev == ACTIVE  || prev == PREPARING || prev == PREPARED || prev == SUSPENDED;
 
                     break;
                 }
@@ -1178,8 +1187,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                     if (syncUpdate)
                                         cctx.coordinators().updateState(snapshot, txState);
                                     else {
-                                        assert txState == TxState.ABORTED && rollbackFut != null;
-
                                         // If tx was aborted, we need to wait tx log is updated on all backups.
                                         rollbackFut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
                                             @Override public void apply(IgniteInternalFuture fut) {
@@ -1203,8 +1210,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     }
 
                     // Log tx state change to WAL.
-                    if (cctx.wal() != null && cctx.tm().logTxRecords()) {
-                        assert txNodes != null || state == ROLLED_BACK : "txNodes=" + txNodes + " state=" + state;
+                    if (cctx.wal() != null && cctx.tm().logTxRecords() && txNodes != null) {
 
                         BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
 

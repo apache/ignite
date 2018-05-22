@@ -550,9 +550,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     @Override public <T> EntryProcessorResult<T> invoke(K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException {
-        EntryProcessorResult<T> res = invokeAsync(key, entryProcessor, args).get();
-
-        return res != null ? res : new CacheInvokeResult<T>();
+        return invokeAsync(key, entryProcessor, args).get();
     }
 
     /** {@inheritDoc} */
@@ -615,10 +613,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                 if (resMap != null) {
                     assert resMap.isEmpty() || resMap.size() == 1 : resMap.size();
 
-                    return resMap.isEmpty() ? null : resMap.values().iterator().next();
+                    return resMap.isEmpty() ? new CacheInvokeResult<>() : resMap.values().iterator().next();
                 }
 
-                return null;
+                return new CacheInvokeResult<>();
             }
         });
     }
@@ -1077,7 +1075,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             if (computed != null)
                                 invokeRes = CacheInvokeResult.fromResult(ctx.unwrapTemporary(computed));
 
-                            if (invokeEntry.modified()) {
+                            if (invokeEntry.modified() && updated != null) {
                                 validation = true;
 
                                 ctx.validateKeyAndValue(entry.key(), updated);

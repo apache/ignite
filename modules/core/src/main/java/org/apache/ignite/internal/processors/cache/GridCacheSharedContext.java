@@ -70,6 +70,7 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
+import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 
 /**
  * Shared context.
@@ -128,7 +129,7 @@ public class GridCacheSharedContext<K, V> {
     private ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
 
     /** Tx metrics. */
-    private volatile TransactionMetricsAdapter txMetrics;
+    private final TransactionMetricsAdapter txMetrics;
 
     /** Store session listeners. */
     private Collection<CacheStoreSessionListener> storeSesLsnrs;
@@ -220,7 +221,7 @@ public class GridCacheSharedContext<K, V> {
 
         this.storeSesLsnrs = storeSesLsnrs;
 
-        txMetrics = new TransactionMetricsAdapter();
+        txMetrics = new TransactionMetricsAdapter(kernalCtx);
 
         ctxMap = new ConcurrentHashMap<>();
 
@@ -634,7 +635,7 @@ public class GridCacheSharedContext<K, V> {
      * Resets tx metrics.
      */
     public void resetTxMetrics() {
-        txMetrics = new TransactionMetricsAdapter();
+        txMetrics.reset();
     }
 
     /**
@@ -978,9 +979,14 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void endTx(GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.txState().awaitLastFuture(this);
+        boolean clearThreadMap = txMgr.threadLocalTx(null) == tx;
 
-        tx.close();
+        if (clearThreadMap)
+            tx.txState().awaitLastFuture(this);
+        else
+            tx.state(MARKED_ROLLBACK);
+
+        tx.close(clearThreadMap);
     }
 
     /**
@@ -1006,9 +1012,14 @@ public class GridCacheSharedContext<K, V> {
      * @return Rollback future.
      */
     public IgniteInternalFuture rollbackTxAsync(GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.txState().awaitLastFuture(this);
+        boolean clearThreadMap = txMgr.threadLocalTx(null) == tx;
 
-        return tx.rollbackNearTxLocalAsync();
+        if (clearThreadMap)
+            tx.txState().awaitLastFuture(this);
+        else
+            tx.state(MARKED_ROLLBACK);
+
+        return tx.rollbackNearTxLocalAsync(clearThreadMap, false);
     }
 
     /**

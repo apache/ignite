@@ -39,21 +39,16 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
-import org.apache.ignite.client.ClientCache;
-import org.apache.ignite.client.ClientCacheConfiguration;
-import org.apache.ignite.client.Comparers;
-import org.apache.ignite.client.Config;
-import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.client.LocalIgniteCluster;
-import org.apache.ignite.client.Person;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Thin client functional tests.
@@ -378,6 +373,34 @@ public class FunctionalTest {
             cache.removeAll();
             assertEquals(0, cache.size());
         }
+    }
+
+    /**
+     * Test client fails on start if server is unavailable
+     */
+    @Test
+    public void testClientFailsOnStart() {
+        ClientConnectionException expEx = null;
+
+        try (IgniteClient ignored = Ignition.startClient(getClientConfiguration())) {
+            // No-op.
+        }
+        catch (ClientConnectionException connEx) {
+            expEx = connEx;
+        }
+        catch (Exception ex) {
+            fail(String.format(
+                "%s expected but %s was received: %s",
+                ClientConnectionException.class.getName(),
+                ex.getClass().getName(),
+                ex
+            ));
+        }
+
+        assertNotNull(
+            String.format("%s expected but no exception was received", ClientConnectionException.class.getName()),
+            expEx
+        );
     }
 
     /** */

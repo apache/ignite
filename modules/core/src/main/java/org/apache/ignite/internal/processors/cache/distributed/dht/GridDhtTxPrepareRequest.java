@@ -107,6 +107,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     private MvccTxInfo mvccInfo;
 
+    /** {@code True} if remote tx should skip adding itself to completed versions map on finish. */
+    private boolean skipCompletedVers;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -167,6 +170,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.nearXidVer = nearXidVer;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.mvccInfo = mvccInfo;
 
         storeWriteThrough(storeWriteThrough);
         needReturnValue(retVal);
@@ -175,7 +179,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
         nearNodeId = tx.nearNodeId();
 
-        this.mvccInfo = mvccInfo;
+        skipCompletedVers = tx.xidVersion() == tx.nearXidVersion();
     }
 
     /**
@@ -304,6 +308,13 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     public Map<IgniteTxKey, GridCacheVersion> owned() {
         return owned;
+    }
+
+    /**
+     * @return {@code True} if remote tx should skip adding itself to completed versions map on finish.
+     */
+    public boolean skipCompletedVersion() {
+        return skipCompletedVers;
     }
 
     /**
@@ -463,18 +474,24 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 30:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeBoolean("skipCompletedVers", skipCompletedVers))
                     return false;
 
                 writer.incrementState();
 
             case 31:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 32:
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
+
+                writer.incrementState();
+
+            case 33:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -577,7 +594,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 30:
-                subjId = reader.readUuid("subjId");
+                skipCompletedVers = reader.readBoolean("skipCompletedVers");
 
                 if (!reader.isLastRead())
                     return false;
@@ -585,7 +602,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 31:
-                taskNameHash = reader.readInt("taskNameHash");
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -593,6 +610,14 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 32:
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 33:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -612,6 +637,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 33;
+        return 34;
     }
 }

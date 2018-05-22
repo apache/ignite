@@ -106,6 +106,10 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
         awaitPartitionMapExchange();
 
+        // Populate cache to increment update counters.
+        for (int i = 0; i < 1000; i++)
+            ignite.cache(CACHE_NAME).put(i, i);
+
         // Modify update counter for some partition.
         for (GridDhtLocalPartition partition : ignite.cachex(CACHE_NAME).context().topology().localPartitions()) {
             partition.updateCounter(100500L);

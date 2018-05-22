@@ -40,9 +40,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsEvictor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsEvictor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
@@ -157,7 +157,10 @@ public class CacheGroupContext {
     private CacheGroupMetricsMXBean mxBean;
 
     /** */
-    private volatile boolean walEnabled;
+    private volatile boolean localWalEnabled;
+
+    /** */
+    private volatile boolean globalWalEnabled;
 
     /**
      * @param grpId Group ID.
@@ -201,9 +204,10 @@ public class CacheGroupContext {
         this.reuseList = reuseList;
         this.locStartVer = locStartVer;
         this.cacheType = cacheType;
-        this.walEnabled = walEnabled;
+        this.globalWalEnabled = walEnabled;
+        this.localWalEnabled = true;
 
-        persistWalState(walEnabled);
+        persistGlobalWalState(walEnabled);
 
         ioPlc = cacheType.ioPolicy();
 
@@ -336,7 +340,7 @@ public class CacheGroupContext {
             drEnabled = true;
 
         this.caches = caches;
-   }
+    }
 
     /**
      * @param cctx Cache context.
@@ -395,8 +399,8 @@ public class CacheGroupContext {
         List<GridCacheContext> caches = this.caches;
 
         assert !sharedGroup() && caches.size() == 1 :
-            "stopping=" +  ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
-            ", caches=" + caches;
+            "stopping=" + ctx.kernalContext().isStopping() + ", groupName=" + ccfg.getGroupName() +
+                ", caches=" + caches;
 
         return caches.get(0);
     }
@@ -464,6 +468,7 @@ public class CacheGroupContext {
             }
         }
     }
+
     /**
      * Adds partition unload event.
      *
@@ -541,13 +546,6 @@ public class CacheGroupContext {
      */
     public boolean queriesEnabled() {
         return qryEnabled;
-    }
-
-    /**
-     * @return {@code True} if fast eviction is allowed.
-     */
-    public boolean allowFastEviction() {
-        return persistenceEnabled() && !queriesEnabled();
     }
 
     /**
@@ -1055,22 +1053,52 @@ public class CacheGroupContext {
      * WAL enabled flag.
      */
     public boolean walEnabled() {
-        return walEnabled;
+        return localWalEnabled && globalWalEnabled;
     }
 
     /**
-     * @param enabled WAL enabled flag.
+     * Local WAL enabled flag.
      */
-    public void walEnabled(boolean enabled) {
-        persistWalState(enabled);
+    public boolean localWalEnabled() {
+        return localWalEnabled;
+    }
 
-        this.walEnabled = enabled;
+    /**
+     * @return Global WAL enabled flag.
+     */
+    public boolean globalWalEnabled() {
+        return globalWalEnabled;
+    }
+
+    /**
+     * @param enabled Global WAL enabled flag.
+     */
+    public void globalWalEnabled(boolean enabled) {
+        persistGlobalWalState(enabled);
+
+        this.globalWalEnabled = enabled;
+    }
+
+    /**
+     * @param enabled Local WAL enabled flag.
+     */
+    public void localWalEnabled(boolean enabled) {
+        persistLocalWalState(enabled);
+
+        this.localWalEnabled = enabled;
     }
 
     /**
      * @param enabled Enabled flag..
      */
-    private void persistWalState(boolean enabled) {
-        shared().database().walEnabled(grpId, enabled);
+    private void persistGlobalWalState(boolean enabled) {
+        shared().database().walEnabled(grpId, enabled, false);
+    }
+
+    /**
+     * @param enabled Enabled flag..
+     */
+    private void persistLocalWalState(boolean enabled) {
+        shared().database().walEnabled(grpId, enabled, true);
     }
 }

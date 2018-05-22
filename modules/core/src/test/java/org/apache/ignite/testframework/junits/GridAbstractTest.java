@@ -1015,7 +1015,14 @@ public abstract class GridAbstractTest extends TestCase {
             }
         }
 
-        return new IgniteProcessProxy(cfg, log, locNode, resetDiscovery);
+        return new IgniteProcessProxy(cfg, log, locNode, resetDiscovery, additionalRemoteJvmArgs());
+    }
+
+    /**
+     * @return Additional JVM args for remote instances.
+     */
+    protected List<String> additionalRemoteJvmArgs() {
+        return Collections.emptyList();
     }
 
     /**
@@ -2515,7 +2522,7 @@ public abstract class GridAbstractTest extends TestCase {
                     cnt = 0;
 
                     for (Method m : this0.getClass().getMethods())
-                        if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
+                        if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()) && m.getParameterCount() == 0)
                             cnt++;
                 }
 

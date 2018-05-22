@@ -1058,7 +1058,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
         readyLocks();
 
-        if (timeoutObj != null) {
+        if (timeoutObj != null && !isDone()) {
             // Start timeout tracking after 'readyLocks' to avoid race with timeout processing.
             cctx.time().addTimeoutObject(timeoutObj);
         }

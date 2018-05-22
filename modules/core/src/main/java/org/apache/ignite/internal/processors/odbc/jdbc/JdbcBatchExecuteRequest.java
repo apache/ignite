@@ -56,12 +56,41 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     }
 
     /**
+     * Constructor for child requests.
+     * @param type Request type/
+     */
+    protected JdbcBatchExecuteRequest(byte type) {
+        super(type);
+    }
+
+    /**
      * @param schemaName Schema name.
      * @param queries Queries.
      * @param autoCommit Client auto commit flag state.
+     * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
      */
     public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean autoCommit, boolean lastStreamBatch) {
         super(BATCH_EXEC);
+
+        assert lastStreamBatch || !F.isEmpty(queries);
+
+        this.schemaName = schemaName;
+        this.queries = queries;
+        this.autoCommit = autoCommit;
+        this.lastStreamBatch = lastStreamBatch;
+    }
+
+    /**
+     * Constructor for child requests.
+     *
+     * @param type Request type.
+     * @param schemaName Schema name.
+     * @param queries Queries.
+     * @param autoCommit Client auto commit flag state.
+     * @param lastStreamBatch {@code true} in case the request is the last batch at the stream.
+     */
+    protected JdbcBatchExecuteRequest(byte type, String schemaName, List<JdbcQuery> queries, boolean autoCommit, boolean lastStreamBatch) {
+        super(type);
 
         assert lastStreamBatch || !F.isEmpty(queries);
 

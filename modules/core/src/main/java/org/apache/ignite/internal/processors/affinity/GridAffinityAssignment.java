@@ -157,7 +157,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param part Partition.
      * @return Affinity nodes.
      */
-    public List<ClusterNode> get(int part) {
+    @Override public List<ClusterNode> get(int part) {
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 
@@ -170,7 +170,7 @@ public class GridAffinityAssignment implements AffinityAssignment, Serializable 
      * @param part Partition.
      * @return Affinity nodes IDs.
      */
-    public HashSet<UUID> getIds(int part) {
+    @Override public HashSet<UUID> getIds(int part) {
         assert part >= 0 && part < assignment.size() : "Affinity partition is out of range" +
             " [part=" + part + ", partitions=" + assignment.size() + ']';
 

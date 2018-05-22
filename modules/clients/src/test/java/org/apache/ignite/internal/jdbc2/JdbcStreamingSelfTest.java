@@ -57,9 +57,6 @@ public class JdbcStreamingSelfTest extends JdbcThinAbstractSelfTest {
     private static final String STREAMING_URL = CFG_URL_PREFIX +
         "cache=person@modules/clients/src/test/config/jdbc-config.xml";
 
-    /** */
-    protected transient IgniteLogger log;
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         return getConfiguration0(gridName);

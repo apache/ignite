@@ -17,24 +17,47 @@
 
 package org.apache.ignite.ml.knn;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import static junit.framework.TestCase.assertEquals;
 
 /** Tests behaviour of KNNClassificationTest. */
-public class KNNClassificationTest extends BaseKNNTest {
-    /** */
-    public void testBinaryClassificationTest() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+@RunWith(Parameterized.class)
+public class KNNClassificationTest {
+    /** Number of parts to be tested. */
+    private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7, 100};
 
+    /** Number of partitions. */
+    @Parameterized.Parameter
+    public int parts;
+
+    /** Parameters. */
+    @Parameterized.Parameters(name = "Data divided on {0} partitions, training with batch size {1}")
+    public static Iterable<Integer[]> data() {
+        List<Integer[]> res = new ArrayList<>();
+
+        for (int part : partsToBeTested)
+            res.add(new Integer[] {part});
+
+        return res;
+    }
+
+    /** */
+    @Test
+    public void testBinaryClassificationTest() {
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {1.0, 1.0, 1.0});
         data.put(1, new double[] {1.0, 2.0, 1.0});
@@ -46,7 +69,8 @@ public class KNNClassificationTest extends BaseKNNTest {
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            data,
+            parts,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2]
         ).withK(3)
@@ -60,9 +84,8 @@ public class KNNClassificationTest extends BaseKNNTest {
     }
 
     /** */
+    @Test
     public void testBinaryClassificationWithSmallestKTest() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {1.0, 1.0, 1.0});
         data.put(1, new double[] {1.0, 2.0, 1.0});
@@ -74,7 +97,8 @@ public class KNNClassificationTest extends BaseKNNTest {
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            data,
+            parts,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2]
         ).withK(1)
@@ -88,9 +112,8 @@ public class KNNClassificationTest extends BaseKNNTest {
     }
 
     /** */
+    @Test
     public void testBinaryClassificationFarPointsWithSimpleStrategy() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {10.0, 10.0, 1.0});
         data.put(1, new double[] {10.0, 20.0, 1.0});
@@ -102,7 +125,8 @@ public class KNNClassificationTest extends BaseKNNTest {
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            data,
+            parts,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2]
         ).withK(3)
@@ -114,9 +138,8 @@ public class KNNClassificationTest extends BaseKNNTest {
     }
 
     /** */
+    @Test
     public void testBinaryClassificationFarPointsWithWeightedStrategy() {
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
         Map<Integer, double[]> data = new HashMap<>();
         data.put(0, new double[] {10.0, 10.0, 1.0});
         data.put(1, new double[] {10.0, 20.0, 1.0});
@@ -128,7 +151,8 @@ public class KNNClassificationTest extends BaseKNNTest {
         KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            data,
+            parts,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2]
         ).withK(3)

@@ -20,18 +20,18 @@ form(
     novalidate
     ng-submit='$ctrl.save($ctrl.clonedCache)'
 )
-    include /app/modules/states/configuration/caches/general
-    include /app/modules/states/configuration/caches/memory
-    include /app/modules/states/configuration/caches/query
-    include /app/modules/states/configuration/caches/store
+    include ./templates/general
+    include ./templates/memory
+    include ./templates/query
+    include ./templates/store
 
-    include /app/modules/states/configuration/caches/affinity
-    include /app/modules/states/configuration/caches/concurrency
-    include /app/modules/states/configuration/caches/near-cache-client
-    include /app/modules/states/configuration/caches/near-cache-server
-    include /app/modules/states/configuration/caches/node-filter
-    include /app/modules/states/configuration/caches/rebalance
-    include /app/modules/states/configuration/caches/statistics
+    include ./templates/affinity
+    include ./templates/concurrency
+    include ./templates/near-cache-client
+    include ./templates/near-cache-server
+    include ./templates/node-filter
+    include ./templates/rebalance
+    include ./templates/statistics
 
 .pc-form-actions-panel
     .pc-form-actions-panel__right-after

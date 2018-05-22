@@ -240,6 +240,20 @@
                 box-shadow: none;
             }
         }
+
+        // Added right offset to appearance of input for invalid password
+        & > input[type='email'].ng-invalid.ng-touched,
+        & > input[type='text'].ng-invalid.ng-touched,
+        & > input[type='password'].ng-invalid.ng-touched {
+            padding-right: 36px;
+        }
+
+        // Added right offset to appearance of dropdown for invalid data
+        & > button.select-toggle.ng-invalid.ng-touched {
+            &:after {
+                right: 36px;
+            }
+        }
     }
 
     &__errors {
@@ -295,6 +309,7 @@
 }
 
 .form-field__checkbox {
+    $errorSize: 16px;
     display: flex;
 
     .form-field {
@@ -307,6 +322,7 @@
             width: auto;
             margin-right: 10px;
             padding: 3px 0;
+            flex: 0 0 auto;
 
             input {
                 width: auto;
@@ -314,5 +330,55 @@
                 margin: 0;
             }
         }
+
+        &__errors {
+            position: static;
+            right: initial;
+            bottom: initial;
+            order: 3;
+            margin-left: 5px;
+
+            .form-field__error {
+                width: $errorSize;
+                height: $errorSize;
+
+                div {
+                    // Required to correctly position error popover
+                    top: -10px;
+                    height: 36px;
+                    
+                    width: $errorSize;                    
+                }
+
+                [ignite-icon] {
+                    width: $errorSize;
+                    top: 0;
+                }
+            }
+        }
+    }
+}
+
+.form-field__password {
+    // Validation error notification will overlap with visibility button if it's not moved more to the left
+    input[type='password'].ng-invalid.ng-touched,
+    input[type='password'].ng-invalid.ng-touched + input {
+        padding-right: 62px;
+    }
+
+    // Extra space for visibility button
+    input {
+        padding-right: 36px;
+    }
+
+    // Distance between error notification and visibility button
+    .form-field__errors {
+        right: 26px;
+    }
+
+    password-visibility-toggle-button {
+        position: absolute;
+        right: 0;
+        height: 36px;
     }
 }

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
@@ -28,9 +28,11 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContex
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -49,8 +51,8 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.4.0: adds default values for columns feature. */
     static final ClientListenerProtocolVersion VER_2_4_0 = ClientListenerProtocolVersion.create(2, 4, 0);
 
-    /** Version 2.5.0. */
-    private static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
+    /** Version 2.5.0: adds precision and scale for columns feature. */
+    static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
 
     /** Current version. */
     private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_0;
@@ -61,8 +63,14 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
     /** Context. */
     private final GridKernalContext ctx;
 
+    /** Session. */
+    private final GridNioSession ses;
+
     /** Shutdown busy lock. */
     private final GridSpinBusyLock busyLock;
+
+    /** Logger. */
+    private final IgniteLogger log;
 
     /** Maximum allowed cursors. */
     private final int maxCursors;
@@ -85,13 +93,17 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
     /**
      * Constructor.
      * @param ctx Kernal Context.
+     * @param ses Session.
      * @param busyLock Shutdown busy lock.
      * @param maxCursors Maximum allowed cursors.
      */
-    public JdbcConnectionContext(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
+    public JdbcConnectionContext(GridKernalContext ctx, GridNioSession ses, GridSpinBusyLock busyLock, int maxCursors) {
         this.ctx = ctx;
+        this.ses = ses;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
+
+        log = ctx.log(getClass());
     }
 
     /** {@inheritDoc} */
@@ -161,10 +173,23 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         if (ctx.authentication().enabled() && actx == null)
             throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
 
-        handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode, actx, ver);
-
         parser = new JdbcMessageParser(ctx);
+
+        JdbcResponseSender sender = new JdbcResponseSender() {
+            @Override public void send(ClientListenerResponse resp) {
+                if (resp != null) {
+                    if (log.isDebugEnabled())
+                        log.debug("Async response: [resp=" + resp.status() + ']');
+
+                    byte[] outMsg = parser.encode(resp);
+
+                    ses.send(outMsg);
+                }
+            }
+        };
+
+        handler = new JdbcRequestHandler(ctx, busyLock, sender, maxCursors, distributedJoins, enforceJoinOrder,
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode, actx, ver);
 
         handler.start();
     }

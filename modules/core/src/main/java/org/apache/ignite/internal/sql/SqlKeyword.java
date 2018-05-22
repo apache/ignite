@@ -67,6 +67,9 @@ public class SqlKeyword {
     /** Keyword: CHARACTER. */
     public static final String CHARACTER = "CHARACTER";
 
+    /** Keyword: CHARSET. */
+    public static final String CHARSET = "CHARSET";
+
     /** Keyword: COMMIT. */
     public static final String COMMIT = "COMMIT";
 
@@ -189,6 +192,9 @@ public class SqlKeyword {
 
     /** Keyword: ON. */
     public static final String ON = "ON";
+
+    /** Keyword: ORDERED. */
+    public static final String ORDERED = "ORDERED";
 
     /** Keyword: PER_NODE_PARALLEL_OPERATIONS. */
     public static final String PER_NODE_PARALLEL_OPERATIONS = "PER_NODE_PARALLEL_OPERATIONS";

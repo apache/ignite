@@ -62,6 +62,36 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** */
     private long lastCpCowPages;
 
+    /** */
+    private long walTotalSize;
+
+    /** */
+    private long walLastRollOverTime;
+
+    /** */
+    private long checkpointTotalSize;
+
+    /** */
+    private long dirtyPages;
+
+    /** */
+    private long readPages;
+
+    /** */
+    private long writtenPages;
+
+    /** */
+    private long replacedPages;
+
+    /** */
+    private long offHeapSize;
+
+    /** */
+    private long offHeadUsedSize;
+
+    /** */
+    private long totalAllocatedSize;
+
     /**
      * @param metrics Metrics.
      */
@@ -79,6 +109,16 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
         lastCpTotalPages = metrics.getLastCheckpointTotalPagesNumber();
         lastCpDataPages = metrics.getLastCheckpointDataPagesNumber();
         lastCpCowPages = metrics.getLastCheckpointCopiedOnWritePagesNumber();
+        walTotalSize = metrics.getWalTotalSize();
+        walLastRollOverTime = metrics.getWalLastRollOverTime();
+        checkpointTotalSize = metrics.getCheckpointTotalTime();
+        dirtyPages = metrics.getDirtyPages();
+        readPages = metrics.getPagesRead();
+        writtenPages = metrics.getPagesWritten();
+        replacedPages = metrics.getPagesReplaced();
+        offHeapSize = metrics.getOffHeapSize();
+        offHeadUsedSize = metrics.getOffheapUsedSize();
+        totalAllocatedSize = metrics.getTotalAllocatedSize();
     }
 
     /** {@inheritDoc} */
@@ -144,6 +184,56 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** {@inheritDoc} */
     @Override public long getLastCheckpointCopiedOnWritePagesNumber() {
         return lastCpCowPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getWalTotalSize() {
+        return walTotalSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getWalLastRollOverTime() {
+        return walLastRollOverTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointTotalTime() {
+        return checkpointTotalSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getDirtyPages() {
+        return dirtyPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesRead() {
+        return readPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesWritten() {
+        return writtenPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesReplaced() {
+        return replacedPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapSize() {
+        return offHeapSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffheapUsedSize() {
+        return offHeadUsedSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        return totalAllocatedSize;
     }
 
     /** {@inheritDoc} */

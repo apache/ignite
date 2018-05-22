@@ -137,6 +137,7 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisito
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
+import org.apache.ignite.internal.sql.SqlStrictParseException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
@@ -1808,6 +1809,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 || cmd instanceof SqlDropUserCommand))
                 return null;
         }
+        catch (SqlStrictParseException e) {
+            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
+        }
         catch (Exception e) {
             // Cannot parse, return.
             if (log.isDebugEnabled())
@@ -1844,7 +1848,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 if (setCmd.isTurnOn())
                     cliCtx.enableStreaming(setCmd.allowOverwrite(), setCmd.flushFrequency(),
-                        setCmd.perNodeBufferSize(), setCmd.perNodeParallelOperations());
+                        setCmd.perNodeBufferSize(), setCmd.perNodeParallelOperations(), setCmd.isOrdered());
                 else
                     cliCtx.disableStreaming();
             }

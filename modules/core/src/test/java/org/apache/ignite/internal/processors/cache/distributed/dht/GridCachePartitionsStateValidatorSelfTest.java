@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
@@ -54,10 +55,11 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         Mockito.when(topologyMock.partitions()).thenReturn(3);
 
         List<GridDhtLocalPartition> localPartitions = Lists.newArrayList(
-                partitionMock(0, 1, 1),
-                partitionMock(1, 2, 2),
-                partitionMock(2, 3, 3)
+            partitionMock(0, 1, 1),
+            partitionMock(1, 2, 2),
+            partitionMock(2, 3, 3)
         );
+
         Mockito.when(topologyMock.localPartitions()).thenReturn(localPartitions);
         Mockito.when(topologyMock.currentLocalPartitions()).thenReturn(localPartitions);
     }
@@ -70,24 +72,24 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         Mockito.when(partitionMock.id()).thenReturn(id);
         Mockito.when(partitionMock.updateCounter()).thenReturn(updateCounter);
         Mockito.when(partitionMock.fullSize()).thenReturn(size);
+        Mockito.when(partitionMock.state()).thenReturn(GridDhtPartitionState.OWNING);
         return partitionMock;
     }
 
     /**
-     * @return Message containing specified {@code countersMap}.
+     * @param countersMap Update counters map.
+     * @param sizesMap Sizes map.
+     * @return Message with specified {@code countersMap} and {@code sizeMap}.
      */
-    private GridDhtPartitionsSingleMessage fromUpdateCounters(Map<Integer, T2<Long, Long>> countersMap) {
+    private GridDhtPartitionsSingleMessage from(@Nullable Map<Integer, T2<Long, Long>> countersMap, @Nullable Map<Integer, Long> sizesMap) {
         GridDhtPartitionsSingleMessage msg = new GridDhtPartitionsSingleMessage();
-        msg.addPartitionUpdateCounters(0, countersMap);
-        return msg;
-    }
 
-    /**
-     * @return Message containing specified {@code sizesMap}.
-     */
-    private GridDhtPartitionsSingleMessage fromCacheSizes(Map<Integer, Long> sizesMap) {
-        GridDhtPartitionsSingleMessage msg = new GridDhtPartitionsSingleMessage();
-        msg.addPartitionSizes(0, sizesMap);
+        if (countersMap != null)
+            msg.addPartitionUpdateCounters(0, countersMap);
+
+        if (sizesMap != null)
+            msg.addPartitionSizes(0, sizesMap);
+
         return msg;
     }
 
@@ -98,15 +100,22 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         UUID remoteNode = UUID.randomUUID();
         UUID ignoreNode = UUID.randomUUID();
 
-        // For partitions 0 and 2 (zero counter) we have inconsistent update counters.
+        // For partitions 0 and 2 we have inconsistent update counters.
         Map<Integer, T2<Long, Long>> updateCountersMap = new HashMap<>();
         updateCountersMap.put(0, new T2<>(2L, 2L));
         updateCountersMap.put(1, new T2<>(2L, 2L));
+        updateCountersMap.put(2, new T2<>(5L, 5L));
+
+        // For partitions 0 and 2 we have inconsistent cache sizes.
+        Map<Integer, Long> cacheSizesMap = new HashMap<>();
+        cacheSizesMap.put(0, 2L);
+        cacheSizesMap.put(1, 2L);
+        cacheSizesMap.put(2, 2L);
 
         // Form single messages map.
         Map<UUID, GridDhtPartitionsSingleMessage> messages = new HashMap<>();
-        messages.put(remoteNode, fromUpdateCounters(updateCountersMap));
-        messages.put(ignoreNode, fromUpdateCounters(updateCountersMap));
+        messages.put(remoteNode, from(updateCountersMap, cacheSizesMap));
+        messages.put(ignoreNode, from(updateCountersMap, cacheSizesMap));
 
         GridDhtPartitionsStateValidator validator = new GridDhtPartitionsStateValidator(cctxMock);
 
@@ -120,7 +129,7 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         Assert.assertTrue(result.get(0).get(localNodeId) == 1L);
         Assert.assertTrue(result.get(0).get(remoteNode) == 2L);
         Assert.assertTrue(result.get(2).get(localNodeId) == 3L);
-        Assert.assertTrue(result.get(2).get(remoteNode) == 0L);
+        Assert.assertTrue(result.get(2).get(remoteNode) == 5L);
     }
 
     /**
@@ -130,6 +139,12 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         UUID remoteNode = UUID.randomUUID();
         UUID ignoreNode = UUID.randomUUID();
 
+        // For partitions 0 and 2 we have inconsistent update counters.
+        Map<Integer, T2<Long, Long>> updateCountersMap = new HashMap<>();
+        updateCountersMap.put(0, new T2<>(2L, 2L));
+        updateCountersMap.put(1, new T2<>(2L, 2L));
+        updateCountersMap.put(2, new T2<>(5L, 5L));
+
         // For partitions 0 and 2 we have inconsistent cache sizes.
         Map<Integer, Long> cacheSizesMap = new HashMap<>();
         cacheSizesMap.put(0, 2L);
@@ -138,8 +153,8 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
 
         // Form single messages map.
         Map<UUID, GridDhtPartitionsSingleMessage> messages = new HashMap<>();
-        messages.put(remoteNode, fromCacheSizes(cacheSizesMap));
-        messages.put(ignoreNode, fromCacheSizes(cacheSizesMap));
+        messages.put(remoteNode, from(updateCountersMap, cacheSizesMap));
+        messages.put(ignoreNode, from(updateCountersMap, cacheSizesMap));
 
         GridDhtPartitionsStateValidator validator = new GridDhtPartitionsStateValidator(cctxMock);
 

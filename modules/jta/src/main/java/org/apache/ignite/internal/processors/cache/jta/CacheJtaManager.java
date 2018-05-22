@@ -168,7 +168,8 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
                                 tCfg.getDefaultTxTimeout(),
                                 /*store enabled*/true,
                                 /*sql*/false,
-                                /*tx size*/0
+                                /*tx size*/0,
+                                null
                             );
                         }
 
