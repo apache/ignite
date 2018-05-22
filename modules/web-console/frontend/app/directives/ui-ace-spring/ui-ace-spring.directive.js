@@ -17,7 +17,7 @@
 
 import _ from 'lodash';
 
-import templateUrl from './ui-ace-spring.jade';
+import template from './ui-ace-spring.pug';
 import controller from './ui-ace-spring.controller';
 
 export default ['igniteUiAceSpring', [() => {
@@ -58,7 +58,7 @@ export default ['igniteUiAceSpring', [() => {
             client: '@'
         },
         link,
-        templateUrl,
+        template,
         controller,
         controllerAs: 'ctrl',
         require: ['igniteUiAceSpring', '?^igniteUiAceTabs', '?^form', '?ngModel']

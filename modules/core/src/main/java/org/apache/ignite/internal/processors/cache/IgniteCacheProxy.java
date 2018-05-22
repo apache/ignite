@@ -855,6 +855,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             (qry instanceof SqlQuery || qry instanceof SqlFieldsQuery || qry instanceof TextQuery))
             throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
                 "of all Ignite nodes.");
+
+        if (!ctx.isLocal()) {
+            Throwable exc = ctx.topologyVersionFuture().validateCache(ctx);
+
+            if (exc != null)
+                throw new CacheException(exc);
+        }
     }
 
     /** {@inheritDoc} */
@@ -2260,6 +2267,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Previous projection set on this thread.
      */
     private CacheOperationContext onEnter(GridCacheGateway<K, V> gate, CacheOperationContext opCtx) {
+        if ( ctx.kernalContext().igniteSysThreads().containsKey(Thread.currentThread().getId()) )
+            throw new CacheException("Failed to execute cache operation in Ignite system thread "
+                + Thread.currentThread().getName() + ".");
+
         if (lock)
             return gate.enter(opCtx);
         else

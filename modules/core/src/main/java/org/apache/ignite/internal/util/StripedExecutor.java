@@ -20,7 +20,9 @@ package org.apache.ignite.internal.util;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -55,9 +57,10 @@ public class StripedExecutor implements ExecutorService {
     private final IgniteLogger log;
 
     /**
-     * Constructor.
-     *
      * @param cnt Count.
+     * @param gridName Node name.
+     * @param poolName Pool name.
+     * @param log Logger.
      */
     public StripedExecutor(int cnt, String gridName, String poolName, final IgniteLogger log) {
         A.ensure(cnt > 0, "cnt > 0");
@@ -268,6 +271,56 @@ public class StripedExecutor implements ExecutorService {
     }
 
     /**
+     * @return Completed tasks per stripe count.
+     */
+    public long[] stripesCompletedTasks() {
+        long[] res = new long[stripes()];
+
+        for (int i = 0; i < res.length; i++)
+            res[i] = stripes[i].completedCnt;
+
+        return res;
+    }
+
+    /**
+     * @return Number of active tasks per stripe.
+     */
+    public boolean[] stripesActiveStatuses() {
+        boolean[] res = new boolean[stripes()];
+
+        for (int i = 0; i < res.length; i++)
+            res[i] = stripes[i].active;
+
+        return res;
+    }
+
+    /**
+     * @return Number of active tasks.
+     */
+    public int activeStripesCount() {
+        int res = 0;
+
+        for (boolean status : stripesActiveStatuses()) {
+            if (status)
+                res++;
+        }
+
+        return res;
+    }
+
+    /**
+     * @return Size of queue per stripe.
+     */
+    public int[] stripesQueueSizes() {
+        int[] res = new int[stripes()];
+
+        for (int i = 0; i < res.length; i++)
+            res[i] = stripes[i].queueSize();
+
+        return res;
+    }
+
+    /**
      * Operation not supported.
      */
     @NotNull @Override public <T> Future<T> submit(
@@ -327,6 +380,18 @@ public class StripedExecutor implements ExecutorService {
         @NotNull TimeUnit unit
     ) throws InterruptedException, ExecutionException, TimeoutException {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @return Stripe thread attributes.
+     */
+    public Map<Long, String> getStripeThreadIds() {
+        Map<Long, String> stripeThreads = new HashMap<>(stripes());
+
+        for (Stripe s : stripes)
+            stripeThreads.put(s.thread.getId(), s.thread.getName());
+
+        return stripeThreads;
     }
 
     /** {@inheritDoc} */

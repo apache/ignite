@@ -98,6 +98,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
         o.bigVal = new BigDecimal(1);
         o.strVal = "str";
         o.arrVal = new byte[] {1};
+        o.blobVal = new byte[] {1};
         o.dateVal = new Date(1);
         o.timeVal = new Time(1);
         o.tsVal = new Timestamp(1);
@@ -135,6 +136,41 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
 
             assert conn.isClosed();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRepeatableUsage() throws Exception {
+        stmt = conn.prepareStatement("select * from TestObject where id = ?");
+
+        stmt.setInt(1, 1);
+
+        ResultSet rs = stmt.executeQuery();
+
+        int cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0)
+                assertEquals(1, rs.getInt(1));
+
+            cnt++;
+        }
+
+        assertEquals(1, cnt);
+
+        cnt = 0;
+
+        rs = stmt.executeQuery();
+
+        while (rs.next()) {
+            if (cnt == 0)
+                assertEquals(1, rs.getInt(1));
+
+            cnt++;
+        }
+
+        assertEquals(1, cnt);
     }
 
     /**
@@ -510,6 +546,47 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testBlob() throws Exception {
+        stmt = conn.prepareStatement("select * from TestObject where blobVal is not distinct from ?");
+
+        Blob blob = conn.createBlob();
+
+        blob.setBytes(1, new byte[] {1});
+
+        stmt.setBlob(1, blob);
+
+        ResultSet rs = stmt.executeQuery();
+
+        int cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0)
+                assert rs.getInt("id") == 1;
+
+            cnt++;
+        }
+
+        assertEquals(1, cnt);
+
+        stmt.setNull(1, BINARY);
+
+        rs = stmt.executeQuery();
+
+        cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0)
+                assert rs.getInt("id") == 2;
+
+            cnt++;
+        }
+
+        assert cnt == 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testDate() throws Exception {
         stmt = conn.prepareStatement("select * from TestObject where dateVal is not distinct from ?");
 
@@ -703,6 +780,10 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
         /** */
         @QuerySqlField
         private byte[] arrVal;
+
+        /** */
+        @QuerySqlField
+        private byte[] blobVal;
 
         /** */
         @QuerySqlField

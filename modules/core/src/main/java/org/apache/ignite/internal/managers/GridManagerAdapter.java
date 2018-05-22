@@ -264,6 +264,8 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
             onBeforeSpiStart();
 
+            spi.setCtxSysThreads(ctx.igniteSysThreads());
+
             try {
                 spi.spiStart(ctx.gridName());
             }
@@ -567,6 +569,10 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
                     @Override public void removeTimeoutObject(IgniteSpiTimeoutObject obj) {
                         ctx.timeout().removeTimeoutObject(new GridSpiTimeoutObject(obj));
+                    }
+
+                    @Override public Map<String, Object> nodeAttributes() {
+                        return ctx.nodeAttributes();
                     }
 
                     /**

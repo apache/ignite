@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -38,9 +41,11 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryResponse;
+import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxRemoteAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
@@ -118,6 +123,40 @@ public class IgniteTxHandler {
         if (txPrepareMsgLog.isDebugEnabled()) {
             txPrepareMsgLog.debug("Received near prepare request [txId=" + req.version() +
                 ", node=" + nearNodeId + ']');
+        }
+
+        if (ctx.cache().cacheValidator() != null) {
+            for (GridCacheContext cctx : caches(req)) {
+                GridDhtTopologyFuture fut = ctx.exchange().exchangeFuture(req.topologyVersion());
+
+                if (fut == null)
+                    fut = cctx.topologyVersionFuture();
+
+                Throwable exc = fut.validateCache(cctx);
+
+                if (exc != null) {
+                    GridNearTxPrepareResponse resp = new GridNearTxPrepareResponse(
+                        req.version(),
+                        req.futureId(),
+                        req.miniId(),
+                        req.version(),
+                        req.version(),
+                        null,
+                        new CacheException(exc),
+                        null,
+                        req.deployInfo() != null
+                    );
+
+                    try {
+                        ctx.io().send(nearNodeId, resp, req.policy());
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to prepare DHT transaction: [req=" + req + ']', e);
+                    }
+
+                    return new GridFinishedFuture<>(resp);
+                }
+            }
         }
 
         IgniteInternalFuture<GridNearTxPrepareResponse> fut = prepareTx(nearNodeId, null, req);
@@ -1038,6 +1077,33 @@ public class IgniteTxHandler {
     }
 
     /**
+     * @param req Request.
+     */
+    private Collection<GridCacheContext> caches(GridDistributedTxPrepareRequest req) {
+        Set<GridCacheContext> caches = new HashSet<>();
+        
+        if (!F.isEmpty(req.reads())) {
+            for (IgniteTxEntry entry : req.reads()) {
+                GridCacheContext cctx = ctx.cacheContext(entry.cacheId());
+
+                if (cctx != null)
+                    caches.add(cctx);
+            }
+        }
+
+        if (!F.isEmpty(req.writes())) {
+            for (IgniteTxEntry entry : req.writes()) {
+                GridCacheContext cctx = ctx.cacheContext(entry.cacheId());
+
+                if (cctx != null)
+                    caches.add(cctx);
+            }
+        }
+
+        return caches;
+    }
+    
+    /**
      * @param nodeId Node ID.
      * @param req Request.
      */
@@ -1412,7 +1478,8 @@ public class IgniteTxHandler {
                     req.transactionNodes(),
                     req.subjectId(),
                     req.taskNameHash(),
-                    single);
+                    single,
+                    req.storeUsed());
 
                 tx.writeVersion(req.writeVersion());
 
@@ -1557,7 +1624,7 @@ public class IgniteTxHandler {
         GridCacheEntryEx nearEntry = near.peekEx(key);
 
         if (nearEntry != null)
-            nearEntry.invalidate(null, ver);
+            nearEntry.invalidate(ver);
     }
 
     /**

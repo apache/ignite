@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
@@ -48,6 +49,7 @@ public class ServiceContextImpl implements ServiceContext {
     private final String cacheName;
 
     /** Affinity key. */
+    @GridToStringInclude
     private final Object affKey;
 
     /** Executor service. */

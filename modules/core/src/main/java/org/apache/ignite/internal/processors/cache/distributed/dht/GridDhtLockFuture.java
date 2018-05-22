@@ -875,6 +875,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                         inTx() ? tx.taskNameHash() : 0,
                         read ? accessTtl : -1L,
                         skipStore,
+                        cctx.store().configured(),
                         keepBinary,
                         cctx.deploymentEnabled());
 

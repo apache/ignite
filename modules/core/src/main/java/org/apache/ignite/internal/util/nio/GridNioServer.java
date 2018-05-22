@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -419,6 +420,21 @@ public class GridNioServer<T> {
 
         for (IgniteThread thread : clientThreads)
             thread.start();
+    }
+
+    /**
+     * @return Stripe thread attributes.
+     */
+    public Map<Long, String> getStripeThreadIds() {
+        Map<Long, String> stripeThreads = new HashMap<>();
+
+        if (acceptThread != null)
+            stripeThreads.put(acceptThread.getId(), acceptThread.getName());
+
+        for (IgniteThread thread : clientThreads)
+            stripeThreads.put(thread.getId(), thread.getName());
+
+        return stripeThreads;
     }
 
     /**
@@ -985,12 +1001,12 @@ public class GridNioServer<T> {
 
                     if (req == null) {
                         if (ses.procWrite.get()) {
-                            ses.procWrite.set(false);
+                            boolean set = ses.procWrite.compareAndSet(true, false);
 
-                            if (ses.writeQueue().isEmpty()) {
-                                if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                            }
+                            assert set;
+
+                            if (ses.writeQueue().isEmpty())
+                                key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
                             else
                                 ses.procWrite.set(true);
                         }
@@ -1206,17 +1222,17 @@ public class GridNioServer<T> {
                         if (req == null) {
                             req = ses.pollFuture();
 
-                            if (req == null && buf.position() == 0) {
-                                if (ses.procWrite.get()) {
-                                    ses.procWrite.set(false);
+                        if (req == null && buf.position() == 0) {
+                            if (ses.procWrite.get()) {
+                                boolean set = ses.procWrite.compareAndSet(true, false);
 
-                                    if (ses.writeQueue().isEmpty()) {
-                                        if ((key.interestOps() & SelectionKey.OP_WRITE) != 0)
-                                            key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
-                                    }
-                                    else
-                                        ses.procWrite.set(true);
-                                }
+                                assert set;
+
+                                if (ses.writeQueue().isEmpty())
+                                    key.interestOps(key.interestOps() & (~SelectionKey.OP_WRITE));
+                                else
+                                    ses.procWrite.set(true);
+                            }
 
                                 break;
                             }
@@ -3024,8 +3040,12 @@ public class GridNioServer<T> {
 
                     GridSelectorNioSessionImpl ses0 = (GridSelectorNioSessionImpl)ses;
 
-                    if (!ses0.procWrite.get() && ses0.procWrite.compareAndSet(false, true))
-                        ses0.worker().registerWrite(ses0);
+                    if (!ses0.procWrite.get() && ses0.procWrite.compareAndSet(false, true)) {
+                        GridNioWorker worker = ses0.worker();
+
+                        if (worker != null)
+                            worker.registerWrite(ses0);
+                    }
 
                     return null;
                 }

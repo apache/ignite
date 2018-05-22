@@ -16,7 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache.ttl;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CacheMode;
 
 /**
  * TTL test with offheap.
@@ -30,5 +30,15 @@ public class CacheTtlOnheapAtomicPartitionedSelfTest extends CacheTtlOnheapAtomi
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testDefaultTimeToLiveLoadAll() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-11241");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testDefaultTimeToLiveStreamerAdd() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-11241");
     }
 }

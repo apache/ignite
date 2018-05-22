@@ -170,6 +170,7 @@ public class PlatformConfigurationUtils {
         ccfg.setWriteBehindFlushFrequency(in.readLong());
         ccfg.setWriteBehindFlushSize(in.readInt());
         ccfg.setWriteBehindFlushThreadCount(in.readInt());
+        ccfg.setWriteBehindCoalescing(in.readBoolean());
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(in.readInt()));
         ccfg.setReadThrough(in.readBoolean());
         ccfg.setWriteThrough(in.readBoolean());
@@ -795,6 +796,7 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getWriteBehindFlushFrequency());
         writer.writeInt(ccfg.getWriteBehindFlushSize());
         writer.writeInt(ccfg.getWriteBehindFlushThreadCount());
+        writer.writeBoolean(ccfg.getWriteBehindCoalescing());
         writeEnumInt(writer, ccfg.getWriteSynchronizationMode());
         writer.writeBoolean(ccfg.isReadThrough());
         writer.writeBoolean(ccfg.isWriteThrough());

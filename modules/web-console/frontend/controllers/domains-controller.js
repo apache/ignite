@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
+import templateUrl from 'views/configuration/domains-import.tpl.pug';
+
 // Controller for Domain model screen.
 export default ['domainsController', [
-    '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteAgentMonitor', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'JavaTypes', 'SqlTypes', 'IgniteActivitiesData',
-    function($root, $scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Focus, Confirm, ConfirmBatch, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, IgniteAgentMonitor, LegacyTable, Resource, ErrorPopover, FormUtils, JavaTypes, SqlTypes, ActivitiesData) {
+    '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteInput', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteAgentMonitor', 'IgniteLegacyTable', 'IgniteConfigurationResource', 'IgniteErrorPopover', 'IgniteFormUtils', 'JavaTypes', 'SqlTypes', 'IgniteActivitiesData',
+    function($root, $scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Focus, Confirm, ConfirmBatch, Input, Loading, ModelNormalizer, UnsavedChangesGuard, IgniteAgentMonitor, LegacyTable, Resource, ErrorPopover, FormUtils, JavaTypes, SqlTypes, ActivitiesData) {
         UnsavedChangesGuard.install($scope);
 
         const emptyDomain = {empty: true};
@@ -409,7 +411,7 @@ export default ['domainsController', [
         $scope.$watch('importDomain.displayedTables', $scope.selectTable);
 
         // Pre-fetch modal dialogs.
-        const importDomainModal = $modal({scope: $scope, templateUrl: '/configuration/domains-import.html', show: false});
+        const importDomainModal = $modal({scope: $scope, templateUrl, show: false});
 
         const hideImportDomain = importDomainModal.hide;
 
@@ -1427,7 +1429,7 @@ export default ['domainsController', [
 
                 item.cacheStoreChanges = [];
 
-                _.forEach(item.caches, function(cacheId) {
+                _.forEach(item.caches, (cacheId) => {
                     const cache = _.find($scope.caches, {value: cacheId}).cache;
 
                     const change = LegacyUtils.autoCacheStoreConfiguration(cache, [item]);
@@ -1442,9 +1444,7 @@ export default ['domainsController', [
         };
 
         function _domainNames() {
-            return _.map($scope.domains, function(domain) {
-                return domain.valueType;
-            });
+            return _.map($scope.domains, (domain) => domain.valueType);
         }
 
         function _newNameIsValidJavaClass(newName) {
@@ -1455,7 +1455,7 @@ export default ['domainsController', [
         // Save domain model with new name.
         $scope.cloneItem = function() {
             if ($scope.tableReset(true) && validate($scope.backupItem)) {
-                Clone.confirm($scope.backupItem.valueType, _domainNames(), _newNameIsValidJavaClass).then(function(newName) {
+                Input.clone($scope.backupItem.valueType, _domainNames(), _newNameIsValidJavaClass).then((newName) => {
                     const item = angular.copy($scope.backupItem);
 
                     delete item._id;

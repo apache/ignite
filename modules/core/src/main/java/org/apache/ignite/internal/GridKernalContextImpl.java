@@ -298,6 +298,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    protected ExecutorService svcExecSvc;
+
+    /** */
+    @GridToStringExclude
     protected ExecutorService sysExecSvc;
 
     /** */
@@ -335,6 +339,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private Map<String, Object> attrs = new HashMap<>();
+
+    /** */
+    @GridToStringExclude
+    private Map<Long, String> igniteSysThreads = new HashMap<>();
 
     /** */
     private IgniteEx grid;
@@ -406,6 +414,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         ExecutorService utilityCachePool,
         ExecutorService marshCachePool,
         ExecutorService execSvc,
+        ExecutorService svcExecSvc,
         ExecutorService sysExecSvc,
         StripedExecutor stripedExecSvc,
         ExecutorService p2pExecSvc,
@@ -427,6 +436,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.utilityCachePool = utilityCachePool;
         this.marshCachePool = marshCachePool;
         this.execSvc = execSvc;
+        this.svcExecSvc = svcExecSvc;
         this.sysExecSvc = sysExecSvc;
         this.stripedExecSvc = stripedExecSvc;
         this.p2pExecSvc = p2pExecSvc;
@@ -953,6 +963,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public ExecutorService getServiceExecutorService() {
+        return svcExecSvc;
+    }
+
+    /** {@inheritDoc} */
     @Override public ExecutorService getSystemExecutorService() {
         return sysExecSvc;
     }
@@ -1018,6 +1033,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Override public Map<Long, String> igniteSysThreads() {
+        return igniteSysThreads;
+    }
+
+    /** {@inheritDoc} */
     @Override public ClusterProcessor cluster() {
         return cluster;
     }
@@ -1043,6 +1063,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public PlatformProcessor platform() {
         return platformProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String registerSysThread(Long id, String name) {
+        return igniteSysThreads.put(id, name);
     }
 
     /**

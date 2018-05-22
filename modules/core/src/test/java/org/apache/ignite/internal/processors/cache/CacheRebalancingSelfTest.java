@@ -40,11 +40,19 @@ public class CacheRebalancingSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testRebalanceFuture() throws Exception {
         IgniteEx ignite0 = startGrid(0);
+
         startGrid(1);
 
         IgniteCache<Object, Object> cache = ignite0.cache(null);

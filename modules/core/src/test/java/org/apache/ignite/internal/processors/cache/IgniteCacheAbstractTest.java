@@ -152,6 +152,9 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
             cfg.setReadThrough(true);
             cfg.setWriteThrough(true);
             cfg.setLoadPreviousValue(true);
+
+            cfg.setWriteBehindEnabled(writeBehindEnabled());
+            cfg.setWriteBehindCoalescing(writeBehindCoalescing());
         }
 
         if (cacheMode() == PARTITIONED)
@@ -165,6 +168,20 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
      */
     protected Factory<CacheStore> cacheStoreFactory() {
         return null;
+    }
+
+    /**
+     * @return write behind enabled flag.
+     */
+    protected boolean writeBehindEnabled() {
+        return false;
+    }
+
+    /**
+     * @return write behind coalescing flag.
+     */
+    protected boolean writeBehindCoalescing() {
+        return true;
     }
 
     /**

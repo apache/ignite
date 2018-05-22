@@ -653,6 +653,13 @@
                                             </xs:documentation>
                                         </xs:annotation>
                                     </xs:attribute>
+                                    <xs:attribute name="writeBehindCoalescing" type="xs:boolean">
+                                        <xs:annotation>
+                                            <xs:documentation>
+                                                Coalescing flag for write-behind cache store operations. Store operations (get or remove) with the same key are combined or coalesced to single, resulting operation to reduce pressure to underlying cache store.
+                                            </xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
                                     <xs:attribute name="writeBehindBatchSize" type="xs:int">
                                         <xs:annotation>
                                             <xs:documentation>

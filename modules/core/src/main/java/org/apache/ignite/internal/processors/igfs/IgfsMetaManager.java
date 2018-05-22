@@ -69,6 +69,7 @@ import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T1;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -249,28 +250,19 @@ public class IgfsMetaManager extends IgfsManager {
      */
     <T> T runClientTask(IgfsClientAbstractCallable<T> task) {
         try {
-            return runClientTask(IgfsUtils.ROOT_ID, task);
-        }
-        catch (ClusterTopologyException e) {
-            throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
-        }
-    }
-
-    /**
-     * Run client task.
-     *
-     * @param affinityFileId Affinity fileId.
-     * @param task Task.
-     * @return Result.
-     */
-    <T> T runClientTask(IgniteUuid affinityFileId, IgfsClientAbstractCallable<T> task) {
-        try {
             return (cfg.isColocateMetadata()) ?
-                clientCompute().affinityCall(cfg.getMetaCacheName(), affinityFileId, task) :
+                clientCompute().affinityCall(cfg.getMetaCacheName(), IgfsUtils.ROOT_ID, task) :
                 clientCompute().call(task);
         }
-        catch (ClusterTopologyException e) {
-            throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
+        catch (Exception e) {
+            if (X.hasCause(e, ClusterTopologyException.class))
+                throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
+
+            IgfsException igfsEx = X.cause(e, IgfsException.class);
+            if (igfsEx != null)
+                throw igfsEx;
+
+            throw e;
         }
     }
 
