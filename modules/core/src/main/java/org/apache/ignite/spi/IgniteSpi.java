@@ -126,9 +126,7 @@ public interface IgniteSpi {
      *
      * @param threadMap Map to store thread attributes.
      */
-    public default void setCtxSysThreads(Map<Long, String> threadMap){
-        //No-op.
-    }
+    public void setCtxSysThreads(Map<Long, String> threadMap);
 
     /**
      * Registers sys thread.
@@ -136,7 +134,5 @@ public interface IgniteSpi {
      * @param id Thread id.
      * @param name Thread name.
      */
-    public default void registerSysThread(Long id, String name){
-        //No-op.
-    }
+    public void registerSysThread(Long id, String name);
 }
