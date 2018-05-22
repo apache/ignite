@@ -2368,32 +2368,34 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         new GridConnectionBytesVerifyFilter(log)
                     };
 
-                GridNioServer<Message> srvr =
-                    GridNioServer.<Message>builder()
-                        .address(locHost)
-                        .port(port)
-                        .listener(srvLsnr)
-                        .logger(log)
-                        .selectorCount(selectorsCnt)
-                        .igniteInstanceName(igniteInstanceName)
-                        .serverName("tcp-comm")
-                        .tcpNoDelay(tcpNoDelay)
-                        .directBuffer(directBuf)
-                        .byteOrder(ByteOrder.nativeOrder())
-                        .socketSendBufferSize(sockSndBuf)
-                        .socketReceiveBufferSize(sockRcvBuf)
-                        .sendQueueLimit(msgQueueLimit)
-                        .directMode(true)
-                        .metricsListener(metricsLsnr)
-                        .writeTimeout(sockWriteTimeout)
-                        .selectorSpins(selectorSpins)
-                        .filters(filters)
-                        .writerFactory(writerFactory)
-                        .skipRecoveryPredicate(skipRecoveryPred)
-                        .messageQueueSizeListener(queueSizeMonitor)
-                        .readWriteSelectorsAssign(usePairedConnections)
-                        .workerListener(((IgniteEx)ignite).context().workersRegistry())
-                        .build();
+                GridNioServer.Builder<Message> builder = GridNioServer.<Message>builder()
+                    .address(locHost)
+                    .port(port)
+                    .listener(srvLsnr)
+                    .logger(log)
+                    .selectorCount(selectorsCnt)
+                    .igniteInstanceName(igniteInstanceName)
+                    .serverName("tcp-comm")
+                    .tcpNoDelay(tcpNoDelay)
+                    .directBuffer(directBuf)
+                    .byteOrder(ByteOrder.nativeOrder())
+                    .socketSendBufferSize(sockSndBuf)
+                    .socketReceiveBufferSize(sockRcvBuf)
+                    .sendQueueLimit(msgQueueLimit)
+                    .directMode(true)
+                    .metricsListener(metricsLsnr)
+                    .writeTimeout(sockWriteTimeout)
+                    .selectorSpins(selectorSpins)
+                    .filters(filters)
+                    .writerFactory(writerFactory)
+                    .skipRecoveryPredicate(skipRecoveryPred)
+                    .messageQueueSizeListener(queueSizeMonitor)
+                    .readWriteSelectorsAssign(usePairedConnections);
+
+                if (ignite instanceof IgniteEx)
+                    builder.workerListener(((IgniteEx)ignite).context().workersRegistry());
+
+                GridNioServer<Message> srvr = builder.build();
 
                 boundTcpPort = port;
 
@@ -4215,7 +4217,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         private CommunicationWorker(String igniteInstanceName) {
             super(igniteInstanceName, "tcp-comm-worker", log);
 
-            WorkersRegistry workerRegistry = ((IgniteEx)ignite).context().workersRegistry();
+            WorkersRegistry workerRegistry = ignite instanceof IgniteEx
+                ? ((IgniteEx)ignite).context().workersRegistry()
+                : null;
 
             worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
                 @Override protected void body() throws InterruptedException {
