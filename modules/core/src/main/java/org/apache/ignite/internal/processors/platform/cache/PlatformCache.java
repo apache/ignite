@@ -980,7 +980,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 CacheConfiguration ccfg = ((IgniteCache<Object, Object>)cache).
                         getConfiguration(CacheConfiguration.class);
 
-                PlatformConfigurationUtils.writeCacheConfiguration(writer, ccfg);
+                PlatformConfigurationUtils.writeCacheConfiguration(writer, ccfg, null);
 
                 break;
 

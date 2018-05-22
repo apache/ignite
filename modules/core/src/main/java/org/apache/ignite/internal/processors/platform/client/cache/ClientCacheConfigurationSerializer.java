@@ -30,6 +30,8 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils.readQueryEntity;
 import static org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils.writeEnumInt;
@@ -134,8 +136,10 @@ public class ClientCacheConfigurationSerializer {
      * Writes the cache configuration.
      * @param writer Writer.
      * @param cfg Configuration.
+     * @param ver Client version.
      */
-    static void write(BinaryRawWriterEx writer, CacheConfiguration cfg) {
+    static void write(BinaryRawWriterEx writer, CacheConfiguration cfg, 
+        @Nullable ClientListenerProtocolVersion ver) {
         assert writer != null;
         assert cfg != null;
 
@@ -191,7 +195,7 @@ public class ClientCacheConfigurationSerializer {
             writer.writeInt(qryEntities.size());
 
             for (QueryEntity e : qryEntities)
-                writeQueryEntity(writer, e);
+                writeQueryEntity(writer, e, ver);
         } else
             writer.writeInt(0);
 
@@ -203,9 +207,11 @@ public class ClientCacheConfigurationSerializer {
      * Reads the cache configuration.
      *
      * @param reader Reader.
+     * @param ver Client version.
      * @return Configuration.
      */
-    static CacheConfiguration read(BinaryRawReader reader) {
+    static CacheConfiguration read(BinaryRawReader reader, 
+        @Nullable ClientListenerProtocolVersion ver) {
         reader.readInt();  // Skip length.
 
         short propCnt = reader.readShort();
@@ -349,7 +355,7 @@ public class ClientCacheConfigurationSerializer {
                         Collection<QueryEntity> entities = new ArrayList<>(qryEntCnt);
 
                         for (int j = 0; j < qryEntCnt; j++)
-                            entities.add(readQueryEntity(reader));
+                            entities.add(readQueryEntity(reader, ver));
 
                         cfg.setQueryEntities(entities);
                     }

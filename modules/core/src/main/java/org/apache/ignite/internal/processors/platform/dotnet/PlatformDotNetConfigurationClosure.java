@@ -196,7 +196,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     private void processPrepareResult(BinaryReaderExImpl in) {
         assert cfg != null;
 
-        PlatformConfigurationUtils.readIgniteConfiguration(in, cfg);
+        PlatformConfigurationUtils.readIgniteConfiguration(in, cfg, null);
 
         // Process beans
         List<PlatformDotNetLifecycleBean> beans = beans(cfg);

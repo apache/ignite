@@ -76,12 +76,12 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.processors.platform.events.PlatformLocalEventListener;
 import org.apache.ignite.internal.processors.platform.plugin.cache.PlatformCachePluginConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
@@ -107,8 +107,10 @@ import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Integer.MAX_VALUE;
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_2_0;
 
 /**
  * Configuration utils.
@@ -160,9 +162,11 @@ public class PlatformConfigurationUtils {
      * Reads cache configuration from a stream.
      *
      * @param in Stream.
+     * @param ver Client version.
      * @return Cache configuration.
      */
-    public static CacheConfiguration readCacheConfiguration(BinaryRawReaderEx in) {
+    public static CacheConfiguration readCacheConfiguration(BinaryRawReaderEx in, 
+        @Nullable ClientListenerProtocolVersion ver) {
         assert in != null;
 
         CacheConfiguration ccfg = new CacheConfiguration();
@@ -228,7 +232,7 @@ public class PlatformConfigurationUtils {
             Collection<QueryEntity> entities = new ArrayList<>(qryEntCnt);
 
             for (int i = 0; i < qryEntCnt; i++)
-                entities.add(readQueryEntity(in));
+                entities.add(readQueryEntity(in, ver));
 
             ccfg.setQueryEntities(entities);
         }
@@ -485,9 +489,11 @@ public class PlatformConfigurationUtils {
      * Reads the query entity.
      *
      * @param in Stream.
+     * @param ver Client version.
      * @return QueryEntity.
      */
-    public static QueryEntity readQueryEntity(BinaryRawReader in) {
+    public static QueryEntity readQueryEntity(BinaryRawReader in, 
+        @Nullable ClientListenerProtocolVersion ver) {
         QueryEntity res = new QueryEntity();
 
         res.setKeyType(in.readString());
@@ -522,18 +528,20 @@ public class PlatformConfigurationUtils {
                 Object defVal = in.readObject();
                 if (defVal != null)
                     defVals.put(fieldName, defVal);
-
-                int precision = in.readInt();
-
-                int scale = in.readInt();
-
-                if (precision != -1 || scale != -1)
-                    decimalInfo.put(fieldName, F.t(precision, scale));
                 
-                int maxLength = in.readInt();
-                
-                if (maxLength != MAX_VALUE)
-                    maxLengthInfo.put(fieldName, maxLength);
+                if (ver == null || ver.compareTo(VER_1_2_0) >= 0) {
+                    int precision = in.readInt();
+
+                    int scale = in.readInt();
+
+                    if (precision != -1 || scale != -1)
+                        decimalInfo.put(fieldName, F.t(precision, scale));
+
+                    int maxLength = in.readInt();
+
+                    if (maxLength != MAX_VALUE)
+                        maxLengthInfo.put(fieldName, maxLength);
+                }
             }
 
             res.setFields(fields);
@@ -612,9 +620,11 @@ public class PlatformConfigurationUtils {
      * Reads Ignite configuration.
      * @param in Reader.
      * @param cfg Configuration.
+     * @param ver Client version.
      */
     @SuppressWarnings("deprecation")
-    public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
+    public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg, 
+        @Nullable ClientListenerProtocolVersion ver) {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
         int[] evtTypes = in.readIntArray();
@@ -681,7 +691,7 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             cfg.setQueryThreadPoolSize(in.readInt());
 
-        readCacheConfigurations(in, cfg);
+        readCacheConfigurations(in, cfg, ver);
         readDiscoveryConfiguration(in, cfg);
 
         if (in.readBoolean()) {
@@ -817,8 +827,10 @@ public class PlatformConfigurationUtils {
      *
      * @param cfg IgniteConfiguration to update.
      * @param in Reader.
+     * @param ver Client version.
      */
-    private static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg) {
+    private static void readCacheConfigurations(BinaryRawReaderEx in, IgniteConfiguration cfg, 
+        ClientListenerProtocolVersion ver) {
         int len = in.readInt();
 
         if (len == 0)
@@ -827,7 +839,7 @@ public class PlatformConfigurationUtils {
         List<CacheConfiguration> caches = new ArrayList<>();
 
         for (int i = 0; i < len; i++)
-            caches.add(readCacheConfiguration(in));
+            caches.add(readCacheConfiguration(in, ver));
 
         CacheConfiguration[] oldCaches = cfg.getCacheConfiguration();
         CacheConfiguration[] caches0 = caches.toArray(new CacheConfiguration[caches.size()]);
@@ -926,8 +938,10 @@ public class PlatformConfigurationUtils {
      *
      * @param writer Writer.
      * @param ccfg Configuration.
+     * @param ver Client version.
      */
-    public static void writeCacheConfiguration(BinaryRawWriter writer, CacheConfiguration ccfg) {
+    public static void writeCacheConfiguration(BinaryRawWriter writer, CacheConfiguration ccfg, 
+        ClientListenerProtocolVersion ver) {
         assert writer != null;
         assert ccfg != null;
 
@@ -987,7 +1001,7 @@ public class PlatformConfigurationUtils {
             writer.writeInt(qryEntities.size());
 
             for (QueryEntity e : qryEntities)
-                writeQueryEntity(writer, e);
+                writeQueryEntity(writer, e, ver);
         }
         else
             writer.writeInt(0);
@@ -1044,8 +1058,10 @@ public class PlatformConfigurationUtils {
      *
      * @param writer Writer.
      * @param qryEntity Query entity.
+     * @param ver Client version.
      */
-    public static void writeQueryEntity(BinaryRawWriter writer, QueryEntity qryEntity) {
+    public static void writeQueryEntity(BinaryRawWriter writer, QueryEntity qryEntity, 
+        @Nullable ClientListenerProtocolVersion ver) {
         assert qryEntity != null;
 
         writer.writeString(qryEntity.getKeyType());
@@ -1072,15 +1088,17 @@ public class PlatformConfigurationUtils {
                 writer.writeBoolean(keyFields != null && keyFields.contains(field.getKey()));
                 writer.writeBoolean(notNullFields != null && notNullFields.contains(field.getKey()));
                 writer.writeObject(defVals != null ? defVals.get(field.getKey()) : null);
-
-                IgniteBiTuple<Integer, Integer> precisionAndScale =
-                    decimalInfo == null ? null : decimalInfo.get(field.getKey());
-
-                writer.writeInt(precisionAndScale == null ? -1 : precisionAndScale.get1());
-                writer.writeInt(precisionAndScale == null ? -1 : precisionAndScale.get2());
                 
-                writer.writeInt(maxLengthInfo == null ? 
-                    MAX_VALUE : maxLengthInfo.getOrDefault(field.getKey(), MAX_VALUE));
+                if (ver == null || ver.compareTo(VER_1_2_0) >= 0) {
+                    IgniteBiTuple<Integer, Integer> precisionAndScale =
+                        decimalInfo == null ? null : decimalInfo.get(field.getKey());
+
+                    writer.writeInt(precisionAndScale == null ? -1 : precisionAndScale.get1());
+                    writer.writeInt(precisionAndScale == null ? -1 : precisionAndScale.get2());
+
+                    writer.writeInt(maxLengthInfo == null ?
+                        MAX_VALUE : maxLengthInfo.getOrDefault(field.getKey(), MAX_VALUE));
+                }
             }
         }
         else
@@ -1145,9 +1163,11 @@ public class PlatformConfigurationUtils {
      *
      * @param w Writer.
      * @param cfg Configuration.
+     * @param ver Client version.
      */
     @SuppressWarnings("deprecation")
-    public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg) {
+    public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg, 
+        @Nullable ClientListenerProtocolVersion ver) {
         assert w != null;
         assert cfg != null;
 
@@ -1210,7 +1230,7 @@ public class PlatformConfigurationUtils {
             w.writeInt(cacheCfg.length);
 
             for (CacheConfiguration ccfg : cacheCfg)
-                writeCacheConfiguration(w, ccfg);
+                writeCacheConfiguration(w, ccfg, ver);
         }
         else
             w.writeInt(0);
