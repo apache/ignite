@@ -36,8 +36,6 @@ mixin form-field__dropdown({ label, model, name, disabled, required, multiple, p
             tabindex='0'
         )&attributes(attributes.attributes)
 
-    -var errLbl = label.substring(0, label.length - 1)
-
     .form-field(id=`{{ ${name} }}Field`)
         +form-field__label({ label, name, required })
             +form-field__tooltip({ title: tip, options: tipOpts })
