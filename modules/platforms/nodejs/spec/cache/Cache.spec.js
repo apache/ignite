@@ -148,10 +148,16 @@ describe('cache configuration operations test suite >', () => {
                         new QueryEntity().
                             setKeyTypeName('INT').
                             setValueTypeName('Person').
+                            setTableName('Person').
+                            setKeyFieldName('id').
+                            setValueFieldName('salary').
                             setFields([
-                                new QueryField('id', 'INT'),
-                                new QueryField('firstName', 'VARCHAR'),
-                                new QueryField('lastName', 'VARCHAR'),
+                                new QueryField('id', 'INT').
+                                    setIsKeyField(true),
+                                new QueryField('firstName', 'VARCHAR').
+                                    setIsNotNull(true),
+                                new QueryField('lastName', 'VARCHAR').
+                                    setDefaultValue('lastName'),
                                 new QueryField('salary', 'DOUBLE').
                                     setPrecision(10).
                                     setScale(10)
@@ -159,6 +165,9 @@ describe('cache configuration operations test suite >', () => {
                             setAliases(new Map([['id', 'id'], ['firstName', 'firstName']])).
                             setIndexes([
                                 new QueryIndex('id_idx', QueryIndex.INDEX_TYPE.SORTED).
+                                    setName('id_idx').
+                                    setType(QueryIndex.INDEX_TYPE.SORTED).
+                                    setInlineSize(10).
                                     setFields(new Map([['id', true], ['firstName', false]]))
                             ]));
                 let cache = await igniteClient.createCache(CACHE_NAME3, cacheCfg);
