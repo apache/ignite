@@ -79,7 +79,7 @@ public class GridLogThrottleTest extends GridCommonAbstractTest {
         checkInfo("Test info message.", true);
         checkInfo("Test info message.", false);
 
-        for (int i = 1; i <= 128; i++)
+        for (int i = 1; i <= LT.throttleCapacity(); i++)
             checkInfo("Test info message " + i, true);
 
         checkInfo("Test info message.", true);

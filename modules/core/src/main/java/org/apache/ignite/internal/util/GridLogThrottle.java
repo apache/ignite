@@ -26,6 +26,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOG_THROTTLE_CAPACITY;
 import static org.jsr166.ConcurrentLinkedHashMap.DFLT_CONCUR_LVL;
 
 /**
@@ -44,7 +45,7 @@ public class GridLogThrottle {
     private static volatile int throttleTimeout = DFLT_THROTTLE_TIMEOUT;
 
     /** Throttle timeout in milliseconds. */
-    private static final int throttleCap = IgniteSystemProperties.getInteger("throttle.capacity", 128);
+    private static final int throttleCap = IgniteSystemProperties.getInteger(IGNITE_LOG_THROTTLE_CAPACITY, 128);
 
     /** Errors. */
     private static final ConcurrentMap<IgniteBiTuple<Class<? extends Throwable>, String>, Long> errors =
