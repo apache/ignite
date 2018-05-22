@@ -592,7 +592,7 @@ public class GridReduceQueryExecutor {
                     selectForUpdateClientFirst = topFut.clientFirst();
                 }
                 catch (IgniteCheckedException e) {
-                    sfuFut.onError(e);
+                    sfuFut.onDone(e);
 
                     throw new IgniteSQLException("Failed to map SELECT FOR UPDATE query on topology.", e);
                 }
@@ -810,17 +810,15 @@ public class GridReduceQueryExecutor {
                             GridH2QueryRequest res = pspec != null ? (GridH2QueryRequest)pspec.apply(clusterNode, msg) :
                                 new GridH2QueryRequest((GridH2QueryRequest)msg);
 
-                            int miniId = cnt.incrementAndGet();
-
                             GridH2SelectForUpdateTxDetails txReq = new GridH2SelectForUpdateTxDetails(
                                 curTx.threadId(),
                                 IgniteUuid.randomUuid(),
-                                miniId,
+                                cnt.incrementAndGet(),
                                 curTx.subjectId(),
                                 curTx.xidVersion(),
                                 curTx.taskNameHash(),
-                                selectForUpdateClientFirst
-                            );
+                                selectForUpdateClientFirst,
+                                curTx.remainingTime());
 
                             res.txDetails(txReq);
 

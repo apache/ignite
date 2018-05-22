@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.internal.IgniteInternalFuture;
 
 /**
- *
+ * Marker interface.
  */
 public interface DhtLockFuture<T> extends IgniteInternalFuture<T> {
     /**

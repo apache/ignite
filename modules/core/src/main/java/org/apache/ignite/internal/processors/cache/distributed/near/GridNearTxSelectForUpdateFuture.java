@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -56,7 +57,7 @@ import org.jetbrains.annotations.Nullable;
  * of entries produced with complex DML queries requiring reduce step.
  */
 public class GridNearTxSelectForUpdateFuture extends GridCacheCompoundIdentityFuture<Long>
-    implements GridCacheVersionedFuture<Long>, MvccSnapshotResponseListener {
+    implements GridCacheVersionedFuture<Long> {
     /** */
     private static final long serialVersionUID = 6931664882548658420L;
 
@@ -64,10 +65,19 @@ public class GridNearTxSelectForUpdateFuture extends GridCacheCompoundIdentityFu
     private static final AtomicIntegerFieldUpdater<GridNearTxSelectForUpdateFuture> DONE_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridNearTxSelectForUpdateFuture.class, "done");
 
+    /** Done field updater. */
+    private static final AtomicReferenceFieldUpdater<GridNearTxSelectForUpdateFuture, Throwable> EX_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridNearTxSelectForUpdateFuture.class, Throwable.class, "ex");
+
     /** */
     @SuppressWarnings("unused")
     @GridToStringExclude
     private volatile int done;
+
+    /** */
+    @SuppressWarnings("unused")
+    @GridToStringExclude
+    private volatile Throwable ex;
 
     /** Cache context. */
     @GridToStringExclude
@@ -159,33 +169,45 @@ public class GridNearTxSelectForUpdateFuture extends GridCacheCompoundIdentityFu
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err) {
+    @Override protected boolean processFailure(Throwable err, IgniteInternalFuture<Long> fut) {
+        if (ex != null || !EX_UPD.compareAndSet(this, null, err))
+            ex.addSuppressed(err);
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean onDone(@Nullable Long res, @Nullable Throwable err, boolean cancelled) {
         if (!DONE_UPD.compareAndSet(this, 0, 1))
             return false;
 
         cctx.tm().txContext(tx);
 
-        if (err != null)
+        Throwable ex0 = ex;
+
+        if (ex0 != null) {
+            if (err != null)
+                ex0.addSuppressed(err);
+
+            err = ex0;
+        }
+
+        if (!cancelled && err == null)
+            tx.clearLockFuture(this);
+        else
             tx.setRollbackOnly();
 
-        if (!X.hasCause(err, IgniteTxTimeoutCheckedException.class) && tx.trackTimeout()) {
-            // Need restore timeout before onDone is called and next tx operation can proceed.
-            boolean add = tx.addTimeoutHandler();
+        boolean done = super.onDone(res, err, cancelled);
 
-            assert add;
-        }
+        assert done;
 
-        if (super.onDone(res, err)) {
-            // Clean up.
-            cctx.mvcc().removeVersionedFuture(this);
+        // Clean up.
+        cctx.mvcc().removeVersionedFuture(this);
 
-            if (timeoutObj != null)
-                cctx.time().removeTimeoutObject(timeoutObj);
+        if (timeoutObj != null)
+            cctx.time().removeTimeoutObject(timeoutObj);
 
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     /**
@@ -267,17 +289,6 @@ public class GridNearTxSelectForUpdateFuture extends GridCacheCompoundIdentityFu
     }
 
     /** {@inheritDoc} */
-    @Override public void onResponse(UUID crdId, MvccSnapshot res) {
-        if (tx != null)
-            tx.mvccInfo(new MvccTxInfo(crdId, res));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onError(IgniteCheckedException e) {
-        onDone(e);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void logError(IgniteLogger log, String msg, Throwable e) {
         // no-op
     }
@@ -322,20 +333,10 @@ public class GridNearTxSelectForUpdateFuture extends GridCacheCompoundIdentityFu
         if (initialized())
             throw new IllegalStateException("SELECT FOR UPDATE future has been initialized already.");
 
-        if (tx.trackTimeout()) {
-            if (!tx.removeTimeoutHandler()) {
-                tx.finishFuture().listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut) {
-                        IgniteTxTimeoutCheckedException err = new IgniteTxTimeoutCheckedException("Failed to " +
-                            "acquire lock, transaction was rolled back on timeout [timeout=" + tx.timeout() +
-                            ", tx=" + tx + ']');
+        if (!tx.updateLockFuture(null, this)) {
+            onDone(tx.timedOut() ? tx.timeoutException() : tx.rollbackException());
 
-                        onDone(err);
-                    }
-                });
-
-                return;
-            }
+            return;
         }
 
         if (timeout > 0) {

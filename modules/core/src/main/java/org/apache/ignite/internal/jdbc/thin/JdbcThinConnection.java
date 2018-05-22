@@ -936,7 +936,7 @@ public class JdbcThinConnection implements Connection {
                 respSem.acquire();
 
                 sendRequestNotWaitResponse(
-                    new JdbcOrderedBatchExecuteRequest(schema, streamBatch, lastBatch, order));
+                    new JdbcOrderedBatchExecuteRequest(schema, streamBatch, autoCommit, lastBatch, order));
 
                 streamBatch = null;
 

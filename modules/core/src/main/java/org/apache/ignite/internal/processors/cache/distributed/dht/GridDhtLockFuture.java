@@ -84,7 +84,7 @@ import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
  * Cache lock future.
  */
 public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boolean>
-    implements GridCacheVersionedFuture<Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion {
+    implements GridCacheVersionedFuture<Boolean>, GridDhtFuture<Boolean>, GridCacheMappedVersion, DhtLockFuture<Boolean> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -266,7 +266,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         if (tx != null) {
             while(true) {
-                IgniteInternalFuture<Boolean> fut = tx.lockFut;
+                IgniteInternalFuture fut = tx.lockFut;
 
                 if (fut != null) {
                     if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT)
@@ -276,8 +276,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                         assert fut instanceof GridDhtColocatedLockFuture : fut;
 
                         // Terminate this future if parent(collocated) future is terminated by rollback.
-                        fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                            @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                        fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+                            @Override public void apply(IgniteInternalFuture fut) {
                                 try {
                                     fut.get();
                                 }

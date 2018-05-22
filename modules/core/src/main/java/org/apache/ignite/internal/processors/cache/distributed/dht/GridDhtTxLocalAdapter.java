@@ -78,7 +78,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Asynchronous rollback marker for lock futures. */
-    protected static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
+    public static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
 
     /** Lock future updater. */
     private static final AtomicReferenceFieldUpdater<GridDhtTxLocalAdapter, IgniteInternalFuture> LOCK_FUT_UPD =
@@ -108,7 +108,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Enlist or lock future what is currently in progress. */
     @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
-    protected volatile IgniteInternalFuture<Boolean> lockFut;
+    protected volatile IgniteInternalFuture<?> lockFut;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -853,6 +853,13 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
+     * @return Lock future.
+     */
+    public IgniteInternalFuture<?> lockFuture() {
+        return lockFut;
+    }
+
+    /**
      * Atomically updates lock future.
      *
      * @param oldFut Old future.
@@ -901,7 +908,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * @return Current lock future or null if it's safe to roll back.
      */
     public @Nullable IgniteInternalFuture<?> tryRollbackAsync() {
-        IgniteInternalFuture<Boolean> fut;
+        IgniteInternalFuture<?> fut;
 
         while(true) {
             fut = lockFut;

@@ -31,10 +31,12 @@ public interface NearTxFinishFuture extends IgniteInternalFuture<IgniteInternalT
     boolean commit();
 
     /**
-     * @param commit {@code True} to commit, otherwise rollback.
+     *
+     * @param commit Commit flag.
      * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
+     * @param onTimeout If {@code true} called from timeout handler.
      */
-    public void finish(boolean commit, boolean clearThreadMap);
+    public void finish(boolean commit, boolean clearThreadMap, boolean onTimeout);
 
     /**
      * @param e Error.

@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.ExceptionAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -33,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage {
+public class GridNearTxQueryEnlistResponse extends GridCacheIdMessage implements ExceptionAware {
     /** */
     private static final long serialVersionUID = 0L;
 

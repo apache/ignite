@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  *
  */
-public interface DhtEnlistFutureResult {
+public interface ExceptionAware {
+    /**
+     * @return Exception.
+     */
+    @Nullable Throwable error();
 }

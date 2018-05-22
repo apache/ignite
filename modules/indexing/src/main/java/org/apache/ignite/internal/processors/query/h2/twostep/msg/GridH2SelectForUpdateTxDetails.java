@@ -30,6 +30,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridH2SelectForUpdateTxDetails implements Message {
     /** */
+    private static final long serialVersionUID = 8166491041528984454L;
+    /** */
     private long threadId;
 
     /** */
@@ -50,6 +52,9 @@ public class GridH2SelectForUpdateTxDetails implements Message {
     /** */
     private boolean clientFirst;
 
+    /** */
+    private long timeout;
+
     /**
      * Default constructor.
      */
@@ -65,9 +70,10 @@ public class GridH2SelectForUpdateTxDetails implements Message {
      * @param lockVer Lock version.
      * @param taskNameHash Task name hash.
      * @param clientFirst {@code True} if this is the first client request.
+     * @param timeout Tx timeout.
      */
     public GridH2SelectForUpdateTxDetails(long threadId, IgniteUuid futId, int miniId, UUID subjId,
-        GridCacheVersion lockVer, int taskNameHash, boolean clientFirst) {
+        GridCacheVersion lockVer, int taskNameHash, boolean clientFirst, long timeout) {
         this.threadId = threadId;
         this.futId = futId;
         this.miniId = miniId;
@@ -75,6 +81,7 @@ public class GridH2SelectForUpdateTxDetails implements Message {
         this.lockVer = lockVer;
         this.taskNameHash = taskNameHash;
         this.clientFirst = clientFirst;
+        this.timeout = timeout;
     }
 
     /**
@@ -124,6 +131,13 @@ public class GridH2SelectForUpdateTxDetails implements Message {
      */
     public boolean firstClientRequest() {
         return clientFirst;
+    }
+
+    /**
+     * @return Tx timeout.
+     */
+    public long timeout() {
+        return timeout;
     }
 
     /** {@inheritDoc} */
@@ -176,6 +190,12 @@ public class GridH2SelectForUpdateTxDetails implements Message {
 
             case 6:
                 if (!writer.writeLong("threadId", threadId))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
+                if (!writer.writeLong("timeout", timeout))
                     return false;
 
                 writer.incrementState();
@@ -249,6 +269,14 @@ public class GridH2SelectForUpdateTxDetails implements Message {
 
                 reader.incrementState();
 
+            case 7:
+                timeout = reader.readLong("timeout");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridH2SelectForUpdateTxDetails.class);
@@ -261,7 +289,7 @@ public class GridH2SelectForUpdateTxDetails implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 7;
+        return 8;
     }
 
     /** {@inheritDoc} */

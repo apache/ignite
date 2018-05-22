@@ -37,7 +37,7 @@ import org.jetbrains.annotations.NotNull;
  * Future processing transaction enlisting and locking of entries
  * produces by complex DML queries with reduce step.
  */
-public class GridDhtTxQueryResultsEnlistFuture
+public final class GridDhtTxQueryResultsEnlistFuture
     extends GridDhtTxQueryEnlistAbstractFuture<GridNearTxQueryResultsEnlistResponse>
     implements UpdateSourceIterator<Object> {
     /** */

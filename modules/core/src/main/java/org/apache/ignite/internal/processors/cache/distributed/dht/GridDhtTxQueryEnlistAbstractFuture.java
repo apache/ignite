@@ -42,6 +42,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxAbstractEnlistFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxSelectForUpdateFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -57,6 +59,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -70,7 +73,12 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  * Abstract future processing transaction enlisting and locking
  * of entries produced with DML and SELECT FOR UPDATE queries.
  */
-public abstract class GridDhtTxQueryEnlistAbstractFuture<T> extends GridCacheFutureAdapter<T> {
+public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAware> extends GridCacheFutureAdapter<T>
+    implements DhtLockFuture<T> {
+    /** Done field updater. */
+    private static final AtomicIntegerFieldUpdater<GridDhtTxQueryEnlistAbstractFuture> DONE_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(GridDhtTxQueryEnlistAbstractFuture.class, "done");
+
     /** SkipCntr field updater. */
     private static final AtomicIntegerFieldUpdater<GridDhtTxQueryEnlistAbstractFuture> SKIP_UPD =
         AtomicIntegerFieldUpdater.newUpdater(GridDhtTxQueryEnlistAbstractFuture.class, "skipCntr");
@@ -138,9 +146,6 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T> extends GridCacheFut
     /** Lock timeout. */
     protected final long timeout;
 
-    /** Trackable flag. */
-    protected boolean trackable = true;
-
     /** Query iterator */
     private UpdateSourceIterator<?> it;
 
@@ -151,6 +156,11 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T> extends GridCacheFut
     @SuppressWarnings({"FieldCanBeLocal"})
     @GridToStringExclude
     private volatile int skipCntr;
+
+    /** */
+    @SuppressWarnings("unused")
+    @GridToStringExclude
+    private volatile int done;
 
     /** */
     @GridToStringExclude
@@ -232,13 +242,49 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T> extends GridCacheFut
      *
      */
     public void init() {
-        cctx.mvcc().addFuture(this, futId);
+        if (timeout < 0) {
+            // Time is out.
+            onDone(timeoutException());
 
-        if (timeout > 0) {
+            return;
+        }
+        else if (timeout > 0)
             timeoutObj = new LockTimeoutObject();
 
-            cctx.time().addTimeoutObject(timeoutObj);
+        while(true) {
+            IgniteInternalFuture<?> fut = tx.lockFut;
+
+            if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT
+                || fut instanceof GridDhtTxQueryEnlistAbstractFuture) {
+                onDone(tx.timedOut() ? tx.timeoutException() : tx.rollbackException());
+
+                return;
+            }
+            else if (fut != null) {
+                // Wait for previous future.
+                assert fut instanceof GridNearTxAbstractEnlistFuture
+                    || fut instanceof GridNearTxSelectForUpdateFuture : fut;
+
+                // Terminate this future if parent future is terminated by rollback.
+                fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+                    @Override public void apply(IgniteInternalFuture fut) {
+                        if (fut.error() != null)
+                            onDone(fut.error());
+                    }
+                });
+
+                break;
+            }
+            else if (updateLockFuture())
+                break;
         }
+
+        boolean added = cctx.mvcc().addFuture(this, futId);
+
+        assert added;
+
+        if (timeoutObj != null)
+            cctx.time().addTimeoutObject(timeoutObj);
 
         try {
             checkPartitions(parts);
@@ -269,6 +315,20 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T> extends GridCacheFut
         }
 
         continueLoop(false);
+    }
+
+    /**
+     * @return {@code True} if future was updated successfully.
+     */
+    protected boolean updateLockFuture() {
+        return tx.updateLockFuture(null, this);
+    }
+
+    /**
+     * Clears lock future.
+     */
+    protected void clearLockFuture() {
+        tx.clearLockFuture(this);
     }
 
     /**
@@ -627,7 +687,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T> extends GridCacheFut
                 topVer,
                 lockVer,
                 mvccSnapshot,
-                timeout,
+                tx.remainingTime(),
                 tx.taskNameHash(),
                 nearNodeId,
                 nearLockVer,
@@ -747,12 +807,12 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T> extends GridCacheFut
 
     /** {@inheritDoc} */
     @Override public boolean trackable() {
-        return trackable;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
-        trackable = false;
+        // No-op.
     }
 
     /**
@@ -795,27 +855,47 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T> extends GridCacheFut
     @Override public boolean onDone(@Nullable T res, @Nullable Throwable err) {
         assert res != null ^ err != null;
 
+        if (!DONE_UPD.compareAndSet(this, 0, 1))
+            return false;
+
         if (err != null)
             res = createResponse(err);
 
         assert res != null;
 
-        if (super.onDone(res, null)) {
-            if (log.isDebugEnabled())
-                log.debug("Completing future: " + this);
+        if (res.error() == null)
+            clearLockFuture();
 
-            // Clean up.
-            cctx.mvcc().removeFuture(futId);
+        boolean done = super.onDone(res, null);
 
-            if (timeoutObj != null)
-                cctx.time().removeTimeoutObject(timeoutObj);
+        assert done;
 
-            U.close(it, log);
+        if (log.isDebugEnabled())
+            log.debug("Completing future: " + this);
 
-            return true;
-        }
+        // Clean up.
+        cctx.mvcc().removeFuture(futId);
 
-        return false;
+        if (timeoutObj != null)
+            cctx.time().removeTimeoutObject(timeoutObj);
+
+        U.close(it, log);
+
+        return true;
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onError(Throwable error) {
+        onDone(error);
+    }
+
+    /**
+     * @return Timeout exception.
+     */
+    @NotNull protected IgniteTxTimeoutCheckedException timeoutException() {
+        return new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
+            "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']');
     }
 
     /**
@@ -925,8 +1005,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T> extends GridCacheFut
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
-            onDone(new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
-                "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
+            onDone(timeoutException());
         }
 
         /** {@inheritDoc} */

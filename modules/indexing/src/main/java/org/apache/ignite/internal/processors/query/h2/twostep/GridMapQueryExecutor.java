@@ -476,9 +476,18 @@ public class GridMapQueryExecutor {
             GridDhtTransactionalCacheAdapter txCache = (GridDhtTransactionalCacheAdapter)mainCctx.cache();
 
             if (!node.isLocal()) {
-                tx = txCache.initTxTopologyVersion(node.id(), node, txReq.version(), txReq.futureId(),
-                    txReq.miniId(), txReq.firstClientRequest(), req.topologyVersion(), txReq.threadId(), req.timeout(),
-                    txReq.subjectId(), txReq.taskNameHash());
+                tx = txCache.initTxTopologyVersion(
+                    node.id(),
+                    node,
+                    txReq.version(),
+                    txReq.futureId(),
+                    txReq.miniId(),
+                    txReq.firstClientRequest(),
+                    req.topologyVersion(),
+                    txReq.threadId(),
+                    txReq.timeout(),
+                    txReq.subjectId(),
+                    txReq.taskNameHash());
             }
             else {
                 tx = MvccUtils.activeSqlTx(ctx, txReq.version());

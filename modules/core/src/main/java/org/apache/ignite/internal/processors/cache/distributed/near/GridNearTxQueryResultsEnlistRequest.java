@@ -79,6 +79,9 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
     private long timeout;
 
     /** */
+    private long txTimeout;
+
+    /** */
     private int taskNameHash;
 
     /** */
@@ -104,7 +107,6 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
     }
 
     /**
-     *
      * @param cacheId Cache id.
      * @param threadId Thread id.
      * @param futId Future id.
@@ -115,6 +117,10 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
      * @param mvccSnapshot Mvcc snapshot.
      * @param clientFirst First client request flag.
      * @param timeout Timeout.
+     * @param txTimeout Tx timeout.
+     * @param taskNameHash Task name hash.
+     * @param rows Rows.
+     * @param op Cache operation.
      */
     GridNearTxQueryResultsEnlistRequest(int cacheId,
         long threadId,
@@ -126,9 +132,10 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
         MvccSnapshot mvccSnapshot,
         boolean clientFirst,
         long timeout,
-        int taskNameHash,
+        long txTimeout, int taskNameHash,
         Collection<Object> rows,
         GridCacheOperation op) {
+        this.txTimeout = txTimeout;
         this.cacheId = cacheId;
         this.threadId = threadId;
         this.futId = futId;
@@ -198,6 +205,13 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
      */
     public long timeout() {
         return timeout;
+    }
+
+    /**
+     * @return Tx timeout milliseconds.
+     */
+    public long txTimeout() {
+        return txTimeout;
     }
 
     /**
@@ -382,6 +396,12 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
                 writer.incrementState();
 
             case 15:
+                if (!writer.writeLong("txTimeout", txTimeout))
+                    return false;
+
+                writer.incrementState();
+
+            case 16:
                 if (!writer.writeObjectArray("values", values, MessageCollectionItemType.MSG))
                     return false;
 
@@ -504,6 +524,14 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 15:
+                txTimeout = reader.readLong("txTimeout");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 16:
                 values = reader.readObjectArray("values", MessageCollectionItemType.MSG, CacheObject.class);
 
                 if (!reader.isLastRead())
@@ -518,7 +546,7 @@ public class GridNearTxQueryResultsEnlistRequest extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 16;
+        return 17;
     }
 
     /** {@inheritDoc} */

@@ -1803,26 +1803,19 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         try {
             beforePut(cacheCtx, false, true);
 
-            final IgniteInternalFuture<Long> fut = enlistQuery(cacheCtx, cacheIds, parts, schema, qry, params, flags,
-                pageSize, timeout);
+            addActiveCache(cacheCtx, false);
 
-            return nonInterruptable(new GridEmbeddedFuture<>(fut.chain(new CX1<IgniteInternalFuture<Long>, Boolean>() {
-                @Override public Boolean applyx(IgniteInternalFuture<Long> fut0) throws IgniteCheckedException {
-                    return fut0.get() != null;
-                }
-            }), new PLC1<Long>(null) {
-                @Override protected Long postLock(Long val) throws IgniteCheckedException {
-                    Long res = fut.get();
-
-                    assert mvccInfo != null;
-                    assert res != null;
-
-                    if (res > 0)
-                        mvccInfo.snapshot().incrementOperationCounter();
-
-                    return res;
-                }
-            }));
+            return updateAsync(new GridNearTxQueryEnlistFuture(
+                cacheCtx,
+                this,
+                cacheIds,
+                parts,
+                schema,
+                qry,
+                params,
+                flags,
+                pageSize,
+                timeout));
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture(e);
@@ -1836,40 +1829,19 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /**
      * @param cacheCtx Cache context.
-     * @param mvccSnapshot Mvcc snapshot.
      * @param op Cache operation.
      * @param it Entries iterator.
      * @param pageSize Page size.
      * @param timeout Timeout.
      * @return Operation future.
      */
-    public IgniteInternalFuture<Long> updateAsync(GridCacheContext cacheCtx, MvccSnapshot mvccSnapshot,
+    public IgniteInternalFuture<Long> updateAsync(GridCacheContext cacheCtx,
         GridCacheOperation op, UpdateSourceIterator<?> it, int pageSize, long timeout) {
         try {
             beforePut(cacheCtx, false, true);
 
-            final GridNearTxQueryResultsEnlistFuture fut = new GridNearTxQueryResultsEnlistFuture(cacheCtx, this,
-                mvccSnapshot, timeout, op, it, pageSize);
-
-            fut.init();
-
-            return nonInterruptable(new GridEmbeddedFuture<>(fut.chain(new CX1<IgniteInternalFuture<Long>, Boolean>() {
-                @Override public Boolean applyx(IgniteInternalFuture<Long> fut0) throws IgniteCheckedException {
-                    return fut0.get() != null;
-                }
-            }), new PLC1<Long>(null) {
-                @Override protected Long postLock(Long val) throws IgniteCheckedException {
-                    Long res = fut.get();
-
-                    assert mvccInfo != null;
-                    assert res != null;
-
-                    if (res > 0)
-                        mvccInfo.snapshot().incrementOperationCounter();
-
-                    return res;
-                }
-            }));
+            return updateAsync(new GridNearTxQueryResultsEnlistFuture(cacheCtx, this,
+                timeout, op, it, pageSize));
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture(e);
@@ -1881,38 +1853,30 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
     }
 
-    private IgniteInternalFuture<Long> enlistQuery(final GridCacheContext cctx,
-        final int[] cacheIds, final int[] parts, final String schema, final String qry, final Object[] params,
-        final int flags, int pageSize, final long timeout) {
-        assert qry != null;
+    /**
+     * @param fut Enlist future.
+     * @return Operation future.
+     */
+    public IgniteInternalFuture<Long> updateAsync(GridNearTxAbstractEnlistFuture fut) {
+        fut.init();
 
-        try {
-            if (timeout == -1)
-                return new GridFinishedFuture<>(timeoutException());
+        return nonInterruptable(new GridEmbeddedFuture<>(fut.chain(new CX1<IgniteInternalFuture<Long>, Boolean>() {
+            @Override public Boolean applyx(IgniteInternalFuture<Long> fut0) throws IgniteCheckedException {
+                return fut0.get() != null;
+            }
+        }), new PLC1<Long>(null) {
+            @Override protected Long postLock(Long val) throws IgniteCheckedException {
+                Long res = fut.get();
 
-            assert pessimistic(); // TODO IGNITE-7184
+                assert mvccInfo != null;
+                assert res != null;
 
-            addActiveCache(cctx, false);
+                if (res > 0)
+                    mvccInfo.snapshot().incrementOperationCounter();
 
-            GridNearTxQueryEnlistFuture fut = new GridNearTxQueryEnlistFuture(
-                cctx,
-                this,
-                cacheIds,
-                parts,
-                schema,
-                qry,
-                params,
-                flags,
-                pageSize,
-                timeout);
-
-            fut.map();
-
-            return fut;
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(e);
-        }
+                return res;
+            }
+        }));
     }
 
     /**

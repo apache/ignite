@@ -1052,7 +1052,11 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         for (Ignite node : G.allGrids()) {
             final MvccProcessor crd = ((IgniteKernal)node).context().cache().context().coordinators();
 
-            Map activeTxs = GridTestUtils.getFieldValue(crd, "activeTxs");
+            final Map activeTxs = GridTestUtils.getFieldValue(crd, "activeTxs");
+
+            // Rollback on coordinator happens asynchronously.
+            // We have to wait until all pending messages are processed.
+            GridTestUtils.waitForCondition(activeTxs::isEmpty, TX_TIMEOUT);
 
             assertTrue("Txs on node [node=" + node.name() + ", txs=" + activeTxs.toString() + ']',
                 activeTxs.isEmpty());
@@ -1069,8 +1073,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
             assertNull(X.getFullStackTrace(vacuumError), vacuumError);
 
-            // TODO IGNITE-6739
-            // checkActiveQueriesCleanup(node);
+            checkActiveQueriesCleanup(node);
         }
     }
 

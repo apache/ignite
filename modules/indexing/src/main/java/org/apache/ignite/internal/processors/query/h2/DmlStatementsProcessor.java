@@ -551,7 +551,7 @@ public class DmlStatementsProcessor {
 
                     tx.addActiveCache(cctx, false);
 
-                    IgniteInternalFuture<Long> fut = tx.updateAsync(cctx, mvccSnapshot, op, it,
+                    IgniteInternalFuture<Long> fut = tx.updateAsync(cctx, op, it,
                         fieldsQry.getPageSize(), timeout);
 
                     UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);

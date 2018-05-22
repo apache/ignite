@@ -1110,7 +1110,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     topVer = topFut.get();
                 }
                 catch (Exception e) {
-                    sfuFut.onError(U.cast(e));
+                    sfuFut.onDone(U.cast(e));
 
                     throw new IgniteSQLException("Failed to lock topology for SELECT FOR UPDATE query.", e);
                 }
@@ -1155,7 +1155,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                                 -1,
                                 null,
                                 tx0,
-                                tx0.remainingTime(),
+                                timeout0,
                                 sfuFut.cache(),
                                 rs
                             );

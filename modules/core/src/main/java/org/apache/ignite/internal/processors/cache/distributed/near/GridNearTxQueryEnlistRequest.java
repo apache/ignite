@@ -89,6 +89,9 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     private long timeout;
 
     /** */
+    private long txTimeout;
+
+    /** */
     private int taskNameHash;
 
     /** */
@@ -116,6 +119,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
      * @param flags Flags.
      * @param pageSize Fetch page size.
      * @param timeout Timeout milliseconds.
+     * @param txTimeout Tx timeout milliseconds.
      * @param taskNameHash Task name hash.
      * @param clientFirst {@code True} if this is the first client request.
      */
@@ -136,6 +140,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
         int flags,
         int pageSize,
         long timeout,
+        long txTimeout,
         int taskNameHash,
         boolean clientFirst) {
         this.cacheIds = cacheIds;
@@ -145,6 +150,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
         this.params = params;
         this.flags = flags;
         this.pageSize = pageSize;
+        this.txTimeout = txTimeout;
         this.cacheId = cacheId;
         this.threadId = threadId;
         this.futId = futId;
@@ -264,6 +270,13 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     }
 
     /**
+     * @return Tx timeout milliseconds.
+     */
+    public long txTimeout() {
+        return txTimeout;
+    }
+
+    /**
      * @return Task name hash.
      */
     public int taskNameHash() {
@@ -284,7 +297,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 20;
+        return 21;
     }
 
     /** {@inheritDoc} */
@@ -416,6 +429,12 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
 
             case 19:
                 if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 20:
+                if (!writer.writeLong("txTimeout", txTimeout))
                     return false;
 
                 writer.incrementState();
@@ -566,6 +585,14 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
 
             case 19:
                 topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 20:
+                txTimeout = reader.readLong("txTimeout");
 
                 if (!reader.isLastRead())
                     return false;

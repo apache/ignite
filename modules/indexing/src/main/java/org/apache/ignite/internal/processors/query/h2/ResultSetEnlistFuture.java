@@ -10,6 +10,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
+import org.apache.ignite.internal.processors.cache.distributed.dht.ExceptionAware;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistAbstractFuture;
@@ -24,7 +25,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Future to process whole local result set of SELECT FOR UPDATE query.
  */
-public class ResultSetEnlistFuture extends GridDhtTxQueryEnlistAbstractFuture<ResultSetEnlistFuture.ResultSetEnlistFutureResult>
+public final class ResultSetEnlistFuture extends GridDhtTxQueryEnlistAbstractFuture<ResultSetEnlistFuture.ResultSetEnlistFutureResult>
     implements UpdateSourceIterator<Object> {
     /** */
     private static final long serialVersionUID = -8995895504338661551L;
@@ -96,6 +97,16 @@ public class ResultSetEnlistFuture extends GridDhtTxQueryEnlistAbstractFuture<Re
         }
     }
 
+    /** {@inheritDoc} */
+    @Override protected boolean updateLockFuture() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void clearLockFuture() {
+        // No-op.;
+    }
+
     @Override public GridCacheOperation operation() {
         return GridCacheOperation.READ;
     }
@@ -130,7 +141,7 @@ public class ResultSetEnlistFuture extends GridDhtTxQueryEnlistAbstractFuture<Re
     /**
      *
      */
-    public static class ResultSetEnlistFutureResult {
+    public static class ResultSetEnlistFutureResult implements ExceptionAware {
         /** */
         private long cnt;
 
@@ -154,10 +165,8 @@ public class ResultSetEnlistFuture extends GridDhtTxQueryEnlistAbstractFuture<Re
             return cnt;
         }
 
-        /**
-         * @return Exception.
-         */
-        public Throwable error() {
+        /** {@inheritDoc} */
+        @Override public Throwable error() {
             return err;
         }
     }

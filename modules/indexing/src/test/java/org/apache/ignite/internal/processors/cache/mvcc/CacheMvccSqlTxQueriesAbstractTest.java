@@ -703,7 +703,7 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
      * @throws Exception If failed.
      */
     public void testQueryDeadlockImplicit() throws Exception {
-        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 0, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
         startGridsMultiThreaded(2);

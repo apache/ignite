@@ -1583,6 +1583,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     false,
                     cctx);
 
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
+
                 if (!grp.storeCacheIdInDataPage() && updateRow.cacheId() != CU.UNDEFINED_CACHE_ID) {
                     updateRow.cacheId(CU.UNDEFINED_CACHE_ID);
 
@@ -1670,6 +1672,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     primary,
                     false,
                     cctx);
+
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
 
                 dataTree.visit(new MvccMaxSearchRow(cacheId, key), new MvccMinSearchRow(cacheId, key), updateRow);
 
@@ -1762,6 +1766,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     false,
                     cctx);
 
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
+
                 dataTree.visit(new MvccMaxSearchRow(cacheId, key), new MvccMinSearchRow(cacheId, key), updateRow);
 
                 ResultType res = updateRow.resultType();
@@ -1822,6 +1828,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     true,
                     cctx);
 
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
+
                 dataTree.visit(new MvccMaxSearchRow(cacheId, key), new MvccMinSearchRow(cacheId, key), updateRow);
 
                 ResultType res = updateRow.resultType();
@@ -1873,6 +1881,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     null,
                     partId,
                     cctx);
+
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
 
                 dataTree.iterate(new MvccMaxSearchRow(cacheId, key), new MvccMinSearchRow(cacheId, key), updateRow);
 
@@ -1960,6 +1970,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     partId,
                     cctx);
 
+                assert cctx.shared().database().checkpointLockIsHeldByThread();
+
                 dataTree.iterate(new MvccMaxSearchRow(cacheId, key) , new MvccMinSearchRow(cacheId, key), updateRow);
 
                 ResultType res = updateRow.resultType();
@@ -1998,6 +2010,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
             boolean cleanup = cctx.queries().enabled() || hasPendingEntries;
+
+            assert cctx.shared().database().checkpointLockIsHeldByThread();
 
             GridCursor<CacheDataRow> cur = dataTree.find(
                 new MvccMaxSearchRow(cacheId, key),
@@ -2049,6 +2063,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     MvccLinkAwareSearchRow cleanupRow = cleanupRows.get(i);
 
                     assert cleanupRow.link() != 0 : cleanupRow;
+
+                    assert cctx.shared().database().checkpointLockIsHeldByThread();
 
                     CacheDataRow oldRow = dataTree.remove(cleanupRow);
 

@@ -706,7 +706,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.firstClientRequest(),
                 req.topologyVersion(),
                 req.threadId(),
-                req.timeout(),
+                req.txTimeout(),
                 req.subjectId(),
                 req.taskNameHash());
         }
@@ -1974,7 +1974,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 req.firstClientRequest(),
                 req.topologyVersion(),
                 req.threadId(),
-                req.timeout(),
+                req.txTimeout(),
                 req.subjectId(),
                 req.taskNameHash());
         }

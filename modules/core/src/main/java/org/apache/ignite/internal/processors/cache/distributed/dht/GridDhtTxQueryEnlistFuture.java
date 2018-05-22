@@ -137,6 +137,8 @@ public final class GridDhtTxQueryEnlistFuture
      * @return Prepare response.
      */
     @NotNull @Override public GridNearTxQueryEnlistResponse createResponse() {
+        assert cnt > 0 || tx.empty();
+
         return new GridNearTxQueryEnlistResponse(cctx.cacheId(), nearFutId, nearMiniId,
             nearLockVer, cnt, tx.empty());
     }
