@@ -413,6 +413,8 @@ class QueryField {
         this._isKeyField = false;
         this._isNotNull = false;
         this._defaultValue = undefined;
+        this._precision = -1;
+        this._scale = -1;
         this._valueType = null;
         this._buffer = null;
         this._index = null;
@@ -549,6 +551,50 @@ class QueryField {
         }
     }
 
+    /**
+     *
+     *
+     * @param {number} precision
+     *
+     * @return {QueryField} - the same instance of the QueryField.
+     */
+    setPrecision(precision) {
+        ArgumentChecker.isInteger(precision, 'precision');
+        this._precision = precision;
+        return this;
+    }
+
+    /**
+     *
+     *
+     * @return {number}
+     */
+    getPrecision() {
+        return this._precision;
+    }
+
+    /**
+     *
+     *
+     * @param {number} scale
+     *
+     * @return {QueryField} - the same instance of the QueryField.
+     */
+    setScale(scale) {
+        ArgumentChecker.isInteger(scale, 'scale');
+        this._scale = scale;
+        return this;
+    }
+
+    /**
+     *
+     *
+     * @return {number}
+     */
+    getScale() {
+        return this._scale;
+    }
+
     /** Private methods */
 
     /**
@@ -560,6 +606,8 @@ class QueryField {
         buffer.writeBoolean(this._isKeyField);
         buffer.writeBoolean(this._isNotNull);
         await BinaryWriter.writeObject(buffer, this._defaultValue ? this._defaultValue : null, this._valueType);
+        buffer.writeInteger(this._precision);
+        buffer.writeInteger(this._scale);
     }
 
     /**
@@ -574,6 +622,8 @@ class QueryField {
         this._buffer = buffer;
         this._index = buffer.position;
         await BinaryReader.readObject(buffer);
+        this._precision = buffer.readInteger();
+        this._scale = buffer.readInteger();
     }
 }
 

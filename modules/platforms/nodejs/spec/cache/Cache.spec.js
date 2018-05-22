@@ -152,7 +152,9 @@ describe('cache configuration operations test suite >', () => {
                                 new QueryField('id', 'INT'),
                                 new QueryField('firstName', 'VARCHAR'),
                                 new QueryField('lastName', 'VARCHAR'),
-                                new QueryField('salary', 'DOUBLE')
+                                new QueryField('salary', 'DOUBLE').
+                                    setPrecision(10).
+                                    setScale(10)
                             ]).
                             setAliases(new Map([['id', 'id'], ['firstName', 'firstName']])).
                             setIndexes([

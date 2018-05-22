@@ -205,11 +205,11 @@ class MessageBuffer {
         return value;
     }
 
-    readBoolean(value) {
+    readBoolean() {
         return this.readByte() === BYTE_ONE;
     }
 
-    readChar(value) {
+    readChar() {
         return String.fromCharCode(this.readShort());
     }
 
