@@ -207,6 +207,7 @@ public class ClientMessageParser implements ClientListenerMessageParser {
      */
     ClientMessageParser(GridKernalContext ctx, ClientListenerProtocolVersion ver) {
         assert ctx != null;
+        assert ver != null;
 
         CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
         marsh = cacheObjProc.marshaller();

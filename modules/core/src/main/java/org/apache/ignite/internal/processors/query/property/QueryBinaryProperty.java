@@ -35,6 +35,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
+
 /**
  * Binary property.
  */
@@ -141,11 +144,12 @@ public class QueryBinaryProperty implements GridQueryProperty {
                     "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
         }
         else {
-            if (propName.equalsIgnoreCase(QueryUtils.KEY_FIELD_NAME)) {
+            if (propName.equalsIgnoreCase(KEY_FIELD_NAME)) {
                 CacheObjectContext coCtx = ctx.cache().internalCache(cacheName).context().cacheObjectContext();
 
                 return key instanceof KeyCacheObject ? ((KeyCacheObject)key).value(coCtx, true) : key;
-            } else if (propName.equalsIgnoreCase(QueryUtils.VAL_FIELD_NAME)) {
+            } 
+            else if (propName.equalsIgnoreCase(VAL_FIELD_NAME)) {
                 CacheObjectContext coCtx = ctx.cache().internalCache(cacheName).context().cacheObjectContext();
 
                 return val instanceof CacheObject ? ((CacheObject)val).value(coCtx, true) : val;

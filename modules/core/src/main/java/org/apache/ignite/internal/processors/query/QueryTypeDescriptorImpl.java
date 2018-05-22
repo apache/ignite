@@ -38,6 +38,8 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.NULL_VALUE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_KEY;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.TOO_LONG_VALUE;
+import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
+import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
 
 /**
  * Descriptor of type.
@@ -404,20 +406,14 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /**
-     * Adds validate property to the type descriptor.
+     * Adds {@code _KEY} or {@code _VAL} validate property to the type descriptor.
      *
      * @param prop Property.
-     * @param failOnDuplicate Fail on duplicate flag.
-     * @throws IgniteCheckedException In case of error.
      */
-    public void addValidateProperty(GridQueryProperty prop, boolean failOnDuplicate) throws IgniteCheckedException {
+    void addSpecialValidateProperty(GridQueryProperty prop) {
         String name = prop.name();
 
-        if (props.put(name, prop) != null && failOnDuplicate)
-            throw new IgniteCheckedException("Property with name '" + name + "' already exists.");
-
-        if (uppercaseProps.put(name.toUpperCase(), prop) != null && failOnDuplicate)
-            throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
+        assert name.equalsIgnoreCase(KEY_FIELD_NAME) || name.equalsIgnoreCase(VAL_FIELD_NAME);
 
         if (validateProps == null)
             validateProps = new ArrayList<>();

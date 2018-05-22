@@ -67,7 +67,10 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
 
         checkSQLThrows("MERGE INTO char_table(id, str) VALUES(?, ?)", 1, "123456");
     }
-    
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testConstraintsAfterAlterTable() throws Exception {
         execSQL("CREATE TABLE char_table_2(id INT PRIMARY KEY, field INTEGER)");
 
@@ -80,10 +83,6 @@ public class IgniteSQLColumnConstraintsTest extends GridCommonAbstractTest {
         checkSQLThrows("UPDATE char_table_2 SET str = ? WHERE id = ?", "123456", 1);
 
         checkSQLThrows("MERGE INTO char_table_2(id, str) VALUES(?, ?)", 1, "123456");
-    }
-
-    public void testUpdateAfterAlterTable() throws Exception {
-
     }
 
     /** */

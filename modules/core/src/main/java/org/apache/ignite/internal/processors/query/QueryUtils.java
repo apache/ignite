@@ -605,10 +605,10 @@ public class QueryUtils {
     /**
      * Add validate property to QueryTypeDescriptor.
      * 
-     * @param ctx
-     * @param qryEntity
-     * @param d
-     * @param name
+     * @param ctx Kernel context.
+     * @param qryEntity Query entity.
+     * @param d Descriptor.
+     * @param name Field name.
      * @throws IgniteCheckedException
      */
     private static void addSpecialValidateProp(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d, 
@@ -622,22 +622,23 @@ public class QueryUtils {
 
         IgniteBiTuple<Integer, Integer> precisionAndScale = F.getCaseInsensitive(decimalInfo, name);
 
-        if (maxLength != null || precisionAndScale != null) {
-            boolean isKey = name.equals(KEY_FIELD_NAME);
+        if (maxLength == null && precisionAndScale == null) 
+            return;
 
-            String typeName = isKey ? qryEntity.getKeyType() : qryEntity.getValueType();
+        boolean isKey = name.equals(KEY_FIELD_NAME);
 
-            Object dfltVal = F.getCaseInsensitive(dfltVals, name);
+        String typeName = isKey ? qryEntity.getKeyType() : qryEntity.getValueType();
 
-            QueryBinaryProperty prop = buildBinaryProperty(ctx, d.cacheName(), name,
-                U.classForName(typeName, Object.class, true),
-                d.aliases(), isKey, true, dfltVal,
-                precisionAndScale != null ? precisionAndScale.get1() : -1,
-                precisionAndScale != null ? precisionAndScale.get2() : -1,
-                maxLength != null ? maxLength : Integer.MAX_VALUE);
+        Object dfltVal = F.getCaseInsensitive(dfltVals, name);
 
-            d.addValidateProperty(prop, false);
-        }
+        QueryBinaryProperty prop = buildBinaryProperty(ctx, d.cacheName(), name,
+            U.classForName(typeName, Object.class, true),
+            d.aliases(), isKey, true, dfltVal,
+            precisionAndScale != null ? precisionAndScale.get1() : -1,
+            precisionAndScale != null ? precisionAndScale.get2() : -1,
+            maxLength != null ? maxLength : MAX_VALUE);
+
+        d.addSpecialValidateProperty(prop);
     }
 
     /**

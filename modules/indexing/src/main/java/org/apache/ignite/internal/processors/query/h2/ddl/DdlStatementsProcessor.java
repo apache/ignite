@@ -625,8 +625,9 @@ public class DdlStatementsProcessor {
 
             if (col.getType() == Value.STRING || 
                 col.getType() == Value.STRING_FIXED || 
-                col.getType() == Value.STRING_IGNORECASE)
+                col.getType() == Value.STRING_IGNORECASE) {
                 maxLengthInfo.put(e.getKey(), (int)col.getPrecision());
+            }
         }
 
         if (!F.isEmpty(dfltValues))

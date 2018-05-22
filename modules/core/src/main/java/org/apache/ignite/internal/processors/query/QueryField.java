@@ -21,6 +21,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.io.Serializable;
 
+import static java.lang.Integer.MAX_VALUE;
+
 /**
  * Query field metadata.
  */
@@ -55,7 +57,7 @@ public class QueryField implements Serializable {
      * @param nullable Nullable flag.
      */
     public QueryField(String name, String typeName, boolean nullable) {
-        this(name, typeName, nullable, null, -1, -1, Integer.MAX_VALUE);
+        this(name, typeName, nullable, null, -1, -1, MAX_VALUE);
     }
 
     /**
@@ -65,7 +67,7 @@ public class QueryField implements Serializable {
      * @param dfltValue Default value.
      */
     public QueryField(String name, String typeName, boolean nullable, Object dfltValue) {
-        this(name, typeName, nullable, dfltValue, -1, -1, Integer.MAX_VALUE);
+        this(name, typeName, nullable, dfltValue, -1, -1, MAX_VALUE);
     }
 
     /**
@@ -73,6 +75,9 @@ public class QueryField implements Serializable {
      * @param typeName Class name for this field's values.
      * @param nullable Nullable flag.
      * @param dfltValue Default value.
+     * @param precision Precision.
+     * @param scale Scale.
+     * @param maxLength Maximum length.
      */
     public QueryField(String name, String typeName, boolean nullable, Object dfltValue, int precision, int scale, 
         int maxLength) {
