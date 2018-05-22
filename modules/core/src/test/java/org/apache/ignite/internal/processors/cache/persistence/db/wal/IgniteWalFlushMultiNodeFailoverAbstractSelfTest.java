@@ -106,8 +106,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                 .setDefaultDataRegionConfiguration(
                         new DataRegionConfiguration().setMaxSize(2048L * 1024 * 1024).setPersistenceEnabled(true))
                 .setWalMode(this.walMode())
-                .setWalSegmentSize(50_000)
-                .setWalBufferSize(50_000);
+                .setWalSegmentSize(512 * 1024)
+                .setWalBufferSize(512 * 1024);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -250,8 +250,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
                 }
 
                 /** {@inheritDoc} */
-                @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
-                    return delegate.map(maxWalSegmentSize);
+                @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+                    return delegate.map(sizeBytes);
                 }
             };
         }

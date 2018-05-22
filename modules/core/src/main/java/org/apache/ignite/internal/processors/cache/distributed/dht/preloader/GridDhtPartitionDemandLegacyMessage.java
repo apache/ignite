@@ -114,21 +114,23 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
         workerId = cp.workerId();
         topVer = cp.topologyVersion();
 
-        parts = new HashSet<>(cp.partitions().size());
+        if(!cp.partitions().isEmpty()) {
+            parts = new HashSet<>(cp.partitions().size());
 
-        parts.addAll(cp.partitions().fullSet());
+            parts.addAll(cp.partitions().fullSet());
 
-        CachePartitionPartialCountersMap histMap = cp.partitions().historicalMap();
+            CachePartitionPartialCountersMap histMap = cp.partitions().historicalMap();
 
-        if (!histMap.isEmpty()) {
-            historicalParts = new HashSet<>(histMap.size());
+            if (!histMap.isEmpty()) {
+                historicalParts = new HashSet<>(histMap.size());
 
-            for (int i = 0; i < histMap.size(); i++) {
-                int p = histMap.partitionAt(i);
+                for (int i = 0; i < histMap.size(); i++) {
+                    int p = histMap.partitionAt(i);
 
-                parts.add(p);
-                historicalParts.add(p);
-                partsCntrs.put(p, histMap.updateCounterAt(i));
+                    parts.add(p);
+                    historicalParts.add(p);
+                    partsCntrs.put(p, histMap.updateCounterAt(i));
+                }
             }
         }
     }

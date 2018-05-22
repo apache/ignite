@@ -33,6 +33,7 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseString;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatches;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
@@ -84,8 +85,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @param lex The lexer.
      */
     private void parseFileName(SqlLexer lex) {
-        if (lex.lookAhead().tokenType() != SqlLexerTokenType.QUOTED)
-            throw errorUnexpectedToken(lex.lookAhead(), "[quoted file name]");
+        if (lex.lookAhead().tokenType() != SqlLexerTokenType.STRING)
+            throw errorUnexpectedToken(lex.lookAhead(), "[file name: string]");
 
         lex.shift();
 
@@ -150,6 +151,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
                 fmt.commentChars(BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS);
                 fmt.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
 
+                parseCsvOptions(lex, fmt);
+
                 inputFormat = fmt;
 
                 break;
@@ -157,6 +160,31 @@ public class SqlBulkLoadCommand implements SqlCommand {
             default:
                 throw error(lex, "Unknown format name: " + name +
                     ". Currently supported format is " + BulkLoadCsvFormat.NAME);
+        }
+    }
+
+    /**
+     * Parses CSV format options.
+     *
+     * @param lex The lexer.
+     * @param format CSV format object to configure.
+     */
+    private void parseCsvOptions(SqlLexer lex, BulkLoadCsvFormat format) {
+        while (lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
+            switch (lex.lookAhead().token()) {
+                case SqlKeyword.CHARSET: {
+                    lex.shift();
+
+                    String charsetName = parseString(lex);
+
+                    format.inputCharsetName(charsetName);
+
+                    break;
+                }
+
+                default:
+                    return;
+            }
         }
     }
 
@@ -241,6 +269,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
      *
      * @return The list of columns.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public List<String> columns() {
         return cols;
     }

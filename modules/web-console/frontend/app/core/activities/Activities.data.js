@@ -18,6 +18,10 @@
 export default class ActivitiesData {
     static $inject = ['$http', '$state'];
 
+    /**
+     * @param {ng.IHttpService} $http
+     * @param {uirouter.StateService} $state
+     */
     constructor($http, $state) {
         this.$http = $http;
         this.$state = $state;
@@ -26,8 +30,10 @@ export default class ActivitiesData {
     post(options = {}) {
         let { group, action } = options;
 
-        action = action || this.$state.$current.url.source;
-        group = group || action.match(/^\/([^/]+)/)[1];
+        // TODO IGNITE-5466: since upgrade to UIRouter 1, "url.source" is undefined.
+        // Actions like that won't be saved to DB. Think of a better solution later.
+        action = action || this.$state.$current.url.source || '';
+        group = group || (action.match(/^\/([^/]+)/) || [])[1];
 
         return this.$http.post('/api/v1/activities/page', { group, action });
     }

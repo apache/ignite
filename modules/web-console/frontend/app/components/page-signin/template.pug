@@ -20,142 +20,40 @@ web-console-header
     web-console-header-left
         ignite-header-title
 
-section
-    .container
-        .row
-            .col-lg-6.col-md-6.col-sm-6.col-xs-12
-                .row
-                    .col-xs-12.col-md-11
-                        -var form = 'form'
-                        form(name='form' novalidate)
-                            .settings-row
-                                h3 Don't Have An Account?
-                            .settings-row
-                                +form-field__email({
-                                    label: 'Email:',
-                                    model: 'ui_signup.email',
-                                    name: '"signupEmail"',
-                                    placeholder: 'Input email',
-                                    required: true
-                                })(
-                                    ignite-on-enter-focus-move='passwordInput'
-                                )
-                            .settings-row
-                                +form-field__password({
-                                    label: 'Password:',
-                                    model: 'ui_signup.password',
-                                    name: '"password"',
-                                    placeholder: 'Input password',
-                                    required: true
-                                })(
-                                    ignite-on-enter-focus-move='confirmInput'
-                                )
-                            .settings-row
-                                +form-field__password({
-                                    label: 'Confirm:',
-                                    model: 'ui_exclude.confirm',
-                                    name: '"confirm"',
-                                    placeholder: 'Confirm password',
-                                    required: true
-                                })(
-                                    ignite-on-enter-focus-move='firstNameInput'
-                                    ignite-match='ui_signup.password'
-                                )
-                            .settings-row
-                                +form-field__text({
-                                    label: 'First name:',
-                                    model: 'ui_signup.firstName',
-                                    name: '"firstName"',
-                                    placeholder: 'Input first name',
-                                    required: true
-                                })(
-                                    ignite-on-enter-focus-move='lastNameInput'
-                                )
-                            .settings-row
-                                +form-field__text({
-                                    label: 'Last name:',
-                                    model: 'ui_signup.lastName',
-                                    name: '"lastName"',
-                                    placeholder: 'Input last name',
-                                    required: true
-                                })(
-                                    ignite-on-enter-focus-move='companyInput'
-                                )
-                            .settings-row
-                                +form-field__text({
-                                    label: 'Company:',
-                                    model: 'ui_signup.company',
-                                    name: '"company"',
-                                    placeholder: 'Input company name',
-                                    required: true
-                                })(
-                                    ignite-on-enter-focus-move='countryInput'
-                                )
-                            .settings-row
-                                +form-field__dropdown({
-                                    label: 'Country:',
-                                    model: 'ui_signup.country',
-                                    name: '"country"',
-                                    required: true,
-                                    placeholder: 'Choose your country',
-                                    options: '$ctrl.countries'
-                                })(
-                                    ignite-on-enter-focus-move='signup_submit'
-                                )
-                            .login-footer
-                                button#signup_submit.btn-ignite.btn-ignite--primary(ng-click='$ctrl.auth("signup", ui_signup)' ng-disabled='form.$invalid') Sign Up
-
-            .col-lg-6.col-md-6.col-sm-6.col-xs-12(ng-init='$ctrl.action = "signin"')
-                .row
-                    .col-xs-12.col-md-11
-                        -var form = 'form_signin'
-                        form.row(ng-show='$ctrl.action == "signin"' name='form_signin' novalidate)
-                            .settings-row
-                                h3 Sign In
-                            .settings-row
-                                +form-field__email({
-                                    label: 'Email:',
-                                    model: 'ui.email',
-                                    name: '"signinEmail"',
-                                    placeholder: 'Input email',
-                                    required: true
-                                })(
-                                    ignite-auto-focus
-                                    ignite-on-enter-focus-move='singinPasswordInput'
-                                )
-                            .settings-row
-                                +form-field__password({
-                                    label: 'Password:',
-                                    model: 'ui.password',
-                                    name: '"signinPassword"',
-                                    placeholder: 'Input password',
-                                    required: true
-                                })(
-                                    ignite-on-enter='form_signin.$valid && $ctrl.auth($ctrl.action, ui)'
-                                )
-                            .login-footer
-                                a.labelField#forgot_show(ng-click='$ctrl.action = "password/forgot"' ignite-on-click-focus='forgot_email') Forgot password?
-                                button#signin_submit.btn-ignite.btn-ignite--primary(ng-click='$ctrl.auth("signin", ui)' ng-disabled='form_signin.$invalid') Sign In
-
-                        - var form = 'form_forgot'
-                        form.row(ng-show='$ctrl.action == "password/forgot"' name='form_forgot' novalidate)
-                            .settings-row
-                                h3 Forgot password?
-                            .settings-row
-                                p.col-xs-12.col-md-11 That's ok! Simply enter your email below and a reset password link will be sent to you via email. You can then follow that link and select a new password.
-                            .settings-row
-                                +form-field__email({
-                                    label: 'Email:',
-                                    model: 'ui.email',
-                                    name: '"forgotEmail"',
-                                    placeholder: 'Input email',
-                                    required: true
-                                })(
-                                    ignite-auto-focus
-                                    ignite-on-enter='form_forgot.$valid && $ctrl.forgotPassword(ui)'
-                                )
-                            .login-footer
-                                a.labelField#forgot_signin(ng-click='$ctrl.action = "signin"' ignite-on-click-focus='signin_email') Sign In
-                                button#forgot_submit.btn-ignite.btn-ignite--primary(ng-click='$ctrl.forgotPassword(ui)' ng-disabled='form_forgot.$invalid') Send it to me
+.container.body-container
+    section
+        -var form = '$ctrl.form'
+        h3 Sign In
+        form(name=form novalidate ng-submit='$ctrl.signin()')
+            +form-field__email({
+                label: 'Email:',
+                model: '$ctrl.data.email',
+                name: '"email"',
+                placeholder: 'Input email',
+                required: true
+            })(
+                ng-model-options='{allowInvalid: true}'
+                autocomplete='email'
+                ignite-auto-focus
+            )
+                +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
+            +form-field__password({
+                label: 'Password:',
+                model: '$ctrl.data.password',
+                name: '"password"',
+                placeholder: 'Input password',
+                required: true
+            })(
+                ng-model-options='{allowInvalid: true}'
+                autocomplete='current-password'
+            )
+                +form-field__error({error: 'server', message: `{{$ctrl.serverError}}`})
+            footer.form-footer
+                a(ui-sref='forgotPassword({email: $ctrl.data.email})') Forgot password?
+                button.btn-ignite.btn-ignite--primary(
+                    type='submit'
+                ) Sign In
+        footer.page-signin__no-account-message
+            | Don't have an account? #[a(ui-sref='signup') Get started]
 
 web-console-footer

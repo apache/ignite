@@ -19,12 +19,13 @@ package org.apache.ignite.internal.pagemem.wal;
 
 import java.io.IOException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.InvalidEnvironmentException;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Exception is needed to distinguish WAL manager critical I/O errors.
+ * Exception is needed to distinguish WAL manager & page store critical I/O errors.
  */
-public class StorageException extends IgniteCheckedException {
+public class StorageException extends IgniteCheckedException implements InvalidEnvironmentException {
     /** */
     private static final long serialVersionUID = 0L;
 

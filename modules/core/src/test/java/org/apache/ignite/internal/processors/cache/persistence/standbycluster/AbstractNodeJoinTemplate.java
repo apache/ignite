@@ -606,6 +606,9 @@ public abstract class AbstractNodeJoinTemplate extends GridCommonAbstractTest {
 
                 nodes.add(nodeCfg.getIgniteInstanceName());
 
+                if (state)
+                    awaitPartitionMapExchange();
+
                 System.out.println(">>> Check after new node join in cluster");
 
                 afterNodeJoin.run();

@@ -23,7 +23,7 @@
               workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' 
               isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml' autoGenerateIgniteInstanceName='true' 
               peerAssemblyLoadingMode='CurrentAppDomain' longQueryWarningTimeout='1:2:3' isActiveOnStart='false' 
-              consistentId='someId012' redirectJavaConsoleOutput='false'>
+              consistentId='someId012' redirectJavaConsoleOutput='false' authenticationEnabled='true'>
     <localhost>127.1.1.1</localhost>
     <binaryConfiguration compactFooter='false' keepDeserialized='true'>
         <nameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
@@ -159,4 +159,5 @@
     <sslContextFactory type='SslContextFactory' protocol='SSL'
                        keyStoreFilePath='KeyStore/server.jks' keyStorePassword='123456' 
                        trustStoreFilePath='KeyStore/trust.jks' trustStorePassword='123456'/>
+    <failureHandler type="StopNodeOrHaltFailureHandler" tryStop="true" timeout="0:1:0"/>
 </igniteConfiguration>

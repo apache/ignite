@@ -783,9 +783,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         throws IgniteCheckedException {
         IgniteInternalFuture<EntryProcessorResult<T>> invokeFut = invoke0(false, key, entryProcessor, args);
 
-        EntryProcessorResult<T> res = invokeFut.get();
-
-        return res != null ? res : new CacheInvokeResult<T>();
+        return invokeFut.get();
     }
 
     /** {@inheritDoc} */
@@ -840,7 +838,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (resMap != null) {
                     assert resMap.isEmpty() || resMap.size() == 1 : resMap.size();
 
-                    EntryProcessorResult<T> res = resMap.isEmpty() ? null : resMap.values().iterator().next();
+                    EntryProcessorResult<T> res =
+                        resMap.isEmpty() ? new CacheInvokeResult<>() : resMap.values().iterator().next();
 
                     if (res instanceof CacheInvokeResult) {
                         CacheInvokeResult invokeRes = (CacheInvokeResult)res;
@@ -853,7 +852,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     return res;
                 }
 
-                return null;
+                return new CacheInvokeResult<>();
             }
         });
     }
@@ -1768,7 +1767,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 // TODO handle failure: probably drop the node from topology
                 // TODO fire events only after successful fsync
                 if (ctx.shared().wal() != null)
-                    ctx.shared().wal().fsync(null);
+                    ctx.shared().wal().flush(null, false);
             }
         }
         catch (GridDhtInvalidPartitionException ignore) {
@@ -2071,7 +2070,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                             validation = true;
 
-                            ctx.validateKeyAndValue(entry.key(), updated);
+                            if (updated != null)
+                                ctx.validateKeyAndValue(entry.key(), updated);
                         }
                     }
                     catch (Exception e) {
@@ -3259,7 +3259,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             // TODO handle failure: probably drop the node from topology
             // TODO fire events only after successful fsync
             if (ctx.shared().wal() != null)
-                ctx.shared().wal().fsync(null);
+                ctx.shared().wal().flush(null, false);
         }
         catch (StorageException e) {
             if (dhtRes != null)

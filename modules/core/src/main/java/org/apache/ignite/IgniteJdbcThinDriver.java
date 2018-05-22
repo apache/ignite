@@ -127,23 +127,21 @@ import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
  */
 @SuppressWarnings("JavadocReference")
 public class IgniteJdbcThinDriver implements Driver {
+    /** Driver instance. */
+    private static final Driver INSTANCE = new IgniteJdbcThinDriver();
+
+    /** Registered flag. */
+    private static volatile boolean registered;
+
+    static {
+        register();
+    }
+
     /** Major version. */
     private static final int MAJOR_VER = IgniteVersionUtils.VER.major();
 
     /** Minor version. */
     private static final int MINOR_VER = IgniteVersionUtils.VER.minor();
-
-    /*
-     * Register driver.
-     */
-    static {
-        try {
-            DriverManager.registerDriver(new IgniteJdbcThinDriver());
-        }
-        catch (SQLException e) {
-            throw new RuntimeException("Failed to register Ignite JDBC driver.", e);
-        }
-    }
 
     /** {@inheritDoc} */
     @Override public Connection connect(String url, Properties props) throws SQLException {
@@ -189,5 +187,23 @@ public class IgniteJdbcThinDriver implements Driver {
     /** {@inheritDoc} */
     @Override public Logger getParentLogger() throws SQLFeatureNotSupportedException {
         throw new SQLFeatureNotSupportedException("java.util.logging is not used.");
+    }
+
+    /**
+     * @return Driver instance.
+     */
+    public static synchronized Driver register() {
+        try {
+            if (!registered) {
+                DriverManager.registerDriver(INSTANCE);
+
+                registered = true;
+            }
+        }
+        catch (SQLException e) {
+            throw new RuntimeException("Failed to register Ignite JDBC thin driver.", e);
+        }
+
+        return INSTANCE;
     }
 }

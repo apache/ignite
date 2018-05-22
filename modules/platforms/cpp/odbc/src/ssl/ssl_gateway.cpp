@@ -25,6 +25,10 @@
 #include "ignite/odbc/ssl/ssl_gateway.h"
 #include "ignite/odbc/log.h"
 
+#ifndef ADDITIONAL_OPENSSL_HOME_ENV
+#   define ADDITIONAL_OPENSSL_HOME_ENV "OPEN_SSL_HOME"
+#endif // ADDITIONAL_OPENSSL_HOME_ENV
+
 namespace ignite
 {
     namespace odbc
@@ -55,7 +59,7 @@ namespace ignite
                 if (libModule.IsLoaded())
                     return libModule;
 
-                std::string home = GetEnv("OPEN_SSL_HOME");
+                std::string home = GetEnv(ADDITIONAL_OPENSSL_HOME_ENV);
 
                 if (home.empty())
                     home = GetEnv("OPENSSL_HOME");
@@ -141,17 +145,26 @@ namespace ignite
                 functions.fpSSL_ctrl = LoadSslMethod("SSL_ctrl");
                 functions.fpSSL_CTX_ctrl = LoadSslMethod("SSL_CTX_ctrl");
 
-                functions.fpSSLv23_method = LoadSslMethod("SSLv23_method");
+                functions.fpSSLv23_client_method = LoadSslMethod("SSLv23_client_method");
+                functions.fpSSL_set_connect_state = LoadSslMethod("SSL_set_connect_state");
+                functions.fpSSL_connect = LoadSslMethod("SSL_connect");
+                functions.fpSSL_get_error = LoadSslMethod("SSL_get_error");
+                functions.fpSSL_want = LoadSslMethod("SSL_want");
+                functions.fpSSL_write = LoadSslMethod("SSL_write");
+                functions.fpSSL_read = LoadSslMethod("SSL_read");
+                functions.fpSSL_pending = LoadSslMethod("SSL_pending");
+                functions.fpSSL_get_fd = LoadSslMethod("SSL_get_fd");
+                functions.fpSSL_free = LoadSslMethod("SSL_free");
                 functions.fpBIO_new_ssl_connect = LoadSslMethod("BIO_new_ssl_connect");
 
                 functions.fpOPENSSL_config = LoadSslMethod("OPENSSL_config");
                 functions.fpX509_free = LoadSslMethod("X509_free");
 
-                functions.fpBIO_write = LoadSslMethod("BIO_write");
-                functions.fpBIO_read = LoadSslMethod("BIO_read");
                 functions.fpBIO_free_all = LoadSslMethod("BIO_free_all");
-                functions.fpBIO_test_flags = LoadSslMethod("BIO_test_flags");
                 functions.fpBIO_ctrl = LoadSslMethod("BIO_ctrl");
+
+                functions.fpERR_get_error = LoadSslMethod("ERR_get_error");
+                functions.fpERR_error_string_n = LoadSslMethod("ERR_error_string_n");
 
                 bool allLoaded =
                     functions.fpSSL_CTX_new != 0 &&
@@ -168,15 +181,23 @@ namespace ignite
                     functions.fpSSL_get_peer_certificate != 0 &&
                     functions.fpSSL_ctrl != 0 &&
                     functions.fpSSL_CTX_ctrl != 0 &&
-                    functions.fpSSLv23_method != 0 &&
+                    functions.fpSSLv23_client_method != 0 &&
+                    functions.fpSSL_set_connect_state != 0 &&
+                    functions.fpSSL_connect != 0 &&
+                    functions.fpSSL_get_error != 0 &&
+                    functions.fpSSL_want != 0 &&
+                    functions.fpSSL_write != 0 &&
+                    functions.fpSSL_read != 0 &&
+                    functions.fpSSL_pending != 0 &&
+                    functions.fpSSL_get_fd != 0 &&
+                    functions.fpSSL_free != 0 &&
                     functions.fpBIO_new_ssl_connect != 0 &&
                     functions.fpOPENSSL_config != 0 &&
                     functions.fpX509_free != 0 &&
-                    functions.fpBIO_write != 0 &&
-                    functions.fpBIO_read != 0 &&
                     functions.fpBIO_free_all != 0 &&
-                    functions.fpBIO_test_flags != 0 &&
-                    functions.fpBIO_ctrl != 0;
+                    functions.fpBIO_ctrl != 0 &&
+                    functions.fpERR_get_error != 0 &&
+                    functions.fpERR_error_string_n != 0;
 
                 if (!allLoaded)
                 {

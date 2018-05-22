@@ -68,7 +68,7 @@ namespace ignite
 
             // Connecting to ODBC server.
             SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
-                                             outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+                outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
 
             if (!SQL_SUCCEEDED(ret))
             {
@@ -79,6 +79,25 @@ namespace ignite
             SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
 
             BOOST_REQUIRE(stmt != NULL);
+        }
+
+        std::string OdbcTestSuite::ExpectConnectionReject(const std::string& connectStr)
+        {
+            Prepare();
+
+            // Connect string
+            std::vector<SQLCHAR> connectStr0(connectStr.begin(), connectStr.end());
+
+            SQLCHAR outstr[ODBC_BUFFER_SIZE];
+            SQLSMALLINT outstrlen;
+
+            // Connecting to ODBC server.
+            SQLRETURN ret = SQLDriverConnect(dbc, NULL, &connectStr0[0], static_cast<SQLSMALLINT>(connectStr0.size()),
+                outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+
+            BOOST_REQUIRE_EQUAL(ret, SQL_ERROR);
+
+            return GetOdbcErrorState(SQL_HANDLE_DBC, dbc);
         }
 
         void OdbcTestSuite::Disconnect()
@@ -99,6 +118,11 @@ namespace ignite
                 SQLFreeHandle(SQL_HANDLE_DBC, dbc);
                 dbc = NULL;
             }
+        }
+
+        void OdbcTestSuite::CleanUp()
+        {
+            Disconnect();
 
             if (env)
             {
@@ -131,7 +155,7 @@ namespace ignite
 
         OdbcTestSuite::~OdbcTestSuite()
         {
-            Disconnect();
+            CleanUp();
 
             Ignition::StopAll(true);
         }
@@ -168,6 +192,18 @@ namespace ignite
         void OdbcTestSuite::CheckSQLConnectionDiagnosticError(const std::string& expectSqlState)
         {
             CheckSQLDiagnosticError(SQL_HANDLE_DBC, dbc, expectSqlState);
+        }
+
+        std::vector<SQLCHAR> OdbcTestSuite::MakeQuery(const std::string& qry)
+        {
+            return std::vector<SQLCHAR>(qry.begin(), qry.end());
+        }
+
+        SQLRETURN OdbcTestSuite::ExecQuery(const std::string& qry)
+        {
+            std::vector<SQLCHAR> sql = MakeQuery(qry);
+
+            return SQLExecDirect(stmt, &sql[0], static_cast<SQLINTEGER>(sql.size()));
         }
 
         void OdbcTestSuite::InsertTestStrings(int recordsNum, bool merge)
