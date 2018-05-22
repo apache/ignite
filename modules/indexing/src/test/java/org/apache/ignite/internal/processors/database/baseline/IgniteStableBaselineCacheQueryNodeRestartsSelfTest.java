@@ -34,7 +34,7 @@ public class IgniteStableBaselineCacheQueryNodeRestartsSelfTest extends IgniteCa
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
-                        .setMaxSize(200 * 1024 * 1024)
+                        .setMaxSize(200L * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )
         );
