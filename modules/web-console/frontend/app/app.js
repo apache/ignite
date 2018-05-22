@@ -128,6 +128,7 @@ import bsSelectMenu from './components/bs-select-menu';
 import protectFromBsSelectRender from './components/protect-from-bs-select-render';
 import uiGridHovering from './components/ui-grid-hovering';
 import uiGridFilters from './components/ui-grid-filters';
+import uiGridColumnResizer from './components/ui-grid-column-resizer';
 import listEditable from './components/list-editable';
 import breadcrumbs from './components/breadcrumbs';
 import panelCollapsible from './components/panel-collapsible';
@@ -222,6 +223,7 @@ angular.module('ignite-console', [
     bsSelectMenu.name,
     uiGridHovering.name,
     uiGridFilters.name,
+    uiGridColumnResizer.name,
     protectFromBsSelectRender.name,
     AngularStrapTooltip.name,
     AngularStrapSelect.name,
