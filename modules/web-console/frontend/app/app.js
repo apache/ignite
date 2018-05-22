@@ -105,9 +105,6 @@ import hasPojo from './filters/hasPojo.filter';
 import uiGridSubcategories from './filters/uiGridSubcategories.filter';
 import id8 from './filters/id8.filter';
 
-// Controllers
-import resetPassword from './controllers/reset-password.controller';
-
 // Components
 import igniteListOfRegisteredUsers from './components/list-of-registered-users';
 import IgniteActivitiesUserDialog from './components/activities-user-dialog';
@@ -297,8 +294,6 @@ angular.module('ignite-console', [
 .service(CSV.name, CSV)
 .service('IGFSs', IGFSs)
 .service('Models', Models)
-// Controllers.
-.controller(...resetPassword)
 // Filters.
 .filter('byName', byName)
 .filter('defaultName', defaultName)
