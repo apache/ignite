@@ -60,7 +60,7 @@ public class NonAffinityCoordinatorDynamicStartStopTest extends GridCommonAbstra
         discoverySpi.setIpFinder(ipFinder);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024));
+            new DataRegionConfiguration().setMaxSize(200L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
 
