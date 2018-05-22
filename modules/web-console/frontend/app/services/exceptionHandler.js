@@ -20,6 +20,8 @@ import {CancellationError} from 'app/errors/CancellationError';
 export function $exceptionHandler($log) {
     return function(exception, cause) {
         if (exception instanceof CancellationError) return;
+        // From ui-grid
+        if (exception === 'Possibly unhandled rejection: canceled') return;
         $log.error(exception, cause);
     };
 }
