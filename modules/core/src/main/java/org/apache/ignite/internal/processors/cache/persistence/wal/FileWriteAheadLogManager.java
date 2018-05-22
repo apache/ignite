@@ -1922,7 +1922,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     return -1;
 
                 while (segmentToCompress > Math.min(lastAllowedToCompressIdx, archivedMonitor.lastArchivedAbsoluteIndex())) {
-                    // TODO IGNITE-6587 timed wait
                     wait();
 
                     if (stopped)
