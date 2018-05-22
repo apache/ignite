@@ -44,7 +44,7 @@ public class GridLogThrottle {
     /** Throttle timeout in milliseconds. */
     private static volatile int throttleTimeout = DFLT_THROTTLE_TIMEOUT;
 
-    /** Throttle timeout in milliseconds. */
+    /** Throttle capacity. */
     private static final int throttleCap = IgniteSystemProperties.getInteger(IGNITE_LOG_THROTTLE_CAPACITY, 128);
 
     /** Errors. */

@@ -758,7 +758,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAL_LOG_TX_RECORDS = "IGNITE_WAL_LOG_TX_RECORDS";
 
     /** Max amount of remembered errors for {@link GridLogThrottle}. */
-    public static final String IGNITE_LOG_THROTTLE_CAPACITY = "IGNITE_THROTTLE_CAPACITY";
+    public static final String IGNITE_LOG_THROTTLE_CAPACITY = "IGNITE_LOG_THROTTLE_CAPACITY";
 
     /** If this property is set, {@link DataStorageConfiguration#writeThrottlingEnabled} will be overridden to true
      * independent of initial value in configuration. */
