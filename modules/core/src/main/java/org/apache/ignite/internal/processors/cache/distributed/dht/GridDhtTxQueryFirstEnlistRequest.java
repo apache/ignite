@@ -36,6 +36,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  * First enlist request.
  */
 public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistRequest {
+    /** */
+    private static final long serialVersionUID = -7494735627739420176L;
+
     /** Tx initiator. Primary node in case of remote DHT tx. */
     private UUID subjId;
 
@@ -109,7 +112,6 @@ public class GridDhtTxQueryFirstEnlistRequest extends GridDhtTxQueryEnlistReques
         this.nearNodeId = nearNodeId;
         this.nearXidVer = nearXidVer;
     }
-
 
     /** {@inheritDoc} */
     @Override public AffinityTopologyVersion topologyVersion() {

@@ -39,6 +39,9 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
  */
 public class GridDhtTxQueryEnlistRequest extends GridCacheIdMessage {
     /** */
+    private static final long serialVersionUID = 5103887309729425173L;
+
+    /** */
     private IgniteUuid dhtFutId;
 
     /** */
