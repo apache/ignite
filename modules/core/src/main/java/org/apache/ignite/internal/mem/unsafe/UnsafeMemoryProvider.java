@@ -58,6 +58,8 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
         this.sizes = sizes;
 
+        freeRegions();
+
         regions = new ArrayList<>();
 
         isInit = true;
@@ -65,7 +67,14 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
 
     /** {@inheritDoc} */
     @Override public void shutdown() {
-        if (regions != null) {
+        freeRegions();
+    }
+
+    /**
+     * Relese memory allocated earlier.
+     */
+    private void freeRegions() {
+        if (regions != null)
             for (Iterator<DirectMemoryRegion> it = regions.iterator(); it.hasNext(); ) {
                 DirectMemoryRegion chunk = it.next();
 
@@ -74,7 +83,6 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider {
                 // Safety.
                 it.remove();
             }
-        }
     }
 
     /** {@inheritDoc} */

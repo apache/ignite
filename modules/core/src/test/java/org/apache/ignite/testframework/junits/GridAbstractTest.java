@@ -1715,7 +1715,8 @@ public abstract class GridAbstractTest extends TestCase {
                     stopAllGrids(false);
 
                 // Remove counters.
-                tests.remove(getClass());
+                //tests.remove(getClass());
+                tests.get(getClass()).reset();
 
                 // Remove resources cached in static, if any.
                 GridClassLoaderCache.clear();
