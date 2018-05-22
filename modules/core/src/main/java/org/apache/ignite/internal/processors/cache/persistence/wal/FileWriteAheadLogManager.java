@@ -2121,32 +2121,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Byte array for draining data. */
         private byte[] arr = new byte[BUF_SIZE];
 
-        /** Worker that encapsulates thread body */
-        private GridWorker worker;
-
         /**
          *
          */
         FileDecompressor() {
             super("wal-file-decompressor%" + cctx.igniteInstanceName());
-
-            worker = makeWorker(getName(), this::workerBody);
         }
 
-        /** */
-        private void workerBody() {
-            long waitTimeoutMs = IgniteSystemProperties.getLong(WAIT_TIMEOUT_PROP, DFLT_WAIT_TIMEOUT);
-
+        /** {@inheritDoc} */
+        @Override public void run() {
             while (!Thread.currentThread().isInterrupted() && !stopped) {
-                Long segmentToDecompress = null;
+                long segmentToDecompress = -1L;
 
                 try {
-                    worker.updateHeartbeat();
-
-                    segmentToDecompress = segmentsQueue.poll(waitTimeoutMs, TimeUnit.MILLISECONDS);
-
-                    if (segmentToDecompress == null)
-                        continue;
+                    segmentToDecompress = segmentsQueue.take();
 
                     if (stopped)
                         break;
@@ -2156,7 +2144,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
 
                     try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
-                        FileIO io = ioFactory.create(unzipTmp)) {
+                         FileIO io = ioFactory.create(unzipTmp)) {
                         zis.getNextEntry();
 
                         int bytesRead;
@@ -2183,7 +2171,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     Thread.currentThread().interrupt();
                 }
                 catch (Throwable t) {
-                    if (!stopped && segmentToDecompress != null && segmentToDecompress != -1) {
+                    if (!stopped && segmentToDecompress != -1L) {
                         IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
                             "decompression [segmentIdx=" + segmentToDecompress + "]", t);
 
@@ -2193,11 +2181,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
                 }
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            worker.run();
         }
 
         /**
