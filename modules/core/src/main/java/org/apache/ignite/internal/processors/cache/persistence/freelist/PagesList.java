@@ -1075,7 +1075,8 @@ public abstract class PagesList extends DataStructure {
                         dirty = true;
 
                         assert !isReuseBucket(bucket) ||
-                            PageIdUtils.itemId(pageId) > 0 && PageIdUtils.itemId(pageId) <= MAX_ITEMID_NUM : U.hexLong(pageId);
+                            PageIdUtils.itemId(pageId) > 0 && PageIdUtils.itemId(pageId) <= MAX_ITEMID_NUM
+                            : "Incorrectly recycled pageId in reuse bucket: " + U.hexLong(pageId);
 
                         dataPageId = pageId;
 
