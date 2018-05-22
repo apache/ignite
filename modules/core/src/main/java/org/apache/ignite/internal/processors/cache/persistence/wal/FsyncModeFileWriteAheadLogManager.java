@@ -123,6 +123,12 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  */
 public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
     /** */
+    public static final String WAIT_TIMEOUT_PROP = "IGNITE_FSYNC_WAL_WAIT_TIMEOUT_MS";
+
+    /** */
+    public static final int DFLT_WAIT_TIMEOUT = 10_000;
+
+    /** */
     public static final FileDescriptor[] EMPTY_DESCRIPTORS = new FileDescriptor[0];
 
     /** */

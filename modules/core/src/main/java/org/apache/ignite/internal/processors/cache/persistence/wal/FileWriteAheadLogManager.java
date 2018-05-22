@@ -135,6 +135,12 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
  */
 @SuppressWarnings("IfMayBeConditional")
 public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
+    /** */
+    public static final String WAIT_TIMEOUT_PROP = "IGNITE_WAL_WAIT_TIMEOUT_MS";
+
+    /** */
+    public static final int DFLT_WAIT_TIMEOUT = 10_000;
+
     /** {@link MappedByteBuffer#force0(java.io.FileDescriptor, long, long)}. */
     private static final Method force0 = findNonPublicMethod(
         MappedByteBuffer.class, "force0",
@@ -1916,6 +1922,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     return -1;
 
                 while (segmentToCompress > Math.min(lastAllowedToCompressIdx, archivedMonitor.lastArchivedAbsoluteIndex())) {
+                    // TODO IGNITE-6587 timed wait
                     wait();
 
                     if (stopped)
