@@ -183,8 +183,9 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
             List<VisorCache> resCaches = res.getCaches();
 
+            int partitions = 0;
             double total = 0;
-            double moving = 0;
+            double ready = 0;
 
             for (String cacheName : cacheProc.cacheNames()) {
                 if (proxyCache(cacheName))
@@ -201,8 +202,9 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
                         CacheMetrics cm = ca.localMetrics();
 
-                        total += cm.getTotalPartitionsCount();
-                        moving += cm.getRebalancingPartitionsCount();
+                        partitions += cm.getTotalPartitionsCount();
+                        total += cm.getEstimatedRebalancingKeys();
+                        ready += cm.getRebalancedKeys();
 
                         resCaches.add(new VisorCache(ignite, ca, arg.isCollectCacheMetrics()));
                     }
@@ -217,7 +219,10 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 }
             }
 
-            res.setRebalance(total > 0 ? (total - moving) / total : -1);
+            if (partitions == 0)
+                res.setRebalance(-1);
+            else
+                res.setRebalance(total > 0 ? ready / total : 1);
         }
         catch (Exception e) {
             res.setCachesEx(new VisorExceptionWrapper(e));
