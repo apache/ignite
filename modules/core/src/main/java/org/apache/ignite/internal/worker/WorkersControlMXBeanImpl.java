@@ -19,6 +19,7 @@ package org.apache.ignite.internal.worker;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.mxbean.WorkersControlMXBean;
 
@@ -56,6 +57,43 @@ public class WorkersControlMXBeanImpl implements WorkersControlMXBean {
             return false;
 
         t.interrupt();
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean stopThreadByUniqueName(String name) {
+        Thread[] threads = Thread.getAllStackTraces().keySet().stream()
+            .filter(t -> Objects.equals(t.getName(), name))
+            .toArray(Thread[]::new);
+
+        if (threads.length != 1)
+            return false;
+
+        threads[0].stop();
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean stopThreadById(String id) {
+        final long threadId;
+
+        try {
+            threadId = Long.parseLong(id, 16);
+        }
+        catch (NumberFormatException e) {
+            return false;
+        }
+
+        Thread[] threads = Thread.getAllStackTraces().keySet().stream()
+            .filter(t -> t.getId() == threadId)
+            .toArray(Thread[]::new);
+
+        if (threads.length != 1)
+            return false;
+
+        threads[0].stop();
 
         return true;
     }
