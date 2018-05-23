@@ -376,22 +376,8 @@ public class IgniteDiagnosticMessagesTest extends GridCommonAbstractTest {
 
             String log = strLog.toString();
 
-            String str1 = "Cache entries [cacheId=" + CU.cacheId(DEFAULT_CACHE_NAME) + ", cacheName=" + DEFAULT_CACHE_NAME + "]:";
-            String str2 = "General node info [id=" + id0;
-
-            StringBuilder dbg = new StringBuilder();
-
-            dbg.append("*** GRIDSTRINGLOGGER DEBUG *** IgniteDiagnosticMessagesTest.testLongRunningTx").append(U.nl())
-                .append("Position of search string 1: ").append(log.indexOf(str1)).append(U.nl())
-                .append("Position of search string 2: ").append(log.indexOf(str2)).append(U.nl())
-                .append("Logger contents: ").append(U.nl())
-                .append(log).append(U.nl())
-                .append("*** END OF GRIDSTRINGLOGGER DEBUG ***").append(U.nl());
-
-            System.err.println(dbg);
-
-            assertTrue(log.contains(str1));
-            assertTrue(log.contains(str2));
+            assertTrue(log.contains("Cache entries [cacheId=" + CU.cacheId(DEFAULT_CACHE_NAME) + ", cacheName=" + DEFAULT_CACHE_NAME + "]:"));
+            assertTrue(log.contains("General node info [id=" + id0));
         }
         finally {
             System.clearProperty(IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT);
