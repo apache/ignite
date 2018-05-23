@@ -612,7 +612,7 @@ public class QueryEntity implements Serializable {
      * Sets maximum length info.
      * 
      * @param maxLengthInfo Set of field name to maximum length.
-     * @return {@cod this} for chaining.
+     * @return {@code this} for chaining.
      */
     public QueryEntity setMaxLengthInfo(Map<String, Integer> maxLengthInfo) {
         this.maxLengthInfo = maxLengthInfo;

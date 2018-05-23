@@ -3139,7 +3139,8 @@ public class GridFunc {
      * @param map Map.
      * @param key Key.
      * @param <V> Value type.
-     * @return Value first founded value from Map associated with {@code key}, {@code key.toLowerCase()}, {@code key.toUpperCase()}.
+     * @return Value first founded value from Map associated with {@code key}, {@code key.toLowerCase()}, 
+     * {@code key.toUpperCase()}.
      */
     @Nullable public static <V> V getCaseInsensitive(@Nullable Map<String, V> map, String key)  {
         assert key != null;

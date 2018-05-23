@@ -25,6 +25,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.Integer.MAX_VALUE;
+
 /**
  * Description of type property.
  */
@@ -159,6 +161,6 @@ public class QueryClassProperty implements GridQueryProperty {
 
     /** {@inheritDoc} */
     @Override public int maxLength() {
-        return Integer.MAX_VALUE;
+        return MAX_VALUE;
     }
 }

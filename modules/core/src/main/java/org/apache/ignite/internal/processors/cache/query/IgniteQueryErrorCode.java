@@ -100,10 +100,10 @@ public final class IgniteQueryErrorCode {
     /** Cache not found. */
     public final static int CACHE_NOT_FOUND = 4006;
 
-    /** Attempt to INSERT or MERGE key that exceed maximum column length. */
+    /** Attempt to INSERT, UPDATE or MERGE key that exceed maximum column length. */
     public final static int TOO_LONG_KEY = 4007;
 
-    /** Attempt to INSERT or MERGE value that exceed maximum column length. */
+    /** Attempt to INSERT, UPDATE or MERGE value that exceed maximum column length. */
     public final static int TOO_LONG_VALUE = 4008;
 
     /** */

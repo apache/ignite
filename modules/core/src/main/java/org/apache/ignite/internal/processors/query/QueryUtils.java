@@ -580,7 +580,7 @@ public class QueryUtils {
             IgniteBiTuple<Integer, Integer> precisionAndScale =
                 decimalInfo != null ? decimalInfo.get(entry.getKey()) : null;
 
-            Integer maxLength = maxLengthInfo != null ? 
+            int maxLength = maxLengthInfo != null ? 
                 maxLengthInfo.getOrDefault(entry.getKey(), MAX_VALUE) : MAX_VALUE;
 
             QueryBinaryProperty prop = buildBinaryProperty(ctx, d.cacheName(), entry.getKey(),

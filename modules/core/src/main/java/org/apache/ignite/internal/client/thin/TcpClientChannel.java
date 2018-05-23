@@ -69,7 +69,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientStatus;
  * Implements {@link ClientChannel} over TCP.
  */
 class TcpClientChannel implements ClientChannel {
-    /** Protocol version: 1.1.0. */
+    /** Protocol version: 1.2.0. */
     private static final ProtocolVersion V1_2_0 = new ProtocolVersion((short)1, (short)2, (short)0);
     
     /** Protocol version: 1.1.0. */
