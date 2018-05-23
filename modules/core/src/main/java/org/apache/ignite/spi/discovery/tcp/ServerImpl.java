@@ -2599,8 +2599,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                     workerBody();
                 }
             };
-
-            setBeforeEachPollAction(worker::updateHeartbeat);
         }
 
         /**
@@ -5600,12 +5598,6 @@ class ServerImpl extends TcpDiscoveryImpl {
      * From that moment server is no more responsible for the socket.
      */
     private class TcpServer extends IgniteSpiThread {
-        /** */
-        private static final String ACCEPT_TIMEOUT_PROP = "IGNITE_TCP_ACCEPT_SO_TIMEOUT";
-
-        /** */
-        private static final int DFLT_ACCEPT_TIMEOUT = 10_000;
-
         /** Socket TCP server listens to. */
         private ServerSocket srvrSock;
 
@@ -5680,21 +5672,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             Throwable err = null;
 
             try {
-                int acceptTimeoutMs = IgniteSystemProperties.getInteger(ACCEPT_TIMEOUT_PROP, DFLT_ACCEPT_TIMEOUT);
-
-                srvrSock.setSoTimeout(acceptTimeoutMs);
-
-                Socket sock;
-
                 while (!isInterrupted()) {
-                    worker.updateHeartbeat();
-
-                    try {
-                        sock = srvrSock.accept();
-                    }
-                    catch (SocketTimeoutException ignored) {
-                        continue;
-                    }
+                    Socket sock = srvrSock.accept();
 
                     long tstamp = U.currentTimeMillis();
 
@@ -6812,9 +6791,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Polling timeout. */
         private final long pollingTimeout;
 
-        /** */
-        private Runnable beforeEachPoll;
-
         /**
          * @param name Thread name.
          * @param pollingTimeout Messages polling timeout.
@@ -6827,22 +6803,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             setPriority(spi.threadPri);
         }
 
-        /**
-         * @param act action to be executed before each timed queue poll.
-         */
-        void setBeforeEachPollAction(Runnable act) {
-            beforeEachPoll = act;
-        }
-
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             if (log.isDebugEnabled())
                 log.debug("Message worker started [locNodeId=" + getConfiguredNodeId() + ']');
 
             while (!isInterrupted()) {
-                if (beforeEachPoll != null)
-                    beforeEachPoll.run();
-
                 T msg = queue.poll(pollingTimeout, TimeUnit.MILLISECONDS);
 
                 if (msg == null)

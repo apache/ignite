@@ -141,9 +141,6 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
      * Handles job timeouts.
      */
     private class TimeoutWorker extends GridWorker {
-        /** */
-        private static final long DFLT_WAIT_TIME = 5000;
-
         /**
          *
          */
@@ -158,8 +155,6 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
             try {
                 while (!isCancelled()) {
-                    updateHeartbeat();
-
                     long now = U.currentTimeMillis();
 
                     for (Iterator<GridTimeoutObject> iter = timeoutObjs.iterator(); iter.hasNext(); ) {
@@ -172,11 +167,8 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                                 if (log.isDebugEnabled())
                                     log.debug("Timeout has occurred [obj=" + timeoutObj + ", process=" + rmvd + ']');
 
-                                if (rmvd) {
-                                    updateHeartbeat();
-
+                                if (rmvd)
                                     timeoutObj.onTimeout();
-                                }
                             }
                             catch (Throwable e) {
                                 if (isCancelled() && !(e instanceof Error)) {
@@ -204,18 +196,16 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
                             // 'addTimeoutObject(..)' method.
                             GridTimeoutObject first = timeoutObjs.firstx();
 
-                            updateHeartbeat();
-
                             if (first != null) {
                                 long waitTime = first.endTime() - U.currentTimeMillis();
 
                                 if (waitTime > 0)
-                                    mux.wait(Math.min(waitTime, DFLT_WAIT_TIME));
+                                    mux.wait(waitTime);
                                 else
                                     break;
                             }
                             else
-                                mux.wait(DFLT_WAIT_TIME);
+                                mux.wait(5000);
                         }
                     }
                 }

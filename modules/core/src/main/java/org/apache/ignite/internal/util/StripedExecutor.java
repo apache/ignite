@@ -53,16 +53,6 @@ import org.jetbrains.annotations.NotNull;
  * Striped executor.
  */
 public class StripedExecutor implements ExecutorService {
-    /** */
-    public static final String WAIT_TIMEOUT_MS_PROP = "IGNITE_STRIPED_EXECUTOR_WAIT_TIMEOUT_MS";
-
-    /** */
-    public static final int DFLT_WAIT_TIMEOUT_MS = 10_000;
-
-    /** */
-    private static final long WAIT_TIMEOUT_NS =
-        IgniteSystemProperties.getLong(WAIT_TIMEOUT_MS_PROP, DFLT_WAIT_TIMEOUT_MS) * 1000;
-
     /** Stripes. */
     private final Stripe[] stripes;
 
@@ -533,14 +523,10 @@ public class StripedExecutor implements ExecutorService {
                 Runnable cmd;
 
                 try {
-                    updateHeartbeat();
-
                     cmd = take();
 
                     if (cmd != null) {
                         active = true;
-
-                        updateHeartbeat();
 
                         try {
                             cmd.run();
@@ -707,9 +693,7 @@ public class StripedExecutor implements ExecutorService {
                         }
                     }
 
-                    updateHeartbeat();
-
-                    LockSupport.parkNanos(WAIT_TIMEOUT_NS);
+                    LockSupport.park();
 
                     if (Thread.interrupted())
                         throw new InterruptedException();
@@ -784,21 +768,11 @@ public class StripedExecutor implements ExecutorService {
 
         /** {@inheritDoc} */
         @Override Runnable take() {
-            long waitTimeout = WAIT_TIMEOUT_NS / 1000;
-
-            long startedAt = System.currentTimeMillis();
-
             for (;;) {
                 Runnable r = queue.poll();
 
                 if (r != null)
                     return r;
-
-                if (System.currentTimeMillis() - startedAt > waitTimeout) {
-                    updateHeartbeat();
-
-                    startedAt = System.currentTimeMillis();
-                }
             }
         }
 
@@ -856,13 +830,7 @@ public class StripedExecutor implements ExecutorService {
 
         /** {@inheritDoc} */
         @Override Runnable take() throws InterruptedException {
-            Runnable r;
-
-            do {
-                updateHeartbeat();
-            } while ((r = queue.poll(WAIT_TIMEOUT_NS, TimeUnit.NANOSECONDS)) == null);
-
-            return r;
+            return queue.take();
         }
 
         /** {@inheritDoc} */

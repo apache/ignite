@@ -2942,12 +2942,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     @SuppressWarnings("NakedNotify")
     public class Checkpointer extends GridWorker {
-        /** */
-        private static final String WAIT_TIMEOUT_PROP = "IGNITE_CHECKPOINTER_WAIT_TIMEOUT_MS";
-
-        /** */
-        private static final int DFLT_WAIT_TIMEOUT = 10_000;
-
         /** Temporary write buffer. */
         private final ByteBuffer tmpWriteBuf;
 
@@ -3137,8 +3131,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     chp.cpPages.innerCollection(i),
                                     updStores,
                                     doneWriteFut,
-                                    totalPagesToWriteCnt,
-                                    this::updateHeartbeat
+                                    totalPagesToWriteCnt
                                 );
 
                                 try {
@@ -3156,8 +3149,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 chp.cpPages,
                                 updStores,
                                 doneWriteFut,
-                                totalPagesToWriteCnt,
-                                this::updateHeartbeat);
+                                totalPagesToWriteCnt);
 
                             write.run();
                         }
@@ -3400,15 +3392,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 long now = U.currentTimeMillis();
 
-                long waitTimeoutMs = IgniteSystemProperties.getLong(WAIT_TIMEOUT_PROP, DFLT_WAIT_TIMEOUT);
-
                 synchronized (this) {
                     long remaining;
 
                     while ((remaining = scheduledCp.nextCpTs - now) > 0 && !isCancelled()) {
-                        updateHeartbeat();
-
-                        wait(Math.min(remaining, waitTimeoutMs));
+                        wait(remaining);
 
                         now = U.currentTimeMillis();
                     }
@@ -3776,9 +3764,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** Total pages to write, counter may be greater than {@link #writePageIds} size */
         private final int totalPagesToWrite;
 
-        /** */
-        private final Runnable beforePageWrite;
-
         /**
          * Creates task for write pages
          *
@@ -3787,21 +3772,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param updStores
          * @param doneFut
          * @param totalPagesToWrite total pages to be written under this checkpoint
-         * @param beforePageWrite Action to be performed before every page write.
          */
         private WriteCheckpointPages(
             final CheckpointMetricsTracker tracker,
             final Collection<FullPageId> writePageIds,
             final ConcurrentLinkedHashMap<PageStore, LongAdder> updStores,
             final CountDownFuture doneFut,
-            final int totalPagesToWrite,
-            final Runnable beforePageWrite) {
+            final int totalPagesToWrite) {
             this.tracker = tracker;
             this.writePageIds = writePageIds;
             this.updStores = updStores;
             this.doneFut = doneFut;
             this.totalPagesToWrite = totalPagesToWrite;
-            this.beforePageWrite = beforePageWrite;
         }
 
         /** {@inheritDoc} */
@@ -3818,8 +3800,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         break;
 
                     tmpWriteBuf.rewind();
-
-                    beforePageWrite.run();
 
                     snapshotMgr.beforePageWrite(fullId);
 

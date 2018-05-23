@@ -2358,8 +2358,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             long cnt = 0;
 
             while (!isCancelled()) {
-                updateHeartbeat();
-
                 cnt++;
 
                 CachePartitionExchangeWorkerTask task = null;
@@ -2397,14 +2395,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (isCancelled())
                         Thread.currentThread().interrupt();
 
-                    updateHeartbeat();
-
                     task = futQ.poll(timeout, MILLISECONDS);
 
                     if (task == null)
                         continue; // Main while loop.
-
-                    updateHeartbeat();
 
                     if (!isExchangeTask(task)) {
                         processCustomTask(task);
@@ -2469,8 +2463,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             while (true) {
                                 try {
-                                    updateHeartbeat();
-
                                     resVer = exchFut.get(rollbackTimeout > 0 ? rollbackTimeout : dumpTimeout);
 
                                     break;

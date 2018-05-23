@@ -1918,8 +1918,6 @@ public class GridNioServer<T> {
                     SessionChangeRequest req0;
 
                     while ((req0 = changeReqs.poll()) != null) {
-                        updateHeartbeat();
-
                         switch (req0.operation()) {
                             case CONNECT: {
                                 NioOperationFuture fut = (NioOperationFuture)req0;
@@ -2091,8 +2089,6 @@ public class GridNioServer<T> {
                     int res = 0;
 
                     for (long i = 0; i < selectorSpins && res == 0; i++) {
-                        updateHeartbeat();
-
                         res = selector.selectNow();
 
                         if (res > 0) {
@@ -2125,8 +2121,6 @@ public class GridNioServer<T> {
                     try {
                         if (!changeReqs.isEmpty())
                             continue;
-
-                        updateHeartbeat();
 
                         // Wake up every 2 seconds to check if closed.
                         if (selector.select(2000) > 0) {
@@ -2898,8 +2892,6 @@ public class GridNioServer<T> {
         private void accept() throws IgniteCheckedException {
             try {
                 while (!closed && selector.isOpen() && !Thread.currentThread().isInterrupted()) {
-                    updateHeartbeat();
-
                     // Wake up every 2 seconds to check if closed.
                     if (selector.select(2000) > 0)
                         // Walk through the ready keys collection and process date requests.

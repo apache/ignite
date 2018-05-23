@@ -135,12 +135,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
  */
 @SuppressWarnings("IfMayBeConditional")
 public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
-    /** */
-    public static final String WAIT_TIMEOUT_PROP = "IGNITE_WAL_WAIT_TIMEOUT_MS";
-
-    /** */
-    public static final int DFLT_WAIT_TIMEOUT = 10_000;
-
     /** {@link MappedByteBuffer#force0(java.io.FileDescriptor, long, long)}. */
     private static final Method force0 = findNonPublicMethod(
         MappedByteBuffer.class, "force0",
@@ -1575,17 +1569,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 }
             }
 
-            long waitTimeoutMs = IgniteSystemProperties.getLong(WAIT_TIMEOUT_PROP, DFLT_WAIT_TIMEOUT);
-
             Throwable err = null;
 
             try {
                 synchronized (this) {
-                    while (curAbsWalIdx == -1 && !stopped) {
-                        worker.updateHeartbeat();
-
-                        wait(waitTimeoutMs);
-                    }
+                    while (curAbsWalIdx == -1 && !stopped)
+                        wait();
 
                     // If the archive directory is empty, we can be sure that there were no WAL segments archived.
                     // This is ensured by the check in truncate() which will leave at least one file there
@@ -1599,11 +1588,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         assert lastAbsArchivedIdx <= curAbsWalIdx : "lastArchived=" + lastAbsArchivedIdx +
                             ", current=" + curAbsWalIdx;
 
-                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped) {
-                            worker.updateHeartbeat();
-
-                            wait(waitTimeoutMs);
-                        }
+                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped)
+                            wait();
 
                         toArchive = lastAbsArchivedIdx + 1;
                     }
@@ -1615,11 +1601,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         final SegmentArchiveResult res = archiveSegment(toArchive);
 
                         synchronized (this) {
-                            while (locked.containsKey(toArchive) && !stopped) {
-                                worker.updateHeartbeat();
-
-                                wait(waitTimeoutMs);
-                            }
+                            while (locked.containsKey(toArchive) && !stopped)
+                                wait();
 
                             // Then increase counter to allow rollover on clean working file
                             changeLastArchivedIndexAndNotifyWaiters(toArchive);
@@ -1841,8 +1824,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 },
                 new CI1<Integer>() {
                     @Override public void apply(Integer idx) {
-                        worker.updateHeartbeat();
-
                         synchronized (FileArchiver.this) {
                             formatted = idx;
 
@@ -3238,18 +3219,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         /** */
         private void workerBody() {
-            long waitTimeoutNs = IgniteSystemProperties.getLong(WAIT_TIMEOUT_PROP, DFLT_WAIT_TIMEOUT) * 1000;
-
             Throwable err = null;
 
             try {
                 while (!shutdown && !Thread.currentThread().isInterrupted()) {
                     while (waiters.isEmpty()) {
-                        if (!shutdown) {
-                            worker.updateHeartbeat();
-
-                            LockSupport.parkNanos(waitTimeoutNs);
-                        }
+                        if (!shutdown)
+                            LockSupport.park();
                         else {
                             unparkWaiters(Long.MAX_VALUE);
 
@@ -3297,8 +3273,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
 
                     for (int i = 0; i < segs.size(); i++) {
-                        worker.updateHeartbeat();
-
                         SegmentedRingByteBuffer.ReadSegment seg = segs.get(i);
 
                         try {

@@ -2635,12 +2635,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Worker for discovery events. */
     private class DiscoveryWorker extends GridWorker {
         /** */
-        private static final String POLL_TIMEOUT_PROP = "IGNITE_DISCOVERY_WORKER_POLL_TIMEOUT_MS";
-
-        /** */
-        private static final int DFLT_POLL_TIMEOUT = 10_000;
-
-        /** */
         private DiscoCache discoCache;
 
         /** Event queue. */
@@ -2655,9 +2649,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         /** Node segmented event fired flag. */
         private boolean nodeSegFired;
-
-        /** */
-        private final long pollTimeoutMs = IgniteSystemProperties.getLong(POLL_TIMEOUT_PROP, DFLT_POLL_TIMEOUT);
 
         /**
          *
@@ -2766,15 +2757,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         @SuppressWarnings("DuplicateCondition")
         private void body0() throws InterruptedException {
             GridTuple6<Integer, AffinityTopologyVersion, ClusterNode, DiscoCache, Collection<ClusterNode>,
-                DiscoveryCustomMessage> evt;
-            do {
-                if (isCancelled())
-                    return;
-
-                updateHeartbeat();
-
-                evt = evts.poll(pollTimeoutMs, TimeUnit.MILLISECONDS);
-            } while (evt == null);
+                DiscoveryCustomMessage> evt = evts.take();
 
             int type = evt.get1();
 

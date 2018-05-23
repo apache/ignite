@@ -4238,8 +4238,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             try {
                 while (!isInterrupted()) {
-                    worker.updateHeartbeat();
-
                     DisconnectedSessionInfo disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
 
                     if (disconnectData != null)

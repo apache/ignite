@@ -123,12 +123,6 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  */
 public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
     /** */
-    public static final String WAIT_TIMEOUT_PROP = "IGNITE_FSYNC_WAL_WAIT_TIMEOUT_MS";
-
-    /** */
-    public static final int DFLT_WAIT_TIMEOUT = 10_000;
-
-    /** */
     public static final FileDescriptor[] EMPTY_DESCRIPTORS = new FileDescriptor[0];
 
     /** */
@@ -1415,17 +1409,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 }
             }
 
-            long waitTimeoutMs = IgniteSystemProperties.getLong(WAIT_TIMEOUT_PROP, DFLT_WAIT_TIMEOUT);
-
             Throwable err = null;
 
             try {
                 synchronized (this) {
-                    while (curAbsWalIdx == -1 && !stopped) {
-                        worker.updateHeartbeat();
-
-                        wait(waitTimeoutMs);
-                    }
+                    while (curAbsWalIdx == -1 && !stopped)
+                        wait();
 
                     // If the archive directory is empty, we can be sure that there were no WAL segments archived.
                     // This is ensured by the check in truncate() which will leave at least one file there
@@ -1433,19 +1422,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 }
 
                 while (!Thread.currentThread().isInterrupted() && !stopped) {
-                    worker.updateHeartbeat();
-
                     long toArchive;
 
                     synchronized (this) {
                         assert lastAbsArchivedIdx <= curAbsWalIdx : "lastArchived=" + lastAbsArchivedIdx +
                             ", current=" + curAbsWalIdx;
 
-                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped) {
-                            worker.updateHeartbeat();
-
-                            wait(waitTimeoutMs);
-                        }
+                        while (lastAbsArchivedIdx >= curAbsWalIdx - 1 && !stopped)
+                            wait();
 
                         toArchive = lastAbsArchivedIdx + 1;
                     }
@@ -1457,11 +1441,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         final SegmentArchiveResult res = archiveSegment(toArchive);
 
                         synchronized (this) {
-                            while (locked.containsKey(toArchive) && !stopped) {
-                                worker.updateHeartbeat();
-
-                                wait(waitTimeoutMs);
-                            }
+                            while (locked.containsKey(toArchive) && !stopped)
+                                wait();
 
                             changeLastArchivedIndexAndWakeupCompressor(toArchive);
 
@@ -1679,8 +1660,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     }
                 }, new CI1<Integer>() {
                     @Override public void apply(Integer idx) {
-                        worker.updateHeartbeat();
-
                         synchronized (archiver) {
                             formatted = idx;
 
