@@ -46,6 +46,12 @@ public class CacheArguments {
     /** Max print. */
     private int maxPrint;
 
+    /** validate_indexes 'checkFirst' argument */
+    private int checkFirst = -1;
+
+    /** validate_indexes 'checkThrough' argument */
+    private int checkThrough = -1;
+
     /** Cache view command. */
     private @Nullable VisorViewCacheCmd cacheCmd;
 
@@ -159,5 +165,29 @@ public class CacheArguments {
      */
     public void maxPrint(int maxPrint) {
         this.maxPrint = maxPrint;
+    }
+
+    /** */
+    public int checkFirst() {
+        return checkFirst;
+    }
+
+    /**
+     * @param checkFirst Check first.
+     */
+    public void checkFirst(int checkFirst) {
+        this.checkFirst = checkFirst;
+    }
+
+    /** */
+    public int checkThrough() {
+        return checkThrough;
+    }
+
+    /**
+     * @param checkThrough Check through.
+     */
+    public void checkThrough(int checkThrough) {
+        this.checkThrough = checkThrough;
     }
 }
