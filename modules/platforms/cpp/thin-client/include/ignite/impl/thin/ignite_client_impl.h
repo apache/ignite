@@ -19,6 +19,7 @@
 #define _IGNITE_IMPL_THIN_IGNITE_CLIENT_IMPL
 
 #include <ignite/thin/ignite_client.h>
+#include <ignite/thin/ignite_client_configuration.h>
 
 namespace ignite
 {
@@ -36,16 +37,27 @@ namespace ignite
             {
             public:
                 /**
-                 * Default constructor.
+                 * Constructor.
+                 *
+                 * @param cfg Configuration.
                  */
-                IgniteClientImpl();
+                IgniteClientImpl(const ignite::thin::IgniteClientConfiguration& cfg);
 
                 /**
                  * Destructor.
                  */
                 ~IgniteClientImpl();
 
+                /**
+                 * Start client.
+                 *
+                 * @throw IgnitError on inability to connect.
+                 */
+                void Start();
+
             private:
+                /** Configuration. */
+                const ignite::thin::IgniteClientConfiguration cfg;
             };
         }
     }

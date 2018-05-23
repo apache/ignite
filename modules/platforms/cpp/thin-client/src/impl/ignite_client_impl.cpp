@@ -23,7 +23,8 @@ namespace ignite
     {
         namespace thin
         {
-            IgniteClientImpl::IgniteClientImpl()
+            IgniteClientImpl::IgniteClientImpl(const ignite::thin::IgniteClientConfiguration& cfg) :
+                cfg(cfg)
             {
                 // No-op.
             }
@@ -31,6 +32,11 @@ namespace ignite
             IgniteClientImpl::~IgniteClientImpl()
             {
                 // No-op.
+            }
+
+            void IgniteClientImpl::Start()
+            {
+
             }
         }   
     }

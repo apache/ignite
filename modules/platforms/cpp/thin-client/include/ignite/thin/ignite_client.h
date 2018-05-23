@@ -50,21 +50,28 @@ namespace ignite
         {
         public:
             /**
-             * Default constructor.
-             */
-            IgniteClient();
-
-            /**
              * Destructor.
              */
             ~IgniteClient();
 
             /**
              * Start client.
+             *
+             * @param cfg Client configuration.
+             * @return IgniteClient instance.
+             * @throw IgnitError on inability to connect.
              */
-            void Start(const IgniteClientConfiguration& cfg);
+            static IgniteClient Start(const IgniteClientConfiguration& cfg);
 
         private:
+            /**
+             * Constructor.
+             *
+             * @param impl Implementation.
+             */
+            IgniteClient(common::concurrent::SharedPointer<impl::thin::IgniteClientImpl>& impl);
+
+            /** Implementation. */
             common::concurrent::SharedPointer<impl::thin::IgniteClientImpl> impl;
         };
     }

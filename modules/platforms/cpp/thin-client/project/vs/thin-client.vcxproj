@@ -113,7 +113,6 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
       <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
@@ -133,7 +132,6 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
       <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -151,18 +149,45 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
       <AdditionalDependencies>Ws2_32.lib;Mswsock.lib;Advapi32.lib;Shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\os\win\src\net\tcp_socket_client.cpp" />
     <ClCompile Include="..\..\src\ignite_client.cpp" />
+    <ClCompile Include="..\..\src\impl\data_router.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_client_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\message.cpp" />
+    <ClCompile Include="..\..\src\impl\protocol_version.cpp" />
+    <ClCompile Include="..\..\src\impl\ssl\secure_socket_client.cpp" />
+    <ClCompile Include="..\..\src\impl\ssl\ssl_gateway.cpp" />
+    <ClCompile Include="..\..\src\impl\utility.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\impl\thin\data_router.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\ignite_client_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\message.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\net\end_point.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\net\tcp_socket_client.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\parser.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\protocol_version.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\response_status.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\socket_client.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\ssl\secure_socket_client.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\ssl\ssl_bindings.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\ssl\ssl_gateway.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\utility.h" />
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h" />
     <ClInclude Include="..\..\include\ignite\thin\ignite_client_configuration.h" />
+    <ClInclude Include="..\..\include\ignite\thin\ssl_mode.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\binary\project\vs\binary.vcxproj">
+      <Project>{4f15669b-92eb-49f0-b774-8f19bae0b960}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\common\project\vs\common.vcxproj">
+      <Project>{b63f2e01-5157-4719-8491-0e1c7cd3b701}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
