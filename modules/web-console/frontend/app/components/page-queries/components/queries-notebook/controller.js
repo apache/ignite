@@ -936,7 +936,7 @@ export class NotebookCtrl {
 
         const _startWatch = () => {
             const awaitClusters$ = fromPromise(
-                agentMgr.startClusterWatch('Back to Configuration', 'default-state'));
+                agentMgr.startClusterWatch('Leave Queries', 'default-state'));
 
             const finishLoading$ = defer(() => {
                 if (!$root.IgniteDemoMode)
