@@ -2376,7 +2376,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ctx.service().updateUtilityCache();
         }
 
-        ctx.dataStructures().onAfterCacheStarted(exchActions.cacheStartRequests());
+        ctx.dataStructures().onExchangeDone(exchActions);
 
         if (err == null)
             processCacheStopRequestOnExchangeDone(exchActions);

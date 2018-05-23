@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -47,6 +49,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
@@ -58,7 +61,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheType;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
-import org.apache.ignite.internal.processors.cache.ExchangeActions.CacheActionData;
+import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
@@ -296,17 +299,30 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /**
-     * Called after cache start request was processed.
+     * Callback invoked when first exchange future for dynamic cache is completed.
      *
-     * @param cacheChangeReqs List of cache change requests.
+     * @param exchActions Change requests.
      */
-    public void onAfterCacheStarted(Iterable<CacheActionData> cacheChangeReqs) {
-        for (CacheActionData req : cacheChangeReqs) {
-            final GridCacheContext cctx = ctx.cache().context().cacheContext(req.descriptor().cacheId());
+    public void onExchangeDone(ExchangeActions exchActions) {
+        List<DynamicCacheDescriptor> cacheDescs = new ArrayList<>();
+
+        for (ExchangeActions.CacheActionData req : exchActions.cacheStartRequests())
+            cacheDescs.add(req.descriptor());
+
+        if (exchActions.localJoinContext() != null) {
+            for (T2<DynamicCacheDescriptor, NearCacheConfiguration> pair : exchActions.localJoinContext().caches())
+                cacheDescs.add(pair.getKey());
+        }
+
+        for (DynamicCacheDescriptor desc : cacheDescs) {
+            final GridCacheContext cctx = ctx.cache().context().cacheContext(desc.cacheId());
 
             if (cctx.dataStructuresCache() && cctx.group().persistenceEnabled() &&
-                cctx.name().startsWith(DS_CACHE_NAME_PREFIX))
-                cctx.dataStructures().onAfterCacheStarted();
+                cctx.name().startsWith(DS_CACHE_NAME_PREFIX)) {
+                ctx.closure().runLocalSafe(() -> {
+                    cctx.dataStructures().onAfterCacheStarted();
+                });
+            }
         }
     }
 

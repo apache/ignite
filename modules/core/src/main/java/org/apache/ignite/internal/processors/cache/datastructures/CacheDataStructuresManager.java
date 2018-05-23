@@ -66,6 +66,8 @@ import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -128,6 +130,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
     /** Init latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
+
+    /** State of Set data recovery process. */
+    private final GridFutureAdapter<Void> recoveryState = new GridFutureAdapter<>();
 
     /** Init flag. */
     private boolean initFlag;
@@ -226,6 +231,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         }
         catch (IgniteCheckedException e) {
             log.error("Unable to restore local set data map from cache " + cctx.name(), e);
+        }
+        finally {
+            recoveryState.onDone();
         }
     }
 
@@ -379,8 +387,11 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         Object key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
 
-        if (key0 instanceof SetItemKey)
+        if (key0 instanceof SetItemKey) {
+            awaitSetDataInit();
+
             onSetItemUpdated((SetItemKey)key0, rmv);
+        }
     }
 
     /**
@@ -487,7 +498,17 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @return Data for given set.
      */
     @Nullable public GridConcurrentHashSet<SetItemKey> setData(IgniteUuid id) {
+        awaitSetDataInit();
+
         return setDataMap.get(id);
+    }
+
+    /**
+     * Check set data items recovery state.
+     */
+    private void awaitSetDataInit() {
+        if (cctx.group().persistenceEnabled() && !recoveryState.isDone())
+            new IgniteFutureImpl<>(recoveryState).get();
     }
 
     /**
