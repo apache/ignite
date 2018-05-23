@@ -55,10 +55,12 @@ import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 
 import static java.lang.Integer.MAX_VALUE;
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.VER_1_2_0;
 
 /**
  * Shared serialization/deserialization utils.
@@ -235,7 +237,7 @@ final class ClientUtils {
     }
 
     /** Serialize configuration to stream. */
-    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out) {
+    void cacheConfiguration(ClientCacheConfiguration cfg, BinaryOutputStream out, ClientListenerProtocolVersion ver) {
         try (BinaryRawWriterEx writer = new BinaryWriterExImpl(marsh.context(), out, null, null)) {
             int origPos = out.position();
 
@@ -313,9 +315,12 @@ final class ClientUtils {
                                 w.writeBoolean(qf.isKey());
                                 w.writeBoolean(qf.isNotNull());
                                 w.writeObject(qf.getDefaultValue());
-                                w.writeInt(qf.getPrecision());
-                                w.writeInt(qf.getScale());
-                                w.writeInt(qf.getMaxLength());
+
+                                if (ver == null || ver.compareTo(VER_1_2_0) >= 0) {
+                                    w.writeInt(qf.getPrecision());
+                                    w.writeInt(qf.getScale());
+                                    w.writeInt(qf.getMaxLength());
+                                }
                             }
                         );
                         ClientUtils.collection(
@@ -348,7 +353,7 @@ final class ClientUtils {
     }
 
     /** Deserialize configuration from stream. */
-    ClientCacheConfiguration cacheConfiguration(BinaryInputStream in) throws IOException {
+    ClientCacheConfiguration cacheConfiguration(BinaryInputStream in, ClientListenerProtocolVersion ver) throws IOException {
         try (BinaryReaderExImpl reader = new BinaryReaderExImpl(marsh.context(), in, null, true)) {
             reader.readInt(); // Do not need length to read data. The protocol defines fixed configuration layout.
 
@@ -392,6 +397,8 @@ final class ClientUtils {
                             .setKeyFieldName(reader.readString())
                             .setValueFieldName(reader.readString());
 
+                        boolean isCliVer1_2 = ver == null || ver.compareTo(VER_1_2_0) >= 0;
+
                         Collection<QueryField> qryFields = ClientUtils.collection(
                             in,
                             unused2 -> new QueryField(
@@ -400,9 +407,9 @@ final class ClientUtils {
                                 reader.readBoolean(),
                                 reader.readBoolean(),
                                 reader.readObject(),
-                                reader.readInt(),
-                                reader.readInt(),
-                                reader.readInt()
+                                isCliVer1_2 ? reader.readInt() : -1,
+                                isCliVer1_2 ? reader.readInt() : -1,
+                                isCliVer1_2 ? reader.readInt() : MAX_VALUE
                             )
                         );
 

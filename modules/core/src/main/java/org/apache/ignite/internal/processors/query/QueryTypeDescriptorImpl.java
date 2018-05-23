@@ -388,7 +388,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
                 validateProps = new ArrayList<>();
 
             validateProps.add(prop);
-        } else if (prop.maxLength() != MAX_VALUE) {
+        }
+        else if (prop.maxLength() != MAX_VALUE) {
             if (validateProps == null)
                 validateProps = new ArrayList<>();
 

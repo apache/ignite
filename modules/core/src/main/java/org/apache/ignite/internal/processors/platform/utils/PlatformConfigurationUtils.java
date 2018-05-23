@@ -1088,7 +1088,7 @@ public class PlatformConfigurationUtils {
                 writer.writeBoolean(keyFields != null && keyFields.contains(field.getKey()));
                 writer.writeBoolean(notNullFields != null && notNullFields.contains(field.getKey()));
                 writer.writeObject(defVals != null ? defVals.get(field.getKey()) : null);
-                
+
                 if (ver == null || ver.compareTo(VER_1_2_0) >= 0) {
                     IgniteBiTuple<Integer, Integer> precisionAndScale =
                         decimalInfo == null ? null : decimalInfo.get(field.getKey());
