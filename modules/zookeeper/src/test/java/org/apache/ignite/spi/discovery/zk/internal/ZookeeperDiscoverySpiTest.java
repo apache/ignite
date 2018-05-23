@@ -1108,7 +1108,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             srvs.get(0).stop();
             srvs.get(1).stop();
 
-            assertTrue(l.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+            assertTrue(l.await(5 * 60 * 1000, TimeUnit.MILLISECONDS));
         }
         finally {
             zkCluster.close();
@@ -1117,6 +1117,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
             zkCluster.start();
         }
+    }
+
+    @Override protected long getTestTimeout() {
+        return 50 * 5 * 60 * 1000;
     }
 
     /**
