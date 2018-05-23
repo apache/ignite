@@ -33,8 +33,6 @@ namespace ignite
     {
         namespace thin
         {
-            class Statement;
-
             /**
              * Data router.
              *

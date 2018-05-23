@@ -21,6 +21,8 @@
 #include <ignite/thin/ignite_client.h>
 #include <ignite/thin/ignite_client_configuration.h>
 
+#include <ignite/impl/thin/data_router.h>
+
 namespace ignite
 {
     namespace impl
@@ -58,6 +60,9 @@ namespace ignite
             private:
                 /** Configuration. */
                 const ignite::thin::IgniteClientConfiguration cfg;
+
+                /** Data router. */
+                DataRouter router;
             };
         }
     }
