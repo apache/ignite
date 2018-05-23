@@ -57,6 +57,10 @@ public interface DataStorageMetricsMXBean extends DataStorageMetrics {
     @Override long getCheckpointTotalTime();
 
     /** {@inheritDoc} */
+    @MXBeanDescription("Total size in bytes for checkpoint buffer.")
+    @Override  long getCheckpointBufferSize();
+
+    /** {@inheritDoc} */
     @MXBeanDescription("Duration of the last checkpoint in milliseconds.")
     @Override long getLastCheckpointDuration();
 

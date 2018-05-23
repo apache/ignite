@@ -69,7 +69,10 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     private long walLastRollOverTime;
 
     /** */
-    private long checkpointTotalSize;
+    private long checkpointTotalTime;
+
+    /** */
+    private long checkpointBufferSize;
 
     /** */
     private long dirtyPages;
@@ -111,7 +114,8 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
         lastCpCowPages = metrics.getLastCheckpointCopiedOnWritePagesNumber();
         walTotalSize = metrics.getWalTotalSize();
         walLastRollOverTime = metrics.getWalLastRollOverTime();
-        checkpointTotalSize = metrics.getCheckpointTotalTime();
+        checkpointTotalTime = metrics.getCheckpointTotalTime();
+        checkpointBufferSize = metrics.getCheckpointBufferSize();
         dirtyPages = metrics.getDirtyPages();
         readPages = metrics.getPagesRead();
         writtenPages = metrics.getPagesWritten();
@@ -198,7 +202,7 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
 
     /** {@inheritDoc} */
     @Override public long getCheckpointTotalTime() {
-        return checkpointTotalSize;
+        return checkpointTotalTime;
     }
 
     /** {@inheritDoc} */
@@ -234,6 +238,11 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedSize() {
         return totalAllocatedSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferSize(){
+        return checkpointBufferSize;
     }
 
     /** {@inheritDoc} */

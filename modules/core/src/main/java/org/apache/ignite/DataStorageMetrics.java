@@ -191,4 +191,11 @@ public interface DataStorageMetrics {
      * @return Total size of memory allocated in bytes.
      */
     public long getTotalAllocatedSize();
+
+    /**
+     * Checkpoint buffer size in bytes.
+     *
+     * @return Checkpoint buffer size in bytes.
+     */
+    public long getCheckpointBufferSize();
 }
