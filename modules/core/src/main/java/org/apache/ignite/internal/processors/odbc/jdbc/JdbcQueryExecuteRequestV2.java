@@ -21,67 +21,75 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * JDBC query fetch request.
+ * JDBC query execute request.
  */
-public class JdbcQueryFetchRequest extends JdbcRequest {
-    /** Cursor ID. */
-    private long cursorId;
+public class JdbcQueryExecuteRequestV2 extends JdbcQueryExecuteRequest {
+    /** Query ID. */
+    private long qryId;
 
-    /** Fetch size. */
-    private int pageSize;
+    /** Query timeout. */
+    private int timeout;
 
     /**
-     * Constructor.
      */
-    JdbcQueryFetchRequest() {
-        super(QRY_FETCH);
+    JdbcQueryExecuteRequestV2() {
+        super(QRY_EXEC_V2);
     }
 
     /**
-     * @param cursorId Cursor ID.
+     * @param qryId query ID.
+     * @param stmtType Expected statement type.
+     * @param schemaName Cache name.
      * @param pageSize Fetch size.
+     * @param maxRows Max rows.
+     * @param sqlQry SQL query.
+     * @param args Arguments list.
+     * @param timeout Query timeout.
      */
-    public JdbcQueryFetchRequest(long cursorId, int pageSize) {
-        super(QRY_FETCH);
+    public JdbcQueryExecuteRequestV2(long qryId, JdbcStatementType stmtType, String schemaName, int pageSize,
+        int maxRows,
+        String sqlQry, Object[] args, int timeout) {
+        super(QRY_EXEC_V2, stmtType, schemaName, pageSize, maxRows, sqlQry, args);
 
-        this.cursorId = cursorId;
-        this.pageSize = pageSize;
+        this.qryId = qryId;
+        this.timeout = timeout;
     }
 
     /**
-     * @return Cursor ID.
+     * @return Query ID.
      */
-    public long cursorId() {
-        return cursorId;
+    @Nullable public long queryId() {
+        return qryId;
     }
 
     /**
-     * @return Fetch page size.
+     * @return Query timeout.
      */
-    public int pageSize() {
-        return pageSize;
+    @Nullable public int timeout() {
+        return timeout;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeLong(cursorId);
-        writer.writeInt(pageSize);
+        writer.writeLong(qryId);
+        writer.writeInt(timeout);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        cursorId = reader.readLong();
-        pageSize = reader.readInt();
-   }
+        qryId = reader.readLong();
+        timeout = reader.readInt();
+    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcQueryFetchRequest.class, this);
+        return S.toString(JdbcQueryExecuteRequestV2.class, this);
     }
 }

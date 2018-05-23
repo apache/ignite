@@ -134,7 +134,7 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(500);
 
                         stmt.cancel();
                     }
@@ -150,6 +150,55 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
                 @Override public Object call() throws Exception {
                     // Execute long running query
                     stmt.executeQuery("select * from (select _val, sleep(500) as s from Integer limit 50)");
+
+                    return null;
+                }
+            }, SQLException.class, "The query was cancelled while executing");
+
+            assert rs.next() : "The other cursor mustn't be closed";
+        } finally {
+            stmt2.close();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCancelQueryMultipleStatements() throws Exception {
+        Statement stmt2 = conn.createStatement();
+
+        try {
+            stmt2.setFetchSize(1);
+
+            // Open the second cursor
+            ResultSet rs = stmt2.executeQuery("SELECT * from Integer");
+
+            assert rs.next();
+
+            GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        Thread.sleep(500);
+
+                        stmt.cancel();
+                    }
+                    catch (Exception e) {
+                        log.error("Unexpected exception.", e);
+
+                        fail("Unexpected exception");
+                    }
+                }
+            });
+
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    // Execute long running query
+                    stmt.execute(
+                        "update Long set _val = _val + 1 where _key < sleep (101);"
+                            + "update Long set _val = _val + 1 where _key < sleep (102);"
+                            + "update Long set _val = _val + 1 where _key < sleep (103);"
+                            + "update Long set _val = _val + 1 where _key < sleep (104);"
+                            + "select _val, sleep(500) as s from Integer limit 10");
 
                     return null;
                 }
@@ -193,6 +242,9 @@ public class JdbcThinQueryCancelSelfTest extends JdbcThinAbstractSelfTest {
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     // Execute long running query
+                    stmt.addBatch("update Long set _val = _val + 1 where _key < sleep (100)");
+                    stmt.addBatch("update Long set _val = _val + 1 where _key < sleep (100)");
+                    stmt.addBatch("update Long set _val = _val + 1 where _key < sleep (100)");
                     stmt.addBatch("update Long set _val = _val + 1 where _key < sleep (100)");
                     stmt.addBatch("update Long set _val = _val + 1 where _key < sleep (100)");
                     stmt.addBatch("update Long set _val = _val + 1 where _key < sleep (100)");

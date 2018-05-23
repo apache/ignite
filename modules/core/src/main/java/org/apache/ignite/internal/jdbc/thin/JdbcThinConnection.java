@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
@@ -785,6 +786,28 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
+     * Send request for execution via {@link #cliIo}. Response is waited at the separate thread
+     *     (see {@link StreamState#asyncRespReaderThread}).
+     * @param req Request.
+     * @throws SQLException On any error.
+     */
+    void sendQueryCancelRequest(JdbcQueryCancelRequest req) throws SQLException {
+        ensureConnected();
+
+        try {
+            cliIo.sendRequestRaw(req);
+        }
+        catch (SQLException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            onDisconnect();
+
+            throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
+        }
+    }
+
+    /**
      * @return Connection URL.
      */
     public String url() {
@@ -1033,5 +1056,12 @@ public class JdbcThinConnection implements Connection {
                 err = e;
             }
         }
+    }
+
+    /**
+     * @return Client I/O.
+     */
+    JdbcThinTcpIo io() {
+        return cliIo;
     }
 }

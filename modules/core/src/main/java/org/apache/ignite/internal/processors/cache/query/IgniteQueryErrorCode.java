@@ -100,6 +100,9 @@ public final class IgniteQueryErrorCode {
     /** Cache not found. */
     public final static int CACHE_NOT_FOUND = 4006;
 
+    /** Query canceled. */
+    public final static int QUERY_CANCELED = 57014;
+
     /** */
     private IgniteQueryErrorCode() {
         // No-op.

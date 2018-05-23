@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
  */
 class JdbcQueryCursor {
     /** Query ID. */
-    private final long queryId;
+    private final long cursorId;
 
     /** Fetch size. */
     private int pageSize;
@@ -44,20 +44,25 @@ class JdbcQueryCursor {
     private final QueryCursorImpl<List<Object>> cur;
 
     /** Query results iterator. */
-    private final Iterator<List<Object>> iter;
+    private Iterator<List<Object>> iter;
 
     /**
-     * @param queryId Query ID.
+     * @param cursorId Cursor ID.
      * @param pageSize Fetch size.
      * @param maxRows Max rows.
      * @param cur Query cursor.
      */
-    JdbcQueryCursor(long queryId, int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur) {
-        this.queryId = queryId;
+    JdbcQueryCursor(long cursorId, int pageSize, int maxRows, QueryCursorImpl<List<Object>> cur) {
+        this.cursorId = cursorId;
         this.pageSize = pageSize;
         this.maxRows = maxRows;
         this.cur = cur;
+    }
 
+    /**
+     * Open cursor.
+     */
+    void openIterator() {
         iter = cur.iterator();
     }
 
@@ -76,6 +81,13 @@ class JdbcQueryCursor {
         }
 
         return items;
+    }
+
+    /**
+     * @return Update count for not SELECT queries.
+     */
+    long updateCount() {
+        return (Long)((List<?>)cur.getAll().get(0)).get(0);
     }
 
     /**
@@ -107,8 +119,8 @@ class JdbcQueryCursor {
     /**
      * @return Query ID.
      */
-    public long queryId() {
-        return queryId;
+    public long cursorId() {
+        return cursorId;
     }
 
     /**

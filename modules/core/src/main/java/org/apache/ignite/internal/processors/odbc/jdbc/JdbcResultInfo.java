@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * JDBC statement result information. Keeps statement type (SELECT or UPDATE) and
- * queryId or update count (depends on statement type).
+ * cursorId or update count (depends on statement type).
  */
 public class JdbcResultInfo implements JdbcRawBinarylizable {
     /** Query flag. */
@@ -32,8 +32,8 @@ public class JdbcResultInfo implements JdbcRawBinarylizable {
     /** Update count. */
     private long updCnt;
 
-    /** Query ID. */
-    private long qryId;
+    /** Cursor ID. */
+    private long curId;
 
     /**
      * Default constructor is used for serialization.
@@ -45,12 +45,12 @@ public class JdbcResultInfo implements JdbcRawBinarylizable {
     /**
      * @param isQuery Query flag.
      * @param updCnt Update count.
-     * @param qryId  Query ID.
+     * @param curId  Cursor ID.
      */
-    public JdbcResultInfo(boolean isQuery, long updCnt, long qryId) {
+    public JdbcResultInfo(boolean isQuery, long updCnt, long curId) {
         this.isQuery = isQuery;
         this.updCnt = updCnt;
-        this.qryId = qryId;
+        this.curId = curId;
     }
 
     /**
@@ -63,8 +63,8 @@ public class JdbcResultInfo implements JdbcRawBinarylizable {
     /**
      * @return Query ID.
      */
-    public long queryId() {
-        return qryId;
+    public long cursorId() {
+        return curId;
     }
 
     /**
@@ -78,14 +78,14 @@ public class JdbcResultInfo implements JdbcRawBinarylizable {
     @Override public void writeBinary(BinaryWriterExImpl writer) {
         writer.writeBoolean(isQuery);
         writer.writeLong(updCnt);
-        writer.writeLong(qryId);
+        writer.writeLong(curId);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) {
         isQuery = reader.readBoolean();
         updCnt = reader.readLong();
-        qryId = reader.readLong();
+        curId = reader.readLong();
     }
 
     /** {@inheritDoc} */

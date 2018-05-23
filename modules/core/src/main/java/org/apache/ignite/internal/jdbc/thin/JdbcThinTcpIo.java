@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
@@ -70,8 +71,11 @@ public class JdbcThinTcpIo {
     /** Version 2.5.0. */
     private static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
 
+    /** Version 2.5.1. */
+    private static final ClientListenerProtocolVersion VER_2_5_1 = ClientListenerProtocolVersion.create(2, 5, 1);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_1;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -448,20 +452,29 @@ public class JdbcThinTcpIo {
                     + CURRENT_VER + ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
             }
 
-            int cap = guessCapacity(req);
-
-            BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
-                null, null);
-
-            req.writeBinary(writer);
-
-            send(writer.array());
+            sendRequestRaw(req);
         }
         finally {
             synchronized (mux) {
                 ownThread = null;
             }
         }
+    }
+
+    /**
+     * @param req Request.
+     * @throws IOException In case of IO error.
+     * @throws SQLException On error.
+     */
+    void sendRequestRaw(JdbcRequest req) throws IOException, SQLException {
+        int cap = guessCapacity(req);
+
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
+            null, null);
+
+        req.writeBinary(writer);
+
+        send(writer.array());
     }
 
     /**
@@ -483,13 +496,7 @@ public class JdbcThinTcpIo {
         }
 
         try {
-            int cap = guessCapacity(req);
-
-            BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
-
-            req.writeBinary(writer);
-
-            send(writer.array());
+            sendRequestRaw(req);
 
             return readResponse();
         }
@@ -549,7 +556,7 @@ public class JdbcThinTcpIo {
      * @param req JDBC request bytes.
      * @throws IOException On error.
      */
-    private void send(byte[] req) throws IOException {
+    private synchronized void send(byte[] req) throws IOException {
         int size = req.length;
 
         out.write(size & 0xFF);
@@ -635,5 +642,14 @@ public class JdbcThinTcpIo {
         assert srvProtocolVer != null;
 
         return srvProtocolVer.compareTo(VER_2_5_0) >= 0;
+    }
+
+    /**
+     * @return {@code true} If the query cancel is supported by the server.
+     */
+    public boolean isQueryCancelSupported() {
+        assert srvProtocolVer != null;
+
+        return srvProtocolVer.compareTo(VER_2_5_1) >= 0;
     }
 }

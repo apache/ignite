@@ -66,6 +66,12 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
     /** Ordered batch request. */
     static final byte BATCH_EXEC_ORDERED = 14;
 
+    /** Ordered batch request. */
+    static final byte QRY_CANCEL = 15;
+
+    /** Execute sql query request v2. */
+    static final byte QRY_EXEC_V2 = 16;
+
     /** Request type. */
     private byte type;
 
@@ -166,6 +172,16 @@ public class JdbcRequest extends ClientListenerRequestNoId implements JdbcRawBin
 
             case BATCH_EXEC_ORDERED:
                 req = new JdbcOrderedBatchExecuteRequest();
+
+                break;
+
+            case QRY_CANCEL:
+                req = new JdbcQueryCancelRequest();
+
+                break;
+
+            case QRY_EXEC_V2:
+                req = new JdbcQueryExecuteRequestV2();
 
                 break;
 

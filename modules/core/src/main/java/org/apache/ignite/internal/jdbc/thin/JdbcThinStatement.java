@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
@@ -40,9 +41,12 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadAckResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCancelRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequestV2;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
@@ -64,6 +68,9 @@ import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 public class JdbcThinStatement implements Statement {
     /** Default queryPage size. */
     private static final int DFLT_PAGE_SIZE = SqlQuery.DFLT_PAGE_SIZE;
+
+    /** Query ID sequence. */
+    private static final AtomicLong QUERY_ID_GEN = new AtomicLong(1);
 
     /** JDBC Connection implementation. */
     protected JdbcThinConnection conn;
@@ -100,6 +107,9 @@ public class JdbcThinStatement implements Statement {
 
     /** Current result index. */
     protected int curRes;
+
+    /** Current query ID. */
+    private long queryId;
 
     /**
      * Creates new statement.
@@ -207,8 +217,19 @@ public class JdbcThinStatement implements Statement {
             return;
         }
 
-        JdbcResult res0 = conn.sendRequest(new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
-            maxRows, sql, args == null ? null : args.toArray(new Object[args.size()])));
+        JdbcRequest req;
+        if (conn.io().isQueryCancelSupported()) {
+            queryId = QUERY_ID_GEN.getAndIncrement();
+
+            req = new JdbcQueryExecuteRequestV2(queryId, stmtType, schema, pageSize,
+                maxRows, sql, args == null ? null : args.toArray(new Object[args.size()]), timeout);
+        }
+        else {
+            req = new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
+                maxRows, sql, args == null ? null : args.toArray(new Object[args.size()]));
+        }
+
+        JdbcResult res0 = conn.sendRequest(req);
 
         assert res0 != null;
 
@@ -218,7 +239,7 @@ public class JdbcThinStatement implements Statement {
         if (res0 instanceof JdbcQueryExecuteResult) {
             JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
 
-            resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.getQueryId(), pageSize,
+            resultSets = Collections.singletonList(new JdbcThinResultSet(this, res.getCursorId(), pageSize,
                 res.last(), res.items(), res.isQuery(), conn.autoCloseServerCursor(), res.updateCount(),
                 closeOnCompletion));
         }
@@ -238,12 +259,12 @@ public class JdbcThinStatement implements Statement {
                     if (firstRes) {
                         firstRes = false;
 
-                        resultSets.add(new JdbcThinResultSet(this, rsInfo.queryId(), pageSize,
+                        resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize,
                             res.isLast(), res.items(), true,
                             conn.autoCloseServerCursor(), -1, closeOnCompletion));
                     }
                     else {
-                        resultSets.add(new JdbcThinResultSet(this, rsInfo.queryId(), pageSize,
+                        resultSets.add(new JdbcThinResultSet(this, rsInfo.cursorId(), pageSize,
                             false, null, true,
                             conn.autoCloseServerCursor(), -1, closeOnCompletion));
                     }
@@ -352,6 +373,8 @@ public class JdbcThinStatement implements Statement {
 
         try {
             closeResults();
+
+            cancel();
         }
         finally {
             closed = true;
@@ -444,7 +467,7 @@ public class JdbcThinStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public void cancel() throws SQLException {
-        ensureNotClosed();
+        conn.sendQueryCancelRequest(new JdbcQueryCancelRequest(queryId));
     }
 
     /** {@inheritDoc} */

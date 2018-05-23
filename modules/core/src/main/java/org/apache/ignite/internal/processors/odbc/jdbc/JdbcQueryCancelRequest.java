@@ -23,65 +23,51 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * JDBC query fetch request.
+ * JDBC query cancel request.
  */
-public class JdbcQueryFetchRequest extends JdbcRequest {
-    /** Cursor ID. */
-    private long cursorId;
-
-    /** Fetch size. */
-    private int pageSize;
+public class JdbcQueryCancelRequest extends JdbcRequest {
+    /** Query ID. */
+    private long qryId;
 
     /**
      * Constructor.
      */
-    JdbcQueryFetchRequest() {
-        super(QRY_FETCH);
+    JdbcQueryCancelRequest() {
+        super(QRY_CANCEL);
     }
 
     /**
-     * @param cursorId Cursor ID.
-     * @param pageSize Fetch size.
+     * @param qryId Query ID.
      */
-    public JdbcQueryFetchRequest(long cursorId, int pageSize) {
-        super(QRY_FETCH);
+    public JdbcQueryCancelRequest(long qryId) {
+        super(QRY_CANCEL);
 
-        this.cursorId = cursorId;
-        this.pageSize = pageSize;
+        this.qryId = qryId;
     }
 
     /**
-     * @return Cursor ID.
+     * @return Query ID.
      */
-    public long cursorId() {
-        return cursorId;
-    }
-
-    /**
-     * @return Fetch page size.
-     */
-    public int pageSize() {
-        return pageSize;
+    public long queryId() {
+        return qryId;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeLong(cursorId);
-        writer.writeInt(pageSize);
+        writer.writeLong(qryId);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        cursorId = reader.readLong();
-        pageSize = reader.readInt();
+        qryId = reader.readLong();
    }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(JdbcQueryFetchRequest.class, this);
+        return S.toString(JdbcQueryCancelRequest.class, this);
     }
 }
