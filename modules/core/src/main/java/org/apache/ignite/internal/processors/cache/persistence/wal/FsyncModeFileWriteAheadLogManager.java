@@ -230,7 +230,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     private volatile long lastTruncatedArchiveIdx = -1L;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
-    private final FileIOFactory ioFactory;
+    private FileIOFactory ioFactory;
 
     /** Updater for {@link #currentHnd}, used for verify there are no concurrent update for current log segment handle */
     private static final AtomicReferenceFieldUpdater<FsyncModeFileWriteAheadLogManager, FileWriteHandle> currentHndUpd =
@@ -318,6 +318,15 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         evt = ctx.event();
 
         assert mode == WALMode.FSYNC : dsCfg;
+    }
+
+    /**
+     * For test purposes only.
+     *
+     * @param ioFactory IO factory.
+     */
+    public void setFileIOFactory(FileIOFactory ioFactory) {
+        this.ioFactory = ioFactory;
     }
 
     /** {@inheritDoc} */
