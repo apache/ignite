@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
+import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -78,7 +79,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     static final String SYSTEM_DATA_REGION_NAME = "sysMemPlc";
 
     /** Minimum size of memory chunk */
-    private static final long MIN_PAGE_MEMORY_SIZE = 10 * 1024 * 1024;
+    private static final long MIN_PAGE_MEMORY_SIZE = 10L * 1024 * 1024;
 
     /** Maximum initial size on 32-bit JVM */
     private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
@@ -103,6 +104,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
+
+    /** First eviction was warned flag. */
+    private volatile boolean firstEvictWarn;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -246,6 +250,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             ),
             CU.isPersistenceEnabled(memCfg)
         );
+
 
         dataRegionsInitialized = true;
     }
@@ -855,6 +860,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 emptyDataPagesCnt < plcCfg.getEmptyPagesPoolSize();
 
             if (shouldEvict) {
+                warnFirstEvict(plcCfg);
+
                 memPlc.evictionTracker().evictDataPage();
 
                 memPlc.memoryMetrics().updateEvictionRate();
@@ -957,7 +964,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         PageMemory pageMem = new PageMemoryNoStoreImpl(
             log,
-            memProvider,
+            wrapMetricsMemoryProvider(memProvider, memMetrics),
             cctx,
             memCfg.getPageSize(),
             memPlcCfg,
@@ -968,6 +975,39 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         memMetrics.pageMemory(pageMem);
 
         return pageMem;
+    }
+
+    /**
+     * @param memoryProvider0 Memory provider.
+     * @param memMetrics Memory metrics.
+     * @return Wrapped memory provider.
+     */
+    protected DirectMemoryProvider wrapMetricsMemoryProvider(
+        final DirectMemoryProvider memoryProvider0,
+        final DataRegionMetricsImpl memMetrics
+    ) {
+        return new DirectMemoryProvider() {
+            private final DirectMemoryProvider memProvider = memoryProvider0;
+
+            @Override public void initialize(long[] chunkSizes) {
+                memProvider.initialize(chunkSizes);
+            }
+
+            @Override public void shutdown() {
+                memProvider.shutdown();
+            }
+
+            @Override public DirectMemoryRegion nextRegion() {
+                DirectMemoryRegion nextMemoryRegion = memProvider.nextRegion();
+
+                if (nextMemoryRegion == null)
+                    return null;
+
+                memMetrics.updateOffHeapSize(nextMemoryRegion.size());
+
+                return nextMemoryRegion;
+            }
+        };
     }
 
     /**
@@ -1035,7 +1075,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param grpId Group ID.
      * @return WAL enabled flag.
      */
-    public boolean walEnabled(int grpId) {
+    public boolean walEnabled(int grpId, boolean local) {
         return false;
     }
 
@@ -1045,7 +1085,27 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param grpId Group id.
      * @param enabled flag.
      */
-    public void walEnabled(int grpId, boolean enabled) {
+    public void walEnabled(int grpId, boolean enabled, boolean local) {
         // No-op.
+    }
+
+    /**
+     * Warns on first eviction.
+     * @param regCfg data region configuration.
+     */
+    private void warnFirstEvict(DataRegionConfiguration regCfg) {
+        if (firstEvictWarn)
+            return;
+
+        // Do not move warning output to synchronized block (it causes warning in IDE).
+        synchronized (this) {
+            if (firstEvictWarn)
+                return;
+
+            firstEvictWarn = true;
+        }
+
+        U.warn(log, "Page-based evictions started." +
+                " Consider increasing 'maxSize' on Data Region configuration: " + regCfg.getName());
     }
 }

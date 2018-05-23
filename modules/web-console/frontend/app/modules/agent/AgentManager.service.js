@@ -20,7 +20,7 @@ import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
-import Worker from 'worker!./decompress.worker';
+import Worker from './decompress.worker';
 import SimpleWorkerPool from '../../utils/SimpleWorkerPool';
 import maskNull from 'app/core/utils/maskNull';
 
@@ -124,7 +124,7 @@ export default class IgniteAgentManager {
             .distinctUntilChanged(({ cluster }) => prevCluster === cluster)
             .do(({ cluster }) => prevCluster = cluster);
 
-        this.clusterVersion = '2.1.0';
+        this.clusterVersion = '2.4.0';
 
         if (!this.isDemoMode()) {
             this.connectionSbj.subscribe({

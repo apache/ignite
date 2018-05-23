@@ -31,8 +31,9 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  * Terminate Condition implementation for OptimizeMakeChangeGATest <br/>
  */
 public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
-
+    /** Ignite logger */
     private IgniteLogger igniteLogger = null;
+    /** Ignite instance */
     private Ignite ignite = null;
 
     /**
@@ -57,7 +58,7 @@ public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
         igniteLogger.info("Generation: " + currentGeneration);
         igniteLogger.info("Fittest is Chromosome Key: " + fittestChromosome);
         igniteLogger.info("Chromsome: " + fittestChromosome);
-        printCoins(GAGridUtils.getGenesForChromosome(ignite, fittestChromosome));
+        printCoins(GAGridUtils.getGenesInOrderForChromosome(ignite, fittestChromosome));
         igniteLogger.info("Avg Chromsome Fitness: " + averageFitnessScore);
         igniteLogger.info("##########################################################################################");
 

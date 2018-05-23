@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -209,7 +210,17 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
                 @Override public Ignite call() throws Exception {
                     latch.await();
 
-                    return startGrid("client" + idx);
+                    String nodeName = "client" + idx;
+
+                    IgniteConfiguration cfg = getConfiguration(nodeName)
+                        .setFailureHandler((ignite, failureCtx) -> {
+                            // This should _not_ fire when exchange-worker terminates before reconnect.
+                            Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
+
+                            return false;
+                        });
+
+                    return startGrid(nodeName, optimize(cfg), null);
                 }
             });
 
@@ -255,6 +266,9 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
         clientReconnectDisabled = true;
 
         Ignite srv1 = startGrid("server1");
+
+        if (!tcpDiscovery())
+            return;
 
         crd = ((IgniteKernal)srv1).localNode();
 

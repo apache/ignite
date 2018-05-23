@@ -107,19 +107,12 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
 
         client = false;
 
-        startGrids(NODES_CNT);
+        startGridsMultiThreaded(NODES_CNT);
 
         client = true;
 
         for (int i = 0; i < NODES_CNT; i++)
             startGrid(i + NODES_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /**

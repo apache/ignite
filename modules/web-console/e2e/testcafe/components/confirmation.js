@@ -17,15 +17,23 @@
 
 import {Selector, t} from 'testcafe';
 
+const body = Selector('.modal-body');
+const confirmButton = Selector('#confirm-btn-ok');
+const cancelButton = Selector('#confirm-btn-cancel');
+const closeButton = Selector('.modal .close');
+
 export const confirmation = {
-    body: Selector('.modal-body'),
+    body,
+    confirmButton,
+    cancelButton,
+    closeButton,
     async confirm() {
-        await t.click('#confirm-btn-ok');
+        await t.click(confirmButton);
     },
     async cancel() {
-        await t.click('#confirm-btn-cancel');
+        await t.click(cancelButton);
     },
     async close() {
-        await t.click('.modal .close');
+        await t.click(closeButton);
     }
 };

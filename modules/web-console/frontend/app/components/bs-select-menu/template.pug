@@ -43,4 +43,5 @@ ul.bs-select-menu(
                 ng-src='{{ $isActive($index) ? "/images/checkbox-active.svg" : "/images/checkbox.svg" }}'
             )
             span.bssm-item-text(ng-bind-html='match.label')
-    .bssm-click-overlay(ng-click='$hide()')
+    bssm-transclude-to-body(ng-if='$isShown')
+        .bssm-click-overlay(ng-click='$hide()')

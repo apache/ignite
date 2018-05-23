@@ -69,13 +69,6 @@ public class ServicePredicateAccessCacheTest extends GridCommonAbstractTest {
         return 60_000;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
