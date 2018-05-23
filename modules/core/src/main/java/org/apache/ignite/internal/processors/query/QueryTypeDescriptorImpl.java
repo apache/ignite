@@ -576,7 +576,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
             if (prop.maxLength() < MAX_VALUE && propVal != null &&
                 CharSequence.class.isAssignableFrom(propVal.getClass()) && 
                 ((CharSequence)propVal).length() > prop.maxLength()) {
-                throw new IgniteSQLException("Value for a column '" + prop.name() + "' is too long", 
+                throw new IgniteSQLException("Value for a column '" + prop.name() + "' is too long. " + 
+                    "Maximum length: " + prop.maxLength() + ", actual length: " + ((CharSequence)propVal).length(), 
                     isKey ? TOO_LONG_KEY : TOO_LONG_VALUE);
             }
         }

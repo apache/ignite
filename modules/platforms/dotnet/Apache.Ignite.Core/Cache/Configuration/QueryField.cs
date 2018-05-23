@@ -42,7 +42,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         public QueryField()
         {
-            // No-op.
+            Precision = -1;
+            Scale = -1;
+            MaxLength = Int32.MaxValue;
         }
 
         /// <summary>
@@ -50,7 +52,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         /// <param name="name">Name.</param>
         /// <param name="javaFieldTypeName">Java type name.</param>
-        public QueryField(string name, string javaFieldTypeName)
+        public QueryField(string name, string javaFieldTypeName): this()
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNullOrEmpty(javaFieldTypeName, "typeName");
@@ -64,7 +66,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         /// <param name="name">Name.</param>
         /// <param name="fieldType">Type.</param>
-        public QueryField(string name, Type fieldType)
+        public QueryField(string name, Type fieldType): this()
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
             IgniteArgumentCheck.NotNull(fieldType, "type");
