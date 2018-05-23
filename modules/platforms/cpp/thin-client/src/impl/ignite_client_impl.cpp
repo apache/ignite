@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "ignite/impl/thin/ignite_client_impl.h"
+#include <ignite/impl/thin/ignite_client_impl.h>
 
 namespace ignite
 {
@@ -24,7 +24,8 @@ namespace ignite
         namespace thin
         {
             IgniteClientImpl::IgniteClientImpl(const ignite::thin::IgniteClientConfiguration& cfg) :
-                cfg(cfg)
+                cfg(cfg),
+                router(cfg)
             {
                 // No-op.
             }
@@ -36,7 +37,7 @@ namespace ignite
 
             void IgniteClientImpl::Start()
             {
-
+                router.Connect();
             }
         }   
     }
