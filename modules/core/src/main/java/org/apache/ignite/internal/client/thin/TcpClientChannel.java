@@ -79,7 +79,11 @@ class TcpClientChannel implements ClientChannel {
     private static final ProtocolVersion V1_0_0 = new ProtocolVersion((short)1, (short)0, (short)0);
 
     /** Supported protocol versions. */
-    private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(V1_1_0, V1_0_0);
+    private static final Collection<ProtocolVersion> supportedVers = Arrays.asList(
+        V1_2_0, 
+        V1_1_0, 
+        V1_0_0
+    );
 
     /** Protocol version agreed with the server. */
     private ProtocolVersion ver = V1_2_0;
