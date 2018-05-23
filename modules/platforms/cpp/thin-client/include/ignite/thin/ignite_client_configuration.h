@@ -20,6 +20,8 @@
 
 #include <string>
 
+#include <ignite/thin/ssl_mode.h>
+
 namespace ignite
 {
     namespace thin
@@ -27,12 +29,8 @@ namespace ignite
         class IgniteClientConfiguration
         {
         public:
-            IgniteClientConfiguration()
-            {
-                // No-op.
-            }
-
-            ~IgniteClientConfiguration()
+            IgniteClientConfiguration() :
+                sslMode(SslMode::DISABLE)
             {
                 // No-op.
             }
@@ -67,6 +65,46 @@ namespace ignite
                 this->password = password;
             }
 
+            SslMode::Type GetSslMode() const
+            {
+                return sslMode;
+            }
+
+            void SetSslMode(SslMode::Type sslMode)
+            {
+                this->sslMode = sslMode;
+            }
+
+            const std::string& GetSslCertFile() const
+            {
+                return sslCertFile;
+            }
+
+            void SetSslCertFile(const std::string& sslCertFile)
+            {
+                this->sslCertFile = sslCertFile;
+            }
+
+            const std::string& GetSslKeyFile() const
+            {
+                return sslKeyFile;
+            }
+
+            void SetSslKeyFile(const std::string& sslKeyFile)
+            {
+                this->sslKeyFile = sslKeyFile;
+            }
+
+            const std::string& GetSslCaFile() const
+            {
+                return sslCaFile;
+            }
+
+            void SetSslCaFile(const std::string& sslCaFile)
+            {
+                this->sslCaFile = sslCaFile;
+            }
+
         private:
             /** Connection end points */
             std::string endPoints;
@@ -76,6 +114,18 @@ namespace ignite
 
             /** Password. */
             std::string password;
+
+            /** SSL mode */
+            SslMode::Type sslMode;
+
+            /** SSL client certificate path */
+            std::string sslCertFile;
+
+            /** SSL client key path */
+            std::string sslKeyFile;
+
+            /** SSL client certificate authority path */            
+            std::string sslCaFile;
         };
     }
 }

@@ -15,32 +15,24 @@
  * limitations under the License.
  */
 
-#include <ignite/thin/ignite_client.h>
-#include <ignite/thin/ignite_client_configuration.h>
-
-#include <ignite/impl/thin/ignite_client_impl.h>
+#ifndef _IGNITE_THIN_SSL_MODE
+#define _IGNITE_THIN_SSL_MODE
 
 namespace ignite
 {
     namespace thin
     {
-        IgniteClient::IgniteClient(common::concurrent::SharedPointer<impl::thin::IgniteClientImpl>& impl)
+        /** SSL Mode enum. */
+        struct SslMode
         {
-            this->impl.Swap(impl);
-        }
+            enum Type
+            {
+                DISABLE = 0,
 
-        IgniteClient::~IgniteClient()
-        {
-            // No-op.
-        }
-
-        IgniteClient IgniteClient::Start(const IgniteClientConfiguration& cfg)
-        {
-            common::concurrent::SharedPointer<impl::thin::IgniteClientImpl> res(new impl::thin::IgniteClientImpl(cfg));
-
-            res.Get()->Start();
-
-            return IgniteClient(res);
-        }
+                REQUIRE = 1,
+            };
+        };
     }
 }
+
+#endif //_IGNITE_THIN_SSL_MODE

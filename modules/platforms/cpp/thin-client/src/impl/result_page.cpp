@@ -15,32 +15,44 @@
  * limitations under the License.
  */
 
-#include <ignite/thin/ignite_client.h>
-#include <ignite/thin/ignite_client_configuration.h>
+#include <ignite/impl/interop/interop_input_stream.h>
 
-#include <ignite/impl/thin/ignite_client_impl.h>
+#include "ignite/odbc/result_page.h"
+#include "ignite/odbc/utility.h"
 
 namespace ignite
 {
-    namespace thin
+    namespace odbc
     {
-        IgniteClient::IgniteClient(common::concurrent::SharedPointer<impl::thin::IgniteClientImpl>& impl)
+        ResultPage::ResultPage() :
+            last(false), size(0), data(DEFAULT_ALLOCATED_MEMORY)
         {
-            this->impl.Swap(impl);
+            //No-op.
         }
 
-        IgniteClient::~IgniteClient()
+        ResultPage::~ResultPage()
         {
-            // No-op.
+            //No-op.
         }
 
-        IgniteClient IgniteClient::Start(const IgniteClientConfiguration& cfg)
+        void ResultPage::Read(ignite::impl::binary::BinaryReaderImpl& reader)
         {
-            common::concurrent::SharedPointer<impl::thin::IgniteClientImpl> res(new impl::thin::IgniteClientImpl(cfg));
+            last = reader.ReadBool();
+            size = reader.ReadInt32();
 
-            res.Get()->Start();
+            impl::interop::InteropInputStream& stream = *reader.GetStream();
 
-            return IgniteClient(res);
+            int32_t dataToRead = stream.Remaining();
+
+            data.Length(dataToRead);
+
+            if (dataToRead)
+            {
+                data.Reallocate(dataToRead);
+
+                reader.GetStream()->ReadInt8Array(data.Data(), dataToRead);
+            }
         }
     }
 }
+
