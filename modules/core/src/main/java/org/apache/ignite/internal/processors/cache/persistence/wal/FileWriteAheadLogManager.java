@@ -2124,7 +2124,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
 
                     try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
-                         FileIO io = ioFactory.create(unzipTmp)) {
+                        FileIO io = ioFactory.create(unzipTmp)) {
                         zis.getNextEntry();
 
                         int bytesRead;
