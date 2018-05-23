@@ -144,7 +144,11 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         StringBuilder resultSB = new StringBuilder(arrStr);
             resultSB.deleteCharAt(resultSB.length()-1);
             resultSB.append("... and ").append(arrOf.length - limit).append(" more]");
-            arrStr = resultSB.toString();
+
+        arrStr = resultSB.toString();
+
+        info(arrOfStr);
+        info(arrStr);
 
         assertTrue("Collection limit error in array of type " + arrOf.getClass().getName()
             + " error, normal arr: <" + arrStr + ">, overflowed arr: <" + arrOfStr + ">", arrStr.equals(arrOfStr));
@@ -237,8 +241,12 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         String testClassStrOfR = testClassStrOf.replaceAll("... and 1 more","");
 
+        info(testClassStr);
+        info(testClassStrOf);
+        info(testClassStrOfR);
+
         assertTrue("Collection limit error in Map or List, normal: <" + testClassStr + ">, overflowed: <"
-            +"testClassStrOf", testClassStr.length() == testClassStrOfR.length());
+            + testClassStrOf + ">", testClassStr.length() == testClassStrOfR.length());
 
     }
 

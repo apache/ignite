@@ -911,42 +911,58 @@ public class GridToStringBuilder {
         if (valClass.isArray())
             buf.a(arrayToString(valClass, val));
         else {
-            int overflow = 0;
-            char bracket = ' ';
-
-            if (val instanceof Collection && ((Collection)val).size() > COLLECTION_LIMIT) {
-                overflow = ((Collection)val).size() - COLLECTION_LIMIT;
-                bracket = ']';
-                val = F.retain((Collection) val, true, COLLECTION_LIMIT);
-            }
-            else if (val instanceof Map && ((Map)val).size() > COLLECTION_LIMIT) {
-                Map<Object, Object> tmp = U.newHashMap(COLLECTION_LIMIT);
-
-                overflow = ((Map)val).size() - COLLECTION_LIMIT;
-
-                bracket= '}';
-
-                int cntr = 0;
-
-                for (Object o : ((Map)val).entrySet()) {
-                    Map.Entry e = (Map.Entry)o;
-
-                    tmp.put(e.getKey(), e.getValue());
-
-                    if (++cntr >= COLLECTION_LIMIT)
-                        break;
-                }
-
-                val = tmp;
-            }
-
-            buf.a(val);
-
-            if (overflow > 0) {
-                buf.d(buf.length() - 1);
-                buf.a("... and ").a(overflow).a(" more").a(bracket);
-            }
+            if (val instanceof Collection)
+                addCol(buf, (Collection) val);
+            else if (val instanceof Map)
+                addMap(buf, (Map<?, ?>) val);
+            else
+                buf.a(val);
         }
+    }
+
+    private static void addCol(SBLimitedLength buf, Collection val) {
+        buf.a(val.getClass().getSimpleName()).a(' ').a('[');
+
+        int cnt = 0;
+
+        for (Object o : val) {
+            buf.a(o);
+
+            if (++cnt == COLLECTION_LIMIT)
+                break;
+
+            buf.a(',').a(' ');
+        }
+
+        checkOverflow(buf, val.size());
+
+        buf.a(']');
+    }
+
+    private static <K, V> void addMap(SBLimitedLength buf, Map<K, V> val) {
+        buf.a(val.getClass().getSimpleName()).a(' ').a('{');
+
+        int cnt = 0;
+
+        for (Map.Entry<K, V> e : val.entrySet()) {
+            buf.a(e.getKey()).a('=').a(e.getValue());
+
+            if (++cnt == COLLECTION_LIMIT)
+                break;
+
+            buf.a(',').a(' ');
+        }
+
+        checkOverflow(buf, val.size());
+
+        buf.a('}');
+    }
+
+    private static void checkOverflow(SBLimitedLength buf, int size) {
+        int overflow = size - COLLECTION_LIMIT;
+
+        if (overflow > 0)
+            buf.a("... and ").a(overflow).a(" more");
     }
 
     /**
