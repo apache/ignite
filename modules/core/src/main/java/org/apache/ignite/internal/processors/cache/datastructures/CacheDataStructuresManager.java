@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
@@ -82,6 +83,9 @@ import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
  *
  */
 public class CacheDataStructuresManager extends GridCacheManagerAdapter {
+    /** Non collocated IgniteSet will use separate cache if all nodes in cluster is not older then specified version. */
+    public static final IgniteProductVersion SEPARATE_CACHE_SET_SINCE = IgniteProductVersion.fromString("2.5.0");
+
     /** Known classes which are safe to use on server nodes. */
     private static final Collection<Class<?>> KNOWN_CLS = new HashSet<>();
 
@@ -364,13 +368,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         Object key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
 
-        if (key0 instanceof SetItemKey) {
-            SetItemKey setKey = (SetItemKey)key0;
-
-            // We should update on-heap values only for version that uses shared cache.
-            if (setKey.setId() != null)
-                onSetItemUpdated(setKey, rmv);
-        }
+        if (key0 instanceof SetItemKey)
+            onSetItemUpdated((SetItemKey)key0, rmv);
     }
 
     /**
@@ -397,36 +396,32 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param name Set name.
      * @param colloc Collocated flag.
      * @param create Create flag.
-     * @param compatibilityMode {@code True} to create compatible with older Ignite version.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public <T> IgniteSet<T> set(final String name,
         boolean colloc,
-        final boolean create,
-        final boolean compatibilityMode)
+        final boolean create)
         throws IgniteCheckedException
     {
         // Non collocated mode enabled only for PARTITIONED cache.
         final boolean colloc0 =
             create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
 
-        return set0(name, colloc0, create, compatibilityMode);
+        return set0(name, colloc0, create);
     }
 
     /**
      * @param name Name of set.
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
-     * @param compatibilityMode {@code True} to create compatible with older Ignite version.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     @Nullable private <T> IgniteSet<T> set0(String name,
         boolean collocated,
-        boolean create,
-        boolean compatibilityMode)
+        boolean create)
         throws IgniteCheckedException
     {
         cctx.gate().enter();
@@ -439,8 +434,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
             if (create) {
-                hdr = compatibilityMode ? new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated) :
-                    new GridCacheSetHeaderV2(IgniteUuid.randomUuid(), collocated);
+                hdr = U.isIgniteVersionAtLeast(SEPARATE_CACHE_SET_SINCE, cctx.grid().cluster().nodes()) ?
+                    new GridCacheSetHeaderV2(IgniteUuid.randomUuid(), collocated) :
+                    new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
 
                 CacheSetHeader old = (CacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
 
@@ -627,6 +623,10 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param rmv {@code True} if item was removed.
      */
     private void onSetItemUpdated(SetItemKey key, boolean rmv) {
+        // Items stored in a separate cache don't have identifier.
+        if (key.setId() == null)
+            return;
+
         GridConcurrentHashSet<SetItemKey> set = setDataMap.get(key.setId());
 
         if (set == null) {

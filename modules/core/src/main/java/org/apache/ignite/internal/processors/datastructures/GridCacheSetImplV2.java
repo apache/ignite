@@ -65,7 +65,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
  * Non-collocated version uses separate cache for each instance.<br>
  * Collocated version uses shared cache.
  */
-public class GridCacheSetImplV2<T> extends AbstractCollection<T> implements IgniteInternalSet<T> {
+public class GridCacheSetImplV2<T> extends AbstractCollection<T> implements IgniteSetEx<T> {
     /** */
     private static final int BATCH_SIZE = 100;
 
@@ -405,7 +405,7 @@ public class GridCacheSetImplV2<T> extends AbstractCollection<T> implements Igni
             if (rmvd)
                 return;
 
-            ctx.kernalContext().dataStructures().removeSet(name, ctx, collocated);
+            ctx.kernalContext().dataStructures().removeSet(name, ctx);
 
             if (!collocated)
                 ctx.kernalContext().cache().dynamicDestroyCache(ctx.cache().name(), false, true, false);

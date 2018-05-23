@@ -22,9 +22,9 @@ import org.apache.ignite.IgniteSet;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
- * Internal service methods used by proxy.
+ * Extended IgniteSet interface that includes internal service methods.
  */
-public interface IgniteInternalSet<T> extends IgniteSet<T> {
+public interface IgniteSetEx<T> extends IgniteSet<T> {
     /**
      * @return Set ID.
      */

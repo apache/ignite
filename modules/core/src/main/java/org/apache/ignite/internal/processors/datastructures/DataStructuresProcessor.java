@@ -79,7 +79,6 @@ import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -88,6 +87,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager.SEPARATE_CACHE_SET_SINCE;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_LONG;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_REF;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_SEQ;
@@ -118,9 +118,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
-
-    /** Non collocated IgniteSet version will use spearate cache. */
-    private final IgniteProductVersion SEPARATE_CACHE_SET_SINCE = IgniteProductVersion.fromString("2.5.0");
 
     /** Initialization latch. */
     private volatile CountDownLatch initLatch = new CountDownLatch(1);
@@ -936,12 +933,15 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         // Non collocated mode enabled only for PARTITIONED cache.
         boolean collocated = cfg.isCollocated() || cfg.getCacheMode() != PARTITIONED;
 
-        if (dsType == DataStructureType.SET && !collocated && separateCacheSetEnabled() &&
-            (cache == null || !cache.containsKey(new GridCacheSetHeaderKey(dsName)))) {
-            cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
-                cfg.getBackups() + "_" + dsType.name() + "_" + dsName + "@" + grpName;
+        if (dsType == DataStructureType.SET && !collocated) {
+            boolean oldSetFound = cache != null && cache.containsKey(new GridCacheSetHeaderKey(dsName));
 
-            cache = ctx.cache().cache(cacheName);
+            if (!oldSetFound && U.isIgniteVersionAtLeast(SEPARATE_CACHE_SET_SINCE, ctx.grid().cluster().nodes())) {
+                cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
+                    cfg.getBackups() + "_" + dsType.name() + "_" + dsName + "@" + grpName;
+
+                cache = ctx.cache().cache(cacheName);
+            }
         }
 
         if (cache == null) {
@@ -1118,19 +1118,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         });
     }
 
-    /**
-     * Check that IgniteSet can use a separate cache implementation.
-     *
-     * @return {@code True} If IgniteSet can use a separate cache for non collocated version.
-     */
-    private boolean separateCacheSetEnabled() {
-        for (ClusterNode node : ctx.grid().cluster().nodes()) {
-            if (node.version().compareTo(SEPARATE_CACHE_SET_SINCE) < 0)
-                return false;
-        }
-
-        return true;
-    }
 
     /**
      * Awaits for processor initialization.
@@ -1557,10 +1544,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         final boolean create = cfg != null;
 
         return getCollection(new CX1<GridCacheContext, IgniteSet<T>>() {
-            @Override public IgniteSet<T> applyx(GridCacheContext cctx)
-                throws IgniteCheckedException {
-
-                return cctx.dataStructures().set(name, create && cfg.isCollocated(), create, !separateCacheSetEnabled());
+            @Override public IgniteSet<T> applyx(GridCacheContext cctx) throws IgniteCheckedException {
+                return cctx.dataStructures().set(name, create && cfg.isCollocated(), create);
             }
         }, cfg, name, grpName, SET, create);
     }
@@ -1568,21 +1553,20 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /**
      * @param name Set name.
      * @param cctx Set cache context.
-     * @param cleanup Clean up cache data.
      * @throws IgniteCheckedException If failed.
      */
-    public void removeSet(final String name, final GridCacheContext cctx, final boolean cleanup) throws IgniteCheckedException {
+    public void removeSet(final String name, final GridCacheContext cctx) throws IgniteCheckedException {
         assert name != null;
         assert cctx != null;
 
-        CIX1<CacheSetHeader> afterRmv = cleanup ? new CIX1<CacheSetHeader>() {
+        CIX1<CacheSetHeader> afterRmv = new CIX1<CacheSetHeader>() {
             @Override public void applyx(CacheSetHeader hdr) throws IgniteCheckedException {
-                hdr = (CacheSetHeader) cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
+                hdr = (CacheSetHeader)cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
 
-                if (hdr != null)
+                if (hdr != null && hdr.collocated() || (hdr instanceof GridCacheSetHeader))
                     cctx.dataStructures().removeSetData(hdr.id());
             }
-        } : null;
+        };
 
         removeDataStructure(null, name, cctx.group().name(), SET, afterRmv);
     }
