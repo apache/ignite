@@ -17,19 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
-import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.IgniteSystemProperties;
 
 /**
  *
  */
-public class IgniteWalFlushDefaultSelfTest extends IgniteWalFlushMultiNodeFailoverAbstractSelfTest {
+public class IgniteWalFlushFsyncWithDedicatedWorkerSelfTest extends IgniteWalFlushFsyncSelfTest {
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
+    @Override protected void beforeTest() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER, "true");
+
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */
-    @Override protected WALMode walMode() {
-        return WALMode.FSYNC;
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER);
     }
 }
