@@ -151,7 +151,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
         final URL cfgUrl = U.resolveIgniteUrl(DFLT_CONFIG_PATH);
 
         if (cfgUrl == null) {
-            error("Failed to resolve default logging config file: " + DFLT_CONFIG_PATH);
+            warning("Failed to resolve default logging config file: " + DFLT_CONFIG_PATH);
 
             return;
         }

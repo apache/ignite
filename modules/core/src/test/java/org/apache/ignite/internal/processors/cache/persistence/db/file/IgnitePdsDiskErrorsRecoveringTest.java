@@ -98,7 +98,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
-                        new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).setPersistenceEnabled(true))
+                        new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024).setPersistenceEnabled(true))
                 .setWalMode(WALMode.LOG_ONLY)
                 .setWalCompactionEnabled(false)
                 .setWalSegmentSize(WAL_SEGMENT_SIZE)

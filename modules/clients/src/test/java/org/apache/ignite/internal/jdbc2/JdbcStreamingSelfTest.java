@@ -111,11 +111,6 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         U.sleep(1000);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @return Connection without streaming initially turned on.
      * @throws SQLException if failed.

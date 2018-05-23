@@ -128,9 +128,14 @@ export default {
                 loader: 'file?name=assets/fonts/[name].[ext]'
             },
             {
-                test: /.*\.svg$/,
+                test: /^(?:(?!url\.svg$).)*\.svg$/,
                 include: [contentBase, IgniteModules],
                 use: ['svg-sprite-loader']
+            },
+            {
+                test: /.*\.url\.svg$/,
+                include: [contentBase, IgniteModules],
+                loader: 'file?name=assets/fonts/[name].[ext]'
             },
             {
                 test: /\.(jpe?g|png|gif)$/i,

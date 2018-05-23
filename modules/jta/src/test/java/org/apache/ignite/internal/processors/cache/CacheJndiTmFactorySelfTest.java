@@ -82,8 +82,6 @@ public class CacheJndiTmFactorySelfTest extends GridCommonAbstractTest {
 
         if (urlPkgPrefixesBackup != null)
             System.setProperty(Context.URL_PKG_PREFIXES, urlPkgPrefixesBackup);
-
-        super.afterTestsStopped();
     }
 
     /**
