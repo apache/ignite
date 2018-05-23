@@ -409,7 +409,7 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         long checkpointBufferSize = 0L;
 
         for (DataRegionMetrics rm : regionMetrics0)
-            checkpointBufferSize += rm.getUsedCheckpointBufferSize();
+            checkpointBufferSize += rm.getCheckpointBufferSize();
 
         return checkpointBufferSize;
     }
