@@ -57,8 +57,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.Greater(memMetrics.PageFillFactor, 0);
             Assert.Greater(memMetrics.TotalAllocatedPages, 1000);
             Assert.Greater(memMetrics.PhysicalMemoryPages, 1000);
-            Assert.AreEqual(memMetrics.TotalAllocatedSize, memMetrics.TotalAllocatedPages * memMetrics.PageSize);
-            Assert.AreEqual(memMetrics.PhysicalMemorySize, memMetrics.PhysicalMemoryPages * memMetrics.PageSize);
+            Assert.Greater(memMetrics.TotalAllocatedSize, memMetrics.TotalAllocatedPages * memMetrics.PageSize);
+            Assert.Greater(memMetrics.PhysicalMemorySize, memMetrics.PhysicalMemoryPages * memMetrics.PageSize);
 
             var sysMetrics = metrics[2];
             Assert.AreEqual("sysMemPlc", sysMetrics.Name);
@@ -77,8 +77,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.Greater(memMetrics.PageFillFactor, 0);
             Assert.Greater(memMetrics.TotalAllocatedPages, 1000);
             Assert.Greater(memMetrics.PhysicalMemoryPages, 1000);
-            Assert.AreEqual(memMetrics.TotalAllocatedSize, memMetrics.TotalAllocatedPages * memMetrics.PageSize);
-            Assert.AreEqual(memMetrics.PhysicalMemorySize, memMetrics.PhysicalMemoryPages * memMetrics.PageSize);
+            Assert.Greater(memMetrics.TotalAllocatedSize, memMetrics.TotalAllocatedPages * memMetrics.PageSize);
+            Assert.Greater(memMetrics.PhysicalMemorySize, memMetrics.PhysicalMemoryPages * memMetrics.PageSize);
 
             sysMetrics = ignite.GetDataRegionMetrics("sysMemPlc");
             Assert.AreEqual("sysMemPlc", sysMetrics.Name);
