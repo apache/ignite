@@ -89,8 +89,15 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         caches = U.readSet(in);
-        checkFirst = in.readInt();
-        checkThrough = in.readInt();
+
+        if (protoVer > V1) {
+            checkFirst = in.readInt();
+            checkThrough = in.readInt();
+        }
+        else {
+            checkFirst = -1;
+            checkThrough = -1;
+        }
     }
 
     /** {@inheritDoc} */
