@@ -59,19 +59,14 @@ public class WorkersControlMXBeanTest extends GridCommonAbstractTest {
         Thread t1 = startTestThread();
         Thread t2 = startTestThread();
 
-        String t1HexId = Long.toHexString(t1.getId());
-        String t2HexId = Long.toHexString(t2.getId());
-
-        assertTrue(workersCtrlMXBean.stopThreadById(t1HexId));
-        assertTrue(workersCtrlMXBean.stopThreadById(t2HexId));
+        assertTrue(workersCtrlMXBean.stopThreadById(t1.getId()));
+        assertTrue(workersCtrlMXBean.stopThreadById(t2.getId()));
 
         t1.join(500);
         t2.join(500);
 
-        assertFalse(workersCtrlMXBean.stopThreadById(t1HexId));
-        assertFalse(workersCtrlMXBean.stopThreadById(t2HexId));
-
-        assertFalse(workersCtrlMXBean.stopThreadById("non-hexadecimal string"));
+        assertFalse(workersCtrlMXBean.stopThreadById(t1.getId()));
+        assertFalse(workersCtrlMXBean.stopThreadById(t2.getId()));
     }
 
     /**

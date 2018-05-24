@@ -63,17 +63,17 @@ public interface WorkersControlMXBean {
     public boolean stopThreadByUniqueName(String name);
 
     /**
-     * Stops thread by hex {@code id}, if exists.
+     * Stops thread by {@code id}, if exists.
      *
-     * @param id Thread id in hexadecimal format.
+     * @param id Thread id.
      * @return {@code True} if thread has been stopped successfully, {@code false} otherwise.
      */
-    @MXBeanDescription("Stops thread by hex id.")
+    @MXBeanDescription("Stops thread by id.")
     @MXBeanParametersNames(
         "id"
     )
     @MXBeanParametersDescriptions(
         "Id of thread to stop."
     )
-    public boolean stopThreadById(String id);
+    public boolean stopThreadById(long id);
 }

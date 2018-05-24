@@ -76,18 +76,9 @@ public class WorkersControlMXBeanImpl implements WorkersControlMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean stopThreadById(String id) {
-        final long threadId;
-
-        try {
-            threadId = Long.parseLong(id, 16);
-        }
-        catch (NumberFormatException e) {
-            return false;
-        }
-
+    @Override public boolean stopThreadById(long id) {
         Thread[] threads = Thread.getAllStackTraces().keySet().stream()
-            .filter(t -> t.getId() == threadId)
+            .filter(t -> t.getId() == id)
             .toArray(Thread[]::new);
 
         if (threads.length != 1)
