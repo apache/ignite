@@ -116,6 +116,8 @@ AC_CONFIG_FILES([ \
     jni/Makefile \
     thin_client/include/Makefile \
     thin_client/Makefile \
+    thin_client-test/include/Makefile \
+    thin_client-test/Makefile \
     ignite/Makefile \
 ])
 
