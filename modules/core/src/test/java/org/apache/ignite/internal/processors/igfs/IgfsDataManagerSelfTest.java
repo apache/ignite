@@ -145,11 +145,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         startGrids(NODES_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * Test file system structure in meta-cache.
      *

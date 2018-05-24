@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
@@ -119,6 +120,9 @@ public class JdbcThinTcpIo {
 
     /** Mutex. */
     private final Object mux = new Object();
+
+    /** Current protocol version used to connection to Ignite. */
+    private ClientListenerProtocolVersion srvProtocolVer;
 
     /**
      * Constructor.
@@ -341,6 +345,8 @@ public class JdbcThinTcpIo {
             }
             else
                 igniteVer = new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
+
+            srvProtocolVer = ver;
         }
         else {
             short maj = reader.readShort();
@@ -349,12 +355,12 @@ public class JdbcThinTcpIo {
 
             String err = reader.readString();
 
-            ClientListenerProtocolVersion srvProtocolVer = ClientListenerProtocolVersion.create(maj, min, maintenance);
+            ClientListenerProtocolVersion srvProtoVer0 = ClientListenerProtocolVersion.create(maj, min, maintenance);
 
-            if (srvProtocolVer.compareTo(VER_2_5_0) < 0 && !F.isEmpty(connProps.getUsername())) {
-                throw new SQLException("Authentication doesn't support by remote server[driverProtocolVer=" + CURRENT_VER +
-                    ", remoteNodeProtocolVer=" + srvProtocolVer + ", err=" + err + ", url=" + connProps.getUrl() + ']',
-                    SqlStateCode.CONNECTION_REJECTED);
+            if (srvProtoVer0.compareTo(VER_2_5_0) < 0 && !F.isEmpty(connProps.getUsername())) {
+                throw new SQLException("Authentication doesn't support by remote server[driverProtocolVer="
+                    + CURRENT_VER + ", remoteNodeProtocolVer=" + srvProtoVer0 + ", err=" + err
+                    + ", url=" + connProps.getUrl() + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
             if (VER_2_4_0.equals(srvProtocolVer) || VER_2_3_0.equals(srvProtocolVer) ||
@@ -401,8 +407,11 @@ public class JdbcThinTcpIo {
 
         boolean accepted = reader.readBoolean();
 
-        if (accepted)
+        if (accepted) {
             igniteVer = new IgniteProductVersion((byte)2, (byte)1, (byte)0, "Unknown", 0L, null);
+
+            srvProtocolVer = VER_2_1_0;
+        }
         else {
             short maj = reader.readShort();
             short min = reader.readShort();
@@ -414,6 +423,44 @@ public class JdbcThinTcpIo {
 
             throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
                 ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']', SqlStateCode.CONNECTION_REJECTED);
+        }
+    }
+
+    /**
+     * @param req Request.
+     * @throws IOException In case of IO error.
+     * @throws SQLException On error.
+     */
+    void sendBatchRequestNoWaitResponse(JdbcOrderedBatchExecuteRequest req) throws IOException, SQLException {
+        synchronized (mux) {
+            if (ownThread != null) {
+                throw new SQLException("Concurrent access to JDBC connection is not allowed"
+                    + " [ownThread=" + ownThread.getName()
+                    + ", curThread=" + Thread.currentThread().getName(), SqlStateCode.CONNECTION_FAILURE);
+            }
+
+            ownThread = Thread.currentThread();
+        }
+
+        try {
+            if (!isUnorderedStreamSupported()) {
+                throw new SQLException("Streaming without response doesn't supported by server [driverProtocolVer="
+                    + CURRENT_VER + ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
+            }
+
+            int cap = guessCapacity(req);
+
+            BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
+                null, null);
+
+            req.writeBinary(writer);
+
+            send(writer.array());
+        }
+        finally {
+            synchronized (mux) {
+                ownThread = null;
+            }
         }
     }
 
@@ -444,13 +491,7 @@ public class JdbcThinTcpIo {
 
             send(writer.array());
 
-            BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, null, false);
-
-            JdbcResponse res = new JdbcResponse();
-
-            res.readBinary(reader);
-
-            return res;
+            return readResponse();
         }
         finally {
             synchronized (mux) {
@@ -458,6 +499,22 @@ public class JdbcThinTcpIo {
             }
         }
     }
+
+    /**
+     * @return Server response.
+     * @throws IOException In case of IO error.
+     */
+    @SuppressWarnings("unchecked")
+    JdbcResponse readResponse() throws IOException {
+        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()), null, null, false);
+
+        JdbcResponse res = new JdbcResponse();
+
+        res.readBinary(reader);
+
+        return res;
+    }
+
 
     /**
      * Try to guess request capacity.
@@ -569,5 +626,14 @@ public class JdbcThinTcpIo {
      */
     IgniteProductVersion igniteVersion() {
         return igniteVer;
+    }
+
+    /**
+     * @return {@code true} If the unordered streaming supported.
+     */
+    boolean isUnorderedStreamSupported() {
+        assert srvProtocolVer != null;
+
+        return srvProtocolVer.compareTo(VER_2_5_0) >= 0;
     }
 }

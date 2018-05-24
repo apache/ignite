@@ -206,13 +206,25 @@ public class GridServiceProxy<T> implements Serializable {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {
-                    // Rethrow original service method exception so that calling user code can handle it correctly.
-                    ServiceProxyException svcProxyE = X.cause(e, ServiceProxyException.class);
+                    // Check if ignorable exceptions are in the cause chain.
+                    Throwable ignorableCause = X.cause(e, GridServiceNotFoundException.class);
 
-                    if (svcProxyE != null)
-                        throw svcProxyE.getCause();
+                    if (ignorableCause == null)
+                        ignorableCause = X.cause(e, ClusterTopologyCheckedException.class);
 
-                    throw U.convertException(e);
+                    if (ignorableCause != null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Service was not found or topology changed (will retry): " + ignorableCause.getMessage());
+                    }
+                    else {
+                        // Rethrow original service method exception so that calling user code can handle it correctly.
+                        ServiceProxyException svcProxyE = X.cause(e, ServiceProxyException.class);
+
+                        if (svcProxyE != null)
+                            throw svcProxyE.getCause();
+
+                        throw U.convertException(e);
+                    }
                 }
                 catch (Exception e) {
                     throw new IgniteException(e);

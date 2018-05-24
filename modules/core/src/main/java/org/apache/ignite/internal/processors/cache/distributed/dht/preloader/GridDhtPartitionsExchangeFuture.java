@@ -45,6 +45,7 @@ import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -137,6 +138,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
     /** */
     private static final IgniteProductVersion FORCE_AFF_REASSIGNMENT_SINCE = IgniteProductVersion.fromString("2.4.3");
+
+    /**
+     * This may be useful when per-entry (not per-cache based) partition policy is in use.
+     * See {@link IgniteSystemProperties#IGNITE_SKIP_PARTITION_SIZE_VALIDATION} for details.
+     * Default value is {@code false}.
+     */
+    private static final boolean SKIP_PARTITION_SIZE_VALIDATION = Boolean.getBoolean(IgniteSystemProperties.IGNITE_SKIP_PARTITION_SIZE_VALIDATION);
 
     /** */
     @GridToStringExclude
@@ -807,13 +815,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         List<CacheConfiguration> notStartedCacheConfigs = new ArrayList<>();
 
         for (CacheConfiguration cCfg : cctx.gridConfig().getCacheConfiguration()) {
-            if (!cacheNames.contains(cCfg.getName())) {
+            if (!cacheNames.contains(cCfg.getName()))
                 notStartedCacheConfigs.add(cCfg);
-            }
         }
 
         if (!notStartedCacheConfigs.isEmpty())
-            cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false);
+            cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false, false);
     }
 
     /**
@@ -1740,7 +1747,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grp.topology().onExchangeDone(this, grp.affinity().readyAffinity(res), false);
             }
 
-            cctx.walState().changeLocalStatesOnExchangeDone(exchId.topologyVersion());
+            cctx.walState().changeLocalStatesOnExchangeDone(res);
         }
 
         if (super.onDone(res, err)) {
@@ -2779,13 +2786,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grpCtx.topology() :
                     cctx.exchange().clientTopology(grpId, events().discoveryCache());
 
-            // Do not validate read or write through caches or caches with disabled rebalance.
+            // Do not validate read or write through caches or caches with disabled rebalance
+            // or ExpiryPolicy is set or validation is disabled.
             if (grpCtx == null
                     || grpCtx.config().isReadThrough()
                     || grpCtx.config().isWriteThrough()
                     || grpCtx.config().getCacheStoreFactory() != null
                     || grpCtx.config().getRebalanceDelay() == -1
-                    || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE)
+                    || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE
+                    || grpCtx.config().getExpiryPolicyFactory() == null
+                    || SKIP_PARTITION_SIZE_VALIDATION)
                 continue;
 
             try {

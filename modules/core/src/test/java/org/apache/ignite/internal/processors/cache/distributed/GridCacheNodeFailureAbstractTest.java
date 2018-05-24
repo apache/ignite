@@ -110,8 +110,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         IGNITEs.clear();
     }
 

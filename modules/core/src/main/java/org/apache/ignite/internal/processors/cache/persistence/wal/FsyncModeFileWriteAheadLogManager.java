@@ -115,6 +115,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 
 /**
  * File WAL manager.
@@ -227,7 +228,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     private volatile long lastTruncatedArchiveIdx = -1L;
 
     /** Factory to provide I/O interfaces for read/write operations with files */
-    private final FileIOFactory ioFactory;
+    private FileIOFactory ioFactory;
 
     /** Updater for {@link #currentHnd}, used for verify there are no concurrent update for current log segment handle */
     private static final AtomicReferenceFieldUpdater<FsyncModeFileWriteAheadLogManager, FileWriteHandle> currentHndUpd =
@@ -315,6 +316,15 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         evt = ctx.event();
 
         assert mode == WALMode.FSYNC : dsCfg;
+    }
+
+    /**
+     * For test purposes only.
+     *
+     * @param ioFactory IO factory.
+     */
+    public void setFileIOFactory(FileIOFactory ioFactory) {
+        this.ioFactory = ioFactory;
     }
 
     /** {@inheritDoc} */
@@ -1037,7 +1047,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 // If we have existing segment, try to read version from it.
                 if (lastReadPtr != null) {
                     try {
-                        serVer = readSerializerVersionAndCompactedFlag(fileIO).get1();
+                        serVer = readSegmentHeader(fileIO, absIdx).getSerializerVersion();
                     }
                     catch (SegmentEofException | EOFException ignore) {
                         serVer = serializerVersion;
@@ -1151,16 +1161,28 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /**
-     * Clears the file with zeros.
+     * Clears whole the file, fills with zeros for Default mode.
      *
      * @param file File to format.
+     * @throws IgniteCheckedException if formatting failed
      */
     private void formatFile(File file) throws IgniteCheckedException {
+        formatFile(file, dsCfg.getWalSegmentSize());
+    }
+
+    /**
+     * Clears the file, fills with zeros for Default mode.
+     *
+     * @param file File to format.
+     * @param bytesCntToFormat Count of first bytes to format.
+     * @throws IgniteCheckedException if formatting failed
+     */
+    private void formatFile(File file, int bytesCntToFormat) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Formatting file [exists=" + file.exists() + ", file=" + file.getAbsolutePath() + ']');
 
         try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
-            int left = dsCfg.getWalSegmentSize();
+            int left = bytesCntToFormat;
 
             if (mode == WALMode.FSYNC) {
                 while (left > 0) {
@@ -1424,13 +1446,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         synchronized (this) {
                             while (locked.containsKey(toArchive) && !stopped)
                                 wait();
-                        }
 
-                        // Firstly, format working file
-                        if (!stopped)
-                            formatFile(res.getOrigWorkFile());
-
-                        synchronized (this) {
                             // Then increase counter to allow rollover on clean working file
                             changeLastArchivedIndexAndWakeupCompressor(toArchive);
 
@@ -1833,9 +1849,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             int segmentSerializerVer;
 
             try (FileIO fileIO = ioFactory.create(raw)) {
-                IgniteBiTuple<Integer, Boolean> tup = readSerializerVersionAndCompactedFlag(fileIO);
-
-                segmentSerializerVer = tup.get1();
+                segmentSerializerVer = readSegmentHeader(fileIO, nextSegment).getSerializerVersion();
             }
 
             try (ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zip)))) {
@@ -2026,58 +2040,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             if (completionCallback != null)
                 completionCallback.apply(i);
-        }
-    }
-
-    /**
-     * Reads record serializer version from provided {@code io} along with compacted flag.
-     * NOTE: Method mutates position of {@code io}.
-     *
-     * @param io I/O interface for file.
-     * @return Serializer version stored in the file.
-     * @throws IgniteCheckedException If failed to read serializer version.
-     */
-    public static IgniteBiTuple<Integer, Boolean> readSerializerVersionAndCompactedFlag(FileIO io)
-            throws IgniteCheckedException, IOException {
-        try (ByteBufferExpander buf = new ByteBufferExpander(RecordV1Serializer.HEADER_RECORD_SIZE, ByteOrder.nativeOrder())) {
-            FileInput in = new FileInput(io, buf);
-
-            in.ensure(RecordV1Serializer.HEADER_RECORD_SIZE);
-
-            int recordType = in.readUnsignedByte();
-
-            if (recordType == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
-                throw new SegmentEofException("Reached logical end of the segment", null);
-
-            WALRecord.RecordType type = WALRecord.RecordType.fromOrdinal(recordType - 1);
-
-            if (type != WALRecord.RecordType.HEADER_RECORD)
-                throw new IOException("Can't read serializer version", null);
-
-            // Read file pointer.
-            FileWALPointer ptr = RecordV1Serializer.readPosition(in);
-
-            assert ptr.fileOffset() == 0 : "Header record should be placed at the beginning of file " + ptr;
-
-            long hdrMagicNum = in.readLong();
-
-            boolean compacted;
-            if (hdrMagicNum == HeaderRecord.REGULAR_MAGIC)
-                compacted = false;
-            else if (hdrMagicNum == HeaderRecord.COMPACTED_MAGIC)
-                compacted = true;
-            else {
-                throw new IOException("Magic is corrupted [exp=" + U.hexLong(HeaderRecord.REGULAR_MAGIC) +
-                    ", actual=" + U.hexLong(hdrMagicNum) + ']');
-            }
-
-            // Read serializer version.
-            int ver = in.readInt();
-
-            // Read and skip CRC.
-            in.readInt();
-
-            return new IgniteBiTuple<>(ver, compacted);
         }
     }
 

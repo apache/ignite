@@ -1015,7 +1015,14 @@ public abstract class GridAbstractTest extends TestCase {
             }
         }
 
-        return new IgniteProcessProxy(cfg, log, locNode, resetDiscovery);
+        return new IgniteProcessProxy(cfg, log, locNode, resetDiscovery, additionalRemoteJvmArgs());
+    }
+
+    /**
+     * @return Additional JVM args for remote instances.
+     */
+    protected List<String> additionalRemoteJvmArgs() {
+        return Collections.emptyList();
     }
 
     /**
@@ -1026,7 +1033,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws IgniteCheckedException On error.
      */
     protected IgniteConfiguration optimize(IgniteConfiguration cfg) throws IgniteCheckedException {
-        // TODO: IGNITE-605: propose another way to avoid network overhead in tests.
         if (cfg.getLocalHost() == null) {
             if (cfg.getDiscoverySpi() instanceof TcpDiscoverySpi) {
                 cfg.setLocalHost("127.0.0.1");

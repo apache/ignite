@@ -36,7 +36,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +43,6 @@ import org.jetbrains.annotations.NotNull;
 /**
  */
 public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTest {
-
     /** Server id. */
     private static final int SERVER_ID = 0;
 
@@ -63,6 +61,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
         if (getTestIgniteInstanceName(CLIENT_ID).equals(igniteInstanceName)) {
             cfg.setClientMode(true);
+
             CacheConfiguration ccfg = getCacheConfiguration();
 
             cfg.setCacheConfiguration(ccfg);
@@ -117,6 +116,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
     public void testReconnectClient() throws Exception {
         try {
             startGrid(SERVER_ID);
+
             Ignite client = startGrid(CLIENT_ID);
             checkTopology(2);
 
