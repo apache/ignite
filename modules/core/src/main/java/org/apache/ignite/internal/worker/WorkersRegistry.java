@@ -21,12 +21,13 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 
 /**
  * Workers registry.
  */
-public class WorkersRegistry implements GridWorkerListener {
+public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHandler {
     /** Registered workers. */
     private final ConcurrentMap<String, GridWorker> registeredWorkers = new ConcurrentHashMap<>();
 
@@ -76,5 +77,15 @@ public class WorkersRegistry implements GridWorkerListener {
     /** {@inheritDoc} */
     @Override public void onStopped(GridWorker w) {
         unregister(w.runner().getName());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onIdle(GridWorker worker) {
+        checkIfNextWorkerSubsetIsWorking();
+    }
+
+    /** */
+    private void checkIfNextWorkerSubsetIsWorking() {
+        // TODO: IGNITE-6587
     }
 }
