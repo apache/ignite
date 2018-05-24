@@ -167,25 +167,29 @@ public class CacheArguments {
         this.maxPrint = maxPrint;
     }
 
-    /** */
+    /**
+     *  @return Max number of entries to be checked.
+     */
     public int checkFirst() {
         return checkFirst;
     }
 
     /**
-     * @param checkFirst Check first.
+     * @param checkFirst Max number of entries to be checked.
      */
     public void checkFirst(int checkFirst) {
         this.checkFirst = checkFirst;
     }
 
-    /** */
+    /**
+     * @return Number of entries to check through.
+     */
     public int checkThrough() {
         return checkThrough;
     }
 
     /**
-     * @param checkThrough Check through.
+     * @param checkThrough Number of entries to check through.
      */
     public void checkThrough(int checkThrough) {
         this.checkThrough = checkThrough;

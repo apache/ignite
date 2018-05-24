@@ -632,7 +632,11 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheValidateIndexes(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-        VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(cacheArgs.caches(), cacheArgs.checkFirst(), cacheArgs.checkThrough());
+        VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(
+            cacheArgs.caches(),
+            cacheArgs.checkFirst(),
+            cacheArgs.checkThrough()
+        );
 
         UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
 
@@ -1436,7 +1440,7 @@ public class CommandHandler {
             case VALIDATE_INDEXES:
                 int argsCnt = 0;
 
-                while (argsCnt++ > 3 || hasNextCacheArg()) {
+                while (hasNextCacheArg() && argsCnt++ < 4) {
                     String arg = nextArg("");
 
                     if (VI_CHECK_FIRST.equals(arg) || VI_CHECK_THROUGH.equals(arg)) {
@@ -1467,7 +1471,7 @@ public class CommandHandler {
                         else
                             cacheArgs.checkThrough(numVal);
 
-                        break;
+                        continue;
                     }
 
                     try {

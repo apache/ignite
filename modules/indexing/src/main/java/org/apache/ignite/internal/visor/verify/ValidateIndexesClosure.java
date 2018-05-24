@@ -330,26 +330,36 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
             m.setAccessible(true);
 
-            final boolean skipValues = checkFirst > 0 || checkThrough > 0;
+            final boolean skipConditions = checkFirst > 0 || checkThrough > 0;
+            final boolean bothSkipConditions = checkFirst > 0 && checkThrough > 0;
 
             long current = 0;
+            long processedNumber = 0;
 
             while (it.hasNextX()) {
                 if (enoughIssues)
                     break;
 
-                current++;
-
                 CacheDataRow row = it.nextX();
 
-                if (skipValues) {
-                    if (checkFirst > 0) {
-                        if (current > checkFirst)
+                if (skipConditions) {
+                    if (bothSkipConditions) {
+                        if (processedNumber > checkFirst)
                             break;
+                        else if (current++ % checkThrough > 0)
+                            continue;
+                        else
+                            processedNumber++;
                     }
                     else {
-                        if (current % checkThrough > 0)
-                            continue;
+                        if (checkFirst > 0) {
+                            if (current++ > checkFirst)
+                                break;
+                        }
+                        else {
+                            if (current++ % checkThrough > 0)
+                                continue;
+                        }
                     }
                 }
 
@@ -489,13 +499,14 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
             enoughIssues = true;
         }
 
-        final boolean skipValues = checkFirst > 0 || checkThrough > 0;
+        final boolean skipConditions = checkFirst > 0 || checkThrough > 0;
+        final boolean bothSkipConditions = checkFirst > 0 && checkThrough > 0;
 
         long current = 0;
+        long processedNumber = 0;
 
         while (!enoughIssues) {
             KeyCacheObject h2key = null;
-            current++;
 
             try {
                 if (!cursor.next())
@@ -503,14 +514,24 @@ public class ValidateIndexesClosure implements IgniteCallable<VisorValidateIndex
 
                 GridH2Row h2Row = (GridH2Row)cursor.get();
 
-                if (skipValues) {
-                    if (checkFirst > 0) {
-                        if (current > checkFirst)
+                if (skipConditions) {
+                    if (bothSkipConditions) {
+                        if (processedNumber > checkFirst)
                             break;
+                        else if (current++ % checkThrough > 0)
+                            continue;
+                        else
+                            processedNumber++;
                     }
                     else {
-                        if (current % checkThrough > 0)
-                            continue;
+                        if (checkFirst > 0) {
+                            if (current++ > checkFirst)
+                                break;
+                        }
+                        else {
+                            if (current++ % checkThrough > 0)
+                                continue;
+                        }
                     }
                 }
 

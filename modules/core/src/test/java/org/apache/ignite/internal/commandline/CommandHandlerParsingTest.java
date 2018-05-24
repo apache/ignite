@@ -64,22 +64,26 @@ public class CommandHandlerParsingTest extends TestCase {
 
         //happy case for all parameters
         try {
-            int expectedParam = 10;
+            int expectedCheckFirst = 10;
+            int expectedCheckThrough = 11;
             UUID nodeId = UUID.randomUUID();
 
             CacheArguments args = hnd.parseAndValidate(
                 Arrays.asList(
                     CACHE.text(),
                     CacheCommand.VALIDATE_INDEXES.text(),
+                    "cache1, cache2",
                     nodeId.toString(),
                     VI_CHECK_FIRST,
-                    Integer.toString(expectedParam)
+                    Integer.toString(expectedCheckFirst),
+                    VI_CHECK_THROUGH,
+                    Integer.toString(expectedCheckThrough)
                 )
             ).cacheArgs();
 
             assertEquals("nodeId parameter unexpected value", nodeId, args.nodeId());
-            assertEquals("checkFirst parameter unexpected value", expectedParam, args.checkFirst());
-            assertEquals("checkThrough parameter unexpected value", -1, args.checkThrough());
+            assertEquals("checkFirst parameter unexpected value", expectedCheckFirst, args.checkFirst());
+            assertEquals("checkThrough parameter unexpected value", expectedCheckThrough, args.checkThrough());
         }
         catch (IllegalArgumentException e) {
             fail("Unexpected exception: " + e);
