@@ -200,7 +200,11 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 }
             }
 
-            boolean more = cctx.offheap().expire(dhtCtx, expireC, amount);
+            final IgniteCacheOffheapManager offheapMgr = cctx.offheap();
+
+            assert (offheapMgr != null); // https://issues.apache.org/jira/browse/IGNITE-8612
+
+            boolean more = offheapMgr.expire(dhtCtx, expireC, amount);
 
             if (more)
                 return true;
