@@ -15,21 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.db.wal;
+package org.apache.ignite.internal.processors.cache.persistence.tree.reuse;
 
-import org.apache.ignite.configuration.WALMode;
+import java.io.Externalizable;
+import org.apache.ignite.internal.util.GridLongList;
 
 /**
- *
+ * {@link GridLongList}-based reuse bag.
  */
-public class IgniteWalFlushDefaultSelfTest extends IgniteWalFlushMultiNodeFailoverAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
+public final class LongListReuseBag extends GridLongList implements ReuseBag {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /**
+     * Default constructor for {@link Externalizable}.
+     */
+    public LongListReuseBag() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override protected WALMode walMode() {
-        return WALMode.FSYNC;
+    @Override public void addFreePage(long pageId) {
+        add(pageId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long pollFreePage() {
+        return isEmpty() ? 0 : remove();
     }
 }
