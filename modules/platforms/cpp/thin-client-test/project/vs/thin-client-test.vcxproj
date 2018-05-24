@@ -19,15 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\config\cache-query-32.xml" />
-    <None Include="..\..\config\cache-query-default.xml" />
-    <None Include="..\..\config\cache-query.xml" />
-    <None Include="..\..\config\cache-test-32.xml" />
-    <None Include="..\..\config\cache-test-default.xml" />
-    <None Include="..\..\config\cache-test.xml" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\..\src\ignite_client_test.cpp" />
+    <ClCompile Include="..\..\src\ssl_test.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_messages.cpp" />
     <ClCompile Include="..\..\src\test_utils.cpp" />
@@ -52,6 +45,14 @@
     <ProjectReference Include="..\..\..\thin-client\project\vs\thin-client.vcxproj">
       <Project>{5c037386-b5f5-4a58-9ee2-3d3a508aa866}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\config\cache-32.xml" />
+    <None Include="..\..\config\cache-default.xml" />
+    <None Include="..\..\config\cache.xml" />
+    <None Include="..\..\config\ssl-32.xml" />
+    <None Include="..\..\config\ssl-default.xml" />
+    <None Include="..\..\config\ssl.xml" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5662F10A-9C40-45D6-AFF8-E93573FEAABA}</ProjectGuid>

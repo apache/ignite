@@ -59,8 +59,6 @@ namespace ignite_test
 #endif
 
         cfg.springCfgPath = GetTestConfigDir().append("/").append(cfgFile);
-
-        std::cout << __LINE__ << ": " << cfg.springCfgPath << std::endl;
     }
 
     ignite::Ignite StartServerNode(const char* cfgFile, const char* name)

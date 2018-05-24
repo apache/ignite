@@ -14,26 +14,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\config\cache-query.xml">
-      <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-query-32.xml">
-      <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-query-default.xml">
-      <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-test.xml">
-      <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-test-32.xml">
-      <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\cache-test-default.xml">
-      <Filter>Configs</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\..\src\ignite_client_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
@@ -46,6 +26,9 @@
     <ClCompile Include="..\..\src\test_utils.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\ssl_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity\teamcity_messages.h">
@@ -54,5 +37,25 @@
     <ClInclude Include="..\..\include\test_utils.h">
       <Filter>Code</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\config\cache.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\cache-default.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\ssl.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\ssl-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\ssl-default.xml">
+      <Filter>Configs</Filter>
+    </None>
   </ItemGroup>
 </Project>

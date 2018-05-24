@@ -29,17 +29,27 @@
 using namespace ignite::thin;
 using namespace boost::unit_test;
 
-class IgniteClientTestSuiteFixture
+class SslTestSuiteFixture
 {
 public:
-    IgniteClientTestSuiteFixture()
+    SslTestSuiteFixture()
     {
-        serverNode = ignite_test::StartCrossPlatformServerNode("cache.xml", "ServerNode");
+        serverNode = ignite_test::StartCrossPlatformServerNode("ssl.xml", "ServerNode");
     }
 
-    ~IgniteClientTestSuiteFixture()
+    ~SslTestSuiteFixture()
     {
         ignite::Ignition::StopAll(false);
+    }
+
+    std::string GetConfigFile(const std::string& file)
+    {
+        using namespace ignite::common;
+        std::stringstream pathBuilder;
+
+        pathBuilder << ignite_test::GetTestConfigDir() << Fs << "ssl" << Fs << file;
+
+        return pathBuilder.str();
     }
 
 private:
@@ -47,15 +57,45 @@ private:
     ignite::Ignite serverNode;
 };
 
-BOOST_FIXTURE_TEST_SUITE(IgniteClientTestSuite, IgniteClientTestSuiteFixture)
+BOOST_FIXTURE_TEST_SUITE(SslTestSuite, SslTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(IgniteClientConnection)
+BOOST_AUTO_TEST_CASE(SslConnectionSuccess)
 {
     IgniteClientConfiguration cfg;
 
     cfg.SetEndPoints("127.0.0.1:11110");
 
+    cfg.SetSslMode(SslMode::REQUIRE);
+    cfg.SetSslCertFile(GetConfigFile("client_full.pem"));
+    cfg.SetSslKeyFile(GetConfigFile("client_full.pem"));
+    cfg.SetSslCaFile(GetConfigFile("ca.pem"));
+
     IgniteClient::Start(cfg);
+}
+
+BOOST_AUTO_TEST_CASE(SslConnectionReject)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    cfg.SetSslMode(SslMode::REQUIRE);
+    cfg.SetSslCertFile(GetConfigFile("client_unknown.pem"));
+    cfg.SetSslKeyFile(GetConfigFile("client_unknown.pem"));
+    cfg.SetSslCaFile(GetConfigFile("ca.pem"));
+
+    BOOST_CHECK_THROW(IgniteClient::Start(cfg), ignite::IgniteError);
+}
+
+BOOST_AUTO_TEST_CASE(SslConnectionReject2)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    cfg.SetSslMode(SslMode::DISABLE);
+    
+    BOOST_CHECK_THROW(IgniteClient::Start(cfg), ignite::IgniteError);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
