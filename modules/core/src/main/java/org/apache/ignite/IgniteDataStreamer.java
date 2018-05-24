@@ -471,7 +471,7 @@ public interface IgniteDataStreamer<K, V> extends AutoCloseable {
      * Streams any remaining data and closes this streamer.
      *
      * @param cancel {@code True} to cancel ongoing streaming operations.
-     * @throws CacheException If failed to map key to node.
+     * @throws CacheException If failed to close data streamer.
      * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IgniteDataStreamerTimeoutException If {@code timeout} is exceeded, only if cancel is {@code false}.
      */
