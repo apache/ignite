@@ -589,7 +589,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param dfltNodeFilter Default NodeFilter.
      * @return Future for deployment.
      */
-    private IgniteInternalFuture<?> deployAll(Collection<ServiceConfiguration> cfgs, IgnitePredicate<ClusterNode> dfltNodeFilter) {
+    private IgniteInternalFuture<?> deployAll(Collection<ServiceConfiguration> cfgs,
+        IgnitePredicate<ClusterNode> dfltNodeFilter) {
         assert cfgs != null;
 
         if (!busyLock.enterBusy()) {
@@ -1166,138 +1167,27 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (nodeFilter != null)
             ctx.resource().injectGeneric(nodeFilter);
 
-        int totalCnt = cfg.getTotalCount();
-        int maxPerNodeCnt = cfg.getMaxPerNodeCount();
-        String cacheName = cfg.getCacheName();
-        Object affKey = cfg.getAffinityKey();
+        GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
+
+        GridServiceAssignments oldAssigns = (GridServiceAssignments)cache.get(key);
+
+        GridServiceAssignments assigns = new GridServiceAssignments(cfg, dep.nodeId(), topVer.topologyVersion());
+
+        Map<UUID, Integer> cnts = calculateAssignment(dep, topVer, oldAssigns, assigns.nodeFilter());
+
+        if (oldAssigns != null && oldAssigns.assigns().equals(cnts)) {
+            if (log.isInfoEnabled())
+                log.info("No changes are required for service deployment assignment [" +
+                    "svc=" + dep.configuration().getName() + ", topVer=" + topVer + ']');
+
+            return;
+        }
 
         while (true) {
-            GridServiceAssignments assigns = new GridServiceAssignments(cfg, dep.nodeId(), topVer.topologyVersion());
-
-            Collection<ClusterNode> nodes;
-
-            // Call node filter outside of transaction.
-            if (affKey == null) {
-                nodes = ctx.discovery().nodes(topVer);
-
-                if (assigns.nodeFilter() != null) {
-                    Collection<ClusterNode> nodes0 = new ArrayList<>();
-
-                    for (ClusterNode node : nodes) {
-                        if (assigns.nodeFilter().apply(node))
-                            nodes0.add(node);
-                    }
-
-                    nodes = nodes0;
-                }
-            }
-            else
-                nodes = null;
-
             try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
+                oldAssigns = (GridServiceAssignments)cache.get(key);
 
-                GridServiceAssignments oldAssigns = (GridServiceAssignments)cache.get(key);
-
-                Map<UUID, Integer> cnts = new HashMap<>();
-
-                if (affKey != null) {
-                    ClusterNode n = ctx.affinity().mapKeyToNode(cacheName, affKey, topVer);
-
-                    if (n != null) {
-                        int cnt = maxPerNodeCnt == 0 ? totalCnt == 0 ? 1 : totalCnt : maxPerNodeCnt;
-
-                        cnts.put(n.id(), cnt);
-
-                        if (log.isInfoEnabled())
-                            log.info("Assigned service to primary node [svc=" + dep.configuration().getName() +
-                                ", topVer=" + topVer + ", node=" + n.id() + ']');
-                    }
-                }
-                else {
-                    if (!nodes.isEmpty()) {
-                        int size = nodes.size();
-
-                        if (log.isInfoEnabled())
-                            log.info("Calculating assignments for service " +
-                                "[svc=" + dep.configuration().getName() +
-                                ", topVer=" + topVer +
-                                ", nodes=" + U.nodeIds(nodes) +
-                                ", oldAssignment=" + (oldAssigns == null ? "NA" : oldAssigns.assigns()) +
-                                ", totalCnt=" + totalCnt + ", maxPerNodeCnt=" + maxPerNodeCnt + ']');
-
-                        int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
-                        int remainder = totalCnt != 0 ? totalCnt % size : 0;
-
-                        if (perNodeCnt >= maxPerNodeCnt && maxPerNodeCnt != 0) {
-                            perNodeCnt = maxPerNodeCnt;
-                            remainder = 0;
-                        }
-
-                        for (ClusterNode n : nodes)
-                            cnts.put(n.id(), perNodeCnt);
-
-                        assert perNodeCnt >= 0;
-                        assert remainder >= 0;
-
-                        if (remainder > 0) {
-                            int cnt = perNodeCnt + 1;
-
-                            if (oldAssigns != null) {
-                                Collection<UUID> used = new HashSet<>();
-
-                                // Avoid redundant moving of services.
-                                for (Map.Entry<UUID, Integer> e : oldAssigns.assigns().entrySet()) {
-                                    // Do not assign services to left nodes.
-                                    if (ctx.discovery().node(e.getKey()) == null)
-                                        continue;
-
-                                    // If old count and new count match, then reuse the assignment.
-                                    if (e.getValue() == cnt) {
-                                        cnts.put(e.getKey(), cnt);
-
-                                        used.add(e.getKey());
-
-                                        if (--remainder == 0)
-                                            break;
-                                    }
-                                }
-
-                                if (remainder > 0) {
-                                    List<Map.Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
-
-                                    // Randomize.
-                                    Collections.shuffle(entries);
-
-                                    for (Map.Entry<UUID, Integer> e : entries) {
-                                        // Assign only the ones that have not been reused from previous assignments.
-                                        if (!used.contains(e.getKey())) {
-                                            if (e.getValue() < maxPerNodeCnt || maxPerNodeCnt == 0) {
-                                                e.setValue(e.getValue() + 1);
-
-                                                if (--remainder == 0)
-                                                    break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            else {
-                                List<Map.Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
-
-                                // Randomize.
-                                Collections.shuffle(entries);
-
-                                for (Map.Entry<UUID, Integer> e : entries) {
-                                    e.setValue(e.getValue() + 1);
-
-                                    if (--remainder == 0)
-                                        break;
-                                }
-                            }
-                        }
-                    }
-                }
+                cnts = calculateAssignment(dep, topVer, oldAssigns, assigns.nodeFilter());
 
                 assigns.assigns(cnts);
 
@@ -1318,6 +1208,151 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 U.sleep(10);
             }
         }
+    }
+
+    /**
+     * Calculates assignment for service.
+     * @param dep grid service deployment
+     * @param topVer topology version
+     * @param oldAssigns old service assignment
+     * @param nodeFilter node filter
+     * @return node to service count mapping
+     * @throws IgniteCheckedException If failed
+     */
+    private Map<UUID, Integer> calculateAssignment(GridServiceDeployment dep, AffinityTopologyVersion topVer,
+        GridServiceAssignments oldAssigns, IgnitePredicate<ClusterNode> nodeFilter) throws IgniteCheckedException {
+        int totalCnt = dep.configuration().getTotalCount();
+        int maxPerNodeCnt = dep.configuration().getMaxPerNodeCount();
+        String cacheName = dep.configuration().getCacheName();
+        Object affKey = dep.configuration().getAffinityKey();
+
+        Collection<ClusterNode> nodes;
+
+        // Call node filter outside of transaction.
+        if (affKey == null) {
+            nodes = ctx.discovery().nodes(topVer);
+
+            if (nodeFilter != null) {
+                Collection<ClusterNode> nodes0 = new ArrayList<>();
+
+                for (ClusterNode node : nodes) {
+                    if (nodeFilter.apply(node))
+                        nodes0.add(node);
+                }
+
+                nodes = nodes0;
+            }
+        }
+        else
+            nodes = null;
+
+
+        Map<UUID, Integer> cnts = new HashMap<>();
+
+        if (affKey != null) {
+            ClusterNode n = ctx.affinity().mapKeyToNode(cacheName, affKey, topVer);
+
+            if (n != null) {
+                int cnt = maxPerNodeCnt == 0 ? totalCnt == 0 ? 1 : totalCnt : maxPerNodeCnt;
+
+                cnts.put(n.id(), cnt);
+
+                if (log.isInfoEnabled())
+                    log.info("Assigned service to primary node [svc=" + dep.configuration().getName() +
+                        ", topVer=" + topVer + ", node=" + n.id() + ']');
+            }
+        }
+        else {
+            if (!nodes.isEmpty()) {
+                int size = nodes.size();
+
+                if (log.isInfoEnabled())
+                    log.info("Calculating assignments for service " +
+                        "[svc=" + dep.configuration().getName() +
+                        ", topVer=" + topVer +
+                        ", nodes=" + U.nodeIds(nodes) +
+                        ", oldAssignment=" + (oldAssigns == null ? "NA" : oldAssigns.assigns()) +
+                        ", totalCnt=" + totalCnt + ", maxPerNodeCnt=" + maxPerNodeCnt + ']');
+
+                int perNodeCnt = totalCnt != 0 ? totalCnt / size : maxPerNodeCnt;
+                int remainder = totalCnt != 0 ? totalCnt % size : 0;
+
+                if (perNodeCnt >= maxPerNodeCnt && maxPerNodeCnt != 0) {
+                    perNodeCnt = maxPerNodeCnt;
+                    remainder = 0;
+                }
+
+                for (ClusterNode n : nodes)
+                    cnts.put(n.id(), perNodeCnt);
+
+                assert perNodeCnt >= 0;
+                assert remainder >= 0;
+
+                if (remainder > 0) {
+                    int cnt = perNodeCnt + 1;
+
+                    if (oldAssigns != null) {
+                        Collection<UUID> used = new HashSet<>();
+
+                        // Avoid redundant moving of services.
+                        for (Map.Entry<UUID, Integer> e : oldAssigns.assigns().entrySet()) {
+                            // Do not assign services to left nodes.
+                            if (ctx.discovery().node(e.getKey()) == null)
+                                continue;
+
+                            // If old count and new count match, then reuse the assignment.
+                            if (e.getValue() == cnt) {
+                                cnts.put(e.getKey(), cnt);
+
+                                used.add(e.getKey());
+
+                                if (--remainder == 0)
+                                    break;
+                            }
+                        }
+
+                        if (remainder > 0) {
+                            List<Map.Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
+
+                            // Randomize.
+                            Collections.shuffle(entries);
+
+                            for (Map.Entry<UUID, Integer> e : entries) {
+                                // Assign only the ones that have not been reused from previous assignments.
+                                if (!used.contains(e.getKey())) {
+                                    if (e.getValue() < maxPerNodeCnt || maxPerNodeCnt == 0) {
+                                        e.setValue(e.getValue() + 1);
+
+                                        if (--remainder == 0)
+                                            break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        List<Map.Entry<UUID, Integer>> entries = new ArrayList<>(cnts.entrySet());
+
+                        // Randomize.
+                        Collections.shuffle(entries);
+
+                        for (Map.Entry<UUID, Integer> e : entries) {
+                            e.setValue(e.getValue() + 1);
+
+                            if (--remainder == 0)
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
+        HashMap<UUID, Integer> noZeroAssingment = new HashMap<>(cnts);
+
+        for (Map.Entry<UUID, Integer> entry : cnts.entrySet())
+            if(entry.getValue() != 0) noZeroAssingment.put(entry.getKey(), entry.getValue());
+
+        return noZeroAssingment;
     }
 
     /**
