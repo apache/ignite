@@ -132,7 +132,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public static final IgniteProductVersion LAZY_SERVICES_CFG_SINCE = IgniteProductVersion.fromString("1.5.22");
 
     /** */
-    private static final int REASSIGN_DELAY = getInteger(IGNITE_SERVICE_REASSIGN_DELAY, 30_000);
+    private static final int REASSIGNMENT_DELAY = getInteger(IGNITE_SERVICE_REASSIGN_DELAY, 3_000);
 
     /** Versions that only compatible with each other, and from 1.5.33. */
     private static final Set<IgniteProductVersion> SERVICE_TOP_CALLABLE_VER1;
@@ -1205,21 +1205,22 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         GridServiceAssignments assigns = new GridServiceAssignments(cfg, dep.nodeId(), topVer.topologyVersion());
 
-        Map<UUID, Integer> cnts = calculateAssignment(dep, topVer, oldAssigns, assigns.nodeFilter());
+        if (oldAssigns != null && cfg.getAffinityKey() == null) {
+            Map<UUID, Integer> cnts = calculateAssignment(dep, topVer, oldAssigns, assigns.nodeFilter());
+            if(oldAssigns.assigns().equals(cnts)) {
+                if (log.isInfoEnabled())
+                    log.info("No changes are required for service deployment assignment [" +
+                        "svc=" + dep.configuration().getName() + ", topVer=" + topVer + ']');
 
-        if (oldAssigns != null && oldAssigns.assigns().equals(cnts)) {
-            if (log.isInfoEnabled())
-                log.info("No changes are required for service deployment assignment [" +
-                    "svc=" + dep.configuration().getName() + ", topVer=" + topVer + ']');
-
-            return;
+                return;
+            }
         }
 
         while (true) {
             try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                 oldAssigns = (GridServiceAssignments)cache.get(key);
 
-                cnts = calculateAssignment(dep, topVer, oldAssigns, assigns.nodeFilter());
+                Map<UUID, Integer> cnts = calculateAssignment(dep, topVer, oldAssigns, assigns.nodeFilter());
 
                 assigns.assigns(cnts);
 
@@ -1379,7 +1380,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             }
         }
 
-        HashMap<UUID, Integer> noZeroAssingment = new HashMap<>(cnts);
+        HashMap<UUID, Integer> noZeroAssingment = new HashMap<>();
 
         for (Map.Entry<UUID, Integer> entry : cnts.entrySet())
             if(entry.getValue() != 0) noZeroAssingment.put(entry.getKey(), entry.getValue());
@@ -1393,14 +1394,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param assigns Assignments.
      */
     private void redeploy(GridServiceAssignments assigns) {
-        if (assigns.topologyVersion() < ctx.discovery().topologyVersion()) {
-            if (log.isDebugEnabled())
-                log.debug("Skip outdated assignment [assigns=" + assigns +
-                    ", topVer=" + ctx.discovery().topologyVersion() + ']');
-
-            return;
-        }
-
         String svcName = assigns.name();
 
         Integer assignCnt = assigns.assigns().get(ctx.localNodeId());
@@ -2040,7 +2033,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     }
                 };
 
-                if (REASSIGN_DELAY <= 0 || evt.type() != EVT_NODE_JOINED)
+                if (REASSIGNMENT_DELAY <= 0 || evt.type() != EVT_NODE_JOINED)
                     depExe.execute(depRunnable);
                 else
                     ctx.timeout().schedule(new Runnable() {
@@ -2048,7 +2041,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         public void run() {
                             depExe.execute(depRunnable);
                         }
-                    }, REASSIGN_DELAY, -1);
+                    }, REASSIGNMENT_DELAY, -1);
             }
             finally {
                 busyLock.leaveBusy();
