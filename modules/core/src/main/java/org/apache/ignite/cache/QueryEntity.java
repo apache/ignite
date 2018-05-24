@@ -868,7 +868,7 @@ public class QueryEntity implements Serializable {
             if (BigDecimal.class == fldCls && sqlAnn.precision() != -1 && sqlAnn.scale() != -1)
                 desc.addDecimalInfo(prop.fullName(), F.t(sqlAnn.precision(), sqlAnn.scale()));
 
-            if (CharSequence.class.isAssignableFrom(fldCls) && sqlAnn.maxLength() != MAX_VALUE)
+            if (String.class == fldCls && sqlAnn.maxLength() != MAX_VALUE)
                 desc.addMaxLengthInfo(prop.fullName(), sqlAnn.maxLength());
 
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))

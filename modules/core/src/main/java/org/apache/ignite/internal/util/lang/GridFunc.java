@@ -3131,33 +3131,4 @@ public class GridFunc {
 
         return rdc == null ? null : rdc.reduce();
     }
-
-    /**
-     * Returns first founded value from Map associated with 
-     * {@code key}, {@code key.toLowerCase()}, {@code key.toUpperCase()}.
-     * 
-     * @param map Map.
-     * @param key Key.
-     * @param <V> Value type.
-     * @return Value first founded value from Map associated with {@code key}, {@code key.toLowerCase()}, 
-     * {@code key.toUpperCase()}.
-     */
-    @Nullable public static <V> V getCaseInsensitive(@Nullable Map<String, V> map, String key)  {
-        assert key != null;
-        
-        if (isEmpty(map))
-            return null;
-
-        V v = map.get(key);
-        
-        if (v != null)
-            return v;
-
-        v = map.get(key.toLowerCase());
-
-        if (v != null)
-            return v;
-        
-        return map.get(key.toUpperCase());
-    }
 }

@@ -618,9 +618,9 @@ public class QueryUtils {
         Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo  = qryEntity.getDecimalInfo();
         Map<String, Integer> maxLengthInfo = qryEntity.getMaxLengthInfo();
         
-        Integer maxLength = F.getCaseInsensitive(maxLengthInfo, name);
+        Integer maxLength = maxLengthInfo.get(name);
 
-        IgniteBiTuple<Integer, Integer> precisionAndScale = F.getCaseInsensitive(decimalInfo, name);
+        IgniteBiTuple<Integer, Integer> precisionAndScale = decimalInfo.get(name);
 
         if (maxLength == null && precisionAndScale == null) 
             return;
@@ -629,7 +629,7 @@ public class QueryUtils {
 
         String typeName = isKey ? qryEntity.getKeyType() : qryEntity.getValueType();
 
-        Object dfltVal = F.getCaseInsensitive(dfltVals, name);
+        Object dfltVal = dfltVals.get(name);
 
         QueryBinaryProperty prop = buildBinaryProperty(ctx, d.cacheName(), name,
             U.classForName(typeName, Object.class, true),
