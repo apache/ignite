@@ -287,11 +287,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** WAL marker prefix for meta store. */
     private static final String WAL_KEY_PREFIX = "grp-wal-";
 
-    /** WAL marker prefix for meta store. */
+    /** Prefix for meta store records which means that WAL was disabled globally for some group. */
     private static final String WAL_GLOBAL_KEY_PREFIX = WAL_KEY_PREFIX + "disabled-";
 
-    /** WAL marker prefix for meta store. */
+    /** Prefix for meta store records which means that WAL was disabled locally for some group. */
     private static final String WAL_LOCAL_KEY_PREFIX = WAL_KEY_PREFIX + "local-disabled-";
+
+    /** Prefix for meta store records which means that WAL was disabled after some checkpoint has done. */
+    private static final String WAL_DISABLED_PREFIX = WAL_KEY_PREFIX + "cp-disabled-";
 
     /** WAL marker predicate for meta store. */
     private static final IgnitePredicate<String> WAL_KEY_PREFIX_PRED = new IgnitePredicate<String>() {
@@ -4134,6 +4137,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
+         * @return Last checkpoint entry if exists. Otherwise {@code null}.
+         */
+        private CheckpointEntry lastEntry() {
+            Map.Entry<Long,CheckpointEntry> entry = histMap.lastEntry();
+
+            return entry != null ? entry.getValue() : null;
+        }
+
+        /**
          * Get WAL pointer to low checkpoint bound.
          *
          * @return WAL pointer to low checkpoint bound.
@@ -4799,8 +4811,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try {
             if (enabled)
                 metaStorage.remove(key);
-            else
+            else {
                 metaStorage.write(key, true);
+
+                CheckpointEntry lastCp = checkpointHist.lastEntry();
+                Long lastCpTs = lastCp != null ? lastCp.cpTs : null;
+
+                metaStorage.write(walDisabledAfterCpAndGroupIdToKey(lastCpTs, grpId), true);
+            }
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to write cache group WAL state [grpId=" + grpId +
@@ -4809,6 +4827,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         finally {
             checkpointReadUnlock();
         }
+    }
+
+    /**
+     * Checks that after checkpoint with timestamp {@code cpTs} WAL was disabled for given group {@code grpId}.
+     *
+     * @param cpTs Checkpoint timestamp.
+     * @param grpId Group ID.
+     * @return {@code true} if WAL was disabled after checkpoint with timestamp {@code cpTs}.
+     * @throws IgniteCheckedException If failed to check.
+     */
+    private boolean walWasDisabledAfterCp(Long cpTs, int grpId) throws IgniteCheckedException {
+        return metaStorage.read(walDisabledAfterCpAndGroupIdToKey(cpTs, grpId)) != null;
     }
 
     /**
@@ -4849,6 +4879,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return WAL_LOCAL_KEY_PREFIX + grpId;
         else
             return WAL_GLOBAL_KEY_PREFIX + grpId;
+    }
+
+    /**
+     * Convert checkpoint timestamp and cache group ID to WAL state key.
+     *
+     * @param cpTs Checkpoint timestamp.
+     * @param grpId Group ID.
+     * @return Key.
+     */
+    private static String walDisabledAfterCpAndGroupIdToKey(Long cpTs, int grpId) {
+        return WAL_DISABLED_PREFIX + (cpTs != null ? cpTs : "none") + "-" + grpId;
     }
 
     /**
