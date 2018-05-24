@@ -156,7 +156,7 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply() {
                     return svcs.service(svcName) == null;
                 }
-            }, 10 * 1000);
+            }, 40 * 1000);
 
             assertTrue("Service was not undeployed", res);
         }
