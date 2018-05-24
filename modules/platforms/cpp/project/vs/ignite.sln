@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "core", "..\..\core\project\vs\core.vcxproj", "{E2DEA693-F2EA-43C2-A813-053378F6E4DB}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4F15669B-92EB-49F0-B774-8F19BAE0B960} = {4F15669B-92EB-49F0-B774-8F19BAE0B960}
@@ -27,6 +29,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jni", "..\..\jni\project\vs\jni.vcxproj", "{4F7E4917-4612-4B96-9838-025711ADE391}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "thin-client", "..\..\thin-client\project\vs\thin-client.vcxproj", "{5C037386-B5F5-4A58-9EE2-3D3A508AA866}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "thin-client-test", "..\..\thin-client-test\project\vs\thin-client-test.vcxproj", "{5662F10A-9C40-45D6-AFF8-E93573FEAABA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -108,6 +112,14 @@ Global
 		{5C037386-B5F5-4A58-9EE2-3D3A508AA866}.Release|Win32.Build.0 = Release|Win32
 		{5C037386-B5F5-4A58-9EE2-3D3A508AA866}.Release|x64.ActiveCfg = Release|x64
 		{5C037386-B5F5-4A58-9EE2-3D3A508AA866}.Release|x64.Build.0 = Release|x64
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Debug|Win32.Build.0 = Debug|Win32
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Debug|x64.ActiveCfg = Debug|x64
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Debug|x64.Build.0 = Debug|x64
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Release|Win32.ActiveCfg = Release|Win32
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Release|Win32.Build.0 = Release|Win32
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Release|x64.ActiveCfg = Release|x64
+		{5662F10A-9C40-45D6-AFF8-E93573FEAABA}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -28,6 +28,7 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/impl/thin/net/tcp_socket_client.h>
 #include "ignite/ignite_error.h"
+#include <iostream>
 
 namespace
 {
@@ -113,6 +114,8 @@ namespace ignite
                     static common::concurrent::CriticalSection initCs;
                     static bool networkInited = false;
 
+                    std::cout << hostname << ":" << port << std::endl;
+
                     // Initing networking if is not inited.
                     if (!networkInited)
                     {
@@ -147,7 +150,8 @@ namespace ignite
 
                     if (res != 0)
                     {
-//                        std::string err = "Address resolving failed: " + GetLastSocketErrorMessage();
+                        std::string err = "Address resolving failed: " + GetLastSocketErrorMessage();
+                        std::cout << err << std::endl;
 
                         return false;
                     }
@@ -175,7 +179,8 @@ namespace ignite
 
                             if (lastError != WSAEWOULDBLOCK)
                             {
-                                //std::string err = "Connection failed: " + GetSocketErrorMessage(lastError);
+                                std::string err = "Connection failed: " + GetSocketErrorMessage(lastError);
+                                std::cout << err << std::endl;
 
                                 Close();
 
@@ -186,7 +191,8 @@ namespace ignite
 
                             if (res < 0 || res == WaitResult::TIMEOUT)
                             {
-                                //std::string err = "Connection timeout expired: " + GetSocketErrorMessage(-res));
+                                std::string err = "Connection timeout expired: " + GetSocketErrorMessage(-res);
+                                std::cout << err << std::endl;
 
                                 Close();
 
@@ -329,7 +335,7 @@ namespace ignite
     #else // use old hardcore WSAIoctl
 
                     // WinSock structure for KeepAlive timing settings
-                    struct tcp_keepalive settings = {0};
+                    struct tcp_keepalive settings = { 0 };
                     settings.onoff = 1;
                     settings.keepalivetime = KEEP_ALIVE_IDLE_TIME * 1000;
                     settings.keepaliveinterval = KEEP_ALIVE_PROBES_PERIOD * 1000;

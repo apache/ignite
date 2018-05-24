@@ -46,7 +46,7 @@ namespace ignite
          * This is an entry point for Thin C++ Ignite client. Its main
          * purpose is to establish connection to the remote server node.
          */
-        class IgniteClient
+        class IGNITE_IMPORT_EXPORT IgniteClient
         {
         public:
             /**
