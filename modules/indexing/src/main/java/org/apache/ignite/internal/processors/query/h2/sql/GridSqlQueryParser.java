@@ -578,10 +578,14 @@ public class GridSqlQueryParser {
      * @return Whether {@code p} is an {@code SELECT FOR UPDATE} query.
      */
     public static boolean isForUpdateQuery(Prepared p) {
-        if (!p.isQuery())
-            return false;
+        boolean union;
 
-        boolean union = ((Query)p).isUnion();
+        if (p.getClass() == Select.class)
+            union = false;
+        else if (p.getClass() == SelectUnion.class)
+            union = true;
+        else
+            return false;
 
         boolean forUpdate = (!union && SELECT_IS_FOR_UPDATE.get((Select)p)) ||
             (union && UNION_IS_FOR_UPDATE.get((SelectUnion)p));
