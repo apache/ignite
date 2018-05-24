@@ -360,7 +360,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         evt = ctx.event();
     }
 
-    /** For test purposes only. */
+    /**
+     * For test purposes only.
+     *
+     * @param ioFactory IO factory.
+     */
     public void setFileIOFactory(FileIOFactory ioFactory) {
         this.ioFactory = ioFactory;
     }

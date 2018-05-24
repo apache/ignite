@@ -186,7 +186,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration cfg1 = new DataStorageConfiguration();
 
-        cfg1.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(512 * 1024 * 1024L));
+        cfg1.setDefaultDataRegionConfiguration(new DataRegionConfiguration().setMaxSize(512L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(cfg1);
 
