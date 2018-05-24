@@ -193,6 +193,20 @@ public interface DataStorageMetrics {
     public long getTotalAllocatedSize();
 
     /**
+     * Gets used checkpoint buffer size in pages.
+     *
+     * @return Checkpoint buffer size in pages.
+     */
+    public long getUsedCheckpointBufferPages();
+
+    /**
+     * Gets used checkpoint buffer size in bytes.
+     *
+     * @return Checkpoint buffer size in bytes.
+     */
+    public long getUsedCheckpointBufferSize();
+
+    /**
      * Checkpoint buffer size in bytes.
      *
      * @return Checkpoint buffer size in bytes.

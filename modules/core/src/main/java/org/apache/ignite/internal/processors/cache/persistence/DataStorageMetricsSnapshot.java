@@ -72,6 +72,12 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     private long checkpointTotalTime;
 
     /** */
+    private long usedCheckpointBufferSize;
+
+    /** */
+    private long usedCheckpointBufferPages;
+
+    /** */
     private long checkpointBufferSize;
 
     /** */
@@ -115,6 +121,8 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
         walTotalSize = metrics.getWalTotalSize();
         walLastRollOverTime = metrics.getWalLastRollOverTime();
         checkpointTotalTime = metrics.getCheckpointTotalTime();
+        usedCheckpointBufferSize = metrics.getUsedCheckpointBufferSize();
+        usedCheckpointBufferPages = metrics.getUsedCheckpointBufferPages();
         checkpointBufferSize = metrics.getCheckpointBufferSize();
         dirtyPages = metrics.getDirtyPages();
         readPages = metrics.getPagesRead();
@@ -238,6 +246,16 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedSize() {
         return totalAllocatedSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getUsedCheckpointBufferPages() {
+        return usedCheckpointBufferPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getUsedCheckpointBufferSize() {
+        return usedCheckpointBufferSize;
     }
 
     /** {@inheritDoc} */

@@ -132,7 +132,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     @Override public long getTotalAllocatedSize() {
         assert pageMem != null;
 
-        return getTotalAllocatedPages() * pageMem.pageSize();
+        return getTotalAllocatedPages() * (persistenceEnabled ? pageMem.pageSize() : pageMem.systemPageSize());
     }
 
     /** {@inheritDoc} */
