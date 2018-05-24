@@ -35,6 +35,12 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
     /** Caches. */
     private Set<String> caches;
 
+    /** Check first K elements. */
+    private int checkFirst;
+
+    /** Check through K element (skip K-1, check Kth). */
+    private int checkThrough;
+
     /**
      * Default constructor.
      */
@@ -45,8 +51,10 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
     /**
      * @param caches Caches.
      */
-    public VisorValidateIndexesTaskArg(Set<String> caches) {
+    public VisorValidateIndexesTaskArg(Set<String> caches, int checkFirst, int checkThrough) {
         this.caches = caches;
+        this.checkFirst = checkFirst;
+        this.checkThrough = checkThrough;
     }
 
 
@@ -57,14 +65,44 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
         return caches;
     }
 
+    /**
+     * @return checkFirst.
+     */
+    public int getCheckFirst() {
+        return checkFirst;
+    }
+
+    /**
+     * @return checkThrough.
+     */
+    public int getCheckThrough() {
+        return checkThrough;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeCollection(out, caches);
+        out.writeInt(checkFirst);
+        out.writeInt(checkThrough);
     }
 
     /** {@inheritDoc} */
     @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         caches = U.readSet(in);
+
+        if (protoVer > V1) {
+            checkFirst = in.readInt();
+            checkThrough = in.readInt();
+        }
+        else {
+            checkFirst = -1;
+            checkThrough = -1;
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
     }
 
     /** {@inheritDoc} */
