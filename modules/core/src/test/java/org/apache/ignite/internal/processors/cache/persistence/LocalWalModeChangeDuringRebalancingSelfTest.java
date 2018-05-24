@@ -49,7 +49,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Assert;
 
 /**
  *
@@ -63,8 +62,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
     /** */
     private static final AtomicReference<CountDownLatch> fileIOLatch = new AtomicReference<>();
-
-    private boolean client = false;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -86,12 +83,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         cfg.setCacheConfiguration(
             new CacheConfiguration(DEFAULT_CACHE_NAME)
                 // Test checks internal state before and after rebalance, so it is configured to be triggered manually
-                .setRebalanceDelay(-1),
-
-            new CacheConfiguration("cache")
-                // Test checks internal state before and after rebalance, so it is configured to be triggered manually
                 .setRebalanceDelay(-1)
-                .setBackups(1)
         );
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi() {
@@ -141,9 +133,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING,
             Boolean.toString(disableWalDuringRebalancing));
-
-        if (client)
-            cfg.setClientMode(true);
 
         return cfg;
     }
@@ -273,40 +262,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void test2() throws Exception {
-        Ignite ignite = startGrids(3);
-
-        ignite.cluster().active(true);
-
-        IgniteCache<Integer, Integer> cache = ignite.cache("cache");
-
-        for (int k = 0; k < 10_000; k++)
-            cache.put(k, k);
-
-        stopGrid(2);
-
-        for (int k = 0; k < 10_000; k++)
-            cache.put(k, k * 2);
-
-        IgniteEx g2 = startGrid(2);
-
-        for (Ignite g : G.allGrids())
-            g.cache("cache").rebalance();
-
-        awaitPartitionMapExchange();
-
-        IgniteCache<Integer, Integer> cache2 = g2.cache("cache");
-
-        for (int k = 0; k < 10_000; k++) {
-            Assert.assertEquals(k * 2, (int) cache2.get(k));
-        }
-
-        int k = 2;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testLocalAndGlobalWalStateInterdependence() throws Exception {
         Ignite ignite = startGrids(3);
 
@@ -381,11 +336,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         assertFalse(grpCtx.walEnabled());
 
-        client = true;
-
+        // TODO : test with client node as well
         startGrid(4); // Trigger exchange
-
-        client = false;
 
         assertFalse(grpCtx.walEnabled());
 

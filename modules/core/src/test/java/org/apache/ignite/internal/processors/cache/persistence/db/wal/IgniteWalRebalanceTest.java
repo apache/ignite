@@ -346,6 +346,9 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
             }
         }
 
+        /**
+         * @return All topology versions for all groups where WAL rebalance has been used.
+         */
         public Map<Integer, Set<Long>> all() {
             synchronized (mux) {
                 return Collections.unmodifiableMap(topVers);
