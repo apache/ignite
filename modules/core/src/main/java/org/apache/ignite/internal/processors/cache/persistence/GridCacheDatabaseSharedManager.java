@@ -1091,10 +1091,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 int idx = checkPointBufferIdxCnt.decrementAndGet();
 
+                long chunkSize = nextMemoryRegion.size();
+
+                // Checkpoint chunk last in the long[] chunkSizes.
                 if (idx != 0)
-                    memMetrics.updateOffHeapSize(nextMemoryRegion.size());
+                    memMetrics.updateOffHeapSize(chunkSize);
                 else
-                    memMetrics.updateCheckpointBufferSize(nextMemoryRegion.size());
+                    memMetrics.updateCheckpointBufferSize(chunkSize);
 
                 return nextMemoryRegion;
             }
