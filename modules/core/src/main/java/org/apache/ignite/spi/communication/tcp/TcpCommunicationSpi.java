@@ -158,6 +158,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
+import static org.apache.ignite.internal.util.worker.GridWorker.DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS;
 import static org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture.SES_FUT_META;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
@@ -4222,7 +4223,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 ? ((IgniteEx)ignite).context().workersRegistry()
                 : null;
 
-            worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
+            worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry, workerRegistry,
+                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS) {
                 @Override protected void body() throws InterruptedException {
                     workerBody();
                 }

@@ -94,6 +94,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.LoggerNodeIdAware;
@@ -1817,7 +1818,7 @@ public class IgnitionEx {
 
             validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
 
-            GridWorkerListener workerRegistryWrapper = new GridWorkerListener() {
+            class WorkerRegistryWrapper implements GridWorkerListener, GridWorkerIdlenessHandler {
                 @Override public void onStarted(GridWorker w) {
                     Thread t = new Thread(() -> {
                         U.awaitQuiet(startLatch);
@@ -1835,7 +1836,14 @@ public class IgnitionEx {
                     if (grid != null && grid.context() != null && grid.context().workersRegistry() != null)
                         grid.context().workersRegistry().onStopped(w);
                 }
-            };
+
+                @Override public void onIdle(GridWorker w) {
+                    if (grid != null && grid.context() != null && grid.context().workersRegistry() != null)
+                        grid.context().workersRegistry().onIdle(w);
+                }
+            }
+
+            WorkerRegistryWrapper workerRegistryWrapper = new WorkerRegistryWrapper();
 
             stripedExecSvc = new StripedExecutor(
                 cfg.getStripedPoolSize(),
@@ -1846,6 +1854,7 @@ public class IgnitionEx {
                     if (grid != null)
                         grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                 },
+                workerRegistryWrapper,
                 workerRegistryWrapper);
 
             // Note that since we use 'LinkedBlockingQueue', number of
@@ -1893,6 +1902,7 @@ public class IgnitionEx {
                         grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                 },
                 true,
+                workerRegistryWrapper,
                 workerRegistryWrapper);
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.

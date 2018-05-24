@@ -25,6 +25,8 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteFuture;
 
+import static org.apache.ignite.internal.util.worker.GridWorker.DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS;
+
 /**
  * Convenience adapter for cache managers.
  */
@@ -184,7 +186,8 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
     protected GridWorker makeWorker(String workerName, Runnable r) {
         WorkersRegistry workerRegistry = cctx.kernalContext().workersRegistry();
 
-        return new GridWorker(cctx.igniteInstanceName(), workerName, log, workerRegistry) {
+        return new GridWorker(cctx.igniteInstanceName(), workerName, log, workerRegistry, workerRegistry,
+            DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS) {
             @Override protected void body() {
                 r.run();
             }

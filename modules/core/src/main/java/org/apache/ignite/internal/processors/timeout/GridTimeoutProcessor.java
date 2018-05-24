@@ -148,8 +148,8 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
          *
          */
         TimeoutWorker() {
-            super(ctx.config().getIgniteInstanceName(), "grid-timeout-worker",
-                GridTimeoutProcessor.this.log, ctx.workersRegistry());
+            super(ctx.config().getIgniteInstanceName(), "grid-timeout-worker", GridTimeoutProcessor.this.log,
+                ctx.workersRegistry(), ctx.workersRegistry(), DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
         }
 
         /** {@inheritDoc} */

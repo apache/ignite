@@ -32,6 +32,9 @@ import org.jetbrains.annotations.Nullable;
  * with {@link Executor} implementations. Only for internal use.
  */
 public abstract class GridWorker implements Runnable {
+    /**  Default heartbeat timeout threshold in milliseconds, when exceeded, worker is considered as hanging. */
+    public final static long DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS = 30_000;
+
     /** Ignite logger. */
     protected final IgniteLogger log;
 
@@ -43,6 +46,9 @@ public abstract class GridWorker implements Runnable {
 
     /** */
     private final GridWorkerListener lsnr;
+
+    /** */
+    protected final GridWorkerIdlenessHandler idleHnd;
 
     /** */
     private volatile boolean finished;
@@ -57,6 +63,9 @@ public abstract class GridWorker implements Runnable {
     private volatile long heartbeatTimeMillis;
 
     /** */
+    private final long criticalHeartbeatTimeoutMs;
+
+    /** */
     private final Object mux = new Object();
 
     /**
@@ -68,15 +77,27 @@ public abstract class GridWorker implements Runnable {
      *      for logging and debugging purposes we separate the two.
      * @param log Grid logger to be used.
      * @param lsnr Listener for life-cycle events.
+     * @param idleHnd Idleness handler.
+     * @param criticalHeartbeatTimeoutMs heartbeat timeout threshold in milliseconds, when exceeded,
+     *      worker is considered as hanging.
      */
-    protected GridWorker(String igniteInstanceName, String name, IgniteLogger log, @Nullable GridWorkerListener lsnr) {
+    protected GridWorker(
+        String igniteInstanceName,
+        String name,
+        IgniteLogger log,
+        @Nullable GridWorkerListener lsnr,
+        @Nullable GridWorkerIdlenessHandler idleHnd,
+        long criticalHeartbeatTimeoutMs
+    ) {
         assert name != null;
         assert log != null;
 
         this.igniteInstanceName = igniteInstanceName;
         this.name = name;
-        this.lsnr = lsnr;
         this.log = log;
+        this.lsnr = lsnr;
+        this.idleHnd = idleHnd;
+        this.criticalHeartbeatTimeoutMs = criticalHeartbeatTimeoutMs;
     }
 
     /**
@@ -89,7 +110,7 @@ public abstract class GridWorker implements Runnable {
      * @param log Grid logger to be used.
      */
     protected GridWorker(@Nullable String igniteInstanceName, String name, IgniteLogger log) {
-        this(igniteInstanceName, name, log, null);
+        this(igniteInstanceName, name, log, null, null, DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
     }
 
     /** {@inheritDoc} */
@@ -273,5 +294,15 @@ public abstract class GridWorker implements Runnable {
     /** */
     public void updateHeartbeat() {
         heartbeatTimeMillis = System.currentTimeMillis();
+    }
+
+    /** */
+    public long heartbeatTimeMillis() {
+        return heartbeatTimeMillis;
+    }
+
+    /** Returns heartbeat timeout threshold in milliseconds, when exceeded, worker is considered as hanging. */
+    public long criticalHeartbeatTimeoutMs() {
+        return criticalHeartbeatTimeoutMs;
     }
 }

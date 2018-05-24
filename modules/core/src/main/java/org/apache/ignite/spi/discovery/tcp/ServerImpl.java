@@ -164,6 +164,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_CO
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_MODE;
+import static org.apache.ignite.internal.util.worker.GridWorker.DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.CHECK_FAILED;
@@ -2594,7 +2595,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 ? ((IgniteEx)spi.ignite()).context().workersRegistry()
                 : null;
 
-            worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
+            worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry, workerRegistry,
+                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS) {
                 @Override protected void body() throws InterruptedException {
                     workerBody();
                 }
@@ -5651,7 +5653,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         ? ((IgniteEx)spi.ignite()).context().workersRegistry()
                         : null;
 
-                    worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
+                    worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry, workerRegistry,
+                        DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS) {
                         @Override protected void body() {
                             workerBody();
                         }

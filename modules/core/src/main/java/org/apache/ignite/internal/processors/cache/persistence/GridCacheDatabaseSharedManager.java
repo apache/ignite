@@ -2969,7 +2969,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param log Logger.
          */
         protected Checkpointer(@Nullable String gridName, String name, IgniteLogger log) {
-            super(gridName, name, log, cctx.kernalContext().workersRegistry());
+            super(gridName, name, log, cctx.kernalContext().workersRegistry(), cctx.kernalContext().workersRegistry(),
+                DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
 
             scheduledCp = new CheckpointProgress(U.currentTimeMillis() + checkpointFreq);
 

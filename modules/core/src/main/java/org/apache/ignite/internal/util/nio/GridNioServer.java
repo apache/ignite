@@ -66,6 +66,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.GridWorkerIdlenessHandler;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -269,6 +270,7 @@ public class GridNioServer<T> {
      * @param msgQueueLsnr Message queue size listener.
      * @param readWriteSelectorsAssign If {@code true} then in/out connections are assigned to even/odd workers.
      * @param workerLsnr Worker lifecycle listener.
+     * @param idleHnd Idleness handler.
      * @param filters Filters for this server.
      * @throws IgniteCheckedException If failed.
      */
@@ -295,6 +297,7 @@ public class GridNioServer<T> {
         IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr,
         boolean readWriteSelectorsAssign,
         @Nullable GridWorkerListener workerLsnr,
+        @Nullable GridWorkerIdlenessHandler idleHnd,
         GridNioFilter... filters
     ) throws IgniteCheckedException {
         if (port != -1)
@@ -341,7 +344,8 @@ public class GridNioServer<T> {
             // This method will throw exception if address already in use.
             Selector acceptSelector = createSelector(locAddr);
 
-            acceptThread = new IgniteThread(new GridNioAcceptWorker(igniteInstanceName, "nio-acceptor", log, acceptSelector, workerLsnr));
+            acceptThread = new IgniteThread(new GridNioAcceptWorker(igniteInstanceName, "nio-acceptor", log,
+                acceptSelector, workerLsnr, idleHnd));
         }
         else {
             locAddr = null;
@@ -360,8 +364,8 @@ public class GridNioServer<T> {
                 threadName = "grid-nio-worker-" + srvName + "-" + i;
 
             AbstractNioClientWorker worker = directMode ?
-                new DirectNioClientWorker(i, igniteInstanceName, threadName, log, workerLsnr) :
-                new ByteBufferNioClientWorker(i, igniteInstanceName, threadName, log, workerLsnr);
+                new DirectNioClientWorker(i, igniteInstanceName, threadName, log, workerLsnr, idleHnd) :
+                new ByteBufferNioClientWorker(i, igniteInstanceName, threadName, log, workerLsnr, idleHnd);
 
             clientWorkers.add(worker);
 
@@ -1049,6 +1053,7 @@ public class GridNioServer<T> {
          * @param name Worker name.
          * @param log Logger.
          * @param workerLsnr Worker lifecycle listener.
+         * @param idleHnd Idleness handler.
          * @throws IgniteCheckedException If selector could not be created.
          */
         protected ByteBufferNioClientWorker(
@@ -1056,9 +1061,10 @@ public class GridNioServer<T> {
             @Nullable String igniteInstanceName,
             String name,
             IgniteLogger log,
-            @Nullable GridWorkerListener workerLsnr
+            @Nullable GridWorkerListener workerLsnr,
+            @Nullable GridWorkerIdlenessHandler idleHnd
         ) throws IgniteCheckedException {
-            super(idx, igniteInstanceName, name, log, workerLsnr);
+            super(idx, igniteInstanceName, name, log, workerLsnr, idleHnd);
 
             readBuf = directBuf ? ByteBuffer.allocateDirect(8 << 10) : ByteBuffer.allocate(8 << 10);
 
@@ -1225,6 +1231,7 @@ public class GridNioServer<T> {
          * @param name Worker name.
          * @param log Logger.
          * @param workerLsnr Worker lifecycle listener.
+         * @param idleHnd Idleness handler.
          * @throws IgniteCheckedException If selector could not be created.
          */
         protected DirectNioClientWorker(
@@ -1232,9 +1239,10 @@ public class GridNioServer<T> {
             @Nullable String igniteInstanceName,
             String name,
             IgniteLogger log,
-            @Nullable GridWorkerListener workerLsnr
+            @Nullable GridWorkerListener workerLsnr,
+            @Nullable GridWorkerIdlenessHandler idleHnd
         ) throws IgniteCheckedException {
-            super(idx, igniteInstanceName, name, log, workerLsnr);
+            super(idx, igniteInstanceName, name, log, workerLsnr, idleHnd);
         }
 
         /**
@@ -1754,6 +1762,7 @@ public class GridNioServer<T> {
          * @param name Worker name.
          * @param log Logger.
          * @param workerLsnr Worker lifecycle listener.
+         * @param idleHnd Idleness handler.
          * @throws IgniteCheckedException If selector could not be created.
          */
         AbstractNioClientWorker(
@@ -1761,9 +1770,10 @@ public class GridNioServer<T> {
             @Nullable String igniteInstanceName,
             String name,
             IgniteLogger log,
-            @Nullable GridWorkerListener workerLsnr
+            @Nullable GridWorkerListener workerLsnr,
+            @Nullable GridWorkerIdlenessHandler idleHnd
         ) throws IgniteCheckedException {
-            super(igniteInstanceName, name, log, workerLsnr);
+            super(igniteInstanceName, name, log, workerLsnr, idleHnd, DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
 
             createSelector();
 
@@ -2826,15 +2836,17 @@ public class GridNioServer<T> {
          * @param log Log.
          * @param selector Which will accept incoming connections.
          * @param workerLsnr Worker lifecycle listener.
+         * @param idleHnd Idleness handler.
          */
         protected GridNioAcceptWorker(
             @Nullable String igniteInstanceName,
             String name,
             IgniteLogger log,
             Selector selector,
-            @Nullable GridWorkerListener workerLsnr
+            @Nullable GridWorkerListener workerLsnr,
+            @Nullable GridWorkerIdlenessHandler idleHnd
         ) {
-            super(igniteInstanceName, name, log, workerLsnr);
+            super(igniteInstanceName, name, log, workerLsnr, idleHnd, DFLT_CRITICAL_HEARTBEAT_TIMEOUT_MS);
 
             this.selector = selector;
         }
@@ -3633,6 +3645,9 @@ public class GridNioServer<T> {
         /** */
         private GridWorkerListener workerListener;
 
+        /** */
+        private GridWorkerIdlenessHandler idleHnd;
+
         /**
          * Finishes building the instance.
          *
@@ -3663,6 +3678,7 @@ public class GridNioServer<T> {
                 msgQueueLsnr,
                 readWriteSelectorsAssign,
                 workerListener,
+                idleHnd,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -3924,6 +3940,16 @@ public class GridNioServer<T> {
          */
         public Builder<T> workerListener(GridWorkerListener workerLsnr) {
             this.workerListener = workerLsnr;
+
+            return this;
+        }
+
+        /**
+         * @param idleHnd Idleness handler.
+         * @return This for chaining.
+         */
+        public Builder<T> idlenessHandler(GridWorkerIdlenessHandler idleHnd) {
+            this.idleHnd = idleHnd;
 
             return this;
         }
