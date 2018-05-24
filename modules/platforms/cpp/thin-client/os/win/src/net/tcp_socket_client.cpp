@@ -114,7 +114,8 @@ namespace ignite
                     static common::concurrent::CriticalSection initCs;
                     static bool networkInited = false;
 
-                    std::cout << hostname << ":" << port << std::endl;
+                    //TODO: implement logging
+                    //std::cout << hostname << ":" << port << std::endl;
 
                     // Initing networking if is not inited.
                     if (!networkInited)
@@ -150,8 +151,9 @@ namespace ignite
 
                     if (res != 0)
                     {
-                        std::string err = "Address resolving failed: " + GetLastSocketErrorMessage();
-                        std::cout << err << std::endl;
+                        // TODO implement logging.
+                        //std::string err = "Address resolving failed: " + GetLastSocketErrorMessage();
+                        //std::cout << err << std::endl;
 
                         return false;
                     }
@@ -179,8 +181,9 @@ namespace ignite
 
                             if (lastError != WSAEWOULDBLOCK)
                             {
-                                std::string err = "Connection failed: " + GetSocketErrorMessage(lastError);
-                                std::cout << err << std::endl;
+                                // TODO implement logging.
+                                //std::string err = "Connection failed: " + GetSocketErrorMessage(lastError);
+                                //std::cout << err << std::endl;
 
                                 Close();
 
@@ -191,8 +194,9 @@ namespace ignite
 
                             if (res < 0 || res == WaitResult::TIMEOUT)
                             {
-                                std::string err = "Connection timeout expired: " + GetSocketErrorMessage(-res);
-                                std::cout << err << std::endl;
+                                // TODO implement logging.
+                                //std::string err = "Connection timeout expired: " + GetSocketErrorMessage(-res);
+                                //std::cout << err << std::endl;
 
                                 Close();
 

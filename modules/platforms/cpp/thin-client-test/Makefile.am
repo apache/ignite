@@ -57,8 +57,9 @@ ignite_thin_client_tests_LDFLAGS = \
 
 ignite_thin_client_tests_SOURCES = \
 	src/ignite_client_test.cpp \
-	src/teamcity_messages.cpp \
-	src/teamcity_boost.cpp
+	src/ssl_test.cpp \
+	src/teamcity/teamcity_messages.cpp \
+	src/teamcity/teamcity_boost.cpp
 
 run-check: check
 	./ignite-thin-client-tests -p
