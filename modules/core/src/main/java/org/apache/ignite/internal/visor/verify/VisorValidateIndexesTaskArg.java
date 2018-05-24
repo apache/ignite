@@ -94,6 +94,11 @@ public class VisorValidateIndexesTaskArg extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(VisorValidateIndexesTaskArg.class, this);
     }
