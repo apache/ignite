@@ -292,4 +292,8 @@ public class SBLimitedLength extends GridStringBuilder {
             return res.toString();
         }
     }
+
+    public boolean isOverflowed() {
+        return lenLimit.overflowed(this);
+    }
 }

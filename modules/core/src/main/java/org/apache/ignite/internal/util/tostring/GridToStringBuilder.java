@@ -23,12 +23,14 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -39,9 +41,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -116,6 +116,14 @@ public class GridToStringBuilder {
         }
     };
 
+    /** Contains objects currently printing in the string builder. */
+    private static ThreadLocal<IdentityHashMap<Object, Integer>> savedObjects = new ThreadLocal<IdentityHashMap<Object, Integer>>() {
+        @Override protected IdentityHashMap<Object, Integer> initialValue() {
+            return new IdentityHashMap<>();
+        }
+    };
+
+    private static int i = 0;
 
     /**
      * Produces auto-generated output of string presentation for given object and its declaration class.
@@ -301,7 +309,7 @@ public class GridToStringBuilder {
         try {
             newStr = lenLim.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 5);
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 5, true);
         }
         finally {
             queue.offer(tmp);
@@ -392,7 +400,7 @@ public class GridToStringBuilder {
         try {
             newStr = lenLim.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 6);
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 6, true);
         }
         finally {
             queue.offer(tmp);
@@ -491,7 +499,7 @@ public class GridToStringBuilder {
         try {
             newStr = lenLim.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 7);
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 7, true);
         }
         finally {
             queue.offer(tmp);
@@ -594,7 +602,7 @@ public class GridToStringBuilder {
         try {
             newStr = lenLim.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 4);
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 4, true);
         }
         finally {
             queue.offer(tmp);
@@ -686,7 +694,7 @@ public class GridToStringBuilder {
         try {
             newStr = lenLim.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 3);
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 3, true);
         }
         finally {
             queue.offer(tmp);
@@ -763,7 +771,7 @@ public class GridToStringBuilder {
         try {
             newStr = lenLim.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 2);
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 2, true);
         }
         finally {
             queue.offer(tmp);
@@ -827,7 +835,7 @@ public class GridToStringBuilder {
         try {
             newStr = lenLim.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 1);
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 1, true);
         }
         finally {
             queue.offer(tmp);
@@ -866,7 +874,7 @@ public class GridToStringBuilder {
             newStr = lenLim.length() == 0;
 
             return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, tmp.getAdditionalNames(),
-                tmp.getAdditionalValues(), null, 0);
+                tmp.getAdditionalValues(), null, 0, true);
         }
         finally {
             queue.offer(tmp);
@@ -908,27 +916,43 @@ public class GridToStringBuilder {
      * @param val value to print
      */
     private static void toString(SBLimitedLength buf, Class<?> valClass, Object val) {
-        if (valClass.isArray())
-            buf.a(arrayToString(valClass, val));
-        else {
-            if (val instanceof Collection)
+        if (val == null) {
+            buf.a("null");
+
+            return;
+        }
+
+        if (checkObjectInBuffer(buf, val))
+            return;
+
+        try {
+            if (valClass.isArray())
+                addArr(buf, valClass, (Object[]) val);
+            else if (val instanceof Collection)
                 addCol(buf, (Collection) val);
             else if (val instanceof Map)
                 addMap(buf, (Map<?, ?>) val);
             else
-                buf.a(val);
+                toStringImpl((Class)val.getClass(), buf, val, new Object[] {}, new Object[] {}, null, 0, false);
+        }
+        finally {
+            savedObjects.get().remove(val);
         }
     }
 
+    /**
+     * @param buf buffer to print to.
+     * @param val value to print.
+     */
     private static void addCol(SBLimitedLength buf, Collection val) {
         buf.a(val.getClass().getSimpleName()).a(' ').a('[');
 
         int cnt = 0;
 
-        for (Object o : val) {
-            buf.a(o);
+        for (Object obj : val) {
+            toString(buf, obj);
 
-            if (++cnt == COLLECTION_LIMIT)
+            if (++cnt == COLLECTION_LIMIT || cnt == val.size())
                 break;
 
             buf.a(',').a(' ');
@@ -939,15 +963,23 @@ public class GridToStringBuilder {
         buf.a(']');
     }
 
+    /**
+     * @param buf buffer to print to.
+     * @param val value to print.
+     */
     private static <K, V> void addMap(SBLimitedLength buf, Map<K, V> val) {
         buf.a(val.getClass().getSimpleName()).a(' ').a('{');
 
         int cnt = 0;
 
         for (Map.Entry<K, V> e : val.entrySet()) {
-            buf.a(e.getKey()).a('=').a(e.getValue());
+            toString(buf, e.getKey());
 
-            if (++cnt == COLLECTION_LIMIT)
+            buf.a('=');
+
+            toString(buf, e.getValue());
+
+            if (++cnt == COLLECTION_LIMIT || cnt == val.size())
                 break;
 
             buf.a(',').a(' ');
@@ -975,6 +1007,7 @@ public class GridToStringBuilder {
      * @param addVals Additional values to be included.
      * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
      * @param addLen How many additional values will be included.
+     * @param isOuterCall Flag to reset string builder.
      * @return String presentation of the given object.
      * @param <T> Type of object.
      */
@@ -986,7 +1019,9 @@ public class GridToStringBuilder {
         Object[] addNames,
         Object[] addVals,
         @Nullable boolean[] addSens,
-        int addLen) {
+        int addLen,
+        boolean isOuterCall
+    ) {
         assert cls != null;
         assert buf != null;
         assert obj != null;
@@ -995,12 +1030,25 @@ public class GridToStringBuilder {
         assert addNames.length == addVals.length;
         assert addLen <= addNames.length;
 
+        if (isPrimitiveWraper(cls)) {
+            buf.a(String.valueOf(obj));
+
+            return null;
+        }
+
         try {
             GridToStringClassDescriptor cd = getClassDescriptor(cls);
 
             assert cd != null;
 
-            buf.setLength(0);
+            if (isOuterCall) {
+                buf.setLength(0);
+
+                // Real outer call will not have cached object, so method will return string later.
+                // Inner call don't need the returned string, so here we can return null.
+                if (checkObjectInBuffer(buf, obj))
+                    return null;
+            }
 
             buf.a(cd.getSimpleClassName()).a(" [");
 
@@ -1046,7 +1094,19 @@ public class GridToStringBuilder {
 
             // No other option here.
             throw new IgniteException(e);
+        } finally {
+            savedObjects.get().remove(obj);
         }
+    }
+
+    /**
+     * @param cls Class to be checked.
+     * @return True - if given class is primitive and is possible to call object's toString().
+     */
+    private static boolean isPrimitiveWraper(Class cls) {
+        return cls == Byte.class || cls == Short.class || cls == Integer.class || cls == Long.class ||
+            cls == Float.class || cls == Double.class  || cls == Boolean.class || cls == Character.class ||
+            cls == String.class || cls == StringBuilder.class || ByteBuffer.class.isAssignableFrom(cls);
     }
 
     /**
@@ -1068,6 +1128,10 @@ public class GridToStringBuilder {
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
     public static <T> String arrayToString(Class arrType, Object arr) {
+        return arrayToString(null, arrType, arr);
+    }
+
+    private static <T> String arrayToString(SBLimitedLength buf, Class arrType, Object arr) {
         if (arr == null)
             return "null";
 
@@ -1156,6 +1220,39 @@ public class GridToStringBuilder {
         }
 
         return res;
+    }
+
+    private static void addArr(SBLimitedLength buf, Class arrType, Object[] arr) {
+        if (arr == null)
+            return;
+
+        if (isPrimitiveArrayType(arrType)) {
+            buf.a(arrayToString(arrType, arr));
+
+            return;
+        }
+
+        buf.a(arrType.getSimpleName()).a(' ').a('[');
+
+        for (int i = 0; i < arr.length; i++) {
+            toString(buf, arr[i]);
+
+            if (i == COLLECTION_LIMIT - 1)
+                break;
+
+            if (i != arr.length - 1)
+                buf.a(',').a(" ");
+        }
+
+        checkOverflow(buf, arr.length);
+
+        buf.a(']');
+    }
+
+    private static boolean isPrimitiveArrayType(Class cls) {
+        return cls.equals(byte[].class) || cls.equals(boolean[].class) || cls.equals(short[].class) ||
+            cls.equals(int[].class) || cls.equals(long[].class) || cls.equals(float[].class) ||
+            cls.equals(double[].class) || cls.equals(char[].class);
     }
 
     /**
@@ -1884,5 +1981,60 @@ public class GridToStringBuilder {
         sb.a(']');
 
         return sb.toString();
+    }
+
+    /**
+     * @param buf String builder.
+     * @param obj Object.
+     * @return True if object is already saved. False if it wasn't saved previously, but now is saved.
+     */
+    private static boolean checkObjectInBuffer(SBLimitedLength buf, Object obj) {
+        if (isPrimitiveArrayType(obj.getClass()))
+            return false;
+
+        IdentityHashMap<Object, Integer> objs = savedObjects.get();
+
+        if (objs.containsKey(obj)) {
+            Integer pos = objs.get(obj);
+
+            if (pos == null)
+                throw new IllegalStateException("Wrong object was saved. [obj=" + obj + ']');
+
+            String name = obj.getClass().getSimpleName();
+            String hash = '@' + Integer.toHexString(System.identityHashCode(obj));
+            String savedName = name + hash;
+
+            if (!buf.isOverflowed() && buf.impl().indexOf(savedName, pos) != pos) {
+                buf.i(pos + name.length(), hash);
+
+                incValues(objs, obj, hash.length());
+            }
+
+            buf.a(savedName);
+
+            return true;
+        }
+
+        objs.put(obj, buf.length());
+
+        return false;
+    }
+
+    /**
+     * Increment positions of already presented objects afterward object.
+     *
+     * @param map Map with objects already presented in the buffer.
+     * @param obj Object.
+     * @param hashLen Length of the object's hash.
+     */
+    private static void incValues(IdentityHashMap<Object, Integer> map, Object obj, int hashLen) {
+        Integer baseline = map.get(obj);
+
+        for (IdentityHashMap.Entry<Object, Integer> entry : map.entrySet()) {
+            Integer pos = entry.getValue();
+
+            if (pos > baseline)
+                entry.setValue(pos + hashLen);
+        }
     }
 }
