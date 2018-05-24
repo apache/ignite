@@ -142,9 +142,10 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
         try {
             boolean res = GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {
+                    System.out.println("CHECK");
                     return svcs.service(svcName) != null;
                 }
-            }, 10 * 1000);
+            }, 60 * 1000);
 
             assertTrue("Service was not deployed", res);
 
@@ -156,7 +157,7 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
                 @Override public boolean apply() {
                     return svcs.service(svcName) == null;
                 }
-            }, 40 * 1000);
+            }, 60 * 1000);
 
             assertTrue("Service was not undeployed", res);
         }
