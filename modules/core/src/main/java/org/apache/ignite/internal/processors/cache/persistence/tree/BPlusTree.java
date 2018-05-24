@@ -4495,6 +4495,33 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     protected abstract T getRow(BPlusIO<L> io, long pageAddr, int idx, Object x) throws IgniteCheckedException;
 
     /**
+     * Get multiple rows from the given index.
+     *
+     * @param io IO.
+     * @param pageAddr Page address.
+     * @param startIdx Start index.
+     * @param cnt Count.
+     * @param x Implementation specific argument, {@code null} always means that we need to return full
+     *          detached data row.
+     * @param out Output buffer.
+     * @return How many rows were filled.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected int getRows(BPlusIO<L> io, long pageAddr, int startIdx, int cnt, Object x, Object[] out)
+        throws IgniteCheckedException {
+        int foundCnt = 0;
+
+        for (int i = 0; i < cnt; i++) {
+            T r = getRow(io, pageAddr, startIdx + i, x);
+
+            if (r != null)
+                out[foundCnt++] = r;
+        }
+
+        return foundCnt;
+    }
+
+    /**
      * Forward cursor.
      */
     @SuppressWarnings("unchecked")
@@ -4651,17 +4678,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             if (cnt == 0)
                 return false;
 
-            if (rows == EMPTY)
+            if (rows.length < cnt)
                 rows = (T[])new Object[cnt];
 
-            int foundCnt = 0;
-
-            for (int i = 0; i < cnt; i++) {
-                T r = getRow(io, pageAddr, startIdx + i, x);
-
-                if (r != null)
-                    rows = GridArrays.set(rows, foundCnt++, r);
-            }
+            int foundCnt = getRows(io, pageAddr, startIdx, cnt, x, rows);
 
             if (foundCnt == 0) {
                 rows = (T[])EMPTY;
