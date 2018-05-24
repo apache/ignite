@@ -1117,9 +1117,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (msg.topicOrdinal() == TOPIC_CACHE_COORDINATOR.ordinal()) {
             MvccMessage msg0 = (MvccMessage)msg.message();
 
-            if (msg0.processedFromNioThread())
+            // see IGNITE-8609
+            /*if (msg0.processedFromNioThread())
                 c.run();
-            else
+            else*/
                 ctx.getStripedExecutorService().execute(-1, c);
 
             return;
