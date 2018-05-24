@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Impl.Handle
     public class HandleRegistry
     {
         /** Default critical resources capacity. */
-        internal const int DfltFastCap = 1024;
+        private const int DfltFastCap = 1024;
 
         /** Array for fast-path. */
         private readonly object[] _fast;
@@ -239,6 +239,7 @@ namespace Apache.Ignite.Core.Impl.Handle
         /// <param name="id">Identifier.</param>
         /// <param name="throwOnAbsent">Whether to throw an exception if resource is not found.</param>
         /// <returns>Target.</returns>
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Global
         public T Get<T>(long id, bool throwOnAbsent)
         {
             object target;

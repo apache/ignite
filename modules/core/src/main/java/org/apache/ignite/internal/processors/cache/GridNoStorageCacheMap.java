@@ -22,35 +22,24 @@ import java.util.Collections;
 import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtOffHeapCacheEntry;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Empty cache map that will never store any entries.
  */
 public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
-    /** Context. */
-    private final GridCacheContext ctx;
-
-    /**
-     * @param ctx Cache context.
-     */
-    public GridNoStorageCacheMap(GridCacheContext ctx) {
-        this.ctx = ctx;
-    }
-
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry getEntry(KeyCacheObject key) {
+    @Nullable @Override public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
-        @Nullable CacheObject val, boolean create, boolean touch) {
+    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(GridCacheContext ctx, AffinityTopologyVersion topVer,
+        KeyCacheObject key,
+        boolean create,
+        boolean touch) {
         if (create)
-            return ctx.useOffheapEntry() ?
-                new GridDhtOffHeapCacheEntry(ctx, topVer, key, key.hashCode(), val) :
-                new GridDhtCacheEntry(ctx, topVer, key, key.hashCode(), val);
+            return new GridDhtCacheEntry(ctx, topVer, key);
         else
             return null;
     }
@@ -61,47 +50,32 @@ public class GridNoStorageCacheMap implements GridCacheConcurrentMap {
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
+    @Override public int internalSize() {
         return 0;
     }
 
     /** {@inheritDoc} */
-    @Override public int publicSize() {
+    @Override public int publicSize(int cacheId) {
         return 0;
     }
 
     /** {@inheritDoc} */
-    @Override public void incrementPublicSize(GridCacheEntryEx e) {
+    @Override public void incrementPublicSize(CacheMapHolder hld, GridCacheEntryEx e) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void decrementPublicSize(GridCacheEntryEx e) {
+    @Override public void decrementPublicSize(CacheMapHolder hld, GridCacheEntryEx e) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry randomEntry() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
+    @Override public Iterable<GridCacheMapEntry> entries(int cacheId, CacheEntryPredicate... filter) {
         return Collections.emptySet();
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<GridCacheMapEntry> entries(CacheEntryPredicate... filter) {
-        return Collections.emptySet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterable<GridCacheMapEntry> allEntries(CacheEntryPredicate... filter) {
-        return Collections.emptySet();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
+    @Override public Set<GridCacheMapEntry> entrySet(int cacheId, CacheEntryPredicate... filter) {
         return Collections.emptySet();
     }
 }

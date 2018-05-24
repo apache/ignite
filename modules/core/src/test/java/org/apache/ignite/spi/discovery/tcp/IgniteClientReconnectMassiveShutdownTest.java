@@ -45,7 +45,6 @@ import org.apache.ignite.transactions.Transaction;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -67,8 +66,8 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientMode(clientMode);
 
@@ -134,13 +133,11 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
 
         assertTrue(client.configuration().isClientMode());
 
-        final CacheConfiguration<String, Integer> cfg = new CacheConfiguration<>();
+        final CacheConfiguration<String, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setBackups(2);
-        cfg.setOffHeapMaxMemory(0);
-        cfg.setMemoryMode(OFFHEAP_TIERED);
 
         IgniteCache<String, Integer> cache = client.getOrCreateCache(cfg);
 
@@ -305,7 +302,7 @@ public class IgniteClientReconnectMassiveShutdownTest extends GridCommonAbstract
                 Object val = cache.get(key);
 
                 for (int i = srvsToKill; i < GRID_CNT; i++)
-                    assertEquals(val, ignite(i).cache(null).get(key));
+                    assertEquals(val, ignite(i).cache(DEFAULT_CACHE_NAME).get(key));
             }
         }
         finally {

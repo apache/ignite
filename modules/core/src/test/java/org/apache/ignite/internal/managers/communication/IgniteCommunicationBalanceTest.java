@@ -56,8 +56,8 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
     private int selectors;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpCommunicationSpi commSpi = ((TcpCommunicationSpi)cfg.getCommunicationSpi());
 
@@ -72,7 +72,17 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
+        if (sslEnabled())
+            cfg.setSslContextFactory(GridTestUtils.sslFactory());
+
         return cfg;
+    }
+
+    /**
+     * @return {@code True} to enable SSL.
+     */
+    protected boolean sslEnabled() {
+        return false;
     }
 
     /**
@@ -100,6 +110,9 @@ public class IgniteCommunicationBalanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBalance1() throws Exception {
+        if (sslEnabled())
+            return;
+
         System.setProperty(IgniteSystemProperties.IGNITE_IO_BALANCE_PERIOD, "5000");
 
         try {

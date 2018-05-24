@@ -32,25 +32,27 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
-import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.clock.GridClockSource;
-import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
+import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
-import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
+import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
-import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
-import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
+import org.apache.ignite.internal.processors.marshaller.GridMarshallerMappingProcessor;
+import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.pool.PoolProcessor;
@@ -63,6 +65,7 @@ import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
@@ -94,11 +97,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public UUID localNodeId();
 
     /**
-     * Gets grid name.
+     * Gets Ignite instance name.
      *
-     * @return Grid name.
+     * @return Ignite instance name.
      */
-    public String gridName();
+    public String igniteInstanceName();
 
     /**
      * Gets logger for given category.
@@ -164,25 +167,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridJobProcessor job();
 
     /**
-     * Gets offheap processor.
-     *
-     * @return Off-heap processor.
-     */
-    public GridOffHeapProcessor offheap();
-
-    /**
      * Gets timeout processor.
      *
      * @return Timeout processor.
      */
     public GridTimeoutProcessor timeout();
-
-    /**
-     * Gets time processor.
-     *
-     * @return Time processor.
-     */
-    public GridClockSyncProcessor clockSync();
 
     /**
      * Gets resource processor.
@@ -204,6 +193,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Cache processor.
      */
     public GridCacheProcessor cache();
+
+    /**
+     * Gets cluster state processor.
+     *
+     * @return Cluster state processor.
+     */
+    public GridClusterStateProcessor state();
 
     /**
      * Gets task session processor.
@@ -262,6 +258,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public <K, V> DataStreamProcessor<K, V> dataStream();
 
     /**
+     * Gets authentication processor.
+     *
+     * @return Authentication processor.
+     */
+    public IgniteAuthenticationProcessor authentication();
+
+    /**
      * Gets file system processor.
      *
      * @return File system processor.
@@ -297,6 +300,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public PoolProcessor pools();
 
     /**
+     * Gets grid marshaller mapping processor.
+     *
+     * @return Mapping processor.
+     */
+    public GridMarshallerMappingProcessor mapping();
+
+    /**
      * Gets Hadoop helper.
      *
      * @return Hadoop helper.
@@ -309,13 +319,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Utility cache pool.
      */
     public ExecutorService utilityCachePool();
-
-    /**
-     * Gets marshaller cache pool.
-     *
-     * @return Marshaller cache pool.
-     */
-    public ExecutorService marshallerCachePool();
 
     /**
      * Gets async callback pool.
@@ -339,11 +342,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridQueryProcessor query();
 
     /**
-     * Gets ODBC processor.
+     * Gets SQL listener processor.
      *
-     * @return ODBC processor.
+     * @return SQL listener processor.
      */
-    public OdbcProcessor odbc();
+    public ClientListenerProcessor sqlListener();
 
     /**
      * @return Plugin processor.
@@ -414,13 +417,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridLoadBalancerManager loadBalancing();
 
     /**
-     * Gets swap space manager.
-     *
-     * @return Swap space manager.
-     */
-    public GridSwapSpaceManager swap();
-
-    /**
      * Gets indexing manager.
      *
      * @return Indexing manager.
@@ -428,11 +424,11 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridIndexingManager indexing();
 
     /**
-     * Gets grid time source.
+     * Gets workers registry.
      *
-     * @return Time source.
+     * @return Workers registry.
      */
-    public GridClockSource timeSource();
+    public WorkersRegistry workersRegistry();
 
     /**
      * Gets data structures processor.
@@ -442,16 +438,16 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public DataStructuresProcessor dataStructures();
 
     /**
-     * Sets segmented flag to {@code true} when node is stopped due to segmentation issues.
+     * Checks whether this node is invalid due to a critical error or not.
+     *
+     * @return {@code True} if this node is invalid, {@code false} otherwise.
      */
-    public void markSegmented();
+    public boolean invalid();
 
     /**
-     * Gets segmented flag.
-     *
-     * @return {@code True} if network is currently segmented, {@code false} otherwise.
+     * Gets failure processor.
      */
-    public boolean segmented();
+    public FailureProcessor failure();
 
     /**
      * Print grid kernal memory stats (sizes of internal structures, etc.).
@@ -506,6 +502,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public ExecutorService getExecutorService();
 
     /**
+     * Executor service that is in charge of processing service proxy invocations.
+     *
+     * @return Thread pool implementation to be used in grid for service proxy invocations.
+     */
+    public ExecutorService getServiceExecutorService();
+
+    /**
      * Executor service that is in charge of processing internal system messages.
      *
      * @return Thread pool implementation to be used in grid for internal system messages.
@@ -543,6 +546,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public ExecutorService getIgfsExecutorService();
 
     /**
+     * Executor service that is in charge of processing data stream messages.
+     *
+     * @return Thread pool implementation to be used for data stream messages.
+     */
+    public StripedExecutor getDataStreamerExecutorService();
+
+    /**
      * Should return an instance of fully configured thread pool to be used for
      * processing of client messages (REST requests).
      *
@@ -564,6 +574,28 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Indexing executor service.
      */
     @Nullable public ExecutorService getIndexingExecutorService();
+
+    /**
+     * Executor service that is in charge of processing query messages.
+     *
+     * @return Thread pool implementation to be used in grid for query messages.
+     */
+    public ExecutorService getQueryExecutorService();
+
+
+    /**
+     * Executor services that is in charge of processing user compute task.
+     *
+     * @return Map of custom thread pool executors.
+     */
+    @Nullable public Map<String, ? extends ExecutorService> customExecutors();
+
+    /**
+     * Executor service that is in charge of processing schema change messages.
+     *
+     * @return Executor service that is in charge of processing schema change messages.
+     */
+    public ExecutorService getSchemaExecutorService();
 
     /**
      * Gets exception registry.
@@ -630,4 +662,14 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Platform processor.
      */
     public PlatformProcessor platform();
+
+    /**
+     * @return PDS mode folder name resolver, also generates consistent ID in case new folder naming is used
+     */
+    public PdsFoldersResolver pdsFolderResolver();
+
+    /**
+     * @return subscription processor to manage internal-only (strict node-local) subscriptions between components.
+     */
+    public GridInternalSubscriptionProcessor internalSubscriptionProcessor();
 }

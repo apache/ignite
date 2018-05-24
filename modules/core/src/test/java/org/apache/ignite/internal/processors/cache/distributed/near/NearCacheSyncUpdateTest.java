@@ -22,7 +22,6 @@ import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -33,8 +32,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,8 +45,8 @@ public class NearCacheSyncUpdateTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -66,33 +63,24 @@ public class NearCacheSyncUpdateTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNearCacheSyncUpdateAtomic1() throws Exception {
-        nearCacheSyncUpdateTx(ATOMIC, CLOCK);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNearCacheSyncUpdateAtomic2() throws Exception {
-        nearCacheSyncUpdateTx(ATOMIC, PRIMARY);
+    public void testNearCacheSyncUpdateAtomic() throws Exception {
+        nearCacheSyncUpdateTx(ATOMIC);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNearCacheSyncUpdateTx() throws Exception {
-        nearCacheSyncUpdateTx(TRANSACTIONAL, null);
+        nearCacheSyncUpdateTx(TRANSACTIONAL);
     }
 
     /**
      * @param atomicityMode Atomicity mode.
-     * @param writeOrderMode Write order mode.
      * @throws Exception If failed.
      */
-    private void nearCacheSyncUpdateTx(CacheAtomicityMode atomicityMode,
-        CacheAtomicWriteOrderMode writeOrderMode) throws Exception {
+    private void nearCacheSyncUpdateTx(CacheAtomicityMode atomicityMode) throws Exception {
         final IgniteCache<Integer, Integer> cache =
-            ignite(0).createCache(cacheConfiguration(atomicityMode, writeOrderMode));
+            ignite(0).createCache(cacheConfiguration(atomicityMode));
 
         try {
             final AtomicInteger idx = new AtomicInteger();
@@ -142,24 +130,21 @@ public class NearCacheSyncUpdateTest extends GridCommonAbstractTest {
             }, 10, "update-thread");
         }
         finally {
-            ignite(0).destroyCache(null);
+            ignite(0).destroyCache(DEFAULT_CACHE_NAME);
         }
     }
 
     /**
      * @param atomicityMode Atomicity mode.
-     * @param writeOrderMode Write order mode.
      * @return Cache configuration.
      */
-    private CacheConfiguration<Integer, Integer> cacheConfiguration(CacheAtomicityMode atomicityMode,
-        CacheAtomicWriteOrderMode writeOrderMode) {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+    private CacheConfiguration<Integer, Integer> cacheConfiguration(CacheAtomicityMode atomicityMode) {
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setBackups(1);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setAtomicWriteOrderMode(writeOrderMode);
         ccfg.setNearConfiguration(new NearCacheConfiguration<Integer, Integer>());
 
         return ccfg;

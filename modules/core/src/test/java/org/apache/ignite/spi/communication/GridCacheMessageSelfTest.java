@@ -89,8 +89,8 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -100,7 +100,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeEventTypes((int[])null);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
@@ -139,7 +139,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(SAMPLE_CNT);
 
         mgr1.addMessageListener(topic, new GridMessageListener() {
-            @Override public void onMessage(UUID nodeId, Object msg) {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
                 try {
                     latch.countDown();
 
@@ -194,7 +194,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             msg.add(mes2);
         }
 
-        mgr0.send(grid(1).localNode(), topic, msg, GridIoPolicy.PUBLIC_POOL);
+        mgr0.sendToCustomTopic(grid(1).localNode(), topic, msg, GridIoPolicy.PUBLIC_POOL);
 
         assert latch.await(3, SECONDS);
     }
@@ -202,7 +202,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestMessage extends GridCacheMessage {
         /** */
-        public static final byte DIRECT_TYPE = (byte)202;
+        public static final short DIRECT_TYPE = 202;
 
         /** */
         @GridDirectCollection(TestMessage1.class)
@@ -213,6 +213,16 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
          */
         public void add(TestMessage1 entry) {
             entries.add(entry);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int handlerId() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
         }
 
         /** {@inheritDoc} */
@@ -228,7 +238,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return DIRECT_TYPE;
         }
 
@@ -293,7 +303,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
     */
     static class TestMessage1 extends GridCacheMessage {
         /** */
-        public static final byte DIRECT_TYPE = (byte) 203;
+        public static final short DIRECT_TYPE = 203;
 
         /** Body. */
         private String body;
@@ -302,12 +312,22 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         private Message msg;
 
         /**
-         * @param mes Message.
+         * @param msg Message.
+         * @param body Message body.
          */
-        public void init(Message mes, String body) {
-            this.msg = mes;
-
+        public void init(Message msg, String body) {
+            this.msg = msg;
             this.body = body;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int handlerId() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
         }
 
         /** {@inheritDoc} */
@@ -330,7 +350,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return DIRECT_TYPE;
         }
 
@@ -409,7 +429,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
      */
     static class TestMessage2 extends GridCacheMessage {
         /** */
-        public static final byte DIRECT_TYPE = (byte) 205;
+        public static final short DIRECT_TYPE = 201;
 
         /** Node id. */
         private UUID nodeId;
@@ -431,6 +451,16 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             this.id = id;
             this.msg = mes;
             this.body = body;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int handlerId() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cacheGroupMessage() {
+            return false;
         }
 
         /** {@inheritDoc} */
@@ -467,7 +497,7 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             return DIRECT_TYPE;
         }
 

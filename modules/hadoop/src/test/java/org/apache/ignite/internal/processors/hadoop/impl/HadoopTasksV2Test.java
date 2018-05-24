@@ -26,7 +26,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.ignite.internal.processors.hadoop.HadoopDefaultJobInfo;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelperImpl;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
@@ -46,7 +46,7 @@ public class HadoopTasksV2Test extends HadoopTasksAllVersionsTest {
      * @return Hadoop job.
      * @throws Exception if fails.
      */
-    @Override public HadoopJob getHadoopJob(String inFile, String outFile) throws Exception {
+    @Override public HadoopJobEx getHadoopJob(String inFile, String outFile) throws Exception {
         Job job = Job.getInstance();
 
         job.setOutputKeyClass(Text.class);
@@ -65,7 +65,7 @@ public class HadoopTasksV2Test extends HadoopTasksAllVersionsTest {
 
         Job hadoopJob = HadoopWordCount2.getJob(inFile, outFile);
 
-        HadoopDefaultJobInfo jobInfo = createJobInfo(hadoopJob.getConfiguration());
+        HadoopDefaultJobInfo jobInfo = createJobInfo(hadoopJob.getConfiguration(), null);
 
         UUID uuid = new UUID(0, 0);
 

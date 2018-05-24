@@ -116,10 +116,10 @@ public class IgniteBenchmarkUtils {
 
         final boolean clientDriverNode = true;
 
-        final int extraNodes = 4;
+        final int extraNodes = 1;
 
-        final int warmUp = 5;
-        final int duration = 5;
+        final int warmUp = 60;
+        final int duration = 120;
 
         final int range = 100_000;
 
@@ -128,7 +128,7 @@ public class IgniteBenchmarkUtils {
         for (int i = 0; i < extraNodes; i++) {
             IgniteConfiguration nodeCfg = Ignition.loadSpringBean(cfg, "grid.cfg");
 
-            nodeCfg.setGridName("node-" + i);
+            nodeCfg.setIgniteInstanceName("node-" + i);
             nodeCfg.setMetricsLogFrequency(0);
 
             Ignition.start(nodeCfg);
@@ -143,6 +143,7 @@ public class IgniteBenchmarkUtils {
         addArg(args0, "-dn", benchmark.getSimpleName());
         addArg(args0, "-sn", "IgniteNode");
         addArg(args0, "-cfg", cfg);
+        addArg(args0, "-wom", "PRIMARY");
 
         if (throughputLatencyProbe)
             addArg(args0, "-pr", "ThroughputLatencyProbe");

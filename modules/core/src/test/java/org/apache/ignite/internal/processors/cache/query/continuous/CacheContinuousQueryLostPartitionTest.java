@@ -194,8 +194,8 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(name);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -204,7 +204,7 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
         cfg.setDiscoverySpi(spi);
         cfg.setCacheConfiguration(cache(TX_CACHE_NAME), cache(CACHE_NAME));
 
-        if (name.endsWith("3"))
+        if (igniteInstanceName.endsWith("3"))
             cfg.setClientMode(true);
 
         return cfg;

@@ -17,15 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
@@ -43,22 +49,29 @@ import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 
 /**
  * Failover tests for cache data structures.
@@ -68,13 +81,16 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     private static final long TEST_TIMEOUT = 3 * 60 * 1000;
 
     /** */
-    private static final String NEW_GRID_NAME = "newGrid";
+    private static final String NEW_IGNITE_INSTANCE_NAME = "newGrid";
 
     /** */
     private static final String STRUCTURE_NAME = "structure";
 
     /** */
     private static final String TRANSACTIONAL_CACHE_NAME = "tx_cache";
+
+    /** */
+    private static final String CLIENT_INSTANCE_NAME = "client";
 
     /** */
     private static final int TOP_CHANGE_CNT = 2;
@@ -120,8 +136,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -132,7 +148,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         cfg.setAtomicConfiguration(atomicCfg);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(TRANSACTIONAL_CACHE_NAME);
         ccfg.setAtomicityMode(TRANSACTIONAL);
@@ -145,6 +161,16 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         }
 
         return cfg;
+    }
+
+    /**
+     * Starts client node.
+     *
+     * @return client node.
+     * @throws Exception If failed.
+     */
+    protected IgniteEx startClient() throws Exception {
+        return startGrid(getConfiguration(CLIENT_INSTANCE_NAME).setClientMode(true));
     }
 
     /**
@@ -182,13 +208,13 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicLongTopologyChange() throws Exception {
         try (IgniteAtomicLong atomic = grid(0).atomicLong(STRUCTURE_NAME, 10, true)) {
-            Ignite g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals(10, g.atomicLong(STRUCTURE_NAME, 10, false).get());
 
             assertEquals(20, g.atomicLong(STRUCTURE_NAME, 10, false).addAndGet(10));
 
-            stopGrid(NEW_GRID_NAME);
+            stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals(20, grid(0).atomicLong(STRUCTURE_NAME, 10, true).get());
         }
@@ -244,13 +270,13 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicReferenceTopologyChange() throws Exception {
         try (IgniteAtomicReference atomic = grid(0).atomicReference(STRUCTURE_NAME, 10, true)) {
-            Ignite g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals((Integer)10, g.atomicReference(STRUCTURE_NAME, 10, false).get());
 
             g.atomicReference(STRUCTURE_NAME, 10, false).set(20);
 
-            stopGrid(NEW_GRID_NAME);
+            stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals((Integer)20, grid(0).atomicReference(STRUCTURE_NAME, 10, true).get());
         }
@@ -306,7 +332,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicStampedTopologyChange() throws Exception {
         try (IgniteAtomicStamped atomic = grid(0).atomicStamped(STRUCTURE_NAME, 10, 10, true)) {
-            Ignite g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             IgniteBiTuple<Integer, Integer> t = g.atomicStamped(STRUCTURE_NAME, 10, 10, false).get();
 
@@ -315,7 +341,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             g.atomicStamped(STRUCTURE_NAME, 10, 10, false).set(20, 20);
 
-            stopGrid(NEW_GRID_NAME);
+            stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
             t = grid(0).atomicStamped(STRUCTURE_NAME, 10, 10, false).get();
 
@@ -387,13 +413,13 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     public void testCountDownLatchTopologyChange() throws Exception {
         try (IgniteCountDownLatch latch = grid(0).countDownLatch(STRUCTURE_NAME, 20, true, true)) {
             try {
-                Ignite g = startGrid(NEW_GRID_NAME);
+                Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
                 assertEquals(20, g.countDownLatch(STRUCTURE_NAME, 20, true, false).count());
 
                 g.countDownLatch(STRUCTURE_NAME, 20, true, false).countDown(10);
 
-                stopGrid(NEW_GRID_NAME);
+                stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
                 assertEquals(10, grid(0).countDownLatch(STRUCTURE_NAME, 20, true, false).count());
             }
@@ -407,8 +433,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testSemaphoreFailoverSafe() throws Exception {
-        try (IgniteSemaphore semaphore = grid(0).semaphore(STRUCTURE_NAME, 20, true, true)) {
-            Ignite g = startGrid(NEW_GRID_NAME);
+        try (final IgniteSemaphore semaphore = grid(0).semaphore(STRUCTURE_NAME, 20, true, true)) {
+            Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             IgniteSemaphore semaphore2 = g.semaphore(STRUCTURE_NAME, 20, true, false);
 
@@ -416,9 +442,13 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             semaphore2.acquire(10);
 
-            stopGrid(NEW_GRID_NAME);
+            stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
-            assertEquals(10, semaphore.availablePermits());
+            waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    return semaphore.availablePermits() == 20;
+                }
+            }, 2000);
         }
     }
 
@@ -427,7 +457,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testSemaphoreNonFailoverSafe() throws Exception {
         try (IgniteSemaphore sem = grid(0).semaphore(STRUCTURE_NAME, 20, false, true)) {
-            Ignite g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             IgniteSemaphore sem2 = g.semaphore(STRUCTURE_NAME, 20, false, false);
 
@@ -437,7 +467,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             new Timer().schedule(new TimerTask() {
                 @Override public void run() {
-                    stopGrid(NEW_GRID_NAME);
+                    stopGrid(NEW_IGNITE_INSTANCE_NAME);
                 }
             }, 2000);
 
@@ -456,6 +486,78 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
+    public void testCanCloseSetInInterruptedThread() throws Exception {
+        doCloseByInterruptedThread(grid(0).set(STRUCTURE_NAME, new CollectionConfiguration()));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCanCloseQueueInInterruptedThread() throws Exception {
+        doCloseByInterruptedThread(grid(0).queue(STRUCTURE_NAME, 0, new CollectionConfiguration()));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCanCloseAtomicLongInInterruptedThread() throws Exception {
+        doCloseByInterruptedThread(grid(0).atomicLong(STRUCTURE_NAME, 10, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCanCloseAtomicReferenceInInterruptedThread() throws Exception {
+        doCloseByInterruptedThread(grid(0).atomicReference(STRUCTURE_NAME, 10, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCanCloseCountDownLatchInInterruptedThread() throws Exception {
+        IgniteCountDownLatch latch = grid(0).countDownLatch(STRUCTURE_NAME, 1, true, true);
+        latch.countDown();
+
+        doCloseByInterruptedThread(latch);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCanCloseAtomicStampedInInterruptedThread() throws Exception {
+        doCloseByInterruptedThread(grid(0).atomicStamped(STRUCTURE_NAME, 10, 10,true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCanCloseSemaphoreInInterruptedThread() throws Exception {
+        doCloseByInterruptedThread(grid(0).semaphore(STRUCTURE_NAME, 1, true, true));
+    }
+
+    /**
+     * Tries close datastructure in interrupted thread
+     *
+     * @param closeableDs DataStructure to close.
+     * @throws Exception If failed.
+     */
+    private void doCloseByInterruptedThread(final Closeable closeableDs) throws Exception {
+        Thread.currentThread().interrupt();
+
+        try {
+            closeableDs.close();
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        finally {
+            Thread.interrupted();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testSemaphoreSingleNodeFailure() throws Exception {
         final Ignite i1 = grid(0);
 
@@ -463,13 +565,18 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         sem1.acquire();
 
+        final CountDownLatch createLatch = new CountDownLatch(1);
+
         IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
-            @Override public Void call() throws Exception {
+            @Override public Void call() {
                 boolean failed = true;
 
                 IgniteSemaphore sem2 = i1.semaphore(STRUCTURE_NAME, 1, false, true);
 
                 try {
+                    // Guard the acquire call by count down latch to make sure that semaphore creation does not fail.
+                    createLatch.countDown();
+
                     sem2.acquire();
                 }
                 catch (Exception ignored){
@@ -484,10 +591,14 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             }
         });
 
-        while(!sem1.hasQueuedThreads()){
+        assertTrue("Failed to wait for semaphore creation",
+            createLatch.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+
+        while(!sem1.hasQueuedThreads()) {
             try {
                 Thread.sleep(1);
-            } catch (InterruptedException ignored) {
+            }
+            catch (InterruptedException ignored) {
                 fail();
             }
         }
@@ -529,8 +640,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     private void doTestSemaphore(ConstantTopologyChangeWorker topWorker, final boolean failoverSafe) throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1977");
-
         final int permits = topWorker instanceof MultipleTopologyChangeWorker ||
             topWorker instanceof PartitionedMultipleTopologyChangeWorker ? TOP_CHANGE_THREAD_CNT * 3 :
             TOP_CHANGE_CNT;
@@ -547,9 +656,14 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             break;
                         }
                         catch (IgniteInterruptedException e) {
-                            // Exception may happen in non failover safe mode.
+                           // Exception may happen in non failover safe mode.
                             if (failoverSafe)
                                 throw e;
+                            else {
+                                // In non-failoverSafe mode semaphore is not safe to be reused,
+                                // and should always be discarded after exception is caught.
+                                break;
+                            }
                         }
                     }
 
@@ -568,6 +682,11 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                         // Exception may happen in non failover safe mode.
                         if (failoverSafe)
                             throw e;
+                        else {
+                            // In non-failoverSafe mode semaphore is not safe to be reused,
+                            // and should always be discarded after exception is caught.
+                            break;
+                        }
                     }
                 }
 
@@ -580,8 +699,11 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
             fut.get();
 
-            for (Ignite g : G.allGrids())
-                assertEquals(permits, g.semaphore(STRUCTURE_NAME, permits, false, false).availablePermits());
+            // Semaphore is left in proper state only if failoverSafe mode is used.
+            if (failoverSafe) {
+                for (Ignite g : G.allGrids())
+                    assertEquals(permits, g.semaphore(STRUCTURE_NAME, permits, false, false).availablePermits());
+            }
         }
     }
 
@@ -614,9 +736,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         IgniteSemaphore semaphore = server.semaphore("sync", 0, true, true);
 
-        IgniteCompute compute = client.compute().withAsync();
-
-        compute.apply(new IgniteClosure<Ignite, Object>() {
+        IgniteFuture fut = client.compute().applyAsync(new IgniteClosure<Ignite, Object>() {
             @Override public Object apply(Ignite ignite) {
                 final IgniteLock l = ignite.reentrantLock("lock", true, fair, true);
 
@@ -662,7 +782,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         for (int i = 0; i < gridCount(); i++)
             stopGrid(i);
 
-        compute.future().get();
+        fut.get();
 
         client.close();
     }
@@ -726,10 +846,16 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /**
      * @throws Exception If failed.
      */
-    private void doTestReentrantLock(ConstantTopologyChangeWorker topWorker, final boolean failoverSafe, final boolean fair) throws Exception {
-        try (IgniteLock lock = grid(0).reentrantLock(STRUCTURE_NAME, failoverSafe, fair, true)) {
-            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
-                @Override public Object apply(Ignite ignite) {
+    private void doTestReentrantLock(
+        final ConstantTopologyChangeWorker topWorker,
+        final boolean failoverSafe,
+        final boolean fair
+    ) throws Exception {
+        IgniteEx ig = grid(0);
+
+        try (IgniteLock lock = ig.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, true)) {
+            IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Void>() {
+                @Override public Void apply(Ignite ignite) {
                     final IgniteLock l = ignite.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, false);
 
                     final AtomicBoolean done = new AtomicBoolean(false);
@@ -745,7 +871,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                             return null;
                         }
-                    });
+                    }, "lock-thread");
 
                     // Wait until l.lock() has been called.
                     while(!l.hasQueuedThreads() && !done.get()){
@@ -756,34 +882,39 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                 }
             });
 
+            long endTime = System.currentTimeMillis() + getTestTimeout();
+
             while (!fut.isDone()) {
-                while (true) {
-                    try {
-                        lock.lock();
-                    }
-                    catch (IgniteException e) {
-                        // Exception may happen in non-failoversafe mode.
-                        if (failoverSafe)
-                            throw e;
-                    }
-                    finally {
-                        // Broken lock cannot be used in non-failoversafe mode.
-                        if(!lock.isBroken() || failoverSafe) {
-                            assertTrue(lock.isHeldByCurrentThread());
+                try {
+                    lock.lock();
+                }
+                catch (IgniteException e) {
+                    // Exception may happen in non-failoversafe mode.
+                    if (failoverSafe)
+                        throw e;
+                }
+                finally {
+                    // Broken lock cannot be used in non-failoversafe mode.
+                    if(!lock.isBroken() || failoverSafe) {
+                        assertTrue(lock.isHeldByCurrentThread());
 
-                            lock.unlock();
+                        lock.unlock();
 
-                            assertFalse(lock.isHeldByCurrentThread());
-                        }
-                        break;
+                        assertFalse(lock.isHeldByCurrentThread());
                     }
                 }
+
+                if (System.currentTimeMillis() > endTime)
+                    fail("Failed to wait for topology change threads.");
             }
 
             fut.get();
 
-            for (Ignite g : G.allGrids())
-                assertFalse(g.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, false).isHeldByCurrentThread());
+            for (Ignite g : G.allGrids()){
+                IgniteLock l = g.reentrantLock(STRUCTURE_NAME, failoverSafe, fair, false);
+
+                assertTrue(g.name(), !l.isHeldByCurrentThread() || lock.isBroken());
+            }
         }
     }
 
@@ -844,13 +975,13 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         try {
             grid(0).queue(STRUCTURE_NAME, 0, config(false)).put(10);
 
-            Ignite g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals(10, (int)g.<Integer>queue(STRUCTURE_NAME, 0, null).poll());
 
             g.queue(STRUCTURE_NAME, 0, null).put(20);
 
-            stopGrid(NEW_GRID_NAME);
+            stopGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals(20, (int)grid(0).<Integer>queue(STRUCTURE_NAME, 0, null).peek());
         }
@@ -996,7 +1127,35 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testAtomicSequenceInitialization() throws Exception {
+        checkAtomicSequenceInitialization(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicSequenceInitializationOnStableNodes() throws Exception {
+        checkAtomicSequenceInitialization(true);
+    }
+
+    /**
+     * @param limitProjection {@code True} if test should call init only on stable nodes.
+     * @throws Exception If failed.
+     */
+    private void checkAtomicSequenceInitialization(boolean limitProjection) throws Exception {
         int threadCnt = 3;
+
+        IgniteCompute compute;
+
+        if (limitProjection) {
+            List<UUID> nodeIds = new ArrayList<>(gridCount());
+
+            for (int i = 0; i < gridCount(); i++)
+                nodeIds.add(grid(i).cluster().localNode().id());
+
+            compute = grid(0).compute(grid(0).cluster().forNodeIds(nodeIds));
+        }
+        else
+            compute = grid(0).compute();
 
         final AtomicInteger idx = new AtomicInteger(gridCount());
 
@@ -1024,20 +1183,29 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         }, threadCnt, "test-thread");
 
         while (!fut.isDone()) {
-            grid(0).compute().call(new IgniteCallable<Object>() {
+            compute.call(new IgniteCallable<Object>() {
                 /** */
                 @IgniteInstanceResource
                 private Ignite g;
 
-                @Override public Object call() throws Exception {
-                    IgniteAtomicSequence seq = g.atomicSequence(STRUCTURE_NAME, 1, true);
+                @Override public Object call() {
+                    try {
+                        IgniteAtomicSequence seq = g.atomicSequence(STRUCTURE_NAME, 1, true);
 
-                    assert seq != null;
+                        assert seq != null;
 
-                    for (int i = 0; i < 1000; i++)
-                        seq.getAndIncrement();
+                        for (int i = 0; i < 1000; i++)
+                            seq.getAndIncrement();
 
-                    return null;
+                        return null;
+                    }
+                    catch (IgniteException e) {
+                        // Fail if we are on stable nodes or exception is not node stop.
+                        if (limitProjection || !X.hasCause(e, NodeStoppingException.class))
+                            throw e;
+
+                        return null;
+                    }
                 }
             });
         }
@@ -1050,13 +1218,13 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testAtomicSequenceTopologyChange() throws Exception {
         try (IgniteAtomicSequence s = grid(0).atomicSequence(STRUCTURE_NAME, 10, true)) {
-            Ignite g = startGrid(NEW_GRID_NAME);
+            Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
             assertEquals(1010, g.atomicSequence(STRUCTURE_NAME, 10, false).get());
 
             assertEquals(1020, g.atomicSequence(STRUCTURE_NAME, 10, false).addAndGet(10));
 
-            stopGrid(NEW_GRID_NAME);
+            stopGrid(NEW_IGNITE_INSTANCE_NAME);
         }
     }
 
@@ -1064,7 +1232,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testAtomicSequenceConstantTopologyChange() throws Exception {
-        doTestAtomicSequence(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT));
+        doTestAtomicSequence(new ConstantTopologyChangeWorker(TOP_CHANGE_THREAD_CNT, true));
     }
 
     /**
@@ -1081,7 +1249,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     private void doTestAtomicSequence(ConstantTopologyChangeWorker topWorker) throws Exception {
-        try (IgniteAtomicSequence s = grid(0).atomicSequence(STRUCTURE_NAME, 1, true)) {
+        try (IgniteAtomicSequence s = startClient().atomicSequence(STRUCTURE_NAME, 1, true)) {
             IgniteInternalFuture<?> fut = topWorker.startChangingTopology(new IgniteClosure<Ignite, Object>() {
                 @Override public Object apply(Ignite ignite) {
                     assertTrue(ignite.atomicSequence(STRUCTURE_NAME, 1, false).get() > 0);
@@ -1116,7 +1284,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                Ignite g = startGrid(NEW_GRID_NAME);
+                Ignite g = startGrid(NEW_IGNITE_INSTANCE_NAME);
 
                 try {
                     g.transactions().txStart();
@@ -1126,7 +1294,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                     assertEquals(val + 1, g.atomicLong(STRUCTURE_NAME, val, false).incrementAndGet());
                 }
                 finally {
-                    stopGrid(NEW_GRID_NAME);
+                    stopGrid(NEW_IGNITE_INSTANCE_NAME);
                 }
 
                 return null;
@@ -1159,11 +1327,23 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         /** */
         private final int topChangeThreads;
 
+        /** Flag to enable circular topology change. */
+        private boolean circular;
+
         /**
          * @param topChangeThreads Number of topology change threads.
          */
         public ConstantTopologyChangeWorker(int topChangeThreads) {
             this.topChangeThreads = topChangeThreads;
+        }
+
+        /**
+         * @param topChangeThreads Number of topology change threads.
+         * @param circular flag to enable circular topology change.
+         */
+        public ConstantTopologyChangeWorker(int topChangeThreads, boolean circular) {
+            this.topChangeThreads = topChangeThreads;
+            this.circular = circular;
         }
 
         /**
@@ -1184,17 +1364,20 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                             int idx = nodeIdx.getAndIncrement();
 
-                            Thread.currentThread().setName("thread-" + getTestGridName(idx));
+                            Thread.currentThread().setName("thread-" + getTestIgniteInstanceName(idx));
 
                             try {
-                                log.info("Start node: " + getTestGridName(idx));
+                                log.info("Start node: " + getTestIgniteInstanceName(idx));
 
                                 Ignite g = startGrid(idx);
 
                                 cb.apply(g);
                             }
                             finally {
-                                stopGrid(idx);
+                                if(circular)
+                                    stopGrid(G.allGrids().get(0).configuration().getIgniteInstanceName());
+                                else
+                                    stopGrid(idx);
                             }
                         }
                     }

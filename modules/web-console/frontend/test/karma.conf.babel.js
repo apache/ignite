@@ -15,26 +15,29 @@
  * limitations under the License.
  */
 
-import webpackConfig from '../gulpfile.babel.js/webpack';
 import path from 'path';
 
-const basePath = path.resolve('./');
+import testCfg from '../webpack/webpack.test';
 
 export default (config) => {
     config.set({
         // Base path that will be used to resolve all patterns (eg. files, exclude).
-        basePath: basePath,
+        basePath: path.resolve('./'),
 
         // Frameworks to use available frameworks: https://npmjs.org/browse/keyword/karma-adapter
         frameworks: ['mocha'],
 
         // List of files / patterns to load in the browser.
         files: [
-            'test/**/*.test.js'
+            'node_modules/babel-polyfill/dist/polyfill.js',
+            'node_modules/angular/angular.js',
+            'node_modules/angular-mocks/angular-mocks.js',
+            'test/**/*.test.js',
+            'app/**/*.spec.js'
         ],
 
         plugins: [
-            require('karma-phantomjs-launcher'),
+            require('karma-chrome-launcher'),
             require('karma-teamcity-reporter'),
             require('karma-mocha-reporter'),
             require('karma-webpack'),
@@ -44,9 +47,10 @@ export default (config) => {
         // Preprocess matching files before serving them to the browser
         // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor.
         preprocessors: {
-            'test/**/*.js': ['webpack']
+            '{app,test}/**/*.js': ['webpack']
         },
-        webpack: webpackConfig,
+
+        webpack: testCfg,
 
         webpackMiddleware: {
             noInfo: true
@@ -55,7 +59,11 @@ export default (config) => {
         // Test results reporter to use
         // possible values: 'dots', 'progress'
         // available reporters: https://npmjs.org/browse/keyword/karma-reporter.
-        reporters: ['mocha'],
+        reporters: [process.env.TEST_REPORTER || 'mocha'],
+
+        mochaReporter: {
+            showDiff: true
+        },
 
         // web server port
         port: 9876,
@@ -72,7 +80,21 @@ export default (config) => {
 
         // start these browsers
         // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-        browsers: ['PhantomJS'],
+        browsers: ['ChromeHeadlessNoSandbox'],
+        customLaunchers: {
+            ChromeHeadlessNoSandbox: {
+                base: 'ChromeHeadless',
+                flags: ['--no-sandbox']
+            },
+            ChromeDebug: {
+                base: 'Chrome',
+                flags: [
+                    '--start-maximized',
+                    '--auto-open-devtools-for-tabs'
+                ],
+                debug: true
+            }
+        },
 
         // Continuous Integration mode
         // if true, Karma captures browsers, runs the tests and exits

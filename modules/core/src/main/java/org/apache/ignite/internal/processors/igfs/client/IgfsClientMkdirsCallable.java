@@ -49,11 +49,13 @@ public class IgfsClientMkdirsCallable extends IgfsClientAbstractCallable<Void> {
      * Constructor.
      *
      * @param igfsName IGFS name.
+     * @param user IGFS user name.
      * @param path Path.
      * @param props Properties.
      */
-    public IgfsClientMkdirsCallable(@Nullable String igfsName, IgfsPath path, @Nullable Map<String, String> props) {
-        super(igfsName, path);
+    public IgfsClientMkdirsCallable(@Nullable String igfsName, @Nullable String user, IgfsPath path,
+        @Nullable Map<String, String> props) {
+        super(igfsName, user, path);
 
         this.props = props;
     }

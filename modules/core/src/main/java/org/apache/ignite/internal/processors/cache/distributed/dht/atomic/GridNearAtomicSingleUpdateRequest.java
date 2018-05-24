@@ -57,9 +57,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
     /** Value to update. */
     protected CacheObject val;
 
-    /** Partition of key. */
-    protected int partId;
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -72,62 +69,45 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
      *
      * @param cacheId Cache ID.
      * @param nodeId Node ID.
-     * @param futVer Future version.
-     * @param fastMap Fast map scheme flag.
-     * @param updateVer Update version set if fast map is performed.
+     * @param futId Future ID.
      * @param topVer Topology version.
-     * @param topLocked Topology locked flag.
      * @param syncMode Synchronization mode.
      * @param op Cache update operation.
-     * @param retval Return value required flag.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
-     * @param skipStore Skip write-through to a persistent storage.
-     * @param keepBinary Keep binary flag.
-     * @param clientReq Client node request flag.
+     * @param flags Flags.
      * @param addDepInfo Deployment info flag.
      */
     GridNearAtomicSingleUpdateRequest(
         int cacheId,
         UUID nodeId,
-        GridCacheVersion futVer,
-        boolean fastMap,
-        @Nullable GridCacheVersion updateVer,
+        long futId,
         @NotNull AffinityTopologyVersion topVer,
-        boolean topLocked,
         CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
-        boolean retval,
         @Nullable UUID subjId,
         int taskNameHash,
-        boolean skipStore,
-        boolean keepBinary,
-        boolean clientReq,
+        byte flags,
         boolean addDepInfo
     ) {
-        super(
-            cacheId,
+        super(cacheId,
             nodeId,
-            futVer,
-            fastMap,
-            updateVer,
+            futId,
             topVer,
-            topLocked,
             syncMode,
             op,
-            retval,
             subjId,
             taskNameHash,
-            skipStore,
-            keepBinary,
-            clientReq,
+            flags,
             addDepInfo
         );
     }
 
     /** {@inheritDoc} */
     @Override public int partition() {
-        return partId;
+        assert key != null;
+
+        return key.partition();
     }
 
     /**
@@ -136,14 +116,12 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
      * @param conflictTtl Conflict TTL (optional).
      * @param conflictExpireTime Conflict expire time (optional).
      * @param conflictVer Conflict version (optional).
-     * @param primary If given key is primary on this mapping.
      */
     @Override public void addUpdateEntry(KeyCacheObject key,
         @Nullable Object val,
         long conflictTtl,
         long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer,
-        boolean primary) {
+        @Nullable GridCacheVersion conflictVer) {
         assert op != TRANSFORM;
         assert val != null || op == DELETE;
         assert conflictTtl < 0 : conflictTtl;
@@ -151,19 +129,18 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         assert conflictVer == null : conflictVer;
 
         this.key = key;
-        partId = key.partition();
 
         if (val != null) {
             assert val instanceof CacheObject : val;
 
             this.val = (CacheObject)val;
         }
-
-        hasPrimary(hasPrimary() | primary);
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
+        assert key != null;
+
         return key == null ? 0 : 1;
     }
 
@@ -253,8 +230,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
         if (val != null)
             val.finishUnmarshal(cctx.cacheObjectContext(), ldr);
-
-        key.partition(partId);
     }
 
     /** {@inheritDoc} */
@@ -272,19 +247,13 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
         }
 
         switch (writer.state()) {
-            case 11:
+            case 10:
                 if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
-            case 12:
-                if (!writer.writeInt("partId", partId))
-                    return false;
-
-                writer.incrementState();
-
-            case 13:
+            case 11:
                 if (!writer.writeMessage("val", val))
                     return false;
 
@@ -306,7 +275,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
             return false;
 
         switch (reader.state()) {
-            case 11:
+            case 10:
                 key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
@@ -314,15 +283,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
 
                 reader.incrementState();
 
-            case 12:
-                partId = reader.readInt("partId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 13:
+            case 11:
                 val = reader.readMessage("val");
 
                 if (!reader.isLastRead())
@@ -344,13 +305,13 @@ public class GridNearAtomicSingleUpdateRequest extends GridNearAtomicAbstractSin
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 125;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 14;
+        return 12;
     }
 
     /** {@inheritDoc} */

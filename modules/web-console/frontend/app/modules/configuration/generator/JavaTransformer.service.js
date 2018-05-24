@@ -15,9 +15,13 @@
  * limitations under the License.
  */
 
+import {nonEmpty} from 'app/utils/lodashMixins';
+
 import AbstractTransformer from './AbstractTransformer';
 import StringBuilder from './StringBuilder';
+import VersionService from 'app/services/Version.service';
 
+const versionService = new VersionService();
 const STORE_FACTORY = ['org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory'];
 
 // Descriptors for generation of demo data.
@@ -325,7 +329,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
         sb.append(`${this.varInit(clsName, id, vars)} = ${this._newBean(bean)};`);
 
-        if (_.nonEmpty(bean.properties)) {
+        if (nonEmpty(bean.properties)) {
             sb.emptyLine();
 
             this._setProperties(sb, bean, vars, limitLines, id);
@@ -384,12 +388,12 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                 return 'null';
 
             switch (clsName) {
-                case 'var':
-                    return item;
                 case 'byte':
                     return `(byte) ${item}`;
                 case 'float':
                     return `${item}f`;
+                case 'double':
+                    return `${item}`;
                 case 'long':
                     return `${item}L`;
                 case 'java.io.Serializable':
@@ -568,12 +572,17 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
                     break;
                 case 'EVENT_TYPES':
-                    if (prop.eventTypes.length === 1)
-                        this._setProperty(sb, id, prop.name, _.head(prop.eventTypes));
-                    else {
-                        sb.append(`int[] ${prop.id} = new int[${_.head(prop.eventTypes)}.length`);
+                    if (prop.eventTypes.length === 1) {
+                        const evtGrp = _.head(prop.eventTypes);
 
-                        _.forEach(_.tail(prop.eventTypes), (evtGrp) => {
+                        this._setProperty(sb, id, prop.name, evtGrp.label);
+                    }
+                    else {
+                        const evtGrp = _.map(prop.eventTypes, 'label');
+
+                        sb.append(`int[] ${prop.id} = new int[${_.head(evtGrp)}.length`);
+
+                        _.forEach(_.tail(evtGrp), (evtGrp) => {
                             sb.append(`    + ${evtGrp}.length`);
                         });
 
@@ -583,12 +592,12 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
                         sb.append('int k = 0;');
 
-                        _.forEach(prop.eventTypes, (evtGrp, evtIdx) => {
+                        _.forEach(evtGrp, (evtGrp, evtIdx) => {
                             sb.emptyLine();
 
                             sb.append(`System.arraycopy(${evtGrp}, 0, ${prop.id}, k, ${evtGrp}.length);`);
 
-                            if (evtIdx < prop.eventTypes.length - 1)
+                            if (evtIdx < evtGrp.length - 1)
                                 sb.append(`k += ${evtGrp}.length;`);
                         });
 
@@ -653,7 +662,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                 case 'MAP':
                     this._constructMap(sb, prop, vars);
 
-                    if (_.nonEmpty(prop.entries))
+                    if (nonEmpty(prop.entries))
                         sb.emptyLine();
 
                     this._setProperty(sb, id, prop.name, prop.id);
@@ -662,7 +671,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                 case 'java.util.Properties':
                     sb.append(`${this.varInit('Properties', prop.id, vars)} = new Properties();`);
 
-                    if (_.nonEmpty(prop.entries))
+                    if (nonEmpty(prop.entries))
                         sb.emptyLine();
 
                     _.forEach(prop.entries, (entry) => {
@@ -773,10 +782,14 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
                     break;
                 case 'ARRAY':
-                    imports.push(prop.typeClsName);
+                    if (!prop.varArg)
+                        imports.push(prop.typeClsName);
 
                     if (this._isBean(prop.typeClsName))
                         _.forEach(prop.items, (item) => imports.push(...this.collectBeanImports(item)));
+
+                    if (prop.typeClsName === 'java.lang.Class')
+                        _.forEach(prop.items, (item) => imports.push(item));
 
                     break;
                 case 'COLLECTION':
@@ -807,7 +820,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
     }
 
     static _prepareImports(imports) {
-        return _.sortedUniq(_.sortBy(_.filter(imports, (cls) => !cls.startsWith('java.lang.') && _.includes(cls, '.'))));
+        return _.sortedUniq(_.sortBy(_.filter(imports, (cls) => !_.startsWith(cls, 'java.lang.') && _.includes(cls, '.'))));
     }
 
     /**
@@ -820,10 +833,8 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         _.forEach(bean.properties, (prop) => {
             switch (prop.clsName) {
                 case 'EVENT_TYPES':
-                    _.forEach(prop.eventTypes, (value) => {
-                        const evtGrp = _.find(this.eventGroups, {value});
-
-                        imports.push(`${evtGrp.class}.${evtGrp.value}`);
+                    _.forEach(prop.eventTypes, (grp) => {
+                        imports.push(`${grp.class}.${grp.value}`);
                     });
 
                     break;
@@ -877,12 +888,15 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
      * Build Java startup class with configuration.
      *
      * @param {Bean} cfg
+     * @param {Object} targetVer Version of Ignite for generated project.
      * @param pkg Package name.
      * @param {String} clsName Class name for generate factory class otherwise generate code snippet.
      * @param {Array.<Object>} clientNearCaches Is client node.
      * @returns {StringBuilder}
      */
-    static igniteConfiguration(cfg, pkg, clsName, clientNearCaches) {
+    static igniteConfiguration(cfg, targetVer, pkg, clsName, clientNearCaches) {
+        const available = versionService.since.bind(versionService, targetVer.ignite);
+
         const sb = new StringBuilder();
 
         sb.append(`package ${pkg};`);
@@ -892,11 +906,11 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
         const nearCacheBeans = [];
 
-        if (_.nonEmpty(clientNearCaches)) {
+        if (nonEmpty(clientNearCaches)) {
             imports.push('org.apache.ignite.configuration.NearCacheConfiguration');
 
             _.forEach(clientNearCaches, (cache) => {
-                const nearCacheBean = this.generator.cacheNearClient(cache);
+                const nearCacheBean = this.generator.cacheNearClient(cache, available);
 
                 nearCacheBean.cacheName = cache.name;
 
@@ -1032,12 +1046,13 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
         return sb;
     }
 
-    static cluster(cluster, pkg, clsName, client) {
-        const cfg = this.generator.igniteConfiguration(cluster, client);
+    static cluster(cluster, targetVer, pkg, clsName, client) {
+        const cfg = this.generator.igniteConfiguration(cluster, targetVer, client);
 
-        const clientNearCaches = client ? _.filter(cluster.caches, (cache) => _.get(cache, 'clientNearConfiguration.enabled')) : [];
+        const clientNearCaches = client ? _.filter(cluster.caches, (cache) =>
+            cache.cacheMode === 'PARTITIONED' && _.get(cache, 'clientNearConfiguration.enabled')) : [];
 
-        return this.igniteConfiguration(cfg, pkg, clsName, clientNearCaches);
+        return this.igniteConfiguration(cfg, targetVer, pkg, clsName, clientNearCaches);
     }
 
     /**
@@ -1232,7 +1247,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
                     tempVar = true;
 
-                    fldHashCode = `${javaName} != +0.0f ? Float.floatToIntBits(${javaName}) : 0`;
+                    fldHashCode = '(int) (ig_hash_temp ^ (ig_hash_temp >>> 32))';
 
                     break;
                 default:
@@ -1282,14 +1297,14 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
                 // Process only  domains with 'generatePojo' flag and skip already generated classes.
                 if (domain.generatePojo && !_.find(pojos, {valueType: domain.valueType}) &&
                     // Skip domain models without value fields.
-                    _.nonEmpty(domain.valueFields)) {
+                    nonEmpty(domain.valueFields)) {
                     const pojo = {
                         keyType: domain.keyType,
                         valueType: domain.valueType
                     };
 
                     // Key class generation only if key is not build in java class.
-                    if (this.javaTypes.nonBuiltInClass(domain.keyType) && _.nonEmpty(domain.keyFields))
+                    if (this.javaTypes.nonBuiltInClass(domain.keyType) && nonEmpty(domain.keyFields))
                         pojo.keyClass = this.pojo(domain.keyType, domain.keyFields, addConstructor);
 
                     const valueFields = _.clone(domain.valueFields);
@@ -1355,10 +1370,10 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
         // Prepare array of cache and his demo domain model list. Every domain is contained only in first cache.
         const demoTypes = _.reduce(cachesWithDataSource, (acc, cache) => {
-            const domains = _.filter(cache.domains, (domain) => _.nonEmpty(domain.valueFields) &&
+            const domains = _.filter(cache.domains, (domain) => nonEmpty(domain.valueFields) &&
                 !_.includes(uniqDomains, domain));
 
-            if (_.nonEmpty(domains)) {
+            if (nonEmpty(domains)) {
                 uniqDomains.push(...domains);
 
                 acc.push({
@@ -1370,7 +1385,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
             return acc;
         }, []);
 
-        if (_.nonEmpty(demoTypes)) {
+        if (nonEmpty(demoTypes)) {
             // Group domain modes by data source
             const typeByDs = _.groupBy(demoTypes, ({cache}) => cache.cacheStoreFactory[cache.cacheStoreFactory.kind].dataSourceBean);
 
@@ -1582,7 +1597,7 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
         const sb = new StringBuilder();
 
-        const imports = ['org.apache.ignite.Ignition', 'org.apache.ignite.Ignite'];
+        const imports = ['org.apache.ignite.Ignition'];
 
         if (demo) {
             imports.push('org.h2.tools.Server', 'java.sql.Connection', 'java.sql.PreparedStatement',
@@ -1597,6 +1612,9 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
 
             shortFactoryCls = this.javaTypes.shortClassName(factoryCls);
         }
+
+        if ((nonEmpty(clientNearCaches) || demo) && shortFactoryCls)
+            imports.push('org.apache.ignite.Ignite');
 
         sb.append(`package ${pkg};`)
             .emptyLine();
@@ -1642,7 +1660,9 @@ export default class IgniteJavaTransformer extends AbstractTransformer {
             sb.emptyLine();
         }
 
-        if ((_.nonEmpty(clientNearCaches) || demo) && shortFactoryCls) {
+        if ((nonEmpty(clientNearCaches) || demo) && shortFactoryCls) {
+            imports.push('org.apache.ignite.Ignite');
+
             sb.append(`Ignite ignite = Ignition.start(${cfgRef});`);
 
             _.forEach(clientNearCaches, (cache, idx) => {

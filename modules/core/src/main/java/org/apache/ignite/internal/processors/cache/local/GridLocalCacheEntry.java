@@ -33,24 +33,17 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Cache entry for local caches.
  */
-@SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
+@SuppressWarnings({"TooBroadScope"})
 public class GridLocalCacheEntry extends GridCacheMapEntry {
-    /** Off-heap value pointer. */
-    private long valPtr;
-
     /**
      * @param ctx  Cache registry.
      * @param key  Cache key.
-     * @param hash Key hash value.
-     * @param val Entry value.
      */
     GridLocalCacheEntry(
         GridCacheContext ctx,
-        KeyCacheObject key,
-        int hash,
-        CacheObject val
+        KeyCacheObject key
     ) {
-        super(ctx, key, hash, val);
+        super(ctx, key);
     }
 
     /** {@inheritDoc} */
@@ -91,7 +84,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         CacheLockCandidates prev;
         CacheLockCandidates owner = null;
 
-        synchronized (this) {
+        lockEntry();
+
+        try {
             checkObsolete();
 
             if (serReadVer != null) {
@@ -131,6 +126,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
             val = this.val;
         }
+        finally {
+            unlockEntry();
+        }
 
         if (cand != null && !cand.reentry())
             cctx.mvcc().addNext(cctx, cand);
@@ -148,7 +146,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 
-        synchronized (this) {
+        lockEntry();
+
+        try {
             GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc != null) {
@@ -161,6 +161,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
             }
 
             val = this.val;
+        }
+        finally {
+            unlockEntry();
         }
 
         checkOwnerChanged(prev, owner, val);
@@ -202,7 +205,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 
-        synchronized (this) {
+        lockEntry();
+
+        try {
             GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc != null) {
@@ -216,13 +221,16 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
             val = this.val;
         }
+        finally {
+            unlockEntry();
+        }
 
         checkOwnerChanged(prev, owner, val);
     }
 
     /** {@inheritDoc} */
     @Override protected void checkThreadChain(GridCacheMvccCandidate owner) {
-        assert !Thread.holdsLock(this);
+        assert !lockedByCurrentThread();
 
         assert owner != null;
         assert owner.owner() || owner.used() : "Neither owner or used flags are set on ready local candidate: " +
@@ -275,7 +283,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         CacheLockCandidates prev = null;
         CacheLockCandidates owner = null;
 
-        synchronized (this) {
+        lockEntry();
+
+        try {
             GridCacheMvcc mvcc = mvccExtras();
 
             if (mvcc != null) {
@@ -290,6 +300,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
             }
 
             val = this.val;
+        }
+        finally {
+            unlockEntry();
         }
 
         if (prev != null) {
@@ -314,7 +327,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
         GridCacheMvccCandidate doomed;
 
-        synchronized (this) {
+        lockEntry();
+
+        try {
             GridCacheVersion obsoleteVer = obsoleteVersionExtras();
 
             if (obsoleteVer != null && !obsoleteVer.equals(ver))
@@ -337,6 +352,9 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
 
             val = this.val;
         }
+        finally {
+            unlockEntry();
+        }
 
         if (doomed != null)
             checkThreadChain(doomed);
@@ -347,22 +365,14 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean hasOffHeapPointer() {
-        return valPtr != 0;
-    }
+    @Override public String toString() {
+        lockEntry();
 
-    /** {@inheritDoc} */
-    @Override protected long offHeapPointer() {
-        return valPtr;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void offHeapPointer(long valPtr) {
-        this.valPtr = valPtr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public synchronized String toString() {
-        return S.toString(GridLocalCacheEntry.class, this, super.toString());
+        try {
+            return S.toString(GridLocalCacheEntry.class, this, super.toString());
+        }
+        finally {
+            unlockEntry();
+        }
     }
 }

@@ -31,7 +31,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -47,6 +49,7 @@ import org.apache.ignite.spi.communication.GridTestMessage;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
@@ -79,6 +82,9 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
     /** Use ssl. */
     protected boolean useSsl;
+
+    /** */
+    private static GridTimeoutProcessor timeoutProcessor;
 
     /**
      *
@@ -186,7 +192,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
      * @return Timeout.
      */
     protected long awaitForSocketWriteTimeout() {
-        return 8000;
+        return 20_000;
     }
 
     /**
@@ -298,6 +304,12 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
             // Send message to establish connection.
             spi0.sendMessage(node1, new GridTestMessage(node0.id(), msgId.incrementAndGet(), 0));
 
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return lsnr1.rcvCnt.get() >= 1;
+                }
+            }, 1000);
+
             final AtomicInteger sentCnt = new AtomicInteger(1);
 
             int errCnt = 0;
@@ -356,6 +368,8 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                     }, 60_000);
 
                     assertEquals(expMsgs, lsnr1.rcvCnt.get());
+
+                    assertTrue(waitForSessionsCount(spi1, 1));
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
@@ -413,6 +427,12 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
             // Send message to establish connection.
             spi0.sendMessage(node1, new GridTestMessage(node0.id(), msgId.incrementAndGet(), 0));
 
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return lsnr1.rcvCnt.get() >= 1;
+                }
+            }, 1000);
+
             expCnt1.incrementAndGet();
 
             int errCnt = 0;
@@ -451,7 +471,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                         ses1.resumeReads().get();
                     }
                     catch (IgniteCheckedException ignore) {
-                        // Can fail is ses1 was closed.
+                        // Can fail if ses1 was closed.
                     }
 
                     // Wait when session is closed, then try to open new connection from node1.
@@ -482,6 +502,9 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     assertEquals(expMsgs0, lsnr0.rcvCnt.get());
                     assertEquals(expMsgs1, lsnr1.rcvCnt.get());
+
+                    if (spi1.isUsePairedConnections())
+                        assertTrue(waitForSessionsCount(spi1, 2));
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
@@ -533,6 +556,12 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
             // Send message to establish connection.
             spi0.sendMessage(node1, new GridTestMessage(node0.id(), msgId.incrementAndGet(), 0));
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return lsnr1.rcvCnt.get() >= 1;
+                }
+            }, 1000);
 
             final AtomicInteger sentCnt = new AtomicInteger(1);
 
@@ -586,6 +615,8 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                     }, 60_000);
 
                     assertEquals(expMsgs, lsnr1.rcvCnt.get());
+
+                    assertTrue(waitForSessionsCount(spi1, 1));
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
@@ -616,6 +647,22 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
         finally {
             stopSpis();
         }
+    }
+
+    /**
+     * @param spi Spi.
+     *
+     * @return {@code true} if sessions count was achieved, {@code false} otherwise.
+     */
+    private boolean waitForSessionsCount(TcpCommunicationSpi spi, int cnt) throws IgniteInterruptedCheckedException {
+        return GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                Collection<? extends GridNioSession> sessions =
+                    GridTestUtils.getFieldValue(spi, "nioSrvr", "sessions");
+
+                return sessions.size() == cnt;
+            }
+        }, awaitForSocketWriteTimeout());
     }
 
     /**
@@ -686,10 +733,14 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
+        timeoutProcessor = new GridTimeoutProcessor(new GridTestKernalContext(log));
+
+        timeoutProcessor.start();
+
+        timeoutProcessor.onKernalStart(true);
+
         for (int i = 0; i < SPI_CNT; i++) {
             TcpCommunicationSpi spi = getSpi(i);
-
-            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
 
             IgniteTestResources rsrcs = new IgniteTestResources();
 
@@ -701,9 +752,13 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
             ctx.setLocalNode(node);
 
+            ctx.timeoutProcessor(timeoutProcessor);
+
             spiRsrcs.add(rsrcs);
 
             rsrcs.inject(spi);
+
+            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "igniteInstanceName", "grid-" + i);
 
             if (useSsl) {
                 IgniteMock ignite = GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "ignite");
@@ -720,7 +775,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
             nodes.add(node);
 
-            spi.spiStart(getTestGridName() + (i + 1));
+            spi.spiStart(getTestIgniteInstanceName() + (i + 1));
 
             spis.add(spi);
 
@@ -770,6 +825,14 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
      * @throws Exception If failed.
      */
     private void stopSpis() throws Exception {
+        if (timeoutProcessor != null) {
+            timeoutProcessor.onKernalStop(true);
+
+            timeoutProcessor.stop(true);
+
+            timeoutProcessor = null;
+        }
+
         for (CommunicationSpi<Message> spi : spis) {
             spi.onContextDestroyed();
 

@@ -56,11 +56,12 @@ namespace Apache.Ignite.Core.Events
         /// Initializes a new instance of the <see cref="EventBase"/> class.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected EventBase(IBinaryRawReader r)
         {
-            var id = IgniteGuid.Read(r);
-            Debug.Assert(id.HasValue);
-            _id = id.Value;
+            Debug.Assert(r != null);
+
+            _id = r.ReadObject<IgniteGuid>();
 
             _localOrder = r.ReadLong();
 

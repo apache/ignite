@@ -44,10 +44,10 @@ public abstract class CacheAbstractRestartSelfTest extends IgniteCacheAbstractTe
     private final ReentrantReadWriteLock rwl = new ReentrantReadWriteLock(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (gridName.equals(getTestGridName(gridCount() - 1)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(gridCount() - 1)))
             cfg.setClientMode(true);
 
         cfg.setPeerClassLoadingEnabled(false);

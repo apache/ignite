@@ -20,15 +20,15 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.io.EOFException;
 import java.io.IOException;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridLuceneOutputStream.BUFFER_SIZE;
 
 /**
  * A memory-resident {@link IndexInput} implementation.
  */
-public class GridLuceneInputStream extends IndexInput {
+public class GridLuceneInputStream extends IndexInput implements Cloneable {
     /** */
     private GridLuceneFile file;
 
@@ -53,6 +53,11 @@ public class GridLuceneInputStream extends IndexInput {
     /** */
     private final GridUnsafeMemory mem;
 
+    /** */
+    private volatile boolean closed;
+
+    /** */
+    private boolean isClone;
     /**
      * Constructor.
      *
@@ -61,11 +66,23 @@ public class GridLuceneInputStream extends IndexInput {
      * @throws IOException If failed.
      */
     public GridLuceneInputStream(String name, GridLuceneFile f) throws IOException {
+        this(name, f, f.getLength());
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param name Name.
+     * @param f File.
+     * @param length inputStream length.
+     * @throws IOException If failed.
+     */
+    public GridLuceneInputStream(String name, GridLuceneFile f, final long length) throws IOException {
         super("RAMInputStream(name=" + name + ")");
 
         file = f;
 
-        length = file.getLength();
+        this.length = length;
 
         if (length / BUFFER_SIZE >= Integer.MAX_VALUE)
             throw new IOException("RAMInputStream too large length=" + length + ": " + name);
@@ -80,7 +97,24 @@ public class GridLuceneInputStream extends IndexInput {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // nothing to do here
+        if (!isClone) {
+            closed = true;
+
+            file.releaseRef();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexInput clone() {
+        GridLuceneInputStream clone = (GridLuceneInputStream) super.clone();
+
+        if(closed)
+            throw new AlreadyClosedException(toString());
+
+        clone.isClone = true;
+
+        return clone;
+
     }
 
     /** {@inheritDoc} */
@@ -149,39 +183,14 @@ public class GridLuceneInputStream extends IndexInput {
     }
 
     /** {@inheritDoc} */
-    @Override public void copyBytes(IndexOutput out, long numBytes) throws IOException {
-        assert numBytes >= 0 : "numBytes=" + numBytes;
+    @Override
+    public IndexInput slice(final String sliceDescription, final long offset, final long length) throws IOException {
+        if (offset < 0 || length < 0 || offset + length > this.length)
+            throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: " + this);
 
-        GridLuceneOutputStream gridOut = out instanceof GridLuceneOutputStream ? (GridLuceneOutputStream)out : null;
+        final String newResourceDescription = (sliceDescription == null) ? toString() : (toString() + " [slice=" + sliceDescription + "]");
 
-        long left = numBytes;
-
-        while (left > 0) {
-            if (bufPosition == bufLength) {
-                ++currBufIdx;
-
-                switchCurrentBuffer(true);
-            }
-
-            final int bytesInBuf = bufLength - bufPosition;
-            final int toCp = (int)(bytesInBuf < left ? bytesInBuf : left);
-
-            if (gridOut != null)
-                gridOut.writeBytes(currBuf + bufPosition, toCp);
-            else {
-                byte[] buff = new byte[toCp];
-
-                mem.readBytes(currBuf + bufPosition, buff);
-
-                out.writeBytes(buff, toCp);
-            }
-
-            bufPosition += toCp;
-
-            left -= toCp;
-        }
-
-        assert left == 0 : "Insufficient bytes to copy: numBytes=" + numBytes + " copied=" + (numBytes - left);
+        return new SlicedInputStream(newResourceDescription, offset, length);
     }
 
     /**
@@ -225,5 +234,46 @@ public class GridLuceneInputStream extends IndexInput {
         }
 
         bufPosition = (int)(pos % BUFFER_SIZE);
+    }
+
+    /** */
+    private class SlicedInputStream extends GridLuceneInputStream {
+        /** */
+        private final long offset;
+
+        /** */
+        public SlicedInputStream(String newResourceDescription, long offset, long length) throws IOException {
+            super(newResourceDescription, GridLuceneInputStream.this.file, offset + length);
+
+            // Avoid parent resource closing together with this.
+            super.isClone = true;
+
+            this.offset = offset;
+
+            seek(0L);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void seek(long pos) throws IOException {
+            if (pos < 0L) {
+                throw new IllegalArgumentException("Seeking to negative position: " + this);
+            }
+            super.seek(pos + offset);
+        }
+
+        /** {@inheritDoc} */
+        @Override public long getFilePointer() {
+            return super.getFilePointer() - offset;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long length() {
+            return super.length() - offset;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IndexInput slice(String sliceDescription, long ofs, long len) throws IOException {
+            return super.slice(sliceDescription, offset + ofs, len);
+        }
     }
 }

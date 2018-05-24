@@ -31,13 +31,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
@@ -48,12 +46,10 @@ public class CacheIndexStreamerTest extends GridCommonAbstractTest {
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
-
-        cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         return cfg;
     }
@@ -91,7 +87,7 @@ public class CacheIndexStreamerTest extends GridCommonAbstractTest {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                     while (!stop.get()) {
-                        try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(null)) {
+                        try (IgniteDataStreamer<Integer, String> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
                             for (int i = 0; i < 1; i++)
                                 streamer.addData(rnd.nextInt(KEYS), String.valueOf(i));
                         }
@@ -138,12 +134,10 @@ public class CacheIndexStreamerTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration cacheConfiguration(CacheAtomicityMode atomicityMode) {
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
-        ccfg.setMemoryMode(OFFHEAP_TIERED);
-        ccfg.setOffHeapMaxMemory(0);
         ccfg.setBackups(1);
         ccfg.setIndexedTypes(Integer.class, String.class);
 

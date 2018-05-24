@@ -39,7 +39,7 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         c.iterator();
 
-        c = p.query(new SqlFieldsQuery("select * from Person order by id"));
+        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by id"));
 
         List<List<?>> leftovers = c.getAll();
 
@@ -63,7 +63,7 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         c.iterator();
 
-        c = p.query(new SqlFieldsQuery("select * from Person order by id, _key"));
+        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by id, _key"));
 
         List<List<?>> leftovers = c.getAll();
 
@@ -91,7 +91,7 @@ public class IgniteCacheDeleteSqlQuerySelfTest extends IgniteCacheAbstractSqlDml
 
         c.iterator();
 
-        c = p.query(new SqlFieldsQuery("select * from Person order by id"));
+        c = p.query(new SqlFieldsQuery("select _key, _val, * from Person order by id"));
 
         List<List<?>> leftovers = c.getAll();
 

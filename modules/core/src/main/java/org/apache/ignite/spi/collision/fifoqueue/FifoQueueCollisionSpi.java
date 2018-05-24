@@ -26,6 +26,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiConfiguration;
 import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.collision.CollisionContext;
 import org.apache.ignite.spi.collision.CollisionExternalListener;
@@ -78,8 +79,7 @@ import org.apache.ignite.spi.collision.CollisionSpi;
  * </pre>
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements CollisionSpi,
-    FifoQueueCollisionSpiMBean {
+public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements CollisionSpi {
     /**
      * Default number of parallel jobs allowed (set to number of cores times 2).
      */
@@ -110,54 +110,93 @@ public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements Collision
     /** Number of jobs that are held. */
     private volatile int heldCnt;
 
-    /** {@inheritDoc} */
-    @Override public int getParallelJobsNumber() {
+    /**
+     * See {@link #setParallelJobsNumber(int)}
+     *
+     * @return Number of jobs that can be executed in parallel.
+     */
+    public int getParallelJobsNumber() {
         return parallelJobsNum;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Sets number of jobs that can be executed in parallel.
+     *
+     * @param parallelJobsNum Parallel jobs number.
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = true)
-    @Override public void setParallelJobsNumber(int parallelJobsNum) {
+    public FifoQueueCollisionSpi setParallelJobsNumber(int parallelJobsNum) {
         A.ensure(parallelJobsNum > 0, "parallelJobsNum > 0");
 
         this.parallelJobsNum = parallelJobsNum;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getWaitingJobsNumber() {
+    /**
+     * See {@link #setWaitingJobsNumber(int)}
+     *
+     * @return Maximum allowed number of waiting jobs.
+     */
+    public int getWaitingJobsNumber() {
         return waitJobsNum;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Sets maximum number of jobs that are allowed to wait in waiting queue. If number
+     * of waiting jobs ever exceeds this number, excessive jobs will be rejected.
+     *
+     * @param waitJobsNum Waiting jobs number.
+     * @return {@code this} for chaining.
+     */
     @IgniteSpiConfiguration(optional = true)
-    @Override public void setWaitingJobsNumber(int waitJobsNum) {
+    public FifoQueueCollisionSpi setWaitingJobsNumber(int waitJobsNum) {
         A.ensure(waitJobsNum >= 0, "waitingJobsNum >= 0");
 
         this.waitJobsNum = waitJobsNum;
+
+        return this;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getCurrentWaitJobsNumber() {
+    /**
+     * Gets current number of jobs that wait for the execution.
+     *
+     * @return Number of jobs that wait for execution.
+     */
+    public int getCurrentWaitJobsNumber() {
         return waitingCnt;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getCurrentActiveJobsNumber() {
+    /**
+     * Gets current number of jobs that are active, i.e. {@code 'running + held'} jobs.
+     *
+     * @return Number of active jobs.
+     */
+    public int getCurrentActiveJobsNumber() {
         return runningCnt + heldCnt;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getCurrentRunningJobsNumber() {
+    /**
+     * Gets number of currently running (not {@code 'held}) jobs.
+     *
+     * @return Number of currently running (not {@code 'held}) jobs.
+     */
+    public int getCurrentRunningJobsNumber() {
         return runningCnt;
     }
 
-    /** {@inheritDoc} */
-    @Override public int getCurrentHeldJobsNumber() {
+    /**
+     * Gets number of currently {@code 'held'} jobs.
+     *
+     * @return Number of currently {@code 'held'} jobs.
+     */
+    public int getCurrentHeldJobsNumber() {
         return heldCnt;
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
         assertParameter(parallelJobsNum > 0, "parallelJobsNum > 0");
         assertParameter(waitJobsNum >= 0, "waitingJobsNum >= 0");
 
@@ -168,7 +207,7 @@ public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements Collision
         if (log.isDebugEnabled())
             log.debug(configInfo("parallelJobsNum", parallelJobsNum));
 
-        registerMBean(gridName, this, FifoQueueCollisionSpiMBean.class);
+        registerMBean(igniteInstanceName, new FifoQueueCollisionSpiMBeanImpl(this), FifoQueueCollisionSpiMBean.class);
 
         // Ack start.
         if (log.isDebugEnabled())
@@ -252,7 +291,64 @@ public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements Collision
     }
 
     /** {@inheritDoc} */
+    @Override public FifoQueueCollisionSpi setName(String name) {
+        super.setName(name);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(FifoQueueCollisionSpi.class, this);
+    }
+
+    /**
+     * MBean implementation for FifoQueueCollisionSpi.
+     */
+    private class FifoQueueCollisionSpiMBeanImpl extends IgniteSpiMBeanAdapter implements FifoQueueCollisionSpiMBean {
+        /** {@inheritDoc} */
+        FifoQueueCollisionSpiMBeanImpl(IgniteSpiAdapter spiAdapter) {
+            super(spiAdapter);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getParallelJobsNumber() {
+            return FifoQueueCollisionSpi.this.getParallelJobsNumber();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentWaitJobsNumber() {
+            return FifoQueueCollisionSpi.this.getCurrentWaitJobsNumber();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentActiveJobsNumber() {
+            return FifoQueueCollisionSpi.this.getCurrentActiveJobsNumber();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentRunningJobsNumber() {
+            return FifoQueueCollisionSpi.this.getCurrentRunningJobsNumber();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getCurrentHeldJobsNumber() {
+            return FifoQueueCollisionSpi.this.getCurrentHeldJobsNumber();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getWaitingJobsNumber() {
+            return FifoQueueCollisionSpi.this.getWaitingJobsNumber();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setWaitingJobsNumber(int waitJobsNum) {
+            FifoQueueCollisionSpi.this.setWaitingJobsNumber(waitJobsNum);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void setParallelJobsNumber(int parallelJobsNum) {
+            FifoQueueCollisionSpi.this.setParallelJobsNumber(parallelJobsNum);
+        }
     }
 }

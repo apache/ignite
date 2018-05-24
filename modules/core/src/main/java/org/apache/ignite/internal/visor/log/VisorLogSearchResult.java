@@ -17,42 +17,54 @@
 
 package org.apache.ignite.internal.visor.log;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Result for log search operation.
  * Contains found line and several lines before and after, plus other info.
  */
-public class VisorLogSearchResult implements Serializable, LessNamingBean {
+public class VisorLogSearchResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Node ID. */
-    private final UUID nid;
+    private UUID nid;
 
     /** File path relative to the search folder. */
-    private final String filePath;
+    private String filePath;
 
     /** File size. */
-    private final long fileSize;
+    private long fileSize;
 
     /** Timestamp of last modification of the file. */
-    private final long lastModified;
+    private long lastModified;
 
     /** Lines of text including found line and several lines before and after. */
-    private final String[] lines;
+    private List<String> lines;
 
     /** Line number in the file, 1 based. */
-    private final int lineNum;
+    private int lineNum;
 
     /** Lines count in the file. */
-    private final int lineCnt;
+    private int lineCnt;
 
     /** File content encoding. */
-    private final String encoding;
+    private String encoding;
+
+    /**
+     * Default constructor.
+     */
+    public VisorLogSearchResult() {
+        // No-op.
+    }
 
     /**
      * Create log search result with given parameters.
@@ -80,7 +92,7 @@ public class VisorLogSearchResult implements Serializable, LessNamingBean {
         this.filePath = filePath;
         this.fileSize = fileSize;
         this.lastModified = lastModified;
-        this.lines = lines;
+        this.lines = Arrays.asList(lines);
         this.lineNum = lineNum;
         this.lineCnt = lineCnt;
         this.encoding = encoding;
@@ -89,64 +101,88 @@ public class VisorLogSearchResult implements Serializable, LessNamingBean {
     /**
      * @return Node ID.
      */
-    public UUID nid() {
+    public UUID getNid() {
         return nid;
     }
 
     /**
      * @return File path relative to the search folder.
      */
-    public String filePath() {
+    public String getFilePath() {
         return filePath;
     }
 
     /**
      * @return File size.
      */
-    public long fileSize() {
+    public long getFileSize() {
         return fileSize;
     }
 
     /**
      * @return Timestamp of last modification of the file.
      */
-    public long lastModified() {
+    public long getLastModified() {
         return lastModified;
     }
 
     /**
      * @return Lines of text including found line and several lines before and after.
      */
-    public String[] lines() {
+    public List<String> getLines() {
         return lines;
     }
 
     /**
      * @return Line number in the file, 1 based.
      */
-    public int lineNumber() {
+    public int getLineNumber() {
         return lineNum;
     }
 
     /**
      * @return Lines count in the file.
      */
-    public int lineCount() {
+    public int getLineCount() {
         return lineCnt;
     }
 
     /**
      * @return File content encoding.
      */
-    public String encoding() {
+    public String getEncoding() {
         return encoding;
     }
 
     /**
      * @return Found line.
      */
-    public String line() {
-        return lines[lines.length / 2];
+    public String getLine() {
+        return lines.get(lines.size() / 2);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeUuid(out, nid);
+        U.writeString(out, filePath);
+        out.writeLong(fileSize);
+        out.writeLong(lastModified);
+        U.writeCollection(out, lines);
+        out.writeInt(lineNum);
+        out.writeInt(lineCnt);
+        U.writeString(out, encoding);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        nid = U.readUuid(in);
+        filePath = U.readString(in);
+        fileSize = in.readLong();
+        lastModified = in.readLong();
+        lines = U.readList(in);
+        lineNum = in.readInt();
+        lineCnt = in.readInt();
+        encoding = U.readString(in);
     }
 
     /** {@inheritDoc} */

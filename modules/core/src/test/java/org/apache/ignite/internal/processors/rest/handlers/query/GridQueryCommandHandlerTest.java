@@ -48,13 +48,6 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
 
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -114,7 +107,8 @@ public class GridQueryCommandHandlerTest extends GridCommonAbstractTest {
         IgniteInternalFuture<GridRestResponse> resp = cmdHnd.handleAsync(req);
         resp.get();
 
-        assertEquals("Failed to find cache with name: null", resp.result().getError());
+        // If cache name is not set server uses name 'default'.
+        assertEquals("Failed to find cache with name: default", resp.result().getError());
         assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());
         assertNull(resp.result().getResponse());
     }

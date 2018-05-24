@@ -22,12 +22,14 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
 
 /**
- * Ignite benchmark that performs invoke operations.
+ * Ignite benchmark that performs getAndPut operations.
  */
 public class IgniteGetAndPutBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
+
+        IgniteCache<Integer, Object> cache = cacheForOperation();
 
         cache.getAndPut(key, new SampleValue(key));
 

@@ -18,16 +18,15 @@
 package org.apache.ignite.internal.binary;
 
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryIdentityResolver;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -78,6 +77,11 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         throw new BinaryObjectException("Object is not enum.");
     }
 
+    /** {@inheritDoc} */
+    @Override public String enumName() throws BinaryObjectException {
+        throw new BinaryObjectException("Object is not enum.");
+    }
+
     /**
      * Get offset of data begin.
      *
@@ -101,11 +105,20 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     @Nullable public abstract <F> F fieldByOrder(int order);
 
     /**
-     * Create field comparer.
+     * Create field comparator.
      *
-     * @return Comparer.
+     * @return Comparator.
      */
     public abstract BinarySerializedFieldComparator createFieldComparator();
+
+    /**
+     * Writes field value defined by the given field offset to the given byte buffer.
+     *
+     * @param fieldOffset Field offset.
+     * @return Boolean flag indicating whether the field was successfully written to the buffer, {@code false}
+     *      if there is no enough space for the field in the buffer.
+     */
+    protected abstract boolean writeFieldByOrder(int fieldOffset, ByteBuffer buf);
 
     /**
      * @param ctx Reader context.
@@ -159,9 +172,6 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
             return false;
 
         BinaryIdentityResolver identity = context().identity(typeId());
-
-        if (identity == null)
-            identity = BinaryArrayIdentityResolver.instance();
 
         return identity.equals(this, (BinaryObject)other);
     }
@@ -235,7 +245,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     private void appendValue(Object val, SB buf, BinaryReaderHandles ctx,
         IdentityHashMap<BinaryObject, Integer> handles) {
         if (val instanceof byte[])
-            buf.a(Arrays.toString((byte[]) val));
+            buf.a(Arrays.toString((byte[])val));
         else if (val instanceof short[])
             buf.a(Arrays.toString((short[])val));
         else if (val instanceof int[])
@@ -249,7 +259,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         else if (val instanceof char[])
             buf.a(Arrays.toString((char[])val));
         else if (val instanceof boolean[])
-            buf.a(Arrays.toString((boolean[]) val));
+            buf.a(Arrays.toString((boolean[])val));
         else if (val instanceof BigDecimal[])
             buf.a(Arrays.toString((BigDecimal[])val));
         else if (val instanceof IgniteUuid)
@@ -325,5 +335,66 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
         }
         else
             buf.a(val);
+    }
+
+    /**
+     * Check if object graph has circular references.
+     *
+     * @return {@code true} if object has circular references.
+     */
+    public boolean hasCircularReferences() {
+        try {
+            BinaryReaderHandles ctx = new BinaryReaderHandles();
+
+            ctx.put(start(), this);
+
+            return hasCircularReferences(ctx, new IdentityHashMap<BinaryObject, Integer>());
+        }
+        catch (BinaryObjectException e) {
+            throw new IgniteException("Failed to check binary object for circular references", e);
+        }
+    }
+
+    /**
+     * @param ctx Reader context.
+     * @param handles Handles for already traversed objects.
+     * @return {@code true} if has circular reference.
+     */
+    private boolean hasCircularReferences(BinaryReaderHandles ctx, IdentityHashMap<BinaryObject, Integer> handles) {
+        BinaryType meta;
+
+        try {
+            meta = rawType();
+        }
+        catch (BinaryObjectException ignore) {
+            meta = null;
+        }
+
+        if (meta == null)
+            return false;
+
+        int idHash = System.identityHashCode(this);
+
+        handles.put(this, idHash);
+
+        if (meta.fieldNames() != null) {
+            ctx.put(start(), this);
+
+            for (String name : meta.fieldNames()) {
+                Object val = field(ctx, name);
+
+                if (val instanceof BinaryObjectExImpl) {
+                    BinaryObjectExImpl po = (BinaryObjectExImpl)val;
+
+                    Integer idHash0 = handles.get(val);
+
+                    // Check for circular reference.
+                    if (idHash0 != null || po.hasCircularReferences(ctx, handles))
+                        return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

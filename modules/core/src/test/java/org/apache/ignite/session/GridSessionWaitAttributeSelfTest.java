@@ -24,8 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -90,8 +88,8 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -109,12 +107,6 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(1);
         startGrid(2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-        stopGrid(2);
     }
 
     /**
@@ -207,19 +199,15 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     private void checkWaitAttributeMethod(WaitAttributeType type) throws Exception {
         assert type != null;
 
-        Ignite ignite1 = G.ignite(getTestGridName() + '1');
-        Ignite ignite2 = G.ignite(getTestGridName() + '2');
+        Ignite ignite1 = G.ignite(getTestIgniteInstanceName() + '1');
+        Ignite ignite2 = G.ignite(getTestIgniteInstanceName() + '2');
 
         assert ignite1 != null;
         assert ignite2 != null;
 
         ignite1.compute().localDeployTask(TestSessionTask.class, TestSessionTask.class.getClassLoader());
 
-        IgniteCompute comp = ignite1.compute().withAsync();
-
-        comp.execute(TestSessionTask.class.getName(), type);
-
-        ComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = ignite1.compute().executeAsync(TestSessionTask.class.getName(), type);
 
         fut.getTaskSession().mapFuture().get();
 
@@ -254,7 +242,6 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
      * @param ses Session.
      * @param prefix Prefix.
      * @param type Type.
-     * @throws IgniteCheckedException If failed.
      */
     private static void checkSessionAttributes(ComputeTaskSession ses, String prefix, WaitAttributeType type) {
         assert ses != null;

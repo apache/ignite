@@ -46,11 +46,13 @@ public class IgfsClientDeleteCallable extends IgfsClientAbstractCallable<Boolean
      * Constructor.
      *
      * @param igfsName IGFS name.
+     * @param user IGFS user name.
      * @param path Path.
      * @param recursive Recursive flag.
      */
-    public IgfsClientDeleteCallable(@Nullable String igfsName, IgfsPath path, boolean recursive) {
-        super(igfsName, path);
+    public IgfsClientDeleteCallable(@Nullable String igfsName, @Nullable String user,
+        IgfsPath path, boolean recursive) {
+        super(igfsName, user, path);
 
         this.recursive = recursive;
     }

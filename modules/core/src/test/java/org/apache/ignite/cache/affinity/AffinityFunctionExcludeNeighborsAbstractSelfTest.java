@@ -32,7 +32,6 @@ import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -55,8 +54,8 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         // Override node attributes in discovery spi.
         TcpDiscoverySpi spi = new TcpDiscoverySpi() {
@@ -122,14 +121,11 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
             for (int i = 0; i < grids; i++) {
                 final Ignite g = grid(i);
 
-                Affinity<Object> aff = g.affinity(null);
+                Affinity<Object> aff = g.affinity(DEFAULT_CACHE_NAME);
 
-                List<TcpDiscoveryNode> top = new ArrayList<>();
+                List<ClusterNode> top = new ArrayList<>(g.cluster().nodes());
 
-                for (ClusterNode node : g.cluster().nodes())
-                    top.add((TcpDiscoveryNode) node);
-
-                Collections.sort(top);
+                Collections.sort((List)top);
 
                 assertEquals(grids, top.size());
 
@@ -169,7 +165,7 @@ public abstract class AffinityFunctionExcludeNeighborsAbstractSelfTest extends G
         try {
             Object key = 12345;
 
-            Collection<? extends ClusterNode> affNodes = nodes(g.affinity(null), key);
+            Collection<? extends ClusterNode> affNodes = nodes(g.affinity(DEFAULT_CACHE_NAME), key);
 
             info("Affinity picture for grid: " + U.toShortString(affNodes));
 

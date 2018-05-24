@@ -80,13 +80,13 @@ public class GridJobStealingZeroActiveJobsSelfTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         JobStealingCollisionSpi colSpi = new JobStealingCollisionSpi();
 
         // One job at a time.
-        colSpi.setActiveJobsThreshold(gridName.endsWith("1") ? 0 : 2);
+        colSpi.setActiveJobsThreshold(igniteInstanceName.endsWith("1") ? 0 : 2);
         colSpi.setWaitJobsThreshold(0);
 
         JobStealingFailoverSpi failSpi = new JobStealingFailoverSpi();

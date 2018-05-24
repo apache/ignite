@@ -35,7 +35,6 @@ import org.jetbrains.annotations.Nullable;
  * <li>{@link #BACKUP}</li>
  * <li>{@link #ONHEAP}</li>
  * <li>{@link #OFFHEAP}</li>
- * <li>{@link #SWAP}</li>
  * </ul>
  */
 public enum CachePeekMode {
@@ -64,10 +63,7 @@ public enum CachePeekMode {
     ONHEAP,
 
     /** Peeks value from the off-heap storage only, without loading off-heap value into cache. */
-    OFFHEAP,
-
-    /** Peeks value from the swap storage only, without loading swapped value into cache. */
-    SWAP;
+    OFFHEAP;
 
     /** Enumerated values. */
     private static final CachePeekMode[] VALS = values();

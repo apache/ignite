@@ -59,12 +59,12 @@ class SharedFsTimeoutTask extends IgniteSpiThread {
     /**
      * Creates new instance of task that looks after files.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param marshaller Messages marshaller.
      * @param log Messages logger.
      */
-    SharedFsTimeoutTask(String gridName, Marshaller marshaller, IgniteLogger log) {
-        super(gridName, "grid-sharedfs-timeout-worker", log);
+    SharedFsTimeoutTask(String igniteInstanceName, Marshaller marshaller, IgniteLogger log) {
+        super(igniteInstanceName, "grid-sharedfs-timeout-worker", log);
 
         assert marshaller != null;
         assert log != null;

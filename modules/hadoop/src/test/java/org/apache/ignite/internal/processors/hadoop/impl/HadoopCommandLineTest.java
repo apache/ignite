@@ -38,7 +38,7 @@ import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopCommonUtils;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
@@ -46,7 +46,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Test of integration with Hadoop client via command line interface.
@@ -214,8 +213,6 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         U.delete(testWorkDir);
     }
 
@@ -245,9 +242,8 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
     private ProcessBuilder createProcessBuilder() {
         String sep = ":";
 
-        String ggClsPath = HadoopJob.class.getProtectionDomain().getCodeSource().getLocation().getPath() + sep +
-            HadoopJobTracker.class.getProtectionDomain().getCodeSource().getLocation().getPath() + sep +
-            ConcurrentHashMap8.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        String ggClsPath = HadoopJobEx.class.getProtectionDomain().getCodeSource().getLocation().getPath() + sep +
+            HadoopJobTracker.class.getProtectionDomain().getCodeSource().getLocation().getPath();
 
         ProcessBuilder res = new ProcessBuilder();
 

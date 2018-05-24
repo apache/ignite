@@ -66,10 +66,10 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean writeHeader(byte type, byte fieldCnt) {
+    @Override public boolean writeHeader(short type, byte fieldCnt) {
         DirectByteBufferStream stream = state.item().stream;
 
-        stream.writeByte(type);
+        stream.writeShort(type);
 
         return stream.lastFinished();
     }
@@ -187,6 +187,15 @@ public class DirectMessageWriter implements MessageWriter {
         DirectByteBufferStream stream = state.item().stream;
 
         stream.writeLongArray(val);
+
+        return stream.lastFinished();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeLongArray(String name, long[] val, int len) {
+        DirectByteBufferStream stream = state.item().stream;
+
+        stream.writeLongArray(val, len);
 
         return stream.lastFinished();
     }

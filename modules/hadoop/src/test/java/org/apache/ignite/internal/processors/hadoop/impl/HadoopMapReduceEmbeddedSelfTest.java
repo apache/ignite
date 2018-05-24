@@ -46,8 +46,8 @@ import static org.apache.ignite.internal.processors.hadoop.state.HadoopMapReduce
  */
 public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
     /** {@inheritDoc} */
-    @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
-        HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+    @Override public HadoopConfiguration hadoopConfiguration(String igniteInstanceName) {
+        HadoopConfiguration cfg = super.hadoopConfiguration(igniteInstanceName);
 
         // TODO: IGNITE-404: Uncomment when fixed.
         //cfg.setExternalExecution(false);
@@ -143,7 +143,7 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
             job.setJarByClass(HadoopWordCount2.class);
 
             IgniteInternalFuture<?> fut = grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 1),
-                    createJobInfo(job.getConfiguration()));
+                    createJobInfo(job.getConfiguration(), null));
 
             fut.get();
 

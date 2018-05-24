@@ -49,13 +49,15 @@ public class IgfsClientSetTimesCallable extends IgfsClientAbstractCallable<Void>
      * Constructor.
      *
      * @param igfsName IGFS name.
+     * @param user IGFS user name.
      * @param path Path.
      * @param accessTime Access time.
      * @param modificationTime Modification time.
      */
-    public IgfsClientSetTimesCallable(@Nullable String igfsName, IgfsPath path, long accessTime,
+    public IgfsClientSetTimesCallable(@Nullable String igfsName, @Nullable String user,
+        IgfsPath path, long accessTime,
         long modificationTime) {
-        super(igfsName, path);
+        super(igfsName, user, path);
 
         this.accessTime = accessTime;
         this.modificationTime = modificationTime;
@@ -63,7 +65,7 @@ public class IgfsClientSetTimesCallable extends IgfsClientAbstractCallable<Void>
 
     /** {@inheritDoc} */
     @Override protected Void call0(IgfsContext ctx) throws Exception {
-        ctx.igfs().setTimes(path, accessTime, modificationTime);
+        ctx.igfs().setTimes(path, modificationTime, accessTime);
 
         return null;
     }

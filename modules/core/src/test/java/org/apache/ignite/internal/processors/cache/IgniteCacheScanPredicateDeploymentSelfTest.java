@@ -45,10 +45,10 @@ public class IgniteCacheScanPredicateDeploymentSelfTest extends GridCommonAbstra
     protected static final String TEST_PREDICATE = "org.apache.ignite.tests.p2p.CacheDeploymentAlwaysTruePredicate";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (getTestGridName(3).equals(gridName))
+        if (getTestIgniteInstanceName(3).equals(igniteInstanceName))
             cfg.setClassLoader(getExternalClassLoader());
 
         cfg.setCacheConfiguration(cacheConfiguration());
@@ -93,7 +93,7 @@ public class IgniteCacheScanPredicateDeploymentSelfTest extends GridCommonAbstra
         awaitPartitionMapExchange();
 
         try {
-            IgniteCache<Object, Object> cache = grid(3).cache(null);
+            IgniteCache<Object, Object> cache = grid(3).cache(DEFAULT_CACHE_NAME);
 
             // It is important that there are no too many keys.
             for (int i = 0; i < 1; i++)

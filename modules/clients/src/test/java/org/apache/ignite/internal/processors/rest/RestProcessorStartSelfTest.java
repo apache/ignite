@@ -56,8 +56,8 @@ public class RestProcessorStartSelfTest extends GridCommonAbstractTest {
     private CountDownLatch proceed;
 
     /** {@inheritDoc}*/
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost(HOST);
 
@@ -152,7 +152,7 @@ public class RestProcessorStartSelfTest extends GridCommonAbstractTest {
      */
     private class TestDiscoverySpi extends TcpDiscoverySpi {
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+        @Override public void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException {
             gridReady.countDown();
 
             try {
@@ -162,7 +162,7 @@ public class RestProcessorStartSelfTest extends GridCommonAbstractTest {
                 throw new IgniteSpiException("Failed to await start signal.", e);
             }
 
-            super.spiStart(gridName);
+            super.spiStart(igniteInstanceName);
         }
     }
 }

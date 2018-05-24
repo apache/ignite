@@ -70,7 +70,7 @@ namespace ignite
             {
                 switch (GetType())
                 {
-                    case OFFSET_TYPE_ONE_BYTE:
+                    case BinaryOffsetType::ONE_BYTE:
                     {
                         for (FieldContainer::const_iterator i = fieldsInfo->begin(); i != fieldsInfo->end(); ++i)
                         {
@@ -80,7 +80,7 @@ namespace ignite
                         break;
                     }
 
-                    case OFFSET_TYPE_TWO_BYTES:
+                    case BinaryOffsetType::TWO_BYTES:
                     {
                         for (FieldContainer::const_iterator i = fieldsInfo->begin(); i != fieldsInfo->end(); ++i)
                         {
@@ -90,7 +90,7 @@ namespace ignite
                         break;
                     }
 
-                    case OFFSET_TYPE_FOUR_BYTES:
+                    case BinaryOffsetType::FOUR_BYTES:
                     {
                         for (FieldContainer::const_iterator i = fieldsInfo->begin(); i != fieldsInfo->end(); ++i)
                         {
@@ -119,16 +119,17 @@ namespace ignite
                 fieldsInfo->clear();
             }
 
-            BinaryOffsetType BinarySchema::GetType() const
+            BinaryOffsetType::Type BinarySchema::GetType() const
             {
                 int32_t maxOffset = fieldsInfo->back().offset;
 
                 if (maxOffset < 0x100)
-                    return OFFSET_TYPE_ONE_BYTE;
-                else if (maxOffset < 0x10000)
-                    return OFFSET_TYPE_TWO_BYTES;
+                    return BinaryOffsetType::ONE_BYTE;
 
-                return OFFSET_TYPE_FOUR_BYTES;
+                if (maxOffset < 0x10000)
+                    return BinaryOffsetType::TWO_BYTES;
+
+                return BinaryOffsetType::FOUR_BYTES;
             }
         }
     }

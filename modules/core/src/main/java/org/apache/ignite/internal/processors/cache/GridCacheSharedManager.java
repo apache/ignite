@@ -40,12 +40,6 @@ public interface GridCacheSharedManager<K, V> {
     public void stop(boolean cancel);
 
     /**
-     * @param reconnect {@code True} if manager restarted after client reconnect.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void onKernalStart(boolean reconnect) throws IgniteCheckedException;
-
-    /**
      * @param cancel Cancel flag.
      */
     public void onKernalStop(boolean cancel);
@@ -54,6 +48,11 @@ public interface GridCacheSharedManager<K, V> {
      * @param reconnectFut Reconnect future.
      */
     public void onDisconnected(IgniteFuture<?> reconnectFut);
+
+    /**
+     * @param active Active flag.
+     */
+    public void onReconnected(boolean active);
 
     /**
      * Prints memory statistics (sizes of internal data structures, etc.).

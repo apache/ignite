@@ -24,7 +24,7 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopPartitioner;
@@ -150,7 +150,7 @@ public abstract class HadoopAbstractMapTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public HadoopJob createJob(Class<? extends HadoopJob> jobCls, HadoopJobId jobId, IgniteLogger log,
+        @Override public HadoopJobEx createJob(Class<? extends HadoopJobEx> jobCls, HadoopJobId jobId, IgniteLogger log,
             @Nullable String[] libNames, HadoopHelper helper) throws IgniteCheckedException {
             assert false;
 
@@ -173,6 +173,12 @@ public abstract class HadoopAbstractMapTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public String user() {
+            assert false;
+
+            return null;
+        }
+
+        @Override public byte[] credentials() {
             assert false;
 
             return null;

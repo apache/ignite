@@ -25,9 +25,8 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
     /// <summary>
     /// Stream capable of working with binary objects.
     /// </summary>
-    [CLSCompliant(false)]
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
-    public unsafe interface IBinaryStream : IDisposable
+    internal unsafe interface IBinaryStream : IDisposable
     {
         /// <summary>
         /// Write bool.
@@ -292,10 +291,15 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         int Remaining { get; }
 
         /// <summary>
-        /// Gets underlying array, avoiding copying if possible.
+        /// Gets underlying array, avoiding copying.
         /// </summary>
         /// <returns>Underlying array.</returns>
         byte[] GetArray();
+
+        /// <summary>
+        /// Gets a value indicating whether this instance can return underlying array without copying.
+        /// </summary>
+        bool CanGetArray { get; }
 
         /// <summary>
         /// Gets underlying data in a new array.

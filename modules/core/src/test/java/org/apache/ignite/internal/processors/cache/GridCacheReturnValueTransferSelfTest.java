@@ -27,14 +27,12 @@ import java.util.Set;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -48,9 +46,6 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
     /** Atomicity mode. */
     private CacheAtomicityMode atomicityMode;
 
-    /** Atomic write order mode. */
-    private CacheAtomicWriteOrderMode writeOrderMode;
-
     /** Number of backups. */
     private int backups;
 
@@ -58,15 +53,14 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
     private static volatile boolean failDeserialization;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setBackups(backups);
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setAtomicWriteOrderMode(writeOrderMode);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -86,7 +80,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
         // Test works too long and fails.
         fail("https://issues.apache.org/jira/browse/IGNITE-581");
 
-        checkTransform(TRANSACTIONAL, PRIMARY, 0);
+        checkTransform(TRANSACTIONAL, 0);
     }
 
     /**
@@ -97,23 +91,20 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
         // Test works too long and fails.
         fail("https://issues.apache.org/jira/browse/IGNITE-581");
 
-        checkTransform(TRANSACTIONAL, PRIMARY, 1);
+        checkTransform(TRANSACTIONAL, 1);
     }
 
     /**
      * @param mode Atomicity mode.
-     * @param order Atomic cache write order mode.
      * @param b Number of backups.
      * @throws Exception If failed.
      */
-    private void checkTransform(CacheAtomicityMode mode, CacheAtomicWriteOrderMode order, int b)
+    private void checkTransform(CacheAtomicityMode mode, int b)
         throws Exception {
         try {
             atomicityMode = mode;
 
             backups = b;
-
-            writeOrderMode = order;
 
             cache = true;
 
@@ -126,7 +117,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
             failDeserialization = false;
 
             // Get client grid.
-            IgniteCache<Integer, TestObject> cache = grid(2).cache(null);
+            IgniteCache<Integer, TestObject> cache = grid(2).cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, new TestObject());

@@ -66,12 +66,14 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 90 * 1000;
+        return 3 * 60 * 1000;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
+
+        c.setConsistentId(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -105,10 +107,9 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
     public void testRestarts() throws Exception {
         int duration = 60 * 1000;
         int qryThreadNum = 10;
-        final long nodeLifeTime = 2 * 1000;
         final int logFreq = 50;
 
-        final IgniteCache<Integer, Integer> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         assert cache != null;
 
@@ -158,7 +159,43 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
         for (int i = 0; i < GRID_CNT; i++)
             grid(i).events().localListen(lsnr, EventType.EVT_CACHE_REBALANCE_STOPPED);
 
-        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut2 = createRestartAction(done, restartCnt);
+
+        Thread.sleep(duration);
+
+        info("Stopping..");
+
+        done.set(true);
+
+        fut2.get();
+
+        info("Restarts stopped.");
+
+        fut1.get();
+
+        info("Queries stopped.");
+
+        info("Awaiting rebalance events [restartCnt=" + restartCnt.get() + ']');
+
+        boolean success = lsnr.awaitEvents(GRID_CNT * 2 * restartCnt.get(), 15000);
+
+        for (int i = 0; i < GRID_CNT; i++)
+            grid(i).events().stopLocalListen(lsnr, EventType.EVT_CACHE_REBALANCE_STOPPED);
+
+        assert success;
+    }
+
+    /**
+     *
+     */
+    protected IgniteInternalFuture createRestartAction(final AtomicBoolean done, final AtomicInteger restartCnt) throws Exception {
+        return multithreadedAsync(new Callable<Object>() {
+            /** */
+            private final long nodeLifeTime = 2 * 1000;
+
+            /** */
+            private final int logFreq = 50;
+
             @SuppressWarnings({"BusyWait"})
             @Override public Object call() throws Exception {
                 while (!done.get()) {
@@ -179,30 +216,6 @@ public class IgniteCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTe
                 return true;
             }
         }, 1, "restart-thread");
-
-        Thread.sleep(duration);
-
-        info("Stopping..");
-
-        done.set(true);
-
-        fut2.get();
-
-        info("Restarts stopped.");
-
-        fut1.get();
-
-        info("Queries stopped.");
-
-
-        info("Awaiting rebalance events [restartCnt=" + restartCnt.get() + ']');
-
-        boolean success = lsnr.awaitEvents(GRID_CNT * 2 * restartCnt.get(), 15000);
-
-        for (int i = 0; i < GRID_CNT; i++)
-            grid(i).events().stopLocalListen(lsnr, EventType.EVT_CACHE_REBALANCE_STOPPED);
-
-        assert success;
     }
 
     /** Listener that will wait for specified number of events received. */

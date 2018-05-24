@@ -75,17 +75,17 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
     private IgniteCache<Integer, Integer>[] cachesReplicated;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfgLoc = new CacheConfiguration();
+        CacheConfiguration ccfgLoc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgLoc.setName(CACHE_LOCAL);
         ccfgLoc.setCacheMode(LOCAL);
         ccfgLoc.setWriteSynchronizationMode(FULL_SYNC);
         ccfgLoc.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration ccfgPartitioned = new CacheConfiguration();
+        CacheConfiguration ccfgPartitioned = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgPartitioned.setName(CACHE_PARTITIONED);
         ccfgPartitioned.setCacheMode(PARTITIONED);
@@ -95,11 +95,11 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
         ccfgPartitioned.setNearConfiguration(nearCfg);
 
-        ccfgPartitioned.setNodeFilter(new AttributeFilter(getTestGridName(0)));
+        ccfgPartitioned.setNodeFilter(new AttributeFilter(getTestIgniteInstanceName(0)));
 
         ccfgPartitioned.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration ccfgColocated = new CacheConfiguration();
+        CacheConfiguration ccfgColocated = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgColocated.setName(CACHE_COLOCATED);
         ccfgColocated.setCacheMode(PARTITIONED);
@@ -107,7 +107,7 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
         ccfgColocated.setWriteSynchronizationMode(FULL_SYNC);
         ccfgColocated.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration ccfgReplicated = new CacheConfiguration();
+        CacheConfiguration ccfgReplicated = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfgReplicated.setName(CACHE_REPLICATED);
         ccfgReplicated.setCacheMode(REPLICATED);
@@ -368,10 +368,10 @@ public class GridCacheClearLocallySelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            String gridName = node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME);
+            String igniteInstanceName = node.attribute(IgniteNodeAttributes.ATTR_IGNITE_INSTANCE_NAME);
 
             for (String attr : attrs) {
-                if (F.eq(attr, gridName))
+                if (F.eq(attr, igniteInstanceName))
                     return true;
             }
 

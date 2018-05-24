@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.client.router.impl;
 
 import java.lang.management.ManagementFactory;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteOrder;
@@ -53,9 +51,6 @@ import org.jetbrains.annotations.Nullable;
  * Wrapper class for router process.
  */
 public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, LifecycleAware {
-    /** */
-    private static final String ENT_NIO_LSNR_CLS = "org.apache.ignite.client.router.impl.GridTcpRouterNioListenerEntImpl";
-
     /** Id. */
     private final UUID id = UUID.randomUUID();
 
@@ -108,23 +103,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
             throw new IgniteException("Failed to initialise embedded client.", e);
         }
 
-        GridNioServerListener<GridClientMessage> lsnr;
-
-        try {
-            Class<?> cls = Class.forName(ENT_NIO_LSNR_CLS);
-
-            Constructor<?> cons = cls.getDeclaredConstructor(IgniteLogger.class, GridRouterClientImpl.class);
-
-            cons.setAccessible(true);
-
-            lsnr = (GridNioServerListener<GridClientMessage>)cons.newInstance(log, client);
-        }
-        catch (ClassNotFoundException ignored) {
-            lsnr = new GridTcpRouterNioListenerOsImpl(log, client);
-        }
-        catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
-            throw new IgniteException("Failed to create NIO listener.", e);
-        }
+        GridNioServerListener<GridClientMessage> lsnr = new GridTcpRouterNioListenerOsImpl(log, client);
 
         parser = new GridTcpRouterNioParser();
 
@@ -169,6 +148,32 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
                 "are in use) [firstPort=" + cfg.getPort() + ", lastPort=" + (cfg.getPort() + cfg.getPortRange()) +
                 ", addr=" + hostAddr + ']');
 
+        registerMBean();
+    }
+
+    /**
+     * Stops this router.
+     */
+    @Override public void stop() {
+        if (srv != null)
+            srv.stop();
+
+        if (client != null)
+            client.stop(true);
+
+        unregisterMBean();
+
+        if (log.isInfoEnabled())
+            log.info("TCP router successfully stopped.");
+    }
+
+    /**
+     * Try to register MBean.
+     */
+    private void registerMBean() {
+        if (U.IGNITE_MBEANS_DISABLED)
+            return;
+
         try {
             ObjectName objName = U.registerMBean(
                 ManagementFactory.getPlatformMBeanServer(),
@@ -189,28 +194,23 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
     }
 
     /**
-     * Stops this router.
+     * Unregister MBean.
      */
-    @Override public void stop() {
-        if (srv != null)
-            srv.stop();
+    private void unregisterMBean() {
+        if (mbeanName == null)
+            return;
 
-        if (client != null)
-            client.stop(true);
+        assert !U.IGNITE_MBEANS_DISABLED;
 
-        if (mbeanName != null)
-            try {
-                ManagementFactory.getPlatformMBeanServer().unregisterMBean(mbeanName);
+        try {
+            ManagementFactory.getPlatformMBeanServer().unregisterMBean(mbeanName);
 
-                if (log.isDebugEnabled())
-                    log.debug("Unregistered MBean: " + mbeanName);
-            }
-            catch (JMException e) {
-                U.error(log, "Failed to unregister MBean.", e);
-            }
-
-        if (log.isInfoEnabled())
-            log.info("TCP router successfully stopped.");
+            if (log.isDebugEnabled())
+                log.debug("Unregistered MBean: " + mbeanName);
+        }
+        catch (JMException e) {
+            U.error(log, "Failed to unregister MBean.", e);
+        }
     }
 
     /**
@@ -235,7 +235,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
 
             // This name is required to be unique in order to avoid collisions with
             // ThreadWorkerGroups running in the same JVM by other routers/nodes.
-            String gridName = "router-" + id;
+            String igniteInstanceName = "router-" + id;
 
             GridNioFilter[] filters;
 
@@ -257,7 +257,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
                 .listener(lsnr)
                 .logger(log)
                 .selectorCount(Runtime.getRuntime().availableProcessors())
-                .gridName(gridName)
+                .igniteInstanceName(igniteInstanceName)
                 .serverName("router")
                 .tcpNoDelay(tcpNoDelay)
                 .directBuffer(false)

@@ -25,7 +25,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -38,24 +38,25 @@ import org.jetbrains.annotations.Nullable;
  * An implementation of GridCacheConcurrentMap that will delegate all method calls to corresponding local partition.
  */
 public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap {
-    /** Context. */
-    private final GridCacheContext ctx;
+    /** Cache group. */
+    private final CacheGroupContext grp;
 
     /**
-     * Constructor.
-     * @param ctx Context.
+     * @param grp Cache group.
      */
-    public GridCachePartitionedConcurrentMap(GridCacheContext ctx) {
-        this.ctx = ctx;
+    GridCachePartitionedConcurrentMap(CacheGroupContext grp) {
+        this.grp = grp;
     }
 
     /**
+     * @param cctx Cache context.
      * @param key Key.
      * @param topVer Topology version.
      * @param create Create flag.
      * @return Local partition.
      */
     @Nullable private GridDhtLocalPartition localPartition(
+        GridCacheContext cctx,
         KeyCacheObject key,
         AffinityTopologyVersion topVer,
         boolean create
@@ -63,65 +64,74 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         int p = key.partition();
 
         if (p == -1)
-            p = ctx.affinity().partition(key);
+            p = cctx.affinity().partition(key);
 
-        return ctx.topology().localPartition(p, topVer, create);
+        return grp.topology().localPartition(p, topVer, create);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry getEntry(KeyCacheObject key) {
-        GridDhtLocalPartition part = localPartition(key, AffinityTopologyVersion.NONE, false);
+    @Nullable @Override public GridCacheMapEntry getEntry(GridCacheContext ctx, KeyCacheObject key) {
+        GridDhtLocalPartition part = localPartition(ctx, key, AffinityTopologyVersion.NONE, false);
 
         if (part == null)
             return null;
 
-        return part.getEntry(key);
+        return part.getEntry(ctx, key);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(AffinityTopologyVersion topVer, KeyCacheObject key,
-        @Nullable CacheObject val, boolean create, boolean touch) {
-        GridDhtLocalPartition part = localPartition(key, topVer, create);
+    @Override public GridCacheMapEntry putEntryIfObsoleteOrAbsent(GridCacheContext ctx, AffinityTopologyVersion topVer,
+        KeyCacheObject key,
+        boolean create,
+        boolean touch) {
+        while (true) {
+            GridDhtLocalPartition part = localPartition(ctx, key, topVer, create);
 
-        if (part == null)
-            return null;
+            if (part == null)
+                return null;
 
-        return part.putEntryIfObsoleteOrAbsent(topVer, key, val, create, touch);
+            GridCacheMapEntry res = part.putEntryIfObsoleteOrAbsent(ctx, topVer, key, create, touch);
+
+            if (res != null || !create)
+                return res;
+
+            // Otherwise partition was concurrently evicted and should be re-created on next iteration.
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public int size() {
+    @Override public int internalSize() {
         int size = 0;
 
-        for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
-            size += part.size();
+        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
+            size += part.internalSize();
 
         return size;
     }
 
     /** {@inheritDoc} */
-    @Override public int publicSize() {
+    @Override public int publicSize(int cacheId) {
         int size = 0;
 
-        for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
-            size += part.publicSize();
+        for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
+            size += part.publicSize(cacheId);
 
         return size;
     }
 
     /** {@inheritDoc} */
-    @Override public void incrementPublicSize(GridCacheEntryEx e) {
-        localPartition(e.key(), AffinityTopologyVersion.NONE, true).incrementPublicSize(e);
+    @Override public void incrementPublicSize(CacheMapHolder hld, GridCacheEntryEx e) {
+        localPartition(e.context(), e.key(), AffinityTopologyVersion.NONE, true).incrementPublicSize(hld, e);
     }
 
     /** {@inheritDoc} */
-    @Override public void decrementPublicSize(GridCacheEntryEx e) {
-        localPartition(e.key(), AffinityTopologyVersion.NONE, true).decrementPublicSize(e);
+    @Override public void decrementPublicSize(CacheMapHolder hld, GridCacheEntryEx e) {
+        localPartition(e.context(), e.key(), AffinityTopologyVersion.NONE, true).decrementPublicSize(hld, e);
     }
 
     /** {@inheritDoc} */
     @Override public boolean removeEntry(GridCacheEntryEx entry) {
-        GridDhtLocalPartition part = localPartition(entry.key(), AffinityTopologyVersion.NONE, false);
+        GridDhtLocalPartition part = localPartition(entry.context(), entry.key(), AffinityTopologyVersion.NONE, false);
 
         if (part == null)
             return false;
@@ -130,26 +140,12 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheMapEntry randomEntry() {
-        return entries().iterator().next();
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<KeyCacheObject> keySet(final CacheEntryPredicate... filter) {
-        return new PartitionedSet<KeyCacheObject>() {
-            @Override protected Set<KeyCacheObject> set(GridDhtLocalPartition part) {
-                return part.keySet(filter);
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
-    @Override public Iterable<GridCacheMapEntry> entries(final CacheEntryPredicate... filter) {
+    @Override public Iterable<GridCacheMapEntry> entries(final int cacheId, final CacheEntryPredicate... filter) {
         return new Iterable<GridCacheMapEntry>() {
             @Override public Iterator<GridCacheMapEntry> iterator() {
                 return new PartitionedIterator<GridCacheMapEntry>() {
                     @Override protected Iterator<GridCacheMapEntry> iterator(GridDhtLocalPartition part) {
-                        return part.entries(filter).iterator();
+                        return part.entries(cacheId, filter).iterator();
                     }
                 };
             }
@@ -157,23 +153,10 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<GridCacheMapEntry> allEntries(final CacheEntryPredicate... filter) {
-        return new Iterable<GridCacheMapEntry>() {
-            @Override public Iterator<GridCacheMapEntry> iterator() {
-                return new PartitionedIterator<GridCacheMapEntry>() {
-                    @Override protected Iterator<GridCacheMapEntry> iterator(GridDhtLocalPartition part) {
-                        return part.allEntries(filter).iterator();
-                    }
-                };
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<GridCacheMapEntry> entrySet(final CacheEntryPredicate... filter) {
+    @Override public Set<GridCacheMapEntry> entrySet(final int cacheId, final CacheEntryPredicate... filter) {
         return new PartitionedSet<GridCacheMapEntry>() {
             @Override protected Set<GridCacheMapEntry> set(GridDhtLocalPartition part) {
-                return part.entrySet(filter);
+                return part.entrySet(cacheId, filter);
             }
         };
     }
@@ -183,7 +166,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
      */
     private abstract class PartitionedIterator<T> implements Iterator<T> {
         /** Partitions iterator. */
-        private Iterator<GridDhtLocalPartition> partsIter = ctx.topology().currentLocalPartitions().iterator();
+        private Iterator<GridDhtLocalPartition> partsIter = grp.topology().currentLocalPartitions().iterator();
 
         /** Current partition iterator. */
         private Iterator<T> currIter = partsIter.hasNext() ? iterator(partsIter.next()) :
@@ -247,7 +230,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         @Override public int size() {
             int size = 0;
 
-            for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions())
+            for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
                 size += set(part).size();
 
             return size;
@@ -255,7 +238,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
 
         /** {@inheritDoc} */
         @Override public boolean contains(Object o) {
-            for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions()) {
+            for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
                 if (set(part).contains(o))
                     return true;
             }

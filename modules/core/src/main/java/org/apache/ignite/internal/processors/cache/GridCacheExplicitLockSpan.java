@@ -51,14 +51,20 @@ public class GridCacheExplicitLockSpan extends ReentrantLock {
 
     /** Span lock release future. */
     @GridToStringExclude
-    private final GridFutureAdapter<Object> releaseFut = new GridFutureAdapter<>();
+    private final GridFutureAdapter<Object> releaseFut;
 
     /**
      * @param topVer Topology version.
      * @param cand Candidate.
      */
-    public GridCacheExplicitLockSpan(AffinityTopologyVersion topVer, GridCacheMvccCandidate cand) {
+    public GridCacheExplicitLockSpan(final AffinityTopologyVersion topVer, final GridCacheMvccCandidate cand) {
         this.topVer = topVer;
+
+        releaseFut = new GridFutureAdapter<Object>() {
+            @Override public String toString() {
+                return "ExplicitLockSpan [topVer=" + topVer + ", firstCand=" + cand + "]";
+            }
+        };
 
         ensureDeque(cand.key()).addFirst(cand);
     }

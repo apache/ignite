@@ -46,9 +46,6 @@ public class GridFailoverContextImpl implements FailoverContext {
     /** Partition key for affinityCall. */
     private final int partId;
 
-    /** Affinity key for affinityCall. */
-    private final Object affKey;
-
     /** Affinity cache name for affinityCall. */
     private final String affCacheName;
 
@@ -62,7 +59,6 @@ public class GridFailoverContextImpl implements FailoverContext {
      * @param jobRes Failed job result.
      * @param loadMgr Load manager.
      * @param partId Partition.
-     * @param affKey Affinity key.
      * @param affCacheName Affinity cache name.
      * @param topVer Affinity topology version.
      */
@@ -70,7 +66,6 @@ public class GridFailoverContextImpl implements FailoverContext {
         ComputeJobResult jobRes,
         GridLoadBalancerManager loadMgr,
         int partId,
-        @Nullable Object affKey,
         @Nullable String affCacheName,
         @Nullable AffinityTopologyVersion topVer) {
         assert taskSes != null;
@@ -81,7 +76,6 @@ public class GridFailoverContextImpl implements FailoverContext {
         this.jobRes = jobRes;
         this.loadMgr = loadMgr;
         this.partId = partId;
-        this.affKey = affKey;
         this.affCacheName = affCacheName;
         this.topVer = topVer;
     }
@@ -99,11 +93,6 @@ public class GridFailoverContextImpl implements FailoverContext {
     /** {@inheritDoc} */
     @Override public ClusterNode getBalancedNode(List<ClusterNode> top) {
         return loadMgr.getBalancedNode(taskSes, top, jobRes.getJob());
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Object affinityKey() {
-        return affKey;
     }
 
     /** {@inheritDoc} */

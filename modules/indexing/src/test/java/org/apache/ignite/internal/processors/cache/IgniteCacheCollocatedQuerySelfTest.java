@@ -65,8 +65,8 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -79,7 +79,6 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setSwapEnabled(false);
         cacheCfg.setBackups(1);
         cacheCfg.setIndexedTypes(
             AffinityUuid.class, Purchase.class
@@ -98,13 +97,8 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        ignite(0).cache(null).removeAll();
+        ignite(0).cache(DEFAULT_CACHE_NAME).removeAll();
     }
 
     /**
@@ -120,7 +114,7 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
      * Correct affinity.
      */
     public void testColocatedQueryRight() {
-        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(null);
+        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         Random rnd = new GridRandom(SEED);
 
@@ -147,7 +141,7 @@ public class IgniteCacheCollocatedQuerySelfTest extends GridCommonAbstractTest {
      * Correct affinity.
      */
     public void testColocatedQueryWrong() {
-        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(null);
+        IgniteCache<AffinityUuid,Purchase> c = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         Random rnd = new GridRandom(SEED);
 

@@ -47,7 +47,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     private Collection<GridCacheVersion> pending;
 
     /** */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** DHT versions. */
     @GridToStringInclude
@@ -85,7 +85,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
         int cacheId,
         GridCacheVersion lockVer,
         IgniteUuid futId,
-        IgniteUuid miniId,
+        int miniId,
         boolean filterRes,
         int cnt,
         Throwable err,
@@ -94,7 +94,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     ) {
         super(cacheId, lockVer, futId, cnt, err, addDepInfo);
 
-        assert miniId != null;
+        assert miniId != 0;
 
         this.miniId = miniId;
         this.clientRemapVer = clientRemapVer;
@@ -134,7 +134,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
@@ -233,7 +233,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 writer.incrementState();
 
             case 14:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -293,7 +293,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
                 reader.incrementState();
 
             case 14:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -314,7 +314,7 @@ public class GridNearLockResponse extends GridDistributedLockResponse {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 52;
     }
 

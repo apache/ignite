@@ -66,13 +66,6 @@ namespace ignite
                          */
                         QueryCursorImpl* GetInitialQueryCursor(IgniteError& err);
 
-                        /**
-                         * Set query to keep pointer to.
-                         *
-                         * @param query Query.
-                         */
-                        void SetQuery(SP_ContinuousQueryImplBase query);
-
                     private:
                         /** Environment. */
                         SP_IgniteEnvironment env;
@@ -82,9 +75,6 @@ namespace ignite
 
                         /** Handle to Java object. */
                         jobject javaRef;
-
-                        /** Shared pointer to query. Kept for query to live long enough. */
-                        SP_ContinuousQueryImplBase qry;
 
                         /** Mutex. */
                         common::concurrent::CriticalSection mutex;

@@ -47,27 +47,17 @@ class VisorTasksCommandSpec extends FunSpec with Matchers with BeforeAndAfterAll
         visor.open(config("visor-demo-node"), "n/a")
 
         try {
-            val compute = ignite.compute().withAsync
+            val compute = ignite.compute()
 
-            compute.withName("TestTask1").execute(new TestTask1(), null)
+            val fut1 = compute.withName("TestTask1").executeAsync(new TestTask1(), null)
 
-            val fut1 = compute.future()
+            val fut2 = compute.withName("TestTask1").executeAsync(new TestTask1(), null)
 
-            compute.withName("TestTask1").execute(new TestTask1(), null)
+            val fut3 = compute.withName("TestTask1").executeAsync(new TestTask1(), null)
 
-            val fut2 = compute.future()
+            val fut4 = compute.withName("TestTask2").executeAsync(new TestTask2(), null)
 
-            compute.withName("TestTask1").execute(new TestTask1(), null)
-
-            val fut3 = compute.future()
-
-            compute.withName("TestTask2").execute(new TestTask2(), null)
-
-            val fut4 = compute.future()
-
-            compute.withName("Test3").execute(new Test3(), null)
-
-            val fut5 = compute.future()
+            val fut5 = compute.withName("Test3").executeAsync(new Test3(), null)
 
             fut1.get
             fut2.get
@@ -83,13 +73,13 @@ class VisorTasksCommandSpec extends FunSpec with Matchers with BeforeAndAfterAll
     /**
      * Creates grid configuration for provided grid host.
      *
-     * @param name Grid name.
+     * @param name Ignite instance name.
      * @return Grid configuration.
      */
     private def config(name: String): IgniteConfiguration = {
         val cfg = new IgniteConfiguration
 
-        cfg.setGridName(name)
+        cfg.setIgniteInstanceName(name)
         cfg.setIncludeEventTypes(EVTS_ALL: _*)
 
         cfg

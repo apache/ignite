@@ -31,20 +31,16 @@ namespace ignite
             /**
              * Type handler. Tracks all type updates during write session.
              */
-            class BinaryTypeHandler 
+            class BinaryTypeHandler
             {
             public:
+
                 /**
                  * Constructor.
                  *
                  * @param snap Snapshot.
                  */
                 BinaryTypeHandler(SPSnap snap);
-                
-                /**
-                 * Destructor.
-                 */
-                ~BinaryTypeHandler();
 
                 /**
                  * Callback invoked when field is being written.
@@ -56,42 +52,31 @@ namespace ignite
                 void OnFieldWritten(int32_t fieldId, std::string fieldName, int32_t fieldTypeId);
 
                 /**
-                 * Get initial snapshot.
-                 *
-                 * @param Snapshot.
-                 */
-                SPSnap GetSnapshot();
-
-                /**
                  * Whether any difference exists.
                  *
-                 * @param True if difference exists.
+                 * @return True if difference exists.
                  */
-                bool HasDifference();
+                bool HasUpdate() const
+                {
+                    return updated.Get() != 0;
+                }
 
                 /**
-                 * Get recorded field IDs difference.
+                 * Get updated snapshot.
                  *
-                 * @param Recorded field IDs difference.
+                 * @return Updated snapshot.
                  */
-                std::set<int32_t>* GetFieldIds();
-
-                /**
-                 * Get recorded fields difference.
-                 *
-                 * @param Recorded fields difference.
-                 */
-                std::map<std::string, int32_t>* GetFields();
+                SPSnap GetUpdated()
+                {
+                    return updated;
+                }
 
             private:
                 /** Snapshot. */
-                SPSnap snap;                          
+                SPSnap origin;
 
-                /** Recorded field IDs difference. */
-                std::set<int32_t>* fieldIds;           
-                
-                /** Recorded fields difference. */
-                std::map<std::string, int32_t>* fields; 
+                /** Snapshot. */
+                SPSnap updated;
 
                 IGNITE_NO_COPY_ASSIGNMENT(BinaryTypeHandler)
             };

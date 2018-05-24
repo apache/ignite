@@ -147,6 +147,15 @@ public class GridBinaryMarshaller {
     /** Proxy. */
     public static final byte PROXY = 35;
 
+    /** Time. */
+    public static final byte TIME = 36;
+
+    /** Time array. */
+    public static final byte TIME_ARR = 37;
+
+    /** Binary enum */
+    public static final byte BINARY_ENUM = 38;
+
     /** */
     public static final byte NULL = (byte)101;
 
@@ -175,6 +184,9 @@ public class GridBinaryMarshaller {
     public static final byte LINKED_HASH_SET = 4;
 
     /** */
+    public static final byte SINGLETON_LIST = 5;
+
+    /** */
     public static final byte HASH_MAP = 1;
 
     /** */
@@ -184,7 +196,7 @@ public class GridBinaryMarshaller {
     public static final byte PLATFORM_JAVA_OBJECT_FACTORY_PROXY = 99;
 
     /** */
-    public static final int OBJECT_TYPE_ID = -1;
+    public static final int OBJECT = -1;
 
     /** */
     public static final int UNREGISTERED_TYPE_ID = 0;

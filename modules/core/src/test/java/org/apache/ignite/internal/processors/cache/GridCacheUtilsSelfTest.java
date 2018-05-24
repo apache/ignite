@@ -143,10 +143,6 @@ public class GridCacheUtilsSelfTest extends GridCommonAbstractTest {
         BinaryObjectBuilderImpl binBuilder = new BinaryObjectBuilderImpl(binaryContext(),
             EqualsAndHashCode.class.getName());
 
-        assertThrowsForInvalidKey(binBuilder.build());
-
-        binBuilder.hashCode(0xFE12);
-
         BinaryObject binObj = binBuilder.build();
 
         CU.validateCacheKey(binObj);

@@ -54,8 +54,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -69,7 +69,6 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
         cacheCfg.setBackups(0);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setSwapEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -80,11 +79,6 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(GRID_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -125,7 +119,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return Near cache.
      */
     private IgniteCache<Integer, String> near(Ignite g) {
-        return g.cache(null);
+        return g.cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -134,7 +128,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
-        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht();
+        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME)).dht();
     }
 
     /**
@@ -175,6 +169,9 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         // Get value on other node.
         assertEquals(val, near1.get(key));
+
+        e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        e1 = (GridDhtCacheEntry)dht1.peekEx(key);
 
         assert e0 != null;
 
@@ -220,6 +217,9 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
 
         // Get value on other node.
         assertEquals(val, near1.get(key));
+
+        e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        e1 = (GridDhtCacheEntry)dht1.peekEx(key);
 
         assert e0 != null;
 
@@ -267,12 +267,15 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         // Get value on other node.
         assertEquals(val, near1.get(key));
 
+        e0 = (GridDhtCacheEntry)dht0.peekEx(key);
+        e1 = (GridDhtCacheEntry)dht1.peekEx(key);
+
         assert e0 != null;
 
         assert e0.readers().contains(other.id());
         assert e1 == null || e1.readers().isEmpty();
 
-        assert !e0.evictInternal(false, dht0.context().versions().next(), null);
+        assert !e0.evictInternal(dht0.context().versions().next(), null, false);
 
         assertEquals(1, near0.localSize(CachePeekMode.ALL));
         assertEquals(1, dht0.localSize(null));
@@ -280,7 +283,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         assertEquals(1, near1.localSize(CachePeekMode.ALL));
         assertEquals(0, dht1.localSize(null));
 
-        assert !e0.evictInternal(true, dht0.context().versions().next(), null);
+        assert !e0.evictInternal(dht0.context().versions().next(), null, false);
 
         assertEquals(1, near0.localSize(CachePeekMode.ALL));
         assertEquals(1, dht0.localSize(null));
@@ -294,7 +297,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return For the given key pair {primary node, some other node}.
      */
     private IgniteBiTuple<ClusterNode, ClusterNode> getNodes(Integer key) {
-        Affinity<Integer> aff = grid(0).affinity(null);
+        Affinity<Integer> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
         int part = aff.partition(key);
 

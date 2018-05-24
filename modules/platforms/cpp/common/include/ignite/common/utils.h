@@ -29,6 +29,7 @@
 
 #include <ignite/date.h>
 #include <ignite/timestamp.h>
+#include "ignite/time.h"
 
 #ifdef IGNITE_FRIEND
 #   define IGNITE_FRIEND_EXPORT IGNITE_EXPORT
@@ -189,6 +190,17 @@ namespace ignite
         }
 
         /**
+         * Convert Time type to standard C type time_t.
+         *
+         * @param time Time type value.
+         * @return Corresponding value of time_t.
+         */
+        inline time_t TimeToCTime(const Time& time)
+        {
+            return static_cast<time_t>(time.GetSeconds());
+        }
+
+        /**
          * Convert Date type to standard C type time_t.
          *
          * @param date Date type value.
@@ -217,7 +229,21 @@ namespace ignite
         }
 
         /**
-         * Convert standard C type time_t to Date struct tm.
+         * Convert Time type to standard C type struct tm.
+         *
+         * @param time Time type value.
+         * @param ctime Corresponding value of struct tm.
+         * @return True on success.
+         */
+        inline bool TimeToCTm(const Time& time, tm& ctime)
+        {
+            time_t tmt = TimeToCTime(time);
+
+            return common::IgniteGmTime(tmt, ctime);
+        }
+
+        /**
+         * Convert standard C type time_t to Date.
          *
          * @param ctime Standard C type time_t.
          * @return Corresponding value of Date.
@@ -225,6 +251,17 @@ namespace ignite
         inline Date CTimeToDate(time_t ctime)
         {
             return Date(ctime * 1000);
+        }
+
+        /**
+         * Convert standard C type time_t to Time.
+         *
+         * @param ctime Standard C type time_t.
+         * @return Corresponding value of Time.
+         */
+        inline Time CTimeToTime(time_t ctime)
+        {
+            return Time(ctime * 1000);
         }
 
         /**
@@ -250,6 +287,19 @@ namespace ignite
             time_t time = common::IgniteTimeGm(ctime);
 
             return CTimeToDate(time);
+        }
+
+        /**
+         * Convert standard C type struct tm to Time type.
+         *
+         * @param ctime Standard C type struct tm.
+         * @return Corresponding value of Time.
+         */
+        inline Time CTmToTime(const tm& ctime)
+        {
+            time_t time = common::IgniteTimeGm(ctime);
+
+            return CTimeToTime(time);
         }
 
         /**
@@ -299,7 +349,31 @@ namespace ignite
             int day = 1, int hour = 0, int min = 0, int sec = 0);
 
         /**
-         * Make Date in human understandable way.
+         * Make Time in human understandable way.
+         *
+         * Created Time uses GMT timezone.
+         *
+         * @param hour Hour.
+         * @param min Minute.
+         * @param sec Second.
+         * @return Time.
+         */
+        Time MakeTimeGmt(int hour = 0, int min = 0, int sec = 0);
+
+        /**
+         * Make Time in human understandable way.
+         *
+         * Created Time uses Local timezone.
+         *
+         * @param hour Hour.
+         * @param min Minute.
+         * @param sec Second.
+         * @return Time.
+         */
+        Time MakeTimeLocal(int hour = 0, int min = 0, int sec = 0);
+
+        /**
+         * Make Timestamp in human understandable way.
          *
          * Created Timestamp uses GMT timezone.
          *
@@ -351,6 +425,64 @@ namespace ignite
         {
             typedef T2 type;
         };
+
+        /**
+         * Utility class to bind class instance with member function.
+         */
+        template<typename R, typename T>
+        class BoundInstance
+        {
+        public:
+            typedef R FunctionReturnType;
+            typedef T ClassType;
+            typedef FunctionReturnType(ClassType::* MemberFunctionType)();
+
+            /**
+             * Constructor.
+             *
+             * @param instance Class instance.
+             * @param mfunc Member function.
+             */
+            BoundInstance(ClassType* instance, MemberFunctionType mfunc) : 
+                instance(instance),
+                mfunc(mfunc)
+            {
+                // No-op.
+            }
+
+            /**
+             * Invoke operator.
+             *
+             * @return Result of the invokation of the member function on the bound instance.
+             */
+            FunctionReturnType operator()()
+            {
+                return (instance->*mfunc)();
+            }
+                
+        private:
+            /** Instance reference. */
+            ClassType* instance;
+
+            /** Member function pointer. */
+            MemberFunctionType mfunc;
+        };
+
+        /**
+         * Utility function for binding.
+         */
+        template<typename R, typename T>
+        BoundInstance<R, T> Bind(T* instance, R(T::* mfunc)())
+        {
+            return BoundInstance<R, T>(instance, mfunc);
+        }
+
+        /**
+         * Get dynamic library full name.
+         * @param name Name without extension.
+         * @return Full name.
+         */
+        IGNITE_IMPORT_EXPORT std::string GetDynamicLibraryName(const char* name);
     }
 }
 

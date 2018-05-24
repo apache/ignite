@@ -53,7 +53,7 @@ suite('routes.clusters', () => {
     });
 
     test('Remove cluster model', (done) => {
-        return agentFactory.authAgent(db.mocks.accounts[0])
+        agentFactory.authAgent(db.mocks.accounts[0])
             .then((agent) => {
                 agent.post('/configuration/clusters/remove')
                     .send({_id: db.mocks.clusters[0]._id})
@@ -68,7 +68,7 @@ suite('routes.clusters', () => {
     });
 
     test('Remove all clusters', (done) => {
-        return agentFactory.authAgent(db.mocks.accounts[0])
+        agentFactory.authAgent(db.mocks.accounts[0])
             .then((agent) => {
                 agent.post('/configuration/clusters/remove/all')
                     .expect(200)

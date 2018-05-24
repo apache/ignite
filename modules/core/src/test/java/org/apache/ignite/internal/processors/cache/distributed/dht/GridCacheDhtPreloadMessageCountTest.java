@@ -50,8 +50,8 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         assert preloadMode != null;
 
@@ -66,8 +66,8 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
 
+        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
         c.setDiscoverySpi(disco);
         c.setCacheConfiguration(cc);
 
@@ -93,7 +93,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         int cnt = KEY_CNT;
 
-        IgniteCache<String, Integer> c0 = g0.cache(null);
+        IgniteCache<String, Integer> c0 = g0.cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -103,8 +103,8 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         U.sleep(1000);
 
-        IgniteCache<String, Integer> c1 = g1.cache(null);
-        IgniteCache<String, Integer> c2 = g2.cache(null);
+        IgniteCache<String, Integer> c1 = g1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<String, Integer> c2 = g2.cache(DEFAULT_CACHE_NAME);
 
         TestRecordingCommunicationSpi spi0 = (TestRecordingCommunicationSpi)g0.configuration().getCommunicationSpi();
         TestRecordingCommunicationSpi spi1 = (TestRecordingCommunicationSpi)g1.configuration().getCommunicationSpi();

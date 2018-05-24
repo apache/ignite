@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests
 
             var clientCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                GridName = "client",
+                IgniteInstanceName = "client",
                 ClientMode = true
             };
 
@@ -98,9 +98,8 @@ namespace Apache.Ignite.Core.Tests
             cache1[1] = 2;
             Assert.AreEqual(2, cache1[1]);
 
-            // Check that old cache instance does not work.
-            var cacheEx1 = Assert.Throws<InvalidOperationException>(() => cache.Get(1));
-            Assert.AreEqual("Cache has been closed or destroyed: " + CacheName, cacheEx1.Message);
+            // Check that old cache instance still works.
+            Assert.AreEqual(2, cache.Get(1));
         }
 
         /// <summary>

@@ -55,8 +55,8 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
     private static final int NODES = 3;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -70,13 +70,6 @@ public class TaskNodeRestartTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(NODES);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /**

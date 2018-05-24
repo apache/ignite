@@ -41,7 +41,7 @@ public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
         TestSuite dfltCacheSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
             .withBasicCacheParams().build();
 
-        assertEquals(4 * 12, dfltCacheSuite.countTestCases());
+        assertEquals(4 * 4 * 2, dfltCacheSuite.countTestCases());
 
         // With clients.
         dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
@@ -52,7 +52,7 @@ public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
         dfltCacheSuite = new ConfigVariationsTestSuiteBuilder("testSuite", NoopTest.class)
             .withBasicCacheParams().testedNodesCount(3).withClients().build();
 
-        assertEquals(4 * 12 * 3, dfltCacheSuite.countTestCases());
+        assertEquals(4 * 4 * 2 * 3, dfltCacheSuite.countTestCases());
     }
 
     /**

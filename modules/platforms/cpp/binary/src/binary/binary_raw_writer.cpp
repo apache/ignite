@@ -139,6 +139,16 @@ namespace ignite
             impl->WriteTimestampArray(val, len);
         }
 
+        void BinaryRawWriter::WriteTime(const Time& val)
+        {
+            impl->WriteTime(val);
+        }
+
+        void BinaryRawWriter::WriteTimeArray(const Time* val, const int32_t len)
+        {
+            impl->WriteTimeArray(val, len);
+        }
+
         void BinaryRawWriter::WriteString(const char* val)
         {
             if (val)

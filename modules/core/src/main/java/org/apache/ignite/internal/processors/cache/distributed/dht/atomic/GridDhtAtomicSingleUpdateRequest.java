@@ -38,39 +38,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.KEEP_BINARY_FLAG_MASK;
-import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SKIP_STORE_FLAG_MASK;
-
 /**
  *
  */
 public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdateRequest {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Near cache key flag. */
-    private static final int NEAR_FLAG_MASK = 0x80;
-
-    /** Future version. */
-    protected GridCacheVersion futVer;
-
-    /** Write version. */
-    protected GridCacheVersion writeVer;
-
-    /** Write synchronization mode. */
-    protected CacheWriteSynchronizationMode syncMode;
-
-    /** Topology version. */
-    protected AffinityTopologyVersion topVer;
-
-    /** Subject ID. */
-    protected UUID subjId;
-
-    /** Task name hash. */
-    protected int taskNameHash;
-
-    /** Additional flags. */
-    protected byte flags;
 
     /** Key to update. */
     @GridToStringInclude
@@ -87,9 +60,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     /** Partition. */
     protected long updateCntr;
 
-    /** */
-    protected int partId;
-
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -102,7 +72,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      *
      * @param cacheId Cache ID.
      * @param nodeId Node ID.
-     * @param futVer Future version.
+     * @param futId Future ID.
      * @param writeVer Write version for cache values.
      * @param syncMode Cache write synchronization mode.
      * @param topVer Topology version.
@@ -115,7 +85,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     GridDhtAtomicSingleUpdateRequest(
         int cacheId,
         UUID nodeId,
-        GridCacheVersion futVer,
+        long futId,
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
@@ -125,19 +95,17 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         boolean keepBinary,
         boolean skipStore
     ) {
-        super(cacheId, nodeId);
-        this.futVer = futVer;
-        this.writeVer = writeVer;
-        this.syncMode = syncMode;
-        this.topVer = topVer;
-        this.subjId = subjId;
-        this.taskNameHash = taskNameHash;
-        this.addDepInfo = addDepInfo;
-
-        if (skipStore)
-            setFlag(true, SKIP_STORE_FLAG_MASK);
-        if (keepBinary)
-            setFlag(true, KEEP_BINARY_FLAG_MASK);
+        super(cacheId,
+            nodeId,
+            futId,
+            writeVer,
+            syncMode,
+            topVer,
+            subjId,
+            taskNameHash,
+            addDepInfo,
+            keepBinary,
+            skipStore);
     }
 
     /**
@@ -148,7 +116,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
      * @param conflictExpireTime Conflict expire time (optional).
      * @param conflictVer Conflict version (optional).
      * @param addPrevVal If {@code true} adds previous value.
-     * @param partId Partition.
      * @param prevVal Previous value.
      * @param updateCntr Update counter.
      */
@@ -159,26 +126,38 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         long conflictExpireTime,
         @Nullable GridCacheVersion conflictVer,
         boolean addPrevVal,
-        int partId,
         @Nullable CacheObject prevVal,
-        @Nullable Long updateCntr
+        long updateCntr
     ) {
         assert entryProcessor == null;
         assert ttl <= 0 : ttl;
         assert conflictExpireTime <= 0 : conflictExpireTime;
         assert conflictVer == null : conflictVer;
+        assert key.partition() >= 0 : key;
 
-        near(false);
+        assert this.key == null;
 
         this.key = key;
-        this.partId = partId;
         this.val = val;
 
         if (addPrevVal)
             this.prevVal = prevVal;
 
-        if (updateCntr != null)
-            this.updateCntr = updateCntr;
+        this.updateCntr = updateCntr;
+    }
+
+    /**
+     * @return {@code True} if near cache update request.
+     */
+    private boolean near() {
+        return isFlag(DHT_ATOMIC_NEAR_FLAG_MASK);
+    }
+
+    /**
+     * @param near Near cache update flag.
+     */
+    private void near(boolean near) {
+        setFlag(near, DHT_ATOMIC_NEAR_FLAG_MASK);
     }
 
     /**
@@ -195,6 +174,13 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         long expireTime) {
         assert entryProcessor == null;
         assert ttl <= 0 : ttl;
+        assert key.partition() >= 0 : key;
+
+        if (this.key != null) {
+            setFlag(true, DHT_ATOMIC_OBSOLETE_NEAR_KEY_FLAG_MASK);
+
+            return;
+        }
 
         near(true);
 
@@ -223,11 +209,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public boolean skipStore() {
-        return isFlag(SKIP_STORE_FLAG_MASK);
-    }
-
-    /** {@inheritDoc} */
     @Override public KeyCacheObject key(int idx) {
         assert idx == 0 : idx;
 
@@ -235,15 +216,24 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public int partition() {
-        return partId;
+    @Override public int obsoleteNearKeysSize() {
+        return isFlag(DHT_ATOMIC_OBSOLETE_NEAR_KEY_FLAG_MASK) ? 1 : 0;
     }
 
     /** {@inheritDoc} */
-    @Override public int partitionId(int idx) {
-        assert idx == 0 : idx;
+    @Override public KeyCacheObject obsoleteNearKey(int idx) {
+        assert obsoleteNearKeysSize() == 1 && idx == 0 : idx;
 
-        return partId;
+        return key;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition() {
+        int p = key.partition();
+
+        assert p >= 0;
+
+        return p;
     }
 
     /** {@inheritDoc} */
@@ -265,31 +255,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         assert idx == 0 : idx;
 
         return near() ? null : val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheVersion futureVersion() {
-        return futVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridCacheVersion writeVersion() {
-        return writeVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int taskNameHash() {
-        return taskNameHash;
-    }
-
-    /** {@inheritDoc} */
-    @Override public UUID subjectId() {
-        return subjId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheWriteSynchronizationMode writeSynchronizationMode() {
-        return syncMode;
     }
 
     /** {@inheritDoc} */
@@ -361,25 +326,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public boolean keepBinary() {
-        return isFlag(KEEP_BINARY_FLAG_MASK);
-    }
-
-    /**
-     *
-     */
-    private boolean near() {
-        return isFlag(NEAR_FLAG_MASK);
-    }
-
-    /**
-     *
-     */
-    private void near(boolean near) {
-        setFlag(near, NEAR_FLAG_MASK);
-    }
-
-    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
@@ -390,7 +336,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         prepareMarshalObject(val, cctx);
 
         prepareMarshalObject(prevVal, cctx);
-
     }
 
     /** {@inheritDoc} */
@@ -404,8 +349,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         finishUnmarshalObject(val, cctx, ldr);
 
         finishUnmarshalObject(prevVal, cctx, ldr);
-
-        key.partition(partId);
     }
 
     /** {@inheritDoc} */
@@ -423,74 +366,26 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
         }
 
         switch (writer.state()) {
-            case 3:
-                if (!writer.writeByte("flags", flags))
-                    return false;
-
-                writer.incrementState();
-
-            case 4:
-                if (!writer.writeMessage("futVer", futVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 5:
+            case 12:
                 if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
-            case 6:
-                if (!writer.writeInt("partId", partId))
-                    return false;
-
-                writer.incrementState();
-
-            case 7:
+            case 13:
                 if (!writer.writeMessage("prevVal", prevVal))
                     return false;
 
                 writer.incrementState();
 
-            case 8:
-                if (!writer.writeUuid("subjId", subjId))
-                    return false;
-
-                writer.incrementState();
-
-            case 9:
-                if (!writer.writeByte("syncMode", syncMode != null ? (byte)syncMode.ordinal() : -1))
-                    return false;
-
-                writer.incrementState();
-
-            case 10:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
-                    return false;
-
-                writer.incrementState();
-
-            case 11:
-                if (!writer.writeMessage("topVer", topVer))
-                    return false;
-
-                writer.incrementState();
-
-            case 12:
+            case 14:
                 if (!writer.writeLong("updateCntr", updateCntr))
                     return false;
 
                 writer.incrementState();
 
-            case 13:
+            case 15:
                 if (!writer.writeMessage("val", val))
-                    return false;
-
-                writer.incrementState();
-
-            case 14:
-                if (!writer.writeMessage("writeVer", writeVer))
                     return false;
 
                 writer.incrementState();
@@ -511,23 +406,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
             return false;
 
         switch (reader.state()) {
-            case 3:
-                flags = reader.readByte("flags");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 4:
-                futVer = reader.readMessage("futVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 5:
+            case 12:
                 key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
@@ -535,15 +414,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 6:
-                partId = reader.readInt("partId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 7:
+            case 13:
                 prevVal = reader.readMessage("prevVal");
 
                 if (!reader.isLastRead())
@@ -551,43 +422,7 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 8:
-                subjId = reader.readUuid("subjId");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                byte syncModeOrd;
-
-                syncModeOrd = reader.readByte("syncMode");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncModeOrd);
-
-                reader.incrementState();
-
-            case 10:
-                taskNameHash = reader.readInt("taskNameHash");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 11:
-                topVer = reader.readMessage("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 12:
+            case 14:
                 updateCntr = reader.readLong("updateCntr");
 
                 if (!reader.isLastRead())
@@ -595,16 +430,8 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
 
                 reader.incrementState();
 
-            case 13:
+            case 15:
                 val = reader.readMessage("val");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 14:
-                writeVer = reader.readMessage("writeVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -647,33 +474,13 @@ public class GridDhtAtomicSingleUpdateRequest extends GridDhtAtomicAbstractUpdat
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return -36;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 15;
-    }
-
-    /**
-     * Sets flag mask.
-     *
-     * @param flag Set or clear.
-     * @param mask Mask.
-     */
-    private void setFlag(boolean flag, int mask) {
-        flags = flag ? (byte)(flags | mask) : (byte)(flags & ~mask);
-    }
-
-    /**
-     * Reags flag mask.
-     *
-     * @param mask Mask to read.
-     * @return Flag value.
-     */
-    private boolean isFlag(int mask) {
-        return (flags & mask) != 0;
+        return 16;
     }
 
     /** {@inheritDoc} */

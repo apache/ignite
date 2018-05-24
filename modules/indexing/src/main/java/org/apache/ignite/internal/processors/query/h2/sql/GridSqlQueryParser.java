@@ -24,13 +24,37 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.dml.DmlAstUtils;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
+import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
+import org.h2.command.CommandInterface;
 import org.h2.command.Prepared;
+import org.h2.command.ddl.AlterTableAddConstraint;
+import org.h2.command.ddl.AlterTableAlterColumn;
+import org.h2.command.ddl.CreateIndex;
+import org.h2.command.ddl.CreateTable;
+import org.h2.command.ddl.CreateTableData;
+import org.h2.command.ddl.DefineCommand;
+import org.h2.command.ddl.DropIndex;
+import org.h2.command.ddl.DropTable;
+import org.h2.command.ddl.SchemaCommand;
 import org.h2.command.dml.Delete;
 import org.h2.command.dml.Explain;
 import org.h2.command.dml.Insert;
@@ -39,12 +63,14 @@ import org.h2.command.dml.Query;
 import org.h2.command.dml.Select;
 import org.h2.command.dml.SelectUnion;
 import org.h2.command.dml.Update;
+import org.h2.engine.Constants;
 import org.h2.engine.FunctionAlias;
 import org.h2.expression.Aggregate;
 import org.h2.expression.Alias;
 import org.h2.expression.CompareLike;
 import org.h2.expression.Comparison;
 import org.h2.expression.ConditionAndOr;
+import org.h2.expression.ConditionExists;
 import org.h2.expression.ConditionIn;
 import org.h2.expression.ConditionInConstantSet;
 import org.h2.expression.ConditionInSelect;
@@ -62,13 +88,17 @@ import org.h2.expression.ValueExpression;
 import org.h2.index.ViewIndex;
 import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.result.SortOrder;
+import org.h2.schema.Schema;
 import org.h2.table.Column;
 import org.h2.table.FunctionTable;
+import org.h2.table.IndexColumn;
+import org.h2.table.MetaTable;
 import org.h2.table.RangeTable;
 import org.h2.table.Table;
 import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
+import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
@@ -78,6 +108,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperatio
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.DIVIDE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL_NULL_SAFE;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EXISTS;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IN;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IS_NOT_NULL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IS_NULL;
@@ -184,7 +215,10 @@ public class GridSqlQueryParser {
         "compareType");
 
     /** */
-    private static final Getter<ConditionInSelect, Query> QUERY = getter(ConditionInSelect.class, "query");
+    private static final Getter<ConditionInSelect, Query> QUERY_IN = getter(ConditionInSelect.class, "query");
+
+    /** */
+    private static final Getter<ConditionExists, Query> QUERY_EXISTS = getter(ConditionExists.class, "query");
 
     /** */
     private static final Getter<CompareLike, Expression> LEFT = getter(CompareLike.class, "left");
@@ -297,6 +331,177 @@ public class GridSqlQueryParser {
         GridSqlQueryParser.<Command, Prepared>getter(CommandContainer.class, "prepared");
 
     /** */
+    private static final Getter<CreateIndex, String> CREATE_INDEX_NAME = getter(CreateIndex.class, "indexName");
+
+    /** */
+    private static final Getter<CreateIndex, String> CREATE_INDEX_TABLE_NAME = getter(CreateIndex.class, "tableName");
+
+    /** */
+    private static final Getter<CreateIndex, IndexColumn[]> CREATE_INDEX_COLUMNS = getter(CreateIndex.class,
+        "indexColumns");
+
+    /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_SPATIAL = getter(CreateIndex.class, "spatial");
+
+    /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_PRIMARY_KEY = getter(CreateIndex.class,
+        "primaryKey");
+
+    /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_UNIQUE = getter(CreateIndex.class, "unique");
+
+    /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_HASH = getter(CreateIndex.class, "hash");
+
+    /** */
+    private static final Getter<CreateIndex, Boolean> CREATE_INDEX_IF_NOT_EXISTS = getter(CreateIndex.class,
+        "ifNotExists");
+
+    /** */
+    private static final Getter<IndexColumn, String> INDEX_COLUMN_NAME = getter(IndexColumn.class, "columnName");
+
+    /** */
+    private static final Getter<IndexColumn, Integer> INDEX_COLUMN_SORT_TYPE = getter(IndexColumn.class, "sortType");
+
+    /** */
+    private static final Getter<DropIndex, String> DROP_INDEX_NAME = getter(DropIndex.class, "indexName");
+
+    /** */
+    private static final Getter<DropIndex, Boolean> DROP_INDEX_IF_EXISTS = getter(DropIndex.class, "ifExists");
+
+    /** */
+    private static final Getter<SchemaCommand, Schema> SCHEMA_COMMAND_SCHEMA = getter(SchemaCommand.class, "schema");
+
+    /** */
+    private static final Getter<CreateTable, CreateTableData> CREATE_TABLE_DATA = getter(CreateTable.class, "data");
+
+    /** */
+    private static final Getter<CreateTable, ArrayList<DefineCommand>> CREATE_TABLE_CONSTRAINTS =
+        getter(CreateTable.class, "constraintCommands");
+
+    /** */
+    private static final Getter<CreateTable, IndexColumn[]> CREATE_TABLE_PK = getter(CreateTable.class,
+        "pkColumns");
+
+    /** */
+    private static final Getter<CreateTable, Boolean> CREATE_TABLE_IF_NOT_EXISTS = getter(CreateTable.class,
+        "ifNotExists");
+
+    /** */
+    private static final Getter<CreateTable, Query> CREATE_TABLE_QUERY = getter(CreateTable.class, "asQuery");
+
+    /** */
+    private static final Getter<DropTable, Boolean> DROP_TABLE_IF_EXISTS = getter(DropTable.class, "ifExists");
+
+    /** */
+    private static final Getter<DropTable, String> DROP_TABLE_NAME = getter(DropTable.class, "tableName");
+
+    /** */
+    private static final Getter<Column, Boolean> COLUMN_IS_COMPUTED = getter(Column.class, "isComputed");
+
+    /** */
+    private static final Getter<Column, Expression> COLUMN_CHECK_CONSTRAINT = getter(Column.class, "checkConstraint");
+
+    /** Class for private class: 'org.h2.command.CommandList'. */
+    private static final Class<? extends Command> CLS_COMMAND_LIST;
+
+    /** */
+    private static final Getter<Command, Command> LIST_COMMAND;
+
+    /** */
+    private static final Getter<Command, String> REMAINING;
+
+    /** */
+    public static final String ORG_H2_COMMAND_COMMAND_LIST = "org.h2.command.CommandList";
+
+    static {
+        try {
+            CLS_COMMAND_LIST = (Class<? extends Command>)CommandContainer.class.getClassLoader()
+                .loadClass(ORG_H2_COMMAND_COMMAND_LIST);
+
+            LIST_COMMAND = getter(CLS_COMMAND_LIST, "command");
+
+            REMAINING = getter(CLS_COMMAND_LIST, "remaining");
+        }
+        catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, String> ALTER_COLUMN_TBL_NAME =
+        getter(AlterTableAlterColumn.class, "tableName");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, ArrayList<Column>> ALTER_COLUMN_NEW_COLS =
+        getter(AlterTableAlterColumn.class, "columnsToAdd");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, ArrayList<Column>> ALTER_COLUMN_REMOVE_COLS =
+        getter(AlterTableAlterColumn.class, "columnsToRemove");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, Boolean> ALTER_COLUMN_IF_NOT_EXISTS =
+        getter(AlterTableAlterColumn.class, "ifNotExists");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, Boolean> ALTER_COLUMN_IF_TBL_EXISTS =
+        getter(AlterTableAlterColumn.class, "ifTableExists");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, String> ALTER_COLUMN_BEFORE_COL =
+        getter(AlterTableAlterColumn.class, "addBefore");
+
+    /** */
+    private static final Getter<AlterTableAlterColumn, String> ALTER_COLUMN_AFTER_COL =
+        getter(AlterTableAlterColumn.class, "addAfter");
+
+    /** */
+    private static final String PARAM_NAME_VALUE_SEPARATOR = "=";
+
+    /** */
+    private static final String PARAM_TEMPLATE = "TEMPLATE";
+
+    /** */
+    private static final String PARAM_BACKUPS = "BACKUPS";
+
+    /** */
+    private static final String PARAM_ATOMICITY = "ATOMICITY";
+
+    /** */
+    private static final String PARAM_CACHE_GROUP_OLD = "CACHEGROUP";
+
+    /** */
+    private static final String PARAM_AFFINITY_KEY_OLD = "AFFINITYKEY";
+
+    /** */
+    private static final String PARAM_CACHE_GROUP = "CACHE_GROUP";
+
+    /** */
+    private static final String PARAM_AFFINITY_KEY = "AFFINITY_KEY";
+
+    /** */
+    private static final String PARAM_WRITE_SYNC = "WRITE_SYNCHRONIZATION_MODE";
+
+    /** */
+    private static final String PARAM_CACHE_NAME = "CACHE_NAME";
+
+    /** */
+    private static final String PARAM_KEY_TYPE = "KEY_TYPE";
+
+    /** */
+    private static final String PARAM_VAL_TYPE = "VALUE_TYPE";
+
+    /** */
+    private static final String PARAM_WRAP_KEY = "WRAP_KEY";
+
+    /** */
+    public static final String PARAM_WRAP_VALUE = "WRAP_VALUE";
+
+    /** Data region name. */
+    public static final String PARAM_DATA_REGION = "DATA_REGION";
+
+    /** */
     private final IdentityHashMap<Object, Object> h2ObjToGridObj = new IdentityHashMap<>();
 
     /** */
@@ -318,6 +523,16 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * @param stmt Prepared statement to check.
+     * @return {@code true} in case of multiple statements.
+     */
+    public static boolean checkMultipleStatements(PreparedStatement stmt) {
+        Command cmd = COMMAND.get((JdbcPreparedStatement)stmt);
+
+        return ORG_H2_COMMAND_COMMAND_LIST.equals(cmd.getClass().getName());
+    }
+
+    /**
      * @param stmt Prepared statement.
      * @return Parsed select.
      */
@@ -327,6 +542,26 @@ public class GridSqlQueryParser {
         assert cmd instanceof CommandContainer;
 
         return PREPARED.get(cmd);
+    }
+
+    /**
+     * @param stmt Prepared statement.
+     * @return Parsed select.
+     */
+    public static PreparedWithRemaining preparedWithRemaining(PreparedStatement stmt) {
+        Command cmd = COMMAND.get((JdbcPreparedStatement)stmt);
+
+        if (cmd instanceof CommandContainer)
+            return new PreparedWithRemaining(PREPARED.get(cmd), null);
+        else {
+            Class<?> cmdCls = cmd.getClass();
+
+            if (cmdCls.getName().equals(ORG_H2_COMMAND_COMMAND_LIST)) {
+                return new PreparedWithRemaining(PREPARED.get(LIST_COMMAND.get(cmd)), REMAINING.get(cmd));
+            }
+            else
+                throw new IgniteSQLException("Unexpected statement command");
+        }
     }
 
     /**
@@ -349,6 +584,10 @@ public class GridSqlQueryParser {
 
         if (res == null) {
             res = parseTable(filter.getTable());
+
+            // Setup index hints.
+            if (res instanceof GridSqlTable && filter.getIndexHints() != null)
+                ((GridSqlTable)res).useIndexes(new ArrayList<>(filter.getIndexHints().getAllowedIndexes()));
 
             String alias = ALIAS.get(filter);
 
@@ -390,6 +629,8 @@ public class GridSqlQueryParser {
                 res.addChild(parseExpression(RANGE_MIN.get((RangeTable)tbl), false));
                 res.addChild(parseExpression(RANGE_MAX.get((RangeTable)tbl), false));
             }
+            else if (tbl instanceof MetaTable)
+                res = new GridSqlTable(tbl);
             else
                 assert0(false, "Unexpected Table implementation [cls=" + tbl.getClass().getSimpleName() + ']');
 
@@ -415,7 +656,7 @@ public class GridSqlQueryParser {
         res.distinct(select.isDistinct());
 
         Expression where = CONDITION.get(select);
-        res.where(parseExpression(where, false));
+        res.where(parseExpression(where, true));
 
         ArrayList<TableFilter> tableFilters = new ArrayList<>();
 
@@ -447,7 +688,7 @@ public class GridSqlQueryParser {
             GridSqlElement gridFilter = parseTableFilter(f);
 
             from = from == null ? gridFilter : new GridSqlJoin(from, gridFilter, f.isJoinOuter(),
-                parseExpression(f.getJoinCondition(), false));
+                parseExpression(f.getJoinCondition(), true));
         }
 
         res.from(from);
@@ -521,9 +762,24 @@ public class GridSqlQueryParser {
 
         Column[] srcKeys = MERGE_KEYS.get(merge);
 
+        GridH2Table intoTbl = DmlAstUtils.gridTableForElement(tbl).dataTable();
+
+        GridH2RowDescriptor rowDesc = intoTbl.rowDescriptor();
+
         GridSqlColumn[] keys = new GridSqlColumn[srcKeys.length];
-        for (int i = 0; i < srcKeys.length; i++)
-            keys[i] = new GridSqlColumn(srcKeys[i], tbl, null, null, srcKeys[i].getName());
+
+        for (int i = 0; i < srcKeys.length; i++) {
+            String colName = srcKeys[i].getName();
+
+            int colId = intoTbl.getColumn(colName).getColumnId();
+
+            if (!rowDesc.isKeyColumn(colId) && !F.eq(colName, rowDesc.type().affinityKey()))
+                throw new IgniteSQLException("Invalid column name in KEYS clause of MERGE - it may include only " +
+                    "key and/or affinity columns: " + colName, IgniteQueryErrorCode.PARSING);
+
+            keys[i] = new GridSqlColumn(srcKeys[i], tbl, null, null, colName);
+        }
+
         res.keys(keys);
 
         List<Expression[]> srcRows = MERGE_ROWS.get(merge);
@@ -654,6 +910,617 @@ public class GridSqlQueryParser {
         return res;
     }
 
+
+
+    /**
+     * Parse {@code DROP INDEX} statement.
+     *
+     * @param dropIdx {@code DROP INDEX} statement.
+     * @see <a href="http://h2database.com/html/grammar.html#drop_index">H2 {@code DROP INDEX} spec.</a>
+     */
+    private GridSqlDropIndex parseDropIndex(DropIndex dropIdx) {
+        GridSqlDropIndex res = new GridSqlDropIndex();
+
+        res.indexName(DROP_INDEX_NAME.get(dropIdx));
+        res.schemaName(SCHEMA_COMMAND_SCHEMA.get(dropIdx).getName());
+        res.ifExists(DROP_INDEX_IF_EXISTS.get(dropIdx));
+
+        return res;
+    }
+
+    /**
+     * Parse {@code CREATE INDEX} statement.
+     *
+     * @param createIdx {@code CREATE INDEX} statement.
+     * @see <a href="http://h2database.com/html/grammar.html#create_index">H2 {@code CREATE INDEX} spec.</a>
+     */
+    private GridSqlCreateIndex parseCreateIndex(CreateIndex createIdx) {
+        if (CREATE_INDEX_HASH.get(createIdx) || CREATE_INDEX_PRIMARY_KEY.get(createIdx) ||
+            CREATE_INDEX_UNIQUE.get(createIdx))
+            throw new IgniteSQLException("Only SPATIAL modifier is supported for CREATE INDEX",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        GridSqlCreateIndex res = new GridSqlCreateIndex();
+
+        Schema schema = SCHEMA_COMMAND_SCHEMA.get(createIdx);
+
+        String tblName = CREATE_INDEX_TABLE_NAME.get(createIdx);
+
+        res.schemaName(schema.getName());
+        res.tableName(tblName);
+        res.ifNotExists(CREATE_INDEX_IF_NOT_EXISTS.get(createIdx));
+
+        QueryIndex idx = new QueryIndex();
+
+        idx.setName(CREATE_INDEX_NAME.get(createIdx));
+        idx.setIndexType(CREATE_INDEX_SPATIAL.get(createIdx) ? QueryIndexType.GEOSPATIAL : QueryIndexType.SORTED);
+
+        IndexColumn[] cols = CREATE_INDEX_COLUMNS.get(createIdx);
+
+        LinkedHashMap<String, Boolean> flds = new LinkedHashMap<>(cols.length);
+
+        for (IndexColumn col : CREATE_INDEX_COLUMNS.get(createIdx)) {
+            int sortType = INDEX_COLUMN_SORT_TYPE.get(col);
+
+            if ((sortType & SortOrder.NULLS_FIRST) != 0 || (sortType & SortOrder.NULLS_LAST) != 0)
+                throw new IgniteSQLException("NULLS FIRST and NULLS LAST modifiers are not supported for index columns",
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            flds.put(INDEX_COLUMN_NAME.get(col), (sortType & SortOrder.DESCENDING) == 0);
+        }
+
+        idx.setFields(flds);
+
+        res.index(idx);
+
+        return res;
+    }
+
+    /**
+     * Parse {@code CREATE TABLE} statement.
+     *
+     * @param createTbl {@code CREATE TABLE} statement.
+     * @see <a href="http://h2database.com/html/grammar.html#create_table">H2 {@code CREATE TABLE} spec.</a>
+     */
+    private GridSqlCreateTable parseCreateTable(CreateTable createTbl) {
+        GridSqlCreateTable res = new GridSqlCreateTable();
+
+        res.templateName(QueryUtils.TEMPLATE_PARTITIONED);
+
+        Query qry = CREATE_TABLE_QUERY.get(createTbl);
+
+        if (qry != null)
+            throw new IgniteSQLException("CREATE TABLE ... AS ... syntax is not supported",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        List<DefineCommand> constraints = CREATE_TABLE_CONSTRAINTS.get(createTbl);
+
+        if (constraints.size() == 0)
+            throw new IgniteSQLException("No PRIMARY KEY defined for CREATE TABLE",
+                IgniteQueryErrorCode.PARSING);
+
+        if (constraints.size() > 1)
+            throw new IgniteSQLException("Too many constraints - only PRIMARY KEY is supported for CREATE TABLE",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        DefineCommand constraint = constraints.get(0);
+
+        if (!(constraint instanceof AlterTableAddConstraint))
+            throw new IgniteSQLException("Unsupported type of constraint for CREATE TABLE - only PRIMARY KEY " +
+                "is supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        AlterTableAddConstraint alterTbl = (AlterTableAddConstraint)constraint;
+
+        if (alterTbl.getType() != Command.ALTER_TABLE_ADD_CONSTRAINT_PRIMARY_KEY)
+            throw new IgniteSQLException("Unsupported type of constraint for CREATE TABLE - only PRIMARY KEY " +
+                "is supported", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        Schema schema = SCHEMA_COMMAND_SCHEMA.get(createTbl);
+
+        res.schemaName(schema.getName());
+
+        CreateTableData data = CREATE_TABLE_DATA.get(createTbl);
+
+        LinkedHashMap<String, GridSqlColumn> cols = new LinkedHashMap<>(data.columns.size());
+
+        for (Column col : data.columns)
+            cols.put(col.getName(), parseColumn(col));
+
+        if (cols.containsKey(QueryUtils.KEY_FIELD_NAME.toUpperCase()) ||
+            cols.containsKey(QueryUtils.VAL_FIELD_NAME.toUpperCase()))
+            throw new IgniteSQLException("Direct specification of _KEY and _VAL columns is forbidden",
+                IgniteQueryErrorCode.PARSING);
+
+        IndexColumn[] pkIdxCols = CREATE_TABLE_PK.get(createTbl);
+
+        if (F.isEmpty(pkIdxCols))
+            throw new AssertionError("No PRIMARY KEY columns specified");
+
+        LinkedHashSet<String> pkCols = new LinkedHashSet<>();
+
+        for (IndexColumn pkIdxCol : pkIdxCols) {
+            GridSqlColumn gridCol = cols.get(pkIdxCol.columnName);
+
+            if (gridCol == null)
+                throw new IgniteSQLException("PRIMARY KEY column is not defined: " + pkIdxCol.columnName,
+                    IgniteQueryErrorCode.PARSING);
+
+            pkCols.add(gridCol.columnName());
+        }
+
+        int keyColsNum = pkCols.size();
+        int valColsNum = cols.size() - keyColsNum;
+
+        if (valColsNum == 0)
+            throw new IgniteSQLException("Table must have at least one non PRIMARY KEY column.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        res.columns(cols);
+        res.primaryKeyColumns(pkCols);
+        res.tableName(data.tableName);
+        res.ifNotExists(CREATE_TABLE_IF_NOT_EXISTS.get(createTbl));
+
+        List<String> extraParams = data.tableEngineParams != null ? new ArrayList<String>() : null;
+
+        if (data.tableEngineParams != null)
+            for (String s : data.tableEngineParams)
+                extraParams.addAll(F.asList(s.split(",")));
+
+        res.params(extraParams);
+
+        if (!F.isEmpty(extraParams)) {
+            Map<String, String> params = new HashMap<>();
+
+            for (String p : extraParams) {
+                String[] parts = p.split(PARAM_NAME_VALUE_SEPARATOR);
+
+                if (parts.length > 2)
+                    throw new IgniteSQLException("Invalid parameter (key[=value] expected): " + p,
+                        IgniteQueryErrorCode.PARSING);
+
+                String name = parts[0].trim().toUpperCase();
+
+                String val = parts.length > 1 ? parts[1].trim() : null;
+
+                if (F.isEmpty(name))
+                    throw new IgniteSQLException("Invalid parameter (key[=value] expected): " + p,
+                        IgniteQueryErrorCode.PARSING);
+
+                if (params.put(name, val) != null)
+                    throw new IgniteSQLException("Duplicate parameter: " + p, IgniteQueryErrorCode.PARSING);
+            }
+
+            for (Map.Entry<String, String> e : params.entrySet())
+                processExtraParam(e.getKey(), e.getValue(), res);
+        }
+
+        // Process key wrapping.
+        Boolean wrapKey = res.wrapKey();
+
+        if (wrapKey != null && !wrapKey) {
+            if (keyColsNum > 1) {
+                throw new IgniteSQLException(PARAM_WRAP_KEY + " cannot be false when composite primary key exists.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!F.isEmpty(res.keyTypeName())) {
+                throw new IgniteSQLException(PARAM_WRAP_KEY + " cannot be false when " + PARAM_KEY_TYPE + " is set.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+        }
+
+        boolean wrapKey0 = (res.wrapKey() != null && res.wrapKey()) || !F.isEmpty(res.keyTypeName()) || keyColsNum > 1;
+
+        res.wrapKey(wrapKey0);
+
+        // Process value wrapping.
+        Boolean wrapVal = res.wrapValue();
+
+        if (wrapVal != null && !wrapVal) {
+            if (valColsNum > 1) {
+                throw new IgniteSQLException(PARAM_WRAP_VALUE + " cannot be false when multiple non-primary key " +
+                    "columns exist.", IgniteQueryErrorCode.PARSING);
+            }
+
+            if (!F.isEmpty(res.valueTypeName())) {
+                throw new IgniteSQLException(PARAM_WRAP_VALUE + " cannot be false when " + PARAM_VAL_TYPE + " is set.",
+                    IgniteQueryErrorCode.PARSING);
+            }
+
+            res.wrapValue(false);
+        }
+        else
+            res.wrapValue(true); // By default value is always wrapped to allow for ALTER TABLE ADD COLUMN commands.
+
+        if (!F.isEmpty(res.valueTypeName()) && F.eq(res.keyTypeName(), res.valueTypeName()))
+            throw new IgniteSQLException("Key and value type names " +
+                "should be different for CREATE TABLE: " + res.valueTypeName(), IgniteQueryErrorCode.PARSING);
+
+        if (res.affinityKey() == null) {
+            LinkedHashSet<String> pkCols0 = res.primaryKeyColumns();
+
+            if (!F.isEmpty(pkCols0) && pkCols0.size() == 1 && wrapKey0)
+                res.affinityKey(pkCols0.iterator().next());
+        }
+
+        return res;
+    }
+
+    /**
+     * Parse {@code DROP TABLE} statement.
+     *
+     * @param dropTbl {@code DROP TABLE} statement.
+     * @see <a href="http://h2database.com/html/grammar.html#drop_table">H2 {@code DROP TABLE} spec.</a>
+     */
+    private GridSqlDropTable parseDropTable(DropTable dropTbl) {
+        GridSqlDropTable res = new GridSqlDropTable();
+
+        Schema schema = SCHEMA_COMMAND_SCHEMA.get(dropTbl);
+
+        res.schemaName(schema.getName());
+
+        res.ifExists(DROP_TABLE_IF_EXISTS.get(dropTbl));
+
+        res.tableName(DROP_TABLE_NAME.get(dropTbl));
+
+        return res;
+    }
+
+    /**
+     * Parse {@code ALTER TABLE} statement.
+     * @param stmt H2 statement.
+     */
+    private GridSqlStatement parseAlterColumn(AlterTableAlterColumn stmt) {
+        switch (stmt.getType()) {
+            case CommandInterface.ALTER_TABLE_ADD_COLUMN:
+                return parseAddColumn(stmt);
+
+            case CommandInterface.ALTER_TABLE_DROP_COLUMN:
+                return parseDropColumn(stmt);
+
+            default: {
+                String stmtName = null;
+
+                switch (stmt.getType()) {
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_CHANGE_TYPE:
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_DEFAULT:
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_NOT_NULL:
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_RENAME:
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_NULL:
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_SELECTIVITY:
+                    case CommandInterface.ALTER_TABLE_ALTER_COLUMN_VISIBILITY:
+                        stmtName = "ALTER COLUMN";
+
+                        break;
+                }
+
+                if (stmtName == null) {
+                    throw new IgniteSQLException("Unsupported operation: " + stmt.getSQL(),
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                }
+                else {
+                    throw new IgniteSQLException(stmtName + " is not supported",
+                        IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                }
+            }
+        }
+    }
+
+    /**
+     * Turn H2 column to grid column and check requested features.
+     * @param col H2 column.
+     * @return Grid column.
+     */
+    private static GridSqlColumn parseColumn(Column col) {
+        if (col.isAutoIncrement())
+            throw new IgniteSQLException("AUTO_INCREMENT columns are not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (COLUMN_IS_COMPUTED.get(col))
+            throw new IgniteSQLException("Computed columns are not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (col.getDefaultExpression() != null) {
+            if (!col.getDefaultExpression().isConstant()) {
+                throw new IgniteSQLException("Non-constant DEFAULT expressions are not supported [colName=" + col.getName() + ']',
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            }
+
+            DataType colType = DataType.getDataType(col.getType());
+            DataType dfltType = DataType.getDataType(col.getDefaultExpression().getType());
+
+            if ((DataType.isStringType(colType.type) && !DataType.isStringType(dfltType.type))
+                || (DataType.supportsAdd(colType.type) && !DataType.supportsAdd(dfltType.type))) {
+                throw new IgniteSQLException("Invalid default value for column. [colName=" + col.getName()
+                    + ", colType=" + colType.name
+                    + ", dfltValueType=" + dfltType.name + ']',
+                    IgniteQueryErrorCode.UNEXPECTED_ELEMENT_TYPE);
+            }
+        }
+
+        if (col.getSequence() != null)
+            throw new IgniteSQLException("SEQUENCE columns are not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (col.getSelectivity() != Constants.SELECTIVITY_DEFAULT)
+            throw new IgniteSQLException("SELECTIVITY column attribute is not supported [colName=" + col.getName() + ']',
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        if (COLUMN_CHECK_CONSTRAINT.get(col) != null)
+            throw new IgniteSQLException("Column CHECK constraints are not supported [colName=" + col.getName() +
+                ']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        GridSqlColumn gridCol = new GridSqlColumn(col, null, col.getName());
+
+        gridCol.resultType(GridSqlType.fromColumn(col));
+
+        return gridCol;
+    }
+
+    /**
+     * Parse {@code ALTER TABLE ... ADD COLUMN} statement.
+     * @param addCol H2 statement.
+     * @return Grid SQL statement.
+     *
+     * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add"></a>
+     */
+    private GridSqlStatement parseAddColumn(AlterTableAlterColumn addCol) {
+        assert addCol.getType() == CommandInterface.ALTER_TABLE_ADD_COLUMN;
+
+        if (ALTER_COLUMN_BEFORE_COL.get(addCol) != null || ALTER_COLUMN_AFTER_COL.get(addCol) != null)
+            throw new IgniteSQLException("ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported" ,
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        GridSqlAlterTableAddColumn res = new GridSqlAlterTableAddColumn();
+
+        ArrayList<Column> h2NewCols = ALTER_COLUMN_NEW_COLS.get(addCol);
+
+        GridSqlColumn[] gridNewCols = new GridSqlColumn[h2NewCols.size()];
+
+        for (int i = 0; i < h2NewCols.size(); i++) {
+            Column col = h2NewCols.get(i);
+
+            if (col.getDefaultExpression() != null)
+                throw new IgniteSQLException("ALTER TABLE ADD COLUMN with DEFAULT value is not supported " +
+                    "[col=" + col.getName() + ']', IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+            gridNewCols[i] = parseColumn(h2NewCols.get(i));
+        }
+
+        res.columns(gridNewCols);
+
+        if (gridNewCols.length == 1)
+            res.ifNotExists(ALTER_COLUMN_IF_NOT_EXISTS.get(addCol));
+
+        res.ifTableExists(ALTER_COLUMN_IF_TBL_EXISTS.get(addCol));
+
+        Schema schema = SCHEMA_COMMAND_SCHEMA.get(addCol);
+
+        res.schemaName(schema.getName());
+
+        res.tableName(ALTER_COLUMN_TBL_NAME.get(addCol));
+
+        return res;
+    }
+
+    /**
+     * Parse {@code ALTER TABLE ... DROP COLUMN} statement.
+     * @param dropCol H2 statement.
+     * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add"></a>
+     */
+    private GridSqlStatement parseDropColumn(AlterTableAlterColumn dropCol) {
+        assert dropCol.getType() == CommandInterface.ALTER_TABLE_DROP_COLUMN;
+
+        GridSqlAlterTableDropColumn res = new GridSqlAlterTableDropColumn();
+
+        ArrayList<Column> h2DropCols = ALTER_COLUMN_REMOVE_COLS.get(dropCol);
+
+        String[] gridDropCols = new String[h2DropCols.size()];
+
+        for (int i = 0; i < h2DropCols.size(); i++)
+            gridDropCols[i] = h2DropCols.get(i).getName();
+
+        res.columns(gridDropCols);
+
+        if (gridDropCols.length == 1)
+            res.ifExists(!ALTER_COLUMN_IF_NOT_EXISTS.get(dropCol));
+
+        res.ifTableExists(ALTER_COLUMN_IF_TBL_EXISTS.get(dropCol));
+
+        Schema schema = SCHEMA_COMMAND_SCHEMA.get(dropCol);
+
+        res.schemaName(schema.getName());
+
+        res.tableName(ALTER_COLUMN_TBL_NAME.get(dropCol));
+
+        return res;
+    }
+
+    /**
+     * @param name Param name.
+     * @param val Param value.
+     * @param res Table params to update.
+     */
+    private static void processExtraParam(String name, String val, GridSqlCreateTable res) {
+        assert !F.isEmpty(name);
+
+        switch (name) {
+            case PARAM_TEMPLATE:
+                ensureNotEmpty(name, val);
+
+                res.templateName(val);
+
+                break;
+
+            case PARAM_BACKUPS:
+                ensureNotEmpty(name, val);
+
+                int backups = parseIntParam(PARAM_BACKUPS, val);
+
+                if (backups < 0)
+                    throw new IgniteSQLException("\"" + PARAM_BACKUPS + "\" cannot be negative: " + backups,
+                        IgniteQueryErrorCode.PARSING);
+
+                res.backups(backups);
+
+                break;
+
+            case PARAM_ATOMICITY:
+                ensureNotEmpty(name, val);
+
+                CacheAtomicityMode atomicityMode;
+
+                if (CacheAtomicityMode.TRANSACTIONAL.name().equalsIgnoreCase(val))
+                    atomicityMode = CacheAtomicityMode.TRANSACTIONAL;
+                else if (CacheAtomicityMode.ATOMIC.name().equalsIgnoreCase(val))
+                    atomicityMode = CacheAtomicityMode.ATOMIC;
+                else
+                    throw new IgniteSQLException("Invalid value of \"" + PARAM_ATOMICITY + "\" parameter " +
+                        "(should be either TRANSACTIONAL or ATOMIC): " + val, IgniteQueryErrorCode.PARSING);
+
+                res.atomicityMode(atomicityMode);
+
+                break;
+
+            case PARAM_CACHE_NAME:
+                ensureNotEmpty(name, val);
+
+                res.cacheName(val);
+
+                break;
+
+            case PARAM_KEY_TYPE:
+                ensureNotEmpty(name, val);
+
+                res.keyTypeName(val);
+
+                break;
+
+            case PARAM_VAL_TYPE:
+                ensureNotEmpty(name, val);
+
+                res.valueTypeName(val);
+
+                break;
+
+            case PARAM_CACHE_GROUP_OLD:
+            case PARAM_CACHE_GROUP:
+                ensureNotEmpty(name, val);
+
+                res.cacheGroup(val);
+
+                break;
+
+            case PARAM_AFFINITY_KEY_OLD:
+            case PARAM_AFFINITY_KEY:
+                ensureNotEmpty(name, val);
+
+                String affColName = null;
+
+                // Either strip column name off its quotes, or uppercase it.
+                if (val.startsWith("'")) {
+                    if (val.length() == 1 || !val.endsWith("'"))
+                        throw new IgniteSQLException("Affinity key column name does not have trailing quote: " + val,
+                            IgniteQueryErrorCode.PARSING);
+
+                    val = val.substring(1, val.length() - 1);
+
+                    ensureNotEmpty(name, val);
+
+                    affColName = val;
+                }
+                else {
+                    for (String colName : res.columns().keySet()) {
+                        if (val.equalsIgnoreCase(colName)) {
+                            if (affColName != null)
+                                throw new IgniteSQLException("Ambiguous affinity column name, use single quotes " +
+                                    "for case sensitivity: " + val, IgniteQueryErrorCode.PARSING);
+
+                            affColName = colName;
+                        }
+                    }
+                }
+
+                if (affColName == null || !res.columns().containsKey(affColName))
+                    throw new IgniteSQLException("Affinity key column with given name not found: " + val,
+                        IgniteQueryErrorCode.PARSING);
+
+                if (!res.primaryKeyColumns().contains(affColName))
+                    throw new IgniteSQLException("Affinity key column must be one of key columns: " + affColName,
+                        IgniteQueryErrorCode.PARSING);
+
+                res.affinityKey(affColName);
+
+                break;
+
+            case PARAM_WRITE_SYNC:
+                ensureNotEmpty(name, val);
+
+                CacheWriteSynchronizationMode writeSyncMode;
+
+                if (CacheWriteSynchronizationMode.FULL_ASYNC.name().equalsIgnoreCase(val))
+                    writeSyncMode = CacheWriteSynchronizationMode.FULL_ASYNC;
+                else if (CacheWriteSynchronizationMode.FULL_SYNC.name().equalsIgnoreCase(val))
+                    writeSyncMode = CacheWriteSynchronizationMode.FULL_SYNC;
+                else if (CacheWriteSynchronizationMode.PRIMARY_SYNC.name().equalsIgnoreCase(val))
+                    writeSyncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC;
+                else
+                    throw new IgniteSQLException("Invalid value of \"" + PARAM_WRITE_SYNC + "\" parameter " +
+                        "(should be FULL_SYNC, FULL_ASYNC, or PRIMARY_SYNC): " + val, IgniteQueryErrorCode.PARSING);
+
+                res.writeSynchronizationMode(writeSyncMode);
+
+                break;
+
+            case PARAM_WRAP_KEY: {
+                res.wrapKey(F.isEmpty(val) || Boolean.parseBoolean(val));
+
+                break;
+            }
+
+            case PARAM_WRAP_VALUE:
+                res.wrapValue(F.isEmpty(val) || Boolean.parseBoolean(val));
+
+                break;
+
+            case PARAM_DATA_REGION:
+                ensureNotEmpty(name, val);
+
+                res.dataRegionName(val);
+
+                break;
+
+            default:
+                throw new IgniteSQLException("Unsupported parameter: " + name, IgniteQueryErrorCode.PARSING);
+        }
+    }
+
+    /**
+     * Check that param with mandatory value has it specified.
+     * @param name Param name.
+     * @param val Param value to check.
+     */
+    private static void ensureNotEmpty(String name, String val) {
+        if (F.isEmpty(val))
+            throw new IgniteSQLException("Parameter value cannot be empty: " + name, IgniteQueryErrorCode.PARSING);
+    }
+
+    /**
+     * Parse given value as integer, or throw an {@link IgniteSQLException} if it's not of matching format.
+     * @param name param name.
+     * @param val param value.
+     * @return parsed int value.
+     */
+    private static int parseIntParam(String name, String val) {
+        try {
+            return Integer.parseInt(val);
+        }
+        catch (NumberFormatException ignored) {
+            throw new IgniteSQLException("Parameter value must be an integer [name=" + name + ", value=" + val + ']',
+                IgniteQueryErrorCode.PARSING);
+        }
+    }
+
     /**
      * @param sortOrder Sort order.
      * @param qry Query.
@@ -691,6 +1558,61 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * Check if query may be run locally on all caches mentioned in the query.
+     * @param replicatedOnlyQry replicated-only query flag from original {@link SqlFieldsQuery}.
+     * @return {@code true} if query may be run locally on all caches mentioned in the query, i.e. there's no need
+     *     to run distributed query.
+     * @see SqlFieldsQuery#isReplicatedOnly()
+     */
+    public boolean isLocalQuery(boolean replicatedOnlyQry) {
+        boolean hasCaches = false;
+
+        for (Object o : h2ObjToGridObj.values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable) {
+                GridH2Table tbl = ((GridSqlTable)o).dataTable();
+
+                if (tbl != null) {
+                    hasCaches = true;
+
+                    GridCacheContext cctx = tbl.cache();
+
+                    if (!cctx.isLocal() && !(replicatedOnlyQry && cctx.isReplicatedAffinityNode()))
+                        return false;
+                }
+            }
+        }
+
+        // For consistency with old logic, let's not force locality in absence of caches -
+        // if there are no caches, original SqlFieldsQuery's isLocal flag will be used.
+        return hasCaches;
+    }
+
+    /**
+     * Get first (i.e. random, as we need any one) partitioned cache from parsed query
+     *     to determine expected query parallelism.
+     * @return Context for the first of partitioned caches mentioned in the query,
+     *     or {@code null} if it does not involve partitioned caches.
+     */
+    public GridCacheContext getFirstPartitionedCache() {
+        for (Object o : h2ObjToGridObj.values()) {
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable) {
+                GridH2Table tbl = ((GridSqlTable)o).dataTable();
+
+                if (tbl != null && tbl.cache().isPartitioned())
+                    return tbl.cache();
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @param stmt Prepared statement.
      * @return Parsed AST.
      */
@@ -716,6 +1638,21 @@ public class GridSqlQueryParser {
 
         if (stmt instanceof Explain)
             return parse(EXPLAIN_COMMAND.get((Explain)stmt)).explain(true);
+
+        if (stmt instanceof CreateIndex)
+            return parseCreateIndex((CreateIndex)stmt);
+
+        if (stmt instanceof DropIndex)
+            return parseDropIndex((DropIndex)stmt);
+
+        if (stmt instanceof CreateTable)
+            return parseCreateTable((CreateTable)stmt);
+
+        if (stmt instanceof DropTable)
+            return parseDropTable((DropTable)stmt);
+
+        if (stmt instanceof AlterTableAlterColumn)
+            return parseAlterColumn((AlterTableAlterColumn)stmt);
 
         throw new CacheException("Unsupported SQL statement: " + stmt);
     }
@@ -940,7 +1877,7 @@ public class GridSqlQueryParser {
 
             res.addChild(parseExpression(LEFT_CIS.get((ConditionInSelect)expression), calcTypes));
 
-            Query qry = QUERY.get((ConditionInSelect)expression);
+            Query qry = QUERY_IN.get((ConditionInSelect)expression);
 
             res.addChild(parseQueryExpression(qry));
 
@@ -1043,8 +1980,30 @@ public class GridSqlQueryParser {
             return res;
         }
 
+        if (expression instanceof ConditionExists) {
+            Query qry = QUERY_EXISTS.get((ConditionExists)expression);
+
+            GridSqlOperation res = new GridSqlOperation(EXISTS);
+
+            res.addChild(parseQueryExpression(qry));
+
+            return res;
+        }
+
         throw new IgniteException("Unsupported expression: " + expression + " [type=" +
             expression.getClass().getSimpleName() + ']');
+    }
+
+    /**
+     * Check if passed statement is insert statement eligible for streaming.
+     *
+     * @param nativeStmt Native statement.
+     * @return {@code True} if streamable insert.
+     */
+    public static boolean isStreamableInsertStatement(PreparedStatement nativeStmt) {
+        Prepared prep = prepared(nativeStmt);
+
+        return prep instanceof Insert && INSERT_QUERY.get((Insert)prep) == null;
     }
 
     /**
@@ -1101,6 +2060,44 @@ public class GridSqlQueryParser {
             catch (IllegalAccessException e) {
                 throw new IgniteException(e);
             }
+        }
+    }
+
+    /**
+     *
+     */
+    public static class PreparedWithRemaining {
+        /** Prepared. */
+        private Prepared prepared;
+
+        /** Remaining sql. */
+        private String remainingSql;
+
+        /**
+         * @param prepared Prepared.
+         * @param sql Remaining SQL.
+         */
+        public PreparedWithRemaining(Prepared prepared, String sql) {
+            this.prepared = prepared;
+
+            if (sql != null)
+                sql = sql.trim();
+
+            remainingSql = !F.isEmpty(sql) ? sql : null;
+        }
+
+        /**
+         * @return Prepared.
+         */
+        public Prepared prepared() {
+            return prepared;
+        }
+
+        /**
+         * @return Remaining SQL.
+         */
+        public String remainingSql() {
+            return remainingSql;
         }
     }
 }

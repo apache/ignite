@@ -28,6 +28,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -61,9 +62,9 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        IgniteDiscoverySpi srvSpi = spi0(srv);
 
         EventListener lsnr = new EventListener();
 
@@ -133,9 +134,9 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        IgniteDiscoverySpi srvSpi = spi0(srv);
 
         final String topic = "testTopic";
 
@@ -216,7 +217,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         assertTrue(client.cluster().localNode().isClient());
 
-        IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>());
+        IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         CacheEventListener lsnr = new CacheEventListener();
 
@@ -253,7 +254,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         assertTrue(client.cluster().localNode().isClient());
 
-        IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>());
+        IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         CacheEventListener lsnr = new CacheEventListener();
 
@@ -273,7 +274,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
             lsnr.latch = new CountDownLatch(10);
 
-            IgniteCache<Object, Object> newSrvCache = newSrv.cache(null);
+            IgniteCache<Object, Object> newSrvCache = newSrv.cache(DEFAULT_CACHE_NAME);
 
             for (Integer key : primaryKeys(newSrvCache, 10))
                 newSrvCache.put(key, key);
@@ -289,7 +290,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
             lsnr.latch = new CountDownLatch(5);
 
-            IgniteCache<Object, Object> newSrvCache = newSrv.cache(null);
+            IgniteCache<Object, Object> newSrvCache = newSrv.cache(DEFAULT_CACHE_NAME);
 
             for (Integer key : primaryKeys(newSrvCache, 5))
                 newSrvCache.put(key, key);
@@ -309,9 +310,9 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
         CacheEventListener lsnr)
         throws Exception
     {
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        IgniteDiscoverySpi srvSpi = spi0(srv);
 
         final CountDownLatch reconnectLatch = new CountDownLatch(1);
 
@@ -343,7 +344,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         lsnr.latch = new CountDownLatch(1);
 
-        srv.cache(null).put(2, 2);
+        srv.cache(DEFAULT_CACHE_NAME).put(2, 2);
 
         assertTrue(lsnr.latch.await(5000, MILLISECONDS));
     }

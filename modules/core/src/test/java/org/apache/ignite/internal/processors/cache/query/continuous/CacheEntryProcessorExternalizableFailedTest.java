@@ -82,8 +82,8 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
     private boolean failOnWrite = false;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
@@ -102,13 +102,6 @@ public class CacheEntryProcessorExternalizableFailedTest extends GridCommonAbstr
         client = true;
 
         startGrid(getServerNodeCount());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */

@@ -17,8 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Store
 {
-    using System;
-    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
@@ -28,7 +26,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     /// <summary>
     /// Test cache store with parallel load.
     /// </summary>
-    public class CacheTestParallelLoadStore : CacheParallelLoadStoreAdapter
+    public class CacheTestParallelLoadStore : 
+        CacheParallelLoadStoreAdapter<object, object, CacheTestParallelLoadStore.Record>
     {
         /** Length of input data sequence */
         public const int InputDataLength = 10000;
@@ -61,23 +60,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         }
 
         /** <inheritdoc /> */
-        protected override IEnumerable GetInputData()
+        protected override IEnumerable<Record> GetInputData()
         {
             return Enumerable.Range(0, InputDataLength).Select(x => new Record {Id = x, Name = "Test Record " + x});
         }
 
         /** <inheritdoc /> */
-        protected override KeyValuePair<object, object>? Parse(object inputRecord, params object[] args)
+        protected override KeyValuePair<object, object>? Parse(Record inputRecord, params object[] args)
         {
             var threadId = Thread.CurrentThread.ManagedThreadId;
             ThreadIds.GetOrAdd(threadId, threadId);
 
             var minId = (int)args[0];
 
-            var rec = (Record)inputRecord;
-
-            return rec.Id >= minId
-                ? new KeyValuePair<object, object>(rec.Id, rec)
+            return inputRecord.Id >= minId
+                ? new KeyValuePair<object, object>(inputRecord.Id, inputRecord)
                 : (KeyValuePair<object, object>?) null;
         }
 
@@ -94,6 +91,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             /// <summary>
             /// Gets or sets the name.
             /// </summary>
+            // ReSharper disable once UnusedAutoPropertyAccessor.Global
             public string Name { get; set; }
         }
     }

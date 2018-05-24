@@ -64,19 +64,19 @@ public class IgniteCachePartitionMapUpdateTest extends GridCommonAbstractTest {
     private boolean cache2;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        CacheConfiguration ccfg1 = new CacheConfiguration();
+        CacheConfiguration ccfg1 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg1.setName(CACHE1);
         ccfg1.setCacheMode(PARTITIONED);
         ccfg1.setBackups(1);
         ccfg1.setNodeFilter(new AttributeFilter(CACHE1_ATTR));
 
-        CacheConfiguration ccfg2 = new CacheConfiguration();
+        CacheConfiguration ccfg2 = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg2.setName(CACHE2);
         ccfg2.setCacheMode(PARTITIONED);

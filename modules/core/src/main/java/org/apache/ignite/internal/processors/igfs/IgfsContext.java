@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridTopic;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -169,22 +170,10 @@ public class IgfsContext {
         if (!kernalContext().localNodeId().equals(nodeId))
             msg.prepareMarshal(kernalContext().config().getMarshaller());
 
-        kernalContext().io().send(nodeId, topic, msg, plc);
-    }
-
-    /**
-     * @param node Node.
-     * @param topic Topic.
-     * @param msg Message.
-     * @param plc Policy.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void send(ClusterNode node, Object topic, IgfsCommunicationMessage msg, byte plc)
-        throws IgniteCheckedException {
-        if (!kernalContext().localNodeId().equals(node.id()))
-            msg.prepareMarshal(kernalContext().config().getMarshaller());
-
-        kernalContext().io().send(node, topic, msg, plc);
+        if (topic instanceof GridTopic)
+            kernalContext().io().sendToGridTopic(nodeId, (GridTopic)topic, msg, plc);
+        else
+            kernalContext().io().sendToCustomTopic(nodeId, topic, msg, plc);
     }
 
     /**

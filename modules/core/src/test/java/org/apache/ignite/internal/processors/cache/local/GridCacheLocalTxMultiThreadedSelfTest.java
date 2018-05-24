@@ -35,8 +35,8 @@ public class GridCacheLocalTxMultiThreadedSelfTest extends IgniteTxMultiThreaded
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -73,7 +73,7 @@ public class GridCacheLocalTxMultiThreadedSelfTest extends IgniteTxMultiThreaded
 
     /** {@inheritDoc} */
     @Override protected int threadCount() {
-        return 8;
+        return 2;
     }
 
     /** {@inheritDoc} */

@@ -27,10 +27,10 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.services.Service;
@@ -49,6 +49,9 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
     /** Number of grids started for tests. */
     private static final int NODES_CNT = 4;
 
+    /** */
+    private static final int CLIENT_IDX = 1;
+
     /** Test singleton service name. */
     private static final String SINGLETON_NAME = "testSingleton";
 
@@ -56,16 +59,16 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
+        cfg.setMarshaller(new BinaryMarshaller());
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder).setForceServerMode(true));
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         cfg.setCacheConfiguration();
 
-        if (gridName.equals(getTestGridName(0)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(CLIENT_IDX)))
             cfg.setClientMode(true);
 
         return cfg;
@@ -77,19 +80,16 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
         startGrids(NODES_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
     public void testDefaultClosure() throws Exception {
         Set<String> srvNames = new HashSet<>(NODES_CNT - 1);
 
-        for (int i = 1; i < NODES_CNT; ++i)
-            srvNames.add(getTestGridName(i));
+        for (int i = 0; i < NODES_CNT; ++i) {
+            if (i != CLIENT_IDX)
+                srvNames.add(getTestIgniteInstanceName(i));
+        }
 
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
@@ -137,7 +137,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
             assertEquals(1, res.size());
 
-            assertEquals(getTestGridName(0), F.first(res));
+            assertEquals(getTestIgniteInstanceName(CLIENT_IDX), F.first(res));
         }
     }
 
@@ -168,7 +168,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDefaultService() throws Exception {
-        UUID clientNodeId = grid(0).cluster().localNode().id();
+        UUID clientNodeId = grid(CLIENT_IDX).cluster().localNode().id();
 
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
@@ -209,7 +209,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientService() throws Exception {
-        UUID clientNodeId = grid(0).cluster().localNode().id();
+        UUID clientNodeId = grid(CLIENT_IDX).cluster().localNode().id();
 
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);

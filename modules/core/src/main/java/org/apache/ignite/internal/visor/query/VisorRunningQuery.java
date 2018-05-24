@@ -17,13 +17,18 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Descriptor of running query.
  */
-public class VisorRunningQuery implements Serializable {
+public class VisorRunningQuery extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -36,8 +41,8 @@ public class VisorRunningQuery implements Serializable {
     /** Query type. */
     private GridCacheQueryType qryType;
 
-    /** Cache name for query. */
-    private String cache;
+    /** Schema name. */
+    private String schemaName;
 
     /** */
     private long startTime;
@@ -52,22 +57,31 @@ public class VisorRunningQuery implements Serializable {
     private boolean loc;
 
     /**
+     * Default constructor.
+     */
+    public VisorRunningQuery() {
+        // No-op.
+    }
+
+    /**
+     * Construct data transfer object for running query information.
+     *
      * @param id Query ID.
      * @param qry Query text.
      * @param qryType Query type.
-     * @param cache Cache where query was executed.
+     * @param schemaName Query schema name.
      * @param startTime Query start time.
      * @param duration Query current duration.
      * @param cancellable {@code true} if query can be canceled.
      * @param loc {@code true} if query is local.
      */
-    public VisorRunningQuery(long id, String qry, GridCacheQueryType qryType, String cache,
+    public VisorRunningQuery(long id, String qry, GridCacheQueryType qryType, String schemaName,
         long startTime, long duration,
         boolean cancellable, boolean loc) {
         this.id = id;
         this.qry = qry;
         this.qryType = qryType;
-        this.cache = cache;
+        this.schemaName = schemaName;
         this.startTime = startTime;
         this.duration = duration;
         this.cancellable = cancellable;
@@ -96,10 +110,10 @@ public class VisorRunningQuery implements Serializable {
     }
 
     /**
-     * @return Cache name.
+     * @return Schema name.
      */
-    public String getCache() {
-        return cache;
+    public String getSchemaName() {
+        return schemaName;
     }
 
     /**
@@ -128,5 +142,34 @@ public class VisorRunningQuery implements Serializable {
      */
     public boolean isLocal() {
         return loc;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeLong(id);
+        U.writeString(out, qry);
+        U.writeEnum(out, qryType);
+        U.writeString(out, schemaName);
+        out.writeLong(startTime);
+        out.writeLong(duration);
+        out.writeBoolean(cancellable);
+        out.writeBoolean(loc);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        id = in.readLong();
+        qry = U.readString(in);
+        qryType = GridCacheQueryType.fromOrdinal(in.readByte());
+        schemaName = U.readString(in);
+        startTime = in.readLong();
+        duration = in.readLong();
+        cancellable = in.readBoolean();
+        loc = in.readBoolean();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(VisorRunningQuery.class, this);
     }
 }

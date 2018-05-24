@@ -43,8 +43,8 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -58,11 +58,6 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(GRID_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -83,7 +78,7 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
 
             final String svcName = "myService";
 
-            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, "key");
+            svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, primaryKey(ig.cache(cacheName)));
 
             boolean res = GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {
@@ -125,7 +120,15 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
 
         final String svcName = "myService";
 
-        svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, "key");
+        ig.createCache(ccfg);
+
+        Object key = primaryKey(ig.cache(cacheName));
+
+        ig.destroyCache(cacheName);
+
+        awaitPartitionMapExchange();
+
+        svcs.deployKeyAffinitySingleton(svcName, new TestService(), cacheName, key);
 
         assert svcs.service(svcName) == null;
 
@@ -139,6 +142,8 @@ public class IgniteServiceDynamicCachesSelfTest extends GridCommonAbstractTest {
             }, 10 * 1000);
 
             assertTrue("Service was not deployed", res);
+
+            info("stopping cache: " + cacheName);
 
             ig.destroyCache(cacheName);
 

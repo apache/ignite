@@ -43,8 +43,8 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
     private CacheStore store;
 
     /** {@inheritDoc} */
-    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected final IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -56,7 +56,6 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
 
         cc.setCacheMode(CacheMode.PARTITIONED);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         assert store != null;

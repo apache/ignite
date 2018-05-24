@@ -65,14 +65,15 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     private int gridCnt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setEvictionPolicy(new EvictionPolicy());
+        cc.setOnheapCacheEnabled(true);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();

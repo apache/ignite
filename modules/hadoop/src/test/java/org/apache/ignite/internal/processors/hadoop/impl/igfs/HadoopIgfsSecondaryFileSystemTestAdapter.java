@@ -132,7 +132,7 @@ public class HadoopIgfsSecondaryFileSystemTestAdapter implements IgfsSecondaryFi
     @Override public T2<Long, Long> times(String path) throws IOException {
         FileStatus status = get().getFileStatus(new Path(path));
 
-        return new T2<>(status.getAccessTime(), status.getModificationTime());
+        return new T2<>(status.getModificationTime(), status.getAccessTime());
     }
 
     /** {@inheritDoc} */

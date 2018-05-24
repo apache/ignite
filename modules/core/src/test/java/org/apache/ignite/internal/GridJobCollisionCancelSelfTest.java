@@ -80,7 +80,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings( {"AssignmentToCatchBlockParameter"})
     public void testCancel() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         ignite.compute().localDeployTask(GridCancelTestTask.class, GridCancelTestTask.class.getClassLoader());
 
@@ -102,7 +102,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
                 // Should be exactly the same as Jobs number.
                 assert cancelCnt <= SPLIT_COUNT : "Invalid cancel count: " + cancelCnt;
 
-                // One per start and one per stop and some that come with heartbeats.
+                // One per start and one per stop and some that come with metrics update.
                 assert colResolutionCnt > SPLIT_COUNT + 1:
                     "Invalid collision resolution count: " + colResolutionCnt;
             }
@@ -269,7 +269,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException {
+        @Override public void spiStart(String igniteInstanceName) throws IgniteSpiException {
             // Start SPI start stopwatch.
             startStopwatch();
 

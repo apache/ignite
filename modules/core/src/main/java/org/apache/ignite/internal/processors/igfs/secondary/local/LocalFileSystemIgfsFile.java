@@ -40,6 +40,9 @@ public class LocalFileSystemIgfsFile implements IgfsFile {
     /** Modification time. */
     private final long modTime;
 
+    /** Access time. */
+    private final long accessTime;
+
     /** Length. */
     private final long len;
 
@@ -51,19 +54,20 @@ public class LocalFileSystemIgfsFile implements IgfsFile {
      * @param isFile Path is a file.
      * @param isDir Path is a directory.
      * @param blockSize Block size in bytes.
+     * @param accessTime Access time in millis.
      * @param modTime Modification time in millis.
      * @param len File length in bytes.
      * @param props Properties.
      */
     public LocalFileSystemIgfsFile(IgfsPath path, boolean isFile, boolean isDir, int blockSize,
-        long modTime, long len, Map<String, String> props) {
-
+        long accessTime, long modTime, long len, Map<String, String> props) {
         assert !isDir || blockSize == 0 : "blockSize must be 0 for dirs. [blockSize=" + blockSize + ']';
         assert !isDir || len == 0 : "length must be 0 for dirs. [length=" + len + ']';
 
         this.path = path;
         flags = IgfsUtils.flags(isDir, isFile);
         this.blockSize = blockSize;
+        this.accessTime = accessTime;
         this.modTime = modTime;
         this.len = len;
         this.props = props;
@@ -96,7 +100,7 @@ public class LocalFileSystemIgfsFile implements IgfsFile {
 
     /** {@inheritDoc} */
     @Override public long accessTime() {
-        return 0;
+        return accessTime;
     }
 
     /** {@inheritDoc} */

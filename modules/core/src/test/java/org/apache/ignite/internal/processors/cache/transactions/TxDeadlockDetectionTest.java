@@ -65,8 +65,8 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         if (isDebug()) {
             TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -97,13 +97,6 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(NODES_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /**

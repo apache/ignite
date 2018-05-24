@@ -45,19 +45,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     /** */
-    private static TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    private TcpDiscoveryIpFinder singleTestIpFinder;
 
     /** REST port. */
     protected static final int REST_PORT = ConnectorConfiguration.DFLT_TCP_PORT;
 
     /** IGFS name. */
-    protected static final String igfsName = null;
-
-    /** IGFS name. */
-    protected static final String igfsMetaCacheName = "meta";
-
-    /** IGFS name. */
-    protected static final String igfsDataCacheName = "data";
+    protected static final String igfsName = "test";
 
     /** IGFS block size. */
     protected static final int igfsBlockSize = 1024;
@@ -101,6 +95,7 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
     /**
      * Performs additional initialization in the beginning of test class execution.
+     * @throws Exception If failed.
      */
     protected void beforeTestsStarted0() throws Exception {
         // noop
@@ -108,8 +103,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         // Restore classpath.
         System.setProperty("java.class.path", initCp);
 
@@ -117,10 +110,19 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
-        cfg.setHadoopConfiguration(hadoopConfiguration(gridName));
+        // IP finder should be re-created before each test,
+        // since predecessor grid shutdown does not guarantee finder's state cleanup.
+        singleTestIpFinder = new TcpDiscoveryVmIpFinder(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setHadoopConfiguration(hadoopConfiguration(igniteInstanceName));
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -130,13 +132,10 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
         TcpDiscoverySpi discoSpi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
 
-        discoSpi.setIpFinder(IP_FINDER);
+        discoSpi.setIpFinder(singleTestIpFinder);
 
-        if (igfsEnabled()) {
-            cfg.setCacheConfiguration(metaCacheConfiguration(), dataCacheConfiguration());
-
+        if (igfsEnabled())
             cfg.setFileSystemConfiguration(igfsConfiguration());
-        }
 
         if (restEnabled()) {
             ConnectorConfiguration clnCfg = new ConnectorConfiguration();
@@ -153,10 +152,10 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Hadoop configuration.
      */
-    public HadoopConfiguration hadoopConfiguration(String gridName) {
+    public HadoopConfiguration hadoopConfiguration(String igniteInstanceName) {
         HadoopConfiguration cfg = new HadoopConfiguration();
 
         cfg.setMaxParallelTasks(3);
@@ -166,14 +165,15 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
 
     /**
      * @return IGFS configuration.
+     * @throws Exception If failed.
      */
     public FileSystemConfiguration igfsConfiguration() throws Exception {
         FileSystemConfiguration cfg = new FileSystemConfiguration();
 
         cfg.setName(igfsName);
         cfg.setBlockSize(igfsBlockSize);
-        cfg.setDataCacheName(igfsDataCacheName);
-        cfg.setMetaCacheName(igfsMetaCacheName);
+        cfg.setDataCacheConfiguration(dataCacheConfiguration());
+        cfg.setMetaCacheConfiguration(metaCacheConfiguration());
         cfg.setFragmentizerEnabled(false);
 
         return cfg;
@@ -183,9 +183,8 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
      * @return IGFS meta cache configuration.
      */
     public CacheConfiguration metaCacheConfiguration() {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        cfg.setName(igfsMetaCacheName);
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -197,9 +196,8 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
      * @return IGFS data cache configuration.
      */
     protected CacheConfiguration dataCacheConfiguration() {
-        CacheConfiguration cfg = new CacheConfiguration();
+        CacheConfiguration cfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        cfg.setName(igfsDataCacheName);
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(igfsBlockGroupSize));
@@ -245,6 +243,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
      * @return IGFS scheme for test.
      */
     protected String igfsScheme() {
-        return "igfs://:" + getTestGridName(0) + "@/";
+        return "igfs://" + igfsName + "@/";
     }
 }

@@ -21,8 +21,10 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
@@ -35,6 +37,7 @@ import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSet;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteKernal;
@@ -62,11 +65,12 @@ import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
@@ -75,12 +79,35 @@ import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
  *
  */
 public class CacheDataStructuresManager extends GridCacheManagerAdapter {
+    /** Known classes which are safe to use on server nodes. */
+    private static final Collection<Class<?>> KNOWN_CLS = new HashSet<>();
+
+    /**
+     *
+     */
+    static {
+        KNOWN_CLS.add(String.class);
+        KNOWN_CLS.add(Boolean.class);
+        KNOWN_CLS.add(Byte.class);
+        KNOWN_CLS.add(Short.class);
+        KNOWN_CLS.add(Character.class);
+        KNOWN_CLS.add(Integer.class);
+        KNOWN_CLS.add(Long.class);
+        KNOWN_CLS.add(Float.class);
+        KNOWN_CLS.add(Double.class);
+        KNOWN_CLS.add(String.class);
+        KNOWN_CLS.add(UUID.class);
+        KNOWN_CLS.add(IgniteUuid.class);
+        KNOWN_CLS.add(BigDecimal.class);
+        KNOWN_CLS.add(BinaryObject.class);
+    }
+
     /** Sets map. */
     private final ConcurrentMap<IgniteUuid, GridCacheSetProxy> setsMap;
 
     /** Set keys used for set iteration. */
     private ConcurrentMap<IgniteUuid, GridConcurrentHashSet<SetItemKey>> setDataMap =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Queues map. */
     private final ConcurrentMap<IgniteUuid, GridCacheQueueProxy> queuesMap;
@@ -107,9 +134,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      *
      */
     public CacheDataStructuresManager() {
-        queuesMap = new ConcurrentHashMap8<>(10);
+        queuesMap = new ConcurrentHashMap<>(10);
 
-        setsMap = new ConcurrentHashMap8<>(10);
+        setsMap = new ConcurrentHashMap<>(10);
     }
 
     /** {@inheritDoc} */
@@ -133,6 +160,17 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         for (GridCacheQueueProxy q : queuesMap.values())
             q.delegate().onKernalStop();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture reconnectFut) {
+        super.onDisconnected(reconnectFut);
+
+        for (Map.Entry<IgniteUuid, GridCacheQueueProxy> e : queuesMap.entrySet()) {
+            GridCacheQueueProxy queue = e.getValue();
+
+            queue.delegate().onClientDisconnected();
+        }
     }
 
     /**
@@ -419,6 +457,14 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param obj Object.
+     * @return {@code True}
+     */
+    public boolean knownType(Object obj) {
+        return obj == null || KNOWN_CLS.contains(obj.getClass());
+    }
+
+    /**
      * @param id Set ID.
      * @return Data for given set.
      */
@@ -492,7 +538,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         new BlockSetCallable(cctx.name(), id),
                         nodes,
                         true,
-                        0).get();
+                        0, false).get();
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(ClusterTopologyCheckedException.class)) {
@@ -516,7 +562,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         new RemoveSetDataCallable(cctx.name(), id, topVer),
                         nodes,
                         true,
-                        0).get();
+                        0, false).get();
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(ClusterTopologyCheckedException.class)) {

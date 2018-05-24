@@ -41,8 +41,8 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -54,6 +54,8 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
+
+        ccfg.setStoreKeepBinary(storeValBytes);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -78,13 +80,16 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
         Ignite g0 = startGrid(0);
         Ignite g1 = startGrid(1);
 
-        IgniteCache<Integer, String> c = g0.cache(null);
+        IgniteCache<Integer, String> c = g0.cache(DEFAULT_CACHE_NAME);
 
         c.put(1, "Cached value");
 
-        GridCacheEntryEx entry = ((IgniteKernal)g1).internalCache().peekEx(1);
+        GridCacheEntryEx entry = ((IgniteKernal)g1).internalCache(DEFAULT_CACHE_NAME).entryEx(1);
 
         assert entry != null;
+
+        entry.unswap();
+
         assert entry.valueBytes() != null;
     }
 }

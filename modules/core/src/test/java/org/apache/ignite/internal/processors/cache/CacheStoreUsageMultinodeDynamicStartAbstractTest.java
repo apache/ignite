@@ -37,13 +37,6 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
         startGrid(3);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -157,12 +150,12 @@ public abstract class CacheStoreUsageMultinodeDynamicStartAbstractTest extends C
 
         try {
             if (nearCache)
-                client.createNearCache(null, new NearCacheConfiguration<>());
+                client.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration<>());
 
             checkStoreUpdate(true);
         }
         finally {
-            cache = srv.cache(null);
+            cache = srv.cache(DEFAULT_CACHE_NAME);
 
             if (cache != null)
                 cache.destroy();

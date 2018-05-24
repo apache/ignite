@@ -33,7 +33,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.CacheInterceptorEntry;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -53,7 +52,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -82,8 +80,8 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     private static BlockingQueue<Cache.Entry<TestKey, TestValue>> afterRmvEvts;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
@@ -98,13 +96,6 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         afterPutEvts = new BlockingArrayQueue<>();
         afterRmvEvts = new BlockingArrayQueue<>();
@@ -114,10 +105,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testLocal() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(ATOMIC,false);
 
         doTestPartitionCounterOperation(ccfg);
     }
@@ -126,10 +114,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testLocalWithStore() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(
-            ATOMIC,
-            ONHEAP_TIERED,
-            true);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(ATOMIC,true);
 
         doTestPartitionCounterOperation(ccfg);
     }
@@ -138,10 +123,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testLocalTx() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(TRANSACTIONAL,false);
 
         doTestPartitionCounterOperation(ccfg);
     }
@@ -150,10 +132,7 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testLocalTxWithStore() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            true);
+        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(TRANSACTIONAL,true);
 
         doTestPartitionCounterOperation(ccfg);
     }
@@ -488,18 +467,15 @@ public class CacheInterceptorPartitionCounterLocalSanityTest extends GridCommonA
 
     /**
      * @param atomicityMode Cache atomicity mode.
-     * @param memoryMode Cache memory mode.
      * @param store If {@code true} configures dummy cache store.
      * @return Cache configuration.
      */
     protected CacheConfiguration<Object, Object> cacheConfiguration(
         CacheAtomicityMode atomicityMode,
-        CacheMemoryMode memoryMode,
         boolean store) {
-        CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<TestKey, TestValue> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode);
-        ccfg.setMemoryMode(memoryMode);
         ccfg.setCacheMode(LOCAL);
 
         if (store) {

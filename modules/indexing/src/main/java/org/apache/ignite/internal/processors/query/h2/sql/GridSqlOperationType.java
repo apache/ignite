@@ -31,7 +31,7 @@ public enum GridSqlOperationType {
     MULTIPLY(2, new BiExpressionSqlGenerator("*")),
     DIVIDE(2, new BiExpressionSqlGenerator("/")),
     MODULUS(2, new BiExpressionSqlGenerator("%")),
-    NEGATE(1, new PrefixSqlGenerator("-")),
+    NEGATE(1, new PrefixSqlGenerator("-", true)),
 
     // from org.h2.expression.Comparison
     EQUAL(2, new BiExpressionSqlGenerator("=")),
@@ -47,7 +47,7 @@ public enum GridSqlOperationType {
     IS_NULL(1, new SuffixSqlGenerator("IS NULL")),
     IS_NOT_NULL(1, new SuffixSqlGenerator("IS NOT NULL")),
 
-    NOT(1, new PrefixSqlGenerator("NOT")),
+    NOT(1, new PrefixSqlGenerator("NOT", true)),
 
     // from org.h2.expression.ConditionAndOr
     AND(2, new BiExpressionSqlGenerator("AND")),
@@ -58,6 +58,7 @@ public enum GridSqlOperationType {
     LIKE(2, new BiExpressionSqlGenerator("LIKE")),
 
     IN(-1, new ConditionInSqlGenerator()),
+    EXISTS(1, new PrefixSqlGenerator("EXISTS", false)),
 
     ;
     /** */
@@ -145,18 +146,32 @@ public enum GridSqlOperationType {
         /** */
         private final String text;
 
+        /** */
+        private final boolean addSpace;
+
         /**
          * @param text Text.
+         * @param addSpace Add space char after the prefix.
          */
-        private PrefixSqlGenerator(String text) {
+        private PrefixSqlGenerator(String text, boolean addSpace) {
             this.text = text;
+            this.addSpace = addSpace;
         }
 
         /** {@inheritDoc} */
         @Override public String getSql(GridSqlOperation operation) {
             assert operation.operationType().childrenCnt == 1;
 
-            return '(' + text + ' ' + operation.child(0).getSQL() + ')';
+            StringBuilder b = new StringBuilder();
+
+            b.append('(').append(text);
+
+            if (addSpace)
+                b.append(' ');
+
+            b.append(operation.child(0).getSQL()).append(')');
+
+            return b.toString();
         }
     }
 

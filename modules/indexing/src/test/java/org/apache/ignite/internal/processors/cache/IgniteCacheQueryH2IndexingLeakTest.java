@@ -63,8 +63,8 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     private static final int ITERATIONS = 5;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -106,8 +106,6 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         System.setProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD,
             origCacheCleanupPeriod != null ? origCacheCleanupPeriod : "");
 
@@ -132,7 +130,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"TooBroadScope"})
     public void testLeaksInIgniteH2IndexingOnTerminatedThread() throws Exception {
-        final IgniteCache<Integer, Integer> c = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for(int i = 0; i < ITERATIONS; ++i) {
             info("Iteration #" + i);
@@ -157,7 +155,11 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
                 // Wait for stmt cache entry is created for each thread.
                 assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
-                        return getStatementCacheSize(qryProc) == THREAD_COUNT;
+                        // '>' case is for lazy query flag turned on - in this case, there's more threads
+                        // than those run by test explicitly, and we can't rely on exact number.
+                        // Still the main check for this test is that all threads, no matter how many of them
+                        // is out there, are terminated and their statement caches are cleaned up.
+                        return getStatementCacheSize(qryProc) >= THREAD_COUNT;
                     }
                 }, STMT_CACHE_CLEANUP_TIMEOUT));
             }
@@ -180,7 +182,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLeaksInIgniteH2IndexingOnUnusedThread() throws Exception {
-        final IgniteCache<Integer, Integer> c = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
         final CountDownLatch latch = new CountDownLatch(1);
 

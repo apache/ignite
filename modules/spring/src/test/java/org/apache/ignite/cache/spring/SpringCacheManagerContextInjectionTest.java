@@ -99,7 +99,7 @@ public class SpringCacheManagerContextInjectionTest extends GridCommonAbstractTe
 
             cfg.setLocalHost("127.0.0.1");
 
-            cfg.setGridName("scmt");
+            cfg.setIgniteInstanceName("scmt");
 
             cfg.setLifecycleBeans(bean1(), bean2());
 

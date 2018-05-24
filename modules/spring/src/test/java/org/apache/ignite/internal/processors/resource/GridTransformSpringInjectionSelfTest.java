@@ -53,7 +53,7 @@ public class GridTransformSpringInjectionSelfTest extends GridCacheAbstractSelfT
 
     /** {@inheritDoc} */
     @Override public void beforeTestsStarted() throws Exception {
-        IgniteSpring.start(getConfiguration(getTestGridName(0)),
+        IgniteSpring.start(getConfiguration(getTestIgniteInstanceName(0)),
             new ClassPathXmlApplicationContext("/org/apache/ignite/internal/processors/resource/spring-resource.xml"));
     }
 
@@ -99,7 +99,7 @@ public class GridTransformSpringInjectionSelfTest extends GridCacheAbstractSelfT
      * @return Cache configuration.
      */
     private CacheConfiguration<String, Integer> cacheConfiguration(CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<String, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<String, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName(getClass().getSimpleName());
         ccfg.setAtomicityMode(atomicityMode);

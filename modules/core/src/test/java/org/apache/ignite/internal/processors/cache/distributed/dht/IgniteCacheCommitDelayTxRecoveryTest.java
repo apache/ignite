@@ -75,8 +75,8 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
     private boolean client;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -85,13 +85,6 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
         cfg.setClientMode(client);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -154,11 +147,11 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
         assertFalse(srv.configuration().isClientMode());
 
         for (Boolean pessimistic : Arrays.asList(false, true)) {
-            checkRecovery(backupKey(srv.cache(null)), srv, pessimistic, useStore);
+            checkRecovery(backupKey(srv.cache(DEFAULT_CACHE_NAME)), srv, pessimistic, useStore);
 
-            checkRecovery(nearKey(srv.cache(null)), srv, pessimistic, useStore);
+            checkRecovery(nearKey(srv.cache(DEFAULT_CACHE_NAME)), srv, pessimistic, useStore);
 
-            checkRecovery(nearKey(clientNode.cache(null)), clientNode, pessimistic, useStore);
+            checkRecovery(nearKey(clientNode.cache(DEFAULT_CACHE_NAME)), clientNode, pessimistic, useStore);
 
             srv = ignite(0);
 
@@ -177,11 +170,11 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
         final Ignite ignite,
         final boolean pessimistic,
         final boolean useStore) throws Exception {
-        Ignite primary = primaryNode(key, null);
+        Ignite primary = primaryNode(key, DEFAULT_CACHE_NAME);
 
         assertNotSame(ignite, primary);
 
-        List<Ignite> backups = backupNodes(key, null);
+        List<Ignite> backups = backupNodes(key, DEFAULT_CACHE_NAME);
 
         assertFalse(backups.isEmpty());
 
@@ -196,7 +189,7 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
             ", backups=" + backupNames +
             ", node=" + ignite.name() + ']');
 
-        final IgniteCache<Integer, Integer> cache = ignite.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         cache.put(key, 0);
 
@@ -253,22 +246,22 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
         fut.get();
 
         for (Ignite node : G.allGrids())
-            assertEquals(1, node.cache(null).get(key));
+            assertEquals(1, node.cache(DEFAULT_CACHE_NAME).get(key));
 
         cache.put(key, 2);
 
         for (Ignite node : G.allGrids())
-            assertEquals(2, node.cache(null).get(key));
+            assertEquals(2, node.cache(DEFAULT_CACHE_NAME).get(key));
 
         startGrid(primary.name());
 
         for (Ignite node : G.allGrids())
-            assertEquals(2, node.cache(null).get(key));
+            assertEquals(2, node.cache(DEFAULT_CACHE_NAME).get(key));
 
         cache.put(key, 3);
 
         for (Ignite node : G.allGrids())
-            assertEquals(3, node.cache(null).get(key));
+            assertEquals(3, node.cache(DEFAULT_CACHE_NAME).get(key));
 
         awaitPartitionMapExchange();
     }
@@ -336,7 +329,7 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
      * @return Cache configuration.
      */
     private CacheConfiguration<Object, Object> cacheConfiguration(int backups, boolean useStore) {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setBackups(backups);

@@ -77,9 +77,9 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(null);
 
-        cfg.setGridName(getTestGridName(0));
+        cfg.setIgniteInstanceName(getTestIgniteInstanceName(0));
 
-        CacheConfiguration cc = new CacheConfiguration();
+        CacheConfiguration cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cc.setAtomicityMode(TRANSACTIONAL);
 
@@ -89,9 +89,9 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         cfg = new IgniteConfiguration();
 
-        cfg.setGridName(getTestGridName(1));
+        cfg.setIgniteInstanceName(getTestIgniteInstanceName(1));
 
-        cc = new CacheConfiguration();
+        cc = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cc.setAtomicityMode(TRANSACTIONAL);
 
@@ -105,7 +105,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try {
                     try (Transaction ignored = g0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        g0.cache(null).get(1);
+                        g0.cache(DEFAULT_CACHE_NAME).get(1);
 
                         latch.countDown();
 
@@ -113,7 +113,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
                         info("Before stop.");
 
-                        G.stop(getTestGridName(1), true);
+                        G.stop(getTestIgniteInstanceName(1), true);
                     }
                 }
                 catch (Exception e) {
@@ -129,7 +129,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
         info("Before remove.");
 
         try {
-            g1.cache(null).remove(1);
+            g1.cache(DEFAULT_CACHE_NAME).remove(1);
         }
         catch (CacheException ignore) {
             // No-op.

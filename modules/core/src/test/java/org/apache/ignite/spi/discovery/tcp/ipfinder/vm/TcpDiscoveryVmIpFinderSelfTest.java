@@ -223,6 +223,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
 
         Ignition.stop("client1", true);
         Ignition.stop("client2", true);
+        Ignition.stop("client3", true);
 
         assertEquals(3 * srvSize, IP_FINDER.getRegisteredAddresses().size());
 
@@ -237,11 +238,13 @@ public class TcpDiscoveryVmIpFinderSelfTest
         Ignition.stop("server1", true);
         Ignition.stop("server2", true);
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        boolean res = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return 0 == G.allGrids().size();
+                return G.allGrids().isEmpty();
             }
         }, 10000);
+
+        assertTrue(res);
 
         assertTrue(3 * srvSize >= IP_FINDER.getRegisteredAddresses().size());
     }
@@ -253,7 +256,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
     private static IgniteConfiguration config(String name, boolean client, boolean forceServerMode) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(name);
+        cfg.setIgniteInstanceName(name);
         cfg.setClientMode(client);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();

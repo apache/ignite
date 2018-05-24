@@ -17,11 +17,6 @@
 
 import angular from 'angular';
 
-/* ignite:modules */
-/* endignite */
-
-angular
+export default angular
 .module('ignite-console.modules', [
-    /* ignite-console:modules */
-    /* endignite */
 ]);

@@ -77,7 +77,7 @@ void DoSqlQueryWithDistributedJoin()
 
     std::cout << std::endl;
 
-    qry = SqlQuery("Person", joinSql);
+    qry.ClearArguments();
 
     qry.AddArgument<std::string>("Other");
 
@@ -258,7 +258,7 @@ void DoSqlQueryWithJoin()
 
     std::cout << "Following people are 'Other' employees: " << std::endl;
 
-    qry = SqlQuery(PERSON_TYPE, sql);
+    qry.ClearArguments();
 
     qry.AddArgument<std::string>("Other");
 
@@ -302,7 +302,7 @@ void DoSqlQuery()
 
     std::cout << std::endl;
 
-    qry = SqlQuery(PERSON_TYPE, sql);
+    qry.ClearArguments();
 
     // Execute queries for salary range 1000 - 2000.
     std::cout << "People with salaries between 1000 and 2000 (queried with SQL query): " << std::endl;
@@ -393,9 +393,6 @@ int main()
 {
     IgniteConfiguration cfg;
 
-    cfg.jvmInitMem = 512;
-    cfg.jvmMaxMem = 512;
-
     cfg.springCfgPath = "platforms/cpp/examples/query-example/config/query-example.xml";
 
     try
@@ -447,6 +444,8 @@ int main()
     catch (IgniteError& err)
     {
         std::cout << "An error occurred: " << err.GetText() << std::endl;
+
+        return err.GetCode();
     }
 
     std::cout << std::endl;

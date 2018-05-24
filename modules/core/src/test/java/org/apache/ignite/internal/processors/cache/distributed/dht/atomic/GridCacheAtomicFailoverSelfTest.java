@@ -23,7 +23,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFailoverSelfTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -32,10 +31,8 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class GridCacheAtomicFailoverSelfTest extends GridCacheAbstractFailoverSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        ccfg.setAtomicWriteOrderMode(CLOCK);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         assertEquals(CacheWriteSynchronizationMode.FULL_SYNC, ccfg.getWriteSynchronizationMode());
 

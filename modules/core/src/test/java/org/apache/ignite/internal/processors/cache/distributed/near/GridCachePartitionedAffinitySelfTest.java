@@ -68,7 +68,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
@@ -81,7 +81,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         spi.setIpFinder(ipFinder);
 
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setDiscoverySpi(spi);
@@ -94,17 +94,12 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         startGrids(GRIDS);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param ignite Grid.
      * @return Affinity.
      */
     static Affinity<Object> affinity(Ignite ignite) {
-        return ignite.affinity(null);
+        return ignite.affinity(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -159,13 +154,13 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     /** @param g Grid. */
     private static void partitionMap(Ignite g) {
         X.println(">>> Full partition map for grid: " + g.name());
-        X.println(">>> " + dht(g.cache(null)).topology().partitionMap(false).toFullString());
+        X.println(">>> " + dht(g.cache(DEFAULT_CACHE_NAME)).topology().partitionMap(false).toFullString());
     }
 
     /** @throws Exception If failed. */
     @SuppressWarnings("BusyWait")
     private void waitTopologyUpdate() throws Exception {
-        GridTestUtils.waitTopologyUpdate(null, BACKUPS, log());
+        GridTestUtils.waitTopologyUpdate(DEFAULT_CACHE_NAME, BACKUPS, log());
     }
 
     /** @throws Exception If failed. */
@@ -174,7 +169,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         Ignite mg = grid(0);
 
-        IgniteCache<Integer, String> mc = mg.cache(null);
+        IgniteCache<Integer, String> mc = mg.cache(DEFAULT_CACHE_NAME);
 
         int keyCnt = 10;
 
@@ -189,7 +184,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
             if (failFlag.get())
                 fail("testAffinityWithPut failed.");
 
-            info("Before putting key [key=" + i + ", grid=" + mg.name() + ']');
+            info("Before putting key [key=" + i + ", igniteInstanceName=" + mg.name() + ']');
 
             mc.put(i, Integer.toString(i));
 
@@ -218,7 +213,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         /** */
         private int keyCnt;
 
-        /** Master grid name. */
+        /** Master Ignite instance name. */
         private String master;
 
         /** */
@@ -253,17 +248,17 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 //                            new Exception("Dumping stack on grid [" + grid.name() + ", evtHash=" +
 //                                System.identityHashCode(evt) + ']').printStackTrace(System.out);
 
-                            log.info(">>> Grid cache event [grid=" + ignite.name() + ", name=" + e.name() +
-                                ", key=" + e.key() + ", oldVal=" + e.oldValue() + ", newVal=" + e.newValue() +
-                                ']');
+                            log.info(">>> Grid cache event [igniteInstanceName=" + ignite.name() +
+                                ", name=" + e.name() + ", key=" + e.key() + ", oldVal=" + e.oldValue() +
+                                ", newVal=" + e.newValue() + ']');
 
                             evtCnt.incrementAndGet();
 
                             if (!ignite.name().equals(master) && evtCnt.get() > keyCnt * (BACKUPS + 1)) {
                                 failFlag.set(true);
 
-                                fail("Invalid put event count on grid [cnt=" + evtCnt.get() + ", grid=" +
-                                    ignite.name() + ']');
+                                fail("Invalid put event count on grid [cnt=" + evtCnt.get() +
+                                    ", igniteInstanceName=" + ignite.name() + ']');
                             }
 
                             Collection<? extends ClusterNode> affNodes = nodes(affinity(ignite), e.key());
@@ -279,7 +274,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
                         default:
                             failFlag.set(true);
 
-                            fail("Invalid cache event [grid=" + ignite + ", evt=" + evt + ']');
+                            fail("Invalid cache event [igniteInstanceName=" + ignite + ", evt=" + evt + ']');
                     }
 
                     return true;

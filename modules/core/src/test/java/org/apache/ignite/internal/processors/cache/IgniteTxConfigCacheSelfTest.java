@@ -33,8 +33,8 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -66,8 +66,8 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
     private static final long TX_TIMEOUT = 100;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -75,7 +75,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(commSpi);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setBackups(1);
@@ -101,11 +101,6 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -134,11 +129,6 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
 
         checkImplicitTxSuccess(utilCache);
         checkStartTxSuccess(utilCache);
-
-        final IgniteInternalCache<Object, Object> atomicsCache = getSystemCache(ignite, CU.ATOMICS_CACHE_NAME);
-
-        checkImplicitTxSuccess(atomicsCache);
-        checkStartTxSuccess(atomicsCache);
     }
 
     /**
@@ -190,6 +180,8 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
         try (final Transaction tx = ignite.transactions().txStart()) {
             assert tx != null;
 
+            cache.put("key0", "val0");
+
             sleepForTxFailure();
 
             cache.put("key", "val");
@@ -200,7 +192,19 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
             assert e.getCause() instanceof TransactionTimeoutException;
         }
 
+        assertNull(ignite.transactions().tx());
+
+        assert !cache.containsKey("key0");
         assert !cache.containsKey("key");
+
+        // New transaction must succeed.
+        try (final Transaction tx = ignite.transactions().txStart()) {
+            cache.put("key", "val");
+
+            tx.commit();
+        }
+
+        assert cache.containsKey("key");
     }
 
     /**
@@ -210,7 +214,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     protected void checkStartTxSuccess(final IgniteInternalCache<Object, Object> cache) throws Exception {
-        try (final IgniteInternalTx tx = CU.txStartInternal(cache.context(), cache, PESSIMISTIC, READ_COMMITTED)) {
+        try (final GridNearTxLocal tx = CU.txStartInternal(cache.context(), cache, PESSIMISTIC, READ_COMMITTED)) {
             assert tx != null;
 
             sleepForTxFailure();

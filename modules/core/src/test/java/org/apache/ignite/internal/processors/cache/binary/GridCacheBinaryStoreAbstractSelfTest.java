@@ -36,7 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tests for cache store with binary.
@@ -53,8 +53,8 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
@@ -67,7 +67,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        CacheConfiguration cacheCfg = new CacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheStoreFactory(singletonFactory(STORE));
         cacheCfg.setStoreKeepBinary(keepBinaryInStore());
@@ -96,11 +96,6 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid();
     }
 
     /** {@inheritDoc} */
@@ -283,7 +278,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
      */
     private static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** */
-        private final Map<Object, Object> map = new ConcurrentHashMap8<>();
+        private final Map<Object, Object> map = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
         @Nullable @Override public Object load(Object key) {

@@ -17,13 +17,10 @@
 
 namespace Apache.Ignite.Core.Impl.Memory
 {
-    using System;
-
     /// <summary>
     /// Platform memory chunk.
     /// </summary>
-    [CLSCompliant(false)]
-    public interface IPlatformMemory
+    internal interface IPlatformMemory
     {
         /// <summary>
         /// Gets stream for read/write operations on the given memory chunk.

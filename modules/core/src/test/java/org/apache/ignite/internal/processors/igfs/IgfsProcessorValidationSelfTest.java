@@ -24,8 +24,8 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -46,7 +46,7 @@ import static org.apache.ignite.igfs.IgfsMode.PROXY;
  * Tests for node validation logic in {@link IgfsProcessor}.
  * <p>
  * Tests starting with "testLocal" are checking
- * {@link IgfsProcessor#validateLocalIgfsConfigurations(org.apache.ignite.configuration.FileSystemConfiguration[])}.
+ * {@link IgfsUtils#validateLocalIgfsConfigurations(org.apache.ignite.configuration.IgniteConfiguration)}.
  * <p>
  * Tests starting with "testRemote" are checking {@link IgfsProcessor#checkIgfsOnRemoteNode(org.apache.ignite.cluster.ClusterNode)}.
  */
@@ -56,18 +56,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
     /** Grid #1 config. */
     private IgniteConfiguration g1Cfg;
-
-    /** Data cache 1 name. */
-    private static final String dataCache1Name = "dataCache1";
-
-    /** Data cache 2 name. */
-    private static final String dataCache2Name = "dataCache2";
-
-    /** Meta cache 1 name. */
-    private static final String metaCache1Name = "metaCache1";
-
-    /** Meta cache 2 name. */
-    private static final String metaCache2Name = "metaCache2";
 
     /** First IGFS config in grid #1. */
     private FileSystemConfiguration g1IgfsCfg1 = new FileSystemConfiguration();
@@ -81,8 +69,8 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -91,12 +79,8 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         g1IgfsCfg1.setName("g1IgfsCfg1");
-        g1IgfsCfg1.setDataCacheName(dataCache1Name);
-        g1IgfsCfg1.setMetaCacheName(metaCache1Name);
 
         g1IgfsCfg2.setName("g1IgfsCfg2");
-        g1IgfsCfg2.setDataCacheName(dataCache2Name);
-        g1IgfsCfg2.setMetaCacheName(metaCache2Name);
 
         cfg.setFileSystemConfiguration(g1IgfsCfg1, g1IgfsCfg2);
 
@@ -115,7 +99,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      *
      * @param first the first array of elements to concatenate.
      * @param second the second array of elements to concatenate.
-     * @param cls
+     * @param cls Class of elements.
      * @return Concatenated array.
      */
     private <T> T[] concat(T[] first, T[] second, Class<?> cls) {
@@ -127,48 +111,18 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         return res.toArray((T[]) Array.newInstance(cls, res.size()));
     }
 
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalIfNoCacheIsConfigured() throws Exception {
-        checkGridStartFails(g1Cfg, "Data cache is not configured locally for IGFS", true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalIfNoDataCacheIsConfigured() throws Exception {
-        CacheConfiguration cc = defaultCacheConfiguration();
-
-        cc.setName("someName");
-
-        g1Cfg.setCacheConfiguration(cc);
-
-        checkGridStartFails(g1Cfg, "Data cache is not configured locally for IGFS", true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalIfNoMetadataCacheIsConfigured() throws Exception {
-        CacheConfiguration cc = defaultCacheConfiguration();
-
-        cc.setName(dataCache1Name);
-
-        g1Cfg.setCacheConfiguration(cc);
-
-        checkGridStartFails(g1Cfg, "Metadata cache is not configured locally for IGFS", true);
-    }
-
     /**
      * @throws Exception If failed.
      */
     public void testLocalIfAffinityMapperIsWrongClass() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
-        for (CacheConfiguration cc : g1Cfg.getCacheConfiguration())
-            cc.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
+        for (FileSystemConfiguration igfsCfg : g1Cfg.getFileSystemConfiguration()) {
+            igfsCfg.setDataCacheConfiguration(dataCache(1024));
+            igfsCfg.setMetaCacheConfiguration(metaCache());
+
+            igfsCfg.getMetaCacheConfiguration().setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
+            igfsCfg.getDataCacheConfiguration().setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
+        }
 
         checkGridStartFails(g1Cfg, "Invalid IGFS data cache configuration (key affinity mapper class should be", true);
     }
@@ -176,9 +130,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLocalIfIgfsConfigsHaveDifferentNames() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-
+    public void testLocalIfIgfsConfigsHaveDuplicatedNames() throws Exception {
         String igfsCfgName = "igfs-cfg";
 
         g1IgfsCfg1.setName(igfsCfgName);
@@ -191,11 +143,8 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLocalIfQueryIndexingEnabledForDataCache() throws Exception {
-        CacheConfiguration[] dataCaches = dataCaches(1024);
-
-        dataCaches[0].setIndexedTypes(Integer.class, String.class);
-
-        g1Cfg.setCacheConfiguration(concat(dataCaches, metaCaches(), CacheConfiguration.class));
+        g1IgfsCfg1.setDataCacheConfiguration(dataCache(1024));
+        g1IgfsCfg1.getDataCacheConfiguration().setIndexedTypes(Integer.class, String.class);
 
         checkGridStartFails(g1Cfg, "IGFS data cache cannot start with enabled query indexing", true);
     }
@@ -204,11 +153,9 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLocalIfQueryIndexingEnabledForMetaCache() throws Exception {
-        CacheConfiguration[] metaCaches = metaCaches();
+        g1IgfsCfg1.setMetaCacheConfiguration(metaCache());
 
-        metaCaches[0].setIndexedTypes(Integer.class, String.class);
-
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches, CacheConfiguration.class));
+        g1IgfsCfg1.getMetaCacheConfiguration().setIndexedTypes(Integer.class, String.class);
 
         checkGridStartFails(g1Cfg, "IGFS metadata cache cannot start with enabled query indexing", true);
     }
@@ -217,20 +164,29 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("NullableProblems")
-    public void testLocalNullIgfsNameIsSupported() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
+    public void testLocalNullIgfsNameIsNotSupported() throws Exception {
+        try {
+            g1IgfsCfg1.setName(null);
 
-        g1IgfsCfg1.setName(null);
+            fail("IGFS name cannot be null");
+        }
+        catch (IllegalArgumentException e) {
+            // No-op.
+        }
 
-        assertFalse(G.start(g1Cfg).cluster().nodes().isEmpty());
+        ArrayList<FileSystemConfiguration> fsCfgs = new ArrayList<>(Arrays.asList(g1Cfg.getFileSystemConfiguration()));
+
+        fsCfgs.add(new FileSystemConfiguration()); // IGFS doesn't have default name (name == null).
+
+        g1Cfg.setFileSystemConfiguration(fsCfgs.toArray(new FileSystemConfiguration[fsCfgs.size()]));
+
+        checkGridStartFails(g1Cfg, "IGFS name cannot be null", true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testLocalIfNonPrimaryModeAndHadoopFileSystemUriIsNull() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-
         g1IgfsCfg2.setDefaultMode(PROXY);
 
         checkGridStartFails(g1Cfg, "secondaryFileSystem cannot be null when mode is not PRIMARY", true);
@@ -239,41 +195,8 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLocalIfMetaCacheNameEquals() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-
-        g1IgfsCfg1.setDataCacheName(dataCache1Name);
-        g1IgfsCfg1.setMetaCacheName(metaCache1Name);
-
-        g1IgfsCfg2.setDataCacheName(dataCache2Name);
-        g1IgfsCfg2.setMetaCacheName(metaCache1Name);
-
-        checkGridStartFails(g1Cfg, "Meta cache names should be different for different IGFS instances", true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testLocalIfDataCacheNameEquals() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-
-        g1IgfsCfg1.setDataCacheName(dataCache1Name);
-        g1IgfsCfg1.setMetaCacheName(metaCache1Name);
-
-        g1IgfsCfg2.setDataCacheName(dataCache1Name);
-        g1IgfsCfg2.setMetaCacheName(metaCache2Name);
-
-        checkGridStartFails(g1Cfg, "Data cache names should be different for different IGFS instances", true);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testRemoteIfDataBlockSizeDiffers() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
-
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
         FileSystemConfiguration g2IgfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
 
@@ -292,111 +215,13 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     public void testRemoteIfAffinityMapperGroupSizeDiffers() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(4021), metaCaches(), CacheConfiguration.class));
-
         G.start(g1Cfg);
+
+        for (FileSystemConfiguration igfsCfg : g2Cfg.getFileSystemConfiguration())
+            igfsCfg.setDataCacheConfiguration(dataCache(1000));
 
         checkGridStartFails(g2Cfg, "Affinity mapper group size should be the same on all nodes in grid for IGFS",
             false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRemoteIfMetaCacheNameDiffers() throws Exception {
-        IgniteConfiguration g2Cfg = getConfiguration("g2");
-
-        FileSystemConfiguration g2IgfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
-        FileSystemConfiguration g2IgfsCfg2 = new FileSystemConfiguration(g1IgfsCfg2);
-
-        g2IgfsCfg1.setMetaCacheName("g2MetaCache1");
-        g2IgfsCfg2.setMetaCacheName("g2MetaCache2");
-
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches("g2MetaCache1", "g2MetaCache2"),
-             CacheConfiguration.class));
-
-        g2Cfg.setFileSystemConfiguration(g2IgfsCfg1, g2IgfsCfg2);
-
-        G.start(g1Cfg);
-
-        checkGridStartFails(g2Cfg, "Meta cache name should be the same on all nodes in grid for IGFS", false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRemoteIfMetaCacheNameEquals() throws Exception {
-        IgniteConfiguration g2Cfg = getConfiguration("g2");
-
-        FileSystemConfiguration g2IgfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
-        FileSystemConfiguration g2IgfsCfg2 = new FileSystemConfiguration(g1IgfsCfg2);
-
-        g2IgfsCfg1.setName("g2IgfsCfg1");
-        g2IgfsCfg2.setName("g2IgfsCfg2");
-
-        g2IgfsCfg1.setDataCacheName("g2DataCache1");
-        g2IgfsCfg2.setDataCacheName("g2DataCache2");
-
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(1024, "g2DataCache1", "g2DataCache2"), metaCaches(),
-             CacheConfiguration.class));
-
-        g2Cfg.setFileSystemConfiguration(g2IgfsCfg1, g2IgfsCfg2);
-
-        G.start(g1Cfg);
-
-        checkGridStartFails(g2Cfg, "Meta cache names should be different for different IGFS instances", false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRemoteIfDataCacheNameDiffers() throws Exception {
-        IgniteConfiguration g2Cfg = getConfiguration("g2");
-
-        FileSystemConfiguration g2IgfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
-        FileSystemConfiguration g2IgfsCfg2 = new FileSystemConfiguration(g1IgfsCfg2);
-
-        g2IgfsCfg1.setDataCacheName("g2DataCache1");
-        g2IgfsCfg2.setDataCacheName("g2DataCache2");
-
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(1024, "g2DataCache1", "g2DataCache2"), metaCaches(),
-             CacheConfiguration.class));
-
-        g2Cfg.setFileSystemConfiguration(g2IgfsCfg1, g2IgfsCfg2);
-
-        G.start(g1Cfg);
-
-        checkGridStartFails(g2Cfg, "Data cache name should be the same on all nodes in grid for IGFS", false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testRemoteIfDataCacheNameEquals() throws Exception {
-        IgniteConfiguration g2Cfg = getConfiguration("g2");
-
-        FileSystemConfiguration g2IgfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
-        FileSystemConfiguration g2IgfsCfg2 = new FileSystemConfiguration(g1IgfsCfg2);
-
-        g2IgfsCfg1.setName("g2IgfsCfg1");
-        g2IgfsCfg2.setName("g2IgfsCfg2");
-
-        g2IgfsCfg1.setMetaCacheName("g2MetaCache1");
-        g2IgfsCfg2.setMetaCacheName("g2MetaCache2");
-
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches("g2MetaCache1", "g2MetaCache2"),
-             CacheConfiguration.class));
-
-        g2Cfg.setFileSystemConfiguration(g2IgfsCfg1, g2IgfsCfg2);
-
-        G.start(g1Cfg);
-
-        checkGridStartFails(g2Cfg, "Data cache names should be different for different IGFS instances", false);
     }
 
     /**
@@ -413,9 +238,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
         g2IgfsCfg1.setDefaultMode(DUAL_SYNC);
         g2IgfsCfg2.setDefaultMode(DUAL_SYNC);
-
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
         g2Cfg.setFileSystemConfiguration(g2IgfsCfg1, g2IgfsCfg2);
 
@@ -436,9 +258,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         g2IgfsCfg1.setPathModes(Collections.singletonMap("/somePath", DUAL_SYNC));
         g2IgfsCfg2.setPathModes(Collections.singletonMap("/somePath", DUAL_SYNC));
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
-
         g2Cfg.setFileSystemConfiguration(g2IgfsCfg1, g2IgfsCfg2);
 
         G.start(g1Cfg);
@@ -450,21 +269,49 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testZeroEndpointTcpPort() throws Exception {
-        checkIvalidPort(0);
+        checkInvalidPort(0);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testNegativeEndpointTcpPort() throws Exception {
-        checkIvalidPort(-1);
+        checkInvalidPort(-1);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTooBigEndpointTcpPort() throws Exception {
-        checkIvalidPort(65536);
+        checkInvalidPort(65536);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPreConfiguredCache() throws Exception {
+        FileSystemConfiguration igfsCfg1 = new FileSystemConfiguration(g1IgfsCfg1);
+        igfsCfg1.setName("igfs");
+
+        g1Cfg.setFileSystemConfiguration(igfsCfg1);
+
+        CacheConfiguration ccfgData = dataCache(1024);
+        ccfgData.setRebalanceTimeout(10001);
+
+        CacheConfiguration ccfgMeta = metaCache();
+        ccfgMeta.setRebalanceTimeout(10002);
+
+        igfsCfg1.setDataCacheConfiguration(ccfgData);
+        igfsCfg1.setMetaCacheConfiguration(ccfgMeta);
+
+        IgniteEx g = (IgniteEx)G.start(g1Cfg);
+
+        assertEquals(10001,
+            g.cachex(g.igfsx("igfs").configuration().getDataCacheConfiguration().getName())
+                .configuration().getRebalanceTimeout());
+        assertEquals(10002,
+            g.cachex(g.igfsx("igfs").configuration().getMetaCacheConfiguration().getName())
+                .configuration().getRebalanceTimeout());
     }
 
     /**
@@ -473,9 +320,8 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      * @param port Port.
      * @throws Exception If failed.
      */
-    private void checkIvalidPort(int port) throws Exception {
+    private void checkInvalidPort(int port) throws Exception {
         final String failMsg = "IGFS endpoint TCP port is out of range";
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
         final String igfsCfgName = "igfs-cfg";
         final IgfsIpcEndpointConfiguration igfsEndpointCfg = new IgfsIpcEndpointConfiguration();
@@ -491,7 +337,6 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      */
     public void testInvalidEndpointThreadCount() throws Exception {
         final String failMsg = "IGFS endpoint thread count must be positive";
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
         final String igfsCfgName = "igfs-cfg";
         final IgfsIpcEndpointConfiguration igfsEndpointCfg = new IgfsIpcEndpointConfiguration();
@@ -520,9 +365,10 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
         }
         catch (IgniteException e) {
             if (testLoc) {
-                if ("Failed to start processor: GridProcessorAdapter []".equals(e.getMessage()) &&
+                if (e.getMessage().contains(excMsgSnippet)
+                    || ("Failed to start processor: GridProcessorAdapter []".equals(e.getMessage()) &&
                     (e.getCause().getMessage().contains(excMsgSnippet) ||
-                     e.getCause().getCause().getMessage().contains(excMsgSnippet)))
+                     e.getCause().getCause().getMessage().contains(excMsgSnippet))))
                     return; // Expected exception.
             }
             else if (e.getMessage().contains(excMsgSnippet))
@@ -536,51 +382,26 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
 
     /**
      * @param grpSize Group size to use in {@link org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper}.
-     * @param cacheNames 2 Optional caches names.
-     * @return 2 preconfigured data caches.
+     * @return 2 preconfigured data cache.
      */
-    private CacheConfiguration[] dataCaches(int grpSize, String... cacheNames) {
-        assertTrue(F.isEmpty(cacheNames) || cacheNames.length == 2);
+    private CacheConfiguration dataCache(int grpSize) {
 
-        if (F.isEmpty(cacheNames))
-            cacheNames = new String[] {dataCache1Name, dataCache2Name};
+        CacheConfiguration dataCache = defaultCacheConfiguration();
 
-        CacheConfiguration[] res = new CacheConfiguration[cacheNames.length];
+        dataCache.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(grpSize));
+        dataCache.setAtomicityMode(TRANSACTIONAL);
 
-        for (int i = 0; i < cacheNames.length; i++) {
-            CacheConfiguration dataCache = defaultCacheConfiguration();
-
-            dataCache.setName(cacheNames[i]);
-            dataCache.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(grpSize));
-            dataCache.setAtomicityMode(TRANSACTIONAL);
-
-            res[i] = dataCache;
-        }
-
-        return res;
+        return dataCache;
     }
 
     /**
-     * @param cacheNames 2 Optional caches names.
-     * @return 2 preconfigured meta caches.
+     * @return preconfigured meta cache.
      */
-    private CacheConfiguration[] metaCaches(String... cacheNames) {
-        assertTrue(F.isEmpty(cacheNames) || cacheNames.length == 2);
+    private CacheConfiguration metaCache() {
+        CacheConfiguration metaCache = defaultCacheConfiguration();
 
-        if (F.isEmpty(cacheNames))
-            cacheNames = new String[] {metaCache1Name, metaCache2Name};
+        metaCache.setAtomicityMode(TRANSACTIONAL);
 
-        CacheConfiguration[] res = new CacheConfiguration[cacheNames.length];
-
-        for (int i = 0; i < cacheNames.length; i++) {
-            CacheConfiguration metaCache = defaultCacheConfiguration();
-
-            metaCache.setName(cacheNames[i]);
-            metaCache.setAtomicityMode(TRANSACTIONAL);
-
-            res[i] = metaCache;
-        }
-
-        return res;
+        return metaCache;
     }
 }

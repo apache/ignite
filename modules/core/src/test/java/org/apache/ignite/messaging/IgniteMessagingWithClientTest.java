@@ -27,9 +27,9 @@ import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -51,12 +51,12 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
+        cfg.setMarshaller(new BinaryMarshaller());
 
-        if (gridName.equals(getTestGridName(2))) {
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(2))) {
             cfg.setClientMode(true);
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);

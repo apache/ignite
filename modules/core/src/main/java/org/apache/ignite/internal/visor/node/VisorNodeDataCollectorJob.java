@@ -18,31 +18,35 @@
 package org.apache.ignite.internal.visor.node;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
 import org.apache.ignite.internal.util.ipc.IpcServerEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.cache.VisorCache;
-import org.apache.ignite.internal.visor.cache.VisorCacheV2;
-import org.apache.ignite.internal.visor.cache.VisorCacheV3;
-import org.apache.ignite.internal.visor.cache.VisorCacheV4;
+import org.apache.ignite.internal.visor.cache.VisorMemoryMetrics;
 import org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder;
 import org.apache.ignite.internal.visor.igfs.VisorIgfs;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsEndpoint;
+import org.apache.ignite.internal.visor.util.VisorExceptionWrapper;
 import org.apache.ignite.lang.IgniteProductVersion;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isIgfsCache;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isSystemCache;
 import static org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder.COMPUTE_MONITORING_HOLDER_KEY;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.EVT_MAPPER;
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.EVT_MAPPER_V2;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VISOR_TASK_EVTS;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.checkExplicitTaskMonitoring;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.collectEvents;
@@ -54,18 +58,6 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.log;
 public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTaskArg, VisorNodeDataCollectorJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private static final IgniteProductVersion VER_1_4_1 = IgniteProductVersion.fromString("1.4.1");
-
-    /** */
-    private static final IgniteProductVersion VER_1_5_10 = IgniteProductVersion.fromString("1.5.10");
-
-    /** */
-    private static final IgniteProductVersion VER_1_5_26 = IgniteProductVersion.fromString("1.5.26");
-
-    /** */
-    protected static final IgniteProductVersion VER_1_7_2 = IgniteProductVersion.fromString("1.7.2");
 
     /**
      * Create job with given argument.
@@ -87,8 +79,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
      */
     protected void events0(VisorNodeDataCollectorJobResult res, String evtOrderKey, String evtThrottleCntrKey,
         final boolean all) {
-        res.events().addAll(collectEvents(ignite, evtOrderKey, evtThrottleCntrKey, all,
-            compatibleWith(VER_1_7_2) ? EVT_MAPPER_V2 : EVT_MAPPER));
+        res.getEvents().addAll(collectEvents(ignite, evtOrderKey, evtThrottleCntrKey, all, EVT_MAPPER));
     }
 
     /**
@@ -101,12 +92,12 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         try {
             // Visor events explicitly enabled in configuration.
             if (checkExplicitTaskMonitoring(ignite))
-                res.taskMonitoringEnabled(true);
+                res.setTaskMonitoringEnabled(true);
             else {
                 // Get current task monitoring state.
-                res.taskMonitoringEnabled(arg.taskMonitoringEnabled());
+                res.setTaskMonitoringEnabled(arg.isTaskMonitoringEnabled());
 
-                if (arg.taskMonitoringEnabled()) {
+                if (arg.isTaskMonitoringEnabled()) {
                     ConcurrentMap<String, VisorComputeMonitoringHolder> storage = ignite.cluster().nodeLocalMap();
 
                     VisorComputeMonitoringHolder holder = storage.get(COMPUTE_MONITORING_HOLDER_KEY);
@@ -120,17 +111,17 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                     }
 
                     // Enable task monitoring for new node in grid.
-                    holder.startCollect(ignite, arg.eventsOrderKey());
+                    holder.startCollect(ignite, arg.getEventsOrderKey());
 
                     // Update current state after change (it may not changed in some cases).
-                    res.taskMonitoringEnabled(ignite.allEventsUserRecordable(VISOR_TASK_EVTS));
+                    res.setTaskMonitoringEnabled(ignite.allEventsUserRecordable(VISOR_TASK_EVTS));
                 }
             }
 
-            events0(res, arg.eventsOrderKey(), arg.eventsThrottleCounterKey(), arg.taskMonitoringEnabled());
+            events0(res, arg.getEventsOrderKey(), arg.getEventsThrottleCounterKey(), arg.isTaskMonitoringEnabled());
         }
-        catch (Exception eventsEx) {
-            res.eventsEx(eventsEx);
+        catch (Exception e) {
+            res.setEventsEx(new VisorExceptionWrapper(e));
         }
     }
 
@@ -147,22 +138,6 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     }
 
     /**
-     * @return Compatible {@link VisorCache} instance.
-     */
-    private VisorCache createVisorCache() {
-        if (compatibleWith(VER_1_4_1))
-            return new VisorCache();
-
-        if (compatibleWith(VER_1_5_10))
-            return new VisorCacheV2();
-
-        if (compatibleWith(VER_1_5_26))
-            return new VisorCacheV3();
-
-        return new VisorCacheV4();
-    }
-
-    /**
      * @param cacheName Cache name to check.
      * @return {@code true} if cache on local node is not a data cache or near cache disabled.
      */
@@ -175,6 +150,26 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     }
 
     /**
+     * Collect memory metrics.
+     *
+     * @param res Job result.
+     */
+    protected void memoryMetrics(VisorNodeDataCollectorJobResult res) {
+        try {
+            List<VisorMemoryMetrics> memoryMetrics = res.getMemoryMetrics();
+
+            // TODO: Should be really fixed in IGNITE-7111.
+            if (ignite.active()) {
+                for (DataRegionMetrics m : ignite.dataRegionMetrics())
+                    memoryMetrics.add(new VisorMemoryMetrics(m));
+            }
+        }
+        catch (Exception e) {
+            res.setMemoryMetricsEx(new VisorExceptionWrapper(e));
+        }
+    }
+
+    /**
      * Collect caches.
      *
      * @param res Job result.
@@ -184,18 +179,32 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         try {
             IgniteConfiguration cfg = ignite.configuration();
 
-            for (String cacheName : ignite.context().cache().cacheNames()) {
+            GridCacheProcessor cacheProc = ignite.context().cache();
+
+            List<VisorCache> resCaches = res.getCaches();
+
+            double total = 0;
+            double moving = 0;
+
+            for (String cacheName : cacheProc.cacheNames()) {
                 if (proxyCache(cacheName))
                     continue;
 
-                if (arg.systemCaches() || !(isSystemCache(cacheName) || isIgfsCache(cfg, cacheName))) {
+                if (arg.getSystemCaches() || !(isSystemCache(cacheName) || isIgfsCache(cfg, cacheName))) {
                     long start0 = U.currentTimeMillis();
 
                     try {
-                        VisorCache cache = createVisorCache().from(ignite, cacheName, arg.sample());
+                        GridCacheAdapter ca = cacheProc.internalCache(cacheName);
 
-                        if (cache != null)
-                            res.caches().add(cache);
+                        if (ca == null || !ca.context().started())
+                            continue;
+
+                        CacheMetrics cm = ca.localMetrics();
+
+                        total += cm.getTotalPartitionsCount();
+                        moving += cm.getRebalancingPartitionsCount();
+
+                        resCaches.add(new VisorCache(ignite, ca, arg.isCollectCacheMetrics()));
                     }
                     catch(IllegalStateException | IllegalArgumentException e) {
                         if (debug && ignite.log() != null)
@@ -207,9 +216,11 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                     }
                 }
             }
+
+            res.setRebalance(total > 0 ? (total - moving) / total : -1);
         }
-        catch (Exception cachesEx) {
-            res.cachesEx(cachesEx);
+        catch (Exception e) {
+            res.setCachesEx(new VisorExceptionWrapper(e));
         }
     }
 
@@ -227,7 +238,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
                 FileSystemConfiguration igfsCfg = igfs.configuration();
 
-                if (proxyCache(igfsCfg.getDataCacheName()) || proxyCache(igfsCfg.getMetaCacheName()))
+                if (proxyCache(igfsCfg.getDataCacheConfiguration().getName()) || proxyCache(igfsCfg.getMetaCacheConfiguration().getName()))
                     continue;
 
                 try {
@@ -236,11 +247,11 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                     if (endPoints != null) {
                         for (IpcServerEndpoint ep : endPoints)
                             if (ep.isManagement())
-                                res.igfsEndpoints().add(new VisorIgfsEndpoint(igfs.name(), ignite.name(),
+                                res.getIgfsEndpoints().add(new VisorIgfsEndpoint(igfs.name(), ignite.name(),
                                     ep.getHost(), ep.getPort()));
                     }
 
-                    res.igfss().add(VisorIgfs.from(igfs));
+                    res.getIgfss().add(new VisorIgfs(igfs));
                 }
                 finally {
                     if (debug)
@@ -248,8 +259,22 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 }
             }
         }
-        catch (Exception igfssEx) {
-            res.igfssEx(igfssEx);
+        catch (Exception e) {
+            res.setIgfssEx(new VisorExceptionWrapper(e));
+        }
+    }
+
+    /**
+     * Collect persistence metrics.
+     *
+     * @param res Job result.
+     */
+    protected void persistenceMetrics(VisorNodeDataCollectorJobResult res) {
+        try {
+            res.setPersistenceMetrics(new VisorPersistenceMetrics(ignite.dataStorageMetrics()));
+        }
+        catch (Exception e) {
+            res.setPersistenceMetricsEx(new VisorExceptionWrapper(e));
         }
     }
 
@@ -267,9 +292,14 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
      */
     protected VisorNodeDataCollectorJobResult run(VisorNodeDataCollectorJobResult res,
         VisorNodeDataCollectorTaskArg arg) {
-        res.gridName(ignite.name());
+        res.setGridName(ignite.name());
 
-        res.topologyVersion(ignite.cluster().topologyVersion());
+        GridCachePartitionExchangeManager<Object, Object> exchange = ignite.context().cache().context().exchange();
+
+        res.setReadyAffinityVersion(new VisorAffinityTopologyVersion(exchange.readyAffinityVersion()));
+        res.setHasPendingExchange(exchange.hasPendingExchange());
+
+        res.setTopologyVersion(ignite.cluster().topologyVersion());
 
         long start0 = U.currentTimeMillis();
 
@@ -277,6 +307,11 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
 
         if (debug)
             start0 = log(ignite.log(), "Collected events", getClass(), start0);
+
+        memoryMetrics(res);
+
+        if (debug)
+            start0 = log(ignite.log(), "Collected memory metrics", getClass(), start0);
 
         caches(res, arg);
 
@@ -286,9 +321,14 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         igfs(res);
 
         if (debug)
-            log(ignite.log(), "Collected igfs", getClass(), start0);
+            start0 = log(ignite.log(), "Collected igfs", getClass(), start0);
 
-        res.errorCount(ignite.context().exceptionRegistry().errorCount());
+        persistenceMetrics(res);
+
+        if (debug)
+            log(ignite.log(), "Collected persistence metrics", getClass(), start0);
+
+        res.setErrorCount(ignite.context().exceptionRegistry().errorCount());
 
         return res;
     }

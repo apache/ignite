@@ -29,7 +29,7 @@ import org.apache.ignite.internal.processors.hadoop.io.PartiallyOffheapRawCompar
  */
 public abstract class HadoopTaskContext {
     /** */
-    protected final HadoopJob job;
+    protected final HadoopJobEx job;
 
     /** */
     private HadoopTaskInput input;
@@ -44,7 +44,7 @@ public abstract class HadoopTaskContext {
      * @param taskInfo Task info.
      * @param job Job.
      */
-    protected HadoopTaskContext(HadoopTaskInfo taskInfo, HadoopJob job) {
+    protected HadoopTaskContext(HadoopTaskInfo taskInfo, HadoopJobEx job) {
         this.taskInfo = taskInfo;
         this.job = job;
     }
@@ -88,7 +88,7 @@ public abstract class HadoopTaskContext {
     /**
      * @return Job.
      */
-    public HadoopJob job() {
+    public HadoopJobEx job() {
         return job;
     }
 

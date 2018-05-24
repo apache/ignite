@@ -66,12 +66,13 @@
             <constructor-arg value="127.0.0.1"/>
         </bean>
 
+        <property name="failureDetectionTimeout" value="45000"/>
+        <property name="metricsUpdateFrequency" value="15000"/>
+
         <bean id="discoSpi" class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
             <property name="ackTimeout" value="5000"/>
             <property name="socketTimeout" value="5000"/>
             <property name="reconnectCount" value="5"/>
-            <property name="heartbeatFrequency" value="15000"/>
-            <property name="maxMissedHeartbeats" value="3"/>
 
             <property name="ipFinder">
                 <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">

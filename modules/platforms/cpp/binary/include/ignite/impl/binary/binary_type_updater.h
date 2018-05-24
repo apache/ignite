@@ -19,7 +19,7 @@
 #define _IGNITE_IMPL_BINARY_BINARY_TYPE_UPDATER
 
 #include <ignite/ignite_error.h>
-#include "ignite/impl/binary/binary_type_snapshot.h"
+#include <ignite/impl/binary/binary_type_snapshot.h>
 
 namespace ignite
 {    
@@ -36,15 +36,28 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                virtual ~BinaryTypeUpdater();
+                virtual ~BinaryTypeUpdater()
+                {
+                    // No-op.
+                }
 
                 /**
                  * Update type using provided snapshot.
                  *
                  * @param snapshot Snapshot.
                  * @param err Error.
+                 * @return True on success.
                  */
-                virtual bool Update(Snap* snapshot, IgniteError* err) = 0;
+                virtual bool Update(const Snap& snapshot, IgniteError& err) = 0;
+
+                /**
+                 * Get schema for type.
+                 *
+                 * @param typeId Type ID.
+                 * @param err Error.
+                 * @return Result.
+                 */
+                virtual SPSnap GetMeta(int32_t typeId, IgniteError& err) = 0;
             };
         }
     }    

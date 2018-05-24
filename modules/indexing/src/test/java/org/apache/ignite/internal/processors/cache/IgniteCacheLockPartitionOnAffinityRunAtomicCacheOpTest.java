@@ -21,9 +21,11 @@ import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -80,8 +82,8 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
         ccfg.setBackups(0);
 
         return  ccfg;
@@ -92,7 +94,7 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
      * @param mode Atomicity mode.
      * @throws Exception If failed.
      */
-    private void createCache(String cacheName, CacheAtomicityMode mode) throws Exception {
+    protected void createCache(String cacheName, CacheAtomicityMode mode) throws Exception {
         CacheConfiguration ccfg = cacheConfiguration(grid(0).name());
         ccfg.setName(cacheName);
 
@@ -107,17 +109,27 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        key.set(0);
-        createCache(ATOMIC_CACHE, CacheAtomicityMode.ATOMIC);
-        createCache(TRANSACT_CACHE, CacheAtomicityMode.TRANSACTIONAL);
+        createCaches();
 
         awaitPartitionMapExchange();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    /** */
+    protected void createCaches() throws Exception {
+        key.set(0);
+        createCache(ATOMIC_CACHE, CacheAtomicityMode.ATOMIC);
+        createCache(TRANSACT_CACHE, CacheAtomicityMode.TRANSACTIONAL);
+    }
+
+    /** */
+    protected void destroyCaches() throws Exception {
         grid(0).destroyCache(ATOMIC_CACHE);
         grid(0).destroyCache(TRANSACT_CACHE);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        destroyCaches();
 
         super.afterTest();
     }
@@ -157,10 +169,15 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             affFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
                     for (int i = 0; i < PARTS_CNT; ++i) {
-                        grid(0).compute().affinityRun(
-                            Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                            new Integer(i),
-                            new NotReservedCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT, cacheName));
+                        try {
+                            grid(0).compute().affinityRun(
+                                Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
+                                new Integer(i),
+                                new NotReservedCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT, cacheName));
+                        }
+                        catch (IgniteException e) {
+                            checkException(e, ClusterTopologyException.class);
+                        }
                     }
                 }
             }, AFFINITY_THREADS_CNT, "affinity-run");
@@ -204,10 +221,15 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
                         if (System.currentTimeMillis() >= endTime)
                             break;
 
-                        grid(0).compute().affinityRun(
-                            Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
-                            new Integer(i),
-                            new ReservedPartitionCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT));
+                        try {
+                            grid(0).compute().affinityRun(
+                                Arrays.asList(Organization.class.getSimpleName(), Person.class.getSimpleName()),
+                                new Integer(i),
+                                new ReservedPartitionCacheOpAffinityRun(i, key.getAndIncrement() * KEYS_CNT));
+                        }
+                        catch (IgniteException e) {
+                            checkException(e, ClusterTopologyException.class);
+                        }
                     }
                 }
             }, AFFINITY_THREADS_CNT, "affinity-run");
@@ -227,6 +249,24 @@ public class IgniteCacheLockPartitionOnAffinityRunAtomicCacheOpTest extends Igni
             IgniteCache cache = grid(0).cache(Person.class.getSimpleName());
             cache.clear();
         }
+    }
+
+
+    /**
+     *
+     * @param e Exception to check.
+     * @param exCls Expected exception cause class.
+     */
+    private void checkException(IgniteException e, Class<? extends Exception> exCls) {
+        for (Throwable t = e; t.getCause() != null; t = t.getCause()) {
+            if (t.getCause().getClass().isAssignableFrom(exCls)) {
+                log.info("Expected exception: " + e);
+
+                return;
+            }
+        }
+
+        throw e;
     }
 
     /** */

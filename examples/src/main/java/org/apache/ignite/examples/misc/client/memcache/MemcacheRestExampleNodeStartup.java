@@ -23,7 +23,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
@@ -64,14 +63,9 @@ public class MemcacheRestExampleNodeStartup {
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
-        OptimizedMarshaller marsh = new OptimizedMarshaller();
-
-        marsh.setRequireSerializable(false);
-
-        cfg.setMarshaller(marsh);
-
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
+        cacheCfg.setName("default");
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setRebalanceMode(SYNC);

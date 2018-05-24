@@ -18,9 +18,10 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -33,19 +34,42 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    private boolean testFooter;
+
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
 
-        if (gridName.endsWith("0"))
-            cfg.setMarshaller(new JdkMarshaller());
-        else {
-            cfg.setClientMode(true);
+        if (testFooter) {
+            cfg.setMarshaller(new BinaryMarshaller());
 
-            cfg.setMarshaller(new OptimizedMarshaller());
+            TcpDiscoverySpi spi = new TcpDiscoverySpi();
+
+            spi.setJoinTimeout(-1); // IGNITE-605, and further tests limitation bypass
+
+            cfg.setDiscoverySpi(spi);
+
+            if (igniteInstanceName.endsWith("0")) {
+                BinaryConfiguration bc = new BinaryConfiguration();
+                bc.setCompactFooter(false);
+
+                cfg.setBinaryConfiguration(bc);
+                cfg.setClientMode(true);
+            }
         }
+        else {
+            if (igniteInstanceName.endsWith("0"))
+                cfg.setMarshaller(new JdkMarshaller());
+            else {
+                cfg.setClientMode(true);
+                cfg.setMarshaller(new BinaryMarshaller());
+            }
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(ipFinder));
+            TcpDiscoverySpi spi = new TcpDiscoverySpi().setIpFinder(ipFinder);
+
+            cfg.setDiscoverySpi(spi);
+        }
 
         return cfg;
     }
@@ -71,6 +95,52 @@ public class TcpClientDiscoveryMarshallerCheckSelfTest extends GridCommonAbstrac
 
             assertTrue(ex instanceof IgniteSpiException);
             assertTrue(ex.getMessage().contains("Local node's marshaller differs from remote node's marshaller"));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInconsistentCompactFooterSingle() throws Exception {
+        clientServerInconsistentConfigFail(false, 1, 1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInconsistentCompactFooterMulti() throws Exception {
+        clientServerInconsistentConfigFail(true, 2, 10);
+    }
+
+    /**
+     * Starts client-server grid with different binary configurations.
+     *
+     * @throws Exception If failed.
+     */
+    private void clientServerInconsistentConfigFail(boolean multiNodes, int cnt, int iters) throws Exception {
+        testFooter = true;
+
+        for (int i = 1; i <= cnt; i++)
+            startGrid(i);
+
+        for (int i = 0; i < iters; i++) {
+            try {
+                startGrid(0);
+
+                fail("Expected SPI exception was not thrown, multiNodes=" + multiNodes);
+            }
+            catch (IgniteCheckedException expect) {
+                Throwable ex = expect.getCause().getCause();
+
+                String msg = ex.getMessage();
+
+                assertTrue(ex instanceof IgniteSpiException);
+                assertTrue("Caught exception: " + msg, msg.contains("Local node's binary " +
+                    "configuration is not equal to remote node's binary configuration"));
+            }
+            finally {
+                stopGrid(0);
+            }
         }
     }
 }

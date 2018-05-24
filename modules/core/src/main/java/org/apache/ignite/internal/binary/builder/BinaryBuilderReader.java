@@ -29,6 +29,7 @@ import org.apache.ignite.internal.binary.BinarySchema;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.BinaryUtils;
 
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.HashMap;
@@ -292,6 +293,11 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
                 break;
 
+            case GridBinaryMarshaller.TIME:
+                len = 8;
+
+                break;
+
             case GridBinaryMarshaller.CHAR_ARR:
             case GridBinaryMarshaller.SHORT_ARR:
                 len = 4 + readLength() * 2;
@@ -313,6 +319,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.DECIMAL_ARR:
             case GridBinaryMarshaller.DATE_ARR:
             case GridBinaryMarshaller.TIMESTAMP_ARR:
+            case GridBinaryMarshaller.TIME_ARR:
             case GridBinaryMarshaller.OBJ_ARR:
             case GridBinaryMarshaller.ENUM_ARR:
             case GridBinaryMarshaller.UUID_ARR:
@@ -428,6 +435,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.UUID:
             case GridBinaryMarshaller.DATE:
             case GridBinaryMarshaller.TIMESTAMP:
+            case GridBinaryMarshaller.TIME:
                 return new BinaryPlainLazyValue(this, pos, len);
 
             case GridBinaryMarshaller.BYTE_ARR:
@@ -441,6 +449,7 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
             case GridBinaryMarshaller.DECIMAL_ARR:
             case GridBinaryMarshaller.DATE_ARR:
             case GridBinaryMarshaller.TIMESTAMP_ARR:
+            case GridBinaryMarshaller.TIME_ARR:
             case GridBinaryMarshaller.UUID_ARR:
             case GridBinaryMarshaller.STRING_ARR:
             case GridBinaryMarshaller.ENUM_ARR:
@@ -474,6 +483,14 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                 BinaryObjectImpl binaryObj = new BinaryObjectImpl(ctx, arr, pos + 4 + start);
 
                 return new BinaryPlainBinaryObject(binaryObj);
+            }
+
+            case GridBinaryMarshaller.OPTM_MARSH: {
+                final BinaryHeapInputStream bin = BinaryHeapInputStream.create(arr, pos + 1);
+
+                final Object obj = BinaryUtils.doReadOptimized(bin, ctx, U.resolveClassLoader(ctx.configuration()));
+
+                return obj;
             }
 
             default:
@@ -587,6 +604,11 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
 
                 break;
 
+            case GridBinaryMarshaller.TIME:
+                plainLazyValLen = 8;
+
+                break;
+
             case GridBinaryMarshaller.BYTE_ARR:
                 plainLazyValLen = 4 + readLength();
                 modifiableLazyVal = true;
@@ -688,6 +710,29 @@ public class BinaryBuilderReader implements BinaryPositionReadable {
                     ts.setNanos(ts.getNanos() + nano);
 
                     res[i] = ts;
+                }
+
+                return res;
+            }
+
+            case GridBinaryMarshaller.TIME_ARR: {
+                int size = readInt();
+
+                Time[] res = new Time[size];
+
+                for (int i = 0; i < res.length; i++) {
+                    byte flag = arr[pos++];
+
+                    if (flag == GridBinaryMarshaller.NULL) continue;
+
+                    if (flag != GridBinaryMarshaller.TIME)
+                        throw new BinaryObjectException("Invalid flag value: " + flag);
+
+                    long time = BinaryPrimitives.readLong(arr, pos);
+
+                    pos += 8;
+
+                    res[i] = new Time(time);
                 }
 
                 return res;

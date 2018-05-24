@@ -25,6 +25,12 @@ import org.jetbrains.annotations.Nullable;
  * Utility marshaller methods.
  */
 public class MarshallerUtils {
+    /** Jdk class names file. */
+    public static final String JDK_CLS_NAMES_FILE = "META-INF/classnames-jdk.properties";
+
+    /** Class names file. */
+    public static final String CLS_NAMES_FILE = "META-INF/classnames.properties";
+
     /** Job sender node version. */
     private static final ThreadLocal<IgniteProductVersion> JOB_SND_NODE_VER = new ThreadLocal<>();
 
@@ -48,7 +54,7 @@ public class MarshallerUtils {
     public static JdkMarshaller jdkMarshaller(@Nullable String nodeName) {
         JdkMarshaller marsh = new JdkMarshaller();
 
-        setNodeName(new JdkMarshaller(), nodeName);
+        setNodeName(marsh, nodeName);
 
         return marsh;
     }

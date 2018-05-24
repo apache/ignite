@@ -52,13 +52,6 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -74,8 +67,8 @@ public class BinarySerialiedFieldComparatorSelfTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg =  super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg =  super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(new BinaryMarshaller());
 

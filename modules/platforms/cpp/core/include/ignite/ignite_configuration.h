@@ -27,8 +27,6 @@
 #include <string>
 #include <list>
 
-#include <ignite/common/utils.h>
-
 namespace ignite
 {
     /**

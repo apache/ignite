@@ -52,7 +52,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -75,16 +75,16 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     protected static final long LATCH_TIMEOUT = 5000;
 
     /** */
-    private static final String NO_CACHE_GRID_NAME = "noCacheGrid";
+    private static final String NO_CACHE_IGNITE_INSTANCE_NAME = "noCacheGrid";
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(peerClassLoadingEnabled());
 
-        if (gridName.equals(NO_CACHE_GRID_NAME))
+        if (igniteInstanceName.equals(NO_CACHE_IGNITE_INSTANCE_NAME))
             cfg.setClientMode(true);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -135,11 +135,6 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(gridCount());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -547,7 +542,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-        final Map<Integer, T2<Integer, Long>> map = new ConcurrentHashMap8<>();
+        final Map<Integer, T2<Integer, Long>> map = new ConcurrentHashMap<>();
         final CountDownLatch latch = new CountDownLatch(10);
 
         qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {

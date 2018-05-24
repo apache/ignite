@@ -70,12 +70,7 @@ public class GridFailoverTestContext implements FailoverContext {
     }
 
     /** {@inheritDoc} */
-    @Override public Object affinityKey() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public int partition() {
+    @Override public int partition() {
         return -1;
     }
 

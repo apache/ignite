@@ -19,7 +19,6 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -28,9 +27,6 @@ import org.apache.ignite.lang.IgniteUuid;
 public class TcpDiscoveryClientAckResponse extends TcpDiscoveryAbstractMessage {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    public static final IgniteProductVersion CLIENT_ACK_SINCE_VERSION = IgniteProductVersion.fromString("1.4.0");
 
     /** */
     private final IgniteUuid msgId;

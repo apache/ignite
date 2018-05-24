@@ -81,9 +81,13 @@ public class PlatformDotNetBinaryConfiguration {
 
     /**
      * @param typesCfg New type cfgs.
+     * @return {@code this} for chaining.
      */
-    public void setTypesConfiguration(Collection<PlatformDotNetBinaryTypeConfiguration> typesCfg) {
+    public PlatformDotNetBinaryConfiguration setTypesConfiguration(
+        Collection<PlatformDotNetBinaryTypeConfiguration> typesCfg) {
         this.typesCfg = typesCfg;
+
+        return this;
     }
 
     /**
@@ -95,9 +99,12 @@ public class PlatformDotNetBinaryConfiguration {
 
     /**
      * @param types New types.
+     * @return {@code this} for chaining.
      */
-    public void setTypes(Collection<String> types) {
+    public PlatformDotNetBinaryConfiguration setTypes(Collection<String> types) {
         this.types = types;
+
+        return this;
     }
 
     /**
@@ -109,9 +116,12 @@ public class PlatformDotNetBinaryConfiguration {
 
     /**
      * @param dfltNameMapper New default name mapper.
+     * @return {@code this} for chaining.
      */
-    public void setDefaultNameMapper(String dfltNameMapper) {
+    public PlatformDotNetBinaryConfiguration setDefaultNameMapper(String dfltNameMapper) {
         this.dfltNameMapper = dfltNameMapper;
+
+        return this;
     }
 
     /**
@@ -123,9 +133,12 @@ public class PlatformDotNetBinaryConfiguration {
 
     /**
      * @param dfltIdMapper New default id mapper.
+     * @return {@code this} for chaining.
      */
-    public void setDefaultIdMapper(String dfltIdMapper) {
+    public PlatformDotNetBinaryConfiguration setDefaultIdMapper(String dfltIdMapper) {
         this.dfltIdMapper = dfltIdMapper;
+
+        return this;
     }
 
     /**
@@ -137,9 +150,12 @@ public class PlatformDotNetBinaryConfiguration {
 
     /**
      * @param dfltSerializer New default serializer.
+     * @return {@code this} for chaining.
      */
-    public void setDefaultSerializer(String dfltSerializer) {
+    public PlatformDotNetBinaryConfiguration setDefaultSerializer(String dfltSerializer) {
         this.dfltSerializer = dfltSerializer;
+
+        return this;
     }
 
     /**
@@ -158,9 +174,12 @@ public class PlatformDotNetBinaryConfiguration {
      * {@link PlatformDotNetBinaryTypeConfiguration#setKeepDeserialized(Boolean)}.
      *
      * @param keepDeserialized Keep deserialized flag.
+     * @return {@code this} for chaining.
      */
-    public void setDefaultKeepDeserialized(boolean keepDeserialized) {
+    public PlatformDotNetBinaryConfiguration setDefaultKeepDeserialized(boolean keepDeserialized) {
         this.dfltKeepDeserialized = keepDeserialized;
+
+        return this;
     }
 
     /** {@inheritDoc} */

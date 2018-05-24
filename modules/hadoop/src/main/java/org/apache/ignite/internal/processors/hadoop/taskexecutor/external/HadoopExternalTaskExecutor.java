@@ -27,16 +27,18 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.HadoopContext;
-import org.apache.ignite.internal.processors.hadoop.HadoopJob;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobEx;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobPhase;
-import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.hadoop.HadoopMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskInfo;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskType;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobMetadata;
@@ -57,8 +59,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState.CRASHED;
 import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState.FAILED;
@@ -89,10 +89,10 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
     private HadoopExternalCommunication comm;
 
     /** Starting processes. */
-    private final ConcurrentMap<UUID, HadoopProcess> runningProcsByProcId = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, HadoopProcess> runningProcsByProcId = new ConcurrentHashMap<>();
 
     /** Starting processes. */
-    private final ConcurrentMap<HadoopJobId, HadoopProcess> runningProcsByJobId = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<HadoopJobId, HadoopProcess> runningProcsByJobId = new ConcurrentHashMap<>();
 
     /** Busy lock. */
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
@@ -118,7 +118,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
             ctx.kernalContext().config().getMarshaller(),
             log,
             ctx.kernalContext().getSystemExecutorService(),
-            ctx.kernalContext().gridName(),
+            ctx.kernalContext().igniteInstanceName(),
             ctx.kernalContext().config().getWorkDirectory());
 
         comm.setListener(new MessageListener());
@@ -198,7 +198,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
             }
         }
         else if (ctx.isParticipating(meta)) {
-            HadoopJob job;
+            HadoopJobEx job;
 
             try {
                 job = jobTracker.job(meta.jobId(), meta.jobInfo());
@@ -215,7 +215,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public void run(final HadoopJob job, final Collection<HadoopTaskInfo> tasks) throws IgniteCheckedException {
+    @Override public void run(final HadoopJobEx job, final Collection<HadoopTaskInfo> tasks) throws IgniteCheckedException {
         if (!busyLock.tryReadLock()) {
             if (log.isDebugEnabled())
                 log.debug("Failed to start hadoop tasks (grid is stopping, will ignore).");
@@ -293,7 +293,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      * @param job Job instance.
      * @param tasks Collection of tasks to execute in started process.
      */
-    private void sendExecutionRequest(HadoopProcess proc, HadoopJob job, Collection<HadoopTaskInfo> tasks)
+    private void sendExecutionRequest(HadoopProcess proc, HadoopJobEx job, Collection<HadoopTaskInfo> tasks)
         throws IgniteCheckedException {
         // Must synchronize since concurrent process crash may happen and will receive onConnectionLost().
         proc.lock();
@@ -349,7 +349,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      * @param job Job instance.
      * @param plan Map reduce plan.
      */
-    private HadoopProcess startProcess(final HadoopJob job, final HadoopMapReducePlan plan) {
+    private HadoopProcess startProcess(final HadoopJobEx job, final HadoopMapReducePlan plan) {
         final UUID childProcId = UUID.randomUUID();
 
         HadoopJobId jobId = job.id();
@@ -523,7 +523,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      * @return Started process.
      */
     private Process startJavaProcess(UUID childProcId, HadoopExternalTaskMetadata startMeta,
-        HadoopJob job, String igniteWorkDir) throws Exception {
+        HadoopJobEx job, String igniteWorkDir) throws Exception {
         String outFldr = jobWorkFolder(job.id()) + File.separator + childProcId;
 
         if (log.isDebugEnabled())
@@ -633,7 +633,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      * @param job Job.
      * @param plan Map reduce plan.
      */
-    private void prepareForJob(HadoopProcess proc, HadoopJob job, HadoopMapReducePlan plan) {
+    private void prepareForJob(HadoopProcess proc, HadoopJobEx job, HadoopMapReducePlan plan) {
         try {
             comm.sendMessage(proc.descriptor(), new HadoopPrepareForJobRequest(job.id(), job.info(),
                 plan.reducers(), plan.reducers(ctx.localNodeId())));
@@ -760,7 +760,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
         private Collection<Integer> reducers;
 
         /** Tasks. */
-        private final Collection<HadoopTaskInfo> tasks = new ConcurrentLinkedDeque8<>();
+        private final Collection<HadoopTaskInfo> tasks = new ConcurrentLinkedDeque<>();
 
         /** Terminated flag. */
         private volatile boolean terminated;
@@ -882,9 +882,6 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
      *
      */
     private class HadoopProcessFuture extends GridFutureAdapter<IgniteBiTuple<Process, HadoopProcessDescriptor>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
         /** Child process ID. */
         private UUID childProcId;
 
@@ -964,7 +961,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
                 if (err == null) {
                     if (log.isDebugEnabled())
                         log.debug("Initialized child process for external task execution [jobId=" + jobId +
-                            ", desc=" + desc + ", initTime=" + duration() + ']');
+                            ", desc=" + desc + ']');
                 }
                 else
                     U.error(log, "Failed to initialize child process for external task execution [jobId=" + jobId +

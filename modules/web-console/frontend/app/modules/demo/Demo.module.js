@@ -18,12 +18,13 @@
 import angular from 'angular';
 
 import DEMO_INFO from 'app/data/demo-info.json';
+import templateUrl from 'views/templates/demo-info.tpl.pug';
 
 angular
 .module('ignite-console.demo', [
     'ignite-console.socket'
 ])
-.config(['$stateProvider', 'AclRouteProvider', ($stateProvider, AclRoute) => {
+.config(['$stateProvider', ($stateProvider) => {
     $stateProvider
         .state('demo', {
             abstract: true,
@@ -32,27 +33,29 @@ angular
         })
         .state('demo.resume', {
             url: '/resume',
-            onEnter: AclRoute.checkAccess('demo'),
-            controller: ['$state', ($state) => {
-                $state.go('base.configuration.clusters');
-            }],
-            metaTags: {
+            permission: 'demo',
+            redirectTo: 'default-state',
+            unsaved: true,
+            tfMetaTags: {
                 title: 'Demo resume'
             }
         })
         .state('demo.reset', {
             url: '/reset',
-            onEnter: AclRoute.checkAccess('demo'),
-            controller: ['$state', '$http', 'IgniteMessages', ($state, $http, Messages) => {
-                $http.post('/api/v1/demo/reset')
-                    .then(() => $state.go('base.configuration.clusters'))
-                    .catch((res) => {
-                        $state.go('base.configuration.clusters');
+            permission: 'demo',
+            redirectTo: (trans) => {
+                const $http = trans.injector().get('$http');
 
-                        Messages.showError(res);
+                return $http.post('/api/v1/demo/reset')
+                    .then(() => 'default-state')
+                    .catch((err) => {
+                        trans.injector().get('IgniteMessages').showError(err);
+
+                        return 'default-state';
                     });
-            }],
-            metaTags: {
+            },
+            unsaved: true,
+            tfMetaTags: {
                 title: 'Demo reset'
             }
         });
@@ -116,7 +119,7 @@ angular
         return items;
     }];
 }])
-.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'IgniteAgentMonitor', ($rootScope, $modal, $state, $q, igniteDemoInfo, agentMonitor) => {
+.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'AgentManager', ($rootScope, $modal, $state, $q, igniteDemoInfo, agentMgr) => {
     const scope = $rootScope.$new();
 
     let closePromise = null;
@@ -129,9 +132,8 @@ angular
     }
 
     const dialog = $modal({
-        templateUrl: '/templates/demo-info.html',
+        templateUrl,
         scope,
-        placement: 'center',
         show: false,
         backdrop: 'static'
     });
@@ -145,7 +147,7 @@ angular
     scope.downloadAgent = () => {
         const lnk = document.createElement('a');
 
-        lnk.setAttribute('href', '/api/v1/agent/download/zip');
+        lnk.setAttribute('href', '/api/v1/agent/downloads/agent');
         lnk.setAttribute('target', '_self');
         lnk.setAttribute('download', null);
         lnk.style.display = 'none';
@@ -165,7 +167,7 @@ angular
 
             return dialog.$promise
                 .then(dialog.show)
-                .then(() => Promise.race([agentMonitor.awaitAgent(), closePromise.promise]))
+                .then(() => Promise.race([agentMgr.awaitCluster(), closePromise.promise]))
                 .then(() => scope.hasAgents = true);
         }
     };

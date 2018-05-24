@@ -17,31 +17,6 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.FileSystemConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
-import org.apache.ignite.igfs.IgfsInputStream;
-import org.apache.ignite.igfs.IgfsOutOfSpaceException;
-import org.apache.ignite.igfs.IgfsOutputStream;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.jsr166.ThreadLocalRandom8;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -50,6 +25,33 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsInputStream;
+import org.apache.ignite.igfs.IgfsOutputStream;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -72,14 +74,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     /** Block size. */
     private static final int BLOCK_SIZE = 384;
 
-    /** Cache name. */
-    private static final String DATA_CACHE_NAME = "dataCache";
-
-    /** Cache name. */
-    private static final String META_CACHE_NAME = "metaCache";
-
     /** IGFS name. */
-    private static final String IGFS_NAME = "igfs";
+    private static final String IGFS_NAME = "test";
 
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -93,18 +89,13 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     /** Whether near cache is enabled (applicable for PARTITIONED cache only). */
     private boolean nearEnabled;
 
-    /** IGFS maximum space. */
-    private long igfsMaxData;
-
-    /** Trash purge timeout. */
-    private long trashPurgeTimeout;
+    /** Mem policy setter. */
+    private IgniteInClosure<IgniteConfiguration> memIgfsdDataPlcSetter;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cacheMode = null;
         nearEnabled = false;
-        igfsMaxData = 0;
-        trashPurgeTimeout = 0;
 
         mgmtPort = 11400;
     }
@@ -115,23 +106,18 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName(DATA_CACHE_NAME);
-        igfsCfg.setMetaCacheName(META_CACHE_NAME);
         igfsCfg.setName(IGFS_NAME);
         igfsCfg.setBlockSize(BLOCK_SIZE);
         igfsCfg.setFragmentizerEnabled(false);
-        igfsCfg.setMaxSpaceSize(igfsMaxData);
-        igfsCfg.setTrashPurgeTimeout(trashPurgeTimeout);
         igfsCfg.setManagementPort(++mgmtPort);
 
         CacheConfiguration dataCfg = defaultCacheConfiguration();
 
-        dataCfg.setName(DATA_CACHE_NAME);
         dataCfg.setCacheMode(cacheMode);
 
         if (cacheMode == PARTITIONED) {
@@ -148,20 +134,24 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCfg = defaultCacheConfiguration();
 
-        metaCfg.setName(META_CACHE_NAME);
         metaCfg.setCacheMode(REPLICATED);
 
         metaCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCfg.setRebalanceMode(SYNC);
         metaCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setMetaCacheConfiguration(metaCfg);
+        igfsCfg.setDataCacheConfiguration(dataCfg);
+
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(metaCfg, dataCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
+
+        if (memIgfsdDataPlcSetter != null)
+            memIgfsdDataPlcSetter.apply(cfg);
 
         return cfg;
     }
@@ -234,7 +224,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         cacheMode = PARTITIONED;
         nearEnabled = false;
 
-        check();
+        checkOversize();
     }
 
     /**
@@ -245,7 +235,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     public void testReplicatedOversize() throws Exception {
         cacheMode = REPLICATED;
 
-        check();
+        checkOversize();
     }
 
     /**
@@ -284,7 +274,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             IgniteEx g = grid(i);
 
-            IgniteInternalCache cache = g.cachex(DATA_CACHE_NAME).cache();
+            IgniteInternalCache cache = g.cachex(g.igfsx(IGFS_NAME).configuration().getDataCacheConfiguration()
+                .getName()).cache();
 
             assert cache.isIgfsDataCache();
         }
@@ -398,15 +389,32 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkOversize() throws Exception {
-        igfsMaxData = BLOCK_SIZE;
+        final long maxSize = 32L * 1024 * 1024;
+
+        memIgfsdDataPlcSetter = new IgniteInClosure<IgniteConfiguration>() {
+            @Override public void apply(IgniteConfiguration cfg) {
+                String memPlcName = "igfsDataMemPlc";
+
+                cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDataRegionConfigurations(
+                    new DataRegionConfiguration().setMaxSize(maxSize).setInitialSize(maxSize).setName(memPlcName)));
+
+                FileSystemConfiguration igfsCfg = cfg.getFileSystemConfiguration()[0];
+
+                igfsCfg.getDataCacheConfiguration().setDataRegionName(memPlcName);
+
+                cfg.setCacheConfiguration(new CacheConfiguration().setName("QQQ").setDataRegionName(memPlcName));
+            }
+        };
 
         startUp();
 
         final IgfsPath path = new IgfsPath("/file");
 
+        final int writeChunkSize = (int)(maxSize / 1024);
+
         // This write is expected to be successful.
         IgfsOutputStream os = igfs(0).create(path, false);
-        os.write(chunk(BLOCK_SIZE - 1));
+        os.write(chunk(writeChunkSize));
         os.close();
 
         // This write must be successful as well.
@@ -420,7 +428,9 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
                 IgfsOutputStream osErr = igfs(0).append(path, false);
 
                 try {
-                    osErr.write(chunk(BLOCK_SIZE));
+                    for (int i = 0; i < maxSize / writeChunkSize * GRID_CNT; ++i)
+                        osErr.write(chunk(writeChunkSize));
+
                     osErr.close();
 
                     return null;
@@ -437,8 +447,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
                     U.closeQuiet(osErr);
                 }
             }
-        }, IgfsOutOfSpaceException.class, "Failed to write data block (IGFS maximum data size exceeded) [used=" +
-            igfsMaxData + ", allowed=" + igfsMaxData + ']');
+        }, IgniteOutOfMemoryException.class, "Not enough memory allocated");
     }
 
     /**
@@ -547,7 +556,8 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         Collection<UUID> ids = new HashSet<>();
 
         for (ClusterNode node : grid.cluster().nodes()) {
-            if (grid.affinity(DATA_CACHE_NAME).isPrimaryOrBackup(node, key))
+            if (grid.affinity(grid.igfsx(IGFS_NAME).configuration().getDataCacheConfiguration().getName())
+                .isPrimaryOrBackup(node, key))
                 ids.add(node.id());
         }
 
@@ -572,8 +582,9 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
      * @return Data cache.
      */
     private GridCacheAdapter<IgfsBlockKey, byte[]> cache(UUID nodeId) {
-        return (GridCacheAdapter<IgfsBlockKey, byte[]>)((IgniteEx)G.ignite(nodeId)).cachex(DATA_CACHE_NAME)
-            .<IgfsBlockKey, byte[]>cache();
+        IgniteEx g = (IgniteEx)G.ignite(nodeId);
+        return (GridCacheAdapter<IgfsBlockKey, byte[]>)g.cachex(g.igfsx(IGFS_NAME).configuration()
+            .getDataCacheConfiguration().getName()).<IgfsBlockKey, byte[]>cache();
     }
 
     /**
@@ -585,7 +596,7 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     private Collection<IgfsFile> write() throws Exception {
         Collection<IgfsFile> res = new HashSet<>(FILES_CNT, 1.0f);
 
-        ThreadLocalRandom8 rand = ThreadLocalRandom8.current();
+        ThreadLocalRandom rand = ThreadLocalRandom.current();
 
         for (int i = 0; i < FILES_CNT; i++) {
             // Create empty file locally.

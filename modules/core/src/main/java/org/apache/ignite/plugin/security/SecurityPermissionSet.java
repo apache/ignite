@@ -20,7 +20,6 @@ package org.apache.ignite.plugin.security;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
-import org.apache.ignite.internal.LessNamingBean;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * Property {@link #defaultAllowAll()} specifies whether to allow or deny
  * cache and task operations if they were not explicitly specified.
  */
-public interface SecurityPermissionSet extends Serializable, LessNamingBean {
+public interface SecurityPermissionSet extends Serializable {
     /**
      * Flag indicating whether to allow or deny cache and task operations
      * if they were not explicitly specified.
@@ -57,6 +56,14 @@ public interface SecurityPermissionSet extends Serializable, LessNamingBean {
      * @return Map of cache names to cache permissions.
      */
     public Map<String, Collection<SecurityPermission>> cachePermissions();
+
+    /**
+     * Map of service names to service permissions. Wildcards are allowed at the
+     * end of service names.
+     *
+     * @return Map of service names to service permissions.
+     */
+    public Map<String, Collection<SecurityPermission>> servicePermissions();
 
     /**
      * Collection of system-wide permissions (events enable/disable, Visor task execution).

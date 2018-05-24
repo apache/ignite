@@ -24,12 +24,12 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -96,8 +96,8 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     private boolean noAutoUnsubscribe;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disc = new TcpDiscoverySpi();
 
@@ -251,6 +251,175 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testApiAsyncOld() throws Exception {
+        IgniteEvents evtAsync = grid(0).events().withAsync();
+
+        try {
+            evtAsync.stopRemoteListen(null);
+            evtAsync.future().get();
+        }
+        catch (NullPointerException ignored) {
+            // No-op.
+        }
+
+        evtAsync.stopRemoteListen(UUID.randomUUID());
+        evtAsync.future().get();
+
+        UUID consumeId = null;
+
+        try {
+            evtAsync.remoteListen(
+                new P2<UUID, DiscoveryEvent>() {
+                    @Override public boolean apply(UUID uuid, DiscoveryEvent evt) {
+                        return false;
+                    }
+                },
+                new P1<DiscoveryEvent>() {
+                    @Override public boolean apply(DiscoveryEvent e) {
+                        return false;
+                    }
+                },
+                EVTS_DISCOVERY
+            );
+
+            consumeId = (UUID)evtAsync.future().get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evtAsync.stopRemoteListen(consumeId);
+            evtAsync.future().get();
+        }
+
+        try {
+            evtAsync.remoteListen(
+                new P2<UUID, DiscoveryEvent>() {
+                    @Override public boolean apply(UUID uuid, DiscoveryEvent evt) {
+                        return false;
+                    }
+                },
+                new P1<DiscoveryEvent>() {
+                    @Override public boolean apply(DiscoveryEvent e) {
+                        return false;
+                    }
+                }
+            );
+
+            consumeId = (UUID)evtAsync.future().get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evtAsync.stopRemoteListen(consumeId);
+            evtAsync.future().get();
+        }
+
+        try {
+            evtAsync.remoteListen(
+                new P2<UUID, Event>() {
+                    @Override public boolean apply(UUID uuid, Event evt) {
+                        return false;
+                    }
+                },
+                new P1<Event>() {
+                    @Override public boolean apply(Event e) {
+                        return false;
+                    }
+                }
+            );
+
+            consumeId = (UUID)evtAsync.future().get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evtAsync.stopRemoteListen(consumeId);
+            evtAsync.future().get();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testApiAsync() throws Exception {
+        IgniteEvents evt = grid(0).events();
+
+        try {
+            evt.stopRemoteListenAsync(null).get();
+        }
+        catch (NullPointerException ignored) {
+            // No-op.
+        }
+
+        evt.stopRemoteListenAsync(UUID.randomUUID()).get();
+
+        UUID consumeId = null;
+
+        try {
+            consumeId = evt.remoteListenAsync(
+                new P2<UUID, DiscoveryEvent>() {
+                    @Override public boolean apply(UUID uuid, DiscoveryEvent evt) {
+                        return false;
+                    }
+                },
+                new P1<DiscoveryEvent>() {
+                    @Override public boolean apply(DiscoveryEvent e) {
+                        return false;
+                    }
+                },
+                EVTS_DISCOVERY
+            ).get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evt.stopRemoteListenAsync(consumeId).get();
+        }
+
+        try {
+            consumeId = evt.remoteListenAsync(
+                new P2<UUID, DiscoveryEvent>() {
+                    @Override public boolean apply(UUID uuid, DiscoveryEvent evt) {
+                        return false;
+                    }
+                },
+                new P1<DiscoveryEvent>() {
+                    @Override public boolean apply(DiscoveryEvent e) {
+                        return false;
+                    }
+                }
+            ).get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evt.stopRemoteListenAsync(consumeId).get();
+        }
+
+        try {
+            consumeId = evt.remoteListenAsync(
+                new P2<UUID, Event>() {
+                    @Override public boolean apply(UUID uuid, Event evt) {
+                        return false;
+                    }
+                },
+                new P1<Event>() {
+                    @Override public boolean apply(Event e) {
+                        return false;
+                    }
+                }
+            ).get();
+
+            assertNotNull(consumeId);
+        }
+        finally {
+            evt.stopRemoteListenAsync(consumeId).get();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testAllEvents() throws Exception {
         final Collection<UUID> nodeIds = new HashSet<>();
         final AtomicInteger cnt = new AtomicInteger();
@@ -278,7 +447,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -319,7 +488,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -363,7 +532,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -409,7 +578,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             grid(0).compute().broadcast(F.noop());
             grid(0).compute().withName("exclude").run(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -423,7 +592,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRemoteProjection() throws Exception {
-        final Collection<UUID> nodeIds = new HashSet<>();
+        final Collection<UUID> nodeIds = new ConcurrentSkipListSet<>();
         final AtomicInteger cnt = new AtomicInteger();
         final CountDownLatch latch = new CountDownLatch(GRID_CNT - 1);
 
@@ -450,7 +619,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT - 1, nodeIds.size());
             assertEquals(GRID_CNT - 1, cnt.get());
@@ -491,7 +660,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT - 1, nodeIds.size());
             assertEquals(GRID_CNT - 1, cnt.get());
@@ -532,7 +701,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(1, nodeIds.size());
             assertEquals(1, cnt.get());
@@ -575,7 +744,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(1, nodeIds.size());
             assertEquals(1, cnt.get());
@@ -616,7 +785,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().run(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(1, nodeIds.size());
             assertEquals(1, cnt.get());
@@ -659,7 +828,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         compute(grid(0).cluster().forLocal()).run(F.noop());
 
-        assert latch.await(2, SECONDS);
+        assert latch.await(10, SECONDS) : latch;
 
         assertEquals(1, cnt.get());
 
@@ -709,7 +878,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT + 1, nodeIds.size());
             assertEquals(GRID_CNT + 1, cnt.get());
@@ -760,7 +929,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -811,7 +980,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT + 1, nodeIds.size());
             assertEquals(GRID_CNT + 1, cnt.get());
@@ -867,7 +1036,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(10, SECONDS) : latch;
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -976,7 +1145,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testMultithreadedWithNodeRestart() throws Exception {
+    public void _testMultithreadedWithNodeRestart() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
         final BlockingQueue<IgniteBiTuple<Integer, UUID>> queue = new LinkedBlockingQueue<>();
         final Collection<UUID> started = new GridConcurrentHashSet<>();
@@ -984,21 +1153,21 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         final Random rnd = new Random();
 
+        final int consumeCnt = tcpDiscovery() ? CONSUME_CNT : CONSUME_CNT / 2;
+
         IgniteInternalFuture<?> starterFut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                for (int i = 0; i < CONSUME_CNT; i++) {
+                for (int i = 0; i < consumeCnt; i++) {
                     int idx = rnd.nextInt(GRID_CNT);
 
                     try {
-                        IgniteEvents evts = grid(idx).events().withAsync();
+                        IgniteEvents evts = grid(idx).events();
 
-                        evts.remoteListen(new P2<UUID, Event>() {
+                        UUID consumeId = evts.remoteListenAsync(new P2<UUID, Event>() {
                             @Override public boolean apply(UUID uuid, Event evt) {
                                 return true;
                             }
-                        }, null, EVT_JOB_STARTED);
-
-                        UUID consumeId = evts.<UUID>future().get(3000);
+                        }, null, EVT_JOB_STARTED).get(3000);
 
                         started.add(consumeId);
 
@@ -1029,11 +1198,9 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     UUID consumeId = t.get2();
 
                     try {
-                        IgniteEvents evts = grid(idx).events().withAsync();
+                        IgniteEvents evts = grid(idx).events();
 
-                        evts.stopRemoteListen(consumeId);
-
-                        evts.future().get(3000);
+                        evts.stopRemoteListenAsync(consumeId).get(3000);
 
                         stopped.add(consumeId);
                     }
@@ -1063,11 +1230,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
                     int idx = rnd.nextInt(GRID_CNT);
 
                     try {
-                        IgniteCompute comp = grid(idx).compute().withAsync();
-
-                        comp.run(F.noop());
-
-                        comp.future().get(3000);
+                        grid(idx).compute().runAsync(F.noop()).get(3000);
                     }
                     catch (IgniteException ignored) {
                         // Ignore all job execution related errors.
@@ -1089,11 +1252,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             int idx = t.get1();
             UUID consumeId = t.get2();
 
-            IgniteEvents evts = grid(idx).events().withAsync();
-
-            evts.stopRemoteListen(consumeId);
-
-            evts.future().get(3000);
+            grid(idx).events().stopRemoteListenAsync(consumeId).get(3000);
 
             stopped.add(consumeId);
         }

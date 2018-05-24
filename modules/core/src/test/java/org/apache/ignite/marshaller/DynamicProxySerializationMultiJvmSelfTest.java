@@ -26,7 +26,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -42,8 +42,8 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(marshFactory.call());
 
@@ -53,19 +53,6 @@ public class DynamicProxySerializationMultiJvmSelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testOptimizedMarshaller() throws Exception {
-        marshFactory = new Callable<Marshaller>() {
-            @Override public Marshaller call() throws Exception {
-                return new OptimizedMarshaller(false);
-            }
-        };
-
-        doTestMarshaller();
     }
 
     /**

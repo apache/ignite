@@ -24,6 +24,7 @@ import java.nio.ByteOrder;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionImpl;
+import org.apache.ignite.lang.IgniteInClosure;
 
 /**
  * Allows to re-use existing {@link GridNioFilter}s on IPC (specifically shared memory IPC)
@@ -190,7 +192,10 @@ public class HadoopIpcToNioAdapter<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg, boolean fut) {
+        @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses,
+            Object msg,
+            boolean fut,
+            IgniteInClosure<IgniteException> ackC) {
             assert ses == HadoopIpcToNioAdapter.this.ses : "ses=" + ses +
                 ", this.ses=" + HadoopIpcToNioAdapter.this.ses;
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import templateUrl from './header-logo.jade';
+import template from './header-logo.pug';
 
 export default ['igniteHeaderLogo', ['IgniteBranding', (branding) => {
     function controller() {
@@ -26,7 +26,7 @@ export default ['igniteHeaderLogo', ['IgniteBranding', (branding) => {
 
     return {
         restrict: 'E',
-        templateUrl,
+        template,
         controller,
         controllerAs: 'logo',
         replace: true

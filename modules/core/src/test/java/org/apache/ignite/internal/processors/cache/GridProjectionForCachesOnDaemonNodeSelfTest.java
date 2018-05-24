@@ -44,8 +44,8 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
     private static Ignite daemon;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(discoverySpi());
 
@@ -77,30 +77,25 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     protected void beforeTest() throws Exception {
-        ignite.getOrCreateCache((String)null);
+        ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        ignite.cache(null).destroy();
+        ignite.cache(DEFAULT_CACHE_NAME).destroy();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testForDataNodes() throws Exception {
-        ClusterGroup grp = ignite.cluster().forDataNodes(null);
+        ClusterGroup grp = ignite.cluster().forDataNodes(DEFAULT_CACHE_NAME);
 
         assertFalse(grp.nodes().isEmpty());
 
         try {
-            daemon.cluster().forDataNodes(null);
+            daemon.cluster().forDataNodes(DEFAULT_CACHE_NAME);
         }
         catch (IllegalStateException ignored) {
             return;
@@ -113,12 +108,12 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testForClientNodes() throws Exception {
-        ClusterGroup grp = ignite.cluster().forClientNodes(null);
+        ClusterGroup grp = ignite.cluster().forClientNodes(DEFAULT_CACHE_NAME);
 
         assertTrue(grp.nodes().isEmpty());
 
         try {
-            daemon.cluster().forClientNodes(null);
+            daemon.cluster().forClientNodes(DEFAULT_CACHE_NAME);
         }
         catch (IllegalStateException ignored) {
             return;
@@ -131,12 +126,12 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testForCacheNodes() throws Exception {
-        ClusterGroup grp = ignite.cluster().forCacheNodes(null);
+        ClusterGroup grp = ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
 
         assertFalse(grp.nodes().isEmpty());
 
         try {
-            daemon.cluster().forCacheNodes(null);
+            daemon.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
         }
         catch (IllegalStateException ignored) {
             return;

@@ -82,10 +82,10 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
     public abstract int serverCount();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (isFirstGrid(gridName)) {
+        if (isFirstGrid(igniteInstanceName)) {
             cfg.setClientMode(true);
 
             assert cfg.getDiscoverySpi() instanceof TcpDiscoverySpi;
@@ -122,10 +122,6 @@ public abstract class GridRollingRestartAbstractTest extends GridCommonAbstractT
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-
         rollingRestartThread.shutdown();
     }
 

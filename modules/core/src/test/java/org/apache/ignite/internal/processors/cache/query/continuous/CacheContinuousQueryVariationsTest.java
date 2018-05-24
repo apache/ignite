@@ -94,10 +94,10 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     public static boolean singleNode = false;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setClientMode(gridName.endsWith("0") && !singleNode);
+        cfg.setClientMode(igniteInstanceName.endsWith("0") && !singleNode);
 
         return cfg;
     }
@@ -713,6 +713,11 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
                         cache.remove(key);
                         cache.remove(key);
 
+                        //Wait when remove event will be added to evts
+                        while (evts.size() != 10) {
+                            Thread.sleep(100);
+                        }
+                        
                         evts.clear();
 
                         log.info("Finish iteration: " + i);

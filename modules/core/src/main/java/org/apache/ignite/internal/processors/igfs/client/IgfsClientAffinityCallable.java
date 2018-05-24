@@ -55,13 +55,15 @@ public class IgfsClientAffinityCallable extends IgfsClientAbstractCallable<Colle
      * Constructor.
      *
      * @param igfsName IGFS name.
+     * @param user IGFS user name.
      * @param path Path.
      * @param start Start.
      * @param len Length.
      * @param maxLen Maximum length.
      */
-    public IgfsClientAffinityCallable(@Nullable String igfsName, IgfsPath path, long start, long len, long maxLen) {
-        super(igfsName, path);
+    public IgfsClientAffinityCallable(@Nullable String igfsName, @Nullable String user, IgfsPath path, long start,
+        long len, long maxLen) {
+        super(igfsName, user, path);
 
         this.start = start;
         this.len = len;

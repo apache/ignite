@@ -108,7 +108,7 @@ public class CacheEntryInfoCollection implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 92;
     }
 

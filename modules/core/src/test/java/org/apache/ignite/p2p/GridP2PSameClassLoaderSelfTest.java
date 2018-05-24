@@ -67,12 +67,12 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDeploymentMode(depMode);
+        cfg.setMetricsUpdateFrequency(500);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(FINDER);
 
         cfg.setCacheConfiguration();

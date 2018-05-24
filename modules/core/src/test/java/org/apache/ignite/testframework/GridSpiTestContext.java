@@ -41,6 +41,7 @@ import org.apache.ignite.internal.direct.DirectMessageReader;
 import org.apache.ignite.internal.direct.DirectMessageWriter;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridIoUserMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
@@ -60,6 +61,7 @@ import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.spi.IgniteSpiContext;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
+import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -328,7 +330,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
     @SuppressWarnings("deprecation")
     public void triggerMessage(ClusterNode node, Object msg) {
         for (GridMessageListener lsnr : msgLsnrs)
-            lsnr.onMessage(node.id(), msg);
+            lsnr.onMessage(node.id(), msg, GridIoPolicy.SYSTEM_POOL);
     }
 
     /** {@inheritDoc} */
@@ -540,6 +542,11 @@ public class GridSpiTestContext implements IgniteSpiContext {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag discoData) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public Collection<SecuritySubject> authenticatedSubjects() {
         return Collections.emptyList();
     }
@@ -599,6 +606,21 @@ public class GridSpiTestContext implements IgniteSpiContext {
     @Override public void removeTimeoutObject(IgniteSpiTimeoutObject obj) {
         if (timeoutProcessor != null)
             timeoutProcessor.removeTimeoutObject(new GridSpiTimeoutObject(obj));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<String, Object> nodeAttributes() {
+        return Collections.emptyMap();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean communicationFailureResolveSupported() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void resolveCommunicationFailure(ClusterNode node, Exception err) {
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -662,7 +684,7 @@ public class GridSpiTestContext implements IgniteSpiContext {
         @SuppressWarnings({
             "SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions",
             "OverlyStrongTypeCast"})
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridIoUserMessage ioMsg = (GridIoUserMessage)msg;
 
             Object msgBody = ioMsg.body();

@@ -37,40 +37,20 @@
                     <property name="name" value="atomic-reties"/>
                 </bean>
 
-                <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="atomic-offheap">
-                    <property name="name" value="atomic-offheap-reties"/>
-                </bean>
-
                 <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="atomic">
                     <property name="name" value="atomic-invoke-retry"/>
-                </bean>
-
-                <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="atomic-offheap">
-                    <property name="name" value="atomic-offheap-invoke-retry"/>
                 </bean>
 
                 <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="tx">
                     <property name="name" value="tx-invoke-retry"/>
                 </bean>
 
-                <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="tx-offheap">
-                    <property name="name" value="tx-offheap-invoke-retry"/>
-                </bean>
-
                 <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="tx">
                     <property name="name" value="tx-write-read"/>
                 </bean>
 
-                <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="tx-offheap">
-                    <property name="name" value="tx-offheap-write-read"/>
-                </bean>
-
                 <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="tx">
                     <property name="name" value="tx-write-invoke"/>
-                </bean>
-
-                <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="tx-offheap">
-                    <property name="name" value="tx-offheap-write-invoke"/>
                 </bean>
             </list>
         </property>
@@ -90,20 +70,6 @@
         <property name="cacheMode" value="PARTITIONED"/>
 
         <property name="atomicityMode" value="ATOMIC"/>
-
-        <property name="swapEnabled" value="false"/>
-    </bean>
-
-    <bean id="atomic-offheap" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
-        <property name="name" value="atomic-offheap"/>
-
-        <property name="cacheMode" value="PARTITIONED"/>
-
-        <property name="atomicityMode" value="ATOMIC"/>
-
-        <property name="swapEnabled" value="false"/>
-
-        <property name="memoryMode" value="OFFHEAP_TIERED"/>
     </bean>
 
     <bean id="tx" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
@@ -114,13 +80,4 @@
         <property name="swapEnabled" value="false"/>
     </bean>
 
-    <bean id="tx-offheap" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
-        <property name="cacheMode" value="PARTITIONED"/>
-
-        <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-        <property name="swapEnabled" value="false"/>
-
-        <property name="memoryMode" value="OFFHEAP_TIERED"/>
-    </bean>
 </beans>

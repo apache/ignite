@@ -18,6 +18,7 @@
 package org.apache.ignite.logger.log4j2;
 
 import java.io.File;
+import java.net.URL;
 import java.util.Collections;
 import java.util.UUID;
 import junit.framework.TestCase;
@@ -44,6 +45,13 @@ public class Log4j2LoggerSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
+    @Override protected void setUp() throws Exception {
+        Log4J2Logger.cleanup();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testFileConstructor() throws Exception {
         File xml = GridTestUtils.resolveIgnitePath(LOG_PATH_TEST);
 
@@ -51,6 +59,11 @@ public class Log4j2LoggerSelfTest extends TestCase {
         assert xml.exists();
 
         IgniteLogger log = new Log4J2Logger(xml).getLogger(getClass());
+
+        System.out.println(log.toString());
+
+        assertTrue(log.toString().contains("Log4J2Logger"));
+        assertTrue(log.toString().contains(xml.getPath()));
 
         ((LoggerNodeIdAware)log).setNodeId(UUID.randomUUID());
 
@@ -66,7 +79,13 @@ public class Log4j2LoggerSelfTest extends TestCase {
         assert xml != null;
         assert xml.exists();
 
-        IgniteLogger log = new Log4J2Logger(xml.toURI().toURL()).getLogger(getClass());
+        URL url = xml.toURI().toURL();
+        IgniteLogger log = new Log4J2Logger(url).getLogger(getClass());
+
+        System.out.println(log.toString());
+
+        assertTrue(log.toString().contains("Log4J2Logger"));
+        assertTrue(log.toString().contains(url.getPath()));
 
         ((LoggerNodeIdAware)log).setNodeId(UUID.randomUUID());
 
@@ -78,6 +97,11 @@ public class Log4j2LoggerSelfTest extends TestCase {
      */
     public void testPathConstructor() throws Exception {
         IgniteLogger log = new Log4J2Logger(LOG_PATH_TEST).getLogger(getClass());
+
+        System.out.println(log.toString());
+
+        assertTrue(log.toString().contains("Log4J2Logger"));
+        assertTrue(log.toString().contains(LOG_PATH_TEST));
 
         ((LoggerNodeIdAware)log).setNodeId(UUID.randomUUID());
 
@@ -153,12 +177,12 @@ public class Log4j2LoggerSelfTest extends TestCase {
     /**
      * Creates grid configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param logPath Logger configuration path.
      * @return Grid configuration.
      * @throws Exception If error occurred.
      */
-    private static IgniteConfiguration getConfiguration(String gridName, String logPath)
+    private static IgniteConfiguration getConfiguration(String igniteInstanceName, String logPath)
         throws Exception {
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -167,7 +191,7 @@ public class Log4j2LoggerSelfTest extends TestCase {
         }});
 
         return new IgniteConfiguration()
-            .setGridName(gridName)
+            .setIgniteInstanceName(igniteInstanceName)
             .setGridLogger(new Log4J2Logger(logPath))
             .setConnectorConfiguration(null)
             .setDiscoverySpi(disco);

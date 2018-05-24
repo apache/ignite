@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -60,8 +59,8 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setNodeId(null);
 
@@ -96,11 +95,7 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
                 ComputeTaskFuture<String> fut;
 
                 synchronized(mux){
-                    IgniteCompute comp = ignite1.compute().withAsync();
-
-                    comp.execute(JobTask.class, null);
-
-                    fut = comp.future();
+                    fut = ignite1.compute().executeAsync(JobTask.class, null);
 
                     mux.wait();
                 }

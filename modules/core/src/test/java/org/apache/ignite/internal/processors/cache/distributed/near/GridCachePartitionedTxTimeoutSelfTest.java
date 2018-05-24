@@ -39,8 +39,8 @@ public class GridCachePartitionedTxTimeoutSelfTest extends IgniteTxTimeoutAbstra
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TransactionConfiguration txCfg = c.getTransactionConfiguration();
 

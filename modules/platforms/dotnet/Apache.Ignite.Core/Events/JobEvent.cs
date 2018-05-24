@@ -54,8 +54,8 @@ namespace Apache.Ignite.Core.Events
         {
             _taskName = r.ReadString();
             _taskClassName = r.ReadString();
-            _taskSessionId = IgniteGuid.Read(r);
-            _jobId = IgniteGuid.Read(r);
+            _taskSessionId = r.ReadObject<IgniteGuid?>();
+            _jobId = r.ReadObject<IgniteGuid?>();
             _taskNode = ReadNode(r);
             _taskSubjectId = r.ReadGuid();
         }
@@ -90,8 +90,10 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         public Guid? TaskSubjectId { get { return _taskSubjectId; } }
 
-        /** <inheritDoc /> */
-	    public override string ToShortString()
+        /// <summary>
+        /// Gets shortened version of ToString result.
+        /// </summary>
+        public override string ToShortString()
 	    {
 	        return string.Format(CultureInfo.InvariantCulture,
 	            "{0}: TaskName={1}, TaskClassName={2}, TaskSessionId={3}, JobId={4}, TaskNode={5}, " +

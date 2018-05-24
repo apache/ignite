@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -54,7 +55,7 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
      * Executes query runnable.
      */
     void execute() {
-        fut = cctx.kernalContext().closure().runLocalSafe(run, true);
+        fut = cctx.kernalContext().closure().runLocalSafe(run, GridIoPolicy.QUERY_POOL);
     }
 
     /** {@inheritDoc} */

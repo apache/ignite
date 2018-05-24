@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCancelledException;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -38,7 +39,7 @@ import static org.apache.ignite.internal.processors.cache.QueryCursorImpl.State.
 /**
  * Query cursor implementation.
  */
-public class QueryCursorImpl<T> implements QueryCursorEx<T> {
+public class QueryCursorImpl<T> implements QueryCursorEx<T>, FieldsQueryCursor<T> {
     /** */
     private final static AtomicReferenceFieldUpdater<QueryCursorImpl, State> STATE_UPDATER =
         AtomicReferenceFieldUpdater.newUpdater(QueryCursorImpl.class, State.class, "state");
@@ -186,6 +187,22 @@ public class QueryCursorImpl<T> implements QueryCursorEx<T> {
      */
     @Override public List<GridQueryFieldMetadata> fieldsMeta() {
         return fieldsMeta;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getFieldName(int idx) {
+        assert this.fieldsMeta != null;
+
+        GridQueryFieldMetadata metadata = fieldsMeta.get(idx);
+
+        return metadata.fieldName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getColumnsCount() {
+        assert this.fieldsMeta != null;
+
+        return fieldsMeta.size();
     }
 
     /** Query cursor state */

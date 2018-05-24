@@ -202,7 +202,7 @@ namespace ignite
              *
              * @throw IgniteError class instance in case of failure.
              */
-            TransactionState GetState();
+            TransactionState::Type GetState();
 
             /**
              * Get current state.
@@ -214,7 +214,7 @@ namespace ignite
              * @param err Error.
              * @return Transaction state.
              */
-            TransactionState GetState(IgniteError& err);
+            TransactionState::Type GetState(IgniteError& err);
 
             /**
              * Get concurrency.
@@ -223,9 +223,9 @@ namespace ignite
              *
              * @return Concurrency.
              */
-            TransactionConcurrency GetConcurrency() const
+            TransactionConcurrency::Type GetConcurrency() const
             {
-                return static_cast<TransactionConcurrency>(impl.Get()->GetConcurrency());
+                return static_cast<TransactionConcurrency::Type>(impl.Get()->GetConcurrency());
             }
 
             /**
@@ -235,9 +235,9 @@ namespace ignite
              *
              * @return Isolation.
              */
-            TransactionIsolation GetIsolation() const
+            TransactionIsolation::Type GetIsolation() const
             {
-                return static_cast<TransactionIsolation>(impl.Get()->GetIsolation());
+                return static_cast<TransactionIsolation::Type>(impl.Get()->GetIsolation());
             }
 
             /**

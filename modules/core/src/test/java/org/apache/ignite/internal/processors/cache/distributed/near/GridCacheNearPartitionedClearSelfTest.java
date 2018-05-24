@@ -67,8 +67,8 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost("127.0.0.1");
 
@@ -78,7 +78,7 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
 
         cfg.setDiscoverySpi(discoSpi);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(CACHE_NAME);
         ccfg.setCacheMode(PARTITIONED);

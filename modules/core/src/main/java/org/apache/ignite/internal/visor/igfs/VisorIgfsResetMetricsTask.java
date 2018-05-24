@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.visor.igfs;
 
-import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -28,19 +27,19 @@ import org.apache.ignite.internal.visor.VisorOneNodeTask;
  * Resets IGFS metrics.
  */
 @GridInternal
-public class VisorIgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Void> {
+public class VisorIgfsResetMetricsTask extends VisorOneNodeTask<VisorIgfsResetMetricsTaskArg, Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected VisorIgfsResetMetricsJob job(Set<String> arg) {
+    @Override protected VisorIgfsResetMetricsJob job(VisorIgfsResetMetricsTaskArg arg) {
         return new VisorIgfsResetMetricsJob(arg, debug);
     }
 
     /**
      * Job that reset IGFS metrics.
      */
-    private static class VisorIgfsResetMetricsJob extends VisorJob<Set<String>, Void> {
+    private static class VisorIgfsResetMetricsJob extends VisorJob<VisorIgfsResetMetricsTaskArg, Void> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -48,13 +47,13 @@ public class VisorIgfsResetMetricsTask extends VisorOneNodeTask<Set<String>, Voi
          * @param arg IGFS names.
          * @param debug Debug flag.
          */
-        private VisorIgfsResetMetricsJob(Set<String> arg, boolean debug) {
+        private VisorIgfsResetMetricsJob(VisorIgfsResetMetricsTaskArg arg, boolean debug) {
             super(arg, debug);
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Set<String> igfsNames) {
-            for (String igfsName : igfsNames)
+        @Override protected Void run(VisorIgfsResetMetricsTaskArg arg) {
+            for (String igfsName : arg.getIgfsNames())
                 try {
                     ignite.fileSystem(igfsName).resetMetrics();
                 }

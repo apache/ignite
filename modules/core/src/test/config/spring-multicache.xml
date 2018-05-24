@@ -66,11 +66,11 @@
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-                    <property name="startSize" value="10"/>
-
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
+
+                    <property name="onheapCacheEnabled" value="true"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
@@ -88,11 +88,11 @@
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-                    <property name="startSize" value="10"/>
-
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
+
+                    <property name="onheapCacheEnabled" value="true"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
@@ -110,11 +110,11 @@
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-                    <property name="startSize" value="10"/>
-
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
+
+                    <property name="onheapCacheEnabled" value="true"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
@@ -132,11 +132,11 @@
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-                    <property name="startSize" value="10"/>
-
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
+
+                    <property name="onheapCacheEnabled" value="true"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
@@ -154,12 +154,11 @@
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-                    <!-- Initial cache size. -->
-                    <property name="startSize" value="10"/>
-
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
+
+                    <property name="onheapCacheEnabled" value="true"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
@@ -177,11 +176,11 @@
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-                    <property name="startSize" value="10"/>
-
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
+
+                    <property name="onheapCacheEnabled" value="true"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
@@ -199,11 +198,11 @@
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-                    <property name="startSize" value="10"/>
-
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
+
+                    <property name="onheapCacheEnabled" value="true"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">
@@ -221,11 +220,11 @@
 
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
 
-                    <property name="startSize" value="10"/>
-
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
+
+                    <property name="onheapCacheEnabled" value="true"/>
 
                     <property name="evictionPolicy">
                         <bean class="org.apache.ignite.cache.eviction.lru.LruEvictionPolicy">

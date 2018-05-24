@@ -618,7 +618,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             .listener(lsnr)
             .logger(log)
             .selectorCount(Runtime.getRuntime().availableProcessors())
-            .gridName("nio-test-grid")
+            .igniteInstanceName("nio-test-grid")
             .tcpNoDelay(true)
             .directBuffer(true)
             .byteOrder(ByteOrder.nativeOrder())
@@ -678,7 +678,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         try {
             SocketChannel ch = SocketChannel.open(new InetSocketAddress(U.getLocalHost(), srvr2.port()));
 
-            GridNioFuture<GridNioSession> fut = srvr1.createSession(ch, null);
+            GridNioFuture<GridNioSession> fut = srvr1.createSession(ch, null, false, null);
 
             ses = fut.get();
 

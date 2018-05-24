@@ -73,8 +73,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -111,13 +111,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         ignite1 = startGrid(1);
         ignite2 = startGrid(2);
 
-        cache1 = ignite1.cache(null);
-        cache2 = ignite2.cache(null);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
+        cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
@@ -507,7 +502,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
      * @throws Throwable If failed.
      */
     public void testLockReentrancy() throws Throwable {
-        Affinity<Integer> aff = ignite1.affinity(null);
+        Affinity<Integer> aff = ignite1.affinity(DEFAULT_CACHE_NAME);
 
         for (int i = 10; i < 100; i++) {
             log.info("Test lock [key=" + i +

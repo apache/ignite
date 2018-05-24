@@ -17,9 +17,10 @@
 
 package org.apache.ignite.thread;
 
+import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,8 +29,8 @@ import org.jetbrains.annotations.NotNull;
  * for creating grid threads.
  */
 public class IgniteThreadFactory implements ThreadFactory {
-    /** Grid name. */
-    private final String gridName;
+    /** Ignite instance name. */
+    private final String igniteInstanceName;
 
     /** Thread name. */
     private final String threadName;
@@ -37,31 +38,59 @@ public class IgniteThreadFactory implements ThreadFactory {
     /** Index generator for threads. */
     private final AtomicInteger idxGen = new AtomicInteger();
 
+    /** */
+    private final byte plc;
+
+    /** Exception handler. */
+    private final UncaughtExceptionHandler eHnd;
+
     /**
      * Constructs new thread factory for given grid. All threads will belong
      * to the same default thread group.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
+     * @param threadName Thread name.
      */
-    public IgniteThreadFactory(String gridName) {
-        this(gridName, "ignite");
+    public IgniteThreadFactory(String igniteInstanceName, String threadName) {
+        this(igniteInstanceName, threadName, null);
     }
 
     /**
      * Constructs new thread factory for given grid. All threads will belong
      * to the same default thread group.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param threadName Thread name.
+     * @param eHnd Uncaught exception handler.
      */
-    public IgniteThreadFactory(String gridName, String threadName) {
-        this.gridName = gridName;
+    public IgniteThreadFactory(String igniteInstanceName, String threadName, UncaughtExceptionHandler eHnd) {
+        this(igniteInstanceName, threadName, GridIoPolicy.UNDEFINED, eHnd);
+    }
+
+    /**
+     * Constructs new thread factory for given grid. All threads will belong
+     * to the same default thread group.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @param threadName Thread name.
+     * @param plc {@link GridIoPolicy} for thread pool.
+     * @param eHnd Uncaught exception handler.
+     */
+    public IgniteThreadFactory(String igniteInstanceName, String threadName, byte plc, UncaughtExceptionHandler eHnd) {
+        this.igniteInstanceName = igniteInstanceName;
         this.threadName = threadName;
+        this.plc = plc;
+        this.eHnd = eHnd;
     }
 
     /** {@inheritDoc} */
     @Override public Thread newThread(@NotNull Runnable r) {
-        return new IgniteThread(gridName, threadName, r, idxGen.incrementAndGet());
+        Thread thread = new IgniteThread(igniteInstanceName, threadName, r, idxGen.incrementAndGet(), -1, plc);
+
+        if (eHnd != null)
+            thread.setUncaughtExceptionHandler(eHnd);
+
+        return thread;
     }
 
     /** {@inheritDoc} */

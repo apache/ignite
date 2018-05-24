@@ -23,47 +23,37 @@ namespace ignite
     {
         namespace binary
         {
-            BinaryTypeSnapshot::BinaryTypeSnapshot(std::string typeName, int32_t typeId, 
-                std::set<int32_t>* fieldIds, std::map<std::string, int32_t>* fields) : 
-                typeName(typeName), typeId(typeId), fieldIds(fieldIds), fields(fields)
+            BinaryTypeSnapshot::BinaryTypeSnapshot(std::string typeName, int32_t typeId) :
+                typeName(typeName),
+                typeId(typeId),
+                fieldIds(),
+                fields()
             {
                 // No-op.
             }
 
-            BinaryTypeSnapshot::~BinaryTypeSnapshot()
+            BinaryTypeSnapshot::BinaryTypeSnapshot(const BinaryTypeSnapshot& another) :
+                typeName(another.typeName),
+                typeId(another.typeId),
+                fieldIds(another.fieldIds),
+                fields(another.fields)
             {
-                delete fieldIds;
-                delete fields;
+                // No-op.
             }
 
-            bool BinaryTypeSnapshot::ContainsFieldId(int32_t fieldId)
+            void BinaryTypeSnapshot::AddField(int32_t fieldId, const std::string& fieldName, int32_t fieldTypeId)
             {
-                return fieldIds && fieldIds->count(fieldId) == 1;
+                fieldIds.insert(fieldId);
+                fields[fieldName] = BinaryFieldMeta(fieldTypeId, fieldId);
             }
 
-            std::string BinaryTypeSnapshot::GetTypeName()
+            void BinaryTypeSnapshot::CopyFieldsFrom(const BinaryTypeSnapshot* another)
             {
-                return typeName;
-            }
-
-            int32_t BinaryTypeSnapshot::GetTypeId()
-            {
-                return typeId;
-            }
-
-            bool BinaryTypeSnapshot::HasFields()
-            {
-                return !fieldIds->empty();
-            }
-
-            std::set<int32_t>* BinaryTypeSnapshot::GetFieldIds()
-            {
-                return fieldIds;
-            }
-
-            std::map<std::string, int32_t>* BinaryTypeSnapshot::GetFields()
-            {
-                return fields;
+                if (another && another->HasFields())
+                {
+                    fieldIds.insert(another->fieldIds.begin(), another->fieldIds.end());
+                    fields.insert(another->fields.begin(), another->fields.end());
+                }
             }
         }
     }

@@ -40,6 +40,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.Transaction;
@@ -61,8 +62,8 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(igniteInstanceName);
 
         ccfg.setExpiryPolicyFactory(new TestExpiryPolicyFactory());
 
@@ -151,9 +152,6 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
      * @throws Exception If failed.
      */
     public void testReadThrough() throws Exception {
-        if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
-            fail("https://issues.apache.org/jira/browse/IGNITE-821");
-
         IgniteCache<Integer, Integer> cache = jcache(0);
 
         final Integer key = primaryKeys(cache, 1, 100_000).get(0);
@@ -298,23 +296,33 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
         for (int i = 0; i < gridCount(); i++) {
             IgniteKernal grid = (IgniteKernal)grid(i);
 
-            GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache();
+            GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache(DEFAULT_CACHE_NAME);
 
-            GridCacheEntryEx e = cache.peekEx(key);
+            GridCacheEntryEx e = null;
 
-            if (e == null && cache.context().isNear())
+            try {
+                e = cache.entryEx(key);
+
+                e.unswap();
+            }
+            catch (GridDhtInvalidPartitionException ignore) {
+                // No-op.
+            }
+
+            if ((e == null || e.rawGet() == null) && cache.context().isNear())
                 e = cache.context().near().dht().peekEx(key);
+
+            if (e == null || e.rawGet() == null)
+                e = null;
 
             if (e == null) {
                 if (primaryOnly)
-                    assertTrue("Not found " + key, !grid.affinity(null).isPrimary(grid.localNode(), key));
+                    assertTrue("Not found " + key, !grid.affinity(DEFAULT_CACHE_NAME).isPrimary(grid.localNode(), key));
                 else
-                    assertTrue("Not found " + key, !grid.affinity(null).isPrimaryOrBackup(grid.localNode(), key));
+                    assertTrue("Not found " + key, !grid.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(grid.localNode(), key));
             }
             else {
                 found = true;
-
-                assertEquals("Unexpected ttl [grid=" + i + ", key=" + key +']', ttl, e.ttl());
 
                 if (ttl > 0)
                     assertTrue(e.expireTime() > 0);

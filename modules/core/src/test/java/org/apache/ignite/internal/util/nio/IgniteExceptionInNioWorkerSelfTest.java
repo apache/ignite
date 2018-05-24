@@ -40,8 +40,8 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration("cache");
 
@@ -74,7 +74,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
             UUID nodeId = ignite(1).cluster().localNode().id();
 
             // This should trigger a failure in a NIO thread.
-            kernal.context().io().send(nodeId, GridTopic.TOPIC_CACHE.topic("cache"), new BrokenMessage(), (byte)0);
+            kernal.context().io().sendToCustomTopic(nodeId, GridTopic.TOPIC_CACHE.topic("cache"), new BrokenMessage(), (byte)0);
 
             for (int i = 0; i < 100; i++)
                 ignite(0).cache("cache").put(i, i);
@@ -92,7 +92,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
         private boolean fail = true;
 
         /** {@inheritDoc} */
-        @Override public byte directType() {
+        @Override public short directType() {
             if (fail) {
                 fail = false;
 

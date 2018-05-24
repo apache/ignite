@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+    Ignite Spring configuration file.
+
+    When starting a standalone Ignite node, you need to execute the following command:
+    {IGNITE_HOME}/bin/ignite.{bat|sh} path-to-this-file/default-config.xml
+
+    When starting Ignite from Java IDE, pass path to this file into Ignition:
+    Ignition.start("path-to-this-file/default-config.xml");
+-->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--
+        Optional description.
+    -->
+    <description>
+        Spring file for Ignite node configuration with IGFS and Apache Hadoop map-reduce support enabled.
+        Ignite node will start with this configuration by default.
+    </description>
+
+    <!--
+        Initialize property configurer so we can reference environment variables.
+    -->
+    <bean id="propertyConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="systemPropertiesModeName" value="SYSTEM_PROPERTIES_MODE_FALLBACK"/>
+        <property name="searchSystemEnvironment" value="true"/>
+    </bean>
+
+    <!--
+        Configuration of Ignite node.
+    -->
+    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="clientMode" value="true"/>
+        <property name="gridName" value="test-IGFS-cli"/>
+
+        <property name="marshaller">
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
+        </property>
+
+        <!--
+            This port will be used by Apache Hadoop client to connect to Ignite node as if it was a job tracker.
+        -->
+        <property name="connectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ConnectorConfiguration">
+                <property name="port" value="11211"/>
+            </bean>
+        </property>
+
+        <property name="fileSystemConfiguration">
+            <list>
+                <!--
+                    Configure PRIMARY IGFS file system instance named "igfs"
+                -->
+                <bean class="org.apache.ignite.configuration.FileSystemConfiguration">
+                    <!-- IGFS name you will use to access IGFS through Hadoop API. -->
+                    <property name="name" value="igfs"/>
+
+                    <!-- IGFS Caches. -->
+                    <property name="metaCacheConfiguration">
+                        <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                            <property name="cacheMode" value="REPLICATED"/>
+                            <property name="atomicityMode" value="TRANSACTIONAL"/>
+                        </bean>
+                    </property>
+                    <property name="dataCacheConfiguration">
+                        <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                            <property name="atomicityMode" value="TRANSACTIONAL"/>
+                            <property name="cacheMode" value="PARTITIONED"/>
+                            <property name="writeSynchronizationMode" value="FULL_SYNC"/>
+
+                            <property name="affinityMapper">
+                                <bean class="org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper">
+                                    <property name="groupSize" value="128"/>
+                                </bean>
+                            </property>
+                        </bean>
+                    </property>
+
+                    <property name="blockSize" value="524288"/>
+                    <property name="defaultMode" value="DUAL_ASYNC"/>
+
+                    <property name="secondaryFileSystem">
+                        <bean class="org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem">
+                            <property name="defaultUserName" value="secondary-default"/>
+
+                            <property name="fileSystemFactory">
+                                <bean class="org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory">
+                                    <property name="uri" value="igfs://igfs_secondary@127.0.0.1:11500/"/>
+                                    <property name="configPaths" value="/work/core-site-test.xml"/>
+                                </bean>
+                            </property>
+                        </bean>
+                    </property>
+                </bean>
+            </list>
+        </property>
+
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>127.0.0.1:47500..47509</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </property>
+
+    </bean>
+</beans>

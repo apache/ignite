@@ -46,22 +46,15 @@ public class IgniteCacheSerializationSelfTest extends GridCommonAbstractTest {
     private static final int CLIENT = NODES - 1;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        if (getTestGridName(CLIENT).equals(gridName))
+        if (getTestIgniteInstanceName(CLIENT).equals(igniteInstanceName))
             cfg.setClientMode(true);
 
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -77,7 +70,7 @@ public class IgniteCacheSerializationSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     private CacheConfiguration<Integer, Integer> cacheConfiguration(CacheMode cacheMode, CacheAtomicityMode atomicityMode) {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(atomicityMode);
@@ -106,7 +99,7 @@ public class IgniteCacheSerializationSelfTest extends GridCommonAbstractTest {
             });
         }
         finally {
-            client.destroyCache(null);
+            client.destroyCache(DEFAULT_CACHE_NAME);
         }
     }
 }

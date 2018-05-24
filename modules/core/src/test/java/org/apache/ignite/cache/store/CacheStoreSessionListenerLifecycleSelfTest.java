@@ -50,8 +50,8 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
     private static final Queue<String> evts = new ConcurrentLinkedDeque<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheStoreSessionListenerFactories(
             new SessionListenerFactory("Shared 1"),

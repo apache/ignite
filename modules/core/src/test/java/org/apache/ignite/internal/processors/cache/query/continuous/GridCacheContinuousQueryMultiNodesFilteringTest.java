@@ -54,7 +54,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -74,7 +73,7 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     public static final int KEYS = 2_000;
 
     /** Cache entry operations' counts. */
-    private static final ConcurrentMap<String, AtomicInteger> opCounts = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<String, AtomicInteger> opCounts = new ConcurrentHashMap<>();
 
     /** Client. */
     private static boolean client = false;
@@ -247,15 +246,15 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
 
     /** */
     private Ignite startGrid(final int idx, boolean isClientMode) throws Exception {
-        String gridName = getTestGridName(idx);
+        String igniteInstanceName = getTestIgniteInstanceName(idx);
 
-        IgniteConfiguration cfg = optimize(getConfiguration(gridName)).setClientMode(isClientMode);
+        IgniteConfiguration cfg = optimize(getConfiguration(igniteInstanceName)).setClientMode(isClientMode);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setUserAttributes(Collections.singletonMap("idx", idx));
 
-        Ignite node = startGrid(gridName, cfg);
+        Ignite node = startGrid(igniteInstanceName, cfg);
 
         IgnitePredicate<ClusterNode> nodeFilter = new NodeFilter(idx);
 
@@ -303,8 +302,8 @@ public class GridCacheContinuousQueryMultiNodesFilteringTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientMode(client);
 

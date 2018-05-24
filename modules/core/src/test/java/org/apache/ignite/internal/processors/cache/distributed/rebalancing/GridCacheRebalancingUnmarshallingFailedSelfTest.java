@@ -32,6 +32,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.thread.IgniteThread;
 
 /**
  *
@@ -90,16 +91,19 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             field = (String)in.readObject();
 
-            if (readCnt.decrementAndGet() <= 0)
+            Thread cur = Thread.currentThread();
+
+            // Decrement readCnt and fail only on node with index 1.
+            if (cur instanceof IgniteThread && ((IgniteThread)cur).getIgniteInstanceName().endsWith("1") && readCnt.decrementAndGet() <= 0)
                 throw new IOException("Class can not be unmarshalled.");
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration iCfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration iCfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<TestKey, Integer> cfg = new CacheConfiguration<>();
+        CacheConfiguration<TestKey, Integer> cfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cfg.setName(CACHE);
         cfg.setCacheMode(CacheMode.PARTITIONED);

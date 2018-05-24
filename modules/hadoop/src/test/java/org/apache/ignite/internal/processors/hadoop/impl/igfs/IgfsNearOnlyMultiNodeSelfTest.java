@@ -81,16 +81,16 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER).setForceServerMode(true));
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("data");
-        igfsCfg.setMetaCacheName("meta");
         igfsCfg.setName("igfs");
+        igfsCfg.setDataCacheConfiguration(cacheConfiguration(igniteInstanceName, "data"));
+        igfsCfg.setMetaCacheConfiguration(cacheConfiguration(igniteInstanceName, "meta"));
 
         IgfsIpcEndpointConfiguration endpointCfg = new IgfsIpcEndpointConfiguration();
 
@@ -102,8 +102,6 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
         igfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
         cfg.setFileSystemConfiguration(igfsCfg);
-
-        cfg.setCacheConfiguration(cacheConfiguration(gridName, "data"), cacheConfiguration(gridName, "meta"));
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
@@ -123,10 +121,10 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     /**
      * Gets cache configuration.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String gridName, String cacheName) {
+    protected CacheConfiguration cacheConfiguration(String igniteInstanceName, String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);
@@ -172,10 +170,10 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
         try (FileSystem fs = FileSystem.get(getFileSystemURI(0), getFileSystemConfig())) {
             Collection<IgniteBiTuple<String, Long>> files = F.asList(
                 F.t("/dir1/dir2/file1", 1024L),
-                F.t("/dir1/dir2/file2", 8 * 1024L),
-                F.t("/dir1/file1", 1024 * 1024L),
-                F.t("/dir1/file2", 5 * 1024 * 1024L),
-                F.t("/file1", 64 * 1024L + 13),
+                F.t("/dir1/dir2/file2", 8L * 1024),
+                F.t("/dir1/file1", 1024L * 1024),
+                F.t("/dir1/file2", 5L * 1024 * 1024),
+                F.t("/file1", 64L * 1024 + 13),
                 F.t("/file2", 13L),
                 F.t("/file3", 123764L)
             );

@@ -35,7 +35,6 @@ import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -62,10 +61,10 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
     private static final ConcurrentLinkedQueue<CacheEntryEvent<?, ?>> events = new ConcurrentLinkedQueue<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -102,17 +101,17 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         // Add initial values.
         for (int i = 0; i < GRID_COUNT; ++i) {
-            keys[i] = primaryKey(grid(i).cache(null));
+            keys[i] = primaryKey(grid(i).cache(DEFAULT_CACHE_NAME));
 
-            grid(0).cache(null).put(keys[i], -1);
+            grid(0).cache(DEFAULT_CACHE_NAME).put(keys[i], -1);
         }
 
-        try (QueryCursor<?> cur = grid(0).cache(null).query(qry)) {
+        try (QueryCursor<?> cur = grid(0).cache(DEFAULT_CACHE_NAME).query(qry)) {
             // Replace values on the keys.
             for (int i = 0; i < KEYS_COUNT; i++) {
                 log.info("Put key: " + i);
 
-                grid(i % GRID_COUNT).cache(null).put(keys[i % GRID_COUNT], i);
+                grid(i % GRID_COUNT).cache(DEFAULT_CACHE_NAME).put(keys[i % GRID_COUNT], i);
             }
         }
 
@@ -132,15 +131,15 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
             1,
             EventType.UPDATED,
-            new KeyCacheObjectImpl(1, new byte[] {0, 0, 0, 1}),
+            new KeyCacheObjectImpl(1, new byte[] {0, 0, 0, 1}, 1),
             new CacheObjectImpl(2, new byte[] {0, 0, 0, 2}),
             new CacheObjectImpl(2, new byte[] {0, 0, 0, 3}),
             true,
             1,
             1L,
-            new AffinityTopologyVersion(1L));
+            new AffinityTopologyVersion(1L),
+            (byte)0);
 
-        e0.filteredEvents(new GridLongList(new long[]{1L, 2L}));
         e0.markFiltered();
 
         ByteBuffer buf = ByteBuffer.allocate(4096);
@@ -156,7 +155,6 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         assertEquals(e0.cacheId(), e1.cacheId());
         assertEquals(e0.eventType(), e1.eventType());
         assertEquals(e0.isFiltered(), e1.isFiltered());
-        assertEquals(GridLongList.asList(e0.filteredEvents()), GridLongList.asList(e1.filteredEvents()));
         assertEquals(e0.isBackup(), e1.isBackup());
         assertEquals(e0.isKeepBinary(), e1.isKeepBinary());
         assertEquals(e0.partition(), e1.partition());

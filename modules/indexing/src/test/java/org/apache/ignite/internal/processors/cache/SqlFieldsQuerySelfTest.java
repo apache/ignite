@@ -18,41 +18,23 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
-import java.util.Collections;
+import java.sql.PreparedStatement;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
  */
 public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setLocalHost("127.0.0.1");
-
-        cfg.setPeerClassLoadingEnabled(true);
-
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-        ipFinder.setAddresses(Collections.singletonList("127.0.0.1:47500..47509"));
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
-
-        return cfg;
-    }
+    /** INSERT statement. */
+    private final static String INSERT = "insert into Person(_key, name) values (5, 'x')";
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -84,16 +66,66 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If error.
+     */
+    public void testQueryCaching() throws Exception {
+        startGrid(0);
+
+        PreparedStatement stmt = null;
+
+        for (int i = 0; i < 2; i++) {
+            createAndFillCache();
+
+            PreparedStatement stmt0 = grid(0).context().query().prepareNativeStatement("person", INSERT);
+
+            // Statement should either be parsed initially or in response to schema change...
+            assertTrue(stmt != stmt0);
+
+            stmt = stmt0;
+
+            // ...and be properly compiled considering schema changes to be properly parsed
+            new GridSqlQueryParser(false).parse(GridSqlQueryParser.prepared(stmt));
+
+            destroyCache();
+        }
+
+        stmt = null;
+
+        createAndFillCache();
+
+        // Now let's do the same without restarting the cache.
+        for (int i = 0; i < 2; i++) {
+            PreparedStatement stmt0 = grid(0).context().query().prepareNativeStatement("person", INSERT);
+
+            // Statement should either be parsed or taken from cache as no schema changes occurred...
+            assertTrue(stmt == null || stmt == stmt0);
+
+            stmt = stmt0;
+
+            // ...and be properly compiled considering schema changes to be properly parsed
+            new GridSqlQueryParser(false).parse(GridSqlQueryParser.prepared(stmt));
+        }
+
+        destroyCache();
+    }
+
+    /**
      *
      */
     private void executeQuery() {
         IgniteCache<?, ?> cache = grid(1).cache("person");
 
-        SqlFieldsQuery qry = new SqlFieldsQuery("select name, age from person where age > 10");
+        SqlFieldsQuery qry = new SqlFieldsQuery("select name as \"Full Name\", age from person where age > 10");
 
-        QueryCursor<List<?>> qryCursor = cache.query(qry);
+        FieldsQueryCursor<List<?>> qryCursor = cache.query(qry);
 
         assertEquals(2, qryCursor.getAll().size());
+
+        assertEquals(2, qryCursor.getColumnsCount()); // Row contains "name" and "age" fields.
+
+        assertEquals("Full Name", qryCursor.getFieldName(0));
+
+        assertEquals("AGE", qryCursor.getFieldName(1));
     }
 
 
@@ -101,7 +133,7 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
      *
      */
     private IgniteCache<Integer, Person> createAndFillCache() {
-        CacheConfiguration<Integer, Person> cacheConf = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Person> cacheConf = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheConf.setCacheMode(CacheMode.PARTITIONED);
         cacheConf.setBackups(0);
@@ -116,6 +148,10 @@ public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
         cache.put(2, new Person("moon", 50));
 
         return cache;
+    }
+
+    private void destroyCache() {
+        grid(0).destroyCache("person");
     }
 
     /**

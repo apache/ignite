@@ -74,10 +74,10 @@ public abstract class IgniteCachePutGetRestartAbstractTest extends IgniteCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        if (gridName.equals(getTestGridName(gridCount() - 1)))
+        if (igniteInstanceName.equals(getTestIgniteInstanceName(gridCount() - 1)))
             cfg.setClientMode(true);
 
         cfg.setPeerClassLoadingEnabled(false);
@@ -88,8 +88,8 @@ public abstract class IgniteCachePutGetRestartAbstractTest extends IgniteCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
 
         cfg.setRebalanceMode(SYNC);
 

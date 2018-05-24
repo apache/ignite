@@ -45,8 +45,8 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -114,7 +114,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
      */
     private void doTest(boolean loc) throws Exception {
         try {
-            IgniteCache<String, Integer> cache = startGrid(0).cache(null);
+            IgniteCache<String, Integer> cache = startGrid(0).cache(DEFAULT_CACHE_NAME);
 
             ContinuousQuery<String, Integer> qry = new ContinuousQuery<>();
 
@@ -122,8 +122,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
             final CountDownLatch latch = new CountDownLatch(10);
 
             qry.setLocalListener(new CacheEntryUpdatedListener<String, Integer>() {
-                @Override
-                public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends Integer>> evts)
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends Integer>> evts)
                         throws CacheEntryListenerException {
                     for (CacheEntryEvent<? extends String, ? extends Integer> evt : evts) {
                         cnt.incrementAndGet();
@@ -155,7 +154,7 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
      */
     private void doTestOneNode(boolean loc) throws Exception {
         try {
-            IgniteCache<String, Integer> cache = startGrid(0).cache(null);
+            IgniteCache<String, Integer> cache = startGrid(0).cache(DEFAULT_CACHE_NAME);
 
             ContinuousQuery<String, Integer> qry = new ContinuousQuery<>();
 

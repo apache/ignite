@@ -18,8 +18,6 @@
 #ifndef _IGNITE_IMPL_BINARY_BINARY_TYPE_UPDATER_IMPL
 #define _IGNITE_IMPL_BINARY_BINARY_TYPE_UPDATER_IMPL
 
-#include <ignite/jni/exports.h>
-
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/binary/binary_type_updater.h"
 
@@ -48,7 +46,9 @@ namespace ignite
                  */
                 ~BinaryTypeUpdaterImpl();
 
-                bool Update(Snap* snapshot, IgniteError* err);
+                virtual bool Update(const Snap& snap, IgniteError& err);
+
+                virtual SPSnap GetMeta(int32_t typeId, IgniteError& err);
             private:
                 /** Environment. */
                 IgniteEnvironment& env;

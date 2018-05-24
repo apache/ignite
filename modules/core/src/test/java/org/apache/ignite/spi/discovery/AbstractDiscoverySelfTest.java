@@ -23,7 +23,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -156,6 +155,11 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         }
 
         /** {@inheritDoc} */
+        @Override public void onLocalNodeInitialized(ClusterNode locNode) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void onDiscovery(int type, long topVer, ClusterNode node, Collection<ClusterNode> topSnapshot,
             Map<Long, Collection<ClusterNode>> topHist, @Nullable DiscoverySpiCustomMessage data) {
             if (type == EVT_NODE_METRICS_UPDATED)
@@ -215,11 +219,11 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
     }
 
     /**
-     * Tests whether local node heartbeats cause METRICS_UPDATE event.
+     * Tests whether local node metrics update cause METRICS_UPDATE event.
      *
      * @throws Exception If test failed.
      */
-    public void testLocalHeartbeat() throws Exception {
+    public void testLocalMetricsUpdate() throws Exception {
         AtomicInteger[] locUpdCnts = new AtomicInteger[getSpiCount()];
 
         int i = 0;
@@ -227,7 +231,12 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         for (final DiscoverySpi spi : spis) {
             final AtomicInteger spiCnt = new AtomicInteger(0);
 
-            DiscoverySpiListener locHeartbeatLsnr = new DiscoverySpiListener() {
+            DiscoverySpiListener locMetricsUpdateLsnr = new DiscoverySpiListener() {
+                /** {@inheritDoc} */
+                @Override public void onLocalNodeInitialized(ClusterNode locNode) {
+                    // No-op.
+                }
+
                 @Override public void onDiscovery(int type, long topVer, ClusterNode node,
                     Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist,
                     @Nullable DiscoverySpiCustomMessage data) {
@@ -240,17 +249,16 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
 
             locUpdCnts[i] = spiCnt;
 
-            spi.setListener(locHeartbeatLsnr);
+            spi.setListener(locMetricsUpdateLsnr);
 
             i++;
         }
 
-        // Sleep fro 3 Heartbeats.
+        // Sleep for 3 metrics update.
         Thread.sleep(getMaxDiscoveryTime() * 3);
 
-        for (AtomicInteger cnt : locUpdCnts) {
-            assert cnt.get() > 1 : "One of the SPIs did not get at least 2 METRICS_UPDATE events from local node";
-        }
+        for (AtomicInteger cnt : locUpdCnts)
+            assertTrue("One of the SPIs did not get at least 2 METRICS_UPDATE events from local node", cnt.get() > 1);
     }
 
     /**
@@ -391,6 +399,11 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                     fromString("99.99.99"));
 
                 spi.setListener(new DiscoverySpiListener() {
+                    /** {@inheritDoc} */
+                    @Override public void onLocalNodeInitialized(ClusterNode locNode) {
+                        // No-op.
+                    }
+
                     @SuppressWarnings({"NakedNotify"})
                     @Override public void onDiscovery(int type, long topVer, ClusterNode node,
                         Collection<ClusterNode> topSnapshot, Map<Long, Collection<ClusterNode>> topHist,
@@ -404,11 +417,11 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                 });
 
                 spi.setDataExchange(new DiscoverySpiDataExchange() {
-                    @Override public Map<Integer, Serializable> collect(UUID nodeId) {
-                        return new HashMap<>();
+                    @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
+                        return dataBag;
                     }
 
-                    @Override public void onExchange(UUID joiningNodeId, UUID nodeId, Map<Integer, Serializable> data) {
+                    @Override public void onExchange(DiscoveryDataBag dataBag) {
                         // No-op.
                     }
                 });
@@ -426,7 +439,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                     ignite.setStaticCfg(cfg);
                 }
 
-                spi.spiStart(getTestGridName() + i);
+                spi.spiStart(getTestIgniteInstanceName() + i);
 
                 spis.add(spi);
 
@@ -477,9 +490,9 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
         }
 
         for (IgniteTestResources rscrs : spiRsrcs) {
-            MBeanServer mBeanServer = rscrs.getMBeanServer();
+            MBeanServer mBeanSrv = rscrs.getMBeanServer();
 
-            mBeanServer.unregisterMBean(new ObjectName(HTTP_ADAPTOR_MBEAN_NAME));
+            mBeanSrv.unregisterMBean(new ObjectName(HTTP_ADAPTOR_MBEAN_NAME));
 
             rscrs.stopThreads();
         }

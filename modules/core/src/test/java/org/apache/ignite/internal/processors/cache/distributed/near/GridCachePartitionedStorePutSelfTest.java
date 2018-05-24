@@ -54,8 +54,8 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
     private IgniteCache<Integer, Integer> cache3;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(discoverySpi());
         cfg.setCacheConfiguration(cacheConfiguration());
@@ -95,9 +95,9 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        cache1 = startGrid(1).cache(null);
-        cache2 = startGrid(2).cache(null);
-        cache3 = startGrid(3).cache(null);
+        cache1 = startGrid(1).cache(DEFAULT_CACHE_NAME);
+        cache2 = startGrid(2).cache(DEFAULT_CACHE_NAME);
+        cache3 = startGrid(3).cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */

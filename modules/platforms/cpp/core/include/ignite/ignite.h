@@ -23,10 +23,12 @@
 #ifndef _IGNITE_IGNITE
 #define _IGNITE_IGNITE
 
-#include "ignite/cache/cache.h"
-#include "ignite/transactions/transactions.h"
-#include "ignite/impl/ignite_impl.h"
-#include "ignite/ignite_configuration.h"
+#include <ignite/impl/ignite_impl.h>
+
+#include <ignite/ignite_configuration.h>
+#include <ignite/cache/cache.h>
+#include <ignite/transactions/transactions.h>
+#include <ignite/compute/compute.h>
 
 namespace ignite
 {
@@ -60,6 +62,15 @@ namespace ignite
         const char* GetName() const;
 
         /**
+         * Get node configuration.
+         *
+         * This method should only be used on the valid instance.
+         *
+         * @return Node configuration.
+         */
+        const IgniteConfiguration& GetConfiguration() const;
+
+        /**
          * Get cache.
          *
          * This method should only be used on the valid instance.
@@ -72,7 +83,7 @@ namespace ignite
         {
             IgniteError err;
 
-            cache::Cache<K, V> res = GetCache<K, V>(name, &err);
+            cache::Cache<K, V> res = GetCache<K, V>(name, err);
 
             IgniteError::ThrowIfNeeded(err);
 
@@ -89,9 +100,9 @@ namespace ignite
          * @return Cache.
          */
         template<typename K, typename V>
-        cache::Cache<K, V> GetCache(const char* name, IgniteError* err)
+        cache::Cache<K, V> GetCache(const char* name, IgniteError& err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetCache<K, V>(name, *err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetCache(name, err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
@@ -109,7 +120,7 @@ namespace ignite
         {
             IgniteError err;
 
-            cache::Cache<K, V> res = GetOrCreateCache<K, V>(name, &err);
+            cache::Cache<K, V> res = GetOrCreateCache<K, V>(name, err);
 
             IgniteError::ThrowIfNeeded(err);
 
@@ -126,9 +137,9 @@ namespace ignite
          * @return Cache.
          */
         template<typename K, typename V>
-        cache::Cache<K, V> GetOrCreateCache(const char* name, IgniteError* err)
+        cache::Cache<K, V> GetOrCreateCache(const char* name, IgniteError& err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetOrCreateCache<K, V>(name, *err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetOrCreateCache(name, err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
@@ -146,7 +157,7 @@ namespace ignite
         {
             IgniteError err;
 
-            cache::Cache<K, V> res = CreateCache<K, V>(name, &err);
+            cache::Cache<K, V> res = CreateCache<K, V>(name, err);
 
             IgniteError::ThrowIfNeeded(err);
 
@@ -163,12 +174,27 @@ namespace ignite
          * @return Cache.
          */
         template<typename K, typename V>
-        cache::Cache<K, V> CreateCache(const char* name, IgniteError* err)
+        cache::Cache<K, V> CreateCache(const char* name, IgniteError& err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->CreateCache<K, V>(name, *err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->CreateCache(name, err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
+
+        /**
+         * Check if the Ignite grid is active.
+         *
+         * @return True if grid is active and false otherwise.
+         */
+        bool IsActive();
+
+        /**
+         * Change Ignite grid state to active or inactive.
+         *
+         * @param active If true start activation process. If false start
+         *    deactivation process.
+         */
+        void SetActive(bool active);
 
         /**
          * Get transactions.
@@ -178,6 +204,24 @@ namespace ignite
          * @return Transaction class instance.
          */
         transactions::Transactions GetTransactions();
+
+        /**
+         * Get compute.
+         *
+         * This method should only be called on the valid instance.
+         *
+         * @return Compute class instance.
+         */
+        compute::Compute GetCompute();
+
+        /**
+         * Get ignite binding.
+         *
+         * This method should only be used on the valid instance.
+         *
+         * @return IgniteBinding class instance.
+         */
+        IgniteBinding GetBinding();
 
         /**
          * Check if the instance is valid.

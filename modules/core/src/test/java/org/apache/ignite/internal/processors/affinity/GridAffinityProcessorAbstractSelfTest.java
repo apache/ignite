@@ -53,8 +53,8 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
     private boolean withCache;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -91,20 +91,15 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
     @Override protected void beforeTestsStarted() throws Exception {
         assert NODES_CNT >= 1;
 
-        withCache = false;
+        withCache = true;
 
         for (int i = 0; i < NODES_CNT; i++)
             startGrid(i);
 
-        withCache = true;
+        withCache = false;
 
         for (int i = NODES_CNT; i < 2 * NODES_CNT; i++)
             startGrid(i);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -180,7 +175,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
         int iterations = 10000000;
 
         for (int i = 0; i < iterations; i++)
-            aff.mapKeyToNode(null, keys);
+            aff.mapKeyToNode(DEFAULT_CACHE_NAME, keys);
 
         long diff = System.currentTimeMillis() - start;
 

@@ -70,11 +70,6 @@ public class CacheEntryImplEx<K, V> extends CacheEntryImpl<K, V> implements Cach
     }
 
     /** {@inheritDoc} */
-    @Override public long updateTime() {
-        return ver.globalTime();
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         super.writeExternal(out);
 
@@ -96,8 +91,7 @@ public class CacheEntryImplEx<K, V> extends CacheEntryImpl<K, V> implements Cach
         if (ver != null && ver != GET_ENTRY_INVALID_VER_AFTER_GET && ver != GET_ENTRY_INVALID_VER_UPDATED) {
             res += ", topVer=" + ver.topologyVersion() +
                 ", nodeOrder=" + ver.nodeOrder() +
-                ", order=" + ver.order() +
-                ", updateTime=" + ver.globalTime();
+                ", order=" + ver.order();
         }
         else
             res += ", ver=n/a";

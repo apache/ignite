@@ -69,8 +69,8 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     protected static final AtomicBoolean fail = new AtomicBoolean();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -84,11 +84,6 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -115,7 +110,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
      * @throws Exception If failed.
      */
     public void testAtomicCache() throws Exception {
-        CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(null, CacheAtomicityMode.ATOMIC);
+        CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(DEFAULT_CACHE_NAME, CacheAtomicityMode.ATOMIC);
 
         IgniteCache<Integer, Integer> cache = ignite(0).createCache(cfg);
 
@@ -140,7 +135,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
      * @throws Exception If failed.
      */
     public void testTransactionalCache() throws Exception {
-        CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(null, CacheAtomicityMode.TRANSACTIONAL);
+        CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(DEFAULT_CACHE_NAME, CacheAtomicityMode.TRANSACTIONAL);
 
         IgniteCache<Integer, Integer> cache = ignite(0).createCache(cfg);
 
@@ -165,7 +160,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
      * @throws Exception If failed.
      */
     public void testExplicitTransaction() throws Exception {
-        CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(null, CacheAtomicityMode.TRANSACTIONAL);
+        CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(DEFAULT_CACHE_NAME, CacheAtomicityMode.TRANSACTIONAL);
 
         IgniteCache<Integer, Integer> cache = ignite(0).createCache(cfg);
 

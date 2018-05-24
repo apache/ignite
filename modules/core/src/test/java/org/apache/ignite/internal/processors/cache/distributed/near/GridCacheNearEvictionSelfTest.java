@@ -33,7 +33,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -50,8 +49,8 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -60,7 +59,6 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
         cc.setBackups(1);
         cc.setRebalanceMode(SYNC);
         cc.setAtomicityMode(atomicityMode());
-        cc.setAtomicWriteOrderMode(PRIMARY);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
@@ -91,7 +89,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(gridCnt);
 
         try {
-            IgniteCache<Integer, String> c = grid(0).cache(null);
+            IgniteCache<Integer, String> c = grid(0).cache(DEFAULT_CACHE_NAME);
 
             int cnt = 100;
 
@@ -121,7 +119,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 @Override public Object call() throws Exception {
-                    IgniteCache<Integer, String> c = ignite.cache(null);
+                    IgniteCache<Integer, String> c = ignite.cache(DEFAULT_CACHE_NAME);
 
                     for (int i = 0; i < cnt; i++)
                         c.put(i, Integer.toString(i));
@@ -154,7 +152,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 @Override public Object call() throws Exception {
-                    IgniteCache<Integer, String> c = ignite.cache(null);
+                    IgniteCache<Integer, String> c = ignite.cache(DEFAULT_CACHE_NAME);
 
                     for (int i = 0; i < cnt; i++)
                         c.put(i, Integer.toString(i));
@@ -165,12 +163,13 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < gridCnt; i++) {
                 final GridCacheAdapter cache = internalCache(i);
+                final GridCacheAdapter near =  near(i);
 
                 // Repeatedly check cache sizes because of concurrent cache updates.
                 assertTrue(GridTestUtils.waitForCondition(new PA() {
                     @Override public boolean apply() {
                         // Every node contains either near, backup, or primary.
-                        return cnt == cache.size();
+                        return cnt == cache.size() + near.nearSize();
                     }
                 }, getTestTimeout()));
 

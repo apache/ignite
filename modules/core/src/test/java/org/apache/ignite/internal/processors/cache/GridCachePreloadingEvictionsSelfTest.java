@@ -29,6 +29,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
@@ -66,8 +67,8 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
     private final AtomicInteger idxGen = new AtomicInteger();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -81,11 +82,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         partCacheCfg.setAffinity(new GridCacheModuloAffinityFunction(1, 1));
         partCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         partCacheCfg.setNearConfiguration(null);
-        partCacheCfg.setEvictSynchronized(true);
-        partCacheCfg.setSwapEnabled(false);
         partCacheCfg.setEvictionPolicy(null);
-        partCacheCfg.setEvictSynchronizedKeyBufferSize(25);
-        partCacheCfg.setEvictMaxOverflowRatio(0.99f);
         partCacheCfg.setRebalanceMode(ASYNC);
         partCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -108,7 +105,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         try {
             final Ignite ignite1 = startGrid(1);
 
-            final IgniteCache<Integer, Object> cache1 = ignite1.cache(null);
+            final IgniteCache<Integer, Object> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < 5000; i++)
                 cache1.put(i, VALUE + i);
@@ -132,7 +129,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                             Cache.Entry<Integer, Object> entry = cache1.getEntry(i);
 
                             if (entry != null)
-                                ignite1.cache(null).localEvict(Collections.<Object>singleton(entry.getKey()));
+                                ignite1.cache(DEFAULT_CACHE_NAME).localEvict(Collections.<Object>singleton(entry.getKey()));
                             else
                                 info("Entry is null.");
                         }
@@ -200,8 +197,8 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
-                int size1 = ignite1.cache(null).localSize(CachePeekMode.ALL);
-                return size1 != oldSize && size1 == ignite2.cache(null).localSize(CachePeekMode.ALL);
+                int size1 = ignite1.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ONHEAP);
+                return size1 != oldSize && size1 == ignite2.cache(DEFAULT_CACHE_NAME).localSize(CachePeekMode.ONHEAP);
             }
         }, getTestTimeout()));
 
@@ -213,7 +210,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @return Random entry from cache.
      */
     @Nullable private Cache.Entry<Integer, Object> randomEntry(Ignite g) {
-        return g.<Integer, Object>cache(null).randomEntry();
+        return g.<Integer, Object>cache(DEFAULT_CACHE_NAME).iterator().next();
     }
 
     /**
@@ -225,8 +222,8 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         IgniteKernal g1 = (IgniteKernal) ignite1;
         IgniteKernal g2 = (IgniteKernal) ignite2;
 
-        GridCacheAdapter<Integer, Object> cache1 = g1.internalCache();
-        GridCacheAdapter<Integer, Object> cache2 = g2.internalCache();
+        GridCacheAdapter<Integer, Object> cache1 = g1.internalCache(DEFAULT_CACHE_NAME);
+        GridCacheAdapter<Integer, Object> cache2 = g2.internalCache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < 3; i++) {
             if (cache1.size(ALL_PEEK_MODES) != cache2.size(ALL_PEEK_MODES)) {

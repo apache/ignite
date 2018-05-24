@@ -117,14 +117,12 @@ class FibonacciClosure (
             // Group that excludes node with id passed in constructor if others exists.
             val prj = if (ignite$.cluster().nodes().size() > 1) ignite$.cluster().forOthers(excludeNode) else ignite$.cluster().forNode(excludeNode)
 
-            val comp = ignite$.compute(prj).withAsync()
+            val comp = ignite$.compute(prj)
 
             // If future is not cached in node-local store, cache it.
             // Note recursive execution!
             if (fut1 == null) {
-                comp.apply(new FibonacciClosure(excludeNodeId), n - 1)
-
-                val futVal = comp.future[BigInteger]()
+                val futVal = comp.applyAsync(new FibonacciClosure(excludeNodeId), n - 1)
 
                 fut1 = store.putIfAbsent(n - 1, futVal)
 
@@ -134,9 +132,7 @@ class FibonacciClosure (
 
             // If future is not cached in node-local store, cache it.
             if (fut2 == null) {
-                comp.apply(new FibonacciClosure(excludeNodeId), n - 2)
-
-                val futVal = comp.future[BigInteger]()
+                val futVal = comp.applyAsync(new FibonacciClosure(excludeNodeId), n - 2)
 
                 fut2 = store.putIfAbsent(n - 2, futVal)
 

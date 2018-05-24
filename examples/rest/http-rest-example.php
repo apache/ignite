@@ -43,8 +43,8 @@ if (!function_exists('json_decode'))
 
 $URL = 'http://localhost:8080/ignite?';
 
-// Cache name to use (null or empty string for default cache).
-$CACHE_NAME = null;
+// Cache name to use.
+$CACHE_NAME = 'default';
 
 /**
  * Creates URL parameters.

@@ -89,11 +89,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         startPrimary();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids(false);
-    }
-
     /**
      * Start a grid with the primary file system.
      *
@@ -120,8 +115,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     private IgniteConfiguration primaryConfiguration(int idx) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(IGFS_PRIMARY);
         igfsCfg.setBlockSize(PRIMARY_BLOCK_SIZE);
         igfsCfg.setDefaultMode(DUAL_SYNC);
@@ -135,7 +128,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -145,22 +137,23 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setNearConfiguration(null);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid-" + idx);
+        cfg.setIgniteInstanceName("grid-" + idx);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
@@ -177,8 +170,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     private void startSecondary() throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(IGFS_SECONDARY);
         igfsCfg.setBlockSize(SECONDARY_BLOCK_SIZE);
         igfsCfg.setDefaultMode(PRIMARY);
@@ -186,7 +177,6 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
-        dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
         dataCacheCfg.setNearConfiguration(null);
         dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
@@ -196,22 +186,23 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
-        metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
         metaCacheCfg.setNearConfiguration(null);
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid-secondary");
+        cfg.setIgniteInstanceName("grid-secondary");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
@@ -350,7 +341,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
         assertEquals(0, m.filesOpenedForRead());
         assertEquals(0, m.filesOpenedForWrite());
 
-        fs.format();
+        fs.clear();
 
         m = fs.metrics();
 

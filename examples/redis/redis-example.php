@@ -19,8 +19,8 @@
  */
 
 /**
- * To execute this script, you need to have Predis extension installed and Ignite running.
- * See https://github.com/nrk/predis for Predis details.
+ * To execute this script, run an Ignite instance with 'redis-ignite-internal-cache-0' cache specified and configured.
+ * You will also need to have Predis extension installed. See https://github.com/nrk/predis for Predis details.
  *
  * See https://apacheignite.readme.io/docs/redis for more details on Redis integration.
  */

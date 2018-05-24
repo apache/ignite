@@ -439,13 +439,9 @@ public class GridClientConsistentHash<N> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        StringBuilder sb = new StringBuilder(getClass().getSimpleName());
-
-        sb.append(" [affSeed=").append(affSeed).
-            append(", circle=").append(circle).
-            append(", nodesComp=").append(nodesComp).
-            append(", nodes=").append(nodes).append("]");
-
-        return sb.toString();
+        return getClass().getSimpleName() + " [affSeed=" + affSeed +
+            ", circle=" + circle +
+            ", nodesComp=" + nodesComp +
+            ", nodes=" + nodes + "]";
     }
 }

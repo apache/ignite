@@ -77,13 +77,13 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
     protected static final int SEQ_READS_BEFORE_PREFETCH = 2;
 
     /** Secondary file system URI. */
-    protected static final String SECONDARY_URI = "igfs://igfs-secondary:grid-secondary@127.0.0.1:11500/";
+    protected static final String SECONDARY_URI = "igfs://igfs-secondary@127.0.0.1:11500/";
 
     /** Secondary file system configuration path. */
     protected static final String SECONDARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml";
 
     /** Primary file system URI. */
-    protected static final String PRIMARY_URI = "igfs://igfs:grid@/";
+    protected static final String PRIMARY_URI = "igfs://igfs@/";
 
     /** Primary file system configuration path. */
     protected static final String PRIMARY_CFG = "modules/core/src/test/config/hadoop/core-site-loopback.xml";
@@ -140,7 +140,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
     /**
      * Start grid with IGFS.
      *
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param igfsName IGFS name
      * @param mode IGFS mode.
      * @param secondaryFs Secondary file system (optional).
@@ -148,12 +148,10 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
+    protected Ignite startGridWithIgfs(String igniteInstanceName, String igfsName, IgfsMode mode,
         @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
-        igfsCfg.setDataCacheName("dataCache");
-        igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(igfsName);
         igfsCfg.setBlockSize(IGFS_BLOCK_SIZE);
         igfsCfg.setDefaultMode(mode);
@@ -171,7 +169,6 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
         dataCacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(2));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
-        dataCacheCfg.setOffHeapMaxMemory(0);
 
         CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
@@ -180,16 +177,18 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
         metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        igfsCfg.setDataCacheConfiguration(dataCacheCfg);
+        igfsCfg.setMetaCacheConfiguration(metaCacheCfg);
+
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(gridName);
+        cfg.setIgniteInstanceName(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
@@ -268,7 +267,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
 
         int seqReads = SEQ_READS_BEFORE_PREFETCH + 1;
 
-        cfg.setInt(String.format(PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH, "igfs:grid@"), seqReads);
+        cfg.setInt(String.format(PARAM_IGFS_SEQ_READS_BEFORE_PREFETCH, "igfs@"), seqReads);
 
         FileSystem fs = FileSystem.get(new URI(PRIMARY_URI), cfg);
 
@@ -292,7 +291,7 @@ public abstract class HadoopIgfsDualAbstractSelfTest extends IgfsCommonAbstractT
         IgfsBlockKey key = new IgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
 
         IgniteCache<IgfsBlockKey, byte[]> dataCache = igfs.context().kernalContext().cache().jcache(
-            igfs.configuration().getDataCacheName());
+            igfs.configuration().getDataCacheConfiguration().getName());
 
         for (int i = 0; i < 10; i++) {
             if (dataCache.containsKey(key))

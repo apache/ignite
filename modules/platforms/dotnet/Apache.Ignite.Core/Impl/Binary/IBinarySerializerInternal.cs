@@ -27,12 +27,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Write binary object.
         /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <param name="writer">The writer.</param>
         void WriteBinary<T>(T obj, BinaryWriter writer);
 
         /// <summary>
         /// Read binary object.
         /// </summary>
-        T ReadBinary<T>(BinaryReader reader, Type type, int pos);
+        /// <param name="reader">The reader.</param>
+        /// <param name="desc">The descriptor.</param>
+        /// <param name="pos">The position.</param>
+        /// <param name="typeOverride">Type override, can be null.</param>
+        T ReadBinary<T>(BinaryReader reader, IBinaryTypeDescriptor desc, int pos, Type typeOverride);
 
         /// <summary>
         /// Gets a value indicating whether this serializer supports handles.

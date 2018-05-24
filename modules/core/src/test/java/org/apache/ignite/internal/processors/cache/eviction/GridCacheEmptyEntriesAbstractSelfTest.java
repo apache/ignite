@@ -66,8 +66,8 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(igniteInstanceName);
 
         TransactionConfiguration txCfg = c.getTransactionConfiguration();
 
@@ -80,14 +80,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         cc.setCacheMode(cacheMode());
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        cc.setSwapEnabled(false);
-
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         cc.setEvictionPolicy(plc);
-        cc.setEvictSynchronizedKeyBufferSize(1);
-
-        cc.setEvictSynchronized(true);
+        cc.setOnheapCacheEnabled(true);
 
         if (testStore != null) {
             cc.setCacheStoreFactory(singletonFactory(testStore));
@@ -178,7 +174,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
                 Ignite g = startGrids();
 
-                IgniteCache<String, String> cache = g.cache(null);
+                IgniteCache<String, String> cache = g.cache(DEFAULT_CACHE_NAME);
 
                 try {
                     info(">>> Checking policy [txConcurrency=" + txConcurrency + ", txIsolation=" + txIsolation +
@@ -204,17 +200,11 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     private void checkImplicitTx(IgniteCache<String, String> cache) throws Exception {
         assertNull(cache.get("key1"));
 
-        IgniteCache<String, String> asyncCache = cache.withAsync();
-
-        asyncCache.get("key2");
-
-        assertNull(asyncCache.future().get());
+        assertNull(cache.getAsync("key2").get());
 
         assertTrue(cache.getAll(F.asSet("key3", "key4")).isEmpty());
 
-        asyncCache.getAll(F.asSet("key5", "key6"));
-
-        assertTrue(((Map)asyncCache.future().get()).isEmpty());
+        assertTrue(((Map)cache.getAllAsync(F.asSet("key5", "key6")).get()).isEmpty());
 
         cache.put("key7", "key7");
         cache.remove("key7", "key7");
@@ -226,12 +216,11 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     /**
      * Checks that gets work for implicit txs.
      *
+     * @param ignite Ignite instance.
      * @param cache Cache to test.
      * @throws Exception If failed.
      */
     private void checkExplicitTx(Ignite ignite, IgniteCache<String, String> cache) throws Exception {
-        IgniteCache<String, String> asyncCache = cache.withAsync();
-
         Transaction tx = ignite.transactions().txStart();
 
         try {
@@ -246,9 +235,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         tx = ignite.transactions().txStart();
 
         try {
-            asyncCache.get("key2");
-
-            assertNull(asyncCache.future().get());
+            assertNull(cache.getAsync("key2").get());
 
             tx.commit();
         }
@@ -270,9 +257,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         tx = ignite.transactions().txStart();
 
         try {
-            asyncCache.getAll(F.asSet("key5", "key6"));
-
-            assertTrue(((Map)asyncCache.future().get()).isEmpty());
+            assertTrue(((Map)cache.getAllAsync(F.asSet("key5", "key6")).get()).isEmpty());
 
             tx.commit();
         }

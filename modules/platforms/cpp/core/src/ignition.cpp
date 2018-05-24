@@ -16,6 +16,7 @@
  */
 
 #include <sstream>
+#include <memory>
 
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
@@ -56,263 +57,293 @@ namespace ignite
     std::string JvmMemoryString(const std::string& prefix, int32_t val)
     {
         std::ostringstream ss;
-        ss << val;
 
-        std::string valStr = ss.str();
+        ss << prefix << val << 'm';
 
-        std::string res = std::string(prefix);
-        res.append(valStr);
-        res.append("m");
-
-        return res;
+        return ss.str();
     }
 
     /**
-     * Create JVM options.
+     * JVM options
      *
-     * @param cfg Configuration.
-     * @param home Optional GG home.
-     * @param cp Classpath.
-     * @param opts Options.
-     * @param optsLen Options length.
-     * @return Options.
+     * Used to build JVM options in a exception-safe way.
      */
-    char** CreateJvmOptions(const IgniteConfiguration& cfg, const std::string* home, const std::string& cp, int* optsLen)
+    class JvmOptions
     {
-        *optsLen = 3 + (home ? 1 : 0) + static_cast<int>(cfg.jvmOpts.size());
-        char** opts = new char*[*optsLen];
-
-        int idx = 0;
-
-        // 1. Set classpath.
-        std::string cpFull = std::string("-Djava.class.path=") + cp;
-
-        *(opts + idx++) = CopyChars(cpFull.c_str());
-
-        // 2. Set home.
-        if (home) {
-            std::string homeFull = std::string("-DIGNITE_HOME=") + *home;
-
-            *(opts + idx++) = CopyChars(homeFull.c_str());
+    public:
+        /**
+         * Constructor.
+         */
+        JvmOptions() :
+            size(0),
+            opts(0)
+        {
+            // No-op.
         }
 
-        // 3. Set Xms, Xmx.
-        std::string xmsStr = JvmMemoryString(std::string("-Xms"), cfg.jvmInitMem);
-        std::string xmxStr = JvmMemoryString(std::string("-Xmx"), cfg.jvmMaxMem);
-
-        *(opts + idx++) = CopyChars(xmsStr.c_str());
-        *(opts + idx++) = CopyChars(xmxStr.c_str());
-
-        // 4. Set the rest options.
-        for (std::list<std::string>::const_iterator i = cfg.jvmOpts.begin(); i != cfg.jvmOpts.end(); ++i) {
-            char* optCopy = CopyChars(i->c_str());
-
-            opts[idx++] = optCopy;
+        /**
+         * Destructor.
+         */
+        ~JvmOptions()
+        {
+            Deinit();
         }
 
-        return opts;
-    }
+        /**
+         * Create JVM options from configuration.
+         *
+         * @param cfg Configuration.
+         * @param home Optional GG home.
+         * @param cp Classpath.
+         */
+        void FromConfiguration(const IgniteConfiguration& cfg, const std::string& home, const std::string& cp)
+        {
+            Deinit();
+
+            size = 3 + static_cast<int>(cfg.jvmOpts.size());
+
+            if (!home.empty())
+                ++size;
+
+            // Brackets '()' here guarantee for the array to be zeroed.
+            // Important to avoid crash in case of exception.
+            opts = new char*[size]();
+
+            int idx = 0;
+
+            // 1. Set classpath.
+            std::string cpFull = "-Djava.class.path=" + cp;
+
+            opts[idx++] = CopyChars(cpFull.c_str());
+
+            // 2. Set home.
+            if (!home.empty()) {
+                std::string homeFull = "-DIGNITE_HOME=" + home;
+
+                opts[idx++] = CopyChars(homeFull.c_str());
+            }
+
+            // 3. Set Xms, Xmx.
+            std::string xmsStr = JvmMemoryString("-Xms", cfg.jvmInitMem);
+            std::string xmxStr = JvmMemoryString("-Xmx", cfg.jvmMaxMem);
+
+            opts[idx++] = CopyChars(xmsStr.c_str());
+            opts[idx++] = CopyChars(xmxStr.c_str());
+
+            // 4. Set the rest options.
+            for (std::list<std::string>::const_iterator i = cfg.jvmOpts.begin(); i != cfg.jvmOpts.end(); ++i)
+                opts[idx++] = CopyChars(i->c_str());
+        }
+
+        /**
+         * Deallocates all allocated data.
+         */
+        void Deinit()
+        {
+            if (opts)
+            {
+                for (int i = 0; i < size; ++i)
+                    ReleaseChars(opts[i]);
+
+                delete[] opts;
+            }
+        }
+
+        /**
+         * Get built options.
+         *
+         * @return Built options
+         */
+        char** GetOpts() const
+        {
+            return opts;
+        }
+
+        /**
+         * Get options number.
+         *
+         * @return Options number.
+         */
+        int GetSize() const
+        {
+            return size;
+        }
+
+    private:
+        /** Size */
+        int size;
+
+        /** Options array. */
+        char** opts;
+    };
 
     Ignite Ignition::Start(const IgniteConfiguration& cfg)
     {
-        return Start(cfg, static_cast<const char*>(NULL));
+        return Start(cfg, static_cast<const char*>(0));
     }
 
-    Ignite Ignition::Start(const IgniteConfiguration& cfg, IgniteError* err)
+    Ignite Ignition::Start(const IgniteConfiguration& cfg, IgniteError& err)
     {
-        return Start(cfg, NULL, err);
+        return Start(cfg, 0, err);
     }
 
     Ignite Ignition::Start(const IgniteConfiguration& cfg, const char* name)
     {
         IgniteError err;
 
-        Ignite res = Start(cfg, name, &err);
+        Ignite res = Start(cfg, name, err);
 
         IgniteError::ThrowIfNeeded(err);
 
         return res;
     }
 
-    Ignite Ignition::Start(const IgniteConfiguration& cfg, const char* name, IgniteError* err)
+    Ignite Ignition::Start(const IgniteConfiguration& cfg, const char* name, IgniteError& err)
     {
-        bool failed = false;
+        CsLockGuard guard(factoryLock);
 
-        SharedPointer<IgniteEnvironment> env;
-        SharedPointer<IgniteEnvironment>* envTarget = NULL;
-
-        jobject javaRef = NULL;
-
-        factoryLock.Enter();
+        std::string jvmLib = FindJvmLibrary(cfg.jvmLibPath);
 
         // 1. Load JVM library if needed.
         if (!JVM_LIB_LOADED)
         {
-            bool jvmLibFound;
-            std::string jvmLib;
-
-            if (!cfg.jvmLibPath.empty())
+            if (jvmLib.empty())
             {
-                std::string jvmLibPath = std::string(cfg.jvmLibPath);
-
-                jvmLib = FindJvmLibrary(&jvmLibPath, &jvmLibFound);
-            }
-            else
-                jvmLib = FindJvmLibrary(NULL, &jvmLibFound);
-
-            if (!jvmLibFound)
-            {
-                *err = IgniteError(IgniteError::IGNITE_ERR_JVM_LIB_NOT_FOUND,
+                err = IgniteError(IgniteError::IGNITE_ERR_JVM_LIB_NOT_FOUND,
                     "JVM library is not found (did you set JAVA_HOME environment variable?)");
 
-                failed = true;
+                return Ignite();
             }
 
-            if (!failed) {
-                if (!LoadJvmLibrary(jvmLib))
-                {
-                    *err = IgniteError(IgniteError::IGNITE_ERR_JVM_LIB_LOAD_FAILED, "Failed to load JVM library.");
+            if (!LoadJvmLibrary(jvmLib))
+            {
+                err = IgniteError(IgniteError::IGNITE_ERR_JVM_LIB_LOAD_FAILED, "Failed to load JVM library.");
 
-                    failed = true;
-                }
+                return Ignite();
             }
 
             JVM_LIB_LOADED = true;
         }
 
-        if (!failed)
+        // 2. Resolve IGNITE_HOME.
+        std::string home = ResolveIgniteHome(cfg.igniteHome);
+
+        // 3. Create classpath.
+        std::string cp = CreateIgniteClasspath(cfg.jvmClassPath, home);
+
+        if (cp.empty())
         {
-            // 2. Resolve IGNITE_HOME.
-            bool homeFound;
-            std::string home;
+            err = IgniteError(IgniteError::IGNITE_ERR_JVM_NO_CLASSPATH,
+                "Java classpath is empty (did you set IGNITE_HOME environment variable?)");
 
-            if (!cfg.igniteHome.empty())
-            {
-                std::string homePath = std::string(cfg.igniteHome);
-
-                home = ResolveIgniteHome(&homePath, &homeFound);
-            }
-            else
-                home = ResolveIgniteHome(NULL, &homeFound);
-
-            // 3. Create classpath.
-            std::string cp;
-
-            if (!cfg.jvmClassPath.empty())
-            {
-                std::string usrCp = cfg.jvmClassPath;
-
-                cp = CreateIgniteClasspath(&usrCp, homeFound ? &home : NULL);
-            }
-            else
-                cp = CreateIgniteClasspath(NULL, homeFound ? &home : NULL);
-
-            if (!cp.empty())
-            {
-                // 4. Start JVM if needed.
-                JniErrorInfo jniErr;
-
-                env = SharedPointer<IgniteEnvironment>(new IgniteEnvironment());
-
-                int optsLen;
-                char** opts = CreateJvmOptions(cfg, homeFound ? &home : NULL, cp, &optsLen);
-
-                envTarget = new SharedPointer<IgniteEnvironment>(env);
-
-                SharedPointer<JniContext> ctx(
-                    JniContext::Create(opts, optsLen, env.Get()->GetJniHandlers(envTarget), &jniErr));
-
-                for (int i = 0; i < optsLen; i++)
-                    ReleaseChars(*(opts + i));
-
-                delete[] opts;
-
-                if (!ctx.Get())
-                {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-
-                    failed = true;
-                }
-
-                env.Get()->SetContext(ctx);
-
-                // 5. Start Ignite.
-                if (!failed)
-                {
-                    char* springCfgPath0 = NULL;
-
-                    if (!cfg.springCfgPath.empty())
-                        springCfgPath0 = CopyChars(cfg.springCfgPath.c_str());
-                    else
-                        springCfgPath0 = CopyChars(DFLT_CFG);
-
-                    char* name0 = CopyChars(name);
-
-                    interop::InteropUnpooledMemory mem(16);
-                    interop::InteropOutputStream stream(&mem);
-                    stream.WriteBool(false);
-                    stream.Synchronize();
-
-                    javaRef = ctx.Get()->IgnitionStart(springCfgPath0, name0, 2, mem.PointerLong(), &jniErr);
-
-                    ReleaseChars(springCfgPath0);
-                    ReleaseChars(name0);
-
-                    if (!javaRef) {
-                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
-
-                        failed = true;
-                    }
-                    else {
-                        // 6. Ignite is started at this point.
-                        env.Get()->Initialize();
-
-                        started = true;
-                    }
-                }
-            }
-            else {
-                *err = IgniteError(IgniteError::IGNITE_ERR_JVM_NO_CLASSPATH,
-                    "Java classpath is empty (did you set IGNITE_HOME environment variable?)");
-
-                failed = true;
-            }
+            return Ignite();
         }
 
-        factoryLock.Leave();
+        // 4. Resolving spring config path
+        std::string springCfgPath0;
 
-        if (failed) 
+        if (!cfg.springCfgPath.empty())
+            springCfgPath0 = cfg.springCfgPath;
+        else
+            springCfgPath0 = DFLT_CFG;
+
+        // 5. Start JVM if needed.
+        IgniteConfiguration cfg0(cfg);
+
+        cfg0.jvmLibPath = jvmLib;
+        cfg0.igniteHome = home;
+        cfg0.jvmClassPath = cp;
+        cfg0.springCfgPath = springCfgPath0;
+
+        JniErrorInfo jniErr;
+
+        SharedPointer<IgniteEnvironment> env = SharedPointer<IgniteEnvironment>(new IgniteEnvironment(cfg0));
+
+        JvmOptions opts;
+        opts.FromConfiguration(cfg, home, cp);
+
+        std::auto_ptr< SharedPointer<IgniteEnvironment> > envTarget(new SharedPointer<IgniteEnvironment>(env));
+
+        SharedPointer<JniContext> ctx(
+            JniContext::Create(opts.GetOpts(), opts.GetSize(), env.Get()->GetJniHandlers(envTarget.get()), &jniErr));
+
+        if (!ctx.Get())
+        {
+            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
             return Ignite();
+        }
+
+        env.Get()->SetContext(ctx);
+
+        // 6. Start Ignite.
+
+        // Workaround for nullable strings as we can't use unique_ptr nor
+        // can we construct std::string from the null-pointer.
+        char* namep = 0;
+
+        std::string name0;
+        if (name)
+        {
+            name0 = name;
+
+            namep = &name0[0];
+        }
+
+        interop::InteropUnpooledMemory mem(16);
+        interop::InteropOutputStream stream(&mem);
+        stream.WriteBool(false);
+        stream.Synchronize();
+
+        ctx.Get()->IgnitionStart(&springCfgPath0[0], namep, 2, mem.PointerLong(), &jniErr);
+
+        // Releasing control over environment as it is controlled by Java at this point.
+        // Even if the call has failed environment are going to be released by the Java.
+        envTarget.release();
+
+        if (!env.Get()->GetProcessor() || jniErr.code != java::IGNITE_JNI_ERR_SUCCESS)
+        {
+            IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+
+            return Ignite();
+        }
+
+        // 7. Ignite is started at this point.
+        env.Get()->Initialize();
+
+        started = true;
+
+        guard.Reset();
 
         env.Get()->ProcessorReleaseStart();
 
-        IgniteImpl* impl = new IgniteImpl(env, javaRef);
+        IgniteImpl* impl = new IgniteImpl(env);
 
         return Ignite(impl);
     }
 
     Ignite Ignition::Get()
     {
-        return Get(static_cast<const char*>(NULL));
+        return Get(static_cast<const char*>(0));
     }
 
-    Ignite Ignition::Get(IgniteError* err)
+    Ignite Ignition::Get(IgniteError& err)
     {
-        return Get(NULL, err);
+        return Get(0, err);
     }
 
     Ignite Ignition::Get(const char* name)
     {
         IgniteError err;
 
-        Ignite res = Get(name, &err);
+        Ignite res = Get(name, err);
 
         IgniteError::ThrowIfNeeded(err);
 
         return res;
     }
 
-    Ignite Ignition::Get(const char* name, IgniteError* err)
+    Ignite Ignition::Get(const char* name, IgniteError& err)
     {
         Ignite res;
 
@@ -325,18 +356,18 @@ namespace ignite
             // 1. Create context for this operation.
             JniErrorInfo jniErr;
 
-            SharedPointer<JniContext> ctx(JniContext::Create(NULL, 0, JniHandlers(), &jniErr));
+            SharedPointer<JniContext> ctx(JniContext::Create(0, 0, JniHandlers(), &jniErr));
 
             IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-            if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
+            if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
             {
                 // 2. Get environment pointer.
                 long long ptr = ctx.Get()->IgnitionEnvironmentPointer(name0, &jniErr);
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-                if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
+                if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
                 {
                     if (ptr != 0)
                     {
@@ -346,26 +377,13 @@ namespace ignite
                         SharedPointer<IgniteEnvironment>* env =
                             static_cast<SharedPointer<IgniteEnvironment>*>(hnds->target);
 
-                        // 4. Get fresh node reference.
-                        jobject ref = ctx.Get()->IgnitionInstance(name0, &jniErr);
+                        IgniteImpl* impl = new IgniteImpl(*env);
 
-                        if (err->GetCode() == IgniteError::IGNITE_SUCCESS) {
-                            if (ref)
-                            {
-                                IgniteImpl* impl = new IgniteImpl(*env, ref);
-
-                                res = Ignite(impl);
-                            }
-                            else
-                                // Error: concurrent node stop.
-                                *err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                                    "Failed to get Ignite instance because it was stopped concurrently.");
-
-                        }
+                        res = Ignite(impl);
                     }
                     else
                         // Error: no node with the given name.
-                        *err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Failed to get Ignite instance because it is either not started yet or already stopped.");
                 }
             }
@@ -374,7 +392,7 @@ namespace ignite
         }
         else
             // Error: no node with the given name.
-            *err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+            err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                 "Failed to get Ignite instance because it is either not started yet or already stopped.");
 
         factoryLock.Leave();
@@ -384,26 +402,26 @@ namespace ignite
 
     bool Ignition::Stop(bool cancel)
     {
-        return Stop(NULL, cancel);
+        return Stop(0, cancel);
     }
 
-    bool Ignition::Stop(bool cancel, IgniteError* err)
+    bool Ignition::Stop(bool cancel, IgniteError& err)
     {
-        return Stop(NULL, cancel, err);
+        return Stop(0, cancel, err);
     }
 
     bool Ignition::Stop(const char* name, bool cancel)
     {
         IgniteError err;
 
-        bool res = Stop(name, cancel, &err);
+        bool res = Stop(name, cancel, err);
 
         IgniteError::ThrowIfNeeded(err);
 
         return res;
     }
 
-    bool Ignition::Stop(const char* name, bool cancel, IgniteError* err)
+    bool Ignition::Stop(const char* name, bool cancel, IgniteError& err)
     {
         bool res = false;
 
@@ -413,11 +431,11 @@ namespace ignite
         {
             JniErrorInfo jniErr;
 
-            SharedPointer<JniContext> ctx(JniContext::Create(NULL, 0, JniHandlers(), &jniErr));
+            SharedPointer<JniContext> ctx(JniContext::Create(0, 0, JniHandlers(), &jniErr));
 
             IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-            if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
+            if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
             {
                 char* name0 = CopyChars(name);
 
@@ -427,7 +445,7 @@ namespace ignite
 
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-                if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
+                if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
                     res = res0;
             }
         }
@@ -441,12 +459,12 @@ namespace ignite
     {
         IgniteError err;
 
-        StopAll(cancel, &err);
+        StopAll(cancel, err);
 
         IgniteError::ThrowIfNeeded(err);
     }
 
-    void Ignition::StopAll(bool cancel, IgniteError* err)
+    void Ignition::StopAll(bool cancel, IgniteError& err)
     {
         factoryLock.Enter();
 
@@ -454,11 +472,11 @@ namespace ignite
         {
             JniErrorInfo jniErr;
 
-            SharedPointer<JniContext> ctx(JniContext::Create(NULL, 0, JniHandlers(), &jniErr));
+            SharedPointer<JniContext> ctx(JniContext::Create(0, 0, JniHandlers(), &jniErr));
 
             IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-            if (err->GetCode() == IgniteError::IGNITE_SUCCESS)
+            if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
             {
                 ctx.Get()->IgnitionStopAll(cancel, &jniErr);
 

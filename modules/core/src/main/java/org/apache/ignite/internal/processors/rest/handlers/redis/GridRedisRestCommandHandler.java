@@ -18,18 +18,22 @@
 package org.apache.ignite.internal.processors.rest.handlers.redis;
 
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisGenericException;
 import org.apache.ignite.internal.processors.rest.handlers.redis.exception.GridRedisTypeException;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.CX1;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Redis command handler done via REST.
@@ -53,7 +57,8 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridRedisMessage> handleAsync(final GridRedisMessage msg) {
+    @Override public IgniteInternalFuture<GridRedisMessage> handleAsync(final GridNioSession ses,
+        final GridRedisMessage msg) {
         assert msg != null;
 
         try {
@@ -80,6 +85,39 @@ public abstract class GridRedisRestCommandHandler implements GridRedisCommandHan
 
             return new GridFinishedFuture<>(msg);
         }
+    }
+
+    /**
+     * Retrieves long value following the parameter name from parameters list.
+     *
+     * @param name Parameter name.
+     * @param params Parameters list.
+     * @return Long value from parameters list or null if not exists.
+     * @throws GridRedisGenericException If parsing failed.
+     */
+    @Nullable protected Long longValue(String name, List<String> params) throws GridRedisGenericException {
+        assert name != null;
+
+        Iterator<String> it = params.iterator();
+
+        while (it.hasNext()) {
+            if (name.equalsIgnoreCase(it.next())) {
+                if (it.hasNext()) {
+                    String val = it.next();
+
+                    try {
+                        return Long.valueOf(val);
+                    }
+                    catch (NumberFormatException ignore) {
+                        throw new GridRedisGenericException("Failed to parse parameter of Long type [" + name + "=" + val + "]");
+                    }
+                }
+                else
+                    throw new GridRedisGenericException("Syntax error. Missing value for parameter: " + name);
+            }
+        }
+
+        return null;
     }
 
     /**

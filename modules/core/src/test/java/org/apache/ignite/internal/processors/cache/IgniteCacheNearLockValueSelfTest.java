@@ -45,23 +45,18 @@ public class IgniteCacheNearLockValueSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(2);
+        startGrid(1);
+
+        startGrid(0);
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setForceServerMode(true).setIpFinder(IP_FINDER));
 
-        if (getTestGridName(0).equals(gridName))
+        if (getTestIgniteInstanceName(0).equals(igniteInstanceName))
             cfg.setClientMode(true);
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();

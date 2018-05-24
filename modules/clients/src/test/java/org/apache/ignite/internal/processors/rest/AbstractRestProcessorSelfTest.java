@@ -47,11 +47,6 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         assert grid(0).cluster().nodes().size() == gridCount();
     }
@@ -64,8 +59,8 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setLocalHost(LOC_HOST);
 
@@ -100,6 +95,6 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
      * @return Cache.
      */
     @Override protected <K, V> IgniteCache<K, V> jcache() {
-        return grid(0).cache(null);
+        return grid(0).cache(DEFAULT_CACHE_NAME);
     }
 }

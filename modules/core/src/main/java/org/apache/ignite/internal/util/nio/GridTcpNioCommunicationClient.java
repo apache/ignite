@@ -32,8 +32,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.ACK_CLOSURE;
-
 /**
  * Grid client for NIO server.
  */
@@ -115,18 +113,9 @@ public class GridTcpNioCommunicationClient extends GridAbstractCommunicationClie
             // Node ID is never provided in asynchronous send mode.
             assert nodeId == null;
 
-            if (c != null)
-                ses.addMeta(ACK_CLOSURE.ordinal(), c);
-
-            ses.sendNoFuture(msg);
-
-            if (c != null)
-                ses.removeMeta(ACK_CLOSURE.ordinal());
+            ses.sendNoFuture(msg, c);
         }
         catch (IgniteCheckedException e) {
-            if (c != null)
-                ses.removeMeta(ACK_CLOSURE.ordinal());
-
             if (log.isDebugEnabled())
                 log.debug("Failed to send message [client=" + this + ", err=" + e + ']');
 

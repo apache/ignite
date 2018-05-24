@@ -37,8 +37,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class GridClosureSerializationTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        final IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(final String igniteInstanceName) throws Exception {
+        final IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setMarshaller(null);
 
@@ -53,13 +53,6 @@ public class GridClosureSerializationTest extends GridCommonAbstractTest {
         startGrid(1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -68,7 +61,7 @@ public class GridClosureSerializationTest extends GridCommonAbstractTest {
         final IgniteEx ignite0 = grid(0);
         final IgniteEx ignite1 = grid(1);
 
-        GridTestUtils.assertThrows(null, new Callable<Object>() {
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 ignite1.compute(ignite1.cluster().forNode(ignite0.localNode())).call(new IgniteCallable<Object>() {
                     @Override public Object call() throws Exception {

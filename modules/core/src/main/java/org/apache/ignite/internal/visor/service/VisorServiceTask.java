@@ -57,12 +57,14 @@ public class VisorServiceTask extends VisorOneNodeTask<Void, Collection<VisorSer
 
         /** {@inheritDoc} */
         @Override protected Collection<VisorServiceDescriptor> run(final Void arg) {
-            Collection<ServiceDescriptor> services = ignite.services().serviceDescriptors();
+            Collection<VisorServiceDescriptor> res = new ArrayList<>();
 
-            Collection<VisorServiceDescriptor> res = new ArrayList<>(services.size());
+            if (ignite.active()) {
+                Collection<ServiceDescriptor> services = ignite.services().serviceDescriptors();
 
-            for (ServiceDescriptor srvc: services)
-                res.add(new VisorServiceDescriptor(srvc));
+                for (ServiceDescriptor srvc : services)
+                    res.add(new VisorServiceDescriptor(srvc));
+            }
 
             return res;
         }

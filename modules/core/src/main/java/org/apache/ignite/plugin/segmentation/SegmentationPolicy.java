@@ -18,6 +18,7 @@
 package org.apache.ignite.plugin.segmentation;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Policy that defines how node will react on topology segmentation. Note that default
@@ -45,5 +46,18 @@ public enum SegmentationPolicy {
      * {@link org.apache.ignite.events.EventType#EVT_NODE_SEGMENTED} event and it is up to user to
      * implement logic to handle this event.
      */
-    NOOP
+    NOOP;
+
+    /** Enumerated values. */
+    private static final SegmentationPolicy[] VALS = values();
+
+    /**
+     * Efficiently gets enumerated value from its ordinal.
+     *
+     * @param ord Ordinal value.
+     * @return Enumerated value or {@code null} if ordinal out of range.
+     */
+    @Nullable public static SegmentationPolicy fromOrdinal(int ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

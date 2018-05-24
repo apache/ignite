@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 
 /**
@@ -57,12 +59,16 @@ public class HadoopMarshallerFilter extends GridNioFilterAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg, boolean fut) throws IgniteCheckedException {
+    @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses,
+        Object msg,
+        boolean fut,
+        IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert msg instanceof HadoopMessage : "Invalid message type: " + msg;
 
-        return proceedSessionWrite(ses, U.marshal(marsh, msg), fut);
+        return proceedSessionWrite(ses, U.marshal(marsh, msg), fut, ackC);
     }
 
+    /** {@inheritDoc} */
     @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
         assert msg instanceof byte[];
 

@@ -23,7 +23,7 @@
         http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="gridName" value="grid-2"/>
+        <property name="igniteInstanceName" value="grid-2"/>
 
         <property name="localHost" value="127.0.0.1"/>
 
@@ -40,8 +40,6 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="atomicWriteOrderMode" value="PRIMARY"/>
-
                     <property name="backups" value="1"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
@@ -56,8 +54,6 @@
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
-                    <property name="atomicWriteOrderMode" value="PRIMARY"/>
-
                     <property name="backups" value="1"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
@@ -71,8 +67,6 @@
                     <property name="atomicityMode" value="ATOMIC"/>
 
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-                    <property name="atomicWriteOrderMode" value="PRIMARY"/>
 
                     <property name="rebalanceMode" value="SYNC"/>
                 </bean>

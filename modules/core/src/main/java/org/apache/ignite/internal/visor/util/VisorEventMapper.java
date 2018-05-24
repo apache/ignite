@@ -136,7 +136,7 @@ public class VisorEventMapper implements IgniteClosure<Event, VisorGridEvent> {
         ClusterNode node = de.eventNode();
 
         return new VisorGridDiscoveryEvent(type, id, name, nid, ts, msg, shortDisplay, node.id(),
-            F.first(node.addresses()), node.isDaemon());
+            F.first(node.addresses()), node.isDaemon(), de.topologyVersion());
     }
 
     /** {@inheritDoc} */

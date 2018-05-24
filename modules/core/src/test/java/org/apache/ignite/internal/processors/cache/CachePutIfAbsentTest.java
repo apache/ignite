@@ -51,8 +51,8 @@ public class CachePutIfAbsentTest extends GridCommonAbstractTest {
     private static final int SRVS = 4;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -64,13 +64,6 @@ public class CachePutIfAbsentTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(SRVS);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -103,7 +96,7 @@ public class CachePutIfAbsentTest extends GridCommonAbstractTest {
         CacheMode cacheMode,
         CacheWriteSynchronizationMode syncMode,
         int backups) {
-        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setAtomicityMode(TRANSACTIONAL);

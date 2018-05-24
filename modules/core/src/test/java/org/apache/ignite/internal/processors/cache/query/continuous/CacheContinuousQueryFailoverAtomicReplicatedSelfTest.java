@@ -17,24 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheMode;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  *
  */
 public class CacheContinuousQueryFailoverAtomicReplicatedSelfTest
-    extends CacheContinuousQueryFailoverAtomicPrimaryWriteOrderSelfTest {
+    extends CacheContinuousQueryFailoverAtomicSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return REPLICATED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode writeOrderMode() {
-        return PRIMARY;
     }
 }

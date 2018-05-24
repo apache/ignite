@@ -27,7 +27,7 @@ import org.apache.ignite.yardstick.cache.model.SampleValue;
 import org.yardstickframework.BenchmarkConfiguration;
 
 /**
- * Ignite benchmark that performs invoke operations.
+ * Ignite benchmark that performs getAndPut operations.
  */
 public class IgniteGetAndPutTxBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
     /** */
@@ -48,6 +48,8 @@ public class IgniteGetAndPutTxBenchmark extends IgniteCacheAbstractBenchmark<Int
         clo = new Callable<Void>() {
             @Override public Void call() throws Exception {
                 int key = nextRandom(args.range());
+
+                IgniteCache<Integer, Object> cache = cacheForOperation();
 
                 cache.getAndPut(key, new SampleValue(key));
 

@@ -25,6 +25,7 @@
 
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
+#include <ignite/impl/binary/binary_field_meta.h>
 
 namespace ignite
 {
@@ -38,21 +39,23 @@ namespace ignite
             class BinaryTypeSnapshot
             {
             public:
+                typedef std::map<std::string, BinaryFieldMeta> FieldMap;
+                typedef std::set<int32_t> FieldIdSet;
+
                 /**
                  * Constructor.
                  *
                  * @param typeName Type name.
                  * @param typeId Type ID.
-                 * @param fieldIds Field IDs.
-                 * @param fields Fields.
                  */
-                BinaryTypeSnapshot(std::string typeName, int32_t typeId, std::set<int32_t>* fieldIds, 
-                    std::map<std::string, int32_t>* fields);
+                BinaryTypeSnapshot(std::string typeName, int32_t typeId);
 
                 /**
-                 * Destructor.
+                 * Copy constructor.
+                 *
+                 * @param another Another instance.
                  */
-                ~BinaryTypeSnapshot();
+                BinaryTypeSnapshot(const BinaryTypeSnapshot& another);
 
                 /**
                  * Check whether snapshot contains a field with the given ID.
@@ -60,42 +63,79 @@ namespace ignite
                  * @param fieldId Field ID.
                  * @return True if contains, false otherwise.
                  */
-                bool ContainsFieldId(int32_t fieldId);
+                bool ContainsFieldId(int32_t fieldId) const
+                {
+                    return fieldIds.count(fieldId) == 1;
+                }
 
                 /**
                  * Get type name.
                  *
                  * @return Type name.
                  */
-                std::string GetTypeName();
+                const std::string& GetTypeName() const
+                {
+                    return typeName;
+                }
 
                 /**
                  * Get type ID.
                  *
                  * @return Type ID.
                  */
-                int32_t GetTypeId();
+                int32_t GetTypeId() const
+                {
+                    return typeId;
+                }
 
                 /**
                  * Whether snapshot contains any fields.
                  *
                  * @return True if fields exist.
                  */
-                bool HasFields();
-
-                /** 
-                 * Get field IDs.
-                 *
-                 * @return Field IDs.
-                 */
-                std::set<int32_t>* GetFieldIds();
+                bool HasFields() const
+                {
+                    return !fieldIds.empty();
+                }
 
                 /**
-                 * Get fields.
+                 * Get field map.
                  *
                  * @return Fields.
                  */
-                std::map<std::string, int32_t>* GetFields();
+                const FieldMap& GetFieldMap() const
+                {
+                    return fields;
+                }
+
+                /**
+                 * Add field meta.
+                 *
+                 * @param fieldId Field ID.
+                 * @param fieldName Field name.
+                 * @param fieldTypeId Field type ID.
+                 */
+                void AddField(int32_t fieldId, const std::string& fieldName, int32_t fieldTypeId);
+
+                /**
+                 * Copy fields from another snapshot.
+                 *
+                 * @param another Another instance.
+                 */
+                void CopyFieldsFrom(const BinaryTypeSnapshot* another);
+
+                /**
+                 * Get field ID.
+                 *
+                 * @param fieldName Field name.
+                 * @return Field ID on success and 0 on fail. 
+                 */
+                int32_t GetFieldId(const std::string& fieldName)
+                {
+                    const FieldMap::const_iterator it = fields.find(fieldName);
+
+                    return it == fields.end() ? 0 : it->second.GetFieldId();
+                }
 
             private:
                 /** Type name. */
@@ -105,12 +145,10 @@ namespace ignite
                 int32_t typeId;
 
                 /** Known field IDs. */
-                std::set<int32_t>* fieldIds;
+                FieldIdSet fieldIds;
 
-                /** Field name-type mappings. */
-                std::map<std::string, int32_t>* fields; 
-
-                IGNITE_NO_COPY_ASSIGNMENT(BinaryTypeSnapshot)
+                /** Fields metadata. */
+                FieldMap fields;
             };
 
             typedef BinaryTypeSnapshot Snap;

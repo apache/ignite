@@ -131,7 +131,7 @@ public class IgfsEventsTestSuite extends TestSuite {
             FileSystemConfiguration igfsCfg = super.getIgfsConfiguration();
 
             igfsCfg.setSecondaryFileSystem(new IgniteHadoopIgfsSecondaryFileSystem(
-                "igfs://igfs-secondary:grid-secondary@127.0.0.1:11500/",
+                "igfs://igfs-secondary@127.0.0.1:11500/",
                 "modules/core/src/test/config/hadoop/core-site-secondary.xml"));
 
             return igfsCfg;
@@ -165,8 +165,6 @@ public class IgfsEventsTestSuite extends TestSuite {
 
         /** {@inheritDoc} */
         @Override protected void afterTestsStopped() throws Exception {
-            super.afterTestsStopped();
-
             G.stopAll(true);
         }
 
@@ -175,7 +173,7 @@ public class IgfsEventsTestSuite extends TestSuite {
             super.afterTest();
 
             // Clean up secondary file system.
-            igfsSec.format();
+            igfsSec.clear();
         }
 
         /**
@@ -235,7 +233,7 @@ public class IgfsEventsTestSuite extends TestSuite {
             igfsCfg.setDefaultMode(IgfsMode.PRIMARY);
 
             igfsCfg.setSecondaryFileSystem(new IgniteHadoopIgfsSecondaryFileSystem(
-                "igfs://igfs-secondary:grid-secondary@127.0.0.1:11500/",
+                "igfs://igfs-secondary@127.0.0.1:11500/",
                 "modules/core/src/test/config/hadoop/core-site-loopback-secondary.xml"));
 
             return igfsCfg;

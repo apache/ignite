@@ -19,6 +19,7 @@
 
 #include "ignite/common/concurrent.h"
 #include "ignite/common/utils.h"
+#include "ignite/common/fixed_size_array.h"
 
 #include "ignite/jni/utils.h"
 #include "ignite/jni/java.h"
@@ -32,6 +33,13 @@ namespace ignite
 {
     namespace jni
     {
+        const char* JAVA_HOME = "JAVA_HOME";
+        const char* JAVA_DLL = "\\jre\\bin\\server\\jvm.dll";
+
+        const char* IGNITE_HOME = "IGNITE_HOME";
+
+        const char* IGNITE_NATIVE_TEST_CLASSPATH = "IGNITE_NATIVE_TEST_CLASSPATH";
+
         AttachHelper::~AttachHelper()
         {
             // No-op.
@@ -42,88 +50,67 @@ namespace ignite
             // No-op.
         }
 
-        const char* JAVA_HOME = "JAVA_HOME";
-        const char* JAVA_DLL = "\\jre\\bin\\server\\jvm.dll";
-
-        const char* IGNITE_HOME = "IGNITE_HOME";
-
-        const char* PROBE_BIN = "\\bin";
-        const char* PROBE_EXAMPLES = "\\examples";
-
-        const char* IGNITE_NATIVE_TEST_CLASSPATH = "IGNITE_NATIVE_TEST_CLASSPATH";
-
         /**
-         * Helper method to set boolean result to pointer with proper NULL-check.
-         *
-         * @param res Result.
-         * @param outRes Where to set the result.
+         * Checks if the path looks like binary release home directory.
+         * Internally checks for presence of core library.
+         * @return @c true if the path looks like binary release home directory.
          */
-        inline void SetBoolResult(bool res, bool* outRes)
+        bool LooksLikeBinaryReleaseHome(const std::string& path)
         {
-            if (outRes)
-                *outRes = res;
+            static const char* PROBE_CORE_LIB = "\\libs\\ignite-core*.jar";
+
+            std::string coreLibProbe = path + PROBE_CORE_LIB;
+
+            return FileExists(coreLibProbe);
         }
 
         /**
-         * Helper function for GG home resolution. Checks whether certain folders
-         * exist in the path. Optionally goes upwards in directory hierarchy.
+         * Checks if the path looks like source release home directory.
+         * Internally checks for presence of core source directory.
+         * @return @c true if the path looks like binary release home directory.
+         */
+        bool LooksLikeSourceReleaseHome(const std::string& path)
+        {
+            static const char* PROBE_CORE_SOURCE = "\\modules\\core\\src\\main\\java\\org\\apache\\ignite";
+
+            std::string coreSourcePath = path + PROBE_CORE_SOURCE;
+
+            return IsValidDirectory(coreSourcePath);
+        }
+
+        /**
+         * Helper function for Ignite home resolution.
+         * Goes upwards in directory hierarchy and checks whether certain
+         * folders exist in the path.
          *
          * @param path Path to evaluate.
-         * @param up Whether to go upwards.
-         * @res Resolution result.
-         * @return Resolved directory.
+         * @return res Resolved directory. Empty string if not found.
          */
-        std::string ResolveIgniteHome0(const std::string& path, bool up, bool* res)
+        std::string ResolveIgniteHome0(const std::string& path)
         {
-            DWORD attrs = GetFileAttributesA(path.c_str());
+            if (!IsValidDirectory(path))
+                return std::string();
 
-            if (attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY))
-            {
-                // Remove trailing slashes, otherwise we will have an infinite loop.
-                std::string path0 = path;
+            // Remove trailing slashes, otherwise we will have an infinite loop.
+            size_t last = path.find_last_not_of("/\\ ");
 
-                while (true) {
-                    char lastChar = *path0.rbegin();
+            if (last == std::string::npos)
+                return std::string();
 
-                    if (lastChar == '/' || lastChar == '\\' || lastChar == ' ') {
-                        size_t off = path0.find_last_of(lastChar);
+            std::string path0(path, 0, last + 1);
 
-                        path0.erase(off, 1);
-                    }
-                    else
-                        break;
-                }
+            if (LooksLikeBinaryReleaseHome(path0) || LooksLikeSourceReleaseHome(path0))
+                return path0;
 
-                std::string binStr = path0 + PROBE_BIN;
-                DWORD binAttrs = GetFileAttributesA(binStr.c_str());
+            // Evaluate parent directory.
+            size_t slashPos = path0.find_last_of("/\\");
 
-                std::string examplesStr = path0 + PROBE_EXAMPLES;
-                DWORD examplesAttrs = GetFileAttributesA(examplesStr.c_str());
+            if (slashPos == std::string::npos)
+                return std::string();
 
-                if (binAttrs != INVALID_FILE_ATTRIBUTES && (binAttrs & FILE_ATTRIBUTE_DIRECTORY) &&
-                    examplesAttrs != INVALID_FILE_ATTRIBUTES && (examplesAttrs & FILE_ATTRIBUTE_DIRECTORY))
-                {
-                    SetBoolResult(true, res);
-                    return std::string(path0);
-                }
+            std::string parent(path0, 0, slashPos);
 
-                if (up)
-                {
-                    // Evaluate parent directory.
-                    size_t slashPos = path0.find_last_of("/\\");
-
-                    if (slashPos != std::string::npos)
-                    {
-                        std::string parent = path0.substr(0, slashPos);
-
-                        return ResolveIgniteHome0(parent, true, res);
-                    }
-                }
-            }
-
-            SetBoolResult(false, res);
-
-            return std::string();
+            return ResolveIgniteHome0(parent);
         }
 
         /**
@@ -136,24 +123,24 @@ namespace ignite
         {
             std::string searchPath = path + "\\*.jar";
 
-            std::string res = std::string();
-
             WIN32_FIND_DATAA findData;
 
             HANDLE hnd = FindFirstFileA(searchPath.c_str(), &findData);
 
-            if (hnd != INVALID_HANDLE_VALUE)
-            {
-                do
-                {
-                    res.append(path);
-                    res.append("\\");
-                    res.append(findData.cFileName);
-                    res.append(";");
-                } while (FindNextFileA(hnd, &findData) != 0);
+            if (hnd == INVALID_HANDLE_VALUE)
+                return std::string();
 
-                FindClose(hnd);
-            }
+            std::string res;
+
+            do
+            {
+                res.append(path);
+                res.append("\\");
+                res.append(findData.cFileName);
+                res.append(";");
+            } while (FindNextFileA(hnd, &findData) != 0);
+
+            FindClose(hnd);
 
             return res;
         }
@@ -230,15 +217,9 @@ namespace ignite
             return res;
         }
 
-        /**
-         * Helper function to create classpath based on Ignite home directory.
-         *
-         * @param home Home directory; expected to be valid.
-         * @param forceTest Force test classpath.
-         */
         std::string CreateIgniteHomeClasspath(const std::string& home, bool forceTest)
         {
-            std::string res = std::string();
+            std::string res;
 
             // 1. Add exploded test directories.
             if (forceTest)
@@ -292,30 +273,21 @@ namespace ignite
             return res;
         }
 
-        std::string FindJvmLibrary(const std::string* path, bool* found)
+        std::string FindJvmLibrary(const std::string& path)
         {
-            SetBoolResult(true, found); // Optimistically assume that we will find it.
+            // If path is provided explicitly, then check only it.
+            if (!path.empty() && FileExists(path))
+                return path;
 
-            if (path) {
-                // If path is provided explicitly, then check only it.
-                if (FileExists(*path))
-                    return std::string(path->data());
-            }
-            else
+            std::string javaEnv = GetEnv(JAVA_HOME);
+
+            if (!javaEnv.empty())
             {
-                bool javaEnvFound;
-                std::string javaEnv = GetEnv(JAVA_HOME, javaEnvFound);
+                std::string javaDll = javaEnv + JAVA_DLL;
 
-                if (javaEnvFound)
-                {
-                    std::string javaDll = javaEnv + JAVA_DLL;
-
-                    if (FileExists(javaDll))
-                        return std::string(javaDll);
-                }
+                if (FileExists(javaDll))
+                    return javaDll;
             }
-
-            *found = false;
 
             return std::string();
         }
@@ -327,32 +299,25 @@ namespace ignite
             return mod != NULL;
         }
 
-        std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home)
-        {
-            bool forceTest = false;
-
-            if (home)
-            {
-                bool envFound;
-                std::string env = GetEnv(IGNITE_NATIVE_TEST_CLASSPATH, envFound);
-
-                forceTest = envFound && env.compare("true") == 0;
-            }
-
-            return CreateIgniteClasspath(usrCp, home, forceTest);
-        }
-
-        std::string CreateIgniteClasspath(const std::string* usrCp, const std::string* home, bool forceTest)
+        /**
+         * Create Ignite classpath based on user input and home directory.
+         *
+         * @param usrCp User's classpath.
+         * @param home Ignite home directory.
+         * @param forceTest Whether test classpath must be used.
+         * @return Classpath.
+         */
+        std::string CreateIgniteClasspath(const std::string& usrCp, const std::string* home, bool forceTest)
         {
             // 1. Append user classpath if it exists.
-            std::string cp = std::string();
+            std::string cp;
 
-            if (usrCp)
+            if (!usrCp.empty())
             {
-                cp.append(*usrCp);
+                cp.append(usrCp);
 
                 if (*cp.rbegin() != ';')
-                    cp.append(";");
+                    cp.push_back(';');
             }
 
             // 2. Append home classpath if home is defined.
@@ -367,33 +332,68 @@ namespace ignite
             return cp;
         }
 
-        std::string ResolveIgniteHome(const std::string* path, bool* found)
+        /**
+         * Adds semicolon at the end of the path if needed.
+         * @param usrCp Classpath provided by user.
+         * @return Normalized classpath.
+         */
+        std::string NormalizeClasspath(const std::string& usrCp)
         {
-            if (path)
-                // 1. Check passed argument.
-                return ResolveIgniteHome0(*path, false, found);
-            else
+            if (usrCp.empty() || *usrCp.rbegin() == ';')
+                return usrCp;
+
+            return usrCp + ';';
+        }
+
+        std::string CreateIgniteClasspath(const std::string& usrCp, const std::string& home)
+        {
+            // 1. Append user classpath if it exists.
+            std::string cp = NormalizeClasspath(usrCp);
+
+            // 2. Append home classpath
+            if (!home.empty())
             {
-                // 2. Check environment variable.
-                bool envFound;
-                std::string env = GetEnv(IGNITE_HOME, envFound);
+                std::string env = GetEnv(IGNITE_NATIVE_TEST_CLASSPATH, "false");
 
-                if (envFound)
-                    return ResolveIgniteHome0(env, false, found);
+                bool forceTest = ToLower(env) == "true";
 
-                // 3. Check current work dir.
-                const DWORD curDirLen = GetCurrentDirectory(0, NULL);
+                std::string homeCp = CreateIgniteHomeClasspath(home, forceTest);
 
-                char* curDir = new char[curDirLen];
-
-                GetCurrentDirectoryA(curDirLen, curDir);
-
-                std::string curDirStr = curDir;
-
-                delete[] curDir;
-
-                return ResolveIgniteHome0(curDirStr, true, found);
+                cp.append(homeCp);
             }
+
+            // 3. Return.
+            return cp;
+        }
+
+        std::string ResolveIgniteHome(const std::string& path)
+        {
+            // 1. Check passed argument.
+            if (IsValidDirectory(path))
+                return path;
+
+            // 2. Check environment variable.
+            std::string home = GetEnv(IGNITE_HOME);
+
+            if (IsValidDirectory(home))
+                return home;
+
+            // 3. Check current work dir.
+            DWORD curDirLen = GetCurrentDirectoryA(0, NULL);
+
+            if (!curDirLen)
+                return std::string();
+
+            FixedSizeArray<char> curDir(curDirLen);
+
+            curDirLen = GetCurrentDirectoryA(curDir.GetSize(), curDir.GetData());
+
+            if (!curDirLen)
+                return std::string();
+
+            std::string curDirStr(curDir.GetData());
+
+            return ResolveIgniteHome0(curDirStr);
         }
     }
 }

@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.spi.discovery.tcp.internal.DiscoveryDataPacket;
 
 /**
  * Sent by coordinator across the ring to finish node add process.
@@ -40,7 +40,7 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMess
      * TcpDiscoveryNodeAddFinishedMessage
      */
     @GridToStringExclude
-    private Map<UUID, Map<Integer, byte[]>> clientDiscoData;
+    private DiscoveryDataPacket clientDiscoData;
 
     /** */
     @GridToStringExclude
@@ -81,17 +81,17 @@ public class TcpDiscoveryNodeAddFinishedMessage extends TcpDiscoveryAbstractMess
     /**
      * @return Discovery data for joined client.
      */
-    public Map<UUID, Map<Integer, byte[]>> clientDiscoData() {
+    public DiscoveryDataPacket clientDiscoData() {
         return clientDiscoData;
     }
 
     /**
      * @param clientDiscoData Discovery data for joined client.
      */
-    public void clientDiscoData(@Nullable Map<UUID, Map<Integer, byte[]>> clientDiscoData) {
+    public void clientDiscoData(DiscoveryDataPacket clientDiscoData) {
         this.clientDiscoData = clientDiscoData;
 
-        assert clientDiscoData == null || !clientDiscoData.containsKey(nodeId);
+        assert clientDiscoData == null || !clientDiscoData.hasDataFromNode(nodeId);
     }
 
     /**

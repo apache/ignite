@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,10 +39,14 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
@@ -60,7 +65,10 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVer
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -84,6 +92,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CRE
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.RELOAD;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -98,6 +107,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
+import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 
 /**
  * Managed transaction adapter.
@@ -192,12 +202,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** */
     protected boolean onePhaseCommit;
 
-    /** */
-    protected CacheWriteSynchronizationMode syncMode;
-
-    /** If this transaction contains transform entries. */
-    protected boolean transform;
-
     /** Commit version. */
     private volatile GridCacheVersion commitVer;
 
@@ -206,9 +210,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
     /** Done marker. */
     protected volatile boolean isDone;
-
-    /** Preparing flag (no need for volatile modifier). */
-    private boolean preparing;
 
     /** */
     @GridToStringInclude
@@ -251,9 +252,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** Store used flag. */
     protected boolean storeEnabled = true;
 
-    /** */
-    @GridToStringExclude
-    private TransactionProxyImpl proxy;
+    /** UUID to consistent id mapper. */
+    protected ConsistentIdMapper consistentIdMapper;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -318,6 +318,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, this);
+
+        consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
     }
 
     /**
@@ -367,6 +369,15 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, this);
+
+        consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+    }
+
+    /**
+     * @return Shared cache context.
+     */
+    public GridCacheSharedContext<?, ?> context() {
+        return cctx;
     }
 
     /** {@inheritDoc} */
@@ -420,33 +431,42 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public boolean storeUsed() {
-        return storeEnabled() && txState().storeUsed(cctx);
+    @Override public boolean storeWriteThrough() {
+        return storeEnabled() && txState().storeWriteThrough(cctx);
     }
 
     /**
      * Uncommits transaction by invalidating all of its entries. Courtesy to minimize inconsistency.
+     *
+     * @param nodeStopping {@code True} if tx was cancelled during node stop.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    protected void uncommit() {
-        for (IgniteTxEntry e : writeMap().values()) {
-            try {
-                GridCacheEntryEx Entry = e.cached();
+    protected void uncommit(boolean nodeStopping) {
+        try {
+            if (!nodeStopping) {
+                for (IgniteTxEntry e : writeMap().values()) {
+                    try {
+                        GridCacheEntryEx entry = e.cached();
 
-                if (e.op() != NOOP)
-                    Entry.invalidate(null, xidVer);
-            }
-            catch (Throwable t) {
-                U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
+                        if (e.op() != NOOP)
+                            entry.invalidate(xidVer);
+                    }
+                    catch (Throwable t) {
+                        U.error(log, "Failed to invalidate transaction entries while reverting a commit.", t);
 
-                if (t instanceof Error)
-                    throw (Error)t;
+                        if (t instanceof Error)
+                            throw (Error)t;
 
-                break;
+                        break;
+                    }
+                }
+
+                cctx.tm().uncommitTx(this);
             }
         }
-
-        cctx.tm().uncommitTx(this);
+        catch (Exception ex) {
+            U.error(log, "Failed to do uncommit.", ex);
+        }
     }
 
     /** {@inheritDoc} */
@@ -471,7 +491,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     @Override public AffinityTopologyVersion topologyVersion() {
         AffinityTopologyVersion res = topVer;
 
-        if (res.equals(AffinityTopologyVersion.NONE)) {
+        if (res == null || res.equals(AffinityTopologyVersion.NONE)) {
             if (system()) {
                 AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), this);
 
@@ -479,7 +499,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     return topVer;
             }
 
-            return cctx.exchange().topologyVersion();
+            return cctx.exchange().readyAffinityVersion();
         }
 
         return res;
@@ -512,46 +532,15 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void onRemap(AffinityTopologyVersion topVer) {
-        assert false : this;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasTransforms() {
-        return transform;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean markPreparing() {
-        synchronized (this) {
-            if (preparing)
-                return false;
-
-            preparing = true;
-
-            return true;
-        }
-    }
-
     /**
      * @return {@code True} if marked.
      */
-    @Override public boolean markFinalizing(FinalizationStatus status) {
+    @Override public final boolean markFinalizing(FinalizationStatus status) {
         boolean res;
 
         switch (status) {
             case USER_FINISH:
                 res = FINALIZING_UPD.compareAndSet(this, FinalizationStatus.NONE, FinalizationStatus.USER_FINISH);
-
-                break;
-
-            case RECOVERY_WAIT:
-                FINALIZING_UPD.compareAndSet(this, FinalizationStatus.NONE, FinalizationStatus.RECOVERY_WAIT);
-
-                FinalizationStatus cur = finalizing;
-
-                res = cur == FinalizationStatus.RECOVERY_WAIT || cur == FinalizationStatus.RECOVERY_FINISH;
 
                 break;
 
@@ -564,7 +553,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             default:
                 throw new IllegalArgumentException("Cannot set finalization status: " + status);
-
         }
 
         if (res) {
@@ -603,6 +591,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         return log;
     }
 
+    /**
+     * @return True if transaction reflects changes in primary -> backup direction.
+     */
+    public boolean remote() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean near() {
         return false;
@@ -636,26 +631,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public boolean colocated() {
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean replicated() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheWriteSynchronizationMode syncMode() {
-        if (syncMode != null)
-            return syncMode;
-
-        return txState().syncMode(cctx);
-    }
-
-    /**
-     * @param syncMode Write synchronization mode.
-     */
-    public void syncMode(CacheWriteSynchronizationMode syncMode) {
-        this.syncMode = syncMode;
     }
 
     /** {@inheritDoc} */
@@ -732,7 +707,15 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      */
     public final IgniteCheckedException timeoutException() {
         return new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
-            "for transaction [timeout=" + timeout() + ", tx=" + this + ']');
+            "for transaction [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
+    }
+
+    /**
+     * @return Rollback exception.
+     */
+    public final IgniteCheckedException rollbackException() {
+        return new IgniteTxRollbackCheckedException("Failed to finish transaction because it has been rolled back " +
+            "[timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
     }
 
     /** {@inheritDoc} */
@@ -815,7 +798,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    public final void errorWhenCommitting() {
+    @Override public final void errorWhenCommitting() {
         synchronized (this) {
             TransactionState prev = state;
 
@@ -911,30 +894,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
     }
 
-    /**
-     *
-     */
-    @Override public void close() throws IgniteCheckedException {
-        TransactionState state = state();
-
-        if (state != ROLLING_BACK && state != ROLLED_BACK && state != COMMITTING && state != COMMITTED)
-            rollback();
-
-        synchronized (this) {
-            try {
-                while (!done())
-                    wait();
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-
-                if (!done())
-                    throw new IgniteCheckedException("Got interrupted while waiting for transaction to complete: " +
-                        this, e);
-            }
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public boolean needsCompletedVersions() {
         return false;
@@ -1019,11 +978,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 fut = finFut;
 
                 if (fut == null) {
-                    fut = new GridFutureAdapter<IgniteInternalTx>() {
-                        @Override public String toString() {
-                            return S.toString(GridFutureAdapter.class, this, "tx", IgniteTxAdapter.this);
-                        }
-                    };
+                    fut = new TxFinishFuture(this);
 
                     finFut = fut;
                 }
@@ -1047,25 +1002,27 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      *
      * @param state State to set.
      * @param timedOut Timeout flag.
+     *
      * @return {@code True} if state changed.
      */
-    @SuppressWarnings({"TooBroadScope"})
-    protected boolean state(TransactionState state, boolean timedOut) {
+    protected final boolean state(TransactionState state, boolean timedOut) {
         boolean valid = false;
 
         TransactionState prev;
 
         boolean notify = false;
 
+        WALPointer ptr = null;
+
         synchronized (this) {
             prev = this.state;
 
             switch (state) {
                 case ACTIVE: {
-                    valid = false;
+                    valid = prev == SUSPENDED;
 
                     break;
-                } // Active is initial state and cannot be transitioned to.
+                }
                 case PREPARING: {
                     valid = prev == ACTIVE;
 
@@ -1110,15 +1067,20 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
 
                 case MARKED_ROLLBACK: {
-                    valid = prev == ACTIVE || prev == PREPARING || prev == PREPARED;
+                    valid = prev == ACTIVE  || prev == PREPARING || prev == PREPARED || prev == SUSPENDED;
 
                     break;
                 }
 
                 case ROLLING_BACK: {
-                    valid =
-                        prev == ACTIVE || prev == MARKED_ROLLBACK || prev == PREPARING ||
-                            prev == PREPARED || (prev == COMMITTING && local() && !dht());
+                    valid = prev == ACTIVE || prev == MARKED_ROLLBACK || prev == PREPARING ||
+                        prev == PREPARED || prev == SUSPENDED || (prev == COMMITTING && local() && !dht());
+
+                    break;
+                }
+
+                case SUSPENDED: {
+                    valid = prev == ACTIVE;
 
                     break;
                 }
@@ -1126,7 +1088,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             if (valid) {
                 this.state = state;
-                this.timedOut = timedOut;
+
+                if (timedOut)
+                    this.timedOut = true;
 
                 if (log.isDebugEnabled())
                     log.debug("Changed transaction state [prev=" + prev + ", new=" + this.state + ", tx=" + this + ']');
@@ -1138,6 +1102,52 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     log.debug("Invalid transaction state transition [invalid=" + state + ", cur=" + this.state +
                         ", tx=" + this + ']');
             }
+
+            if (valid) {
+                // Seal transactions maps.
+                if (state != ACTIVE && state != SUSPENDED)
+                    seal();
+
+                if (cctx.wal() != null && cctx.tm().logTxRecords() && txNodes != null) {
+                    // Log tx state change to WAL.
+                    if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
+                        BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
+
+                        Map<Short, Collection<Short>> participatingNodes = consistentIdMapper
+                            .mapToCompactIds(topVer, txNodes, baselineTop);
+
+                        TxRecord txRecord = new TxRecord(
+                            state,
+                            nearXidVersion(),
+                            writeVersion(),
+                            participatingNodes
+                        );
+
+                        try {
+                            ptr = cctx.wal().log(txRecord);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to log TxRecord: " + txRecord, e);
+
+                            throw new IgniteException("Failed to log TxRecord: " + txRecord, e);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (valid) {
+            if (ptr != null && (state == COMMITTED || state == ROLLED_BACK))
+                try {
+                    cctx.wal().flush(ptr, false);
+                }
+                catch (IgniteCheckedException e) {
+                    String msg = "Failed to fsync ptr: " + ptr;
+
+                    U.error(log, msg, e);
+
+                    throw new IgniteException(msg, e);
+                }
         }
 
         if (notify) {
@@ -1145,12 +1155,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             if (fut != null)
                 fut.onDone(this);
-        }
-
-        if (valid) {
-            // Seal transactions maps.
-            if (state != ACTIVE)
-                seal();
         }
 
         return valid;
@@ -1190,12 +1194,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isSystemInvalidate() {
+    @Override public final boolean isSystemInvalidate() {
         return sysInvalidate;
     }
 
     /** {@inheritDoc} */
-    @Override public void systemInvalidate(boolean sysInvalidate) {
+    @Override public final void systemInvalidate(boolean sysInvalidate) {
         this.sysInvalidate = sysInvalidate;
     }
 
@@ -1238,13 +1242,15 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @param commit Commit flag.
      * @throws IgniteCheckedException In case of error.
      */
-    protected void sessionEnd(Collection<CacheStoreManager> stores, boolean commit) throws IgniteCheckedException {
+    protected void sessionEnd(final Collection<CacheStoreManager> stores, boolean commit) throws IgniteCheckedException {
         Iterator<CacheStoreManager> it = stores.iterator();
+
+        Set<CacheStore> visited = new GridSetWrapper<>(new IdentityHashMap<CacheStore, Object>());
 
         while (it.hasNext()) {
             CacheStoreManager store = it.next();
 
-            store.sessionEnd(this, commit, !it.hasNext());
+            store.sessionEnd(this, commit, !it.hasNext(), !visited.add(store.store()));
         }
     }
 
@@ -1257,7 +1263,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @throws IgniteCheckedException If batch update failed.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    protected void batchStoreCommit(Iterable<IgniteTxEntry> writeEntries) throws IgniteCheckedException {
+    protected final void batchStoreCommit(Iterable<IgniteTxEntry> writeEntries) throws IgniteCheckedException {
         if (!storeEnabled() || internal() ||
             (!local() && near())) // No need to work with local store at GridNearTxRemote.
             return;
@@ -1276,8 +1282,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         if ((local() || first.isLocal()) && (near() || isWriteToStoreFromDht)) {
             try {
                 if (writeEntries != null) {
-                    Map<Object, IgniteBiTuple<Object, GridCacheVersion>> putMap = null;
-                    List<Object> rmvCol = null;
+                    Map<KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> putMap = null;
+                    List<KeyCacheObject> rmvCol = null;
                     CacheStoreManager writeStore = null;
 
                     boolean skipNonPrimary = near() && isWriteToStoreFromDht;
@@ -1342,7 +1348,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                     new CacheLazyEntry(
                                         cacheCtx,
                                         key,
-                                        e.cached().rawGetOrUnmarshal(true),
+                                        e.cached().rawGet(),
                                         e.keepBinary()),
                                     cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(val, e.keepBinary(), false));
 
@@ -1359,7 +1365,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                 if (putMap == null)
                                     putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
 
-                                putMap.put(key, F.<Object, GridCacheVersion>t(val, ver));
+                                putMap.put(key, F.t(val, ver));
                             }
                         }
                         else if (op == DELETE) {
@@ -1388,7 +1394,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                             if (intercept) {
                                 IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor().onBeforeRemove(
-                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true), e.keepBinary()));
+                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGet(), e.keepBinary()));
 
                                 if (cacheCtx.cancelRemove(t))
                                     continue;
@@ -1456,6 +1462,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     sessionEnd(stores, false);
             }
         }
+        else
+            sessionEnd(stores, true);
     }
 
     /**
@@ -1470,6 +1478,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         IgniteTxEntry txEntry,
         boolean metrics,
         @Nullable GridCacheReturn ret) throws GridCacheEntryRemovedException, IgniteCheckedException {
+        assert txEntry.op() != TRANSFORM || !F.isEmpty(txEntry.entryProcessors()) : txEntry;
+
         GridCacheContext cacheCtx = txEntry.context();
 
         assert cacheCtx != null;
@@ -1493,20 +1503,25 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
             final boolean keepBinary = txEntry.keepBinary();
 
-            CacheObject cacheVal = txEntry.hasValue() ? txEntry.value() :
-                txEntry.cached().innerGet(
+            CacheObject cacheVal;
+
+            if (txEntry.hasValue())
+                cacheVal = txEntry.value();
+            else if (txEntry.hasOldValue())
+                cacheVal = txEntry.oldValue();
+            else {
+                cacheVal = txEntry.cached().innerGet(
                     null,
                     this,
-                    /*swap*/false,
                     /*read through*/false,
                     /*metrics*/metrics,
                     /*event*/recordEvt,
-                    /*temporary*/true,
                     /*subjId*/subjId,
-                    /**closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
+                    /*closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                     resolveTaskName(),
                     null,
                     keepBinary);
+            }
 
             boolean modified = false;
 
@@ -1561,7 +1576,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             if (modified)
                 cacheVal = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(val));
 
-            GridCacheOperation op = modified ? (val == null ? DELETE : UPDATE) : NOOP;
+            GridCacheOperation op = modified ? (cacheVal == null ? DELETE : UPDATE) : NOOP;
 
             if (op == NOOP) {
                 ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
@@ -1806,14 +1821,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public TransactionProxy proxy() {
-        if (proxy == null)
-            proxy = new TransactionProxyImpl(this, cctx, false);
-
-        return proxy;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         return o == this || (o instanceof IgniteTxAdapter && xidVer.equals(((IgniteTxAdapter)o).xidVer));
     }
@@ -1972,21 +1979,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public void commit() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void close() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void rollback() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean activeCachesDeploymentEnabled() {
             return false;
         }
@@ -2017,7 +2009,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public boolean storeUsed() {
+        @Override public boolean storeWriteThrough() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
@@ -2051,22 +2043,12 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public void onRemap(AffinityTopologyVersion topVer) {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
         @Override public void commitError(Throwable e) {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
         /** {@inheritDoc} */
         @Override public boolean empty() {
-            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean markPreparing() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
@@ -2156,11 +2138,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public boolean replicated() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
         @Override public UUID subjectId() {
             return null;
         }
@@ -2173,11 +2150,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public boolean user() {
             return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheWriteSynchronizationMode syncMode() {
-            return null;
         }
 
         /** {@inheritDoc} */
@@ -2258,12 +2230,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public void prepare() throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<IgniteInternalTx> prepareAsync() {
+        @Override public IgniteInternalFuture<?> salvageTx() {
             return null;
         }
 
@@ -2393,16 +2360,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         }
 
         /** {@inheritDoc} */
-        @Override public boolean hasTransforms() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public TransactionProxy proxy() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
             return this == o || o instanceof IgniteInternalTx && xid.equals(((IgniteInternalTx)o).xid());
         }
@@ -2415,6 +2372,44 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(TxShadow.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TxFinishFuture extends GridFutureAdapter<IgniteInternalTx> {
+        /** */
+        @GridToStringInclude
+        private IgniteTxAdapter tx;
+
+        /** */
+        private volatile long completionTime;
+
+        /**
+         * @param tx Transaction being awaited.
+         */
+        private TxFinishFuture(IgniteTxAdapter tx) {
+            this.tx = tx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable IgniteInternalTx res, @Nullable Throwable err) {
+            completionTime = U.currentTimeMillis();
+
+            return super.onDone(res, err);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            long ct = completionTime;
+
+            if (ct == 0)
+                ct = U.currentTimeMillis();
+
+            long duration = ct - tx.startTime();
+
+            return S.toString(TxFinishFuture.class, this, "duration", duration);
         }
     }
 }

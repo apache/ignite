@@ -51,8 +51,8 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
     private static volatile int failOn;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -142,6 +142,7 @@ public class DataStreamerTimeoutTest extends GridCommonAbstractTest {
             try (IgniteDataStreamer ldr = ignite.dataStreamer(CACHE_NAME)) {
                 ldr.timeout(TIMEOUT);
                 ldr.receiver(new TestDataReceiver());
+                ldr.perThreadBufferSize(1);
                 ldr.perNodeBufferSize(1);
                 ldr.perNodeParallelOperations(1);
                 ((DataStreamerImpl)ldr).maxRemapCount(0);

@@ -17,44 +17,121 @@
 
 package org.apache.ignite.yardstick.cache;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.yardstickframework.BenchmarkConfiguration;
 
 /**
  * Ignite benchmark that performs putAll operations.
  */
 public class IgnitePutAllBenchmark extends IgniteCacheAbstractBenchmark<Integer, Object> {
+    /** */
+    private static final Integer PUT_MAPS_KEY = 2048;
+
+    /** */
+    private static final Integer PUT_MAPS_CNT = 256;
+
     /** Affinity mapper. */
     private Affinity<Integer> aff;
+
+    /** */
+    private int srvrCnt;
+
+    /** */
+    private int stripesCnt;
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        aff = ignite().affinity("atomic");
+        aff = ignite().affinity(cache().getName());
+
+        Collection<ClusterNode> nodes = ignite().cluster().forServers().nodes();
+
+        stripesCnt = ignite().cluster().forServers().forRandom().metrics().getTotalCpus();
+
+        srvrCnt = nodes.size();
+
+        IgniteLogger log = ignite().log();
+
+        if (log.isInfoEnabled())
+            log.info("Servers info [srvrsCnt=" + srvrCnt + ", stripesCnt=" + stripesCnt + ']');
     }
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        SortedMap<Integer, Integer> vals = new TreeMap<>();
+        List<Map<Integer, Integer>> putMaps = (List<Map<Integer, Integer>>)ctx.get(PUT_MAPS_KEY);
 
-        ClusterNode node = args.collocated() ? aff.mapKeyToNode(nextRandom(args.range())) : null;
+        if (putMaps == null) {
+            putMaps = new ArrayList<>(PUT_MAPS_CNT);
 
-        for (int i = 0; i < args.batch(); ) {
-            int key = nextRandom(args.range());
-
-            if (args.collocated() && !aff.isPrimary(node, key))
-                continue;
-
-            ++i;
-
-            vals.put(key, key);
+            ctx.put(PUT_MAPS_KEY, putMaps);
         }
+
+        Map<Integer, Integer> vals;
+
+        if (putMaps.size() == PUT_MAPS_CNT)
+            vals = putMaps.get(nextRandom(PUT_MAPS_CNT));
+        else {
+            vals = new TreeMap<>();
+
+            ClusterNode node = args.collocated() ? aff.mapKeyToNode(nextRandom(args.range())) : null;
+
+            Map<ClusterNode, Integer> stripesMap = null;
+
+            if (args.singleStripe())
+                stripesMap = U.newHashMap(srvrCnt);
+
+            for (; vals.size() < args.batch(); ) {
+                int key = nextRandom(args.range());
+
+                if (args.collocated() && !aff.isPrimary(
+                    node,
+                    key))
+                    continue;
+
+                if (args.singleStripe()) {
+                    int part = aff.partition(key);
+
+                    ClusterNode node0 = node != null ? node : aff.mapPartitionToNode(part);
+
+                    Integer stripe0 = stripesMap.get(node0);
+                    int stripe = part % stripesCnt;
+
+                    if (stripe0 != null) {
+                        if (stripe0 != stripe)
+                            continue;
+                    }
+                    else
+                        stripesMap.put(
+                            node0,
+                            stripe);
+                }
+
+                vals.put(
+                    key,
+                    key);
+            }
+
+            putMaps.add(vals);
+
+            if (putMaps.size() == PUT_MAPS_CNT) {
+                IgniteLogger log = ignite().log();
+
+                if (log.isInfoEnabled())
+                    log.info("Put maps set generated.");
+            }
+        }
+
+        IgniteCache<Integer, Object> cache = cacheForOperation();
 
         cache.putAll(vals);
 

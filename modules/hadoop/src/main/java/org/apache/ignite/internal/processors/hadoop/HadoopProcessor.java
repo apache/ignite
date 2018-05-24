@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.HadoopConfiguration;
-import org.apache.ignite.hadoop.mapreduce.IgniteHadoopMapReducePlanner;
+import org.apache.ignite.hadoop.mapreduce.IgniteHadoopWeightedMapReducePlanner;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.counter.HadoopCounters;
@@ -95,8 +95,8 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        super.onKernalStart();
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
+        super.onKernalStart(active);
 
         if (hctx == null)
             return;
@@ -199,6 +199,9 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void validateEnvironment() throws IgniteCheckedException {
+        if (U.majorJavaVersion(U.jdkVersion()) > 8)
+            throw new IgniteCheckedException("Java version 9 and above is not supported.");
+
         // Perform some static checks as early as possible, so that any recoverable exceptions are thrown here.
         try {
             HadoopLocations loc = HadoopClasspathUtils.locations();
@@ -243,7 +246,7 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
      */
     private void initializeDefaults(HadoopConfiguration cfg) {
         if (cfg.getMapReducePlanner() == null)
-            cfg.setMapReducePlanner(new IgniteHadoopMapReducePlanner());
+            cfg.setMapReducePlanner(new IgniteHadoopWeightedMapReducePlanner());
     }
 
     /** {@inheritDoc} */

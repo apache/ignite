@@ -21,14 +21,13 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Count down latch value.
  */
-public final class GridCacheCountDownLatchValue implements GridCacheInternal, Externalizable, Cloneable {
+public final class GridCacheCountDownLatchValue extends VolatileAtomicDataStructureValue implements Cloneable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -43,13 +42,17 @@ public final class GridCacheCountDownLatchValue implements GridCacheInternal, Ex
     /** Auto delete flag. */
     private boolean autoDel;
 
+    /** */
+    private long gridStartTime;
+
     /**
      * Constructor.
      *
      * @param cnt Initial count.
      * @param del {@code True} to auto delete on count down to 0.
+     * @param gridStartTime Cluster start time.
      */
-    public GridCacheCountDownLatchValue(int cnt, boolean del) {
+    public GridCacheCountDownLatchValue(int cnt, boolean del, long gridStartTime) {
         assert cnt >= 0;
 
         this.cnt = cnt;
@@ -57,6 +60,8 @@ public final class GridCacheCountDownLatchValue implements GridCacheInternal, Ex
         initCnt = cnt;
 
         autoDel = del;
+
+        this.gridStartTime = gridStartTime;
     }
 
     /**
@@ -64,6 +69,16 @@ public final class GridCacheCountDownLatchValue implements GridCacheInternal, Ex
      */
     public GridCacheCountDownLatchValue() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStructureType type() {
+        return DataStructureType.COUNT_DOWN_LATCH;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long gridStartTime() {
+        return gridStartTime;
     }
 
     /**
@@ -104,6 +119,7 @@ public final class GridCacheCountDownLatchValue implements GridCacheInternal, Ex
         out.writeInt(cnt);
         out.writeInt(initCnt);
         out.writeBoolean(autoDel);
+        out.writeLong(gridStartTime);
     }
 
     /** {@inheritDoc} */
@@ -111,6 +127,7 @@ public final class GridCacheCountDownLatchValue implements GridCacheInternal, Ex
         cnt = in.readInt();
         initCnt = in.readInt();
         autoDel = in.readBoolean();
+        gridStartTime = in.readLong();
     }
 
     /** {@inheritDoc} */

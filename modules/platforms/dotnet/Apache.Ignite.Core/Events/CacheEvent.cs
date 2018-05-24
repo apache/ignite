@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Events
 {
     using System;
-    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
@@ -79,7 +78,7 @@ namespace Apache.Ignite.Core.Events
             _isNear = r.ReadBoolean();
             _eventNode = ReadNode(r);
             _key = r.ReadObject<object>();
-            _xid = IgniteGuid.Read(r);
+            _xid = r.ReadObject<IgniteGuid?>();
             _newValue = r.ReadObject<object>();
             _oldValue = r.ReadObject<object>();
             _hasOldValue = r.ReadBoolean();
@@ -118,13 +117,6 @@ namespace Apache.Ignite.Core.Events
         /// ID of surrounding cache cache transaction or null if there is no surrounding transaction. 
         /// </summary>
         public IgniteGuid? Xid { get { return _xid; } }
-
-        /// <summary>
-        /// ID of the lock if held or null if no lock held. 
-        /// </summary>
-        [Obsolete("LockId is no longer provided. This property is always null.")]
-        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Compatibility")]
-        public object LockId { get { return null; } }
 
         /// <summary>
         /// Gets new value for this event. 

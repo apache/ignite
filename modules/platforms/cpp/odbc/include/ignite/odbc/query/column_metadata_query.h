@@ -59,7 +59,7 @@ namespace ignite
                  *
                  * @return True on success.
                  */
-                virtual SqlResult Execute();
+                virtual SqlResult::Type Execute();
 
                 /**
                  * Get column metadata.
@@ -73,7 +73,7 @@ namespace ignite
                  *
                  * @return Operation result.
                  */
-                virtual SqlResult FetchNextRow(app::ColumnBindingMap& columnBindings);
+                virtual SqlResult::Type FetchNextRow(app::ColumnBindingMap& columnBindings);
 
                 /**
                  * Get data of the specified column in the result set.
@@ -82,14 +82,14 @@ namespace ignite
                  * @param buffer Buffer to put column data to.
                  * @return Operation result.
                  */
-                virtual SqlResult GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer);
+                virtual SqlResult::Type GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer);
 
                 /**
                  * Close query.
                  *
                  * @return True on success.
                  */
-                virtual SqlResult Close();
+                virtual SqlResult::Type Close();
 
                 /**
                  * Check if data is available.
@@ -105,6 +105,13 @@ namespace ignite
                  */
                 virtual int64_t AffectedRows() const;
 
+                /**
+                 * Move to the next result set.
+                 *
+                 * @return Operatoin result.
+                 */
+                virtual SqlResult::Type NextResultSet();
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(ColumnMetadataQuery);
 
@@ -113,7 +120,7 @@ namespace ignite
                  *
                  * @return Operation result.
                  */
-                SqlResult MakeRequestGetColumnsMeta();
+                SqlResult::Type MakeRequestGetColumnsMeta();
 
                 /** Connection associated with the statement. */
                 Connection& connection;
@@ -129,6 +136,9 @@ namespace ignite
 
                 /** Query executed. */
                 bool executed;
+
+                /** Fetched flag. */
+                bool fetched;
 
                 /** Fetched metadata. */
                 meta::ColumnMetaVector meta;

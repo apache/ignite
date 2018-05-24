@@ -17,11 +17,21 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CyclicBarrier;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.GridAbstractCommunicationSelfTest;
@@ -85,6 +95,67 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
         }
     }
 
+    /**
+     *
+     */
+    public void testCheckConnection1() {
+        for (int i = 0; i < 100; i++) {
+            for (Map.Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
+                TcpCommunicationSpi spi = (TcpCommunicationSpi)entry.getValue();
+
+                List<ClusterNode> checkNodes = new ArrayList<>(nodes);
+
+                assert checkNodes.size() > 1;
+
+                IgniteFuture<BitSet> fut = spi.checkConnection(checkNodes);
+
+                BitSet res = fut.get();
+
+                for (int n = 0; n < checkNodes.size(); n++)
+                    assertTrue(res.get(n));
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCheckConnection2() throws Exception {
+        final int THREADS = spis.size();
+
+        final CyclicBarrier b = new CyclicBarrier(THREADS);
+
+        List<IgniteInternalFuture> futs = new ArrayList<>();
+
+        for (Map.Entry<UUID, CommunicationSpi<Message>> entry : spis.entrySet()) {
+            final TcpCommunicationSpi spi = (TcpCommunicationSpi)entry.getValue();
+
+            futs.add(GridTestUtils.runAsync(new Callable() {
+                @Override public Object call() throws Exception {
+                    List<ClusterNode> checkNodes = new ArrayList<>(nodes);
+
+                    assert checkNodes.size() > 1;
+
+                    b.await();
+
+                    for (int i = 0; i < 100; i++) {
+                        IgniteFuture<BitSet> fut = spi.checkConnection(checkNodes);
+
+                        BitSet res = fut.get();
+
+                        for (int n = 0; n < checkNodes.size(); n++)
+                            assertTrue(res.get(n));
+                    }
+
+                    return null;
+                }
+            }));
+        }
+
+        for (IgniteInternalFuture f : futs)
+            f.get();
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -111,8 +182,8 @@ abstract class GridTcpCommunicationSpiAbstractTest extends GridAbstractCommunica
                 if (client0 == null)
                     return;
 
-                info("Check failed for SPI [grid=" +
-                    GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "gridName") +
+                info("Check failed for SPI [igniteInstanceName=" +
+                    GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "igniteInstanceName") +
                     ", client=" + client0 +
                     ", spi=" + spi + ']');
 

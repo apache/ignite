@@ -54,31 +54,6 @@
     -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!--
-            Configure caches where IGFS will store data.
-        -->
-        <property name="cacheConfiguration">
-            <list>
-                <!--
-                    Configure metadata cache where file system structure will be stored. It must be TRANSACTIONAL,
-                    and must have backups to maintain file system consistency in case of node crash.
-                -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="igfs-meta"/>
-                    <property name="cacheMode" value="REPLICATED"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                </bean>
-
-                <!--
-                    Configure data cache where file's data will be stored.
-                -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="igfs-data"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                </bean>
-            </list>
-        </property>
-
-        <!--
             This port will be used by Apache Hadoop client to connect to Ignite node as if it was a job tracker.
         -->
         <property name="connectorConfiguration">
@@ -95,10 +70,6 @@
                 <bean class="org.apache.ignite.configuration.FileSystemConfiguration">
                     <!-- IGFS name you will use to access IGFS through Hadoop API. -->
                     <property name="name" value="igfs"/>
-
-                    <!-- Caches with these names must be configured. -->
-                    <property name="metaCacheName" value="igfs-meta"/>
-                    <property name="dataCacheName" value="igfs-data"/>
 
                     <!-- Configure TCP endpoint for communication with the file system instance. -->
                     <property name="ipcEndpointConfiguration">

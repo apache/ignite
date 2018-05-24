@@ -178,7 +178,7 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
 
         HadoopJobId jobId = new HadoopJobId(UUID.randomUUID(), 1);
 
-        IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
+        IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration(), null));
 
         fut.get();
     }
@@ -384,8 +384,8 @@ public class HadoopTeraSortTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration igc = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration igc = super.getConfiguration(igniteInstanceName);
 
         HadoopConfiguration hc = createHadoopConfiguration();
 

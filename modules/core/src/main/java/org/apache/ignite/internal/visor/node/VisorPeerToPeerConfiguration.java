@@ -17,18 +17,21 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactArray;
 
 /**
  * Data transfer object for node P2P configuration properties.
  */
-public class VisorPeerToPeerConfiguration implements Serializable, LessNamingBean {
+public class VisorPeerToPeerConfiguration extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -39,41 +42,59 @@ public class VisorPeerToPeerConfiguration implements Serializable, LessNamingBea
     private int p2pMissedResCacheSize;
 
     /** List of packages from the system classpath that need to be loaded from task originating node. */
-    private String p2pLocClsPathExcl;
+    private List<String> p2pLocClsPathExcl;
 
     /**
-     * @param c Grid configuration.
-     * @return Data transfer object for node P2P configuration properties.
+     * Default constructor.
      */
-    public static VisorPeerToPeerConfiguration from(IgniteConfiguration c) {
-        VisorPeerToPeerConfiguration cfg = new VisorPeerToPeerConfiguration();
+    public VisorPeerToPeerConfiguration() {
+        // No-op.
+    }
 
-        cfg.p2pEnabled = c.isPeerClassLoadingEnabled();
-        cfg.p2pMissedResCacheSize = c.getPeerClassLoadingMissedResourcesCacheSize();
-        cfg.p2pLocClsPathExcl = compactArray(c.getPeerClassLoadingLocalClassPathExclude());
-
-        return cfg;
+    /**
+     * Create data transfer object for node P2P configuration properties.
+     *
+     * @param c Grid configuration.
+     */
+    public VisorPeerToPeerConfiguration(IgniteConfiguration c) {
+        p2pEnabled = c.isPeerClassLoadingEnabled();
+        p2pMissedResCacheSize = c.getPeerClassLoadingMissedResourcesCacheSize();
+        p2pLocClsPathExcl = Arrays.asList(c.getPeerClassLoadingLocalClassPathExclude());
     }
 
     /**
      * @return Whether peer-to-peer class loading is enabled.
      */
-    public boolean p2pEnabled() {
+    public boolean isPeerClassLoadingEnabled() {
         return p2pEnabled;
     }
 
     /**
      * @return Missed resource cache size.
      */
-    public int p2pMissedResponseCacheSize() {
+    public int getPeerClassLoadingMissedResourcesCacheSize() {
         return p2pMissedResCacheSize;
     }
 
     /**
      * @return List of packages from the system classpath that need to be loaded from task originating node.
      */
-    @Nullable public String p2pLocalClassPathExclude() {
+    @Nullable public List<String> getPeerClassLoadingLocalClassPathExclude() {
         return p2pLocClsPathExcl;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        out.writeBoolean(p2pEnabled);
+        out.writeInt(p2pMissedResCacheSize);
+        U.writeCollection(out, p2pLocClsPathExcl);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        p2pEnabled = in.readBoolean();
+        p2pMissedResCacheSize = in.readInt();
+        p2pLocClsPathExcl = U.readList(in);
     }
 
     /** {@inheritDoc} */

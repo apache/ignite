@@ -51,8 +51,8 @@ public class IgniteClientReconnectStreamerTest extends IgniteClientReconnectAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<Integer, Integer>(CACHE_NAME)
             .setAtomicityMode(ATOMIC)
@@ -71,7 +71,7 @@ public class IgniteClientReconnectStreamerTest extends IgniteClientReconnectAbst
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         final IgniteCache<Object, Object> srvCache = srv.cache(CACHE_NAME);
 
@@ -135,7 +135,7 @@ public class IgniteClientReconnectStreamerTest extends IgniteClientReconnectAbst
 
         assertTrue(client.cluster().localNode().isClient());
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
         final IgniteCache<Object, Object> srvCache = srv.cache(CACHE_NAME);
 
@@ -204,7 +204,7 @@ public class IgniteClientReconnectStreamerTest extends IgniteClientReconnectAbst
      */
     private void checkStreamerClosed(IgniteDataStreamer<Integer, Integer> streamer) {
         try {
-            streamer.addData(100, 100);
+            streamer.addData(100, 100).get();
 
             fail();
         }

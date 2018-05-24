@@ -18,16 +18,24 @@
 package org.apache.ignite.internal.processors.rest.handlers.redis;
 
 import java.util.Collection;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisNioListener;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisProtocolParser;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.ECHO;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.PING;
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.QUIT;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand.SELECT;
 
 /**
  * Redis connection handler.
@@ -37,11 +45,27 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
     private static final Collection<GridRedisCommand> SUPPORTED_COMMANDS = U.sealList(
         PING,
         QUIT,
-        ECHO
+        ECHO,
+        SELECT
     );
+
+    /** Grid context. */
+    private final GridKernalContext ctx;
 
     /** PONG response to PING. */
     private static final String PONG = "PONG";
+
+    /**
+     * Handler constructor.
+     *
+     * @param log Logger to use.
+     * @param hnd Rest handler.
+     * @param ctx Context.
+     */
+    public GridRedisConnectionCommandHandler(final IgniteLogger log, final GridRestProtocolHandler hnd,
+        GridKernalContext ctx) {
+        this.ctx = ctx;
+    }
 
     /** {@inheritDoc} */
     @Override public Collection<GridRedisCommand> supportedCommands() {
@@ -49,7 +73,7 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridRedisMessage> handleAsync(GridRedisMessage msg) {
+    @Override public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg) {
         assert msg != null;
 
         switch (msg.command()) {
@@ -66,6 +90,25 @@ public class GridRedisConnectionCommandHandler implements GridRedisCommandHandle
             case ECHO:
                 msg.setResponse(GridRedisProtocolParser.toSimpleString(msg.key()));
 
+                return new GridFinishedFuture<>(msg);
+
+            case SELECT:
+                String cacheIdx = msg.key();
+
+                if (F.isEmpty(cacheIdx))
+                    msg.setResponse(GridRedisProtocolParser.toGenericError("No cache index specified"));
+                else {
+                    String cacheName = GridRedisMessage.CACHE_NAME_PREFIX + "-" + cacheIdx;
+
+                    CacheConfiguration ccfg = ctx.cache().cacheConfiguration(GridRedisMessage.DFLT_CACHE_NAME);
+                    ccfg.setName(cacheName);
+
+                    ctx.grid().getOrCreateCache(ccfg);
+
+                    ses.addMeta(GridRedisNioListener.CONN_CTX_META_KEY, cacheName);
+
+                    msg.setResponse(GridRedisProtocolParser.oKString());
+                }
                 return new GridFinishedFuture<>(msg);
         }
 

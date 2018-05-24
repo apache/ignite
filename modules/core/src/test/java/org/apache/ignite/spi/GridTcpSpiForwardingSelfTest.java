@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.BasicAddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteCallable;
@@ -76,7 +77,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "deprecation"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
         if (ipFinderUseLocPorts)
@@ -89,20 +90,20 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         final int locPort;
         final int commLocPort;
 
-        if (getTestGridName(0).equals(gridName)) {
+        if (getTestIgniteInstanceName(0).equals(igniteInstanceName)) {
             locPort = locPort1;
             commLocPort = commLocPort1;
         }
-        else if (getTestGridName(1).equals(gridName)) {
+        else if (getTestIgniteInstanceName(1).equals(igniteInstanceName)) {
             locPort = locPort2;
             commLocPort = commLocPort2;
         }
         else
-            throw new IllegalArgumentException("Unknown grid name");
+            throw new IllegalArgumentException("Unknown Ignite instance name");
 
         spi.setIpFinder(ipFinder);
 
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         spi.setLocalPort(locPort);
         spi.setLocalPortRange(1);

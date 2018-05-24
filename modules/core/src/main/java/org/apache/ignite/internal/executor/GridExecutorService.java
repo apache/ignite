@@ -337,8 +337,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
      *     }
      * </pre>
      */
-    @Override
-    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+    @Override public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
         throws InterruptedException {
         A.notNull(tasks, "tasks != null");
         A.ensure(timeout >= 0, "timeout >= 0");

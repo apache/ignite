@@ -117,8 +117,8 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     /** Local node ID. */
     private UUID locNodeId;
 
-    /** Grid name. */
-    private String gridName;
+    /** Ignite instance name. */
+    private String igniteInstanceName;
 
     /** Work directory. */
     private final String workDir;
@@ -154,13 +154,13 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
      *
      * @param log Log.
      * @param locNodeId Node id.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Ignite instance name.
      * @param workDir Work directory.
      */
-    public IpcSharedMemoryServerEndpoint(IgniteLogger log, UUID locNodeId, String gridName, String workDir) {
+    public IpcSharedMemoryServerEndpoint(IgniteLogger log, UUID locNodeId, String igniteInstanceName, String workDir) {
         this.log = log;
         this.locNodeId = locNodeId;
-        this.gridName = gridName;
+        this.igniteInstanceName = igniteInstanceName;
         this.workDir = workDir;
     }
 
@@ -207,7 +207,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
                 "in use?): " + port, e);
         }
 
-        gcWorker = new GcWorker(gridName, "ipc-shmem-gc", log);
+        gcWorker = new GcWorker(igniteInstanceName, "ipc-shmem-gc", log);
 
         new IgniteThread(gcWorker).start();
 
@@ -355,12 +355,12 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     private void injectResources(Ignite ignite){
         if (ignite != null) {
             // Inject resources.
-            gridName = ignite.name();
+            igniteInstanceName = ignite.name();
             locNodeId = ignite.configuration().getNodeId();
         }
         else {
             // Cleanup resources.
-            gridName = null;
+            igniteInstanceName = null;
             locNodeId = null;
         }
     }
@@ -537,12 +537,12 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
      */
     private class GcWorker extends GridWorker {
         /**
-         * @param gridName Grid name.
+         * @param igniteInstanceName Ignite instance name.
          * @param name Name.
          * @param log Log.
          */
-        protected GcWorker(@Nullable String gridName, String name, IgniteLogger log) {
-            super(gridName, name, log);
+        protected GcWorker(@Nullable String igniteInstanceName, String name, IgniteLogger log) {
+            super(igniteInstanceName, name, log);
         }
 
         /** {@inheritDoc} */

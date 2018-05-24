@@ -52,8 +52,8 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -130,7 +130,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
+            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             cache.get(new IncorrectCacheKey(0));
 
@@ -150,7 +150,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
+            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             cache.put(new IncorrectCacheKey(0), "test_value");
 
@@ -170,7 +170,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
+            IgniteCache<IncorrectCacheKey, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             cache.remove(new IncorrectCacheKey(0));
 

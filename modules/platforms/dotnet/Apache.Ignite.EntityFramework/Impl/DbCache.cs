@@ -252,7 +252,7 @@ namespace Apache.Ignite.EntityFramework.Impl
         private IDictionary<string, long> GetEntitySetVersions(ICollection<EntitySetBase> sets)
         {
             // LINQ Select allocates less that a new List<> will do.
-            var versions = _metaCache.GetAll(sets.Select(x => x.Name));
+            var versions = _metaCache.GetAll(sets.Select(x => x.Name)).ToDictionary(x => x.Key, x => x.Value);
 
             // Some versions may be missing, fill up with 0.
             foreach (var set in sets)

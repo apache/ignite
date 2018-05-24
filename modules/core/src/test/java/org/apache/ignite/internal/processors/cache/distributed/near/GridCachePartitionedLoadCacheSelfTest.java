@@ -50,8 +50,8 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -98,17 +98,12 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
 
             IgniteCache<Integer, String> cache = jcache(0);
 
-            if (async) {
-                IgniteCache<Integer, String> asyncCache = cache.withAsync();
-
-                asyncCache.localLoadCache(null, PUT_CNT);
-
-                asyncCache.future().get();
-            }
+            if (async)
+                cache.localLoadCacheAsync(null, PUT_CNT).get();
             else
                 cache.localLoadCache(null, PUT_CNT);
 
-            Affinity<Integer> aff = grid(0).affinity(null);
+            Affinity<Integer> aff = grid(0).affinity(DEFAULT_CACHE_NAME);
 
             int[] parts = aff.allPartitions(grid(0).localNode());
 

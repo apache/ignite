@@ -55,8 +55,8 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
@@ -93,8 +93,6 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         GridTestUtils.setFieldValue(null, TxDeadlockDetection.class, "DEADLOCK_TIMEOUT",
             getInteger(IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, 60000));
     }
@@ -108,6 +106,8 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoHangsPessimistic() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7324");
+
         assertTrue(grid(0).context().cache().context().tm().deadlockDetectionEnabled());
 
         doTest(PESSIMISTIC);
