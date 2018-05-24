@@ -22,9 +22,11 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/ignition.h>
+
+#include <ignite/thin/ignite_client_configuration.h>
 #include <ignite/thin/ignite_client.h>
+
 #include <test_utils.h>
-#include "ignite/thin/ignite_client_configuration.h"
 
 using namespace ignite::thin;
 using namespace boost::unit_test;
