@@ -46,7 +46,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -137,6 +139,67 @@ public class GridCacheFullTextQuerySelfTest extends GridCommonAbstractTest {
      */
     public void testTextQuery() throws Exception {
         checkTextQuery(false, true);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testLargeDataIndexing() throws Exception {
+        final Random rnd = new Random();
+
+        final int dictionarySize = 10_000;
+
+        int sentenceSize = 5_000;
+
+        final IgniteEx ignite = grid(0);
+
+        String[] dictionary = generateDictionary(rnd, dictionarySize);
+
+        IgniteInternalCache<Integer, Person> cache = ignite.cachex(PERSON_CACHE);
+
+        for(int i=0; i<10_000;i++) {
+            String sentence = generateSencence(rnd, sentenceSize, dictionary);
+
+            cache.put(i, new Person(sentence, i));
+        }
+
+        clearCache(ignite);
+    }
+
+    /**
+     * Generate random sentence from dictionary.
+     * @param rnd random instance.
+     * @param sentenceSize number of words in sentence.
+     * @param dictionary words collection.
+     * @return string of random word sequence.
+     */
+    private String generateSencence(Random rnd, int sentenceSize, @NotNull String[] dictionary) {
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < sentenceSize; i++) {
+            int idx = rnd.nextInt(dictionary.length);
+
+            sb.append(dictionary[idx]);//.append(' ');
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Generate collection of random words.
+     * @param rnd random instance.
+     * @param dictionarySize number of words to be generated.
+     * @return string of random word sequence.
+     */
+    private String[] generateDictionary(Random rnd, int dictionarySize) {
+        String[] dictionary;
+        Set<String> words = new HashSet<>();
+
+        for (int i = 0; i < dictionarySize; i++)
+            words.add(GridTestUtils.randomString(rnd, 15));
+
+        dictionary = words.toArray(new String[0]);
+        return dictionary;
     }
 
     /**
