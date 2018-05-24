@@ -2066,24 +2066,24 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         GridDhtPartitionTopology top = null;
 
-        if (firstClientReq) {
-            assert CU.clientNode(nearNode);
-
-            top = topology();
-
-            top.readLock();
-
-            GridDhtTopologyFuture topFut = top.topologyVersionFuture();
-
-            if (!topFut.isDone() || !topFut.topologyVersion().equals(topVer)) {
-                // TODO IGNITE-7164 Wait for topology change, remap client TX in case affinity was changed.
-                top.readUnlock();
-
-                throw new ClusterTopologyException("Topology was changed. Please retry on stable topology.");
-            }
-        }
-
         if (tx == null) {
+            if (firstClientReq) {
+                assert CU.clientNode(nearNode);
+
+                top = topology();
+
+                top.readLock();
+
+                GridDhtTopologyFuture topFut = top.topologyVersionFuture();
+
+                if (!topFut.isDone() || !topFut.topologyVersion().equals(topVer)) {
+                    // TODO IGNITE-7164 Wait for topology change, remap client TX in case affinity was changed.
+                    top.readUnlock();
+
+                    throw new ClusterTopologyException("Topology was changed. Please retry on stable topology.");
+                }
+            }
+
             try {
                 tx = new GridDhtTxLocal(
                     ctx.shared(),

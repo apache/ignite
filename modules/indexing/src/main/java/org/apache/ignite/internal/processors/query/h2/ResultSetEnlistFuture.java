@@ -97,16 +97,6 @@ public final class ResultSetEnlistFuture extends GridDhtTxQueryEnlistAbstractFut
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean updateLockFuture() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void clearLockFuture() {
-        // No-op.;
-    }
-
     @Override public GridCacheOperation operation() {
         return GridCacheOperation.READ;
     }

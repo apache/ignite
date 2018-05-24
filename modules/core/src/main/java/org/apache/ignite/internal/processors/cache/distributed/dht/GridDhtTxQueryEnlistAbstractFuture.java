@@ -263,6 +263,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
             else if (fut != null) {
                 // Wait for previous future.
                 assert fut instanceof GridNearTxAbstractEnlistFuture
+                    || fut instanceof CompoundLockFuture
                     || fut instanceof GridNearTxSelectForUpdateFuture : fut;
 
                 // Terminate this future if parent future is terminated by rollback.
@@ -895,7 +896,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends ExceptionAwar
      */
     @NotNull protected IgniteTxTimeoutCheckedException timeoutException() {
         return new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
-            "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']');
+            "transaction [timeout=" + timeout + ", tx=" + tx + ']');
     }
 
     /**

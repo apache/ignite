@@ -48,10 +48,12 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.CompoundLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsReservation;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
@@ -80,11 +82,13 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRespo
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2SelectForUpdateTxDetails;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -498,7 +502,19 @@ public class GridMapQueryExecutor {
         else
             tx = null;
 
-        AtomicInteger runCntr = txReq != null && segments > 1 ? new AtomicInteger(segments) : null;
+        AtomicInteger runCntr;
+        CompoundLockFuture lockFut;
+
+        if (txReq != null && segments > 1) {
+            runCntr = new AtomicInteger(segments);
+            lockFut = new CompoundLockFuture(segments, tx);
+
+            lockFut.init();
+        }
+        else {
+            runCntr = null;
+            lockFut = null;
+        }
 
         for (int i = 1; i < segments; i++) {
             assert !F.isEmpty(cacheIds);
@@ -525,6 +541,7 @@ public class GridMapQueryExecutor {
                     req.mvccSnapshot(),
                     tx,
                     txReq,
+                    lockFut,
                     runCntr);
             }
             else {
@@ -550,6 +567,7 @@ public class GridMapQueryExecutor {
                                 req.mvccSnapshot(),
                                 tx,
                                 txReq,
+                                lockFut,
                                 runCntr);
 
                             return null;
@@ -578,7 +596,7 @@ public class GridMapQueryExecutor {
             req.mvccSnapshot(),
             tx,
             txReq,
-            runCntr);
+            lockFut, runCntr);
     }
 
     /**
@@ -597,6 +615,7 @@ public class GridMapQueryExecutor {
      * @param mvccSnapshot MVCC snapshot.
      * @param tx Transaction.
      * @param txDetails TX details, if it's a {@code FOR UPDATE} request, or {@code null}.
+     * @param lockFut Lock future.
      * @param runCntr Counter which counts remaining queries in case segmented index is used.
      */
     private void onQueryRequest0(
@@ -619,6 +638,7 @@ public class GridMapQueryExecutor {
         @Nullable final MvccSnapshot mvccSnapshot,
         @Nullable final GridDhtTxLocalAdapter tx,
         @Nullable final GridH2SelectForUpdateTxDetails txDetails,
+        @Nullable final CompoundLockFuture lockFut,
         @Nullable final AtomicInteger runCntr) {
         MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
 
@@ -654,6 +674,7 @@ public class GridMapQueryExecutor {
                         mvccSnapshot,
                         tx,
                         txDetails,
+                        lockFut,
                         runCntr);
                 }
             });
@@ -778,6 +799,9 @@ public class GridMapQueryExecutor {
                                 rs
                             );
 
+                            if (lockFut != null)
+                                lockFut.register(enlistFut);
+
                             enlistFut.init();
 
                             ResultSetEnlistFuture.ResultSetEnlistFutureResult r = enlistFut.get();
@@ -815,13 +839,33 @@ public class GridMapQueryExecutor {
                         throw new QueryCancelledException();
                     }
 
-                    if (forUpdate && tx.dht() && (runCntr == null || runCntr.decrementAndGet() == 0)) {
-                        if (removeMapping = tx.empty())
-                            tx.rollbackAsync().get();
+                    if (forUpdate) {
+                        if (tx.dht() && (runCntr == null || runCntr.decrementAndGet() == 0)) {
+                            if (removeMapping = tx.empty())
+                                tx.rollbackAsync().get();
+                        }
                     }
 
                     // Send the first page.
-                    sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping);
+                    if (lockFut == null)
+                        sendNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping);
+                    else {
+                        GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping);
+
+                        lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
+                            @Override public void apply(IgniteInternalFuture<Void> future) {
+                                try {
+                                    if (node.isLocal())
+                                        h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+                                    else
+                                        ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
+                                }
+                                catch (Exception e) {
+                                    U.error(log, e);
+                                }
+                            }
+                        });
+                    }
 
                     qryIdx++;
                 }
@@ -1086,16 +1130,17 @@ public class GridMapQueryExecutor {
      * @param segmentId Index segment ID.
      * @param pageSize Page size.
      * @param removeMapping Remove mapping flag.
+     * @return Next page.
+     * @throws IgniteCheckedException If failed.
      */
-    @SuppressWarnings("unchecked")
-    private void sendNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
-        int pageSize, boolean removeMapping) {
+    private GridQueryNextPageResponse prepareNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
+        int pageSize, boolean removeMapping) throws IgniteCheckedException {
         MapQueryResult res = qr.result(qry);
 
         assert res != null;
 
         if (res.closed())
-            return;
+            return null;
 
         int page = res.page();
 
@@ -1115,23 +1160,40 @@ public class GridMapQueryExecutor {
             }
         }
 
+        boolean loc = node.isLocal();
+
+        // In case of SELECT FOR UPDATE the last columns is _KEY,
+        // we can't retrieve them for an arbitrary row otherwise.
+        int colsCnt = !qr.isForUpdate() ? res.columnCount() : res.columnCount() - 1;
+
+        GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.queryRequestId(), segmentId, qry, page,
+            page == 0 ? res.rowCount() : -1,
+            colsCnt,
+            loc ? null : toMessages(rows, new ArrayList<>(res.columnCount()), colsCnt),
+            loc ? rows : null,
+            last);
+
+        msg.removeMapping(removeMapping);
+
+        return msg;
+    }
+
+    /**
+     * @param nodeRess Results.
+     * @param node Node.
+     * @param qr Query results.
+     * @param qry Query.
+     * @param segmentId Index segment ID.
+     * @param pageSize Page size.
+     * @param removeMapping Remove mapping flag.
+     */
+    @SuppressWarnings("unchecked")
+    private void sendNextPage(MapNodeResults nodeRess, ClusterNode node, MapQueryResults qr, int qry, int segmentId,
+        int pageSize, boolean removeMapping) {
         try {
-            boolean loc = node.isLocal();
+            GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qry, segmentId, pageSize, removeMapping);
 
-            // In case of SELECT FOR UPDATE the last columns is _KEY,
-            // we can't retrieve them for an arbitrary row otherwise.
-            int colsCnt = !qr.isForUpdate() ? res.columnCount() : res.columnCount() - 1;
-
-            GridQueryNextPageResponse msg = new GridQueryNextPageResponse(qr.queryRequestId(), segmentId, qry, page,
-                page == 0 ? res.rowCount() : -1,
-                colsCnt,
-                loc ? null : toMessages(rows, new ArrayList<>(res.columnCount()), colsCnt),
-                loc ? rows : null,
-                last);
-
-            msg.removeMapping(removeMapping);
-
-            if (loc)
+            if (node.isLocal())
                 h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
             else
                 ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
