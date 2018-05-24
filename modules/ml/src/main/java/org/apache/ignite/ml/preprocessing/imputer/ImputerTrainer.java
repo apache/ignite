@@ -26,21 +26,19 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 
 /**
- * Trainer of the normalization preprocessor.
+ * Trainer of the imputer preprocessor.
+ * The imputer fills the missed values according the imputing strategy (default: mean value for each feature).
+ * It supports double values in features only.
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
 public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[], double[]> {
-    /** Threshold. */
-    private ImputingStrategy imputingStrategy = ImputingStrategy.MEAN;
-
-    /** Throw an exception on invalid data if false or miss otherwise. */
-    private boolean isMissingInvalidData = true;
+    /** The imputing strategy. */
+    private ImputingStrategy imputingStgy = ImputingStrategy.MEAN;
 
     /** {@inheritDoc} */
     @Override public ImputerPreprocessor<K, V> fit(DatasetBuilder<K, V> datasetBuilder,
@@ -56,7 +54,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
                     UpstreamEntry<K, V> entity = upstream.next();
                     double[] row = basePreprocessor.apply(entity.getKey(), entity.getValue());
 
-                    switch (imputingStrategy) {
+                    switch (imputingStgy) {
                         case MEAN:
                             sums = calculateTheSums(row, sums);
                             counts = calculateTheCounts(row, counts);
@@ -64,36 +62,35 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
                         case MOST_FREQUENT:
                             valuesByFreq = calculateFrequencies(row, valuesByFreq);
                             break;
+                        default: throw new UnsupportedOperationException("The chosen strategy is not supported");
                     }
                 }
 
-                ImputerPartitionData partData = null;
+                ImputerPartitionData partData;
 
-                switch (imputingStrategy) {
+                switch (imputingStgy) {
                     case MEAN:
                         partData = new ImputerPartitionData().withSums(sums).withCounts(counts);
                         break;
                     case MOST_FREQUENT:
                         partData = new ImputerPartitionData().withValuesByFrequency(valuesByFreq);
                         break;
-                    case EMPTY:
-                        break;
+                    default: throw new UnsupportedOperationException("The chosen strategy is not supported");
                 }
                 return partData;
             }
         )) {
 
-            double[] imputingValues = null;
+            double[] imputingValues;
 
-            switch (imputingStrategy) {
+            switch (imputingStgy) {
                 case MEAN:
-                    imputingValues = calculateImputingValuesBySums(dataset);
+                    imputingValues = calculateImputingValuesBySumsAndCounts(dataset);
                     break;
                 case MOST_FREQUENT:
                     imputingValues = calculateImputingValuesByFrequencies(dataset);
                     break;
-                case EMPTY:
-                    break;
+                default: throw new UnsupportedOperationException("The chosen strategy is not supported");
             }
 
             return new ImputerPreprocessor<>(imputingValues, basePreprocessor);
@@ -104,6 +101,12 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
         }
     }
 
+    /**
+     * Calculates the imputing values by frequencies keeping in the given dataset.
+     *
+     * @param dataset The dataset of frequencies for each feature aggregated in each partition..
+     * @return Most frequent value for each feature.
+     */
     private double[] calculateImputingValuesByFrequencies(
         Dataset<EmptyContext, ImputerPartitionData> dataset) {
         Map<Double, Integer>[] frequencies = dataset.compute(
@@ -121,7 +124,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
                     int finalI = i;
                     a[i].forEach((k, v) -> b[finalI].merge(k, v, (f1, f2) -> f1 + f2));
                 }
-                return a;
+                return b;
             }
         );
 
@@ -139,7 +142,13 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
         return res;
     }
 
-    private double[] calculateImputingValuesBySums(Dataset<EmptyContext, ImputerPartitionData> dataset) {
+    /**
+     * Calculates the imputing values by sums and counts keeping in the given dataset.
+     *
+     * @param dataset The dataset with sums and counts for each feature aggregated in each partition.
+     * @return The mean value for each feature.
+     */
+    private double[] calculateImputingValuesBySumsAndCounts(Dataset<EmptyContext, ImputerPartitionData> dataset) {
         double[] sums = dataset.compute(
             ImputerPartitionData::sums,
             (a, b) -> {
@@ -192,8 +201,10 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
      * @return Updated sums by values and features.
      */
     private Map<Double, Integer>[] calculateFrequencies(double[] row, Map<Double, Integer>[] valuesByFreq) {
-        if (valuesByFreq == null)
+        if (valuesByFreq == null) {
             valuesByFreq = new HashMap[row.length];
+            for (int i = 0; i < valuesByFreq.length; i++) valuesByFreq[i] = new HashMap<>();
+        }
         else
             assert valuesByFreq.length == row.length : "Base preprocessor must return exactly " + valuesByFreq.length
                 + " features";
@@ -202,9 +213,6 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
             double v = row[i];
 
             if(!Double.valueOf(v).equals(Double.NaN)) {
-                if (valuesByFreq[i] == null)
-                    valuesByFreq[i] = new HashMap<>();
-
                 Map<Double, Integer> map = valuesByFreq[i];
 
                 if (map.containsKey(v))
@@ -239,11 +247,11 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
     }
 
     /**
-     * Updates sums by features.
+     * Updates counts by features.
      *
      * @param row Feature vector.
-     * @param counts Holds the sums by features.
-     * @return Updated sums by features.
+     * @param counts Holds the counts by features.
+     * @return Updated counts by features.
      */
     private int[] calculateTheCounts(double[] row, int[] counts) {
         if (counts == null)
@@ -260,8 +268,14 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
         return counts;
     }
 
-    public ImputerTrainer<K, V> withImputingStrategy(ImputingStrategy imputingStrategy){
-        this.imputingStrategy = imputingStrategy;
+    /**
+     * Sets the imputing strategy.
+     *
+     * @param imputingStgy The given value.
+     * @return The updated imputer trainer.
+     */
+    public ImputerTrainer<K, V> withImputingStrategy(ImputingStrategy imputingStgy){
+        this.imputingStgy = imputingStgy;
         return this;
     }
 }

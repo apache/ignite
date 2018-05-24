@@ -64,9 +64,4 @@ public class ImputerPreprocessor<K, V> implements IgniteBiFunction<K, V, double[
         }
         return res;
     }
-
-    /** */
-    public double[] imputingValues() {
-        return imputingValues;
-    }
 }

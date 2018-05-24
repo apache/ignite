@@ -23,9 +23,5 @@ public enum ImputingStrategy {
     MEAN,
 
     /** If this strategy is chosen, then replace missing using the most frequent value along the axis. */
-    MOST_FREQUENT,
-
-    /** If this strategy is chosen, then replace missing using the empty string for string features
-     * and zeroes for numeric along the axis.  */
-    EMPTY
+    MOST_FREQUENT
 }

@@ -42,10 +42,20 @@ public class BinarizationTrainer<K, V> implements PreprocessingTrainer<K, V, dou
         return new BinarizationPreprocessor<>(threshold, basePreprocessor);
     }
 
+    /**
+     * Gets the threshold parameter value.
+     * @return The parameter value.
+     */
     public double threshold() {
         return threshold;
     }
 
+    /**
+     * Sets the threshold parameter value.
+     *
+     * @param threshold The given value.
+     * @return The Binarization trainer.
+     */
     public BinarizationTrainer<K, V> withThreshold(double threshold) {
         this.threshold = threshold;
         return this;

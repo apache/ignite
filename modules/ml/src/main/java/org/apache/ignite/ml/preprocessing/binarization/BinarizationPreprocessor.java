@@ -67,7 +67,7 @@ public class BinarizationPreprocessor<K, V> implements IgniteBiFunction<K, V, do
         return res;
     }
 
-    /** */
+    /** Gets the threshold parameter. */
     public double threshold() {
         return threshold;
     }

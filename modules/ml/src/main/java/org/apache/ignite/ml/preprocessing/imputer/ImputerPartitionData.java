@@ -20,7 +20,7 @@ package org.apache.ignite.ml.preprocessing.imputer;
 import java.util.Map;
 
 /**
- * Partition data used in imputing preprocessor.
+ * Partition data used in imputer preprocessor.
  *
  * @see ImputerTrainer
  * @see ImputerPreprocessor
@@ -33,7 +33,7 @@ public class ImputerPartitionData implements AutoCloseable {
     private int[] counts;
 
     /** Most frequent values. */
-    private Map<Double, Integer>[] valuesByFrequency;
+    private Map<Double, Integer>[] valuesByFreq;
 
     /**
      * Constructs a new instance of imputing partition data.
@@ -42,30 +42,65 @@ public class ImputerPartitionData implements AutoCloseable {
     public ImputerPartitionData() {
     }
 
+    /**
+     * Gets the array of sums of values in partition for each feature in the dataset.
+     *
+     * @return The sums.
+     */
     public double[] sums() {
         return sums;
     }
 
+    /**
+     * Sets the array of sums of values in partition for each feature in the dataset.
+     *
+     * @param sums The given value.
+     *
+     * @return The partition data.
+     */
     public ImputerPartitionData withSums(double[] sums) {
         this.sums = sums;
         return this;
     }
 
+    /**
+     * Sets the array of amounts of values in partition for each feature in the dataset.
+     *
+     * @param counts The given value.
+     *
+     * @return The partition data.
+     */
     public ImputerPartitionData withCounts(int[] counts) {
         this.counts = counts;
         return this;
     }
 
+    /**
+     * Gets the array of amounts of values in partition for each feature in the dataset.
+     *
+     * @return The counts.
+     */
     public int[] counts() {
         return counts;
     }
 
+    /**
+     * Gets the array of maps of frequencies by value in partition for each feature in the dataset.
+     *
+     * @return The frequencies.
+     */
     public Map<Double, Integer>[] valuesByFrequency() {
-        return valuesByFrequency;
+        return valuesByFreq;
     }
 
-    public ImputerPartitionData withValuesByFrequency(Map<Double, Integer>[] valuesByFrequency) {
-        this.valuesByFrequency = valuesByFrequency;
+    /**
+     * Sets the array of maps of frequencies by value in partition for each feature in the dataset.
+     *
+     * @param valuesByFreq The given value.
+     * @return The partition data.
+     */
+    public ImputerPartitionData withValuesByFrequency(Map<Double, Integer>[] valuesByFreq) {
+        this.valuesByFreq = valuesByFreq;
         return this;
     }
 
