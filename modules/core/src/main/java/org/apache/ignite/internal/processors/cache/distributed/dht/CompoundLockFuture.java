@@ -29,13 +29,14 @@ import org.apache.ignite.lang.IgniteInClosure;
  */
 public class CompoundLockFuture extends GridFutureAdapter<Void> implements IgniteInClosure<IgniteInternalFuture<?>> {
     /** */
-    private static final AtomicIntegerFieldUpdater<CompoundLockFuture> CNT_UPD = AtomicIntegerFieldUpdater.newUpdater(CompoundLockFuture.class, "cnt");
+    private static final long serialVersionUID = 4644646033267042131L;
+    /** */
+    private static final AtomicIntegerFieldUpdater<CompoundLockFuture> CNT_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(CompoundLockFuture.class, "cnt");
     /** */
     private volatile int cnt;
     /** */
     private final GridDhtTxLocalAdapter tx;
-
-    private IgniteInternalFuture origFut;
 
     /**
      * @param cnt ResultSet futures count.
@@ -60,9 +61,7 @@ public class CompoundLockFuture extends GridFutureAdapter<Void> implements Ignit
         while(true) {
             IgniteInternalFuture<?> fut = tx.lockFut;
 
-            if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT
-                || fut instanceof CompoundLockFuture
-                || fut instanceof GridDhtTxQueryEnlistAbstractFuture) {
+            if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT) {
                 onDone(tx.timedOut() ? tx.timeoutException() : tx.rollbackException());
 
                 break;
@@ -70,6 +69,8 @@ public class CompoundLockFuture extends GridFutureAdapter<Void> implements Ignit
             else if (fut != null) {
                 // Wait for previous future.
                 assert fut instanceof GridNearTxAbstractEnlistFuture
+                    || fut instanceof GridDhtTxQueryEnlistAbstractFuture
+                    || fut instanceof CompoundLockFuture
                     || fut instanceof GridNearTxSelectForUpdateFuture : fut;
 
                 // Terminate this future if parent future is terminated by rollback.
@@ -79,8 +80,6 @@ public class CompoundLockFuture extends GridFutureAdapter<Void> implements Ignit
                             onDone(fut.error());
                     }
                 });
-
-                origFut = fut;
 
                 break;
             }
