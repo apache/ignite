@@ -258,6 +258,14 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     public int getTotalNodes();
 
     /**
+     * Get count of baseline nodes.
+     *
+     * @return Count of baseline nodes.
+     */
+    @MXBeanDescription("Baseline nodes count.")
+    public int getBaselineNodes();
+
+    /**
      * Get count of server nodes.
      *
      * @return Count of server nodes.

@@ -18,10 +18,12 @@
 package org.apache.ignite.internal;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -356,6 +358,12 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     /** {@inheritDoc} */
     @Override public int getTotalNodes() {
         return metrics().getTotalNodes();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getBaselineNodes() {
+        Collection<BaselineNode> baselineNodes = cluster.ignite().cluster().currentBaselineTopology();
+        return baselineNodes != null ? baselineNodes.size() : 0;
     }
 
     /** {@inheritDoc} */
