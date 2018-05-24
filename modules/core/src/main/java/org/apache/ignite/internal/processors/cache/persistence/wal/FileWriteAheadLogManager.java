@@ -362,7 +362,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         evt = ctx.event();
     }
 
-    /** For test purposes only. */
+    /**
+     * For test purposes only.
+     *
+     * @param ioFactory IO factory.
+     */
     public void setFileIOFactory(FileIOFactory ioFactory) {
         this.ioFactory = ioFactory;
     }
@@ -1616,29 +1620,21 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (stopped)
                         break;
 
-                    try {
-                        final SegmentArchiveResult res = archiveSegment(toArchive);
+                    final SegmentArchiveResult res = archiveSegment(toArchive);
 
-                        synchronized (this) {
-                            while (locked.containsKey(toArchive) && !stopped)
-                                wait();
+                    synchronized (this) {
+                        while (locked.containsKey(toArchive) && !stopped)
+                            wait();
 
-                            // Then increase counter to allow rollover on clean working file
-                            changeLastArchivedIndexAndNotifyWaiters(toArchive);
+                        // Then increase counter to allow rollover on clean working file
+                        changeLastArchivedIndexAndNotifyWaiters(toArchive);
 
-                            notifyAll();
-                        }
-
-                        if (evt.isRecordable(EventType.EVT_WAL_SEGMENT_ARCHIVED))
-                            evt.record(new WalSegmentArchivedEvent(cctx.discovery().localNode(),
-                                res.getAbsIdx(), res.getDstArchiveFile()));
+                        notifyAll();
                     }
-                    catch (IgniteCheckedException e) {
-                        synchronized (this) {
-                            cleanErr = e;
 
-                            notifyAll();
-                        }
+                    if (evt.isRecordable(EventType.EVT_WAL_SEGMENT_ARCHIVED)) {
+                        evt.record(new WalSegmentArchivedEvent(cctx.discovery().localNode(),
+                            res.getAbsIdx(), res.getDstArchiveFile()));
                     }
                 }
             }

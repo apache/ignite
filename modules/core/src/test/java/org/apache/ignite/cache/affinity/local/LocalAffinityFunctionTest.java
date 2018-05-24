@@ -61,11 +61,6 @@ public class LocalAffinityFunctionTest extends GridCommonAbstractTest {
         startGrids(NODE_CNT);
     }
 
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-        stopAllGrids();
-    }
-
     public void testWronglySetAffinityFunctionForLocalCache() {
         Ignite node = ignite(NODE_CNT - 1);
 

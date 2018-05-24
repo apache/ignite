@@ -34,7 +34,8 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
         assertEquals(0x0102FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0x0002FFFFFFFFFFFFL));
         assertEquals(0x0B02FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0x0A02FFFFFFFFFFFFL));
         assertEquals(0x1002FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0x0F02FFFFFFFFFFFFL));
-        assertEquals(0x0002FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0xFF02FFFFFFFFFFFFL));
+        assertEquals(0x0102FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0xFE02FFFFFFFFFFFFL));
+        assertEquals(0x0102FFFFFFFFFFFFL, PageIdUtils.rotatePageId(0xFF02FFFFFFFFFFFFL));
     }
 
     /**

@@ -87,13 +87,6 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
         startGrid(3);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-        stopGrid(2);
-        stopGrid(3);
-    }
-
     /**
      * @throws IgniteCheckedException If failed.
      */
