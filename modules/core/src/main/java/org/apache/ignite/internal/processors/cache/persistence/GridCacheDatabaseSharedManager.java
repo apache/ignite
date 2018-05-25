@@ -4856,6 +4856,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             for (String key : keys) {
                 T2<Integer, Boolean> t2 = walKeyToGroupIdAndLocalFlag(key);
 
+                if (t2 == null)
+                    continue;
+
                 if (t2.get2())
                     initiallyLocalWalDisabledGrps.add(t2.get1());
                 else
@@ -4901,7 +4904,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private static T2<Integer, Boolean> walKeyToGroupIdAndLocalFlag(String key) {
         if (key.startsWith(WAL_LOCAL_KEY_PREFIX))
             return new T2<>(Integer.parseInt(key.substring(WAL_LOCAL_KEY_PREFIX.length())), true);
-        else
+        else if (key.startsWith(WAL_GLOBAL_KEY_PREFIX))
             return new T2<>(Integer.parseInt(key.substring(WAL_GLOBAL_KEY_PREFIX.length())), false);
+        else
+            return null;
     }
 }

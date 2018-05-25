@@ -185,11 +185,11 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     public void testRebalancingOnRestart() throws Exception {
         Ignite ignite0 = startGrid(0);
 
-        ignite0.cluster().active(true);
-
         startGrid(1);
 
         IgniteEx ignite2 = startGrid(2);
+
+        ignite0.cluster().active(true);
 
         awaitPartitionMapExchange();
 
@@ -284,6 +284,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         ignite2 = startGrid(2);
         ignite3 = startGrid(3);
 
+        resetBaselineTopology();
+
         ignite2.cache(cacheName).rebalance().get();
         ignite3.cache(cacheName).rebalance().get();
 
@@ -293,53 +295,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         for (int i = 0; i < 100; i++) {
             assertEquals(String.valueOf(i), (Integer)(i * 2), cache2.get(i));
             assertEquals(String.valueOf(i), (Integer)(i * 2), cache3.get(i));
-        }
-    }
-
-    /**
-     * Test that all data is correctly restored after non-graceful restart.
-     *
-     * @throws Exception If fails.
-     */
-    public void testDataCorrectnessAfterRestart() throws Exception {
-        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
-        IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
-
-        ignite1.cluster().active(true);
-
-        awaitPartitionMapExchange();
-
-        IgniteCache<Integer, Integer> cache1 = ignite1.cache(cacheName);
-
-        for (int i = 0; i < 100; i++)
-            cache1.put(i, i);
-
-        ignite1.close();
-        ignite2.close();
-        ignite3.close();
-        ignite4.close();
-
-        ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-        ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
-        ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
-
-        ignite1.cluster().active(true);
-
-        awaitPartitionMapExchange();
-
-        cache1 = ignite1.cache(cacheName);
-        IgniteCache<Integer, Integer> cache2 = ignite2.cache(cacheName);
-        IgniteCache<Integer, Integer> cache3 = ignite3.cache(cacheName);
-        IgniteCache<Integer, Integer> cache4 = ignite4.cache(cacheName);
-
-        for (int i = 0; i < 100; i++) {
-            assert cache1.get(i).equals(i);
-            assert cache2.get(i).equals(i);
-            assert cache3.get(i).equals(i);
-            assert cache4.get(i).equals(i);
         }
     }
 
@@ -377,11 +332,11 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         ignite1.resetLostPartitions(Collections.singletonList(cacheName));
 
+        awaitPartitionMapExchange();
+
         IgniteCache<String, String> cache2 = ignite2.cache(cacheName);
         IgniteCache<String, String> cache3 = ignite3.cache(cacheName);
         IgniteCache<String, String> cache4 = ignite4.cache(cacheName);
-
-        //Thread.sleep(5_000);
 
         for (int i = 0; i < 100; i++) {
             String key = String.valueOf(i);
@@ -499,6 +454,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 else
                     stopGrid(nodesCnt.getAndDecrement());
 
+                resetBaselineTopology();
+
                 awaitPartitionMapExchange();
 
                 cache.rebalance().get();
@@ -610,11 +567,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                         forceCheckpoint();
 
                         startGrid(2);
-
-                        awaitPartitionMapExchange();
                     }
 
-                    ig0.cache(cacheName).rebalance().get();
+                    awaitPartitionMapExchange();
                 }
                 catch (Exception e) {
                     error("Unable to start/stop grid", e);
