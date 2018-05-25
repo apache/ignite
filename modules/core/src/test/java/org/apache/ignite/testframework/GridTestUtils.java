@@ -407,6 +407,24 @@ public final class GridTestUtils {
      * Checks whether callable throws exception, which is itself of a specified
      * class, or has a cause of the specified class.
      *
+     * @param call Runnable.
+     * @param cls Expected class.
+     * @return Thrown throwable.
+     */
+    @Nullable public static Throwable assertThrowsWithCause(Runnable call, Class<? extends Throwable> cls) {
+        return assertThrowsWithCause(new Callable<Integer>() {
+            @Override public Integer call() throws Exception {
+                call.run();
+
+                return 0;
+            }
+        }, cls);
+    }
+
+    /**
+     * Checks whether callable throws exception, which is itself of a specified
+     * class, or has a cause of the specified class.
+     *
      * @param call Callable.
      * @param cls Expected class.
      * @return Thrown throwable.

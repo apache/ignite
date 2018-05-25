@@ -57,11 +57,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     private static final String OBJ_CACHE_NAME = "ORG_ADDRESS";
 
     /** */
-    private Consumer<Runnable> shouldFail = (op) -> assertThrowsWithCause(() -> {
-        op.run();
-
-        return 0;
-    }, IgniteException.class);
+    private Consumer<Runnable> shouldFail = (op) -> assertThrowsWithCause(op, IgniteException.class);
 
     /** */
     private Consumer<Runnable> shouldSucceed = Runnable::run;
@@ -234,6 +230,7 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
         checkPutOps(shouldSucceed, cache, key2);
     }
 
+    /** */
     private <K, V> void checkReplaceOps(Consumer<Runnable> checker, IgniteCache<K, V> cache, T2<K, V> val, V okVal) {
         K k = val.get1();
         V v = val.get2();
