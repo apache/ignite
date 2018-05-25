@@ -35,7 +35,6 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 
@@ -93,9 +92,9 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
         orgAddressMaxLengthInfo.put("address", 5);
 
         jcache(grid(0), cacheConfiguration(new QueryEntity(Organization.class.getName(), Address.class.getName())
-                    .addQueryField("name", "java.lang.String", "name")
-                    .addQueryField("address", "java.lang.String", "address")
-                    .setMaxLengthInfo(orgAddressMaxLengthInfo)), OBJ_CACHE_NAME);
+            .addQueryField("name", "java.lang.String", "name")
+            .addQueryField("address", "java.lang.String", "address")
+            .setMaxLengthInfo(orgAddressMaxLengthInfo)), OBJ_CACHE_NAME);
 
         Map<String, Integer> strOrgMaxLengthInfo = new HashMap<>();
 
@@ -146,9 +145,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
             putAllOp(cache, 
                 Stream.of(new T2<>(new Organization("1"), new Address("1")), tooLongAddrVal)));
 
-        checkOpsFail(ops(cache, tooLongAddrVal));
+        checkOpsFail(
+            ops(cache, tooLongAddrVal));
 
-        checkOpsFail(ops3arg(cache, tooLongAddrVal.get1(), new Address("1"), tooLongAddrVal.get2()));
+        checkOpsFail(
+            ops3arg(cache, tooLongAddrVal.get1(), new Address("1"), tooLongAddrVal.get2()));
 
     }
 
@@ -162,7 +163,8 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
             putAllOp(cache,
                 Stream.of(new T2<>(new Organization("1"), new Address("1")), tooLongOrgKey)));
 
-        checkOpsFail(ops(cache, tooLongOrgKey));
+        checkOpsFail(
+            ops(cache, tooLongOrgKey));
     }
 
     /**
@@ -175,7 +177,8 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
             putAllOp(cache,
                 Stream.of(new T2<>("1", new Organization("1")), tooLongKey2)));
 
-        checkOpsFail(ops(cache, tooLongKey2));
+        checkOpsFail(
+            ops(cache, tooLongKey2));
     }
 
     /** */

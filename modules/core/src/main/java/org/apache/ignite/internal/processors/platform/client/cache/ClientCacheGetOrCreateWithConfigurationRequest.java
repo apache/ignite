@@ -42,8 +42,7 @@ public class ClientCacheGetOrCreateWithConfigurationRequest extends ClientReques
      * @param reader Reader.
      * @param ver Client version.
      */
-    public ClientCacheGetOrCreateWithConfigurationRequest(BinaryRawReader reader, 
-        ClientListenerProtocolVersion ver) {
+    public ClientCacheGetOrCreateWithConfigurationRequest(BinaryRawReader reader, ClientListenerProtocolVersion ver) {
         super(reader);
 
         cacheCfg = ClientCacheConfigurationSerializer.read(reader, ver);

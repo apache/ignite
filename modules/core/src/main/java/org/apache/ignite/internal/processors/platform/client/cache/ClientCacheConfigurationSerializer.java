@@ -138,8 +138,7 @@ public class ClientCacheConfigurationSerializer {
      * @param cfg Configuration.
      * @param ver Client version.
      */
-    static void write(BinaryRawWriterEx writer, CacheConfiguration cfg, 
-        @Nullable ClientListenerProtocolVersion ver) {
+    static void write(BinaryRawWriterEx writer, CacheConfiguration cfg, @Nullable ClientListenerProtocolVersion ver) {
         assert writer != null;
         assert cfg != null;
 
@@ -211,8 +210,7 @@ public class ClientCacheConfigurationSerializer {
      * @param ver Client version.
      * @return Configuration.
      */
-    static CacheConfiguration read(BinaryRawReader reader, 
-        @Nullable ClientListenerProtocolVersion ver) {
+    static CacheConfiguration read(BinaryRawReader reader, @Nullable ClientListenerProtocolVersion ver) {
         reader.readInt();  // Skip length.
 
         short propCnt = reader.readShort();

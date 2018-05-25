@@ -39,8 +39,7 @@ public class ClientCacheGetConfigurationResponse extends ClientResponse {
      * @param cfg Cache configuration.
      * @param ver Client version.
      */
-    ClientCacheGetConfigurationResponse(long reqId, CacheConfiguration cfg,
-        ClientListenerProtocolVersion ver) {
+    ClientCacheGetConfigurationResponse(long reqId, CacheConfiguration cfg, ClientListenerProtocolVersion ver) {
         super(reqId);
 
         assert cfg != null;

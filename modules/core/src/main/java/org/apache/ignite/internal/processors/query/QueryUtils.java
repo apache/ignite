@@ -631,9 +631,15 @@ public class QueryUtils {
 
         Object dfltVal = dfltVals.get(name);
 
-        QueryBinaryProperty prop = buildBinaryProperty(ctx, d.cacheName(), name,
+        QueryBinaryProperty prop = buildBinaryProperty(
+            ctx, 
+            d.cacheName(), 
+            name,
             U.classForName(typeName, Object.class, true),
-            d.aliases(), isKey, true, dfltVal,
+            d.aliases(), 
+            isKey, 
+            true, 
+            dfltVal,
             precisionAndScale != null ? precisionAndScale.get1() : -1,
             precisionAndScale != null ? precisionAndScale.get2() : -1,
             maxLength != null ? maxLength : MAX_VALUE);
