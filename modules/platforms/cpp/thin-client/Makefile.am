@@ -49,7 +49,6 @@ libignite_thin_client_la_DEPENDENCIES = \
 
 libignite_thin_client_la_SOURCES = \
     os/linux/src/net/tcp_socket_client.cpp \
-    src/impl/result_page.cpp \
     src/impl/utility.cpp \
     src/impl/protocol_version.cpp \
     src/impl/message.cpp \
