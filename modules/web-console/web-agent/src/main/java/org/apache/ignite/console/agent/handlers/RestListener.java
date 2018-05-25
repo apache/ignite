@@ -20,19 +20,28 @@ package org.apache.ignite.console.agent.handlers;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.apache.ignite.console.agent.AgentConfiguration;
 import org.apache.ignite.console.agent.rest.RestExecutor;
+import org.apache.ignite.console.agent.rest.RestResult;
+import org.apache.ignite.console.demo.AgentClusterDemo;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * API to translate REST requests to Ignite cluster.
  */
 public class RestListener extends AbstractListener {
     /** */
+    private final AgentConfiguration cfg;
+
+    /** */
     private final RestExecutor restExecutor;
 
     /**
-     * @param restExecutor Config.
+     * @param cfg Config.
+     * @param restExecutor Executor.
      */
-    public RestListener(RestExecutor restExecutor) {
+    public RestListener(AgentConfiguration cfg, RestExecutor restExecutor) {
+        this.cfg = cfg;
         this.restExecutor = restExecutor;
     }
 
@@ -45,11 +54,6 @@ public class RestListener extends AbstractListener {
     @Override public Object execute(Map<String, Object> args) throws Exception {
         if (log.isDebugEnabled())
             log.debug("Start parse REST command args: " + args);
-
-        String path = null;
-
-        if (args.containsKey("uri"))
-            path = args.get("uri").toString();
 
         Map<String, Object> params = null;
 
@@ -66,11 +70,29 @@ public class RestListener extends AbstractListener {
         if (args.containsKey("headers"))
             headers = (Map<String, Object>)args.get("headers");
 
-        String body = null;
+        try {
+            if (demo) {
+                if (AgentClusterDemo.getDemoUrl() == null) {
+                    try {
+                        AgentClusterDemo.tryStart().await();
 
-        if (args.containsKey("body"))
-            body = args.get("body").toString();
+                        if (AgentClusterDemo.getDemoUrl() == null)
+                            throw new InterruptedException();
+                    }
+                    catch (InterruptedException ignore) {
+                        return RestResult.fail(404, "Failed to send request because of embedded node for demo mode is not started yet.");
+                    }
+                }
 
-        return restExecutor.execute(demo, path, params, headers, body);
+                return restExecutor.sendRequest(AgentClusterDemo.getDemoUrl(), params, headers);
+            }
+
+            return restExecutor.sendRequest(this.cfg.nodeURIs(), params, headers);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to execute REST command with parameters: " + params, e);
+
+            return RestResult.fail(404, e.getMessage());
+        }
     }
 }
