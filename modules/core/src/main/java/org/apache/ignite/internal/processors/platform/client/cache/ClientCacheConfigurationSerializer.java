@@ -183,8 +183,7 @@ public class ClientCacheConfigurationSerializer {
                 writer.writeString(key.getTypeName());
                 writer.writeString(key.getAffinityKeyFieldName());
             }
-        } 
-        else {
+        } else {
             writer.writeInt(0);
         }
 
