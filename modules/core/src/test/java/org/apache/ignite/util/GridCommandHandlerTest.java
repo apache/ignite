@@ -443,6 +443,21 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             }
         }, "--tx", "label", "^label[0-9]");
 
+
+        // test check minSize
+        int minSize=10;
+
+        validate(h, map -> {
+            VisorTxTaskResult res = map.get(grid(0).localNode());
+
+            assertNotNull(res);
+
+            for (VisorTxInfo txInfo : res.getInfos()) {
+                assertTrue(txInfo.getSize() >= minSize);
+
+            }
+        }, "--tx", "minSize", Integer.toString(minSize));
+
         // test order by size.
         validate(h, map -> {
             VisorTxTaskResult res = map.get(grid(0).localNode());

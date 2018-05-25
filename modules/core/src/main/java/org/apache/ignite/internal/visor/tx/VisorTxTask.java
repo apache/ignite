@@ -168,9 +168,6 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                     duration < arg.getMinDuration())
                     continue;
 
-                if (arg.getMinSize() != null && locTx.size() < arg.getMinSize())
-                    continue;
-
                 if (lbMatch != null && (locTx.label() == null || !lbMatch.matcher(locTx.label()).matches()))
                     continue;
 
@@ -185,6 +182,9 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                         size += mapping.entries().size(); // Entries are not synchronized so no visibility guaranties.
                     }
                 }
+
+                if (arg.getMinSize() != null && size < arg.getMinSize())
+                    continue;
 
                 infos.add(new VisorTxInfo(locTx.xid(), duration, locTx.isolation(), locTx.concurrency(),
                     locTx.timeout(), locTx.label(), mappings, locTx.state(), size));
