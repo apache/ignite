@@ -22,7 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerDiedException;
 import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
@@ -46,8 +46,11 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     /** Points to the next worker to check. */
     private volatile Iterator<Map.Entry<String, GridWorker>> checkIter = registeredWorkers.entrySet().iterator();
 
-    // TODO IGNITE-6587: sync on both last checker and last timestamp.
-    //private AtomicLong lastCheckStartTimestamp = new AtomicLong(System.currentTimeMillis());
+    /** */
+    private volatile long lastCheckStartTimestamp = System.currentTimeMillis();
+
+    /** */
+    private AtomicReference<Thread> lastCheckerThread = new AtomicReference<>();
 
     /**
      * Adds worker to the registry.
@@ -103,6 +106,20 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
 
     /** {@inheritDoc} */
     @Override public void onIdle(GridWorker w) throws GridWorkerFailureException {
+        if (System.currentTimeMillis() - lastCheckStartTimestamp <= CHECK_INTERVAL_MS)
+            return;
+
+        // Prevent further races on successful lastCheckerThread CAS.
+        lastCheckStartTimestamp = System.currentTimeMillis();
+
+        if (!lastCheckerThread.compareAndSet(lastCheckerThread.get(), Thread.currentThread()))
+            // No use to recover lastCheckStartTimestamp: some other thread is starting a check concurrently.
+            return;
+
+        // Due to thread scheduling issues, there is no strict guaranty that only one thread will run the code below
+        // at a time, but the only downside of this is the concurrent use of registeredWorkers iterator,
+        // which is acceptable.
+
         for (int i = 0; i < NO_OF_WORKERS_TO_CHECK_AT_ONCE; i++) {
             if (!checkIter.hasNext()) {
                 checkIter = registeredWorkers.entrySet().iterator();
@@ -117,6 +134,11 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
 
             if (runner != null && runner != Thread.currentThread()) {
                 if (!runner.isAlive()) {
+                    // In normal operation GridWorker implementation guarantees:
+                    // worker termination happens before its removal from registeredWorkers.
+                    // That is, if worker is dead, but still resides in registeredWorkers
+                    // then something went wrong, the only extra thing is to test
+                    // whether the iterator refers to actual state of registeredWorkers.
                     GridWorker workerAgain = registeredWorkers.get(worker.runner().getName());
 
                     if (workerAgain != null && workerAgain == worker)
