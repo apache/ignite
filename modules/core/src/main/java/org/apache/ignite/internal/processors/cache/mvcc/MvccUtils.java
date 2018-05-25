@@ -438,6 +438,8 @@ public class MvccUtils {
      * @return Currently started user transaction, or {@code null} if none started.
      */
     @Nullable private static GridNearTxLocal tx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
+        assert mvccEnabled(ctx);
+
         IgniteTxManager tm = ctx.cache().context().tm();
 
         IgniteInternalTx tx0 = txId == null ? tm.tx() : tm.tx(txId);
@@ -514,6 +516,8 @@ public class MvccUtils {
      * @return Newly started SQL transaction.
      */
     private static GridNearTxLocal txStart(GridKernalContext ctx, @Nullable GridCacheContext cctx, long timeout) {
+        assert mvccEnabled(ctx);
+
         if (timeout == 0) {
             TransactionConfiguration tcfg = cctx != null ?
                 CU.transactionConfiguration(cctx, ctx.config()) : null;

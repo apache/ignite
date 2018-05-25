@@ -1564,7 +1564,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         cacheCtx.checkSecurity(SecurityPermission.CACHE_REMOVE);
 
-        if (!isOperationAllowed(false))
+        if (cacheCtx.mvccEnabled() && !isOperationAllowed(false))
             return txTypeMismatchFinishFuture();
 
         if (retval)
@@ -1902,7 +1902,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
 
-        if (!isOperationAllowed(false))
+        if (cacheCtx.mvccEnabled() && !isOperationAllowed(false))
             return txTypeMismatchFinishFuture();
 
         init();
@@ -4417,14 +4417,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @throws IgniteCheckedException If failed.
      */
     private void beforePut(GridCacheContext cacheCtx, boolean retval, boolean sql) throws IgniteCheckedException {
+        assert !sql || cacheCtx.mvccEnabled();
+
         checkUpdatesAllowed(cacheCtx);
 
         cacheCtx.checkSecurity(SecurityPermission.CACHE_PUT);
 
-        if (sql && !isOperationAllowed(sql))
-            throw new IgniteCheckedException(TX_TYPE_MISMATCH_ERR_MSG);
-
-        if (!sql && !isOperationAllowed(sql))
+        if (cacheCtx.mvccEnabled() && !isOperationAllowed(sql))
             throw new IgniteCheckedException(TX_TYPE_MISMATCH_ERR_MSG);
 
         if (retval)
