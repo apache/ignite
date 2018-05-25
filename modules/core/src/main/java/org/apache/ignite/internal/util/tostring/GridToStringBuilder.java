@@ -35,6 +35,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -1106,7 +1107,8 @@ public class GridToStringBuilder {
     private static boolean isPrimitiveWraper(Class cls) {
         return cls == Byte.class || cls == Short.class || cls == Integer.class || cls == Long.class ||
             cls == Float.class || cls == Double.class  || cls == Boolean.class || cls == Character.class ||
-            cls == String.class || cls == StringBuilder.class || ByteBuffer.class.isAssignableFrom(cls);
+            cls == String.class || cls == StringBuilder.class || ByteBuffer.class.isAssignableFrom(cls) ||
+            cls == UUID.class;
     }
 
     /**
