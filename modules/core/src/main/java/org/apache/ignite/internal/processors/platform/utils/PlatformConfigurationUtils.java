@@ -165,8 +165,7 @@ public class PlatformConfigurationUtils {
      * @param ver Client version.
      * @return Cache configuration.
      */
-    public static CacheConfiguration readCacheConfiguration(BinaryRawReaderEx in, 
-        @Nullable ClientListenerProtocolVersion ver) {
+    public static CacheConfiguration readCacheConfiguration(BinaryRawReaderEx in, ClientListenerProtocolVersion ver) {
         assert in != null;
 
         CacheConfiguration ccfg = new CacheConfiguration();
@@ -492,8 +491,7 @@ public class PlatformConfigurationUtils {
      * @param ver Client version.
      * @return QueryEntity.
      */
-    public static QueryEntity readQueryEntity(BinaryRawReader in, 
-        @Nullable ClientListenerProtocolVersion ver) {
+    public static QueryEntity readQueryEntity(BinaryRawReader in, ClientListenerProtocolVersion ver) {
         QueryEntity res = new QueryEntity();
 
         res.setKeyType(in.readString());
@@ -529,7 +527,7 @@ public class PlatformConfigurationUtils {
                 if (defVal != null)
                     defVals.put(fieldName, defVal);
                 
-                if (ver == null || ver.compareTo(VER_1_2_0) >= 0) {
+                if (ver.compareTo(VER_1_2_0) >= 0) {
                     int precision = in.readInt();
 
                     int scale = in.readInt();
@@ -624,7 +622,7 @@ public class PlatformConfigurationUtils {
      */
     @SuppressWarnings("deprecation")
     public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg, 
-        @Nullable ClientListenerProtocolVersion ver) {
+        ClientListenerProtocolVersion ver) {
         if (in.readBoolean())
             cfg.setClientMode(in.readBoolean());
         int[] evtTypes = in.readIntArray();
@@ -1061,7 +1059,7 @@ public class PlatformConfigurationUtils {
      * @param ver Client version.
      */
     public static void writeQueryEntity(BinaryRawWriter writer, QueryEntity qryEntity, 
-        @Nullable ClientListenerProtocolVersion ver) {
+        ClientListenerProtocolVersion ver) {
         assert qryEntity != null;
 
         writer.writeString(qryEntity.getKeyType());
@@ -1089,7 +1087,7 @@ public class PlatformConfigurationUtils {
                 writer.writeBoolean(notNullFields != null && notNullFields.contains(field.getKey()));
                 writer.writeObject(defVals != null ? defVals.get(field.getKey()) : null);
 
-                if (ver == null || ver.compareTo(VER_1_2_0) >= 0) {
+                if (ver.compareTo(VER_1_2_0) >= 0) {
                     IgniteBiTuple<Integer, Integer> precisionAndScale =
                         decimalInfo == null ? null : decimalInfo.get(field.getKey());
 
@@ -1167,7 +1165,7 @@ public class PlatformConfigurationUtils {
      */
     @SuppressWarnings("deprecation")
     public static void writeIgniteConfiguration(BinaryRawWriter w, IgniteConfiguration cfg, 
-        @Nullable ClientListenerProtocolVersion ver) {
+        ClientListenerProtocolVersion ver) {
         assert w != null;
         assert cfg != null;
 

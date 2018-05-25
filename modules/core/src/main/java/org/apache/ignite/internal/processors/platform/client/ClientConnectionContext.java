@@ -52,6 +52,9 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
     /** Version 1.2.0. */
     public static final ClientListenerProtocolVersion VER_1_2_0 = ClientListenerProtocolVersion.create(1, 2, 0);
 
+    /** Version 1.2.0. */
+    public static final ClientListenerProtocolVersion CURRENT_VER = VER_1_2_0;
+
     /** Supported versions. */
     private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(
         VER_1_2_0,

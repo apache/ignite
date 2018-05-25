@@ -316,7 +316,7 @@ final class ClientUtils {
                                 w.writeBoolean(qf.isNotNull());
                                 w.writeObject(qf.getDefaultValue());
 
-                                if (ver == null || ver.compareTo(VER_1_2_0) >= 0) {
+                                if (ver.compareTo(VER_1_2_0) >= 0) {
                                     w.writeInt(qf.getPrecision());
                                     w.writeInt(qf.getScale());
                                     w.writeInt(qf.getMaxLength());
@@ -397,7 +397,7 @@ final class ClientUtils {
                             .setKeyFieldName(reader.readString())
                             .setValueFieldName(reader.readString());
 
-                        boolean isCliVer1_2 = ver == null || ver.compareTo(VER_1_2_0) >= 0;
+                        boolean isCliVer1_2 = ver.compareTo(VER_1_2_0) >= 0;
 
                         Collection<QueryField> qryFields = ClientUtils.collection(
                             in,

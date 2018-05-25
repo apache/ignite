@@ -38,8 +38,10 @@ import org.apache.ignite.client.ClientException;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 
 import static java.util.AbstractMap.SimpleEntry;
+import static org.apache.ignite.internal.processors.platform.client.ClientConnectionContext.CURRENT_VER;
 
 /**
  * Implementation of {@link ClientCache} over TCP protocol.
@@ -133,7 +135,7 @@ class TcpClientCache<K, V> implements ClientCache<K, V> {
             this::writeCacheInfo,
             res -> {
                 try {
-                    return serDes.cacheConfiguration(res, null);
+                    return serDes.cacheConfiguration(res, CURRENT_VER);
                 }
                 catch (IOException e) {
                     return null;
