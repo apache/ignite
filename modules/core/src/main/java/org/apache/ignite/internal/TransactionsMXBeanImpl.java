@@ -19,6 +19,8 @@ package org.apache.ignite.internal;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -107,6 +109,7 @@ public class TransactionsMXBeanImpl implements TransactionsMXBean {
                         w.println("    Tx: [xid=" + info.getXid() +
                             ", label=" + info.getLabel() +
                             ", state=" + info.getState() +
+                            ", startTime=" + info.getFormattedStartTime() +
                             ", duration=" + info.getDuration() / 1000 +
                             ", isolation=" + info.getIsolation() +
                             ", concurrency=" + info.getConcurrency() +
