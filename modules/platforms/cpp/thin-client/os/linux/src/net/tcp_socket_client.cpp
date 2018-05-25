@@ -26,9 +26,8 @@
 
 #include <sstream>
 
-#include "ignite/odbc/system/tcp_socket_client.h"
-#include "ignite/odbc/utility.h"
-#include "ignite/odbc/log.h"
+#include <ignite/common/concurrent.h>
+#include <ignite/impl/thin/net/tcp_socket_client.h>
 
 #define SOCKET_ERROR (-1)
 
@@ -70,314 +69,289 @@ namespace
 
 namespace ignite
 {
-    namespace odbc
+    namespace impl
     {
-        namespace system
+        namespace thin
         {
-
-            TcpSocketClient::TcpSocketClient() :
-                socketHandle(SOCKET_ERROR),
-                blocking(true)
+            namespace net
             {
-                // No-op.
-            }
-
-            TcpSocketClient::~TcpSocketClient()
-            {
-                Close();
-            }
-
-            bool TcpSocketClient::Connect(const char* hostname, uint16_t port, int32_t timeout,
-                diagnostic::Diagnosable& diag)
-            {
-                LOG_MSG("Host: " << hostname << ", port: " << port);
-
-                addrinfo hints;
-
-                memset(&hints, 0, sizeof(hints));
-                hints.ai_family = AF_UNSPEC;
-                hints.ai_socktype = SOCK_STREAM;
-                hints.ai_protocol = IPPROTO_TCP;
-
-                std::stringstream converter;
-                converter << port;
-
-                // Resolve the server address and port
-                addrinfo *result = NULL;
-                int res = getaddrinfo(hostname, converter.str().c_str(), &hints, &result);
-
-                if (res != 0)
+                TcpSocketClient::TcpSocketClient() :
+                    socketHandle(SOCKET_ERROR),
+                    blocking(true)
                 {
-                    LOG_MSG("Address resolving failed: " << gai_strerror(res));
-
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not resolve host address.");
-
-                    return false;
+                    // No-op.
                 }
 
-                // Attempt to connect to an address until one succeeds
-                for (addrinfo *it = result; it != NULL; it = it->ai_next)
+                TcpSocketClient::~TcpSocketClient()
                 {
-                    LOG_MSG("Addr: " << (it->ai_addr->sa_data[2] & 0xFF) << "."
-                                     << (it->ai_addr->sa_data[3] & 0xFF) << "."
-                                     << (it->ai_addr->sa_data[4] & 0xFF) << "."
-                                     << (it->ai_addr->sa_data[5] & 0xFF));
+                    Close();
+                }
 
-                    // Create a SOCKET for connecting to server
-                    socketHandle = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
+                bool TcpSocketClient::Connect(const char* hostname, uint16_t port, int32_t timeout)
+                {
 
-                    if (socketHandle == SOCKET_ERROR)
+                    addrinfo hints = { 0 };
+
+                    hints.ai_family = AF_UNSPEC;
+                    hints.ai_socktype = SOCK_STREAM;
+                    hints.ai_protocol = IPPROTO_TCP;
+
+                    std::stringstream converter;
+                    converter << port;
+
+                    // Resolve the server address and port
+                    addrinfo *result = NULL;
+                    int res = getaddrinfo(hostname, converter.str().c_str(), &hints, &result);
+
+                    if (res != 0)
                     {
-                        LOG_MSG("Socket creation failed: " << GetLastSocketErrorMessage());
-
-                        diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "Can not create new socket.");
+                        // TODO implement logging.
+                        //std::string err = "Address resolving failed: " + GetLastSocketErrorMessage();
+                        //std::cout << err << std::endl;
 
                         return false;
                     }
 
-                    diag.GetDiagnosticRecords().Reset();
-
-                    TrySetOptions(diag);
-
-                    // Connect to server.
-                    res = connect(socketHandle, it->ai_addr, static_cast<int>(it->ai_addrlen));
-                    if (SOCKET_ERROR == res)
+                    // Attempt to connect to an address until one succeeds
+                    for (addrinfo *it = result; it != NULL; it = it->ai_next)
                     {
-                        int lastError = errno;
+                        // Create a SOCKET for connecting to server
+                        socketHandle = socket(it->ai_family, it->ai_socktype, it->ai_protocol);
 
-                        if (lastError != EWOULDBLOCK && lastError != EINPROGRESS)
+                        if (socketHandle == SOCKET_ERROR)
                         {
-                            LOG_MSG("Connection failed: " << GetSocketErrorMessage(lastError));
+                            std::string err = "Socket creation failed: " + GetLastSocketErrorMessage();
 
-                            Close();
-
-                            continue;
+                            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, err.c_str());
                         }
 
-                        res = WaitOnSocket(timeout, false);
+                        TrySetOptions();
+
+                        // Connect to server.
+                        res = connect(socketHandle, it->ai_addr, static_cast<int>(it->ai_addrlen));
+                        if (SOCKET_ERROR == res)
+                        {
+                            int lastError = errno;
+
+                            if (lastError != EWOULDBLOCK && lastError != EINPROGRESS)
+                            {
+                                // TODO implement logging.
+                                //std::string err = "Connection failed: " + GetSocketErrorMessage(lastError);
+                                //std::cout << err << std::endl;
+
+                                Close();
+
+                                continue;
+                            }
+
+                            res = WaitOnSocket(timeout, false);
+
+                            if (res < 0 || res == WaitResult::TIMEOUT)
+                            {
+                                // TODO implement logging.
+                                //std::string err = "Connection timeout expired: " + GetSocketErrorMessage(-res);
+                                //std::cout << err << std::endl;
+
+                                Close();
+
+                                continue;
+                            }
+                        }
+                        break;
+                    }
+
+                    freeaddrinfo(result);
+
+                    return socketHandle != SOCKET_ERROR;
+                }
+
+                void TcpSocketClient::Close()
+                {
+                    InternalClose();
+                }
+
+                void TcpSocketClient::InternalClose()
+                {
+                    if (socketHandle != SOCKET_ERROR)
+                    {
+                        close(socketHandle);
+
+                        socketHandle = SOCKET_ERROR;
+                    }
+                }
+
+                int TcpSocketClient::Send(const int8_t* data, size_t size, int32_t timeout)
+                {
+                    if (!blocking)
+                    {
+                        int res = WaitOnSocket(timeout, false);
 
                         if (res < 0 || res == WaitResult::TIMEOUT)
-                        {
-                            LOG_MSG("Connection timeout expired: " << GetSocketErrorMessage(-res));
-
-                            Close();
-
-                            continue;
-                        }
+                            return res;
                     }
-                    break;
+
+                    return send(socketHandle, reinterpret_cast<const char*>(data), static_cast<int>(size), 0);
                 }
 
-                freeaddrinfo(result);
-
-                return socketHandle != SOCKET_ERROR;
-            }
-
-            void TcpSocketClient::Close()
-            {
-                if (socketHandle != SOCKET_ERROR)
+                int TcpSocketClient::Receive(int8_t* buffer, size_t size, int32_t timeout)
                 {
-                    close(socketHandle);
+                    if (!blocking)
+                    {
+                        int res = WaitOnSocket(timeout, true);
 
-                    socketHandle = SOCKET_ERROR;
+                        if (res < 0 || res == WaitResult::TIMEOUT)
+                            return res;
+                    }
+
+                    return recv(socketHandle, reinterpret_cast<char*>(buffer), static_cast<int>(size), 0);
                 }
-            }
 
-            int TcpSocketClient::Send(const int8_t* data, size_t size, int32_t timeout)
-            {
-                if (!blocking)
+                bool TcpSocketClient::IsBlocking() const
                 {
-                    int res = WaitOnSocket(timeout, false);
-
-                    if (res < 0 || res == WaitResult::TIMEOUT)
-                        return res;
+                    return blocking;
                 }
 
-                return send(socketHandle, reinterpret_cast<const char*>(data), static_cast<int>(size), 0);
-            }
-
-            int TcpSocketClient::Receive(int8_t* buffer, size_t size, int32_t timeout)
-            {
-                if (!blocking)
+                void TcpSocketClient::TrySetOptions()
                 {
-                    int res = WaitOnSocket(timeout, true);
+                    int trueOpt = 1;
+                    int bufSizeOpt = BUFFER_SIZE;
+                    int idleOpt = KEEP_ALIVE_IDLE_TIME;
+                    int idleRetryOpt = KEEP_ALIVE_PROBES_PERIOD;
 
-                    if (res < 0 || res == WaitResult::TIMEOUT)
-                        return res;
+                    int res = setsockopt(socketHandle, SOL_SOCKET, SO_SNDBUF,
+                        reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
+
+                    if (SOCKET_ERROR == res)
+                    {
+//                        std::string err = "TCP socket send buffer size setup failed: " + GetLastSocketErrorMessage();
+                    }
+
+                    res = setsockopt(socketHandle, SOL_SOCKET, SO_RCVBUF,
+                        reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
+
+                    if (SOCKET_ERROR == res)
+                    {
+//                        std::string err = "TCP socket receive buffer size setup failed: " + GetLastSocketErrorMessage();
+                    }
+
+                    res = setsockopt(socketHandle, IPPROTO_TCP, TCP_NODELAY,
+                        reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
+
+                    if (SOCKET_ERROR == res)
+                    {
+//                        std::string err = "TCP no-delay mode setup failed: " + GetLastSocketErrorMessage();
+                    }
+
+                    res = setsockopt(socketHandle, SOL_SOCKET, SO_OOBINLINE,
+                        reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
+
+                    if (SOCKET_ERROR == res)
+                    {
+//                        std::string err = "TCP out-of-bound data inlining setup failed: " + GetLastSocketErrorMessage();
+                    }
+
+                    blocking = false;
+
+                    int flags;
+                    if (((flags = fcntl(socketHandle, F_GETFL, 0)) < 0) ||
+                        (fcntl(socketHandle, F_SETFL, flags | O_NONBLOCK) < 0))
+                    {
+                        blocking = true;
+//                        std::string err = "Non-blocking mode setup failed: " + GetLastSocketErrorMessage();
+                    }
+
+                    res = setsockopt(socketHandle, SOL_SOCKET, SO_KEEPALIVE,
+                        reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
+
+                    if (SOCKET_ERROR == res)
+                    {
+//                        std::string err = "TCP keep-alive mode setup failed: " + GetLastSocketErrorMessage();
+
+                        // There is no sense in configuring keep alive params if we faileed to set up keep alive mode.
+                        return;
+                    }
+
+                    res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPIDLE,
+                        reinterpret_cast<char*>(&idleOpt), sizeof(idleOpt));
+
+                    if (SOCKET_ERROR == res)
+                    {
+//                        std::string err = "TCP keep-alive idle timeout setup failed: " + GetLastSocketErrorMessage();
+                    }
+
+                    res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPINTVL,
+                        reinterpret_cast<char*>(&idleRetryOpt), sizeof(idleRetryOpt));
+
+                    if (SOCKET_ERROR == res)
+                    {
+//                        std::string err = "TCP keep-alive probes period setup failed: " + GetLastSocketErrorMessage();
+                    }
+
                 }
 
-                return recv(socketHandle, reinterpret_cast<char*>(buffer), static_cast<int>(size), 0);
-            }
-
-            bool TcpSocketClient::IsBlocking() const
-            {
-                return blocking;
-            }
-
-            void TcpSocketClient::TrySetOptions(diagnostic::Diagnosable& diag)
-            {
-                int trueOpt = 1;
-                int bufSizeOpt = BUFFER_SIZE;
-                int idleOpt = KEEP_ALIVE_IDLE_TIME;
-                int idleRetryOpt = KEEP_ALIVE_PROBES_PERIOD;
-
-                int res = setsockopt(socketHandle, SOL_SOCKET, SO_SNDBUF,
-                    reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
-
-                if (SOCKET_ERROR == res)
+                int TcpSocketClient::WaitOnSocket(int32_t timeout, bool rd)
                 {
-                    LOG_MSG("TCP socket send buffer size setup failed: " << GetLastSocketErrorMessage());
+                    int ready = 0;
+                    int lastError = 0;
 
-                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                        "Can not set up TCP socket send buffer size");
-                }
+                    fd_set fds;
 
-                res = setsockopt(socketHandle, SOL_SOCKET, SO_RCVBUF,
-                    reinterpret_cast<char*>(&bufSizeOpt), sizeof(bufSizeOpt));
+                    do {
+                        struct timeval tv = { 0 };
+                        tv.tv_sec = timeout;
 
-                if (SOCKET_ERROR == res)
-                {
-                    LOG_MSG("TCP socket receive buffer size setup failed: " << GetLastSocketErrorMessage());
+                        FD_ZERO(&fds);
+                        FD_SET(socketHandle, &fds);
 
-                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                        "Can not set up TCP socket receive buffer size");
-                }
+                        fd_set* readFds = 0;
+                        fd_set* writeFds = 0;
 
-                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_NODELAY,
-                    reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
+                        if (rd)
+                            readFds = &fds;
+                        else
+                            writeFds = &fds;
 
-                if (SOCKET_ERROR == res)
-                {
-                    LOG_MSG("TCP no-delay mode setup failed: " << GetLastSocketErrorMessage());
+                        ready = select(static_cast<int>((socketHandle) + 1),
+                            readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
 
-                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                        "Can not set up TCP no-delay mode");
-                }
+                        if (ready == SOCKET_ERROR)
+                            lastError = GetLastSocketError();
 
-                res = setsockopt(socketHandle, SOL_SOCKET, SO_OOBINLINE,
-                    reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
-
-                if (SOCKET_ERROR == res)
-                {
-                    LOG_MSG("TCP out-of-bound data inlining setup failed: " << GetLastSocketErrorMessage());
-
-                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                        "Can not set up TCP out-of-bound data inlining");
-                }
-
-                blocking = false;
-
-                int flags;
-                if (((flags = fcntl(socketHandle, F_GETFL, 0)) < 0) ||
-                    (fcntl(socketHandle, F_SETFL, flags | O_NONBLOCK) < 0))
-                {
-                    blocking = true;
-                    LOG_MSG("Non-blocking mode setup failed: " << GetLastSocketErrorMessage());
-
-                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                        "Can not set up non-blocking mode. Timeouts are not available.");
-                }
-
-                res = setsockopt(socketHandle, SOL_SOCKET, SO_KEEPALIVE,
-                    reinterpret_cast<char*>(&trueOpt), sizeof(trueOpt));
-
-                if (SOCKET_ERROR == res)
-                {
-                    LOG_MSG("TCP keep-alive mode setup failed: " << GetLastSocketErrorMessage());
-
-                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                        "Can not set up TCP keep-alive mode");
-
-                    // There is no sense in configuring keep alive params if we faileed to set up keep alive mode.
-                    return;
-                }
-
-                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPIDLE,
-                    reinterpret_cast<char*>(&idleOpt), sizeof(idleOpt));
-
-                if (SOCKET_ERROR == res)
-                {
-                    LOG_MSG("TCP keep-alive idle timeout setup failed: " << GetLastSocketErrorMessage());
-
-                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                        "Can not set up TCP keep-alive idle timeout");
-                }
-
-                res = setsockopt(socketHandle, IPPROTO_TCP, TCP_KEEPINTVL,
-                    reinterpret_cast<char*>(&idleRetryOpt), sizeof(idleRetryOpt));
-
-                if (SOCKET_ERROR == res)
-                {
-                    LOG_MSG("TCP keep-alive probes period setup failed: " << GetLastSocketErrorMessage());
-
-                    diag.AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                        "Can not set up TCP keep-alive probes period");
-                }
-
-            }
-
-            int TcpSocketClient::WaitOnSocket(int32_t timeout, bool rd)
-            {
-                int ready = 0;
-                int lastError = 0;
-
-                fd_set fds;
-
-                do {
-                    struct timeval tv = { 0 };
-                    tv.tv_sec = timeout;
-
-                    FD_ZERO(&fds);
-                    FD_SET(socketHandle, &fds);
-
-                    fd_set* readFds = 0;
-                    fd_set* writeFds = 0;
-
-                    if (rd)
-                        readFds = &fds;
-                    else
-                        writeFds = &fds;
-
-                    ready = select(static_cast<int>((socketHandle) + 1),
-                        readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
+                    } while (ready == SOCKET_ERROR && IsSocketOperationInterrupted(lastError));
 
                     if (ready == SOCKET_ERROR)
-                        lastError = GetLastSocketError();
+                        return -lastError;
 
-                } while (ready == SOCKET_ERROR && IsSocketOperationInterrupted(lastError));
+                    socklen_t size = sizeof(lastError);
+                    int res = getsockopt(socketHandle, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&lastError), &size);
 
-                if (ready == SOCKET_ERROR)
-                    return -lastError;
+                    if (res != SOCKET_ERROR && lastError != 0)
+                        return -lastError;
 
-                socklen_t size = sizeof(lastError);
-                int res = getsockopt(socketHandle, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&lastError), &size);
+                    if (ready == 0)
+                        return WaitResult::TIMEOUT;
 
-                if (res != SOCKET_ERROR && lastError != 0)
-                    return -lastError;
+                    return WaitResult::SUCCESS;
+                }
 
-                if (ready == 0)
-                    return WaitResult::TIMEOUT;
+                int TcpSocketClient::GetLastSocketError()
+                {
+                    return errno;
+                }
 
-                return WaitResult::SUCCESS;
-            }
+                int TcpSocketClient::GetLastSocketError(int handle)
+                {
+                    int lastError = 0;
+                    socklen_t size = sizeof(lastError);
+                    int res = getsockopt(handle, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&lastError), &size);
 
-            int TcpSocketClient::GetLastSocketError()
-            {
-                return errno;
-            }
+                    return res == SOCKET_ERROR ? 0 : lastError;
+                }
 
-            int TcpSocketClient::GetLastSocketError(int handle)
-            {
-                int lastError = 0;
-                socklen_t size = sizeof(lastError);
-                int res = getsockopt(handle, SOL_SOCKET, SO_ERROR, reinterpret_cast<char*>(&lastError), &size);
-
-                return res == SOCKET_ERROR ? 0 : lastError;
-            }
-
-            bool TcpSocketClient::IsSocketOperationInterrupted(int errorCode)
-            {
-                return errorCode == EINTR;
+                bool TcpSocketClient::IsSocketOperationInterrupted(int errorCode)
+                {
+                    return errorCode == EINTR;
+                }
             }
         }
     }
