@@ -28,8 +28,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -893,6 +895,29 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         CacheGroupContext ctx = cctx.cache().cacheGroup(grpId);
 
         return ctx != null && !ctx.walEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void cleanupWalDirectories() throws IgniteCheckedException {
+        try {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(walWorkDir.toPath())) {
+                for (Path path : files)
+                    Files.delete(path);
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to cleanup wal work directory: " + walWorkDir, e);
+        }
+
+        try {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(walArchiveDir.toPath())) {
+                for (Path path : files)
+                    Files.delete(path);
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to cleanup wal archive directory: " + walArchiveDir, e);
+        }
     }
 
     /**
