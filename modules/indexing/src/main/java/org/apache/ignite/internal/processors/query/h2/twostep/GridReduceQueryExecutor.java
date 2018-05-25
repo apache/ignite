@@ -568,7 +568,7 @@ public class GridReduceQueryExecutor {
 
             List<Integer> cacheIds = qry.cacheIds();
 
-            final GridNearTxLocal curTx = MvccUtils.activeSqlTx(ctx);
+            final GridNearTxLocal curTx = MvccUtils.mvccEnabled(ctx) ? MvccUtils.activeSqlTx(ctx) : null;
 
             final GridNearTxSelectForUpdateFuture sfuFut;
 
@@ -578,7 +578,7 @@ public class GridReduceQueryExecutor {
 
             if (qry.forUpdate()) {
                 // Indexing should have started TX at this point for FOR UPDATE query.
-                assert curTx != null;
+                assert MvccUtils.mvccEnabled(ctx) && curTx != null;
 
                 sfuFut = new GridNearTxSelectForUpdateFuture(cacheContext(qry.cacheIds().get(0)), curTx, timeoutMillis);
 
