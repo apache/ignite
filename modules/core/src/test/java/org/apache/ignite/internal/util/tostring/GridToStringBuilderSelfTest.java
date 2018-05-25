@@ -390,7 +390,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         info(testClsStrOfR);
 
         assertTrue("Collection limit error in Map or List, normal: <" + testClsStr + ">, overflowed: <"
-            +testClsStrOf + ">", testClsStr.length() == testClsStrOfR.length());
+            + testClsStrOf + ">", testClsStr.length() == testClsStrOfR.length());
     }
 
     /**

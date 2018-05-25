@@ -43,7 +43,37 @@ class GridToStringClassDescriptor {
         assert cls != null;
 
         fqn = cls.getName();
-        sqn = cls.getSimpleName();
+        sqn = getSimpleName(cls);
+    }
+
+    /**
+     * Workaround on {@link GridToStringBuilder} recursion handling.
+     * In case of P2P class loading {@link Class#getSimpleName()} may throw an error.
+     *
+     * @param cls Class.
+     * @return Simple name of given class.
+     */
+    @SuppressWarnings({"StatementWithEmptyBody"})
+    private String getSimpleName(Class<?> cls) {
+        String name = cls.getName();
+
+        // Lambda
+        int idx = name.indexOf("$$");
+
+        if (idx != -1)
+            return name.substring(name.lastIndexOf('.') + 1);
+
+        // Not top level class
+        idx = name.indexOf('$');
+
+        if (idx != -1) {
+            while (++idx < name.length() && Character.isDigit(name.charAt(idx)));
+
+            return name.substring(idx);
+        }
+
+        // Top level class
+        return name.substring(name.lastIndexOf('.') + 1);
     }
 
     /**

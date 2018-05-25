@@ -1112,7 +1112,7 @@ public class GridToStringBuilder {
         return cls == Byte.class || cls == Short.class || cls == Integer.class || cls == Long.class ||
             cls == Float.class || cls == Double.class  || cls == Boolean.class || cls == Character.class ||
             cls == String.class || cls == StringBuilder.class || ByteBuffer.class.isAssignableFrom(cls) ||
-            cls == UUID.class;
+            cls == UUID.class || cls == Class.class;
     }
 
     /**
@@ -1277,7 +1277,7 @@ public class GridToStringBuilder {
     private static boolean isPrimitiveArrayType(Class cls) {
         return cls.equals(byte[].class) || cls.equals(boolean[].class) || cls.equals(short[].class) ||
             cls.equals(int[].class) || cls.equals(long[].class) || cls.equals(float[].class) ||
-            cls.equals(double[].class) || cls.equals(char[].class);
+            cls.equals(double[].class) || cls.equals(char[].class) || cls.equals(Class[].class);
     }
 
     /**
