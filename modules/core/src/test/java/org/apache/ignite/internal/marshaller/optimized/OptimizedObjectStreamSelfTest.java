@@ -47,6 +47,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Properties;
 import java.util.Queue;
@@ -55,13 +56,9 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.Vector;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedClassDescriptor;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectInputStream;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectOutputStream;
-import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectStreamRegistry;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInput;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -71,7 +68,6 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -83,7 +79,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     private static final MarshallerContext CTX = new MarshallerContextTestImpl();
 
     /** */
-    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap8<>();
+    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap<>();
 
     /**
      * @throws Exception If failed.
@@ -150,13 +146,9 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBoolean() throws Exception {
-        boolean val = true;
+        assertEquals(Boolean.TRUE, marshalUnmarshal(Boolean.TRUE));
 
-        assertEquals(new Boolean(val), marshalUnmarshal(val));
-
-        val = false;
-
-        assertEquals(new Boolean(val), marshalUnmarshal(val));
+        assertEquals(Boolean.FALSE, marshalUnmarshal(Boolean.FALSE));
     }
 
     /**
@@ -275,6 +267,49 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
 
             if (serEx == null)
                 throw e;
+        }
+    }
+
+    /**
+     * Test informative exception message while failed object unmarshalling
+     *
+     * @throws Exception If failed.
+     */
+    public void testFailedUnmarshallingLogging() throws Exception {
+        OptimizedMarshaller marsh = new OptimizedMarshaller(true);
+
+        marsh.setContext(CTX);
+
+        try {
+            marsh.unmarshal(marsh.marshal(new BadDeserializableObject()), null);
+        }
+        catch (IgniteCheckedException ex) {
+            assertTrue(ex.getCause().getMessage().contains(
+                "object [typeName=org.apache.ignite.internal.marshaller.optimized.OptimizedObjectStreamSelfTest$BadDeserializableObject]"));
+
+            assertTrue(ex.getCause().getCause().getMessage().contains("field [name=val"));
+        }
+    }
+
+
+    /**
+     * Test informative exception message while failed object marshalling
+     *
+     * @throws Exception If failed.
+     */
+    public void testFailedMarshallingLogging() throws Exception {
+        OptimizedMarshaller marsh = new OptimizedMarshaller(true);
+
+        marsh.setContext(CTX);
+
+        try {
+            marsh.marshal(new BadSerializableObject());
+        }
+        catch (IgniteCheckedException ex) {
+            assertTrue(ex.getCause().getMessage().contains(
+                "object [typeName=org.apache.ignite.internal.marshaller.optimized.OptimizedObjectStreamSelfTest$BadSerializableObject]"));
+
+            assertTrue(ex.getCause().getCause().getMessage().contains("field [name=val"));
         }
     }
 
@@ -1032,7 +1067,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
             marshalUnmarshal(new CustomWriteObjectMethodObject("test"));
         }
         catch (IOException e) {
-            assert e.getCause() instanceof NotActiveException;
+            assert e.getCause().getCause() instanceof NotActiveException;
         }
     }
 
@@ -1044,6 +1079,21 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
         Throwable t = new Throwable("Throwable");
 
         assertEquals(t.getMessage(), ((Throwable)marshalUnmarshal(t)).getMessage());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNestedReadWriteObject() throws Exception {
+        NestedReadWriteObject[] arr = new NestedReadWriteObject[5];
+
+        arr[0] = new NestedReadWriteObject(null, null, 1, "n1");
+        arr[1] = new NestedReadWriteObject(arr[0], null, 2, "n2");
+        arr[2] = new NestedReadWriteObject(null, arr[0], 3, "n3");
+        arr[3] = new NestedReadWriteObject(arr[1], arr[2], 4, "n4");
+        arr[4] = new NestedReadWriteObject(arr[3], arr[0], 5, "n4");
+
+        assertTrue(Objects.deepEquals(arr, marshalUnmarshal(arr)));
     }
 
     /**
@@ -1663,9 +1713,9 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
          * @throws IOException In case of error.
          */
         private void writeObject(ObjectOutputStream out) throws IOException {
-            out.defaultWriteObject();
+            out.writeObject("Optional data");
 
-            out.writeUTF("Optional data");
+            out.defaultWriteObject();
         }
 
         /**
@@ -1674,9 +1724,9 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
          * @throws ClassNotFoundException If class not found.
          */
         private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-            in.defaultReadObject();
+            strA = (String)in.readObject();
 
-            strA = in.readUTF();
+            in.defaultReadObject();
         }
     }
 
@@ -2159,4 +2209,122 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
             stream.writeFields();
         }
     }
+
+    /**
+     * Class with custom {@link #writeObject(ObjectOutputStream)} and/or
+     * {@link #readObject(ObjectInputStream)} implementation uses {@link ObjectOutputStream#writeObject(Object)} and/or
+     * {@link ObjectInputStream#readObject()} internally.
+     */
+    private static class NestedReadWriteObject implements Serializable {
+        /** */
+        private transient NestedReadWriteObject obj1;
+
+        /** */
+        private transient NestedReadWriteObject obj2;
+
+        /** */
+        private int val;
+
+        /** */
+        private String str;
+
+        /** */
+        public NestedReadWriteObject(NestedReadWriteObject obj1, NestedReadWriteObject obj2, int val, String str) {
+            this.obj1 = obj1;
+            this.obj2 = obj2;
+            this.val = val;
+            this.str = str;
+        }
+
+        /**
+         * @param out Output stream.
+         * @throws IOException In case of error.
+         */
+        private void writeObject(ObjectOutputStream out) throws IOException {
+            out.writeObject(obj1);
+
+            out.defaultWriteObject();
+
+            out.writeObject(obj2);
+        }
+
+        /**
+         * @param in Input stream.
+         * @throws IOException In case of error.
+         * @throws ClassNotFoundException If class not found.
+         */
+        private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+            obj1 = (NestedReadWriteObject)in.readObject();
+
+            in.defaultReadObject();
+
+            obj2 = (NestedReadWriteObject)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object obj) {
+            if (obj == this)
+                return true;
+
+            if (!(obj instanceof NestedReadWriteObject))
+                return false;
+
+            NestedReadWriteObject o = (NestedReadWriteObject) obj;
+
+            return o.val == val && Objects.equals(o.str, str) && Objects.equals(o.obj1, obj1)
+                && Objects.equals(o.obj2, obj2);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = obj1 != null ? obj1.hashCode() : 0;
+
+            res = 31 * res + (obj2 != null ? obj2.hashCode() : 0);
+
+            res = 31 * res + val;
+
+            res = 31 * res + (str != null ? str.hashCode() : 0);
+
+            return res;
+        }
+    }
+
+    /** */
+    static class BadDeserializableObject implements Serializable {
+        /** */
+        BadDeserializableValue val = new BadDeserializableValue();
+    }
+
+    /** */
+    static class BadDeserializableValue implements Serializable {
+        /** */
+        private void writeObject(ObjectOutputStream os) throws IOException{
+            os.write(10);
+        }
+
+        /** */
+        private void readObject(ObjectInputStream os){
+            throw new RuntimeException("bad object");
+        }
+    }
+
+    /** */
+    static class BadSerializableObject implements Serializable {
+        /** */
+        BadSerializableValue val = new BadSerializableValue();
+    }
+
+    /** */
+    static class BadSerializableValue implements Serializable {
+        /** */
+        private void writeObject(ObjectOutputStream os){
+            throw new RuntimeException("bad object");
+        }
+
+        /** */
+        private void readObject(ObjectInputStream os){
+            throw new RuntimeException("bad object");
+        }
+    }
+
 }

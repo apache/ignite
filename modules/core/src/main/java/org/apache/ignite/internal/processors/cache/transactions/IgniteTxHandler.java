@@ -256,9 +256,6 @@ public class IgniteTxHandler {
 
         IgniteInternalFuture<GridNearTxPrepareResponse> fut = locTx.prepareAsyncLocal(req);
 
-        if (locTx.isRollbackOnly())
-            locTx.rollbackNearTxLocalAsync();
-
         return fut.chain(new C1<IgniteInternalFuture<GridNearTxPrepareResponse>, GridNearTxPrepareResponse>() {
             @Override public GridNearTxPrepareResponse apply(IgniteInternalFuture<GridNearTxPrepareResponse> f) {
                 try {
@@ -885,7 +882,7 @@ public class IgniteTxHandler {
                 req.threadId(),
                 req.futureId(),
                 req.miniId(),
-                new IgniteCheckedException("Transaction has been already completed."));
+                new IgniteTxRollbackCheckedException("Transaction has been already completed or not started yet."));
 
             try {
                 ctx.io().send(nodeId, res, req.policy());
@@ -957,28 +954,30 @@ public class IgniteTxHandler {
             }
         }
         catch (Throwable e) {
-            tx.commitError(e);
-
-            tx.systemInvalidate(true);
-
             U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
 
-            IgniteInternalFuture<IgniteInternalTx> res = null;
+            if (tx != null) {
+                tx.commitError(e);
 
-            try {
-                res = tx.rollbackDhtLocalAsync();
+                tx.systemInvalidate(true);
 
-                // Only for error logging.
-                res.listen(CU.errorLogger(log));
-            }
-            catch (Throwable e1) {
-                e.addSuppressed(e1);
+                try {
+                    IgniteInternalFuture<IgniteInternalTx> res = tx.rollbackDhtLocalAsync();
+
+                    // Only for error logging.
+                    res.listen(CU.errorLogger(log));
+
+                    return res;
+                }
+                catch (Throwable e1) {
+                    e.addSuppressed(e1);
+                }
             }
 
             if (e instanceof Error)
                 throw (Error)e;
 
-            return res;
+            return new GridFinishedFuture<>(e);
         }
     }
 
@@ -1696,6 +1695,8 @@ public class IgniteTxHandler {
             res.invalidPartitionsByCacheId(tx.invalidPartitions());
 
             if (tx.empty() && req.last()) {
+                tx.skipCompletedVersions(req.skipCompletedVersion());
+
                 tx.rollbackRemoteTx();
 
                 return null;

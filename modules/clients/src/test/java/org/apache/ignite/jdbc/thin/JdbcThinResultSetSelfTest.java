@@ -112,15 +112,10 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         Connection conn = DriverManager.getConnection(URL);
 
-        conn.setSchema(DEFAULT_CACHE_NAME);
+        conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
         stmt = conn.createStatement();
 
@@ -695,7 +690,7 @@ public class JdbcThinResultSetSelfTest extends JdbcThinAbstractSelfTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, "Custom objects are not supported");
+        }, SQLException.class, "Custom objects are not supported");
     }
 
     /**

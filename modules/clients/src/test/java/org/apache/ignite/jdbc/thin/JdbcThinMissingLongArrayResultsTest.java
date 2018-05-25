@@ -158,11 +158,7 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
             }
             streamer.flush();
         }
-        ignite.active(true);    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
+        ignite.active(true);
     }
 
     /**
@@ -171,7 +167,7 @@ public class JdbcThinMissingLongArrayResultsTest extends JdbcThinAbstractSelfTes
     @SuppressWarnings({"EmptyTryBlock", "unused"})
     public void testDefaults() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            conn.setSchema(CACHE_NAME);
+            conn.setSchema('"' + CACHE_NAME + '"');
 
             try (PreparedStatement st = conn.prepareStatement("SELECT * FROM VALUE")) {
                 ResultSet rs = st.executeQuery();

@@ -19,7 +19,7 @@ package org.apache.ignite.configuration;
 import java.io.Serializable;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
-import org.apache.ignite.mxbean.MemoryMetricsMXBean;
+import org.apache.ignite.mxbean.DataRegionMetricsMXBean;
 
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
 
@@ -41,26 +41,29 @@ import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_D
  *                 <list>
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="Default_Region"/>
- *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{100L * 1024 * 1024}"/>
  *                      </bean>
  *
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="20MB_Region_Eviction"/>
- *                          <property name="initialSize" value="#{20 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{20L * 1024 * 1024}"/>
  *                          <property name="pageEvictionMode" value="RANDOM_2_LRU"/>
  *                      </bean>
  *
  *                      <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                          <property name="name" value="25MB_Region_Swapping"/>
- *                          <property name="initialSize" value="#{25 * 1024 * 1024}"/>
- *                          <property name="initialSize" value="#{100 * 1024 * 1024}"/>
+ *                          <property name="initialSize" value="#{25L * 1024 * 1024}"/>
+ *                          <property name="maxSize" value="#{100L * 1024 * 1024}"/>
  *                          <property name="swapFilePath" value="memoryPolicyExampleSwap"/>
  *                      </bean>
  *                  </list>
  *              </property>
  *     }
  * </pre>
+ *
+ * @deprecated Use {@link DataRegionConfiguration} instead.
  */
+@Deprecated
 public final class MemoryPolicyConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -290,7 +293,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Gets whether memory metrics are enabled by default on node startup. Memory metrics can be enabled and disabled
-     * at runtime via memory metrics {@link MemoryMetricsMXBean MX bean}.
+     * at runtime via memory metrics {@link DataRegionMetricsMXBean MX bean}.
      *
      * @return Metrics enabled flag.
      */
@@ -300,7 +303,7 @@ public final class MemoryPolicyConfiguration implements Serializable {
 
     /**
      * Sets memory metrics enabled flag. If this flag is {@code true}, metrics will be enabled on node startup.
-     * Memory metrics can be enabled and disabled at runtime via memory metrics {@link MemoryMetricsMXBean MX bean}.
+     * Memory metrics can be enabled and disabled at runtime via memory metrics {@link DataRegionMetricsMXBean MX bean}.
      *
      * @param metricsEnabled Metrics enabled flag.
      * @return {@code this} for chaining.

@@ -33,12 +33,14 @@ import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -67,6 +69,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
+
+    /** Client key store path. */
+    private static final String CLI_KEY_STORE_PATH = U.getIgniteHome() +
+        "/modules/clients/src/test/keystore/client.jks";
+
+    /** Server key store path. */
+    private static final String SRV_KEY_STORE_PATH = U.getIgniteHome() +
+        "/modules/clients/src/test/keystore/server.jks";
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
@@ -106,11 +116,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         startGridsMultiThreaded(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -127,17 +132,16 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
     /**
      * Test invalid endpoint.
-     *
-     * @throws Exception If failed.
      */
-    public void testInvalidEndpoint() throws Exception {
+    public void testInvalidEndpoint() {
         assertInvalid("jdbc:ignite:thin://", "Host name is empty");
         assertInvalid("jdbc:ignite:thin://:10000", "Host name is empty");
         assertInvalid("jdbc:ignite:thin://     :10000", "Host name is empty");
 
-        assertInvalid("jdbc:ignite:thin://127.0.0.1:-1", "Invalid port");
-        assertInvalid("jdbc:ignite:thin://127.0.0.1:0", "Invalid port");
-        assertInvalid("jdbc:ignite:thin://127.0.0.1:100000", "Invalid port");
+        assertInvalid("jdbc:ignite:thin://127.0.0.1:-1", "port range contains invalid port -1");
+        assertInvalid("jdbc:ignite:thin://127.0.0.1:0", "port range contains invalid port 0");
+        assertInvalid("jdbc:ignite:thin://127.0.0.1:100000",
+            "port range contains invalid port 100000");
     }
 
     /**
@@ -146,32 +150,66 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testSocketBuffers() throws Exception {
+        final int dfltDufSize = 64 * 1024;
+
         assertInvalid("jdbc:ignite:thin://127.0.0.1?socketSendBuffer=-1",
-            "Property cannot be negative [name=" + JdbcThinUtils.PARAM_SOCK_SND_BUF);
+            "Property cannot be lower than 0 [name=socketSendBuffer, value=-1]");
 
         assertInvalid("jdbc:ignite:thin://127.0.0.1?socketReceiveBuffer=-1",
-            "Property cannot be negative [name=" + JdbcThinUtils.PARAM_SOCK_RCV_BUF);
+            "Property cannot be lower than 0 [name=socketReceiveBuffer, value=-1]");
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertEquals(0, io(conn).socketSendBuffer());
-            assertEquals(0, io(conn).socketReceiveBuffer());
+            assertEquals(dfltDufSize, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(dfltDufSize, io(conn).connectionProperties().getSocketReceiveBuffer());
         }
 
         // Note that SO_* options are hints, so we check that value is equals to either what we set or to default.
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?socketSendBuffer=1024")) {
-            assertEquals(1024, io(conn).socketSendBuffer());
-            assertEquals(0, io(conn).socketReceiveBuffer());
+            assertEquals(1024, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(dfltDufSize, io(conn).connectionProperties().getSocketReceiveBuffer());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?socketReceiveBuffer=1024")) {
-            assertEquals(0, io(conn).socketSendBuffer());
-            assertEquals(1024, io(conn).socketReceiveBuffer());
+            assertEquals(dfltDufSize, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(1024, io(conn).connectionProperties().getSocketReceiveBuffer());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?" +
             "socketSendBuffer=1024&socketReceiveBuffer=2048")) {
-            assertEquals(1024, io(conn).socketSendBuffer());
-            assertEquals(2048, io(conn).socketReceiveBuffer());
+            assertEquals(1024, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(2048, io(conn).connectionProperties().getSocketReceiveBuffer());
+        }
+    }
+
+    /**
+     * Test invalid socket buffer sizes with semicolon.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSocketBuffersSemicolon() throws Exception {
+        final int dfltDufSize = 64 * 1024;
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1;socketSendBuffer=-1",
+            "Property cannot be lower than 0 [name=socketSendBuffer, value=-1]");
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1;socketReceiveBuffer=-1",
+            "Property cannot be lower than 0 [name=socketReceiveBuffer, value=-1]");
+
+        // Note that SO_* options are hints, so we check that value is equals to either what we set or to default.
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;socketSendBuffer=1024")) {
+            assertEquals(1024, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(dfltDufSize, io(conn).connectionProperties().getSocketReceiveBuffer());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;socketReceiveBuffer=1024")) {
+            assertEquals(dfltDufSize, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(1024, io(conn).connectionProperties().getSocketReceiveBuffer());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;" +
+            "socketSendBuffer=1024;socketReceiveBuffer=2048")) {
+            assertEquals(1024, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(2048, io(conn).connectionProperties().getSocketReceiveBuffer());
         }
     }
 
@@ -182,61 +220,95 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testSqlHints() throws Exception {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertFalse(io(conn).distributedJoins());
-            assertFalse(io(conn).enforceJoinOrder());
-            assertFalse(io(conn).collocated());
-            assertFalse(io(conn).replicatedOnly());
-            assertFalse(io(conn).lazy());
+            assertHints(conn, false, false, false, false, false, false);
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true")) {
-            assertTrue(io(conn).distributedJoins());
-            assertFalse(io(conn).enforceJoinOrder());
-            assertFalse(io(conn).collocated());
-            assertFalse(io(conn).replicatedOnly());
-            assertFalse(io(conn).lazy());
+            assertHints(conn, true, false, false, false, false, false);
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?enforceJoinOrder=true")) {
-            assertFalse(io(conn).distributedJoins());
-            assertTrue(io(conn).enforceJoinOrder());
-            assertFalse(io(conn).collocated());
-            assertFalse(io(conn).replicatedOnly());
-            assertFalse(io(conn).lazy());
+            assertHints(conn, false, true, false, false, false, false);
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?collocated=true")) {
-            assertFalse(io(conn).distributedJoins());
-            assertFalse(io(conn).enforceJoinOrder());
-            assertTrue(io(conn).collocated());
-            assertFalse(io(conn).replicatedOnly());
-            assertFalse(io(conn).lazy());
+            assertHints(conn, false, false, true, false, false, false);
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?replicatedOnly=true")) {
-            assertFalse(io(conn).distributedJoins());
-            assertFalse(io(conn).enforceJoinOrder());
-            assertFalse(io(conn).collocated());
-            assertTrue(io(conn).replicatedOnly());
-            assertFalse(io(conn).lazy());
+            assertHints(conn, false, false, false, true, false, false);
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?lazy=true")) {
-            assertFalse(io(conn).distributedJoins());
-            assertFalse(io(conn).enforceJoinOrder());
-            assertFalse(io(conn).collocated());
-            assertFalse(io(conn).replicatedOnly());
-            assertTrue(io(conn).lazy());
+            assertHints(conn, false, false, false, false, true, false);
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?skipReducerOnUpdate=true")) {
+            assertHints(conn, false, false, false, false, false, true);
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?distributedJoins=true&" +
-            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=true")) {
-            assertTrue(io(conn).distributedJoins());
-            assertTrue(io(conn).enforceJoinOrder());
-            assertTrue(io(conn).collocated());
-            assertTrue(io(conn).replicatedOnly());
-            assertTrue(io(conn).lazy());
+            "enforceJoinOrder=true&collocated=true&replicatedOnly=true&lazy=true&skipReducerOnUpdate=true")) {
+            assertHints(conn, true, true, true, true, true, true);
         }
+    }
+
+    /**
+     * Test SQL hints with semicolon.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSqlHintsSemicolon() throws Exception {
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;distributedJoins=true")) {
+            assertHints(conn, true, false, false, false, false, false);
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;enforceJoinOrder=true")) {
+            assertHints(conn, false, true, false, false, false, false);
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;collocated=true")) {
+            assertHints(conn, false, false, true, false, false, false);
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;replicatedOnly=true")) {
+            assertHints(conn, false, false, false, true, false, false);
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;lazy=true")) {
+            assertHints(conn, false, false, false, false, true, false);
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;skipReducerOnUpdate=true")) {
+            assertHints(conn, false, false, false, false, false, true);
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;distributedJoins=true;" +
+            "enforceJoinOrder=true;collocated=true;replicatedOnly=true;lazy=true;skipReducerOnUpdate=true")) {
+            assertHints(conn, true, true, true, true, true, true);
+        }
+    }
+
+    /**
+     * Assert hints.
+     *
+     * @param conn Connection.
+     * @param distributedJoins Distributed joins.
+     * @param enforceJoinOrder Enforce join order.
+     * @param collocated Co-located.
+     * @param replicatedOnly Replicated only.
+     * @param lazy Lazy.
+     * @param skipReducerOnUpdate Skip reducer on update.
+     * @throws Exception If failed.
+     */
+    private void assertHints(Connection conn, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
+        boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate)throws Exception {
+        assertEquals(distributedJoins, io(conn).connectionProperties().isDistributedJoins());
+        assertEquals(enforceJoinOrder, io(conn).connectionProperties().isEnforceJoinOrder());
+        assertEquals(collocated, io(conn).connectionProperties().isCollocated());
+        assertEquals(replicatedOnly, io(conn).connectionProperties().isReplicatedOnly());
+        assertEquals(lazy, io(conn).connectionProperties().isLazy());
+        assertEquals(skipReducerOnUpdate, io(conn).connectionProperties().isSkipReducerOnUpdate());
     }
 
     /**
@@ -246,35 +318,70 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testTcpNoDelay() throws Exception {
         assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=0",
-            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+            "Invalid property value. [name=tcpNoDelay, val=0, choices=[true, false]]");
 
         assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=1",
-            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+            "Invalid property value. [name=tcpNoDelay, val=1, choices=[true, false]]");
 
         assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=false1",
-            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+            "Invalid property value. [name=tcpNoDelay, val=false1, choices=[true, false]]");
 
         assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=true1",
-            "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_TCP_NO_DELAY);
+            "Invalid property value. [name=tcpNoDelay, val=true1, choices=[true, false]]");
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertTrue(io(conn).tcpNoDelay());
+            assertTrue(io(conn).connectionProperties().isTcpNoDelay());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=true")) {
-            assertTrue(io(conn).tcpNoDelay());
+            assertTrue(io(conn).connectionProperties().isTcpNoDelay());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=True")) {
-            assertTrue(io(conn).tcpNoDelay());
+            assertTrue(io(conn).connectionProperties().isTcpNoDelay());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=false")) {
-            assertFalse(io(conn).tcpNoDelay());
+            assertFalse(io(conn).connectionProperties().isTcpNoDelay());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=False")) {
-            assertFalse(io(conn).tcpNoDelay());
+            assertFalse(io(conn).connectionProperties().isTcpNoDelay());
+        }
+    }
+
+    /**
+     * Test TCP no delay property handling with semicolon.
+     *
+     * @throws Exception If failed.
+     */
+    public void testTcpNoDelaySemicolon() throws Exception {
+        assertInvalid("jdbc:ignite:thin://127.0.0.1;tcpNoDelay=0",
+            "Invalid property value. [name=tcpNoDelay, val=0, choices=[true, false]]");
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1;tcpNoDelay=1",
+            "Invalid property value. [name=tcpNoDelay, val=1, choices=[true, false]]");
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1;tcpNoDelay=false1",
+            "Invalid property value. [name=tcpNoDelay, val=false1, choices=[true, false]]");
+
+        assertInvalid("jdbc:ignite:thin://127.0.0.1;tcpNoDelay=true1",
+            "Invalid property value. [name=tcpNoDelay, val=true1, choices=[true, false]]");
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;tcpNoDelay=true")) {
+            assertTrue(io(conn).connectionProperties().isTcpNoDelay());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;tcpNoDelay=True")) {
+            assertTrue(io(conn).connectionProperties().isTcpNoDelay());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;tcpNoDelay=false")) {
+            assertFalse(io(conn).connectionProperties().isTcpNoDelay());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;tcpNoDelay=False")) {
+            assertFalse(io(conn).connectionProperties().isTcpNoDelay());
         }
     }
 
@@ -284,9 +391,9 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testAutoCloseServerCursorProperty() throws Exception {
-        String url = "jdbc:ignite:thin://127.0.0.1?" + JdbcThinUtils.PARAM_AUTO_CLOSE_SERVER_CURSOR;
+        String url = "jdbc:ignite:thin://127.0.0.1?autoCloseServerCursor";
 
-        String err = "Failed to parse boolean property [name=" + JdbcThinUtils.PARAM_AUTO_CLOSE_SERVER_CURSOR;
+        String err = "Invalid property value. [name=autoCloseServerCursor";
 
         assertInvalid(url + "=0", err);
         assertInvalid(url + "=1", err);
@@ -294,23 +401,55 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         assertInvalid(url + "=true1", err);
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertFalse(io(conn).autoCloseServerCursor());
+            assertFalse(io(conn).connectionProperties().isAutoCloseServerCursor());
         }
 
         try (Connection conn = DriverManager.getConnection(url + "=true")) {
-            assertTrue(io(conn).autoCloseServerCursor());
+            assertTrue(io(conn).connectionProperties().isAutoCloseServerCursor());
         }
 
         try (Connection conn = DriverManager.getConnection(url + "=True")) {
-            assertTrue(io(conn).autoCloseServerCursor());
+            assertTrue(io(conn).connectionProperties().isAutoCloseServerCursor());
         }
 
         try (Connection conn = DriverManager.getConnection(url + "=false")) {
-            assertFalse(io(conn).autoCloseServerCursor());
+            assertFalse(io(conn).connectionProperties().isAutoCloseServerCursor());
         }
 
         try (Connection conn = DriverManager.getConnection(url + "=False")) {
-            assertFalse(io(conn).autoCloseServerCursor());
+            assertFalse(io(conn).connectionProperties().isAutoCloseServerCursor());
+        }
+    }
+
+    /**
+     * Test autoCloseServerCursor property handling with semicolon.
+     *
+     * @throws Exception If failed.
+     */
+    public void testAutoCloseServerCursorPropertySemicolon() throws Exception {
+        String url = "jdbc:ignite:thin://127.0.0.1;autoCloseServerCursor";
+
+        String err = "Invalid property value. [name=autoCloseServerCursor";
+
+        assertInvalid(url + "=0", err);
+        assertInvalid(url + "=1", err);
+        assertInvalid(url + "=false1", err);
+        assertInvalid(url + "=true1", err);
+
+        try (Connection conn = DriverManager.getConnection(url + "=true")) {
+            assertTrue(io(conn).connectionProperties().isAutoCloseServerCursor());
+        }
+
+        try (Connection conn = DriverManager.getConnection(url + "=True")) {
+            assertTrue(io(conn).connectionProperties().isAutoCloseServerCursor());
+        }
+
+        try (Connection conn = DriverManager.getConnection(url + "=false")) {
+            assertFalse(io(conn).connectionProperties().isAutoCloseServerCursor());
+        }
+
+        try (Connection conn = DriverManager.getConnection(url + "=False")) {
+            assertFalse(io(conn).connectionProperties().isAutoCloseServerCursor());
         }
     }
 
@@ -324,15 +463,34 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             "Invalid URL format (only schema name is allowed in URL path parameter 'host:port[/schemaName]')" );
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/public")) {
-            assertEquals("Invalid schema", "public", conn.getSchema());
+            assertEquals("Invalid schema", "PUBLIC", conn.getSchema());
         }
 
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/" + DEFAULT_CACHE_NAME)) {
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/\"" + DEFAULT_CACHE_NAME + '"')) {
             assertEquals("Invalid schema", DEFAULT_CACHE_NAME, conn.getSchema());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/_not_exist_schema_")) {
-            assertEquals("Invalid schema", "_not_exist_schema_", conn.getSchema());
+            assertEquals("Invalid schema", "_NOT_EXIST_SCHEMA_", conn.getSchema());
+        }
+    }
+
+    /**
+     * Test schema property in URL with semicolon.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSchemaSemicolon() throws Exception {
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;schema=public")) {
+            assertEquals("Invalid schema", "PUBLIC", conn.getSchema());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;schema=\"" + DEFAULT_CACHE_NAME + '"')) {
+            assertEquals("Invalid schema", DEFAULT_CACHE_NAME, conn.getSchema());
+        }
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1;schema=_not_exist_schema_")) {
+            assertEquals("Invalid schema", "_NOT_EXIST_SCHEMA_", conn.getSchema());
         }
     }
 
@@ -346,7 +504,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     private static JdbcThinTcpIo io(Connection conn) throws Exception {
         JdbcThinConnection conn0 = conn.unwrap(JdbcThinConnection.class);
 
-        return conn0.io();
+        return GridTestUtils.getFieldValue(conn0, JdbcThinConnection.class, "cliIo");
     }
 
     /**
@@ -382,7 +540,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
         assert conn.isClosed();
 
-        assert !conn.isValid(2): "Connection must be closed";
+        assert !conn.isValid(2) : "Connection must be closed";
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -985,6 +1143,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             // Invalid parameter value
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
+                    @SuppressWarnings("MagicConstant")
                     @Override public Object call() throws Exception {
                         conn.setTransactionIsolation(-1);
 
@@ -1049,7 +1208,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     conn.getWarnings();
                 }
             });
-
 
             // Exception when called on closed connection
             checkConnectionClosed(new RunnableX() {
@@ -1633,6 +1791,10 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             conn.setSchema(schema);
 
+            assertEquals(schema.toUpperCase(), conn.getSchema());
+
+            conn.setSchema('"' + schema + '"');
+
             assertEquals(schema, conn.getSchema());
 
             conn.close();
@@ -1732,6 +1894,82 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                     conn.setNetworkTimeout(executor, timeout);
                 }
             });
+        }
+    }
+
+    /**
+     */
+    public void testSslClientAndPlainServer()  {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
+                    "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                    "&sslClientCertificateKeyStorePassword=123456" +
+                    "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                    "&sslTrustCertificateKeyStorePassword=123456");
+
+                return null;
+            }
+        }, SQLException.class, "Failed to SSL connect to server");
+    }
+
+    /**
+     */
+    public void testAuthenticateDisableOnServerClientTryAuthenticate()  {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?user=test&password=test");
+
+                return null;
+            }
+        }, SQLException.class, "Can not perform the operation because the authentication is not enabled for the cluster");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultithreadingException() throws Exception {
+        int threadCnt = 10;
+
+        final boolean end[] = new boolean[] {false};
+
+        final SQLException exs [] = new SQLException[threadCnt];
+
+        final AtomicInteger exCnt = new AtomicInteger(0);
+
+        try (final Connection conn = DriverManager.getConnection(URL)) {
+            final IgniteInternalFuture f = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        conn.createStatement();
+
+                        while (!end[0])
+                            conn.createStatement().execute("SELECT 1");
+
+                        conn.createStatement().execute("SELECT 1");
+                    }
+                    catch (SQLException e) {
+                        end[0] = true;
+                        exs[exCnt.getAndIncrement()] = e;
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace(System.err);
+
+                        fail("Unexpected exception (see details above): " + e.getMessage());
+                    }
+                }
+            }, threadCnt, "run-query");
+
+            f.get();
+
+            boolean exceptionFound = false;
+
+            for (SQLException e : exs) {
+                if (e != null && e.getMessage().contains("Concurrent access to JDBC connection is not allowed"))
+                    exceptionFound = true;
+            }
+
+            assertTrue("Concurrent access to JDBC connection is not allowed", exceptionFound);
         }
     }
 

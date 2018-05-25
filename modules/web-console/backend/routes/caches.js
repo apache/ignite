@@ -17,16 +17,30 @@
 
 'use strict';
 
+const express = require('express');
+
 // Fire me up!
 
 module.exports = {
     implements: 'routes/caches',
-    inject: ['require(lodash)', 'require(express)', 'mongo', 'services/caches']
+    inject: ['mongo', 'services/caches']
 };
 
-module.exports.factory = function(_, express, mongo, cachesService) {
+module.exports.factory = function(mongo, cachesService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
+
+        router.get('/:_id', (req, res) => {
+            cachesService.get(req.currentUserId(), req.demo(), req.params._id)
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
+
+        router.delete('/', (req, res) => {
+            cachesService.remove(req.body.ids)
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
 
         /**
          * Save cache.

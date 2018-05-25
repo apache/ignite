@@ -31,19 +31,13 @@ class PreparedConfigurations {
     /** */
     final List<GridServiceDeploymentFuture> failedFuts;
 
-    /** */
-    final Exception err;
-
     /**
      * @param cfgs Configurations to deploy.
      * @param failedFuts Finished futures for failed configurations.
-     * @param err Error if need to stop deploy.
      */
-    PreparedConfigurations(List<ServiceConfiguration> cfgs, List<GridServiceDeploymentFuture> failedFuts,
-        Exception err) {
+    PreparedConfigurations(List<ServiceConfiguration> cfgs, List<GridServiceDeploymentFuture> failedFuts) {
         this.cfgs = cfgs;
         this.failedFuts = failedFuts;
-        this.err = err;
     }
 
     /** {@inheritDoc} */

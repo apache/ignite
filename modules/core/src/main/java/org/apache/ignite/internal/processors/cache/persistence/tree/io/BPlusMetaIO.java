@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
  * IO routines for B+Tree meta pages.
@@ -178,5 +180,15 @@ public class BPlusMetaIO extends PageIO {
      */
     public int getInlineSize(long pageAddr) {
         return getVersion() > 1 ? PageUtils.getShort(pageAddr, inlineSizeOff) : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+        sb.a("BPlusMeta [\n\tlevelsCnt=").a(getLevelsCount(addr))
+            .a(",\n\trootLvl=").a(getRootLevel(addr))
+            .a(",\n\tinlineSize=").a(getInlineSize(addr))
+            .a("\n]")
+        ;
+            //TODO print firstPageIds by level
     }
 }

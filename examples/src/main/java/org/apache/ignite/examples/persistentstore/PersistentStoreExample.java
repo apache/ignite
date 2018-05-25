@@ -51,7 +51,7 @@ public class PersistentStoreExample {
     private static final String ORG_CACHE = CacheQueryExample.class.getSimpleName() + "Organizations";
 
     /** */
-    private static final boolean UPDATE = false;
+    private static final boolean UPDATE = true;
 
     /**
      * @param args Program arguments, ignored.

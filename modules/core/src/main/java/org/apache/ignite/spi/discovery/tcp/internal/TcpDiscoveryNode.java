@@ -33,9 +33,9 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.managers.discovery.IgniteClusterNode;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -58,7 +58,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTE
  * <strong>This class is not intended for public use</strong> and has been made
  * <tt>public</tt> due to certain limitations of Java technology.
  */
-public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements ClusterNode,
+public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements IgniteClusterNode,
     Comparable<TcpDiscoveryNode>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -225,6 +225,21 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         return consistentId;
     }
 
+    /**
+     * Sets consistent globally unique node ID which survives node restarts.
+     *
+     * @param consistentId Consistent globally unique node ID.
+     */
+    public void setConsistentId(Serializable consistentId) {
+        this.consistentId = consistentId;
+
+        final Map<String, Object> map = new HashMap<>(attrs);
+
+        map.put(ATTR_NODE_CONSISTENT_ID, consistentId);
+
+        attrs = Collections.unmodifiableMap(map);
+    }
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T attribute(String name) {
@@ -276,26 +291,14 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         return metrics;
     }
 
-    /**
-     * Sets node metrics.
-     *
-     * @param metrics Node metrics.
-     */
+    /** {@inheritDoc} */
     public void setMetrics(ClusterMetrics metrics) {
         assert metrics != null;
 
         this.metrics = metrics;
     }
 
-    /**
-     * Gets collections of cache metrics for this node. Note that node cache metrics are constantly updated
-     * and provide up to date information about caches.
-     * <p>
-     * Cache metrics are updated with some delay which is directly related to metrics update
-     * frequency. For example, by default the update will happen every {@code 2} seconds.
-     *
-     * @return Runtime metrics snapshots for this node.
-     */
+    /** {@inheritDoc} */
     public Map<Integer, CacheMetrics> cacheMetrics() {
         if (metricsProvider != null) {
             Map<Integer, CacheMetrics> cacheMetrics0 = metricsProvider.cacheMetrics();
@@ -308,11 +311,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         return cacheMetrics;
     }
 
-    /**
-     * Sets node cache metrics.
-     *
-     * @param cacheMetrics Cache metrics.
-     */
+    /** {@inheritDoc} */
     public void setCacheMetrics(Map<Integer, CacheMetrics> cacheMetrics) {
         this.cacheMetrics = cacheMetrics != null ? cacheMetrics : Collections.<Integer, CacheMetrics>emptyMap();
     }
@@ -529,11 +528,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         return node;
     }
 
-    /**
-     * Whether this node is cache client (see {@link IgniteConfiguration#isClientMode()}).
-     *
-     * @return {@code True if client}.
-     */
+    /** {@inheritDoc} */
     public boolean isCacheClient() {
         if (!cacheCliInit) {
             cacheCli = CU.clientNodeDirect(this);
@@ -608,8 +603,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         Object consistentIdAttr = attrs.get(ATTR_NODE_CONSISTENT_ID);
 
-        consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
-
         // Cluster metrics
         byte[] mtr = U.readByteArray(in);
 
@@ -633,6 +626,11 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         intOrder = in.readLong();
         ver = (IgniteProductVersion)in.readObject();
         clientRouterNodeId = U.readUuid(in);
+
+        if (isClient())
+            consistentId = consistentIdAttr != null ? consistentIdAttr : id;
+        else
+            consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
     }
 
     /** {@inheritDoc} */
@@ -652,7 +650,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /**
      * IMPORTANT!
-     * Only purpose of this constructor is creating node which contains only necessary data to store on disc
+     * Only purpose of this constructor is creating node which contains necessary data to store on disc only
      * @param node to copy data from
      */
     public TcpDiscoveryNode(
@@ -667,6 +665,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         this.daemon = node.isDaemon();
         this.clientRouterNodeId = node.isClient() ? node.id() : null;
 
-        attrs = Collections.emptyMap();
+        attrs = Collections.singletonMap(ATTR_NODE_CONSISTENT_ID, consistentId);
     }
 }

@@ -243,6 +243,11 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
     @Override public int compareTo(GridDhtPartitionMap o) {
         assert nodeId.equals(o.nodeId);
 
+        int topVerCompare = top.compareTo(o.top);
+
+        if (topVerCompare != 0)
+            return topVerCompare;
+
         return Long.compare(updateSeq, o.updateSeq);
     }
 
@@ -293,8 +298,8 @@ public class GridDhtPartitionMap implements Comparable<GridDhtPartitionMap>, Ext
         map = new GridPartitionStateMap();
 
         for (int i = 0; i < size; i++) {
-            int ordinal = in.readByte();
-            int part = in.readShort();
+            int ordinal = in.readUnsignedByte();
+            int part = in.readUnsignedShort();
 
             put(part, GridDhtPartitionState.fromOrdinal(ordinal));
         }

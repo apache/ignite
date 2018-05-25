@@ -18,10 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeWithIndexingPutGetTest;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -31,8 +30,8 @@ public class IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest extends Ignite
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setPersistentStoreConfiguration(
-            new PersistentStoreConfiguration()
+        cfg.setDataStorageConfiguration(
+            new DataStorageConfiguration()
                 .setWalMode(WALMode.LOG_ONLY)
         );
 
@@ -41,15 +40,13 @@ public class IgnitePdsSingleNodeWithIndexingPutGetPersistenceTest extends Ignite
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        cleanPersistenceDir();
 
         super.beforeTestsStarted();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        cleanPersistenceDir();
     }
 }

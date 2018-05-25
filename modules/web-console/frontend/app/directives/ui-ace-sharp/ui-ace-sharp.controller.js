@@ -21,12 +21,14 @@ const CLIENT_CFG = 'ClientConfigurationFactory';
 export default ['$scope', 'IgniteSharpTransformer', function($scope, generator) {
     const ctrl = this;
 
-    delete ctrl.data;
+    this.$onInit = () => {
+        delete ctrl.data;
 
-    // Set default generator
-    ctrl.generator = (cluster) => {
-        const type = $scope.cfg ? CLIENT_CFG : SERVER_CFG;
+        // Set default generator
+        ctrl.generator = (cluster) => {
+            const type = $scope.cfg ? CLIENT_CFG : SERVER_CFG;
 
-        return generator.cluster(cluster, 'config', type, $scope.cfg);
+            return generator.cluster(cluster, 'config', type, $scope.cfg);
+        };
     };
 }];

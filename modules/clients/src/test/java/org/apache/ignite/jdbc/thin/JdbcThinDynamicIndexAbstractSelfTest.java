@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -183,7 +182,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
 
                 return null;
             }
-        }, IgniteCheckedException.class, "Index already exists: IDX");
+        }, SQLException.class, "Index already exists: IDX");
     }
 
     /**
@@ -237,7 +236,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
 
                 return null;
             }
-        }, IgniteCheckedException.class, "Index doesn't exist: IDX");
+        }, SQLException.class, "Index doesn't exist: IDX");
     }
 
     /**
@@ -309,7 +308,7 @@ public abstract class JdbcThinDynamicIndexAbstractSelfTest extends JdbcThinAbstr
         assertEquals(expSize, cache().size());
 
         try (Statement stmt = conn.createStatement()) {
-            conn.setSchema(DEFAULT_CACHE_NAME);
+            conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
             try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) from Person")) {
                 assertEquals(expSize, getSingleValue(rs));

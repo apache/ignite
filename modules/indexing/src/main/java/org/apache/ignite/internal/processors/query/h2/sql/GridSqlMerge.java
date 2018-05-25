@@ -55,9 +55,8 @@ public class GridSqlMerge extends GridSqlStatement {
             buff.append("KEY(\n");
             buff.resetCount();
             for (GridSqlColumn c : keys) {
-                buff.appendExceptFirst(", ");
-                buff.append(c.getSQL())
-                    .append('\n');
+                buff.appendExceptFirst(",\n");
+                buff.append(c.getSQL());
             }
             buff.append(")\n");
         }

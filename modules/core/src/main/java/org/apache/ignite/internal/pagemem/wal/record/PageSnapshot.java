@@ -17,15 +17,19 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Arrays;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
-public class PageSnapshot extends WALRecord {
+public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware{
     /** */
     @GridToStringExclude
     private byte[] pageData;
@@ -76,6 +80,29 @@ public class PageSnapshot extends WALRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PageSnapshot.class, this, super.toString());
+        ByteBuffer buf = ByteBuffer.allocateDirect(pageData.length);
+        buf.order(ByteOrder.nativeOrder());
+        buf.put(pageData);
+
+        long addr = GridUnsafe.bufferAddress(buf);
+
+        try {
+            return "PageSnapshot [fullPageId = " + fullPageId() + ", page = [\n"
+                + PageIO.printPage(addr, pageData.length)
+                + "],\nsuper = ["
+                + super.toString() + "]]";
+        }
+        catch (IgniteCheckedException ignored) {
+            return "Error during call'toString' of PageSnapshot [fullPageId=" + fullPageId() +
+                ", pageData = " + Arrays.toString(pageData) + ", super=" + super.toString() + "]";
+        }
+        finally {
+            GridUnsafe.cleanDirectBuffer(buf);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int groupId() {
+        return fullPageId.groupId();
     }
 }

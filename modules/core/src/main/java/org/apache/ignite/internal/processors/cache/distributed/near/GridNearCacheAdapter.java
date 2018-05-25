@@ -216,7 +216,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param expiryPlc Expiry policy.
      * @param skipVal Skip value flag.
      * @param skipStore Skip store flag.
-     * @param canRemap Can remap flag.
      * @param needVer Need version.
      * @return Loaded values.
      */
@@ -231,7 +230,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVal,
         boolean skipStore,
-        boolean canRemap,
         boolean needVer
     ) {
         if (F.isEmpty(keys))
@@ -251,7 +249,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             deserializeBinary,
             expiry,
             skipVal,
-            canRemap,
             needVer,
             false,
             recovery);

@@ -18,9 +18,11 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_NEAR_START_SIZE;
 
@@ -37,7 +39,11 @@ public class NearCacheConfiguration<K, V> implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Near cache eviction policy. */
+    @Deprecated
     private EvictionPolicy<K, V> nearEvictPlc;
+
+    /** Near cache eviction policy factory. */
+    private Factory nearEvictPlcFactory;
 
     /** Default near cache start size. */
     private int nearStartSize = DFLT_NEAR_START_SIZE;
@@ -55,6 +61,7 @@ public class NearCacheConfiguration<K, V> implements Serializable {
      * @param ccfg Configuration to copy.
      */
     public NearCacheConfiguration(NearCacheConfiguration<K, V> ccfg) {
+        nearEvictPlcFactory = ccfg.getNearEvictionPolicyFactory();
         nearEvictPlc = ccfg.getNearEvictionPolicy();
         nearStartSize = ccfg.getNearStartSize();
     }
@@ -65,7 +72,10 @@ public class NearCacheConfiguration<K, V> implements Serializable {
      *
      * @return Near eviction policy.
      * @see CacheConfiguration#getEvictionPolicy()
+     *
+     * @deprecated Use {@link #getNearEvictionPolicyFactory()}  instead.
      */
+    @Deprecated
     public EvictionPolicy<K, V> getNearEvictionPolicy() {
         return nearEvictPlc;
     }
@@ -75,9 +85,36 @@ public class NearCacheConfiguration<K, V> implements Serializable {
      *
      * @param nearEvictPlc Near eviction policy.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Use {@link #setNearEvictionPolicyFactory(Factory)} instead.
      */
+    @Deprecated
     public NearCacheConfiguration<K, V> setNearEvictionPolicy(EvictionPolicy<K, V> nearEvictPlc) {
         this.nearEvictPlc = nearEvictPlc;
+
+        return this;
+    }
+
+    /**
+     * Gets cache eviction policy factory. By default, returns {@code null}
+     * which means that evictions are disabled for cache.
+     *
+     * @return Cache eviction policy or {@code null} if evictions should be disabled.
+     */
+    @Nullable public Factory<EvictionPolicy<? super K, ? super V>> getNearEvictionPolicyFactory() {
+        return nearEvictPlcFactory;
+    }
+
+    /**
+     * Sets cache eviction policy factory.
+     * Note: Eviction policy factory should be {@link Serializable}.
+     *
+     * @param nearEvictPlcFactory Cache expiration policy.
+     * @return {@code this} for chaining.
+     */
+    public NearCacheConfiguration<K, V> setNearEvictionPolicyFactory(
+        @Nullable Factory<? extends EvictionPolicy<? super K, ? super V>> nearEvictPlcFactory) {
+        this.nearEvictPlcFactory = nearEvictPlcFactory;
 
         return this;
     }

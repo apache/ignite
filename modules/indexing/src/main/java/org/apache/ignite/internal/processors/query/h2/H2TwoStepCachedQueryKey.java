@@ -62,6 +62,7 @@ public class H2TwoStepCachedQueryKey {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("SimplifiableIfStatement")
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;

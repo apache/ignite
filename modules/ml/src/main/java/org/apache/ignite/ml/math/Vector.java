@@ -500,6 +500,7 @@ public interface Vector extends MetaAttributes, Externalizable, StorageOpsMetric
 
     /**
      * Replace vector entry with value oldVal at i with result of computing f(i, oldVal).
+     *
      * @param i Position.
      * @param f Function used for replacing.
      **/

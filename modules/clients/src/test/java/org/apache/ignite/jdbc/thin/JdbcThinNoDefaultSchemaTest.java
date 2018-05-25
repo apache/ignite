@@ -100,11 +100,6 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -161,7 +156,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testSchemaInUrl() throws Exception {
-        try(Connection conn = DriverManager.getConnection(URL + "/cache1")) {
+        try(Connection conn = DriverManager.getConnection(URL + "/\"cache1\"")) {
             Statement stmt = conn.createStatement();
 
             stmt.execute("select t._key, t._val from Integer t");
@@ -172,7 +167,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
                 assertEquals(rs.getInt(2), rs.getInt(1) * 2);
         }
 
-        try(Connection conn = DriverManager.getConnection(URL + "/cache2")) {
+        try(Connection conn = DriverManager.getConnection(URL + "/\"cache2\"")) {
             Statement stmt = conn.createStatement();
 
             stmt.execute("select t._key, t._val from Integer t");
@@ -188,7 +183,7 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testSchemaInUrlAndInQuery() throws Exception {
-        try(Connection conn = DriverManager.getConnection(URL + "/cache2")) {
+        try(Connection conn = DriverManager.getConnection(URL + "/\"cache2\"")) {
             Statement stmt = conn.createStatement();
 
             stmt.execute("select t._key, t._val, v._val " +
@@ -217,11 +212,14 @@ public class JdbcThinNoDefaultSchemaTest extends JdbcThinAbstractSelfTest {
 
                     return null;
                 }
-            }, SQLException.class, "Failed to query Ignite");
+            }, SQLException.class, "Table \"INTEGER\" not found");
 
-            conn.setSchema("cache1");
+            conn.setSchema("\"cache1\"");
 
             Statement stmt = conn.createStatement();
+
+            //Must not affects previous created statements.
+            conn.setSchema("invalid_schema");
 
             stmt.execute("select t._key, t._val from Integer t");
 

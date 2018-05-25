@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -194,8 +195,12 @@ namespace Apache.Ignite.Core.Tests.Binary.Serializable
         [Test]
         public void TestIncorrectMethodSignature()
         {
-            var ex = Assert.Throws<TypeLoadException>(
-                    () => TestUtils.SerializeDeserialize(new InvalidCallbackSignature()));
+            var ex = Assert.Catch(() => TestUtils.SerializeDeserialize(new InvalidCallbackSignature()));
+            
+            var tex = ex as TargetInvocationException;
+            ex = tex != null ? tex.InnerException : ex;
+
+            Assert.IsNotNull(ex);
 
             var t = typeof(InvalidCallbackSignature);
 

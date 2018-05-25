@@ -22,23 +22,23 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.MemoryPolicy;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Test verifies correct construction of swap file path {@link MemoryPolicyConfiguration#setSwapFilePath(String)}
+ * Test verifies correct construction of swap file path {@link DataRegionConfiguration#setSwapPath(String)}
  * when absolute or relative paths are provided via configuration.
  */
 public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
     /** */
-    private MemoryConfiguration memCfg;
+    private DataStorageConfiguration memCfg;
 
     /** */
     private static final String RELATIVE_SWAP_PATH = "relSwapPath";
@@ -50,7 +50,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
@@ -68,11 +68,11 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
     private void cleanUpSwapDir() {
         Path relDir = Paths.get(U.getIgniteHome(), RELATIVE_SWAP_PATH);
 
-        deleteRecursively(relDir.toFile());
+        U.delete(relDir.toFile());
 
         Path absDir = Paths.get(getTmpDir(), ABSOLUTE_SWAP_PATH);
 
-        deleteRecursively(absDir.toFile());
+        U.delete(absDir.toFile());
     }
 
     /**
@@ -118,32 +118,34 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
     private String extractDefaultPageMemoryAllocPath(GridKernalContext context) {
         IgniteCacheDatabaseSharedManager dbMgr = context.cache().context().database();
 
-        Map<String, MemoryPolicy> memPlcMap = U.field(dbMgr, "memPlcMap");
+        Map<String, DataRegion> memPlcMap = U.field(dbMgr, "dataRegionMap");
 
         PageMemory pageMem = memPlcMap.get("default").pageMemory();
 
         Object memProvider = U.field(pageMem, "directMemoryProvider");
 
-        return ((File) U.field(memProvider, "allocationPath")).getAbsolutePath();
+        Object memProvider0 = U.field(memProvider, "memProvider");
+
+        return ((File) U.field(memProvider0, "allocationPath")).getAbsolutePath();
     }
 
     /**
-     * @param isRelativePath flag is set to {@code true} if relative path should be used for memory policy configuration.
+     * @param isRelativePath flag is set to {@code true} if relative path should be used for data region configuration.
      */
-    private MemoryConfiguration createMemoryConfiguration(boolean isRelativePath) {
-        MemoryConfiguration memCfg = new MemoryConfiguration();
+    private DataStorageConfiguration createMemoryConfiguration(boolean isRelativePath) {
+        DataStorageConfiguration memCfg = new DataStorageConfiguration();
 
-        MemoryPolicyConfiguration memPlcCfg = new MemoryPolicyConfiguration();
+        DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("default");
-        memPlcCfg.setMaxSize(20 * 1024 * 1024);
+        memPlcCfg.setMaxSize(20L * 1024 * 1024);
 
         if (isRelativePath)
-            memPlcCfg.setSwapFilePath(RELATIVE_SWAP_PATH);
+            memPlcCfg.setSwapPath(RELATIVE_SWAP_PATH);
         else
-            memPlcCfg.setSwapFilePath(Paths.get(getTmpDir(), ABSOLUTE_SWAP_PATH).toString());
+            memPlcCfg.setSwapPath(Paths.get(getTmpDir(), ABSOLUTE_SWAP_PATH).toString());
 
-        memCfg.setMemoryPolicies(memPlcCfg);
+        memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
 
         return memCfg;
     }

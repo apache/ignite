@@ -107,11 +107,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         jcache(0).clear();
     }
@@ -1614,6 +1609,32 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
             res[i] = ((BinaryObject)arr[i]).deserialize();
 
         return res;
+    }
+
+    /**
+     * @throws Exception If fails
+     */
+    public void testBuilderReusage() throws Exception {
+        // Check: rewrite null field value.
+        BinaryObjectBuilder builder = newWrapper("SimpleCls1");
+
+        builder.setField("f1", null, Object.class);
+        assertNull(builder.build().field("f1"));
+
+        builder.setField("f1", "val1");
+        assertEquals("val1", builder.build().field("f1"));
+
+        // Check: rewrite non-null field value to null and back.
+        builder = newWrapper("SimpleCls2");
+
+        builder.setField("f1", "val1", String.class);
+        assertEquals("val1", builder.build().field("f1"));
+
+        builder.setField("f1", null);
+        assertNull(builder.build().field("f1"));
+
+        builder.setField("f1", "val2");
+        assertEquals("val2", builder.build().field("f1"));
     }
 
     /**

@@ -56,7 +56,7 @@ public class IgniteNodeRunner {
         File.separator + "igniteConfiguration.tmp_";
 
     /** */
-    private static volatile Ignite ignite;
+    protected static volatile Ignite ignite;
 
     /**
      * Starts {@link Ignite} instance accorging to given arguments.
@@ -161,6 +161,8 @@ public class IgniteNodeRunner {
                 disco.setIpFinder(GridCacheAbstractFullApiSelfTest.LOCAL_IP_FINDER);
                 cfg.setDiscoverySpi(disco);
             }
+
+            X.println("Configured discovery: " + cfg.getDiscoverySpi().getClass().getName());
 
             return cfg;
         }

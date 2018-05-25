@@ -32,6 +32,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.util.GridCursorIteratorWrapper;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
 import org.h2.index.IndexLookupBatch;
@@ -51,7 +53,7 @@ import org.h2.table.TableFilter;
 import org.h2.value.Value;
 import org.h2.value.ValueGeometry;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2AbstractKeyValueRow.KEY_COL;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
 /**
  * Spatial index.
@@ -97,6 +99,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      * @param segmentsCnt Index segments count.
      * @param cols Columns.
      */
+    @SuppressWarnings("unchecked")
     public GridH2SpatialIndex(GridH2Table tbl, String idxName, int segmentsCnt, IndexColumn... cols) {
         if (cols.length > 1)
             throw DbException.getUnsupportedException("can only do one column");
@@ -157,7 +160,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
     /** {@inheritDoc} */
     @Override public GridH2Row put(GridH2Row row) {
-        assert row instanceof GridH2AbstractKeyValueRow : "requires key to be at 0";
+        assert row instanceof GridH2KeyValueRowOnheap : "requires key to be at 0";
 
         Lock l = lock.writeLock();
 
@@ -197,6 +200,13 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         finally {
             l.unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putx(GridH2Row row) {
+        GridH2Row old = put(row);
+
+        return old != null;
     }
 
     /**
@@ -246,6 +256,13 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
         finally {
             l.unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removex(SearchRow row) {
+        GridH2Row old = remove(row);
+
+        return old != null;
     }
 
     /** {@inheritDoc} */
@@ -307,11 +324,6 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row findOne(GridH2Row row) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
         return true;
     }
@@ -321,9 +333,16 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
      * @param filter Table filter.
      * @return Iterator over rows.
      */
+    @SuppressWarnings("unchecked")
     private GridCursor<GridH2Row> rowIterator(Iterator<SpatialKey> i, TableFilter filter) {
         if (!i.hasNext())
             return EMPTY_CURSOR;
+
+        long time = System.currentTimeMillis();
+
+        IndexingQueryFilter qryFilter = threadLocalFilter();
+
+        IndexingQueryCacheFilter qryCacheFilter = qryFilter != null ? qryFilter.forCache(getTable().cacheName()) : null;
 
         List<GridH2Row> rows = new ArrayList<>();
 
@@ -332,11 +351,15 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
 
             assert row != null;
 
-            rows.add(row);
+            if (row.expireTime() != 0 && row.expireTime() <= time)
+                continue;
+
+            if (qryCacheFilter == null || qryCacheFilter.applyPartition(row.partition()))
+                rows.add(row);
         }
         while (i.hasNext());
 
-        return filter(new GridCursorIteratorWrapper(rows.iterator()), threadLocalFilter());
+        return new GridCursorIteratorWrapper(rows.iterator());
     }
 
     /** {@inheritDoc} */

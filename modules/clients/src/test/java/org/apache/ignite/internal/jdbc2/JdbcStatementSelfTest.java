@@ -45,7 +45,8 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc-config.xml";
+    private static final String BASE_URL = CFG_URL_PREFIX
+        + "cache=default:multipleStatementsAllowed=true@modules/clients/src/test/config/jdbc-config.xml";
 
     /** SQL query. */
     private static final String SQL = "select * from Person where age > 30";
@@ -93,11 +94,6 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
         cache.put("p1", new Person(1, "John", "White", 25));
         cache.put("p2", new Person(2, "Joe", "Black", 35));
         cache.put("p3", new Person(3, "Mike", "Green", 40));
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -247,6 +243,133 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
         }
 
         assert cnt == 2;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExecuteQueryMultipleOnlyResultSets() throws Exception {
+        assert conn.getMetaData().supportsMultipleResultSets();
+
+        int stmtCnt = 10;
+
+        StringBuilder sql = new StringBuilder();
+
+        for (int i = 0; i < stmtCnt; ++i)
+            sql.append("select ").append(i).append("; ");
+
+        assert stmt.execute(sql.toString());
+
+        for (int i = 0; i < stmtCnt; ++i) {
+            assert stmt.getMoreResults();
+
+            ResultSet rs = stmt.getResultSet();
+
+            assert rs.next();
+            assert rs.getInt(1) == i;
+            assert !rs.next();
+        }
+
+        assert !stmt.getMoreResults();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExecuteQueryMultipleOnlyDml() throws Exception {
+        assert conn.getMetaData().supportsMultipleResultSets();
+
+        conn.setSchema(null);
+
+        int stmtCnt = 10;
+
+        StringBuilder sql = new StringBuilder(
+            "drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
+
+        for (int i = 0; i < stmtCnt; ++i)
+            sql.append("insert into test (ID, NAME) values (" + i + ", 'name_" + i +"'); ");
+
+        assert !stmt.execute(sql.toString());
+
+        // DROP TABLE statement
+        assert stmt.getResultSet() == null;
+        assert stmt.getUpdateCount() == 0;
+
+        // CREATE TABLE statement
+        assert stmt.getResultSet() == null;
+        assert stmt.getUpdateCount() == 0;
+
+        for (int i = 0; i < stmtCnt; ++i) {
+            assert stmt.getMoreResults();
+
+            assert stmt.getResultSet() == null;
+            assert stmt.getUpdateCount() == 1;
+        }
+
+        assert !stmt.getMoreResults();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExecuteQueryMultipleMixed() throws Exception {
+        assert conn.getMetaData().supportsMultipleResultSets();
+
+        conn.setSchema(null);
+
+        int stmtCnt = 10;
+
+        StringBuilder sql = new StringBuilder(
+            "drop table if exists test; create table test(ID int primary key, NAME varchar(20)); ");
+
+        for (int i = 0; i < stmtCnt; ++i) {
+            if (i % 2 == 0)
+                sql.append(" insert into test (ID, NAME) values (" + i + ", 'name_" + i + "'); ");
+            else
+                sql.append(" select * from test where id < " + i + "; ");
+        }
+
+        assert !stmt.execute(sql.toString());
+
+        // DROP TABLE statement
+        assert stmt.getResultSet() == null;
+        assert stmt.getUpdateCount() == 0;
+
+        // CREATE TABLE statement
+        assert stmt.getResultSet() == null;
+        assert stmt.getUpdateCount() == 0;
+
+        boolean notEmptyResult = false;
+
+        for (int i = 0; i < stmtCnt; ++i) {
+            assert stmt.getMoreResults();
+
+            if (i % 2 == 0) {
+                assert stmt.getResultSet() == null;
+                assert stmt.getUpdateCount() == 1;
+            }
+            else {
+                assert stmt.getUpdateCount() == -1;
+
+                ResultSet rs = stmt.getResultSet();
+
+                assert rs.getMetaData().getColumnCount() == 2;
+
+                int rowsCnt = 0;
+
+                while(rs.next())
+                    rowsCnt++;
+
+                assert rowsCnt <= (i + 1) / 2;
+
+                if (rowsCnt == (i + 1) / 2)
+                    notEmptyResult = true;
+            }
+        }
+
+        assert notEmptyResult;
+
+        assert !stmt.getMoreResults();
     }
 
     /**

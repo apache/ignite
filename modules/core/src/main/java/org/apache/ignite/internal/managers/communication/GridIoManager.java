@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -95,9 +97,6 @@ import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -140,7 +139,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
 
     /** Listeners by topic. */
-    private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap<>();
 
     /** System listeners. */
     private volatile GridMessageListener[] sysLsnrs;
@@ -159,14 +158,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** */
     private final ConcurrentMap<Object, ConcurrentMap<UUID, GridCommunicationMessageSet>> msgSetMap =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Local node ID. */
     private final UUID locNodeId;
 
     /** Cache for messages that were received prior to discovery. */
-    private final ConcurrentMap<UUID, ConcurrentLinkedDeque8<DelayedMessage>> waitMap =
-        new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, Deque<DelayedMessage>> waitMap = new ConcurrentHashMap<>();
 
     /** Communication message listener. */
     private CommunicationListener<Serializable> commLsnr;
@@ -300,9 +298,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
                 @Override public MessageReader reader(UUID rmtNodeId, MessageFactory msgFactory)
                     throws IgniteCheckedException {
-                    assert rmtNodeId != null;
 
-                    return new DirectMessageReader(msgFactory, U.directProtocolVersion(ctx, rmtNodeId));
+                    return new DirectMessageReader(msgFactory,
+                        rmtNodeId != null ? U.directProtocolVersion(ctx, rmtNodeId) : GridIoManager.DIRECT_PROTO_VER);
                 }
             };
         }
@@ -474,7 +472,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         final AtomicBoolean warmupFinished = new AtomicBoolean();
         final AtomicBoolean done = new AtomicBoolean();
         final CyclicBarrier bar = new CyclicBarrier(threads + 1);
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
         final long sleepDuration = 5000;
         final byte[] payLoad = new byte[payLoadSize];
         final Map<UUID, IoTestThreadLocalNodeResults>[] res = new Map[threads];
@@ -775,7 +773,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         lock.writeLock().lock();
 
                         try {
-                            ConcurrentLinkedDeque8<DelayedMessage> waitList = waitMap.remove(nodeId);
+                            Deque<DelayedMessage> waitList = waitMap.remove(nodeId);
 
                             if (log.isDebugEnabled())
                                 log.debug("Removed messages from discovery startup delay list " +
@@ -805,9 +803,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         try {
             started = true;
 
-            for (Entry<UUID, ConcurrentLinkedDeque8<DelayedMessage>> e : waitMap.entrySet()) {
+            for (Entry<UUID, Deque<DelayedMessage>> e : waitMap.entrySet()) {
                 if (ctx.discovery().node(e.getKey()) != null) {
-                    ConcurrentLinkedDeque8<DelayedMessage> waitList = waitMap.remove(e.getKey());
+                    Deque<DelayedMessage> waitList = waitMap.remove(e.getKey());
 
                     if (log.isDebugEnabled())
                         log.debug("Processing messages from discovery startup delay list: " + waitList);
@@ -955,8 +953,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                             log.debug("Adding message to waiting list [senderId=" + nodeId +
                                 ", msg=" + msg + ']');
 
-                        ConcurrentLinkedDeque8<DelayedMessage> list =
-                            F.addIfAbsent(waitMap, nodeId, F.<DelayedMessage>newDeque());
+                        Deque<DelayedMessage> list = F.<UUID, Deque<DelayedMessage>>addIfAbsent(
+                            waitMap,
+                            nodeId,
+                            ConcurrentLinkedDeque::new
+                        );
 
                         assert list != null;
 
@@ -1667,7 +1668,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node == null)
-            throw new IgniteCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
+            throw new ClusterTopologyCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
 
         sendToCustomTopic(node, topic, msg, plc);
     }
@@ -1685,7 +1686,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         ClusterNode node = ctx.discovery().node(nodeId);
 
         if (node == null)
-            throw new IgniteCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
+            throw new ClusterTopologyCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
 
         send(node, topic, topic.ordinal(), msg, plc, false, 0, false, null, false);
     }
@@ -2800,7 +2801,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      *
      */
-    private static class ConcurrentHashMap0<K, V> extends ConcurrentHashMap8<K, V> {
+    private static class ConcurrentHashMap0<K, V> extends ConcurrentHashMap<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 

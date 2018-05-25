@@ -140,15 +140,10 @@ public class JdbcThinPreparedStatementSelfTest extends JdbcThinAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         conn = DriverManager.getConnection(URL);
 
-        conn.setSchema(DEFAULT_CACHE_NAME);
+        conn.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
         assert conn != null;
         assert !conn.isClosed();

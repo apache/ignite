@@ -34,13 +34,50 @@ public class QueryField implements Serializable {
     /** Class name for this field's values. */
     private final String typeName;
 
+    /** Nullable flag. */
+    private final boolean nullable;
+
+    /** Default value. */
+    private final Object dfltValue;
+
+    /** Precision. */
+    private final int precision;
+
+    /** Scale. */
+    private final int scale;
+
     /**
      * @param name Field name.
      * @param typeName Class name for this field's values.
+     * @param nullable Nullable flag.
      */
-    public QueryField(String name, String typeName) {
+    public QueryField(String name, String typeName, boolean nullable) {
+        this(name, typeName, nullable, null, -1, -1);
+    }
+
+    /**
+     * @param name Field name.
+     * @param typeName Class name for this field's values.
+     * @param nullable Nullable flag.
+     * @param dfltValue Default value.
+     */
+    public QueryField(String name, String typeName, boolean nullable, Object dfltValue) {
+        this(name, typeName, nullable, dfltValue, -1, -1);
+    }
+
+    /**
+     * @param name Field name.
+     * @param typeName Class name for this field's values.
+     * @param nullable Nullable flag.
+     * @param dfltValue Default value.
+     */
+    public QueryField(String name, String typeName, boolean nullable, Object dfltValue, int precision, int scale) {
         this.name = name;
         this.typeName = typeName;
+        this.nullable = nullable;
+        this.dfltValue = dfltValue;
+        this.precision = precision;
+        this.scale = scale;
     }
 
     /**
@@ -55,6 +92,34 @@ public class QueryField implements Serializable {
      */
     public String typeName() {
         return typeName;
+    }
+
+    /**
+     * @return {@code true}, if field is nullable.
+     */
+    public boolean isNullable() {
+        return nullable;
+    }
+
+    /**
+     * @return Default value.
+     */
+    public Object defaultValue() {
+        return dfltValue;
+    }
+
+    /**
+     * @return Precision.
+     */
+    public int precision() {
+        return precision;
+    }
+
+    /**
+     * @return Scale.
+     */
+    public int scale() {
+        return scale;
     }
 
     /** {@inheritDoc} */
