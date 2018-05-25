@@ -948,7 +948,7 @@ public class GridToStringBuilder {
      * @param col Array object.
      */
     private static void addCol(SBLimitedLength buf, Collection col) {
-        buf.a(col.getClass().getSimpleName()).a(' ').a('[');
+        buf.a(col.getClass().getSimpleName()).a(" [");
 
         int cnt = 0;
 
@@ -958,7 +958,7 @@ public class GridToStringBuilder {
             if (++cnt == COLLECTION_LIMIT || cnt == col.size())
                 break;
 
-            buf.a(',').a(' ');
+            buf.a(", ");
         }
 
         checkOverflow(buf, col.size());
@@ -973,7 +973,7 @@ public class GridToStringBuilder {
      * @param map Array object.
      */
     private static <K, V> void addMap(SBLimitedLength buf, Map<K, V> map) {
-        buf.a(map.getClass().getSimpleName()).a(' ').a('{');
+        buf.a(map.getClass().getSimpleName()).a(" {");
 
         int cnt = 0;
 
@@ -987,7 +987,7 @@ public class GridToStringBuilder {
             if (++cnt == COLLECTION_LIMIT || cnt == map.size())
                 break;
 
-            buf.a(',').a(' ');
+            buf.a(", ");
         }
 
         checkOverflow(buf, map.size());
@@ -1253,7 +1253,7 @@ public class GridToStringBuilder {
 
         Object[] arr = (Object[]) obj;
 
-        buf.a(arrType.getSimpleName()).a(' ').a('[');
+        buf.a(arrType.getSimpleName()).a(" [");
 
         for (int i = 0; i < arr.length; i++) {
             toString(buf, arr[i]);
@@ -1262,7 +1262,7 @@ public class GridToStringBuilder {
                 break;
 
             if (i != arr.length - 1)
-                buf.a(',').a(" ");
+                buf.a(", ");
         }
 
         checkOverflow(buf, arr.length);
