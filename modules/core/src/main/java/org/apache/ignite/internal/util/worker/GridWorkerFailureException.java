@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.util.worker;
 
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /** Thrown when {@link GridWorker} has failed in some way. */
 public abstract class GridWorkerFailureException extends RuntimeException {
     /** */
@@ -30,5 +33,13 @@ public abstract class GridWorkerFailureException extends RuntimeException {
     /** */
     public GridWorker worker() {
         return worker;
+    }
+
+    /** */
+    public abstract FailureType failureType();
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridWorker.class, worker);
     }
 }

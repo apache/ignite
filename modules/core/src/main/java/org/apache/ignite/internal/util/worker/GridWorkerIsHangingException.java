@@ -17,10 +17,19 @@
 
 package org.apache.ignite.internal.util.worker;
 
+import org.apache.ignite.failure.FailureType;
+
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+
 /** Thrown when {@link GridWorker} is hanging. */
 public class GridWorkerIsHangingException extends GridWorkerFailureException {
     /** */
     public GridWorkerIsHangingException(GridWorker worker) {
         super(worker);
+    }
+
+    /** {@inheritDoc} */
+    @Override public FailureType failureType() {
+        return CRITICAL_ERROR;
     }
 }

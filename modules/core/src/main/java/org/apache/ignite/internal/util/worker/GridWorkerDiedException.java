@@ -17,10 +17,19 @@
 
 package org.apache.ignite.internal.util.worker;
 
+import org.apache.ignite.failure.FailureType;
+
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
+
 /** Thrown when {@link GridWorker} has been terminated unexpectedly. */
 public class GridWorkerDiedException extends GridWorkerFailureException {
     /** */
     public GridWorkerDiedException(GridWorker worker) {
         super(worker);
+    }
+
+    /** {@inheritDoc} */
+    @Override public FailureType failureType() {
+        return SYSTEM_WORKER_TERMINATION;
     }
 }
