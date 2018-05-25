@@ -28,7 +28,6 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/impl/thin/net/tcp_socket_client.h>
 #include "ignite/ignite_error.h"
-#include <iostream>
 
 namespace
 {
@@ -317,7 +316,7 @@ namespace ignite
                     }
 
                     // This option is available starting with Windows 10, version 1709.
-    #if defined(TCP_KEEPIDLE) && defined(TCP_KEEPINTVL)
+#if defined(TCP_KEEPIDLE) && defined(TCP_KEEPINTVL)
                     DWORD idleOpt = KEEP_ALIVE_IDLE_TIME;
                     DWORD idleRetryOpt = KEEP_ALIVE_PROBES_PERIOD;
 
@@ -336,7 +335,7 @@ namespace ignite
                     {
 //                        std::string err = "TCP keep-alive probes period setup failed: " + GetLastSocketErrorMessage();
                     }
-    #else // use old hardcore WSAIoctl
+#else // use old hardcore WSAIoctl
 
                     // WinSock structure for KeepAlive timing settings
                     struct tcp_keepalive settings = { 0 };
@@ -366,7 +365,7 @@ namespace ignite
                     {
 //                        std::string err = "TCP keep-alive params setup failed: " + GetLastSocketErrorMessage();
                     }
-    #endif
+#endif
                 }
 
                 int TcpSocketClient::WaitOnSocket(int32_t timeout, bool rd)
@@ -428,7 +427,6 @@ namespace ignite
                 }
             }
         }
-
     }
 }
 
