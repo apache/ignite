@@ -23,6 +23,7 @@ import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2B
 import org.apache.ignite.internal.util.GridHandleTableSelfTest;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInputOutputByteOrderSelfTest;
 import org.apache.ignite.internal.util.io.GridUnsafeDataOutputArraySizingSelfTest;
+import org.apache.ignite.marshaller.MarshallerEnumDeadlockMultiJvmTest;
 import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerEnumSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshallerNodeFailoverTest;
@@ -65,6 +66,7 @@ public class IgniteMarshallerSelfTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, DirectByteBufferStreamImplV2ByteOrderSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridHandleTableSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerPooledSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, MarshallerEnumDeadlockMultiJvmTest.class, ignoredTests);
 
         return suite;
     }
