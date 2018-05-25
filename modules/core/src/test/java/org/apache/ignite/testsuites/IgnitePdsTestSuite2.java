@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPartitio
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsRecoveryAfterFileCorruptionTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeChangeDuringRebalancingSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAbsentEvictionNodeOutOfBaselineTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAllBaselineNodesOnlineFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOfflineBaselineNodeFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteOnlineNodeOutOfBaselineFullApiSelfTest;
@@ -70,6 +71,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteAllBaselineNodesOnlineFullApiSelfTest.class);
         suite.addTestSuite(IgniteOfflineBaselineNodeFullApiSelfTest.class);
         suite.addTestSuite(IgniteOnlineNodeOutOfBaselineFullApiSelfTest.class);
+        suite.addTestSuite(IgniteAbsentEvictionNodeOutOfBaselineTest.class);
 
         return suite;
     }

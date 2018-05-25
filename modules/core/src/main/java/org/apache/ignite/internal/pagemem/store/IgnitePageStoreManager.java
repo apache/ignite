@@ -20,6 +20,7 @@ package org.apache.ignite.internal.pagemem.store;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -220,4 +221,11 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
      * @return number of pages.
      */
     public long pagesAllocated(int grpId);
+
+    /**
+     * Cleanup persistent space for cache.
+     *
+     * @param cacheConfiguration Cache configuration of cache which should be cleanup.
+     */
+    public void cleanupPersistentSpace(CacheConfiguration cacheConfiguration) throws IgniteCheckedException;
 }
