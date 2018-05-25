@@ -72,27 +72,27 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
 
         Collection<BaselineNode> baselineNodes;
 
-        // State #0: 2 server nodes (2 baseline nodes), 1 client node
+        // State #0: 2 server nodes (2 total baseline nodes, 2 active baseline nodes), 1 client node
         log.info(String.format(">>> State #0: topology version = %d", ignite0.cluster().topologyVersion()));
 
         assertEquals(2, mxBeanCluster.getTotalServerNodes());
         assertEquals(1, mxBeanCluster.getTotalClientNodes());
-        assertEquals(2, mxBeanCluster.getBaselineNodes());
+        assertEquals(2, mxBeanCluster.getTotalBaselineNodes());
+        assertEquals(2, mxBeanCluster.getActiveBaselineNodes());
         assertEquals(2, (baselineNodes = ignite0.cluster().currentBaselineTopology()) != null
             ? baselineNodes.size()
             : 0);
 
         stopGrid(1, true);
 
-        resetBlt();
-
-        // State #1: 1 server nodes (1 baseline nodes), 1 client node
+        // State #1: 1 server nodes (2 total baseline nodes, 1 active baseline node), 1 client node
         log.info(String.format(">>> State #1: topology version = %d", ignite0.cluster().topologyVersion()));
 
         assertEquals(1, mxBeanCluster.getTotalServerNodes());
         assertEquals(1, mxBeanCluster.getTotalClientNodes());
-        assertEquals(1, mxBeanCluster.getBaselineNodes());
-        assertEquals(1, (baselineNodes = ignite0.cluster().currentBaselineTopology()) != null
+        assertEquals(2, mxBeanCluster.getTotalBaselineNodes());
+        assertEquals(1, mxBeanCluster.getActiveBaselineNodes()); // todo failed
+        assertEquals(2, (baselineNodes = ignite0.cluster().currentBaselineTopology()) != null
             ? baselineNodes.size()
             : 0);
 
@@ -100,26 +100,14 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
 
         ClusterMetricsMXBean mxBeanLocalNode1 = mxBean(1, ClusterLocalNodeMetricsMXBeanImpl.class);
 
-        // State #2: 2 server nodes (1 baseline nodes), 1 client node
+        // State #2: 2 server nodes (2 total baseline nodes, 2 active baseline nodes), 1 client node
         log.info(String.format(">>> State #2: topology version = %d", ignite0.cluster().topologyVersion()));
 
         assertEquals(2, mxBeanCluster.getTotalServerNodes());
         assertEquals(1, mxBeanCluster.getTotalClientNodes());
-        assertEquals(1, mxBeanCluster.getBaselineNodes());
-        assertEquals(0, mxBeanLocalNode1.getBaselineNodes());
-        assertEquals(1, (baselineNodes = ignite0.cluster().currentBaselineTopology()) != null
-            ? baselineNodes.size()
-            : 0);
-
-        resetBlt();
-
-        // State #3: 2 server nodes (2 baseline nodes), 1 client node
-        log.info(String.format(">>> State #3: topology version = %d", ignite0.cluster().topologyVersion()));
-
-        assertEquals(2, mxBeanCluster.getTotalServerNodes());
-        assertEquals(1, mxBeanCluster.getTotalClientNodes());
-        assertEquals(2, mxBeanCluster.getBaselineNodes());
-        assertEquals(1, mxBeanLocalNode1.getBaselineNodes());
+        assertEquals(2, mxBeanCluster.getTotalBaselineNodes());
+        assertEquals(2, mxBeanCluster.getActiveBaselineNodes());
+        assertEquals(1, mxBeanLocalNode1.getTotalBaselineNodes());
         assertEquals(2, (baselineNodes = ignite0.cluster().currentBaselineTopology()) != null
             ? baselineNodes.size()
             : 0);

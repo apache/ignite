@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -361,9 +362,28 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public int getBaselineNodes() {
+    @Override public int getTotalBaselineNodes() {
         Collection<BaselineNode> baselineNodes = cluster.ignite().cluster().currentBaselineTopology();
         return baselineNodes != null ? baselineNodes.size() : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getActiveBaselineNodes() {
+        Collection<BaselineNode> baselineNodes = cluster.ignite().cluster().currentBaselineTopology();
+        if (baselineNodes != null && !baselineNodes.isEmpty()) {
+            Set<Object> ids = new HashSet<>(baselineNodes.size());
+            for (BaselineNode baselineNode : baselineNodes) {
+                ids.add(baselineNode.consistentId());
+            }
+            int count = 0;
+            for (ClusterNode node : cluster.forServers().nodes()) {
+                if (ids.contains(node.consistentId())) {
+                    count++;
+                }
+            }
+            return count;
+        }
+        return 0;
     }
 
     /** {@inheritDoc} */
