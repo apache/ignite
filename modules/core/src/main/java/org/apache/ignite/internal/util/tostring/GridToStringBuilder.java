@@ -124,8 +124,6 @@ public class GridToStringBuilder {
         }
     };
 
-    private static int i = 0;
-
     /**
      * Produces auto-generated output of string presentation for given object and its declaration class.
      *
@@ -899,7 +897,8 @@ public class GridToStringBuilder {
     }
 
     /**
-     * Print value with length limitation
+     * Print value with length limitation.
+     *
      * @param buf buffer to print to.
      * @param val value to print, can be {@code null}.
      */
@@ -911,10 +910,11 @@ public class GridToStringBuilder {
     }
 
     /**
-     * Print value with length limitation
+     * Print value with length limitation.
+     *
      * @param buf buffer to print to.
      * @param valClass value class.
-     * @param val value to print
+     * @param val value to print.
      */
     private static void toString(SBLimitedLength buf, Class<?> valClass, Object val) {
         if (val == null) {
@@ -942,51 +942,55 @@ public class GridToStringBuilder {
     }
 
     /**
-     * @param buf buffer to print to.
-     * @param val value to print.
+     * Writes collection to buffer.
+     *
+     * @param buf String builder buffer.
+     * @param col Array object.
      */
-    private static void addCol(SBLimitedLength buf, Collection val) {
-        buf.a(val.getClass().getSimpleName()).a(' ').a('[');
+    private static void addCol(SBLimitedLength buf, Collection col) {
+        buf.a(col.getClass().getSimpleName()).a(' ').a('[');
 
         int cnt = 0;
 
-        for (Object obj : val) {
+        for (Object obj : col) {
             toString(buf, obj);
 
-            if (++cnt == COLLECTION_LIMIT || cnt == val.size())
+            if (++cnt == COLLECTION_LIMIT || cnt == col.size())
                 break;
 
             buf.a(',').a(' ');
         }
 
-        checkOverflow(buf, val.size());
+        checkOverflow(buf, col.size());
 
         buf.a(']');
     }
 
     /**
-     * @param buf buffer to print to.
-     * @param val value to print.
+     * Writes map to buffer.
+     *
+     * @param buf String builder buffer.
+     * @param map Array object.
      */
-    private static <K, V> void addMap(SBLimitedLength buf, Map<K, V> val) {
-        buf.a(val.getClass().getSimpleName()).a(' ').a('{');
+    private static <K, V> void addMap(SBLimitedLength buf, Map<K, V> map) {
+        buf.a(map.getClass().getSimpleName()).a(' ').a('{');
 
         int cnt = 0;
 
-        for (Map.Entry<K, V> e : val.entrySet()) {
+        for (Map.Entry<K, V> e : map.entrySet()) {
             toString(buf, e.getKey());
 
             buf.a('=');
 
             toString(buf, e.getValue());
 
-            if (++cnt == COLLECTION_LIMIT || cnt == val.size())
+            if (++cnt == COLLECTION_LIMIT || cnt == map.size())
                 break;
 
             buf.a(',').a(' ');
         }
 
-        checkOverflow(buf, val.size());
+        checkOverflow(buf, map.size());
 
         buf.a('}');
     }
@@ -1128,11 +1132,17 @@ public class GridToStringBuilder {
      * @param arr Array object.
      * @return String representation of an array.
      */
-    @SuppressWarnings({"ConstantConditions", "unchecked"})
     public static <T> String arrayToString(Class arrType, Object arr) {
         return arrayToString(null, arrType, arr);
     }
 
+    /**
+     * @param buf String builder buffer.
+     * @param arrType Type of the array.
+     * @param arr Array object.
+     * @return String representation of an array.
+     */
+    @SuppressWarnings({"ConstantConditions", "unchecked"})
     private static <T> String arrayToString(SBLimitedLength buf, Class arrType, Object arr) {
         if (arr == null)
             return "null";
@@ -1224,6 +1234,13 @@ public class GridToStringBuilder {
         return res;
     }
 
+    /**
+     * Writes object to buffer.
+     *
+     * @param buf String builder buffer.
+     * @param arrType Type of the array.
+     * @param obj Array object.
+     */
     private static void addArr(SBLimitedLength buf, Class arrType, Object obj) {
         if (obj == null)
             return;
@@ -1253,6 +1270,10 @@ public class GridToStringBuilder {
         buf.a(']');
     }
 
+    /**
+     * @param cls Class to check.
+     * @return {@code True} if given class is class of primitive array. {@code False} otherwise.
+     */
     private static boolean isPrimitiveArrayType(Class cls) {
         return cls.equals(byte[].class) || cls.equals(boolean[].class) || cls.equals(short[].class) ||
             cls.equals(int[].class) || cls.equals(long[].class) || cls.equals(float[].class) ||
@@ -1988,9 +2009,13 @@ public class GridToStringBuilder {
     }
 
     /**
-     * @param buf String builder.
+     * Checks that object is already saved.
+     * In positive case this method insetrs hash to the saved object entry (if needed) and name@hash for current entry.
+     * If this is first object entry - it will be saved and nothing applied to buffer.
+     *
+     * @param buf String builder buffer.
      * @param obj Object.
-     * @return True if object is already saved. False if it wasn't saved previously, but now is saved.
+     * @return {@code True} if object is already saved. {@code False} if it wasn't saved previously, but now is saved.
      */
     private static boolean checkObjectInBuffer(SBLimitedLength buf, Object obj) {
         if (isPrimitiveArrayType(obj.getClass()))
@@ -2025,7 +2050,7 @@ public class GridToStringBuilder {
     }
 
     /**
-     * Increment positions of already presented objects afterward object.
+     * Increment positions of already presented objects afterward given object.
      *
      * @param map Map with objects already presented in the buffer.
      * @param obj Object.
