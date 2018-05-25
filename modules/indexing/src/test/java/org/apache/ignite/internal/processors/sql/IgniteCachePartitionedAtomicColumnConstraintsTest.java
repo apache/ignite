@@ -21,13 +21,20 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Callable;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
@@ -37,7 +44,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.query.QueryUtils.KEY_FIELD_NAME;
 import static org.apache.ignite.internal.processors.query.QueryUtils.VAL_FIELD_NAME;
-import static org.apache.ignite.internal.util.lang.GridFunc.t;
+import static org.apache.ignite.testframework.GridTestUtils.assertThrowsWithCause;
 
 /** */
 public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommonAbstractTest {
@@ -54,19 +61,19 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     private static final String OBJ_CACHE_NAME = "ORG_ADDRESS";
 
     /** */
-    private IgniteBiTuple<String, String> tooLongVal = t("3", "123456");
+    private T2<String, String> tooLongKey = new T2<>("123456", "2");
 
     /** */
-    private IgniteBiTuple<String, String> tooLongKey = t("123456", "2");
+    private T2<String, String> tooLongVal = new T2<>("3", "123456");
 
     /** */
-    private IgniteBiTuple<String, Organization> tooLongKey2 = t("123456", new Organization("1"));
+    private T2<String, Organization> tooLongKey2 = new T2<>("123456", new Organization("1"));
 
     /** */
-    private IgniteBiTuple<Organization, Address> tooLongAddrVal = t(new Organization("3"), new Address("123456"));
+    private T2<Organization, Address> tooLongAddrVal = new T2<>(new Organization("3"), new Address("123456"));
 
     /** */
-    private IgniteBiTuple<Organization, Address> tooLongOrgKey = t(new Organization("123456"), new Address("2"));
+    private T2<Organization, Address> tooLongOrgKey = new T2<>(new Organization("123456"), new Address("2"));
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -101,346 +108,139 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
-    public void testPutAllTooLongValue() throws Exception {
-        Map<String, String> entries = new HashMap<>();
+    public void testPutTooLongValueFail() throws Exception {
+        IgniteCache<String, String> cache = jcache(0, STR_CACHE_NAME);
 
-        entries.put("1", "1");
-        entries.put(tooLongVal.getKey(), tooLongVal.getValue());
+        checkOpsFail(
+            putAllOp(cache, 
+                Stream.of(new T2<>("1", "1"), tooLongVal)));
 
-        putAll(jcache(0, STR_CACHE_NAME), entries);
+        checkOpsFail(
+            ops(cache, tooLongVal));
+
+        checkOpsFail(
+            ops3arg(cache, tooLongVal.getKey(), "1", tooLongVal.getValue()));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPutAllTooLongKey() throws Exception {
-        Map<String, String> entries = new HashMap<>();
+    public void testPutTooLongKeyFail() throws Exception {
+        IgniteCache<String, String> cache = jcache(0, STR_CACHE_NAME);
 
-        entries.put("1", "1");
-        entries.put(tooLongKey.getKey(), tooLongKey.getValue());
+        checkOpsFail(
+            putAllOp(cache, 
+                Stream.of(new T2<>("1", "1"), tooLongKey)));
 
-        putAll(jcache(0, STR_CACHE_NAME), entries);
+        checkOpsFail(
+            ops(cache, tooLongKey));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPutAllTooLongKey2() throws Exception {
-        Map<String, Organization> entries = new HashMap<>();
+    public void testPutTooLongValueFieldFail() throws Exception {
+        IgniteCache<Organization, Address> cache = jcache(0, OBJ_CACHE_NAME);
 
-        entries.put("1", new Organization("1"));
-        entries.put(tooLongKey2.getKey(), tooLongKey2.getValue());
+        checkOpsFail(
+            putAllOp(cache, 
+                Stream.of(new T2<>(new Organization("1"), new Address("1")), tooLongAddrVal)));
 
-        putAll(jcache(0, STR_ORG_CACHE_NAME), entries);
+        checkOpsFail(ops(cache, tooLongAddrVal));
+
+        checkOpsFail(ops3arg(cache, tooLongAddrVal.get1(), new Address("1"), tooLongAddrVal.get2()));
+
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPutAllTooLongValueField() throws Exception {
-        Map<Organization, Address> entries = new HashMap<>();
+    public void testPutTooLongKeyFieldFail() throws Exception {
+        IgniteCache<Organization, Address> cache = jcache(0, OBJ_CACHE_NAME);
 
-        entries.put(new Organization("1"), new Address("1"));
-        entries.put(tooLongAddrVal.getKey(), tooLongAddrVal.getValue());
+        checkOpsFail(
+            putAllOp(cache,
+                Stream.of(new T2<>(new Organization("1"), new Address("1")), tooLongOrgKey)));
 
-        putAll(jcache(0, OBJ_CACHE_NAME), entries);
+        checkOpsFail(ops(cache, tooLongOrgKey));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPutAllTooLongKeyField() throws Exception {
-        Map<Organization, Address> entries = new HashMap<>();
+    public void testPutTooLongKeyFail2() throws Exception {
+        IgniteCache<String, Organization> cache = jcache(0, STR_ORG_CACHE_NAME);
 
-        entries.put(new Organization("1"), new Address("1"));
-        entries.put(tooLongOrgKey.getKey(), tooLongOrgKey.getValue());
+        checkOpsFail(
+            putAllOp(cache,
+                Stream.of(new T2<>("1", new Organization("1")), tooLongKey2)));
 
-        putAll(jcache(0, OBJ_CACHE_NAME), entries);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutTooLongValueField() throws Exception {
-        put(jcache(0, OBJ_CACHE_NAME), tooLongAddrVal);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutTooLongKeyField() throws Exception {
-        put(jcache(0, OBJ_CACHE_NAME), tooLongOrgKey);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutTooLongValue() throws Exception {
-        put(jcache(0, STR_CACHE_NAME), tooLongVal);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutTooLongKey() throws Exception {
-        put(jcache(0, STR_CACHE_NAME), tooLongKey);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutTooLongKey2() throws Exception {
-        put(jcache(0, STR_ORG_CACHE_NAME), tooLongKey2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutIfAbsentTooLongValueField() throws Exception {
-        putIfAbsent(jcache(0, OBJ_CACHE_NAME), tooLongAddrVal);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutIfAbsentTooLongKeyField() throws Exception {
-        putIfAbsent(jcache(0, OBJ_CACHE_NAME), tooLongOrgKey);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutIfAbsentTooLongValue() throws Exception {
-        putIfAbsent(jcache(0, STR_CACHE_NAME), tooLongVal);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutIfAbsentTooLongKey() throws Exception {
-        putIfAbsent(jcache(0, STR_CACHE_NAME), tooLongKey);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testPutIfAbsentTooLongKey2() throws Exception {
-        putIfAbsent(jcache(0, STR_ORG_CACHE_NAME), tooLongKey2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndPutTooLongValueField() throws Exception {
-        getAndPut(jcache(0, OBJ_CACHE_NAME), tooLongAddrVal);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndPutTooLongKeyField() throws Exception {
-        getAndPut(jcache(0, OBJ_CACHE_NAME), tooLongOrgKey);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndPutTooLongValue() throws Exception {
-        getAndPut(jcache(0, STR_CACHE_NAME), tooLongVal);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndPutTooLongKey() throws Exception {
-        getAndPut(jcache(0, STR_CACHE_NAME), tooLongKey);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndPutTooLongKey2() throws Exception {
-        getAndPut(jcache(0, STR_ORG_CACHE_NAME), tooLongKey2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndPutIfAbsentTooLongValueField() throws Exception {
-        getAndPutIfAbsent(jcache(0, OBJ_CACHE_NAME), tooLongAddrVal);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndPutIfAbsentTooLongKeyField() throws Exception {
-        getAndPutIfAbsent(jcache(0, OBJ_CACHE_NAME), tooLongOrgKey);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndPutIfAbsentTooLongValue() throws Exception {
-        getAndPutIfAbsent(jcache(0, STR_CACHE_NAME), tooLongVal);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndPutIfAbsentTooLongKey() throws Exception {
-        getAndPutIfAbsent(jcache(0, STR_CACHE_NAME), tooLongKey);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndPutIfAbsentTooLongKey2() throws Exception {
-        getAndPutIfAbsent(jcache(0, STR_ORG_CACHE_NAME), tooLongKey2);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplaceTooLongValueField() throws Exception {
-        replace(jcache(0, OBJ_CACHE_NAME), tooLongAddrVal.getKey(), new Address("1"), tooLongAddrVal.getValue());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplaceTooLongValue() throws Exception {
-        replace(jcache(0, STR_CACHE_NAME), tooLongVal.getKey(), "1", tooLongVal.getValue());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndReplaceTooLongValueField() throws Exception {
-        getAndReplace(jcache(0, OBJ_CACHE_NAME), tooLongAddrVal.getKey(), new Address("1"), 
-            tooLongAddrVal.getValue());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testGetAndReplaceTooLongValue() throws Exception {
-        getAndReplace(jcache(0, STR_CACHE_NAME), tooLongVal.getKey(), "1", tooLongVal.getValue());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplace3TooLongValueField() throws Exception {
-        replace3(jcache(0, OBJ_CACHE_NAME), tooLongAddrVal.getKey(), new Address("1"), tooLongAddrVal.getValue());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testReplace3TooLongValue() throws Exception {
-        replace3(jcache(0, STR_CACHE_NAME), tooLongVal.getKey(), "1", tooLongVal.getValue());
+        checkOpsFail(ops(cache, tooLongKey2));
     }
 
     /** */
-    private <K, V> void put(IgniteCache<K, V> cache, final Map.Entry<K, V> entry) {
-        GridTestUtils.assertThrowsWithCause(() -> {
-            if (async())
-                cache.putAsync(entry.getKey(), entry.getValue()).get(FUT_TIMEOUT);
-            else
-                cache.put(entry.getKey(), entry.getValue());
-
-            return 0;
-        }, IgniteException.class);
+    private void checkOpsFail(Stream<Callable<?>> ops) {
+        ops.forEach(op -> assertThrowsWithCause(op, IgniteException.class));
     }
 
     /** */
-    private <K, V> void putIfAbsent(IgniteCache<K, V> cache, final Map.Entry<K, V> entry) {
-        GridTestUtils.assertThrowsWithCause(() -> {
-            if (async())
-                cache.putIfAbsentAsync(entry.getKey(), entry.getValue()).get(FUT_TIMEOUT);
-            else
-                cache.putIfAbsent(entry.getKey(), entry.getValue());
+    private <K, V> Stream<Callable<?>> ops(IgniteCache<K, V> cache, T2<K, V> val) {
+        Stream<BiFunction<K, V, ?>> ops = Stream.of(
+            (k, v) -> { cache.put(k, v); return 0; },
+            cache::putIfAbsent,
+            cache::getAndPut,
+            cache::getAndPutIfAbsent
+        );
 
-            return 0;
-        }, IgniteException.class);
+        Stream<BiFunction<K, V, IgniteFuture<?>>> asyncOps = Stream.of(
+            cache::putAsync,
+            cache::putIfAbsentAsync,
+            cache::getAndPutAsync,
+            cache::getAndPutIfAbsentAsync
+        );
+
+        Stream<BiFunction<K, V, ?>> allOps = Stream.concat(
+            ops,
+            asyncOps.map(op -> op.andThen(f -> f.get(FUT_TIMEOUT)))
+        );
+
+        return allOps.map(f -> () -> f.apply(val.get1(), val.get2()));
     }
 
     /** */
-    private <K, V> void getAndPut(IgniteCache<K, V> cache, final Map.Entry<K, V> entry) {
-        GridTestUtils.assertThrowsWithCause(() -> {
-            if (async())
-                cache.getAndPutAsync(entry.getKey(), entry.getValue()).get(FUT_TIMEOUT);
-            else
-                cache.getAndPut(entry.getKey(), entry.getValue());
+    private <K, V> Stream<Callable<?>> ops3arg(IgniteCache<K, V> cache, K key, V okVal, V errVal) {
+        Stream<BiFunction<K, V, ?>> ops = Stream.of(
+            cache::replace,
+            cache::getAndReplace
+        );
 
-            return 0;
-        }, IgniteException.class);
+        Stream<BiFunction<K, V, IgniteFuture<?>>> asyncOps = Stream.of(
+            cache::replaceAsync,
+            cache::getAndReplaceAsync
+        );
+
+        Stream<TriFunction<K, V, V, ?>> allOps = Stream.concat(
+            ops,
+            asyncOps.map(op -> op.andThen(f -> f.get(FUT_TIMEOUT)))
+        ).map(f -> (k, ok, err) -> { cache.put(k, ok); f.apply(k, err); return 0; });
+
+        Stream<TriFunction<K, V, V, ?>> triArgOps = Stream.of(
+            (k, ok, err) -> { cache.put(k, ok); cache.replace(k, ok, err); return 0; },
+            (k, ok, err) -> { cache.put(k, ok); cache.replaceAsync(k, ok, err).get(FUT_TIMEOUT); return 0; }
+        );
+
+        return Stream.concat(allOps, triArgOps)
+            .map(f -> () -> f.apply(key, okVal, errVal));
     }
 
     /** */
-    private <K, V> void getAndPutIfAbsent(IgniteCache<K, V> cache, final Map.Entry<K, V> entry) {
-        GridTestUtils.assertThrowsWithCause(() -> {
-            if (async())
-                cache.getAndPutIfAbsentAsync(entry.getKey(), entry.getValue()).get(FUT_TIMEOUT);
-            else
-                cache.getAndPutIfAbsent(entry.getKey(), entry.getValue());
+    private <K, V>  Stream<Callable<?>> putAllOp(IgniteCache<K, V> cache, Stream<T2<K, V>> entries) {
+        return Stream.of(() -> {
+            cache.putAll(
+                entries.collect(Collectors.toMap(T2::get1, T2::get2)));
 
             return 0;
-        }, IgniteException.class);
-    }
-
-    /** */
-    private <K, V> void replace(IgniteCache<K, V> cache, final K key, V okVal, V errorVal) {
-        cache.put(key, okVal);
-
-        GridTestUtils.assertThrowsWithCause(() -> {
-            if (async())
-                cache.replaceAsync(key, errorVal).get(FUT_TIMEOUT);
-            else
-                cache.replace(key, errorVal);
-
-            return 0;
-        }, IgniteException.class);
-    }
-
-    /** */
-    private <K, V> void getAndReplace(IgniteCache<K, V> cache, final K key, V okVal, V errorVal) {
-        cache.put(key, okVal);
-
-        GridTestUtils.assertThrowsWithCause(() -> {
-            if (async())
-                cache.getAndReplaceAsync(key, errorVal).get(FUT_TIMEOUT);
-            else
-                cache.getAndReplace(key, errorVal);
-
-            return 0;
-        }, IgniteException.class);
-    }
-
-    /** */
-    private <K, V> void replace3(IgniteCache<K, V> cache, final K key, V okVal, V errorVal) {
-        cache.put(key, okVal);
-
-        GridTestUtils.assertThrowsWithCause(() -> {
-            if (async())
-                cache.replaceAsync(key, okVal, errorVal).get(FUT_TIMEOUT);
-            else
-                cache.replace(key, okVal, errorVal);
-
-            return 0;
-        }, IgniteException.class);
-    }
-
-    /** */
-    private <K, V> void putAll(IgniteCache<K, V> cache, final Map<K, V> entries) {
-        GridTestUtils.assertThrowsWithCause(() -> {
-            if (async())
-                cache.putAllAsync(entries).get(FUT_TIMEOUT);
-            else
-                cache.putAll(entries);
-
-            return 0;
-        }, IgniteException.class);
+        });
     }
 
     /**
@@ -471,11 +271,6 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
     }
 
     /** */
-    protected boolean async() {
-        return false;
-    }
-
-    /** */
     @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** Name. */
@@ -502,4 +297,15 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
             this.address = address;
         }
     }
+
+    @FunctionalInterface
+    interface TriFunction<A,B,C,R> {
+        R apply(A a, B b, C c);
+
+        default <V> TriFunction<A, B, C, V> andThen(Function<? super R, ? extends V> after) {
+            Objects.requireNonNull(after);
+
+            return (A a, B b, C c) -> after.apply(apply(a, b, c));
+        }
+    } 
 }
