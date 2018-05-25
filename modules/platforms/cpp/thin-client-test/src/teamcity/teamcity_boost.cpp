@@ -15,7 +15,7 @@
  * $Revision: 88625 $
 */
 
-#define BOOST_TEST_MODULE IgniteCoreTest
+#define BOOST_TEST_MODULE IgniteThinClientTest
 
 #include <sstream>
 
