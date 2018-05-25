@@ -80,7 +80,7 @@ const PROTOCOL_VERSION_1_0_0 = new ProtocolVersion(1, 0, 0);
 const PROTOCOL_VERSION_1_1_0 = new ProtocolVersion(1, 1, 0);
 
 const SUPPORTED_VERSIONS = [
-    PROTOCOL_VERSION_1_0_0,
+    // PROTOCOL_VERSION_1_0_0, // Support for QueryField precision/scale fields breaks 1.0.0 compatibility
     PROTOCOL_VERSION_1_1_0
 ];
 
