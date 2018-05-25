@@ -219,6 +219,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * Called after cache was started.
      */
     public void onAfterCacheStarted() {
+        assert !recoveryState.isDone();
+
         try {
             Iterable entries = cctx.cache().localEntries(new CachePeekMode[] {});
 
@@ -377,15 +379,14 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      *
      * @param key Key.
      * @param rmv {@code True} if entry was removed.
-     * @param keepBinary Keep binary flag.
      */
-    public void onEntryUpdated(KeyCacheObject key, boolean rmv, boolean keepBinary) {
+    public void onEntryUpdated(KeyCacheObject key, boolean rmv) {
         // No need to notify data structures manager for a user cache since all DS objects are stored
         // in system caches.
-        if (cctx.userCache())
+        if (!cctx.dataStructuresCache())
             return;
 
-        Object key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
+        Object key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, false, false);
 
         if (key0 instanceof SetItemKey) {
             awaitSetDataInit();

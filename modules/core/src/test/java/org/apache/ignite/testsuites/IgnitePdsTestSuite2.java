@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsPartitio
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreDataStructuresTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteRebalanceScheduleResendPartitionsTest;
 import org.apache.ignite.internal.processors.cache.persistence.LocalWacModeNoChangeDuringRebalanceOnNonNodeAssignTest;
+import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreIgniteSetConsistencyTest;
 import org.apache.ignite.internal.processors.cache.persistence.LocalWalModeChangeDuringRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.ClientAffinityAssignmentWithBaselineTest;
 import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteAbsentEvictionNodeOutOfBaselineTest;
@@ -130,6 +131,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(SlowHistoricalRebalanceSmallHistoryTest.class);
 
         suite.addTestSuite(IgnitePersistentStoreDataStructuresTest.class);
+
+        suite.addTestSuite(IgnitePersistentStoreIgniteSetConsistencyTest.class);
 
         // Failover test
         suite.addTestSuite(IgniteWalFlushFailoverTest.class);
