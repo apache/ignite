@@ -18,6 +18,23 @@
 ACLOCAL_AMFLAGS =-I m4
 
 noinst_HEADERS = \
+    ignite/thin/ssl_mode.h \
+    ignite/thin/ignite_client.h \
+    ignite/thin/ignite_client_configuration.h \
+    ignite/impl/thin/parser.h \
+    ignite/impl/thin/protocol_version.h \
+    ignite/impl/thin/response_status.h \
+    ignite/impl/thin/data_router.h \
+    ignite/impl/thin/utility.h \
+    ignite/impl/thin/net/end_point.h \
+    ignite/impl/thin/net/tcp_socket_client.h \
+    ignite/impl/thin/message.h \
+    ignite/impl/thin/socket_client.h \
+    ignite/impl/thin/ignite_client_impl.h \
+    ignite/impl/thin/result_page.h \
+    ignite/impl/thin/ssl/ssl_bindings.h \
+    ignite/impl/thin/ssl/secure_socket_client.h \
+    ignite/impl/thin/ssl/ssl_gateway.h
 
 uninstall-hook:
 	if [ -d ${includedir}/ignite ]; then find ${includedir}/ignite -type d -empty -delete; fi

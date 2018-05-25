@@ -48,6 +48,16 @@ libignite_thin_client_la_DEPENDENCIES = \
     @top_srcdir@/binary/libignite-binary.la
 
 libignite_thin_client_la_SOURCES = \
+    os/linux/src/net/tcp_socket_client.cpp \
+    src/impl/result_page.cpp \
+    src/impl/utility.cpp \
+    src/impl/protocol_version.cpp \
+    src/impl/message.cpp \
+    src/impl/ignite_client_impl.cpp \
+    src/impl/data_router.cpp \
+    src/impl/ssl/ssl_gateway.cpp \
+    src/impl/ssl/secure_socket_client.cpp \
+    src/ignite_client.cpp
 
 clean-local:
 	$(RM) *.gcno *.gcda
