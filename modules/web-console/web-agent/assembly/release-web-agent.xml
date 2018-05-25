@@ -51,6 +51,7 @@
             <directory>${basedir}/bin</directory>
             <outputDirectory>/</outputDirectory>
             <fileMode>0755</fileMode>
+            <lineEnding>unix</lineEnding>
             <includes>
                 <include>**/*.sh</include>
             </includes>
