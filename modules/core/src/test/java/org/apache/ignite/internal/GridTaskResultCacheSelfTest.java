@@ -47,20 +47,20 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNoCacheAnnotationResults() throws Exception {
+    public void testNoCacheResultAnnotationUsage() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
-        ignite.compute().execute(GridResultNoCacheAnnotationTestTask.class, "Grid Result No Cache Annotation Test Argument");
+        ignite.compute().execute(GridResultNoCacheResultAnnotationTestTask.class, "Grid Result No Cache Annotation Test Argument");
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testNoCacheMethodResults() throws Exception {
+    public void testNoCacheResultMethodUsage() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         ignite.compute().withNoResultCache()
-                .execute(GridResultNoCacheMethodTestTask.class, "Grid Result No Cache Method Test Argument");
+                .execute(GridResultNoCacheResultMethodTestTask.class, "Grid Result No Cache Method Test Argument");
     }
 
     /**
@@ -75,8 +75,7 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @ComputeTaskNoResultCache
-    private static class GridResultNoCacheAnnotationTestTask extends GridAbstractCacheTestTask {
+    private static class GridResultNoCacheResultMethodTestTask extends GridAbstractCacheTestTask {
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             assert res.getData() != null;
@@ -93,21 +92,12 @@ public class GridTaskResultCacheSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    private static class GridResultNoCacheMethodTestTask extends GridAbstractCacheTestTask {
-        /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
-            assert res.getData() != null;
-            assert rcvd.isEmpty();
+    /**
+     *
+     */
+    @ComputeTaskNoResultCache
+    private static class GridResultNoCacheResultAnnotationTestTask extends GridResultNoCacheResultMethodTestTask {
 
-            return super.result(res, rcvd);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) {
-            assert results.isEmpty();
-
-            return null;
-        }
     }
 
     /**

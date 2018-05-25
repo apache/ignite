@@ -51,7 +51,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
-import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_RESULT_CACHE;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBJ_ID;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TASK_NAME;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_TIMEOUT;
 
 /**
  * {@link IgniteCompute} implementation.
@@ -1020,8 +1025,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
-    @Override
-    public IgniteCompute withNoResultCache() {
+    @Override public IgniteCompute withNoResultCache() {
         guard();
 
         try {

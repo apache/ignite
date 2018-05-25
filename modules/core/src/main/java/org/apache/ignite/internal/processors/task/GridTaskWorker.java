@@ -315,10 +315,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         marsh = ctx.config().getMarshaller();
 
-        boolean noCacheAnnotation = dep.annotation(taskCls, ComputeTaskNoResultCache.class) != null;
-        Boolean noCacheMethod = getThreadContext(TC_NO_RESULT_CACHE);
-        boolean noCache = noCacheAnnotation || (noCacheMethod != null && noCacheMethod);
-        resCache = !noCache;
+        boolean noResCacheAnnotation = dep.annotation(taskCls, ComputeTaskNoResultCache.class) != null;
+
+        Boolean noResCacheContextFlag = getThreadContext(TC_NO_RESULT_CACHE);
+
+        resCache = !(noResCacheAnnotation || (noResCacheContextFlag != null && noResCacheContextFlag));
 
         Boolean noFailover = getThreadContext(TC_NO_FAILOVER);
 
