@@ -48,7 +48,7 @@ public abstract class GridWorker implements Runnable {
     private final GridWorkerListener lsnr;
 
     /** */
-    protected final GridWorkerIdlenessHandler idleHnd;
+    private final GridWorkerIdlenessHandler idleHnd;
 
     /** */
     private volatile boolean finished;
@@ -304,5 +304,11 @@ public abstract class GridWorker implements Runnable {
     /** Returns heartbeat timeout threshold in milliseconds, when exceeded, worker is considered as hanging. */
     public long criticalHeartbeatTimeoutMs() {
         return criticalHeartbeatTimeoutMs;
+    }
+
+    /** */
+    public void onIdle() {
+        if (idleHnd != null)
+            idleHnd.onIdle(this);
     }
 }

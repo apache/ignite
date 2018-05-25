@@ -108,6 +108,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -2759,13 +2760,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         throw t;
                     }
+                    else if (t instanceof GridWorkerFailureException)
+                        ctx.failure().process(new FailureContext(((GridWorkerFailureException)t).failureType(), t));
                 }
             }
         }
 
         /** @throws InterruptedException If interrupted. */
         @SuppressWarnings("DuplicateCondition")
-        private void body0() throws InterruptedException {
+        private void body0() throws InterruptedException, GridWorkerFailureException {
             GridTuple6<Integer, AffinityTopologyVersion, ClusterNode, DiscoCache, Collection<ClusterNode>,
                 DiscoveryCustomMessage> evt;
             do {
@@ -2773,6 +2776,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     return;
 
                 updateHeartbeat();
+                onIdle();
 
                 evt = evts.poll(pollTimeoutMs, TimeUnit.MILLISECONDS);
             } while (evt == null);

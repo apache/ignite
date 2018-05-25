@@ -22,7 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicStampedReference;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerDiedException;
 import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
@@ -49,8 +49,8 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     /** */
     private volatile long lastCheckStartTimestamp = System.currentTimeMillis();
 
-    /** */
-    private AtomicReference<Thread> lastCheckerThread = new AtomicReference<>();
+    /** Atomic pair of checker thread and check counter. */
+    private AtomicStampedReference<Thread> lastChecker = new AtomicStampedReference<>(Thread.currentThread(), 0);
 
     /**
      * Adds worker to the registry.
@@ -109,12 +109,25 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
         if (System.currentTimeMillis() - lastCheckStartTimestamp <= CHECK_INTERVAL_MS)
             return;
 
+        System.err.println("PEERCHECK: thread " + Thread.currentThread().getName() + " detects time to check");
+
         // Prevent further races on successful lastCheckerThread CAS.
         lastCheckStartTimestamp = System.currentTimeMillis();
 
-        if (!lastCheckerThread.compareAndSet(lastCheckerThread.get(), Thread.currentThread()))
+        Thread prevCheckerThread = lastChecker.getReference();
+
+        int prevCheckCnt = lastChecker.getStamp();
+
+        System.err.println("PEERCHECK: thread " + Thread.currentThread().getName() + " attempts CAS:" + prevCheckerThread + "," + Thread.currentThread() + " -> " + prevCheckCnt + "," + (prevCheckCnt + 1));
+
+        if (!lastChecker.compareAndSet(prevCheckerThread, Thread.currentThread(), prevCheckCnt, prevCheckCnt + 1)
+            || lastChecker.getStamp() != prevCheckCnt + 1
+            || lastChecker.getReference() != Thread.currentThread())
+            // TODO IGNITE-6587: WTF? Still allows 2 threads to pass simultaneously.
             // No use to recover lastCheckStartTimestamp: some other thread is starting a check concurrently.
             return;
+
+        System.err.println("PEERCHECK: thread " + Thread.currentThread().getName() + " succeeds to CAS");
 
         // Due to thread scheduling issues, there is no strict guaranty that only one thread will run the code below
         // at a time, but the only downside of this is the concurrent use of registeredWorkers iterator,
@@ -133,6 +146,8 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
             Thread runner = worker.runner();
 
             if (runner != null && runner != Thread.currentThread()) {
+                System.err.println("PEERCHECK: thread " + Thread.currentThread().getName() + " checks worker " + worker);
+
                 if (!runner.isAlive()) {
                     // In normal operation GridWorker implementation guarantees:
                     // worker termination happens before its removal from registeredWorkers.
