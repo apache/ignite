@@ -99,8 +99,8 @@ AC_CONFIG_FILES([ \
     core/ignite.pc \
     jni/include/Makefile \
     jni/Makefile \
-    thin_client/include/Makefile \
-    thin_client/Makefile \
+    thin-client/include/Makefile \
+    thin-client/Makefile \
     ignite/Makefile \
 ])
 
