@@ -57,7 +57,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     /** */
     private static final int PRIMARY = CAN_CLEANUP << 1;
     /** */
-    private static final int REMOVE = PRIMARY << 1;
+    private static final int REMOVE_OR_LOCK = PRIMARY << 1;
     /** */
     private static final int BACKUP_FLAGS_SET = FIRST;
     /** */
@@ -130,8 +130,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
         setFlags(primary ? PRIMARY_FLAGS_SET : BACKUP_FLAGS_SET);
 
-        if (primary && val == null && !lockOnly)
-            setFlags(REMOVE);
+        if (primary && (lockOnly || val == null))
+            setFlags(REMOVE_OR_LOCK);
     }
 
     /** {@inheritDoc} */
@@ -169,10 +169,10 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 setFlags(DIRTY);
             }
 
-            // In case it is a REMOVE operation and the first entry is an aborted one
+            // In case it is a REMOVE or locked READ operation and the first entry is an aborted one
             // we have to write lock information to the first committed entry as well
             // because we about to delete all aborted entries before it
-            if (!isFlagsSet(REMOVE))
+            if (!isFlagsSet(REMOVE_OR_LOCK))
                 unsetFlags(CAN_WRITE);
         }
 
@@ -257,7 +257,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                         unsetFlags(CHECK_VERSION);
                     }
 
-                    if (isFlagsSet(PRIMARY | REMOVE) && cleanupRows != null) {
+                    if (isFlagsSet(PRIMARY | REMOVE_OR_LOCK) && cleanupRows != null) {
                         rowIo.setMvccLockCoordinatorVersion(pageAddr, idx, mvccCrd);
                         rowIo.setMvccLockCounter(pageAddr, idx, mvccCntr);
 

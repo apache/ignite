@@ -58,6 +58,8 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        disableScheduledVacuum = getName().equals("testSelectForUpdateAfterAbortedTx");
+
         startGrids(3);
 
         CacheConfiguration seg = new CacheConfiguration("segmented*");
@@ -236,6 +238,46 @@ public abstract class CacheMvccSelectForUpdateQueryAbstractTest extends CacheMvc
 
         assertQueryThrows("select lastName, count(*) from person group by lastName for update",
             "SELECT FOR UPDATE with aggregates and/or GROUP BY is not supported.");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSelectForUpdateAfterAbortedTx() throws Exception {
+        assert disableScheduledVacuum;
+
+        Ignite node = grid(0);
+
+        IgniteCache<Integer, ?> cache = node.cache("Person");
+
+        List<List<?>> res;
+
+        try (Transaction tx = node.transactions().txStart(TransactionConcurrency.PESSIMISTIC,
+            TransactionIsolation.REPEATABLE_READ)) {
+
+            res = cache.query(new SqlFieldsQuery("update person set lastName=UPPER(lastName)")).getAll();
+
+            assertEquals((long)CACHE_SIZE, res.get(0).get(0));
+
+            tx.rollback();
+        }
+
+        try (Transaction tx = node.transactions().txStart(TransactionConcurrency.PESSIMISTIC,
+            TransactionIsolation.REPEATABLE_READ)) {
+
+            res = cache.query(new SqlFieldsQuery("select id, * from person order by id for update")).getAll();
+
+            assertEquals(CACHE_SIZE, res.size());
+
+            List<Integer> keys = new ArrayList<>();
+
+            for (List<?> r : res)
+                keys.add((Integer)r.get(0));
+
+            checkLocks("Person", keys, true);
+
+            tx.rollback();
+        }
     }
 
     /**
