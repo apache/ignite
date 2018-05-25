@@ -84,7 +84,7 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
                 new GridTestClassLoader(
                     Collections.<String, String>emptyMap(), getClass().getClassLoader(),
                     GridP2PRemoteTestTask.class.getName(), GridP2PRemoteTestTask1.class.getName(),
-                    GridP2PRemoteTestJob.class.getName());
+                    GridP2PRemoteTestJob.class.getName(), GridP2PRemoteClassLoadersSelfTest.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task1 =
                 (Class<? extends ComputeTask<?, ?>>) tstClsLdr.loadClass(GridP2PRemoteTestTask.class.getName());
@@ -135,13 +135,14 @@ public class GridP2PRemoteClassLoadersSelfTest extends GridCommonAbstractTest {
             ClassLoader tstClsLdr1 =
                 new GridTestClassLoader(
                     Collections.EMPTY_MAP, getClass().getClassLoader(),
-                    GridP2PRemoteTestTask.class.getName(), GridP2PRemoteTestJob.class.getName()
-                );
+                    GridP2PRemoteTestTask.class.getName(), GridP2PRemoteTestJob.class.getName(),
+                    GridP2PRemoteClassLoadersSelfTest.class.getName());
 
             ClassLoader tstClsLdr2 =
                 new GridTestClassLoader(
                     Collections.EMPTY_MAP, getClass().getClassLoader(),
-                    GridP2PRemoteTestTask1.class.getName(), GridP2PRemoteTestJob.class.getName());
+                    GridP2PRemoteTestTask1.class.getName(), GridP2PRemoteTestJob.class.getName(),
+                    GridP2PRemoteClassLoadersSelfTest.class.getName());
 
             Class<? extends ComputeTask<?, ?>> task1 =
                 (Class<? extends ComputeTask<?, ?>>) tstClsLdr1.loadClass(GridP2PRemoteTestTask.class.getName());
