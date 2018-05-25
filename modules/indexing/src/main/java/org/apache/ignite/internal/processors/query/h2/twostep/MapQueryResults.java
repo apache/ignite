@@ -56,6 +56,7 @@ class MapQueryResults {
 
     /**
      * Constructor.
+     * @param h2 Indexing instance.
      * @param qryReqId Query request ID.
      * @param qrys Number of queries.
      * @param cctx Cache context.
@@ -66,8 +67,6 @@ class MapQueryResults {
     MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
         @Nullable MapQueryLazyWorker lazyWorker, boolean forUpdate) {
         this.forUpdate = forUpdate;
-        assert lazyWorker == null;
-
         this.h2 = h2;
         this.qryReqId = qryReqId;
         this.cctx = cctx;

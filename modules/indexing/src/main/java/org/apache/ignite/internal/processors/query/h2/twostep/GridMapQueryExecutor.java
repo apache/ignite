@@ -852,19 +852,21 @@ public class GridMapQueryExecutor {
                     else {
                         GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qryIdx, segmentId, pageSize, removeMapping);
 
-                        lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                            @Override public void apply(IgniteInternalFuture<Void> future) {
-                                try {
-                                    if (node.isLocal())
-                                        h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
-                                    else
-                                        ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
+                        if (msg != null) {
+                            lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
+                                @Override public void apply(IgniteInternalFuture<Void> future) {
+                                    try {
+                                        if (node.isLocal())
+                                            h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+                                        else
+                                            ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
+                                    }
+                                    catch (Exception e) {
+                                        U.error(log, e);
+                                    }
                                 }
-                                catch (Exception e) {
-                                    U.error(log, e);
-                                }
-                            }
-                        });
+                            });
+                        }
                     }
 
                     qryIdx++;
@@ -1193,10 +1195,12 @@ public class GridMapQueryExecutor {
         try {
             GridQueryNextPageResponse msg = prepareNextPage(nodeRess, node, qr, qry, segmentId, pageSize, removeMapping);
 
-            if (node.isLocal())
-                h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
-            else
-                ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
+            if (msg != null) {
+                if (node.isLocal())
+                    h2.reduceQueryExecutor().onMessage(ctx.localNodeId(), msg);
+                else
+                    ctx.io().sendToGridTopic(node, GridTopic.TOPIC_QUERY, msg, QUERY_POOL);
+            }
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send message.", e);
