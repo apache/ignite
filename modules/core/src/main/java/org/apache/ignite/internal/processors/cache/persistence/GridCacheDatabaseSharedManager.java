@@ -525,7 +525,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!U.mkdirs(cpDir))
                 throw new IgniteCheckedException("Could not create directory for checkpoint metadata: " + cpDir);
 
-            cleanupCheckpointDirectory();
+            cleanupTempCheckpointDirectory();
 
             final FileLockHolder preLocked = kernalCtx.pdsFolderResolver()
                 .resolveFolders()
@@ -543,7 +543,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Cleanup checkpoint directory from all temporary files {@link #FILE_TMP_SUFFIX}.
      */
-    private void cleanupCheckpointDirectory() throws IgniteCheckedException {
+    private void cleanupTempCheckpointDirectory() throws IgniteCheckedException {
         try {
             try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath(), new DirectoryStream.Filter<Path>() {
                 @Override
@@ -551,6 +551,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     return path.endsWith(FILE_TMP_SUFFIX);
                 }
             })) {
+                for (Path path : files)
+                    Files.delete(path);
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to cleanup checkpoint directory from temporary files: " + cpDir, e);
+        }
+    }
+
+    /**
+     * Cleanup checkpoint directory.
+     */
+    public void cleanupCheckpointDirectory() throws IgniteCheckedException {
+        try {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath())) {
                 for (Path path : files)
                     Files.delete(path);
             }

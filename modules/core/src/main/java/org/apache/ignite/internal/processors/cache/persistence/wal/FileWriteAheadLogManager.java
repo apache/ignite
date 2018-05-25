@@ -33,8 +33,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1331,6 +1333,29 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         }
         else
             checkFiles(0, false, null, null);
+    }
+
+    /** {@inheritDoc} */
+    public void cleanupWalDirectories() throws IgniteCheckedException {
+        try {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(walWorkDir.toPath())) {
+                for (Path path : files)
+                    Files.delete(path);
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to cleanup wal work directory: " + walWorkDir, e);
+        }
+
+        try {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(walArchiveDir.toPath())) {
+                for (Path path : files)
+                    Files.delete(path);
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to cleanup wal archive directory: " + walArchiveDir, e);
+        }
     }
 
     /**
