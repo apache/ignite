@@ -91,7 +91,7 @@ public class ClusterBaselineNodesMetricsSelfTest extends GridCommonAbstractTest 
         assertEquals(1, mxBeanCluster.getTotalServerNodes());
         assertEquals(1, mxBeanCluster.getTotalClientNodes());
         assertEquals(2, mxBeanCluster.getTotalBaselineNodes());
-        assertEquals(1, mxBeanCluster.getActiveBaselineNodes()); // todo failed
+        assertEquals(1, mxBeanCluster.getActiveBaselineNodes());
         assertEquals(2, (baselineNodes = ignite0.cluster().currentBaselineTopology()) != null
             ? baselineNodes.size()
             : 0);
