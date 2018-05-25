@@ -928,7 +928,7 @@ public class GridToStringBuilder {
 
         try {
             if (valClass.isArray())
-                addArr(buf, valClass, (Object[]) val);
+                addArr(buf, valClass, val);
             else if (val instanceof Collection)
                 addCol(buf, (Collection) val);
             else if (val instanceof Map)
@@ -1224,15 +1224,17 @@ public class GridToStringBuilder {
         return res;
     }
 
-    private static void addArr(SBLimitedLength buf, Class arrType, Object[] arr) {
-        if (arr == null)
+    private static void addArr(SBLimitedLength buf, Class arrType, Object obj) {
+        if (obj == null)
             return;
 
         if (isPrimitiveArrayType(arrType)) {
-            buf.a(arrayToString(arrType, arr));
+            buf.a(arrayToString(arrType, obj));
 
             return;
         }
+
+        Object[] arr = (Object[]) obj;
 
         buf.a(arrType.getSimpleName()).a(' ').a('[');
 
