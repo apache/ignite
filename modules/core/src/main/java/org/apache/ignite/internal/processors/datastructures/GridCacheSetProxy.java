@@ -53,7 +53,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         };
 
     /** Delegate set. */
-    private IgniteSetEx<T> delegate;
+    private GridCacheSetImpl<T> delegate;
 
     /** Cache context. */
     private GridCacheContext cctx;
@@ -78,7 +78,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
      * @param cctx Cache context.
      * @param delegate Delegate set.
      */
-    public GridCacheSetProxy(GridCacheContext cctx, IgniteSetEx<T> delegate) {
+    public GridCacheSetProxy(GridCacheContext cctx, GridCacheSetImpl<T> delegate) {
         this.cctx = cctx;
         this.delegate = delegate;
 
@@ -90,7 +90,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     /**
      * @return Set delegate.
      */
-    public IgniteSetEx delegate() {
+    public GridCacheSetImpl delegate() {
         return delegate;
     }
 

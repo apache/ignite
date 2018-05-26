@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeaderKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeaderV2;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSetImplV2;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.internal.processors.datastructures.GridTransactionalCacheQueueImpl;
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
@@ -84,6 +83,7 @@ import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
  */
 public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Non collocated IgniteSet will use separate cache if all nodes in cluster is not older then specified version. */
+    // TODO Set current snapshot version before merge.
     public static final IgniteProductVersion SEPARATE_CACHE_SET_SINCE = IgniteProductVersion.fromString("2.5.0");
 
     /** Known classes which are safe to use on server nodes. */
@@ -453,9 +453,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             if (set == null) {
                 GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
-                    set = new GridCacheSetProxy<>(cctx, hdr instanceof GridCacheSetHeader ?
-                        new GridCacheSetImpl<T>(cctx, name, (GridCacheSetHeader)hdr) :
-                        new GridCacheSetImplV2<T>(cctx, name, (GridCacheSetHeaderV2)hdr)));
+                    set = new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)));
 
                 if (old != null)
                     set = old;

@@ -34,9 +34,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSet;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CacheWeakQueryIteratorsHolder;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -49,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -58,12 +62,11 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
 
 /**
- * Cache set implementation.
- *
- * @deprecated Replaced by {@link GridCacheSetImplV2}.
+ * Cache set implementation.<br>
+ * Non-collocated version uses separate cache for each instance.<br>
+ * Collocated version uses shared cache.
  */
-@Deprecated
-public class GridCacheSetImpl<T> extends AbstractCollection<T> implements IgniteSetEx<T> {
+public class GridCacheSetImpl<T> extends AbstractCollection<T> implements IgniteSet<T> {
     /** */
     private static final int BATCH_SIZE = 100;
 
@@ -89,16 +92,16 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     private final int hdrPart;
 
     /** Set header key. */
-    protected final GridCacheSetHeaderKey setKey;
+    private final GridCacheSetHeaderKey setKey;
 
     /** Removed flag. */
     private volatile boolean rmvd;
 
-    /** */
-    private final boolean binaryMarsh;
-
     /** Access to affinityRun() and affinityCall() functions. */
     private final IgniteCompute compute;
+
+    /** {@code True} if this instance of IgniteSet is compatible with older Ignite version. */
+    private final boolean compatibilityMode;
 
     /**
      * @param ctx Cache context.
@@ -106,21 +109,19 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @param hdr Set header.
      */
     @SuppressWarnings("unchecked")
-    public GridCacheSetImpl(GridCacheContext ctx, String name, GridCacheSetHeader hdr) {
+    public GridCacheSetImpl(GridCacheContext ctx, String name, CacheSetHeader hdr) {
+        assert hdr.id() != null;
+
         this.ctx = ctx;
         this.name = name;
-        id = hdr.id();
-        collocated = hdr.collocated();
-        binaryMarsh = ctx.binaryMarshaller();
-        compute = ctx.kernalContext().grid().compute();
-
-        cache = ctx.cache();
-
-        setKey = new GridCacheSetHeaderKey(name);
-
-        log = ctx.logger(GridCacheSetImpl.class);
-
-        hdrPart = ctx.affinity().partition(new GridCacheSetHeaderKey(name));
+        this.collocated = hdr.collocated();
+        this.id = hdr.id();
+        this.compute = ctx.kernalContext().grid().compute();
+        this.cache = ctx.cache();
+        this.setKey = new GridCacheSetHeaderKey(name);
+        this.log = ctx.logger(GridCacheSetImpl.class);
+        this.hdrPart = ctx.affinity().partition(setKey);
+        this.compatibilityMode = hdr instanceof GridCacheSetHeader;
     }
 
     /** {@inheritDoc} */
@@ -143,12 +144,12 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    public boolean checkHeader() throws IgniteCheckedException {
-        IgniteInternalCache<GridCacheSetHeaderKey, GridCacheSetHeader> cache0 = ctx.cache();
+    boolean checkHeader() throws IgniteCheckedException {
+        IgniteInternalCache<GridCacheSetHeaderKey, CacheSetHeader> cache0 = ctx.cache();
 
-        GridCacheSetHeader hdr = cache0.get(new GridCacheSetHeaderKey(name));
+        CacheSetHeader hdr = cache0.get(new GridCacheSetHeaderKey(name));
 
-        return hdr != null && hdr.id().equals(id);
+        return hdr != null && id.equals(hdr.id());
     }
 
     /** {@inheritDoc} */
@@ -156,6 +157,11 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @Override public int size() {
         try {
             onAccess();
+
+            if (!collocated && !compatibilityMode) {
+                // Non collocated IgniteSet uses a separate cache which contains additional header element.
+                return cache.sizeAsync(new CachePeekMode[] {}).get() - 1;
+            }
 
             if (ctx.isLocal() || ctx.isReplicated()) {
                 GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
@@ -188,6 +194,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @SuppressWarnings("unchecked")
     @Override public boolean isEmpty() {
         onAccess();
+
+        if (!collocated && !compatibilityMode)
+            return size() == 0;
 
         GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
 
@@ -378,19 +387,21 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     }
 
     /** {@inheritDoc} */
-    public void affinityRun(IgniteRunnable job) {
-        if (!collocated)
+    @Override public void affinityRun(IgniteRunnable job) {
+        if (!collocated) {
             throw new IgniteException("Failed to execute affinityRun() for non-collocated set: " + name() +
                 ". This operation is supported only for collocated sets.");
+        }
 
         compute.affinityRun(cache.name(), setKey, job);
     }
 
     /** {@inheritDoc} */
-    public <R> R affinityCall(IgniteCallable<R> job) {
-        if (!collocated)
+    @Override public <R> R affinityCall(IgniteCallable<R> job) {
+        if (!collocated) {
             throw new IgniteException("Failed to execute affinityCall() for non-collocated set: " + name() +
                 ". This operation is supported only for collocated sets.");
+        }
 
         return compute.affinityCall(cache.name(), setKey, job);
     }
@@ -402,15 +413,27 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
                 return;
 
             ctx.kernalContext().dataStructures().removeSet(name, ctx);
+
+            if (!collocated && !compatibilityMode)
+                ctx.kernalContext().cache().dynamicDestroyCache(ctx.cache().name(), false, true, false);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @return Closeable iterator.
+     */
+    protected GridCloseableIterator<T> iterator0() {
+        return collocated || compatibilityMode ? sharedCacheIterator() : cacheIterator();
+    }
+
+    /**
+     * @return Closeable iterator.
+     */
     @SuppressWarnings("unchecked")
-    private GridCloseableIterator<T> iterator0() {
+    private GridCloseableIterator<T> sharedCacheIterator() {
         try {
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
                 new GridSetQueryPredicate<>(id, collocated), null, false, false);
@@ -439,6 +462,52 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             }
 
             return it;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
+     * Get iterator for non-collocated igniteSet.
+     *
+     * @return Iterator for non-collocated igniteSet.
+     */
+    @SuppressWarnings("unchecked")
+    private GridCloseableIterator<T> cacheIterator() {
+        GridCacheContext ctx0 = ctx.isNear() ? ctx.near().dht().context() : ctx;
+
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        try {
+            GridCloseableIterator<Map.Entry<T, Object>> iter = ctx0.queries()
+                .createScanQuery(new IgniteBiPredicate() {
+                    @Override public boolean apply(Object k, Object v) {
+                        return k instanceof SetItemKey;
+                    }
+                }, null, true)
+                .keepAll(false)
+                .executeScanQuery();
+
+            return ctx.itHolder().iterator(iter, new CacheIteratorConverter<T, Map.Entry<T, Object>>() {
+                @Override protected T convert(Map.Entry<T, Object> e) {
+                    return (T)((SetItemKey)e.getKey()).item();
+                }
+
+                @Override protected void remove(T item) {
+                    CacheOperationContext prev = ctx.gate().enter(opCtx);
+
+                    try {
+                        cache.remove(itemKey(item));
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw U.convertException(e);
+                    }
+                    finally {
+                        ctx.gate().leave(prev);
+                    }
+                }
+            });
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -514,7 +583,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /**
      * @param rmvd Removed flag.
      */
-    @Override public void removed(boolean rmvd) {
+    void removed(boolean rmvd) {
         if (this.rmvd)
             return;
 
@@ -529,7 +598,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      */
     private void checkRemoved() {
         if (rmvd)
-            throw new IllegalStateException("Set has been removed from cache: " + this);
+            throw new IllegalStateException("Set has been removed: " + this);
     }
 
     /**
@@ -560,7 +629,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @return Item key.
      */
     private SetItemKey itemKey(Object item) {
-        return collocated ? new CollocatedSetItemKey(name, id, item) : new GridCacheSetItemKey(id, item);
+        return collocated ? new CollocatedSetItemKey(name, id, item) :
+            new GridCacheSetItemKey(compatibilityMode ? id : null, item);
     }
 
     /** {@inheritDoc} */

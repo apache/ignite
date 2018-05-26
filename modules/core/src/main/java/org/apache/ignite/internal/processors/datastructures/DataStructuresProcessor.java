@@ -934,9 +934,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         boolean collocated = cfg.isCollocated() || cfg.getCacheMode() != PARTITIONED;
 
         if (dsType == DataStructureType.SET && !collocated) {
-            boolean oldSetFound = cache != null && cache.containsKey(new GridCacheSetHeaderKey(dsName));
+            boolean v1SetFound = cache != null && cache.containsKey(new GridCacheSetHeaderKey(dsName));
 
-            if (!oldSetFound && U.isIgniteVersionAtLeast(SEPARATE_CACHE_SET_SINCE, ctx.grid().cluster().nodes())) {
+            if (!v1SetFound && U.isIgniteVersionAtLeast(SEPARATE_CACHE_SET_SINCE, ctx.grid().cluster().nodes())) {
                 cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
                     cfg.getBackups() + "_" + dsType.name() + "_" + dsName + "@" + grpName;
 
