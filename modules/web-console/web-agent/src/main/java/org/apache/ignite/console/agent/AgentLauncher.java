@@ -365,7 +365,7 @@ public class AgentLauncher {
 
         final Socket client = IO.socket(uri, opts);
 
-        try (RestExecutor restExecutor = new RestExecutorSecurity(cfg.nodeLogin(), cfg.nodePassword());
+        try (RestExecutor restExecutor = new RestExecutorSecurity(cfg.agentUser(), cfg.agentPassword());
              ClusterListener clusterLsnr = new ClusterListener(cfg, client, restExecutor)) {
             Emitter.Listener onConnect = connectRes -> {
                 log.info("Connection established.");

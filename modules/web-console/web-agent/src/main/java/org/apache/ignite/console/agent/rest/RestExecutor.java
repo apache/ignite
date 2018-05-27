@@ -105,7 +105,7 @@ public class RestExecutor implements AutoCloseable {
     /**
      * Stop HTTP client.
      */
-    public void close() {
+    @Override public void close() {
         if (httpClient != null) {
             httpClient.dispatcher().executorService().shutdown();
 

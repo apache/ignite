@@ -64,14 +64,14 @@ public class AgentConfiguration {
     private List<String> nodeURIs;
 
     /** */
-    @Parameter(names = {"-nl", "--node-login"},
-        description = "Login used for connect to Ignite node REST server")
-    private String nodeLogin;
+    @Parameter(names = {"-au", "--agent-user"},
+        description = "User name that will be used to collect metrics from Ignite cluster")
+    private String agentUser;
 
     /** */
-    @Parameter(names = {"-np", "--node-password"},
-        description = "Password used for connect to Ignite node REST server")
-    private String nodePwd;
+    @Parameter(names = {"-ap", "--agent-password"},
+        description = "Password that will be used to connect to cluster")
+    private String agentPwd;
 
     /** URI for connect to Ignite demo node REST server */
     private String demoNodeUri;
@@ -141,31 +141,31 @@ public class AgentConfiguration {
     }
 
     /**
-     * @return Node login.
+     * @return User name for agent.
      */
-    public String nodeLogin() {
-        return nodeLogin;
+    public String agentUser() {
+        return agentUser;
     }
 
     /**
-     * @param nodeLogin New node login.
+     * @param agentUser User name for agent.
      */
-    public void nodeLogin(String nodeLogin) {
-        this.nodeLogin = nodeLogin;
+    public void agentUser(String agentUser) {
+        this.agentUser = agentUser;
     }
 
     /**
-     * @return Node password.
+     * @return Agent password.
      */
-    public String nodePassword() {
-        return nodePwd;
+    public String agentPassword() {
+        return agentPwd;
     }
 
     /**
-     * @param nodePwd New node password.
+     * @param agentPwd Agent password.
      */
-    public void nodePassword(String nodePwd) {
-        this.nodePwd = nodePwd;
+    public void agentPassword(String agentPwd) {
+        this.agentPwd = agentPwd;
     }
 
     /**
@@ -252,12 +252,12 @@ public class AgentConfiguration {
         val = (String)props.remove("node-login");
 
         if (val != null)
-            nodeLogin(val);
+            agentUser(val);
 
         val = (String)props.remove("node-password");
 
         if (val != null)
-            nodePassword(val);
+            agentPassword(val);
 
         val = (String)props.remove("driver-folder");
 
@@ -284,11 +284,11 @@ public class AgentConfiguration {
         if (nodeURIs == null)
             nodeURIs(Collections.singletonList(DFLT_NODE_URI));
 
-        if (nodeLogin == null)
-            nodeLogin(cmd.nodeLogin());
+        if (agentUser == null)
+            agentUser(cmd.agentUser());
 
-        if (nodePwd == null)
-            nodePassword(cmd.nodePassword());
+        if (agentPwd == null)
+            agentPassword(cmd.agentPassword());
 
         if (driversFolder == null)
             driversFolder(cmd.driversFolder());
@@ -325,8 +325,8 @@ public class AgentConfiguration {
         }
 
         sb.append("URI to Ignite node REST server  : ").append(nodeURIs == null ? DFLT_NODE_URI : String.join(", ", nodeURIs)).append('\n');
-        if (nodeLogin != null)
-            sb.append("Login to Ignite node REST server: ").append(nodeLogin).append('\n');
+        if (agentUser != null)
+            sb.append("Login to Ignite node REST server: ").append(agentUser).append('\n');
         sb.append("URI to Ignite Console server    : ").append(srvUri == null ? DFLT_SERVER_URI : srvUri).append('\n');
         sb.append("Path to agent property file     : ").append(configPath()).append('\n');
 
