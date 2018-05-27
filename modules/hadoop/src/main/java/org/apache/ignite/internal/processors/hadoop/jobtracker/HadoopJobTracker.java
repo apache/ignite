@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -80,7 +81,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobPhase.PHASE_CANCELLING;
@@ -119,14 +119,14 @@ public class HadoopJobTracker extends HadoopComponent {
     private HadoopMapReducePlanner mrPlanner;
 
     /** All the known jobs. */
-    private final ConcurrentMap<HadoopJobId, GridFutureAdapter<HadoopJobEx>> jobs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<HadoopJobId, GridFutureAdapter<HadoopJobEx>> jobs = new ConcurrentHashMap<>();
 
     /** Locally active jobs. */
-    private final ConcurrentMap<HadoopJobId, JobLocalState> activeJobs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<HadoopJobId, JobLocalState> activeJobs = new ConcurrentHashMap<>();
 
     /** Locally requested finish futures. */
     private final ConcurrentMap<HadoopJobId, GridFutureAdapter<HadoopJobId>> activeFinishFuts =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Event processing service. */
     private ExecutorService evtProcSvc;
@@ -803,25 +803,27 @@ public class HadoopJobTracker extends HadoopComponent {
      */
     @SuppressWarnings({"unused", "ConstantConditions" })
     private void printPlan(HadoopJobId jobId, HadoopMapReducePlan plan) {
-        log.info("Plan for " + jobId);
+        if (log.isInfoEnabled()) {
+            log.info("Plan for " + jobId);
 
-        SB b = new SB();
+            SB b = new SB();
 
-        b.a("   Map: ");
+            b.a("   Map: ");
 
-        for (UUID nodeId : plan.mapperNodeIds())
-            b.a(nodeId).a("=").a(plan.mappers(nodeId).size()).a(' ');
+            for (UUID nodeId : plan.mapperNodeIds())
+                b.a(nodeId).a("=").a(plan.mappers(nodeId).size()).a(' ');
 
-        log.info(b.toString());
+            log.info(b.toString());
 
-        b = new SB();
+            b = new SB();
 
-        b.a("   Reduce: ");
+            b.a("   Reduce: ");
 
-        for (UUID nodeId : plan.reducerNodeIds())
-            b.a(nodeId).a("=").a(Arrays.toString(plan.reducers(nodeId))).a(' ');
+            for (UUID nodeId : plan.reducerNodeIds())
+                b.a(nodeId).a("=").a(Arrays.toString(plan.reducers(nodeId))).a(' ');
 
-        log.info(b.toString());
+            log.info(b.toString());
+        }
     }
 
     /**

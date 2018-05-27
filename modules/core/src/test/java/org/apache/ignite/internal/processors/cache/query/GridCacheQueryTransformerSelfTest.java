@@ -27,6 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SpiQuery;
@@ -74,11 +75,6 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
         finally {
             Ignition.setClientMode(false);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -174,6 +170,46 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < 50; i++)
                 assertEquals(i * 100, res.get(i).intValue());
+        }
+        finally {
+            cache.destroy();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetObjectFieldPartitioned() throws Exception {
+        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
+
+        Affinity<Integer> affinity = affinity(cache);
+
+        try {
+            int [] keys = new int[50];
+
+            for (int i = 0, j = 0; i < keys.length; j++) {
+                if (affinity.partition(j) == 0)
+                    keys[i++] = j;
+            }
+
+            for (int i : keys)
+                cache.put(i, new Value("str" + i, i * 100));
+
+            IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer =
+                new IgniteClosure<Cache.Entry<Integer, Value>, Integer>() {
+                    @Override public Integer apply(Cache.Entry<Integer, Value> e) {
+                        return e.getValue().idx;
+                    }
+                };
+
+            List<Integer> res = cache.query(new ScanQuery<Integer, Value>().setPartition(0), transformer).getAll();
+
+            assertEquals(50, res.size());
+
+            Collections.sort(res);
+
+            for (int i = 0; i < keys.length; i++)
+                assertEquals(keys[i] * 100, res.get(i).intValue());
         }
         finally {
             cache.destroy();
@@ -547,6 +583,85 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
                 UnsupportedOperationException.class,
                 "Transformers are supported only for SCAN queries."
             );
+        }
+        finally {
+            cache.destroy();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPageSize() throws Exception {
+        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
+
+        int numEntries = 10_000;
+        int pageSize = 3;
+
+        try {
+            for (int i = 0; i < numEntries; i++)
+                cache.put(i, new Value("str" + i, i));
+
+            IgniteClosure<Cache.Entry<Integer, Value>, Integer> transformer =
+                new IgniteClosure<Cache.Entry<Integer, Value>, Integer>() {
+                    @Override public Integer apply(Cache.Entry<Integer, Value> e) {
+                        return e.getValue().idx;
+                    }
+                };
+
+            ScanQuery<Integer, Value> query = new ScanQuery<>();
+            query.setPageSize(pageSize);
+
+            List<Integer> res = cache.query(query, transformer).getAll();
+
+            assertEquals(numEntries, res.size());
+
+            Collections.sort(res);
+
+            for (int i = 0; i < numEntries; i++)
+                assertEquals(i, res.get(i).intValue());
+        }
+        finally {
+            cache.destroy();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalInjection() throws Exception {
+        IgniteCache<Integer, Value> cache = grid().createCache("test-cache");
+
+        try {
+            for (int i = 0; i < 50; i++)
+                cache.put(i, new Value("str" + i, i * 100));
+
+            Collection<List<Boolean>> lists = grid().compute().broadcast(new IgniteCallable<List<Boolean>>() {
+                @IgniteInstanceResource
+                private Ignite ignite;
+
+                @Override public List<Boolean> call() throws Exception {
+                    IgniteClosure<Cache.Entry<Integer, Value>, Boolean> transformer =
+                        new IgniteClosure<Cache.Entry<Integer, Value>, Boolean>() {
+                            @IgniteInstanceResource
+                            Ignite ignite;
+
+                            @Override public Boolean apply(Cache.Entry<Integer, Value> e) {
+                                return ignite != null;
+                            }
+                        };
+
+                    return ignite.cache("test-cache").query(new ScanQuery<Integer, Value>().setLocal(true),
+                        transformer).getAll();
+                }
+            });
+
+            List<Boolean> res = new ArrayList<>(F.flatCollections(lists));
+
+            assertEquals(50, res.size());
+
+            for (int i = 0; i < 50; i++)
+                assertEquals(Boolean.TRUE, res.get(i));
         }
         finally {
             cache.destroy();

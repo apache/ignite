@@ -51,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.h2.command.Prepared;
 import org.h2.command.dml.Query;
 import org.h2.command.dml.SelectUnion;
-import org.h2.jdbc.JdbcPreparedStatement;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
@@ -80,6 +79,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion.RI
 /**
  * Splits a single SQL query into two step map-reduce query.
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class GridSqlQuerySplitter {
     /** */
     private static final String MERGE_TABLE_SCHEMA = "PUBLIC"; // Schema PUBLIC must always exist.
@@ -171,7 +171,8 @@ public class GridSqlQuerySplitter {
     }
 
     /**
-     * @param stmt Prepared statement.
+     * @param conn Connection.
+     * @param prepared Prepared.
      * @param params Parameters.
      * @param collocatedGrpBy Whether the query has collocated GROUP BY keys.
      * @param distributedJoins If distributed joins enabled.
@@ -182,7 +183,8 @@ public class GridSqlQuerySplitter {
      * @throws IgniteCheckedException If failed.
      */
     public static GridCacheTwoStepQuery split(
-        JdbcPreparedStatement stmt,
+        Connection conn,
+        Prepared prepared,
         Object[] params,
         boolean collocatedGrpBy,
         boolean distributedJoins,
@@ -194,7 +196,7 @@ public class GridSqlQuerySplitter {
 
         // Here we will just do initial query parsing. Do not use optimized
         // subqueries because we do not have unique FROM aliases yet.
-        GridSqlQuery qry = parse(prepared(stmt), false);
+        GridSqlQuery qry = parse(prepared, false);
 
         String originalSql = qry.getSQL();
 
@@ -211,8 +213,6 @@ public class GridSqlQuerySplitter {
         splitter.normalizeQuery(qry);
 
 //        debug("NORMALIZED", qry.getSQL());
-
-        Connection conn = stmt.getConnection();
 
         // Here we will have correct normalized AST with optimized join order.
         // The distributedJoins parameter is ignored because it is not relevant for
@@ -233,12 +233,12 @@ public class GridSqlQuerySplitter {
             boolean allCollocated = true;
 
             for (GridCacheSqlQuery mapSqlQry : splitter.mapSqlQrys) {
-                Prepared prepared = optimize(h2, conn, mapSqlQry.query(), mapSqlQry.parameters(params),
+                Prepared prepared0 = optimize(h2, conn, mapSqlQry.query(), mapSqlQry.parameters(params),
                     true, enforceJoinOrder);
 
-                allCollocated &= isCollocated((Query)prepared);
+                allCollocated &= isCollocated((Query)prepared0);
 
-                mapSqlQry.query(parse(prepared, true).getSQL());
+                mapSqlQry.query(parse(prepared0, true).getSQL());
             }
 
             // We do not need distributed joins if all MAP queries are collocated.
@@ -962,9 +962,8 @@ public class GridSqlQuerySplitter {
                 select.setColumn(i, expr);
             }
 
-            assert expr instanceof GridSqlAlias;
-
-            if (isAllRelatedToTables(tblAliases, GridSqlQuerySplitter.<GridSqlAlias>newIdentityHashSet(), expr)) {
+            if (isAllRelatedToTables(tblAliases, GridSqlQuerySplitter.<GridSqlAlias>newIdentityHashSet(), expr)
+                && !hasAggregates(expr)) {
                 // Push down the whole expression.
                 pushDownColumn(tblAliases, cols, wrapAlias, expr, 0);
             }
@@ -1511,6 +1510,19 @@ public class GridSqlQuerySplitter {
             rdcQry.distinct(true);
         }
 
+        // -- SUB-QUERIES
+        boolean hasSubQueries = hasSubQueries(mapQry.where()) || hasSubQueries(mapQry.from());
+
+        if (!hasSubQueries) {
+            for (int i = 0; i < mapQry.columns(false).size(); i++) {
+                if (hasSubQueries(mapQry.column(i))) {
+                    hasSubQueries = true;
+
+                    break;
+                }
+            }
+        }
+
         // Replace the given select with generated reduce query in the parent.
         prnt.child(childIdx, rdcQry);
 
@@ -1521,6 +1533,7 @@ public class GridSqlQuerySplitter {
         map.columns(collectColumns(mapExps));
         map.sortColumns(mapQry.sort());
         map.partitioned(hasPartitionedTables(mapQry));
+        map.hasSubQueries(hasSubQueries);
 
         if (map.isPartitioned())
             map.derivedPartitions(derivePartitionsFromQuery(mapQry, ctx));
@@ -1538,6 +1551,25 @@ public class GridSqlQuerySplitter {
 
         for (int i = 0; i < ast.size(); i++) {
             if (hasPartitionedTables(ast.child(i)))
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param ast Map query AST.
+     * @return {@code true} If the given AST has sub-queries.
+     */
+    private boolean hasSubQueries(GridSqlAst ast) {
+        if (ast == null)
+            return false;
+
+        if (ast instanceof GridSqlSubquery)
+            return true;
+
+        for (int childIdx = 0; childIdx < ast.size(); childIdx++) {
+            if (hasSubQueries(ast.child(childIdx)))
                 return true;
         }
 
@@ -1739,9 +1771,6 @@ public class GridSqlQuerySplitter {
             normalizeExpression(from, 2);
         }
         else if (from instanceof GridSqlFunction) {
-            // TODO generate filtering function around the given function
-            // TODO SYSTEM_RANGE is a special case, it can not be wrapped
-
             // In case of alias parent we need to replace the alias itself.
             if (!prntAlias)
                 generateUniqueAlias(prnt, childIdx);
@@ -1754,6 +1783,7 @@ public class GridSqlQuerySplitter {
      * @param prnt Parent element.
      * @param childIdx Child index.
      */
+    @SuppressWarnings("StatementWithEmptyBody")
     private void normalizeExpression(GridSqlAst prnt, int childIdx) {
         GridSqlAst el = prnt.child(childIdx);
 
@@ -2321,8 +2351,6 @@ public class GridSqlQuerySplitter {
                 constant.value().getObject()), null, null, -1, -1);
         }
 
-        assert right instanceof GridSqlParameter;
-
         GridSqlParameter param = (GridSqlParameter) right;
 
         return new CacheQueryPartitionInfo(-1, tbl.cacheName(), tbl.getName(),
@@ -2349,8 +2377,7 @@ public class GridSqlQuerySplitter {
 
         ArrayList<CacheQueryPartitionInfo> list = new ArrayList<>(a.length + b.length);
 
-        for (CacheQueryPartitionInfo part: a)
-            list.add(part);
+        Collections.addAll(list, a);
 
         for (CacheQueryPartitionInfo part: b) {
             int i = 0;
@@ -2480,6 +2507,7 @@ public class GridSqlQuerySplitter {
         /**
          * @return The actual AST element for this model.
          */
+        @SuppressWarnings("TypeParameterHidesVisibleType")
         private <X extends GridSqlAst> X ast() {
             return prnt.child(childIdx);
         }
@@ -2526,6 +2554,7 @@ public class GridSqlQuerySplitter {
         /**
          * @return The actual AST element for this expression.
          */
+        @SuppressWarnings("TypeParameterHidesVisibleType")
         private <X extends GridSqlAst> X ast() {
             return prnt.child(childIdx);
         }

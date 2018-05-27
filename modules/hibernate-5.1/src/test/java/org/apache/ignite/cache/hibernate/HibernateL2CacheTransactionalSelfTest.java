@@ -82,8 +82,6 @@ public class HibernateL2CacheTransactionalSelfTest extends HibernateL2CacheSelfT
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         if (jotm != null)
             jotm.stop();
 

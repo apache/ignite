@@ -17,6 +17,18 @@
 
 package org.apache.ignite.internal.processors.platform.cache;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import javax.cache.Cache;
+import javax.cache.integration.CompletionListener;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -27,6 +39,7 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.Query;
+import org.apache.ignite.cache.query.QueryMetrics;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
@@ -41,8 +54,8 @@ import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
-import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.PlatformTarget;
+import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQueryProxy;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformFieldsQueryCursor;
@@ -62,19 +75,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
-
-import javax.cache.Cache;
-import javax.cache.integration.CompletionListener;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.EntryProcessorResult;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
 
 /**
  * Native cache wrapper implementation.
@@ -326,6 +326,12 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_GET_LOST_PARTITIONS = 84;
+
+    /** */
+    public static final int OP_QUERY_METRICS = 85;
+
+    /** */
+    public static final int OP_RESET_QUERY_METRICS = 86;
 
     /** Underlying JCache in binary mode. */
     private final IgniteCacheProxy cache;
@@ -931,7 +937,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Arguments.
      */
-    @Nullable private Object[] readQueryArgs(BinaryRawReaderEx reader) {
+    @Nullable public static Object[] readQueryArgs(BinaryRawReaderEx reader) {
         int cnt = reader.readInt();
 
         if (cnt > 0) {
@@ -989,6 +995,14 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 break;
 
+            case OP_QUERY_METRICS: {
+                QueryMetrics metrics = cache.queryMetrics();
+
+                writeQueryMetrics(writer, metrics);
+
+                break;
+            }
+
             default:
                 super.processOutStream(type, writer);
         }
@@ -1009,7 +1023,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             }
 
             case OP_WITH_NO_RETRIES: {
-                CacheOperationContext opCtx = cache.operationContext();
+                CacheOperationContext opCtx = cache.context().operationContextPerCall();
 
                 if (opCtx != null && opCtx.noRetries())
                     return this;
@@ -1018,7 +1032,9 @@ public class PlatformCache extends PlatformAbstractTarget {
             }
 
             case OP_WITH_SKIP_STORE: {
-                if (cache.delegate().skipStore())
+                CacheOperationContext opCtx = cache.context().operationContextPerCall();
+
+                if (opCtx != null && opCtx.skipStore())
                     return this;
 
                 return copy(rawCache.withSkipStore(), keepBinary);
@@ -1091,6 +1107,11 @@ public class PlatformCache extends PlatformAbstractTarget {
 
             case OP_REMOVE_ALL2:
                 cache.removeAll();
+
+                return TRUE;
+
+            case OP_RESET_QUERY_METRICS:
+                cache.resetQueryMetrics();
 
                 return TRUE;
         }
@@ -1309,6 +1330,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
         boolean distrJoins = reader.readBoolean();
         boolean enforceJoinOrder = reader.readBoolean();
+        boolean lazy = reader.readBoolean();
         int timeout = reader.readInt();
         boolean replicated = reader.readBoolean();
         boolean collocated = reader.readBoolean();
@@ -1320,6 +1342,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 .setLocal(loc)
                 .setDistributedJoins(distrJoins)
                 .setEnforceJoinOrder(enforceJoinOrder)
+                .setLazy(lazy)
                 .setTimeout(timeout, TimeUnit.MILLISECONDS)
                 .setReplicatedOnly(replicated)
                 .setCollocated(collocated)
@@ -1469,6 +1492,35 @@ public class PlatformCache extends PlatformAbstractTarget {
         writer.writeBoolean(metrics.isManagementEnabled());
         writer.writeBoolean(metrics.isReadThrough());
         writer.writeBoolean(metrics.isWriteThrough());
+        writer.writeBoolean(metrics.isValidForReading());
+        writer.writeBoolean(metrics.isValidForWriting());
+        writer.writeInt(metrics.getTotalPartitionsCount());
+        writer.writeInt(metrics.getRebalancingPartitionsCount());
+        writer.writeLong(metrics.getKeysToRebalanceLeft());
+        writer.writeLong(metrics.getRebalancingKeysRate());
+        writer.writeLong(metrics.getRebalancingBytesRate());
+        writer.writeLong(metrics.getHeapEntriesCount());
+        writer.writeLong(metrics.getEstimatedRebalancingFinishTime());
+        writer.writeLong(metrics.getRebalancingStartTime());
+        writer.writeLong(metrics.getRebalanceClearingPartitionsLeft());
+        writer.writeLong(metrics.getCacheSize());
+    }
+
+    /**
+     * Writes query metrics.
+     *
+     * @param writer Writer.
+     * @param metrics Metrics.
+     */
+    public static void writeQueryMetrics(BinaryRawWriter writer, QueryMetrics metrics) {
+        assert writer != null;
+        assert metrics != null;
+
+        writer.writeLong(metrics.minimumTime());
+        writer.writeLong(metrics.maximumTime());
+        writer.writeDouble(metrics.averageTime());
+        writer.writeInt(metrics.executions());
+        writer.writeInt(metrics.fails());
     }
 
     /**

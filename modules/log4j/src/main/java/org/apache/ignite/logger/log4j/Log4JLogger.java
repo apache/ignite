@@ -39,8 +39,10 @@ import org.apache.log4j.Category;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
+import org.apache.log4j.helpers.FileWatchdog;
 import org.apache.log4j.varia.LevelRangeFilter;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.jetbrains.annotations.Nullable;
@@ -96,12 +98,14 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     private Logger impl;
 
     /** Path to configuration file. */
-    private final String path;
+    @GridToStringExclude
+    private final String cfg;
 
     /** Quiet flag. */
     private final boolean quiet;
 
     /** Node ID. */
+    @GridToStringExclude
     private UUID nodeId;
 
     /**
@@ -140,7 +144,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         else
             quiet = true;
 
-        path = null;
+        cfg = null;
     }
 
     /**
@@ -151,7 +155,24 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     public Log4JLogger(final Logger impl) {
         assert impl != null;
 
-        path = null;
+        addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
+            @Override public Logger apply(Boolean init) {
+                return impl;
+            }
+        });
+
+        quiet = quiet0;
+        cfg = null;
+    }
+
+    /**
+     * Creates new logger with given implementation.
+     *
+     * @param impl Log4j implementation to use.
+     * @param path Configuration file/url path.
+     */
+    private Log4JLogger(final Logger impl, final String path) {
+        assert impl != null;
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
@@ -160,29 +181,53 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
         });
 
         quiet = quiet0;
+        cfg = path;
     }
 
     /**
      * Creates new logger with given configuration {@code path}.
+     * Calling this constructor is equivalent to calling {@code Log4JLogger(path, FileWatchdog.DEFAULT_DELAY}.
      *
      * @param path Path to log4j configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
-    public Log4JLogger(String path) throws IgniteCheckedException {
+    public Log4JLogger(final String path) throws IgniteCheckedException {
+        this(path, FileWatchdog.DEFAULT_DELAY);
+    }
+
+    /**
+     * Creates new logger with given configuration {@code path}.
+     * <p>
+     * If {@code watchDelay} is not zero, created logger will check the configuration file for changes once every
+     * {@code watchDelay} milliseconds, and update its configuration if the file was changed.
+     * See {@link DOMConfigurator#configureAndWatch(String, long)} for details.
+     *
+     * @param path Path to log4j configuration XML file.
+     * @param watchDelay delay in milliseconds used to check configuration file for changes.
+     * @throws IgniteCheckedException Thrown in case logger can't be created.
+     */
+    public Log4JLogger(final String path, long watchDelay) throws IgniteCheckedException {
         if (path == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
-        this.path = path;
+        if (watchDelay < 0)
+            throw new IgniteCheckedException("watchDelay can't be negative: " + watchDelay);
 
-        final URL cfgUrl = U.resolveIgniteUrl(path);
+        this.cfg = path;
 
-        if (cfgUrl == null)
+        final File cfgFile = U.resolveIgnitePath(path);
+
+        if (cfgFile == null)
             throw new IgniteCheckedException("Log4j configuration path was not found: " + path);
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
-                if (init)
-                    DOMConfigurator.configure(cfgUrl);
+                if (init) {
+                    if (watchDelay > 0)
+                        DOMConfigurator.configureAndWatch(cfgFile.getPath(), watchDelay);
+                    else
+                        DOMConfigurator.configure(cfgFile.getPath());
+                }
 
                 return Logger.getRootLogger();
             }
@@ -193,23 +238,46 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
     /**
      * Creates new logger with given configuration {@code cfgFile}.
+     * Calling this constructor is equivalent to calling {@code Log4JLogger(cfgFile, FileWatchdog.DEFAULT_DELAY}.
      *
      * @param cfgFile Log4j configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
     public Log4JLogger(File cfgFile) throws IgniteCheckedException {
+        this(cfgFile, FileWatchdog.DEFAULT_DELAY);
+    }
+
+    /**
+     * Creates new logger with given configuration {@code cfgFile}.
+     * <p>
+     * If {@code watchDelay} is not zero, created logger will check the configuration file for changes once every
+     * {@code watchDelay} milliseconds, and update its configuration if the file was changed.
+     * See {@link DOMConfigurator#configureAndWatch(String, long)} for details.
+     *
+     * @param cfgFile Log4j configuration XML file.
+     * @param watchDelay delay in milliseconds used to check configuration file for changes.
+     * @throws IgniteCheckedException Thrown in case logger can't be created.
+     */
+    public Log4JLogger(final File cfgFile, final long watchDelay) throws IgniteCheckedException {
         if (cfgFile == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
         if (!cfgFile.exists() || cfgFile.isDirectory())
             throw new IgniteCheckedException("Log4j configuration path was not found or is a directory: " + cfgFile);
 
-        path = cfgFile.getAbsolutePath();
+        if (watchDelay < 0)
+            throw new IgniteCheckedException("watchDelay can't be negative: " + watchDelay);
+
+        cfg = cfgFile.getAbsolutePath();
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
-                if (init)
-                    DOMConfigurator.configure(path);
+                if (init) {
+                    if (watchDelay > 0)
+                        DOMConfigurator.configureAndWatch(cfgFile.getPath(), watchDelay);
+                    else
+                        DOMConfigurator.configure(cfgFile.getPath());
+                }
 
                 return Logger.getRootLogger();
             }
@@ -220,20 +288,43 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
     /**
      * Creates new logger with given configuration {@code cfgUrl}.
+     * Calling this constructor is equivalent to calling {@code Log4JLogger(cfgUrl, FileWatchdog.DEFAULT_DELAY}.
      *
      * @param cfgUrl URL for Log4j configuration XML file.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
     public Log4JLogger(final URL cfgUrl) throws IgniteCheckedException {
+        this(cfgUrl, FileWatchdog.DEFAULT_DELAY);
+    }
+
+    /**
+     * Creates new logger with given configuration {@code cfgUrl}.
+     * <p>
+     * If {@code watchDelay} is not zero, created logger will check the configuration file for changes once every
+     * {@code watchDelay} milliseconds, and update its configuration if the file was changed.
+     * See {@link DOMConfigurator#configureAndWatch(String, long)} for details.
+     *
+     * @param cfgUrl URL for Log4j configuration XML file.
+     * @param watchDelay delay in milliseconds used to check configuration file for changes.
+     * @throws IgniteCheckedException Thrown in case logger can't be created.
+     */
+    public Log4JLogger(final URL cfgUrl, final long watchDelay) throws IgniteCheckedException {
         if (cfgUrl == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
-        path = null;
+        if (watchDelay < 0)
+            throw new IgniteCheckedException("watchDelay can't be negative: " + watchDelay);
+
+        cfg = cfgUrl.getPath();
 
         addConsoleAppenderIfNeeded(null, new C1<Boolean, Logger>() {
             @Override public Logger apply(Boolean init) {
-                if (init)
-                    DOMConfigurator.configure(cfgUrl);
+                if (init) {
+                    if (watchDelay > 0)
+                        DOMConfigurator.configureAndWatch(cfg, watchDelay);
+                    else
+                        DOMConfigurator.configure(cfg);
+                }
 
                 return Logger.getRootLogger();
             }
@@ -448,7 +539,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
     @Override public Log4JLogger getLogger(Object ctgr) {
         return new Log4JLogger(ctgr == null ? Logger.getRootLogger() :
             ctgr instanceof Class ? Logger.getLogger(((Class<?>)ctgr).getName()) :
-                Logger.getLogger(ctgr.toString()));
+                Logger.getLogger(ctgr.toString()), cfg);
     }
 
     /** {@inheritDoc} */
@@ -517,7 +608,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(Log4JLogger.class, this);
+        return S.toString(Log4JLogger.class, this, "config", this.cfg);
     }
 
     /** {@inheritDoc} */
@@ -530,6 +621,19 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
 
                 a.activateOptions();
             }
+        }
+    }
+
+    /**
+     * Cleans up the logger configuration. Should be used in unit tests only for sequential tests run with
+     * different configurations
+     */
+    static void cleanup() {
+        synchronized (mux) {
+            if (inited)
+                LogManager.shutdown();
+
+            inited = false;
         }
     }
 }

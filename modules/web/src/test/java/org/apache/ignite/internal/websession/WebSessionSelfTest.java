@@ -1168,6 +1168,8 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             throws ServletException, IOException {
             HttpSession ses = req.getSession(true);
 
+            assertTrue(req.isRequestedSessionIdValid());
+
             sesId.compareAndSet(null, ses.getId());
 
             Integer attr = (Integer)ses.getAttribute("attr");

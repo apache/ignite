@@ -22,37 +22,14 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-
-
         <!-- Enabling Apache Ignite Persistent Store. -->
-        <property name="persistentStoreConfiguration">
-            <bean class="org.apache.ignite.configuration.PersistentStoreConfiguration"/>
-        </property>
-
-        <!-- Setting up caches. -->
-        <property name="cacheConfiguration">
-            <list>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="organization"/>
-                    <property name="backups" value="1"/>
-
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-
-                    <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-
-                    <property name="indexedTypes">
-                        <list>
-                            <value>java.lang.Long</value>
-                            <value>org.apache.ignite.examples.model.Organization</value>
-                        </list>
-                    </property>
-                </bean>
-            </list>
-        </property>
-
-        <property name="binaryConfiguration">
-            <bean class="org.apache.ignite.configuration.BinaryConfiguration">
-                <property name="compactFooter" value="false"/>
+        <property name="dataStorageConfiguration">
+            <bean class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="defaultDataRegionConfiguration">
+                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <property name="persistenceEnabled" value="true"/>
+                    </bean>
+                </property>
             </bean>
         </property>
 

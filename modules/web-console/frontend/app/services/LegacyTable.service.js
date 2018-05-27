@@ -72,10 +72,10 @@ export default ['IgniteLegacyTable',
             table.editIndex = editIndex;
         }
 
-        function _tableUI(field) {
-            const ui = field.ui;
+        function _tableUI(tbl) {
+            const ui = tbl.ui;
 
-            return ui ? ui : field.type;
+            return ui ? ui : tbl.type;
         }
 
         function _tableFocus(focusId, index) {

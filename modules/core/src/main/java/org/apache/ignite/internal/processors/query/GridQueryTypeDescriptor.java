@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -31,6 +33,13 @@ public interface GridQueryTypeDescriptor {
      * @return Type name which uniquely identifies this type.
      */
     public String name();
+
+    /**
+     * Gets schema name for type (database schema means here).
+     *
+     * @return Schema name.
+     */
+    public String schemaName();
 
     /**
      * Gets table name for type.
@@ -160,4 +169,23 @@ public interface GridQueryTypeDescriptor {
      * @return value field alias.
      */
     @Nullable public String valueFieldAlias();
+
+    /**
+     * Performs validation of given key and value against configured constraints.
+     * Throws runtime exception if validation fails.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @throws IgniteCheckedException, If failure happens.
+     */
+    public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException;
+
+    /**
+     * Sets defaults value for given key and value.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void setDefaults(Object key, Object val) throws IgniteCheckedException;
 }

@@ -20,8 +20,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.MemoryPolicyConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -55,12 +55,12 @@ public class Random2LruPageEvictionTracker extends PageAbstractEvictionTracker {
      */
     public Random2LruPageEvictionTracker(
         PageMemoryNoStoreImpl pageMem,
-        MemoryPolicyConfiguration plcCfg,
+        DataRegionConfiguration plcCfg,
         GridCacheSharedContext<?, ?> sharedCtx
     ) {
         super(pageMem, plcCfg, sharedCtx);
 
-        MemoryConfiguration memCfg = sharedCtx.kernalContext().config().getMemoryConfiguration();
+        DataStorageConfiguration memCfg = sharedCtx.kernalContext().config().getDataStorageConfiguration();
 
         assert plcCfg.getMaxSize() / memCfg.getPageSize() < Integer.MAX_VALUE;
 

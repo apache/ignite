@@ -56,8 +56,6 @@ public class GridCachePartitionExchangeManagerHistSizeTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         if (oldHistVal != null)
             System.setProperty(IGNITE_EXCHANGE_HISTORY_SIZE, oldHistVal);
         else

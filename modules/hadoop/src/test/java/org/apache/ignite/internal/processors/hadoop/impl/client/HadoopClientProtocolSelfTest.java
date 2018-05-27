@@ -108,13 +108,6 @@ public class HadoopClientProtocolSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         setupLockFile.createNewFile();
         mapLockFile.createNewFile();

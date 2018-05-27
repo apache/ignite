@@ -21,6 +21,7 @@
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/log.h"
+#include "ignite/odbc/odbc_error.h"
 #include "ignite/odbc/query/column_metadata_query.h"
 
 namespace
@@ -83,6 +84,7 @@ namespace ignite
                 table(table),
                 column(column),
                 executed(false),
+                fetched(false),
                 meta(),
                 columnsMeta()
             {
@@ -125,6 +127,7 @@ namespace ignite
                 if (result == SqlResult::AI_SUCCESS)
                 {
                     executed = true;
+                    fetched = false;
 
                     cursor = meta.begin();
                 }
@@ -146,6 +149,11 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
+                if (!fetched)
+                    fetched = true;
+                else
+                    ++cursor;
+
                 if (cursor == meta.end())
                     return SqlResult::AI_NO_DATA;
 
@@ -153,8 +161,6 @@ namespace ignite
 
                 for (it = columnBindings.begin(); it != columnBindings.end(); ++it)
                     GetColumn(it->first, it->second);
-
-                ++cursor;
 
                 return SqlResult::AI_SUCCESS;
             }
@@ -169,7 +175,12 @@ namespace ignite
                 }
 
                 if (cursor == meta.end())
-                    return SqlResult::AI_NO_DATA;
+                {
+                    diag.AddStatusRecord(SqlState::S24000_INVALID_CURSOR_STATE,
+                        "Cursor has reached end of the result set.");
+
+                    return SqlResult::AI_ERROR;
+                }
 
                 const meta::ColumnMeta& currentColumn = *cursor;
                 uint8_t columnType = currentColumn.GetDataType();
@@ -278,6 +289,11 @@ namespace ignite
                 return 0;
             }
 
+            SqlResult::Type ColumnMetadataQuery::NextResultSet()
+            {
+                return SqlResult::AI_NO_DATA;
+            }
+
             SqlResult::Type ColumnMetadataQuery::MakeRequestGetColumnsMeta()
             {
                 QueryGetColumnsMetaRequest req(schema, table, column);
@@ -287,9 +303,15 @@ namespace ignite
                 {
                     connection.SyncMessage(req, rsp);
                 }
+                catch (const OdbcError& err)
+                {
+                    diag.AddStatusRecord(err);
+
+                    return SqlResult::AI_ERROR;
+                }
                 catch (const IgniteError& err)
                 {
-                    diag.AddStatusRecord(SqlState::SHYT01_CONNECTIOIN_TIMEOUT, err.GetText());
+                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
 
                     return SqlResult::AI_ERROR;
                 }
@@ -297,7 +319,7 @@ namespace ignite
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                 {
                     LOG_MSG("Error: " << rsp.GetError());
-                    diag.AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, rsp.GetError());
+                    diag.AddStatusRecord(ResponseStatusToSqlState(rsp.GetStatus()), rsp.GetError());
 
                     return SqlResult::AI_ERROR;
                 }

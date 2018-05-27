@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <StartupObject>Apache.Ignite.Examples.Program</StartupObject>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+	<NoWarn>NU1701</NoWarn>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Reference Include="Apache.Ignite.Core">
+      <HintPath Condition="Exists('..\..\Apache.Ignite')">..\..\Apache.Ignite\bin\$(Configuration)\Apache.Ignite.Core.dll</HintPath>
+      <HintPath Condition="Exists('..\..\bin\Apache.Ignite.Core.dll')">..\..\bin\Apache.Ignite.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Apache.Ignite.Linq">
+      <HintPath Condition="Exists('..\..\Apache.Ignite.Linq')">..\..\Apache.Ignite.Linq\bin\$(Configuration)\Apache.Ignite.Linq.dll</HintPath>
+      <HintPath Condition="Exists('..\..\bin\Apache.Ignite.Linq.dll')">..\..\bin\Apache.Ignite.Linq.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.4.0" />
+	<PackageReference Include="Remotion.Linq" Version="2.0.1" />
+  </ItemGroup>
+
+</Project>

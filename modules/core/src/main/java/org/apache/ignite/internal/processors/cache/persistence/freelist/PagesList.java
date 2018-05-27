@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -34,10 +35,11 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListInitNewPageR
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListRemovePageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetNextRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListSetPreviousRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.RotatedIdPartRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataStructure;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseBag;
@@ -47,12 +49,14 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_DATA;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
+import static org.apache.ignite.internal.pagemem.PageIdUtils.MAX_ITEMID_NUM;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.getPageId;
 
 /**
@@ -66,7 +70,7 @@ public abstract class PagesList extends DataStructure {
     /** */
     private static final int MAX_STRIPES_PER_BUCKET =
         IgniteSystemProperties.getInteger("IGNITE_PAGES_LIST_STRIPES_PER_BUCKET",
-            Math.min(8, Runtime.getRuntime().availableProcessors() * 2));
+            Math.max(8, Runtime.getRuntime().availableProcessors()));
 
     /** */
     protected final AtomicLong[] bucketsSize;
@@ -153,9 +157,8 @@ public abstract class PagesList extends DataStructure {
      */
     protected final void init(long metaPageId, boolean initNew) throws IgniteCheckedException {
         if (metaPageId != 0L) {
-            if (initNew) {
+            if (initNew)
                 init(metaPageId, PagesListMetaIO.VERSIONS.latest());
-            }
             else {
                 Map<Integer, GridLongList> bucketsData = new HashMap<>();
 
@@ -179,8 +182,6 @@ public abstract class PagesList extends DataStructure {
 
                             assert nextId != pageId :
                                 "Loop detected [next=" + U.hexLong(nextId) + ", cur=" + U.hexLong(pageId) + ']';
-
-
                         }
                         finally {
                             readUnlock(pageId, page, pageAddr);
@@ -241,11 +242,10 @@ public abstract class PagesList extends DataStructure {
                     }
 
                     boolean ok = casBucket(bucket, null, tails);
+
                     assert ok;
 
                     bucketsSize[bucket].set(bucketSize);
-
-                    changed = true;
                 }
             }
         }
@@ -353,9 +353,8 @@ public abstract class PagesList extends DataStructure {
      * @param pageId Page ID.
      * @param page Page absolute pointer.
      * @param pageAddr Page address.
-     * @throws IgniteCheckedException If failed.
      */
-    private void releaseAndClose(long pageId, long page, long pageAddr) throws IgniteCheckedException {
+    private void releaseAndClose(long pageId, long page, long pageAddr) {
         if (page != 0L) {
             try {
                 // No special WAL record because we most likely changed the whole page.
@@ -407,12 +406,13 @@ public abstract class PagesList extends DataStructure {
      * Adds stripe to the given bucket.
      *
      * @param bucket Bucket.
+     * @param bag Reuse bag.
      * @param reuse {@code True} if possible to use reuse list.
      * @throws IgniteCheckedException If failed.
      * @return Tail page ID.
      */
-    private Stripe addStripe(int bucket, boolean reuse) throws IgniteCheckedException {
-        long pageId = reuse ? allocatePage(null) : allocatePageNoReuse();
+    private Stripe addStripe(int bucket, ReuseBag bag, boolean reuse) throws IgniteCheckedException {
+        long pageId = allocatePage(bag, reuse);
 
         init(pageId, PagesListNodeIO.VERSIONS.latest());
 
@@ -503,14 +503,32 @@ public abstract class PagesList extends DataStructure {
 
     /**
      * @param bucket Bucket.
+     * @param bag Reuse bag.
      * @return Page ID where the given page
      * @throws IgniteCheckedException If failed.
      */
-    private Stripe getPageForPut(int bucket) throws IgniteCheckedException {
+    private Stripe getPageForPut(int bucket, ReuseBag bag) throws IgniteCheckedException {
+        // Striped pool optimization.
+        IgniteThread igniteThread = IgniteThread.current();
+
         Stripe[] tails = getBucket(bucket);
 
+        if (igniteThread != null && igniteThread.policy() == GridIoPolicy.DATA_STREAMER_POOL) {
+            int stripeIdx = igniteThread.stripe();
+
+            assert stripeIdx != -1 : igniteThread;
+
+            while (tails == null || stripeIdx >= tails.length) {
+                addStripe(bucket, bag, true);
+
+                tails = getBucket(bucket);
+            }
+
+            return tails[stripeIdx];
+        }
+
         if (tails == null)
-            return addStripe(bucket, true);
+            return addStripe(bucket, bag, true);
 
         return randomTail(tails);
     }
@@ -599,19 +617,24 @@ public abstract class PagesList extends DataStructure {
         assert bag == null ^ dataAddr == 0L;
 
         for (int lockAttempt = 0; ;) {
-            Stripe stripe = getPageForPut(bucket);
+            Stripe stripe = getPageForPut(bucket, bag);
+
+            // No need to continue if bag has been utilized at getPageForPut.
+            if (bag != null && bag.isEmpty())
+                return;
 
             final long tailId = stripe.tailId;
             final long tailPage = acquirePage(tailId);
 
             try {
-                long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++); // Explicit check.
+                long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++, bag); // Explicit check.
 
                 if (tailAddr == 0L) {
-                    if (isReuseBucket(bucket) && lockAttempt == TRY_LOCK_ATTEMPTS)
-                        addStripeForReuseBucket(bucket);
-
-                    continue;
+                    // No need to continue if bag has been utilized at writeLockPage.
+                    if (bag != null && bag.isEmpty())
+                        return;
+                    else
+                        continue;
                 }
 
                 assert PageIO.getPageId(tailAddr) == tailId : "pageId = " + PageIO.getPageId(tailAddr) + ", tailId = " + tailId;
@@ -684,7 +707,7 @@ public abstract class PagesList extends DataStructure {
             if (needWalDeltaRecord(pageId, page, null))
                 wal.log(new PagesListAddPageRecord(grpId, pageId, dataId));
 
-            DataPageIO dataIO = DataPageIO.VERSIONS.forPage(dataAddr);
+            AbstractDataPageIO dataIO = PageIO.getPageIO(dataAddr);
             dataIO.setFreeListPageId(dataAddr, pageId);
 
             if (needWalDeltaRecord(dataId, dataPage, null))
@@ -715,7 +738,7 @@ public abstract class PagesList extends DataStructure {
         final long dataAddr,
         int bucket
     ) throws IgniteCheckedException {
-        DataPageIO dataIO = DataPageIO.VERSIONS.forPage(dataAddr);
+        AbstractDataPageIO dataIO = PageIO.getPageIO(dataAddr);
 
         // Attempt to add page failed: the node page is full.
         if (isReuseBucket(bucket)) {
@@ -816,6 +839,9 @@ public abstract class PagesList extends DataStructure {
         ReuseBag bag,
         int bucket
     ) throws IgniteCheckedException {
+        assert bag != null : "bag is null";
+        assert !bag.isEmpty() : "bag is empty";
+
         if (io.getNextId(pageAddr) != 0L)
             return false; // Splitted.
 
@@ -831,6 +857,8 @@ public abstract class PagesList extends DataStructure {
 
         try {
             while ((nextId = bag.pollFreePage()) != 0L) {
+                assert PageIdUtils.itemId(nextId) > 0 && PageIdUtils.itemId(nextId) <= MAX_ITEMID_NUM : U.hexLong(nextId);
+
                 int idx = io.addPage(prevAddr, nextId, pageSize());
 
                 if (idx == -1) { // Attempt to add page failed: the node page is full.
@@ -842,9 +870,8 @@ public abstract class PagesList extends DataStructure {
 
                         assert nextPageAddr != 0L;
 
-                        if (locked == null) {
+                        if (locked == null)
                             locked = new GridLongList(6);
-                        }
 
                         locked.add(nextId);
                         locked.add(nextPage);
@@ -899,9 +926,8 @@ public abstract class PagesList extends DataStructure {
                 updateTail(bucket, pageId, prevId);
 
                 // Release write.
-                for (int i = 0; i < locked.size(); i+=3) {
+                for (int i = 0; i < locked.size(); i += 3)
                     writeUnlock(locked.get(i), locked.get(i + 1), locked.get(i + 2), FALSE, true);
-                }
             }
         }
 
@@ -919,6 +945,23 @@ public abstract class PagesList extends DataStructure {
             return null;
 
         int len = tails.length;
+
+        // Striped pool optimization.
+        IgniteThread igniteThread = IgniteThread.current();
+
+        if (igniteThread != null && igniteThread.policy() == GridIoPolicy.DATA_STREAMER_POOL) {
+            int stripeIdx = igniteThread.stripe();
+
+            assert stripeIdx != -1 : igniteThread;
+
+            if (stripeIdx >= len)
+                return null;
+
+            Stripe stripe = tails[stripeIdx];
+
+            return stripe.empty ? null : stripe;
+        }
+
         int init = randomInt(len);
         int cur = init;
 
@@ -938,11 +981,21 @@ public abstract class PagesList extends DataStructure {
      * @param page Page pointer.
      * @param bucket Bucket.
      * @param lockAttempt Lock attempts counter.
+     * @param bag Reuse bag.
      * @return Page address if page is locked of {@code null} if can retry lock.
      * @throws IgniteCheckedException If failed.
      */
-    private long writeLockPage(long pageId, long page, int bucket, int lockAttempt)
+    private long writeLockPage(long pageId, long page, int bucket, int lockAttempt, ReuseBag bag)
         throws IgniteCheckedException {
+        // Striped pool optimization.
+        IgniteThread igniteThread = IgniteThread.current();
+
+        if (igniteThread != null && igniteThread.policy() == GridIoPolicy.DATA_STREAMER_POOL) {
+            assert igniteThread.stripe() != -1 : igniteThread;
+
+            return writeLock(pageId, page);
+        }
+
         long pageAddr = tryWriteLock(pageId, page);
 
         if (pageAddr != 0L)
@@ -952,27 +1005,13 @@ public abstract class PagesList extends DataStructure {
             Stripe[] stripes = getBucket(bucket);
 
             if (stripes == null || stripes.length < MAX_STRIPES_PER_BUCKET) {
-                if (!isReuseBucket(bucket))
-                    addStripe(bucket, true);
+                addStripe(bucket, bag, !isReuseBucket(bucket));
 
                 return 0L;
             }
         }
 
         return lockAttempt < TRY_LOCK_ATTEMPTS ? 0L : writeLock(pageId, page); // Must be explicitly checked further.
-    }
-
-    /**
-     * @param bucket Bucket.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void addStripeForReuseBucket(int bucket) throws IgniteCheckedException {
-        assert isReuseBucket(bucket);
-
-        Stripe[] stripes = getBucket(bucket);
-
-        if (stripes == null || stripes.length < MAX_STRIPES_PER_BUCKET)
-            addStripe(bucket, false);
     }
 
     /**
@@ -992,14 +1031,10 @@ public abstract class PagesList extends DataStructure {
             final long tailPage = acquirePage(tailId);
 
             try {
-                long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++); // Explicit check.
+                long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++, null); // Explicit check.
 
-                if (tailAddr == 0L) {
-                    if (isReuseBucket(bucket) && lockAttempt == TRY_LOCK_ATTEMPTS)
-                        addStripeForReuseBucket(bucket);
-
+                if (tailAddr == 0L)
                     continue;
-                }
 
                 if (stripe.empty) {
                     // Another thread took the last page.
@@ -1039,6 +1074,10 @@ public abstract class PagesList extends DataStructure {
 
                         dirty = true;
 
+                        assert !isReuseBucket(bucket) ||
+                            PageIdUtils.itemId(pageId) > 0 && PageIdUtils.itemId(pageId) <= MAX_ITEMID_NUM
+                            : "Incorrectly recycled pageId in reuse bucket: " + U.hexLong(pageId);
+
                         dataPageId = pageId;
 
                         if (io.isEmpty(tailAddr)) {
@@ -1077,18 +1116,8 @@ public abstract class PagesList extends DataStructure {
 
                         decrementBucketSize(bucket);
 
-                        if (initIoVers != null) {
-                            dataPageId = PageIdUtils.changeType(tailId, FLAG_DATA);
-
-                            PageIO initIo = initIoVers.latest();
-
-                            initIo.initNewPage(tailAddr, dataPageId, pageSize());
-
-                            if (needWalDeltaRecord(tailId, tailPage, null)) {
-                                wal.log(new InitNewPageRecord(grpId, tailId, initIo.getType(),
-                                    initIo.getVersion(), dataPageId));
-                            }
-                        }
+                        if (initIoVers != null)
+                            dataPageId = initReusedPage(tailId, tailPage, tailAddr, 0, FLAG_DATA, initIoVers.latest());
                         else
                             dataPageId = recyclePage(tailId, tailPage, tailAddr, null);
 
@@ -1120,6 +1149,44 @@ public abstract class PagesList extends DataStructure {
     }
 
     /**
+     * Reused page must obtain correctly assembled page id, then initialized by proper {@link PageIO} instance
+     * and non-zero {@code itemId} of reused page id must be saved into special place.
+     *
+     * @param reusedPageId Reused page id.
+     * @param reusedPage Reused page.
+     * @param reusedPageAddr Reused page address.
+     * @param partId Partition id.
+     * @param flag Flag.
+     * @param initIo Initial io.
+     * @return Prepared page id.
+     */
+    protected final long initReusedPage(long reusedPageId, long reusedPage, long reusedPageAddr,
+        int partId, byte flag, PageIO initIo) throws IgniteCheckedException {
+
+        long newPageId = PageIdUtils.pageId(partId, flag, PageIdUtils.pageIndex(reusedPageId));
+
+        initIo.initNewPage(reusedPageAddr, newPageId, pageSize());
+
+        boolean needWalDeltaRecord = needWalDeltaRecord(reusedPageId, reusedPage, null);
+
+        if (needWalDeltaRecord) {
+            wal.log(new InitNewPageRecord(grpId, reusedPageId, initIo.getType(),
+                initIo.getVersion(), newPageId));
+        }
+
+        int itemId = PageIdUtils.itemId(reusedPageId);
+
+        if (itemId != 0) {
+            PageIO.setRotatedIdPart(reusedPageAddr, itemId);
+
+            if (needWalDeltaRecord)
+                wal.log(new RotatedIdPartRecord(grpId, newPageId, itemId));
+        }
+
+        return newPageId;
+    }
+
+    /**
      * @param dataId Data page ID.
      * @param dataPage Data page pointer.
      * @param dataAddr Data page address.
@@ -1132,7 +1199,7 @@ public abstract class PagesList extends DataStructure {
         final long dataId,
         final long dataPage,
         final long dataAddr,
-        DataPageIO dataIO,
+        AbstractDataPageIO dataIO,
         int bucket)
         throws IgniteCheckedException {
         final long pageId = dataIO.getFreeListPageId(dataAddr);
@@ -1452,6 +1519,11 @@ public abstract class PagesList extends DataStructure {
             pageId = 0L;
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            return pageId == 0L;
         }
 
         /** {@inheritDoc} */

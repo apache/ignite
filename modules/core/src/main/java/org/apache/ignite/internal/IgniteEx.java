@@ -160,4 +160,18 @@ public interface IgniteEx extends Ignite {
      * @return Kernal context.
      */
     public GridKernalContext context();
+
+    /**
+     * Get rebalance enabled flag.
+     *
+     * @return {@code True} if rebalance enabled on node, {@code False} otherwise.
+     */
+    public boolean isRebalanceEnabled();
+
+    /**
+     * Set rebalance enable flag on node.
+     *
+     * @param rebalanceEnabled rebalance enabled flag.
+     */
+    public void rebalanceEnabled(boolean rebalanceEnabled);
 }

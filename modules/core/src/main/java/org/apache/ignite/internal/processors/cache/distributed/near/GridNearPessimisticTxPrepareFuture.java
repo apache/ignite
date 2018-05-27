@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -154,15 +155,14 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     /** {@inheritDoc} */
     @Override public void prepare() {
         if (!tx.state(PREPARING)) {
-            if (tx.setRollbackOnly()) {
+            if (tx.isRollbackOnly() || tx.setRollbackOnly()) {
                 if (tx.remainingTime() == -1)
-                    onDone(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " + tx));
+                    onDone(tx.timeoutException());
                 else
-                    onDone(new IgniteCheckedException("Invalid transaction state for prepare " +
-                        "[state=" + tx.state() + ", tx=" + this + ']'));
+                    onDone(tx.rollbackException());
             }
             else
-                onDone(new IgniteTxRollbackCheckedException("Invalid transaction state for prepare " +
+                onDone(new IgniteCheckedException("Invalid transaction state for prepare " +
                     "[state=" + tx.state() + ", tx=" + this + ']'));
 
             return;
@@ -210,6 +210,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             tx.subjectId(),
             tx.taskNameHash(),
             false,
+            true,
             tx.activeCachesDeploymentEnabled());
 
         for (IgniteTxEntry txEntry : writes) {
@@ -282,7 +283,13 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             else
                 nodes = cacheCtx.affinity().nodesByKey(txEntry.key(), topVer);
 
-            assert !nodes.isEmpty();
+            if (F.isEmpty(nodes)) {
+                onDone(new ClusterTopologyServerNotFoundException("Failed to map keys to nodes (partition " +
+                    "is not mapped to any node) [key=" + txEntry.key() +
+                    ", partition=" + cacheCtx.affinity().partition(txEntry.key()) + ", topVer=" + topVer + ']'));
+
+                return;
+            }
 
             ClusterNode primary = nodes.get(0);
 
@@ -400,7 +407,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             tx.state(PREPARED);
 
         if (super.onDone(tx, err)) {
-            cctx.mvcc().removeMvccFuture(this);
+            cctx.mvcc().removeVersionedFuture(this);
 
             return true;
         }

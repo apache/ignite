@@ -32,9 +32,9 @@ import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -100,22 +100,20 @@ public class GridLuceneIndex implements AutoCloseable {
      * Constructor.
      *
      * @param ctx Kernal context.
-     * @param mem Unsafe memory.
      * @param cacheName Cache name.
      * @param type Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    public GridLuceneIndex(GridKernalContext ctx, @Nullable GridUnsafeMemory mem,
-        @Nullable String cacheName, GridQueryTypeDescriptor type) throws IgniteCheckedException {
+    public GridLuceneIndex(GridKernalContext ctx, @Nullable String cacheName, GridQueryTypeDescriptor type)
+        throws IgniteCheckedException {
         this.ctx = ctx;
         this.cacheName = cacheName;
         this.type = type;
 
-        dir = new GridLuceneDirectory(mem == null ? new GridUnsafeMemory(0) : mem);
+        dir = new GridLuceneDirectory(new GridUnsafeMemory(0));
 
         try {
-            writer = new IndexWriter(dir,
-                new IndexWriterConfig(new StandardAnalyzer()));
+            writer = new IndexWriter(dir, new IndexWriterConfig(new StandardAnalyzer()));
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -158,6 +156,7 @@ public class GridLuceneIndex implements AutoCloseable {
      * @param expires Expiration time.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("ConstantConditions")
     public void store(CacheObject k, CacheObject v, GridCacheVersion ver, long expires) throws IgniteCheckedException {
         CacheObjectContext coctx = objectContext();
 
@@ -262,14 +261,18 @@ public class GridLuceneIndex implements AutoCloseable {
             throw new IgniteCheckedException(e);
         }
 
-        IndexSearcher searcher = new IndexSearcher(reader);
-
-        MultiFieldQueryParser parser = new MultiFieldQueryParser(idxdFields,
-            writer.getAnalyzer());
+        IndexSearcher searcher;
 
         TopDocs docs;
 
         try {
+            searcher = new IndexSearcher(reader);
+
+            MultiFieldQueryParser parser = new MultiFieldQueryParser(idxdFields,
+                writer.getAnalyzer());
+
+//            parser.setAllowLeadingWildcard(true);
+
             // Filter expired items.
             Query filter = NumericRangeQuery.newLongRange(EXPIRATION_TIME_FIELD_NAME, U.currentTimeMillis(),
                 null, false, false);
@@ -282,10 +285,12 @@ public class GridLuceneIndex implements AutoCloseable {
             docs = searcher.search(query, Integer.MAX_VALUE);
         }
         catch (Exception e) {
+            U.closeQuiet(reader);
+
             throw new IgniteCheckedException(e);
         }
 
-        IgniteBiPredicate<K, V> fltr = null;
+        IndexingQueryCacheFilter fltr = null;
 
         if (filters != null)
             fltr = filters.forCache(cacheName);
@@ -296,7 +301,7 @@ public class GridLuceneIndex implements AutoCloseable {
     /** {@inheritDoc} */
     @Override public void close() {
         U.closeQuiet(writer);
-        U.closeQuiet(dir);
+        U.close(dir, ctx.log(GridLuceneIndex.class));
     }
 
     /**
@@ -316,7 +321,7 @@ public class GridLuceneIndex implements AutoCloseable {
         private final ScoreDoc[] docs;
 
         /** */
-        private final IgniteBiPredicate<K, V> filters;
+        private final IndexingQueryCacheFilter filters;
 
         /** */
         private int idx;
@@ -336,7 +341,7 @@ public class GridLuceneIndex implements AutoCloseable {
          * @param filters Filters over result.
          * @throws IgniteCheckedException if failed.
          */
-        private It(IndexReader reader, IndexSearcher searcher, ScoreDoc[] docs, IgniteBiPredicate<K, V> filters)
+        private It(IndexReader reader, IndexSearcher searcher, ScoreDoc[] docs, IndexingQueryCacheFilter filters)
             throws IgniteCheckedException {
             this.reader = reader;
             this.searcher = searcher;
@@ -346,17 +351,6 @@ public class GridLuceneIndex implements AutoCloseable {
             coctx = objectContext();
 
             findNext();
-        }
-
-        /**
-         * Filters key using predicates.
-         *
-         * @param key Key.
-         * @param val Value.
-         * @return {@code True} if key passes filter.
-         */
-        private boolean filter(K key, V val) {
-            return filters == null || filters.apply(key, val);
         }
 
         /**
@@ -399,14 +393,14 @@ public class GridLuceneIndex implements AutoCloseable {
 
                 K k = unmarshall(doc.getBinaryValue(KEY_FIELD_NAME).bytes, ldr);
 
+                if (filters != null && !filters.apply(k))
+                    continue;
+
                 V v = type.valueClass() == String.class ?
                     (V)doc.get(VAL_STR_FIELD_NAME) :
                     this.<V>unmarshall(doc.getBinaryValue(VAL_FIELD_NAME).bytes, ldr);
 
                 assert v != null;
-
-                if (!filter(k, v))
-                    continue;
 
                 curr = new IgniteBiTuple<>(k, v);
 

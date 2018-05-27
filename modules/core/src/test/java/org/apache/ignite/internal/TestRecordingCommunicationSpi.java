@@ -27,6 +27,7 @@ import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -71,6 +72,12 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     /** {@inheritDoc} */
     @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
         throws IgniteSpiException {
+        // All ignite code expects that 'send' fails after discovery listener for node fail finished.
+        if (getSpiContext().node(node.id()) == null) {
+            throw new IgniteSpiException(new ClusterTopologyCheckedException("Failed to send message" +
+                " (node left topology): " + node));
+        }
+
         if (msg instanceof GridIoMessage) {
             GridIoMessage ioMsg = (GridIoMessage)msg;
 
@@ -98,7 +105,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                 }
 
                 if (block) {
-                    ignite.log().info("Block message [node=" + node.id() +
+                    ignite.log().info("Block message [node=" + node.id() + ", order=" + node.order() +
                         ", msg=" + ioMsg.message() + ']');
 
                     blockedMsgs.add(new T2<>(node, ioMsg));
@@ -113,6 +120,11 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
         }
 
         super.sendMessage(node, msg, ackC);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+        sendMessage(node, msg, null);
     }
 
     /**
@@ -261,6 +273,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
                 for (T2<ClusterNode, GridIoMessage> msg : blockedMsgs) {
                     try {
                         ignite.log().info("Send blocked message [node=" + msg.get1().id() +
+                            ", order=" + msg.get1().order() +
                             ", msg=" + msg.get2().message() + ']');
 
                         super.sendMessage(msg.get1(), msg.get2());

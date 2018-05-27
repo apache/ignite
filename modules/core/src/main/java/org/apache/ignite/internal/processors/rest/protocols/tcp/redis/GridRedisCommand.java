@@ -67,6 +67,10 @@ public enum GridRedisCommand {
     DEL("DEL"),
     /** EXISTS. */
     EXISTS("EXISTS"),
+    /** EXPIRE. */
+    EXPIRE("EXPIRE"),
+    /** PEXPIRE. */
+    PEXPIRE("PEXPIRE"),
 
     // Server commands.
     /** DBSIZE. */

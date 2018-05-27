@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 import java.io.EOFException;
 import java.io.IOException;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.IndexInput;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridLuceneOutputStream.BUFFER_SIZE;
@@ -27,7 +28,7 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridLuceneOutpu
 /**
  * A memory-resident {@link IndexInput} implementation.
  */
-public class GridLuceneInputStream extends IndexInput {
+public class GridLuceneInputStream extends IndexInput implements Cloneable {
     /** */
     private GridLuceneFile file;
 
@@ -52,6 +53,11 @@ public class GridLuceneInputStream extends IndexInput {
     /** */
     private final GridUnsafeMemory mem;
 
+    /** */
+    private volatile boolean closed;
+
+    /** */
+    private boolean isClone;
     /**
      * Constructor.
      *
@@ -91,7 +97,24 @@ public class GridLuceneInputStream extends IndexInput {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        // nothing to do here
+        if (!isClone) {
+            closed = true;
+
+            file.releaseRef();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IndexInput clone() {
+        GridLuceneInputStream clone = (GridLuceneInputStream) super.clone();
+
+        if(closed)
+            throw new AlreadyClosedException(toString());
+
+        clone.isClone = true;
+
+        return clone;
+
     }
 
     /** {@inheritDoc} */
@@ -222,14 +245,16 @@ public class GridLuceneInputStream extends IndexInput {
         public SlicedInputStream(String newResourceDescription, long offset, long length) throws IOException {
             super(newResourceDescription, GridLuceneInputStream.this.file, offset + length);
 
+            // Avoid parent resource closing together with this.
+            super.isClone = true;
+
             this.offset = offset;
 
             seek(0L);
         }
 
         /** {@inheritDoc} */
-        @Override
-        public void seek(long pos) throws IOException {
+        @Override public void seek(long pos) throws IOException {
             if (pos < 0L) {
                 throw new IllegalArgumentException("Seeking to negative position: " + this);
             }
@@ -237,20 +262,17 @@ public class GridLuceneInputStream extends IndexInput {
         }
 
         /** {@inheritDoc} */
-        @Override
-        public long getFilePointer() {
+        @Override public long getFilePointer() {
             return super.getFilePointer() - offset;
         }
 
         /** {@inheritDoc} */
-        @Override
-        public long length() {
+        @Override public long length() {
             return super.length() - offset;
         }
 
         /** {@inheritDoc} */
-        @Override
-        public IndexInput slice(String sliceDescription, long ofs, long len) throws IOException {
+        @Override public IndexInput slice(String sliceDescription, long ofs, long len) throws IOException {
             return super.slice(sliceDescription, offset + ofs, len);
         }
     }

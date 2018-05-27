@@ -96,6 +96,13 @@ namespace ignite
                  */
                 virtual int64_t AffectedRows() const;
 
+                /**
+                 * Move to the next result set.
+                 *
+                 * @return Operatoin result.
+                 */
+                virtual SqlResult::Type NextResultSet();
+
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(TypeInfoQuery);
 
@@ -104,6 +111,9 @@ namespace ignite
 
                 /** Executed flag. */
                 bool executed;
+
+                /** Fetched flag. */
+                bool fetched;
 
                 /** Requested types. */
                 std::vector<int8_t> types;

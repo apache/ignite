@@ -35,9 +35,6 @@ public class VisorThreadInfo extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private static final int MAX_FRAMES = 8;
-
     /** Thread name. */
     private String name;
 
@@ -308,9 +305,7 @@ public class VisorThreadInfo extends VisorDataTransferObject {
 
         sb.append('\n');
 
-        int maxFrames = Math.min(stackTrace.size(), MAX_FRAMES);
-
-        for (int i = 0; i < maxFrames; i++) {
+        for (int i = 0; i < stackTrace.size(); i++) {
             StackTraceElement ste = stackTrace.get(i);
 
             sb.append("\tat ").append(ste).append('\n');
@@ -338,9 +333,6 @@ public class VisorThreadInfo extends VisorDataTransferObject {
                     sb.append("\t-  locked ").append(mi).append('\n');
             }
         }
-
-        if (maxFrames < stackTrace.size())
-            sb.append("\t...").append('\n');
 
         if (!F.isEmpty(locks)) {
             sb.append("\n\tNumber of locked synchronizers = ").append(locks.size()).append('\n');

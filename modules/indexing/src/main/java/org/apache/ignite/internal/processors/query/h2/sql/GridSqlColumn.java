@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.query.h2.sql;
 import java.util.Collections;
 import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Parser;
+import org.h2.expression.Expression;
 import org.h2.table.Column;
+import org.h2.value.Value;
 
 /**
  * Column.
@@ -85,13 +87,6 @@ public class GridSqlColumn extends GridSqlElement {
     }
 
     /**
-     * @return Table alias.
-     */
-    public String tableAlias() {
-        return tblAlias;
-    }
-
-    /**
      * @param tblAlias Table alias.
      */
     public void tableAlias(String tblAlias) {
@@ -123,6 +118,29 @@ public class GridSqlColumn extends GridSqlElement {
      */
     public void expressionInFrom(GridSqlAlias from) {
         this.from = from;
+    }
+
+    /**
+     * @return Default value.
+     */
+    public Object defaultValue() {
+        Expression dfltExpr = col.getDefaultExpression();
+
+        return dfltExpr != null ? col.convert(dfltExpr.getValue(null)).getObject() : null;
+    }
+
+    /**
+     * @return Precision.
+     */
+    public int precision() {
+        return (int) col.getPrecision();
+    }
+
+    /**
+     * @return Scale.
+     */
+    public int scale() {
+        return col.getScale();
     }
 
     /**

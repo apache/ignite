@@ -822,6 +822,32 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testCeilPow2() throws Exception {
+        assertEquals(2, U.ceilPow2(2));
+        assertEquals(4, U.ceilPow2(3));
+        assertEquals(4, U.ceilPow2(4));
+        assertEquals(8, U.ceilPow2(5));
+        assertEquals(8, U.ceilPow2(6));
+        assertEquals(8, U.ceilPow2(7));
+        assertEquals(8, U.ceilPow2(8));
+        assertEquals(16, U.ceilPow2(9));
+        assertEquals(1 << 15, U.ceilPow2((1 << 15) - 1));
+        assertEquals(1 << 15, U.ceilPow2(1 << 15));
+        assertEquals(1 << 16, U.ceilPow2((1 << 15) + 1));
+        assertEquals(1 << 26, U.ceilPow2((1 << 26) - 100));
+        assertEquals(1 << 26, U.ceilPow2(1 << 26));
+        assertEquals(1 << 27, U.ceilPow2((1 << 26) + 100));
+
+        for (int i = (int)Math.pow(2, 30); i < Integer.MAX_VALUE; i++)
+            assertEquals((int)Math.pow(2, 30), U.ceilPow2(i));
+
+        for (int i = Integer.MIN_VALUE; i < 0; i++)
+            assertEquals(0, U.ceilPow2(i));
+    }
+
+    /**
      * Test enum.
      */
     private enum TestEnum {

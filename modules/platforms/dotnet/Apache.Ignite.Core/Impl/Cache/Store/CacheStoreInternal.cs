@@ -137,11 +137,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                         {
                             lock (writer) // User-defined store can be multithreaded.
                             {
-                                writer.WithDetach(w =>
-                                {
-                                    w.WriteObject(k);
-                                    w.WriteObject(v);
-                                });
+                                writer.WriteObjectDetached(k);
+                                writer.WriteObjectDetached(v);
 
                                 cnt++;
                             }
@@ -188,11 +185,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                         {
                             var entry0 = entry; // Copy modified closure.
 
-                            writer.WithDetach(w =>
-                            {
-                                w.WriteObject(entry0.Key);
-                                w.WriteObject(entry0.Value);
-                            });
+                            writer.WriteObjectDetached(entry0.Key);
+                            writer.WriteObjectDetached(entry0.Value);
 
                             cnt++;
                         }

@@ -24,6 +24,7 @@
 
 #include <ignite/common/common.h>
 #include <ignite/odbc/common_types.h>
+#include <ignite/odbc/config/configuration.h>
 
 namespace ignite
 {
@@ -50,8 +51,10 @@ namespace ignite
 
                 /**
                  * Constructor.
+                 *
+                 * @param config Configuration.
                  */
-                ConnectionInfo();
+                ConnectionInfo(const Configuration& config);
 
                 /**
                  * Destructor.
@@ -88,6 +91,9 @@ namespace ignite
 
                 /** Short parameters. */
                 UshortInfoMap shortParams;
+
+                /** Configuration. */
+                const Configuration& config;
             };
         }
     }

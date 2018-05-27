@@ -54,8 +54,6 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
     @Override protected void afterTestsStopped() throws Exception {
         delegate = null;
         store = null;
-
-        super.afterTestsStopped();
     }
 
     /**

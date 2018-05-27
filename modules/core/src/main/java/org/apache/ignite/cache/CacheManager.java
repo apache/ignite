@@ -43,7 +43,7 @@ import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -177,7 +177,7 @@ public class CacheManager implements javax.cache.CacheManager {
             if (res == null)
                 throw new CacheException();
 
-            ((IgniteCacheProxy<K, V>)res).setCacheManager(this);
+            ((GatewayProtectedCacheProxy<K, V>)res).setCacheManager(this);
 
             if (igniteCacheCfg.isManagementEnabled())
                 enableManagement(cacheName, true);
@@ -351,14 +351,12 @@ public class CacheManager implements javax.cache.CacheManager {
             if (cache == null)
                 throw new CacheException("Cache not found: " + cacheName);
 
-            CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
-
             if (enabled)
                 registerCacheObject(cache.mxBean(), cacheName, CACHE_STATISTICS);
             else
                 unregisterCacheObject(cacheName, CACHE_STATISTICS);
 
-            cfg.setStatisticsEnabled(enabled);
+            ignite.context().cache().cache(cacheName).context().statisticsEnabled(enabled);
         }
         finally {
             kernalGateway.readUnlock();

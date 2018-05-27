@@ -81,6 +81,11 @@ public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids(true);
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -126,7 +131,7 @@ public class IgniteRejectConnectOnNodeStopTest extends GridCommonAbstractTest {
 
         boolean err = false;
 
-        try{
+        try {
             stopStartLatch.await();
 
             IgniteCacheMessageRecoveryAbstractTest.closeSessions(srv);

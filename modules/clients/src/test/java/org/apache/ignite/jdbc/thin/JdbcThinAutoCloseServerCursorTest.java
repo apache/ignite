@@ -29,7 +29,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -51,8 +50,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
     private static final String CACHE_NAME = "cache";
 
     /** URL. */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1/?" +
-        JdbcThinUtils.PARAM_AUTO_CLOSE_SERVER_CURSOR + "=true";
+    private static final String URL = "jdbc:ignite:thin://127.0.0.1/?autoCloseServerCursor=true";
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -86,11 +84,6 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         IgniteCache<Integer, Person> cache = grid(0).cache(CACHE_NAME);
 
@@ -115,7 +108,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
             cache.put(person.id, person);
 
         try (Connection conn = DriverManager.getConnection(URL)) {
-            conn.setSchema(CACHE_NAME);
+            conn.setSchema('"' + CACHE_NAME + '"');
 
             String sqlText = "select * from Person";
 
@@ -198,7 +191,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
      */
     public void testInsert() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            conn.setSchema(CACHE_NAME);
+            conn.setSchema('"' + CACHE_NAME + '"');
 
             String sqlText = "insert into Person (_key, id, name, age) values (?, ?, ?, ?)";
 
@@ -233,7 +226,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
         cache.put(1, p);
 
         try (Connection conn = DriverManager.getConnection(URL)) {
-            conn.setSchema(CACHE_NAME);
+            conn.setSchema('"' + CACHE_NAME + '"');
 
             String sqlText = "update Person set age = age + 1";
 
@@ -258,7 +251,7 @@ public class JdbcThinAutoCloseServerCursorTest extends JdbcThinAbstractSelfTest 
         cache.put(1, p);
 
         try (Connection conn = DriverManager.getConnection(URL)) {
-            conn.setSchema(CACHE_NAME);
+            conn.setSchema('"' + CACHE_NAME + '"');
 
             String sqlText = "delete Person where age = ?";
 

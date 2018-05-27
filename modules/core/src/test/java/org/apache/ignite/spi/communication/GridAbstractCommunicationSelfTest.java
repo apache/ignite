@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,6 +40,7 @@ import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
@@ -68,6 +70,9 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
     /** */
     private static final Object mux = new Object();
+
+    /** */
+    private static GridTimeoutProcessor timeoutProcessor;
 
     /** */
     protected boolean useSsl = false;
@@ -289,6 +294,12 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
         Map<ClusterNode, GridSpiTestContext> ctxs = new HashMap<>();
 
+        timeoutProcessor = new GridTimeoutProcessor(new GridTestKernalContext(log));
+
+        timeoutProcessor.start();
+
+        timeoutProcessor.onKernalStart(true);
+
         for (int i = 0; i < getSpiCount(); i++) {
             CommunicationSpi<Message> spi = getSpi(i);
 
@@ -298,17 +309,19 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
             GridTestNode node = new GridTestNode(rsrcs.getNodeId());
 
-            node.order(i);
-
             GridSpiTestContext ctx = initSpiContext();
 
             ctx.setLocalNode(node);
+
+            ctx.timeoutProcessor(timeoutProcessor);
 
             info(">>> Initialized context: nodeId=" + ctx.localNode().id());
 
             spiRsrcs.add(rsrcs);
 
             rsrcs.inject(spi);
+
+            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "igniteInstanceName", "grid-" + i);
 
             if (useSsl) {
                 IgniteMock ignite = GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "ignite");
@@ -323,6 +336,8 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
             node.setAttributes(spi.getNodeAttributes());
             node.setAttribute(ATTR_MACS, F.concat(U.allLocalMACs(), ", "));
+
+            node.order(i + 1);
 
             nodes.add(node);
 
@@ -346,6 +361,14 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
+        if (timeoutProcessor != null) {
+            timeoutProcessor.onKernalStop(true);
+
+            timeoutProcessor.stop(true);
+
+            timeoutProcessor = null;
+        }
+
         for (CommunicationSpi<Message> spi : spis.values()) {
             spi.onContextDestroyed();
 

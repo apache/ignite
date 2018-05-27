@@ -423,4 +423,48 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
             Assert.assertEquals(2, (long)jedis.exists("existsKey1", "existsKey2"));
         }
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExpire() throws Exception {
+        testExpire(new Expiration() {
+            @Override public long expire(Jedis jedis, String key) {
+                return jedis.expire("k1", 2);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExpireMs() throws Exception {
+        testExpire(new Expiration() {
+            @Override public long expire(Jedis jedis, String key) {
+                return jedis.pexpire("k1", 2000);
+            }
+        });
+    }
+
+    private void testExpire(Expiration exp) throws Exception {
+        try (Jedis jedis = pool.getResource()) {
+            jedis.set("k1", "v1");
+
+            Assert.assertTrue(jedis.exists("k1"));
+
+            Assert.assertEquals(1L, exp.expire(jedis, "k1"));
+
+            Assert.assertEquals("v1", jedis.get("k1"));
+
+            Thread.sleep(2100);
+
+            Assert.assertFalse(jedis.exists("k1"));
+
+            Assert.assertEquals(0L, (long)jedis.expire("k1", 2));
+        }
+    }
+
+    private interface Expiration {
+        long expire(Jedis jedis, String key);
+    }
 }

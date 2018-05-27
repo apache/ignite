@@ -52,7 +52,7 @@ public class WaitMapExchangeFinishCallable implements IgniteCallable<Void> {
                 for (;;) {
                     boolean success = true;
 
-                    if (top.topologyVersion().topologyVersion() == ignite.cluster().topologyVersion()) {
+                    if (top.readyTopologyVersion().topologyVersion() == ignite.cluster().topologyVersion()) {
                         for (Map.Entry<UUID, GridDhtPartitionMap> e : top.partitionMap(true).entrySet()) {
                             for (Map.Entry<Integer, GridDhtPartitionState> p : e.getValue().entrySet()) {
                                 if (p.getValue() != GridDhtPartitionState.OWNING) {
@@ -70,7 +70,7 @@ public class WaitMapExchangeFinishCallable implements IgniteCallable<Void> {
                         }
                     }
                     else {
-                        BenchmarkUtils.println("Topology version is different [cache=" + top.topologyVersion() +
+                        BenchmarkUtils.println("Topology version is different [cache=" + top.readyTopologyVersion() +
                             ", cluster=" + ignite.cluster().topologyVersion() + ']');
 
                         success = false;

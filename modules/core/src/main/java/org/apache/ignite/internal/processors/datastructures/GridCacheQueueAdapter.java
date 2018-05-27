@@ -479,6 +479,11 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             onRemoved(true);
     }
 
+    /** Release all semaphores used in blocking operations in case of client disconnect. */
+    public void onClientDisconnected() {
+        releaseSemaphores();
+    }
+
     /**
      * Marks queue as removed.
      *

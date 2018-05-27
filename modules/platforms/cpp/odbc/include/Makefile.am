@@ -42,7 +42,7 @@ noinst_HEADERS = \
     ignite/odbc/environment.h \
     ignite/odbc/dsn_config.h \
     ignite/odbc/system/odbc_constants.h \
-    ignite/odbc/system/socket_client.h \
+    ignite/odbc/system/tcp_socket_client.h \
     ignite/odbc/meta/primary_key_meta.h \
     ignite/odbc/meta/column_meta.h \
     ignite/odbc/meta/table_meta.h \
@@ -50,7 +50,12 @@ noinst_HEADERS = \
     ignite/odbc/diagnostic/diagnostic_record_storage.h \
     ignite/odbc/diagnostic/diagnosable.h \
     ignite/odbc/diagnostic/diagnosable_adapter.h \
+    ignite/odbc/ssl/ssl_mode.h \
+    ignite/odbc/ssl/ssl_bindings.h \
+    ignite/odbc/ssl/secure_socket_client.h \
+    ignite/odbc/ssl/ssl_gateway.h \
     ignite/odbc/connection.h \
+    ignite/odbc/odbc_error.h \
     ignite/odbc/message.h \
     ignite/odbc/cursor.h \
     ignite/odbc/common_types.h \

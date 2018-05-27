@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheScanPredicateDeplo
 import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMixedModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxGetAfterStopTest;
+import org.apache.ignite.internal.processors.cache.distributed.IgniteTxRemoveTimeoutObjectsNearTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxRemoveTimeoutObjectsTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheDaemonNodePartitionedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCachePartitionedOnlyP2PDisabledByteArrayValuesSelfTest;
@@ -52,14 +53,17 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePut
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteTxReentryNearSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRabalancingDelayedPartitionMapExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingAsyncSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingPartitionCountersTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncCheckDataTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingUnmarshallingFailedSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingWithAsyncClearingTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheDaemonNodeReplicatedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedAtomicGetAndTransformStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedBasicApiTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedBasicOpSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedBasicStoreSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedEventDisabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedEventSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedEvictionEventSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedGetAndTransformStoreSelfTest;
@@ -108,6 +112,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(GridCacheReplicatedGetAndTransformStoreSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedAtomicGetAndTransformStoreSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedEventSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedEventDisabledSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedSynchronousCommitTest.class);
 
         suite.addTestSuite(GridCacheReplicatedLockSelfTest.class);
@@ -146,6 +151,8 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(GridCacheRebalancingUnmarshallingFailedSelfTest.class);
         suite.addTestSuite(GridCacheRebalancingAsyncSelfTest.class);
         suite.addTestSuite(GridCacheRabalancingDelayedPartitionMapExchangeSelfTest.class);
+        suite.addTestSuite(GridCacheRebalancingPartitionCountersTest.class);
+        suite.addTestSuite(GridCacheRebalancingWithAsyncClearingTest.class);
 
         // Test for byte array value special case.
         suite.addTestSuite(GridCacheLocalByteArrayValuesSelfTest.class);
@@ -200,6 +207,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(CacheAsyncOperationsTest.class);
 
         suite.addTestSuite(IgniteTxRemoveTimeoutObjectsTest.class);
+        suite.addTestSuite(IgniteTxRemoveTimeoutObjectsNearTest.class);
 
         return suite;
     }

@@ -79,15 +79,10 @@ public class JdbcThinEmptyCacheSelfTest extends JdbcThinAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         Connection conn = DriverManager.getConnection(URL);
 
-        conn.setSchema(CACHE_NAME);
+        conn.setSchema('"' + CACHE_NAME + '"');
 
         stmt = conn.createStatement();
 

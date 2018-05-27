@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -88,7 +89,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
@@ -480,6 +480,24 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     }
 
     /**
+     * @return Lock or {@code null} if node is stopping.
+     */
+    @Nullable public Lock readLock() {
+        Lock lock = rw.readLock();
+
+        if (!lock.tryLock())
+            return null;
+
+        if (stopping) {
+            lock.unlock();
+
+            return null;
+        }
+
+        return lock;
+    }
+
+    /**
      *
      */
     public void writeLock() {
@@ -797,12 +815,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
-            case 45: {
-                processMessage(nodeId, msg, c);// Will be handled by Rebalance Demander.
-            }
-
-            break;
-
             case 49: {
                 GridNearGetRequest req = (GridNearGetRequest)msg;
 
@@ -1051,27 +1063,34 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 throw e;
         }
         finally {
-            // Reset thread local context.
-            cctx.tm().resetContext();
+            onMessageProcessed(msg);
+        }
+    }
 
-            GridCacheMvccManager mvcc = cctx.mvcc();
+    /**
+     * @param msg Message.
+     */
+    public void onMessageProcessed(GridCacheMessage msg) {
+        // Reset thread local context.
+        cctx.tm().resetContext();
 
-            if (mvcc != null)
-                mvcc.contextReset();
+        GridCacheMvccManager mvcc = cctx.mvcc();
 
-            // Unwind eviction notifications.
-            if (msg instanceof IgniteTxStateAware) {
-                IgniteTxState txState = ((IgniteTxStateAware)msg).txState();
+        if (mvcc != null)
+            mvcc.contextReset();
 
-                if (txState != null)
-                    txState.unwindEvicts(cctx);
-            }
-            else if (msg instanceof GridCacheIdMessage) {
-                GridCacheContext ctx = cctx.cacheContext(((GridCacheIdMessage)msg).cacheId());
+        // Unwind eviction notifications.
+        if (msg instanceof IgniteTxStateAware) {
+            IgniteTxState txState = ((IgniteTxStateAware)msg).txState();
 
-                if (ctx != null)
-                    CU.unwindEvicts(ctx);
-            }
+            if (txState != null)
+                txState.unwindEvicts(cctx);
+        }
+        else if (msg instanceof GridCacheIdMessage) {
+            GridCacheContext ctx = cctx.cacheContext(((GridCacheIdMessage)msg).cacheId());
+
+            if (ctx != null)
+                CU.unwindEvicts(ctx);
         }
     }
 
@@ -1485,8 +1504,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             assert depEnabled : "Received deployment info while peer class loading is disabled [nodeId=" + nodeId +
                 ", msg=" + cacheMsg + ']';
 
-            cctx.deploy().p2pContext(nodeId, bean.classLoaderId(), bean.userVersion(),
-                bean.deployMode(), bean.participants(), bean.localDeploymentOwner());
+            cctx.deploy().p2pContext(
+                nodeId,
+                bean.classLoaderId(),
+                bean.userVersion(),
+                bean.deployMode(),
+                bean.participants()
+            );
 
             if (log.isDebugEnabled())
                 log.debug("Set P2P context [senderId=" + nodeId + ", msg=" + cacheMsg + ']');
@@ -1542,11 +1566,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         /** Handler registry. */
         ConcurrentMap<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage>>
-            clsHandlers = new ConcurrentHashMap8<>();
+            clsHandlers = new ConcurrentHashMap<>();
 
         /** Ordered handler registry. */
         ConcurrentMap<Object, IgniteBiInClosure<UUID, ? extends GridCacheMessage>> orderedHandlers =
-            new ConcurrentHashMap8<>();
+            new ConcurrentHashMap<>();
     }
 
     /**

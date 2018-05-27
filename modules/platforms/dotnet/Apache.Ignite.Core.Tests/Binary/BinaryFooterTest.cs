@@ -137,7 +137,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 return;
             }
 
-            var cache = ignite.GetOrCreateCache<int, OffsetTest>(
+            var cache = ignite.GetIgnite().GetOrCreateCache<int, OffsetTest>(
                     new CacheConfiguration("offs", new QueryEntity(typeof(int), typeof(OffsetTest))));
 
             // Cache operation.
@@ -146,7 +146,7 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.AreEqual(dt.Arr, cache[1].Arr);
 
             // SQL: read field on Java side to ensure correct offset handling.
-            var res = cache.QueryFields(new SqlFieldsQuery("select int from OffsetTest")).GetAll()[0][0];
+            var res = cache.Query(new SqlFieldsQuery("select int from OffsetTest")).GetAll()[0][0];
             Assert.AreEqual(dt.Int, (int) res);
         }
 

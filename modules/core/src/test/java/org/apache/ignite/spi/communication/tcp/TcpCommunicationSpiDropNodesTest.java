@@ -91,8 +91,6 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
     }
 
@@ -202,8 +200,7 @@ public class TcpCommunicationSpiDropNodesTest extends GridCommonAbstractTest {
         final CountDownLatch latch = new CountDownLatch(1);
 
         grid(0).events().localListen(new IgnitePredicate<Event>() {
-            @Override
-            public boolean apply(Event event) {
+            @Override public boolean apply(Event evt) {
                 latch.countDown();
 
                 return true;

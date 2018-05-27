@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -43,8 +44,9 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.F;
@@ -54,7 +56,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.AttributeNodeFilter;
-import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
@@ -136,9 +137,10 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration().setDefaultMemoryPolicySize(20 * 1024 * 1024);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setMaxSize(20L * 1024 * 1024));
 
-        cfg.setMemoryConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         TcpDiscoverySpi spi = (TcpDiscoverySpi)cfg.getDiscoverySpi();
         spi.setIpFinder(IP_FINDER);
@@ -348,7 +350,7 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
                             DepositKey dk = new DepositKey(depositId++, new ClientKey(clientId, regionId));
 
                             Deposit depo = new Deposit();
-                            depo.amount = ThreadLocalRandom8.current().nextLong(1_000_001);
+                            depo.amount = ThreadLocalRandom.current().nextLong(1_000_001);
                             depStr.addData(dk, depo);
                         }
 
@@ -371,13 +373,6 @@ public abstract class IgniteCacheDistributedPartitionQueryAbstractSelfTest exten
                 regionId++;
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
     }
 
     /**
