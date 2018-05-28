@@ -193,7 +193,7 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @return Rebalance future.
+     * @return The latest rebalance future. Can be active or waits for another rebalancing future.
      */
     IgniteInternalFuture<Boolean> rebalanceFuture() {
         return latestRebFut;
@@ -251,15 +251,15 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @param fut Future.
-     * @return {@code True} if topology changed.
+     * @param fut Rebalancing future to evaluate on.
+     * @return {@code True} if topology version changes has valuable cause to process.
      */
     private boolean topologyChanged(RebalanceFuture fut) {
         final AffinityTopologyVersion lastVer = grp.affinity().lastVersion();
 
-        final boolean sameAssignm = grp.affinity().cachedAffinity(lastVer).clientEventChange();
+        final boolean sameAssignments = grp.affinity().cachedAffinity(lastVer).clientEventChange();
 
-        return !(lastVer.equals(fut.topologyVersion()) || sameAssignm) || // Topology already changed.
+        return !(lastVer.equals(fut.topologyVersion()) || sameAssignments) || // Topology already changed.
                 fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
     }
 
@@ -339,8 +339,8 @@ public class GridDhtPartitionDemander {
             // We should wait for current rebalanceFut completion and than assign results to latestRebFut.
             if (grp.affinity().cachedAffinity(topVer).clientEventChange()) {
                 if (log.isDebugEnabled())
-                    log.debug("Affinity assigments does not changed. Will skip rebalance [topVer=" +
-                        topVer + ", rebalanceId=" + rebalanceId + ", groupId=" + grp.groupId() + "]");
+                    log.debug("Affinity assignments does not changed. Will skip rebalance [topVer=" +
+                        topVer + ", rebalanceId=" + rebalanceId + ", grp=" + grp.cacheOrGroupName() + "]");
 
                 oldFut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                     @Override public void applyx(IgniteInternalFuture<Boolean> fut0) {
@@ -361,7 +361,7 @@ public class GridDhtPartitionDemander {
                 if (!oldFut.isInitial())
                     oldFut.cancel();
 
-                // 2) Current assigments can be cancelled due to ExchageWorker has another pending exchanges.
+                // 2) Current assignments can be cancelled due to ExchageWorker has another pending exchanges.
                 if (assignments.cancelled()) { // Pending exchange.
                     if (log.isDebugEnabled())
                         log.debug("Rebalancing skipped due to cancelled assignments.");
@@ -370,7 +370,7 @@ public class GridDhtPartitionDemander {
 
                     fut.sendRebalanceFinishedEvent();
                 }
-                // 3) Refer to method GridCachePreloader#generateAssignments which can produce empty assigments.
+                // 3) Refer to method GridCachePreloader#generateAssignments which can produce empty assignments.
                 else if (assignments.isEmpty()) { // Nothing to rebalance.
                     if (log.isDebugEnabled())
                         log.debug("Rebalancing skipped due to empty assignments.");
@@ -381,7 +381,7 @@ public class GridDhtPartitionDemander {
 
                     fut.sendRebalanceFinishedEvent();
                 }
-                // 4) Assigments checked and rebalance need to be executed.
+                // 4) Assignments checked and rebalance need to be continued.
                 else {
                     return () -> {
                         if (next != null)

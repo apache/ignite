@@ -113,6 +113,9 @@ public interface GridCachePreloader {
      * Future result is {@code true} in case rebalancing successfully finished at current topology.
      * Future result is {@code false} in case rebalancing cancelled or finished with missed partitions and will be
      * restarted at current or pending topology.
+     *
+     * Note that topology change creates new futures which may waits for previous futures to finish (previous future
+     * does not cancel if assignments not changed).
      */
     public IgniteInternalFuture<Boolean> rebalanceFuture();
 
