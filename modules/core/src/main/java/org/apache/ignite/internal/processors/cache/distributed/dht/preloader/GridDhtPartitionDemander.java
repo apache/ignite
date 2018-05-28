@@ -274,7 +274,8 @@ public class GridDhtPartitionDemander {
 
     /**
      * Initiates new rebalance process from given {@code assignments}.
-     * If previous rebalance is not finished method cancels it.
+     * If previous rebalance is not finished and assignments are different method cancels this feature.
+     * If assignments not changed creates new rebalance feature which will be notified on finish previous.
      * In case of delayed rebalance method schedules new with configured delay.
      *
      * @param assignments Assignments.

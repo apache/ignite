@@ -2588,7 +2588,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if (assigns != null)
                                     assignsCancelled |= assigns.cancelled();
 
-                                // Cancels previous rebalance future (in case it's not done yet).
+                                // Cancels previous rebalance future (in case it's not done yet and
+                                // assigments are different to previous rebalance future).
                                 // Sends previous rebalance stopped event (if necessary).
                                 // Creates new rebalance future.
                                 // Sends current rebalance started event (if necessary).
