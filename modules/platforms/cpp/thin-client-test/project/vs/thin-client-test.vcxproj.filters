@@ -29,6 +29,9 @@
     <ClCompile Include="..\..\src\ssl_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\auth_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity\teamcity_messages.h">
@@ -55,6 +58,15 @@
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\ssl-default.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\auth.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\auth-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\auth-default.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>
