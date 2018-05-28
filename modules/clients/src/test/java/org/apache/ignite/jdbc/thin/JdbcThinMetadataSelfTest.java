@@ -397,7 +397,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "pers.PERSON.AGE.null",
                 "pers.PERSON.NAME.null." + MAX_VALUE,
                 "dep.DEPARTMENT.ID.null",
-                "dep.DEPARTMENT.NAME.null.42",
+                "dep.DEPARTMENT.NAME.null.43",
                 "PUBLIC.TEST.ID.null",
                 "PUBLIC.TEST.NAME.'default name'.50",
                 "PUBLIC.TEST.VAL.null.50",
@@ -701,7 +701,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         private final int id;
 
         /** Name. */
-        @QuerySqlField(maxLength = 42)
+        @QuerySqlField(maxLength = 43)
         private final String name;
 
         /**

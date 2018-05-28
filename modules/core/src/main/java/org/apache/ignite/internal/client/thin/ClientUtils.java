@@ -398,19 +398,29 @@ final class ClientUtils {
                             .setValueFieldName(reader.readString());
 
                         boolean isCliVer1_2 = ver.compareTo(VER_1_2_0) >= 0;
+                        
 
                         Collection<QueryField> qryFields = ClientUtils.collection(
                             in,
-                            unused2 -> new QueryField(
-                                reader.readString(),
-                                reader.readString(),
-                                reader.readBoolean(),
-                                reader.readBoolean(),
-                                reader.readObject(),
-                                isCliVer1_2 ? reader.readInt() : -1,
-                                isCliVer1_2 ? reader.readInt() : -1,
-                                isCliVer1_2 ? reader.readInt() : MAX_VALUE
-                            )
+                            unused2 -> {
+                                String name = reader.readString();
+                                String typeName = reader.readString();
+                                boolean isKey = reader.readBoolean();
+                                boolean isNotNull = reader.readBoolean(); 
+                                Object dfltVal = reader.readObject();
+                                int precision = isCliVer1_2 ? reader.readInt() : -1;
+                                int scale = isCliVer1_2 ? reader.readInt() : -1; 
+                                int maxLength = isCliVer1_2 ? reader.readInt() : MAX_VALUE;
+
+                                return new QueryField(name,
+                                    typeName,
+                                    isKey,
+                                    isNotNull,
+                                    dfltVal,
+                                    precision,
+                                    scale,
+                                    maxLength);
+                            }
                         );
 
                         return qryEntity
