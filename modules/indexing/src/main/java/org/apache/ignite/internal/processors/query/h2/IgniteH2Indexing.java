@@ -1475,8 +1475,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
         String sql = qry.getSql();
         List<Object> params = F.asList(qry.getArgs());
-        boolean enforceJoinOrder = qry.isEnforceJoinOrder();
-        boolean startTx = MvccUtils.mvccEnabled(ctx) && autoStartTx(qry);
+        boolean enforceJoinOrder = qry.isEnforceJoinOrder(), startTx = autoStartTx(qry);
         int timeout = qry.getTimeout();
 
         final GridQueryFieldsResult res = queryLocalSqlFields(schemaName, sql, params, filter,
@@ -1991,10 +1990,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
         GridQueryCancel cancel) {
         GridNearTxLocal tx = null;
-        boolean mvccEnabled = MvccUtils.mvccEnabled(ctx);
+        boolean mvccEnabled = MvccUtils.mvccEnabled(ctx), startTx = autoStartTx(qry);
 
         try {
-            final boolean startTx = mvccEnabled && autoStartTx(qry);
 
             List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry, cliCtx);
 
@@ -2373,6 +2371,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return {@code True} if need to start transaction.
      */
     public boolean autoStartTx(SqlFieldsQuery qry) {
+        if (!MvccUtils.mvccEnabled(ctx))
+            return false;
+
         // Let's do this call before anything else so that we always check tx type properly.
         GridNearTxLocal tx = MvccUtils.activeSqlTx(ctx);
 
