@@ -142,6 +142,9 @@ public class GridDhtPartitionDemander {
         if (!enabled) {
             // Calling onDone() immediately since preloading is disabled.
             rebalanceFut.onDone(true);
+
+            latestRebFut.onDone(true);
+
             syncFut.onDone();
         }
 
