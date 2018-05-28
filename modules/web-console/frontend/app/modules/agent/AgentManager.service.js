@@ -94,10 +94,10 @@ class ConnectionState {
 }
 
 export default class IgniteAgentManager {
-    static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', 'AgentModal', 'UserNotifications', 'IgniteVersion' ];
+    static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', 'AgentModal', 'UserNotifications', 'IgniteVersion', 'ClusterCredentials', 'IgniteMessages'];
 
-    constructor($root, $q, $transitions, socketFactory, AgentModal, UserNotifications, Version) {
-        Object.assign(this, {$root, $q, $transitions, socketFactory, AgentModal, UserNotifications, Version});
+    constructor($root, $q, $transitions, socketFactory, AgentModal, UserNotifications, Version, ClusterCredentials, Messages) {
+        Object.assign(this, {$root, $q, $transitions, socketFactory, AgentModal, UserNotifications, Version, ClusterCredentials, Messages});
 
         this.promises = new Set();
 
@@ -439,15 +439,19 @@ export default class IgniteAgentManager {
      * @private
      */
     _restCommand(cmd, args) {
-        const params = {
-            cmd,
-            user: 'web-console',
-            password: '123'
-        };
+        return ClusterCredentials.askCredentials()
+            .then((creds) => {
+                const params = {
+                    cmd,
+                    user: creds.user,
+                    password: creds.password
+                };
 
-        _.assign(params, args);
+                _.assign(params, args);
 
-        return this._rest('node:rest', params);
+                return this._rest('node:rest', params);
+            })
+            .catch(Messages.showError);
     }
 
     /**
@@ -566,7 +570,9 @@ export default class IgniteAgentManager {
 
         nids = _.isArray(nids) ? nids.join(';') : maskNull(nids);
 
-        return this._rest('node:visor', taskId, nids, 'web-console', '123', ...args);
+        return ClusterCredentials.askCredentials()
+            .then((creds) => this._rest('node:visor', taskId, nids, creds.user, creds.password, ...args))
+            .catch(Messages.showError);
     }
 
     /**

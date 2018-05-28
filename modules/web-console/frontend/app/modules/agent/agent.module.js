@@ -19,10 +19,10 @@ import angular from 'angular';
 
 import AgentModal from './AgentModal.service';
 import AgentManager from './AgentManager.service';
+import ClusterCredentials from  './credentials/agent-credentials.service';
 
 angular
-    .module('ignite-console.agent', [
-
-    ])
+    .module('ignite-console.agent', [])
     .service('AgentModal', AgentModal)
-    .service('AgentManager', AgentManager);
+    .service('AgentManager', AgentManager)
+    .service('ClusterCredentials', ClusterCredentials);

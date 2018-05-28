@@ -185,7 +185,8 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
                 Class<?> valCls = Class.forName(valClsName);
 
-                return new IgniteBiTuple<>(toObject(keyCls, argument(startIdx + 2)),
+                return new IgniteBiTuple<>(
+                    toObject(keyCls, argument(startIdx + 2)),
                     toObject(valCls, argument(startIdx + 3)));
             }
 
