@@ -195,9 +195,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @Override public boolean isEmpty() {
         onAccess();
 
-        if (!collocated && !compatibilityMode)
-            return size() == 0;
-
         GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
 
         return (set == null || set.isEmpty()) && size() == 0;
@@ -388,20 +385,18 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
     /** {@inheritDoc} */
     @Override public void affinityRun(IgniteRunnable job) {
-        if (!collocated) {
+        if (!collocated)
             throw new IgniteException("Failed to execute affinityRun() for non-collocated set: " + name() +
                 ". This operation is supported only for collocated sets.");
-        }
 
         compute.affinityRun(cache.name(), setKey, job);
     }
 
     /** {@inheritDoc} */
     @Override public <R> R affinityCall(IgniteCallable<R> job) {
-        if (!collocated) {
+        if (!collocated)
             throw new IgniteException("Failed to execute affinityCall() for non-collocated set: " + name() +
                 ". This operation is supported only for collocated sets.");
-        }
 
         return compute.affinityCall(cache.name(), setKey, job);
     }
