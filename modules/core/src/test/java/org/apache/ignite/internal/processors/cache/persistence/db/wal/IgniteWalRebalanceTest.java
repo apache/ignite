@@ -71,15 +71,11 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
 
         cfg.setConsistentId(gridName);
 
-        CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
-
-        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-
-        ccfg.setRebalanceMode(CacheRebalanceMode.ASYNC);
-
-        ccfg.setCacheMode(CacheMode.REPLICATED);
-
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(CACHE_NAME)
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC)
+            .setRebalanceMode(CacheRebalanceMode.ASYNC)
+            .setCacheMode(CacheMode.REPLICATED)
+            .setAffinity(new RendezvousAffinityFunction(false, PARTS_CNT));
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -108,9 +104,17 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         System.clearProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD);
         System.clearProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING);
 
+        boolean walRebalanceInvoked = !IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.allRebalances()
+            .isEmpty();
+
+        IgniteWalRebalanceTest.WalRebalanceCheckingCommunicationSpi.cleanup();
+
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        if (!walRebalanceInvoked)
+            throw new AssertionError("WAL rebalance hasn't been invoked.");
     }
 
     /**
@@ -331,10 +335,10 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      */
     public static class WalRebalanceCheckingCommunicationSpi extends TcpCommunicationSpi {
         /** (Group ID, Set of topology versions). */
-        private final Map<Integer, Set<Long>> topVers = new HashMap<>();
+        private static final Map<Integer, Set<Long>> topVers = new HashMap<>();
 
         /** Lock object. */
-        private final Object mux = new Object();
+        private static final Object mux = new Object();
 
         /**
          * @param grpId Group ID.
@@ -349,9 +353,18 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
         /**
          * @return All topology versions for all groups where WAL rebalance has been used.
          */
-        public Map<Integer, Set<Long>> all() {
+        public static Map<Integer, Set<Long>> allRebalances() {
             synchronized (mux) {
                 return Collections.unmodifiableMap(topVers);
+            }
+        }
+
+        /**
+         * Cleans all rebalances history.
+         */
+        public static void cleanup() {
+            synchronized (mux) {
+                topVers.clear();
             }
         }
 
