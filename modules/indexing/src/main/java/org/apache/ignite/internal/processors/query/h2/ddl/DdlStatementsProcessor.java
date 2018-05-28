@@ -550,7 +550,7 @@ public class DdlStatementsProcessor {
      * @throws IgniteCheckedException If failed.
      */
     private void finishActiveTxIfNecessary() throws IgniteCheckedException {
-        try (GridNearTxLocal tx = MvccUtils.tx(ctx)) {
+        try (GridNearTxLocal tx = MvccUtils.mvccEnabled(ctx) ? MvccUtils.tx(ctx) : null) {
             if (tx == null)
                 return;
 
