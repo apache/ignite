@@ -196,13 +196,13 @@ public class AgentUtils {
             }
 
             /** {@inheritDoc} */
-            @Override public void checkClientTrusted(
-                java.security.cert.X509Certificate[] certs, String authType) {
+            @Override public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+                // No-op.
             }
 
             /** {@inheritDoc} */
-            @Override public void checkServerTrusted(
-                java.security.cert.X509Certificate[] certs, String authType) {
+            @Override public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {
+                // No-op.
             }
         };
     }

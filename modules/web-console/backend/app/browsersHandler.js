@@ -241,7 +241,7 @@ module.exports = {
                 this.registerVisorTask('toggleClusterState', internalVisor('misc.VisorChangeGridActiveStateTask'), internalVisor('misc.VisorChangeGridActiveStateTaskArg'));
 
                 // Return command result from grid to browser.
-                sock.on('node:visor', (clusterId, taskId, nids, ...args) => {
+                sock.on('node:visor', (clusterId, taskId, nids, user, password, ...args) => {
                     const demo = sock.request._query.IgniteDemoMode === 'true';
                     const token = sock.request.user.token;
 
@@ -256,6 +256,8 @@ module.exports = {
                     const params = {
                         cmd: 'exe',
                         name: 'org.apache.ignite.internal.visor.compute.VisorGatewayTask',
+                        user,
+                        password,
                         p1: nids,
                         p2: desc.taskCls
                     };

@@ -183,7 +183,7 @@ public class RestExecutor implements AutoCloseable {
             try {
                 RestResult res = sendRequest(nodeUrl, params, headers);
 
-                log.info("Connected to cluster [url=" + nodeUrl + "]");
+                LT.info(log, "Connected to cluster [url=" + nodeUrl + "]");
 
                 startIdxs.put(nodeURIs, currIdx);
 

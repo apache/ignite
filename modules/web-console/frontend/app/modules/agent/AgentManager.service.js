@@ -190,6 +190,8 @@ export default class IgniteAgentManager {
     }
 
     updateCluster(newCluster) {
+        console.log('Secured cluster: ' + newCluster.secured);
+
         const state = this.connectionSbj.getValue();
 
         const oldCluster = _.find(state.clusters, (cluster) => cluster.id === newCluster.id);
@@ -429,19 +431,39 @@ export default class IgniteAgentManager {
     }
 
     /**
+     * Execute REST command.
+     *
+     * @param {String} cmd
+     * @param {Object} args
+     * @returns {Promise}
+     * @private
+     */
+    _restCommand(cmd, args) {
+        const params = {
+            cmd,
+            user: 'web-console',
+            password: '123'
+        };
+
+        _.assign(params, args);
+
+        return this._rest('node:rest', params);
+    }
+
+    /**
      * @param {Boolean} [attr]
      * @param {Boolean} [mtr]
      * @returns {Promise}
      */
     topology(attr = false, mtr = false) {
-        return this._rest('node:rest', {cmd: 'top', attr, mtr});
+        return this._restCommand('top', {attr, mtr});
     }
 
     /**
      * @returns {Promise}
      */
     metadata() {
-        return this._rest('node:rest', {cmd: 'metadata'})
+        return this._restCommand('metadata')
             .then((caches) => {
                 let types = [];
 
@@ -544,7 +566,7 @@ export default class IgniteAgentManager {
 
         nids = _.isArray(nids) ? nids.join(';') : maskNull(nids);
 
-        return this._rest('node:visor', taskId, nids, ...args);
+        return this._rest('node:visor', taskId, nids, 'web-console', '123', ...args);
     }
 
     /**

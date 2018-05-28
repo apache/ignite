@@ -51,7 +51,7 @@ public class RestListener extends AbstractListener {
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute(Map<String, Object> args) throws Exception {
+    @Override public Object execute(Map<String, Object> args) {
         if (log.isDebugEnabled())
             log.debug("Start parse REST command args: " + args);
 

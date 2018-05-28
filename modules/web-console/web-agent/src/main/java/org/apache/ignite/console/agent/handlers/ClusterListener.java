@@ -20,7 +20,6 @@ package org.apache.ignite.console.agent.handlers;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.socket.client.Socket;
-import io.socket.emitter.Emitter;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.util.ArrayList;
@@ -40,6 +39,7 @@ import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -95,9 +95,6 @@ public class ClusterListener implements AutoCloseable {
 
     /** */
     private final WatchTask watchTask = new WatchTask();
-
-    /** */
-    private final BroadcastTask broadcastTask = new BroadcastTask();
 
     /** */
     private static final IgniteClosure<UUID, String> ID2ID8 = new IgniteClosure<UUID, String>() {
@@ -177,21 +174,8 @@ public class ClusterListener implements AutoCloseable {
         refreshTask = pool.scheduleWithFixedDelay(watchTask, 0L, DFLT_TIMEOUT, TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * Start broadcast topology to server-side.
-     */
-    public Emitter.Listener start() {
-        return args -> {
-            safeStopRefresh();
-
-            final long timeout = args.length > 1 && args[1] instanceof Long ? (long)args[1] : DFLT_TIMEOUT;
-
-            refreshTask = pool.scheduleWithFixedDelay(broadcastTask, 0L, timeout, TimeUnit.MILLISECONDS);
-        };
-    }
-
     /** {@inheritDoc} */
-    public void close() {
+    @Override public void close() {
         refreshTask.cancel(true);
 
         pool.shutdownNow();
@@ -220,6 +204,9 @@ public class ClusterListener implements AutoCloseable {
         /** */
         private boolean active;
 
+        /** */
+        private boolean secured;
+
         /**
          * Helper method to get attribute.
          *
@@ -241,6 +228,7 @@ public class ClusterListener implements AutoCloseable {
             addrs = U.newHashMap(sz);
             clients = U.newHashMap(sz);
             active = false;
+            secured = false;
 
             for (GridClientNodeBean node : nodes) {
                 UUID nid = node.getNodeId();
@@ -304,6 +292,20 @@ public class ClusterListener implements AutoCloseable {
         }
 
         /**
+         * @return {@code true} If cluster has configured security.
+         */
+        public boolean isSecured() {
+            return secured;
+        }
+
+        /**
+         * @param secured Configured security flag.
+         */
+        public void setSecured(boolean secured) {
+            this.secured = secured;
+        }
+
+        /**
          * @return Cluster nodes IDs.
          */
         public Collection<UUID> getNids() {
@@ -348,6 +350,22 @@ public class ClusterListener implements AutoCloseable {
     }
 
     /**
+     * Execute REST command under agent user.
+     *
+     * @param params Command params.
+     * @return Command result.
+     * @throws IOException If failed to execute.
+     */
+    private RestResult restCommand(Map<String, Object> params) throws IOException {
+        if (!F.isEmpty(cfg.agentUser()) && !F.isEmpty(cfg.agentPassword())) {
+            params.put("user", cfg.agentUser());
+            params.put("password", cfg.agentPassword());
+        }
+
+        return restExecutor.sendRequest(cfg.nodeURIs(), params, null);
+    }
+
+    /**
      * Collect topology.
      *
      * @param full Full.
@@ -359,16 +377,16 @@ public class ClusterListener implements AutoCloseable {
         params.put("attr", true);
         params.put("mtr", full);
 
-        return restExecutor.sendRequest(this.cfg.nodeURIs(), params, null);
+        return restCommand(params);
     }
 
     /**
      * @param ver Cluster version.
      * @param nid Node ID.
-     * @return Cluster active state.
+     * @return Cluster active state and secured .
      * @throws IOException If failed to collect cluster active state.
      */
-    public boolean active(IgniteProductVersion ver, UUID nid) throws IOException {
+    public T2<Boolean, Boolean> active(IgniteProductVersion ver, UUID nid) throws IOException {
         Map<String, Object> params = U.newHashMap(10);
 
         boolean v23 = ver.compareTo(IGNITE_2_3) >= 0;
@@ -393,18 +411,22 @@ public class ClusterListener implements AutoCloseable {
             }
         }
 
-        RestResult res = restExecutor.sendRequest(this.cfg.nodeURIs(), params, null);
+        RestResult res = restCommand(params);
+
+        boolean active;
 
         switch (res.getStatus()) {
             case STATUS_SUCCESS:
-                if (v23)
-                    return Boolean.valueOf(res.getData());
-
-                return res.getData().contains("\"active\":true");
+                active =  v23 ? Boolean.valueOf(res.getData()) : res.getData().contains("\"active\":true");
+                break;
 
             default:
                 throw new IOException(res.getError());
         }
+
+        boolean secured = !F.isEmpty(res.getSessionToken());
+
+        return new T2<>(active, secured);
     }
 
     /** */
@@ -424,9 +446,10 @@ public class ClusterListener implements AutoCloseable {
                         if (newTop.differentCluster(top))
                             log.info("Connection successfully established to cluster with nodes: " + newTop.nid8());
 
-                        boolean active = active(newTop.clusterVersion(), F.first(newTop.getNids()));
+                        T2<Boolean, Boolean> state = active(newTop.clusterVersion(), F.first(newTop.getNids()));
 
-                        newTop.setActive(active);
+                        newTop.setActive(state.get1());
+                        newTop.setSecured(state.get2());
 
                         top = newTop;
 
@@ -447,50 +470,6 @@ public class ClusterListener implements AutoCloseable {
                 log.error("WatchTask failed", e);
 
                 clusterDisconnect();
-            }
-        }
-    }
-
-    /** */
-    private class BroadcastTask implements Runnable {
-        /** {@inheritDoc} */
-        @Override public void run() {
-            try {
-                RestResult res = topology(true);
-
-                switch (res.getStatus()) {
-                    case STATUS_SUCCESS:
-                        List<GridClientNodeBean> nodes = MAPPER.readValue(res.getData(),
-                            new TypeReference<List<GridClientNodeBean>>() {});
-
-                        TopologySnapshot newTop = new TopologySnapshot(nodes);
-
-                        if (top.differentCluster(newTop)) {
-                            clusterDisconnect();
-
-                            log.info("Connection successfully established to cluster with nodes: " + newTop.nid8());
-
-                            watch();
-                        }
-
-                        top = newTop;
-
-                        client.emit(EVENT_CLUSTER_TOPOLOGY, res.getData());
-
-                        break;
-
-                    default:
-                        LT.warn(log, res.getError());
-
-                        clusterDisconnect();
-                }
-            }
-            catch (Exception e) {
-                log.error("BroadcastTask failed", e);
-
-                clusterDisconnect();
-
-                watch();
             }
         }
     }

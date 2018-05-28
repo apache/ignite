@@ -46,7 +46,6 @@ import org.apache.ignite.console.agent.handlers.ClusterListener;
 import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.agent.handlers.RestListener;
 import org.apache.ignite.console.agent.rest.RestExecutor;
-import org.apache.ignite.console.agent.rest.RestExecutorSecurity;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.json.JSONArray;
@@ -70,21 +69,6 @@ import static org.apache.ignite.console.agent.AgentUtils.trustManager;
 public class AgentLauncher {
     /** */
     private static final Logger log = LoggerFactory.getLogger(AgentLauncher.class);
-
-    /** */
-    private static final String EVENT_CLUSTER_BROADCAST_START = "cluster:broadcast:start";
-
-    /** */
-    private static final String EVENT_CLUSTER_BROADCAST_STOP = "cluster:broadcast:stop";
-
-    /** */
-    private static final String EVENT_CLUSTER_DISCONNECTED = "cluster:disconnected";
-
-    /** */
-    private static final String EVENT_DEMO_BROADCAST_START = "demo:broadcast:start";
-
-    /** */
-    private static final String EVENT_DEMO_BROADCAST_STOP = "demo:broadcast:stop";
 
     /** */
     private static final String EVENT_SCHEMA_IMPORT_DRIVERS = "schemaImport:drivers";
@@ -192,15 +176,6 @@ public class AgentLauncher {
      * On token reset listener.
      */
     private static final Emitter.Listener onLogWarning = new Emitter.Listener() {
-        @Override public void call(Object... args) {
-            log.warn(String.valueOf(args[0]));
-        }
-    };
-
-    /**
-     * On demo start request.
-     */
-    private static final Emitter.Listener onDemoStart = new Emitter.Listener() {
         @Override public void call(Object... args) {
             log.warn(String.valueOf(args[0]));
         }
@@ -365,7 +340,7 @@ public class AgentLauncher {
 
         final Socket client = IO.socket(uri, opts);
 
-        try (RestExecutor restExecutor = new RestExecutorSecurity(cfg.agentUser(), cfg.agentPassword());
+        try (RestExecutor restExecutor = new RestExecutor();
              ClusterListener clusterLsnr = new ClusterListener(cfg, client, restExecutor)) {
             Emitter.Listener onConnect = connectRes -> {
                 log.info("Connection established.");
