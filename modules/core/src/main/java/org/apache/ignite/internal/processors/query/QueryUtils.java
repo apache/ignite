@@ -598,13 +598,13 @@ public class QueryUtils {
         //Only if constraints applied to {@code _KEY}.
         if (!F.isEmpty(maxLengthInfo) && maxLengthInfo.containsKey(KEY_FIELD_NAME) && 
             !fields.containsKey(KEY_FIELD_NAME)) {
-            addSpecialValidateProp(ctx, qryEntity, d, KEY_FIELD_NAME);
+            addKeyValueValidationProperty(ctx, qryEntity, d, KEY_FIELD_NAME);
         }
 
         //Only if constraints applied to {@code _VAL}.
         if (!F.isEmpty(maxLengthInfo) && maxLengthInfo.containsKey(VAL_FIELD_NAME) &&
             !fields.containsKey(VAL_FIELD_NAME)) {
-            addSpecialValidateProp(ctx, qryEntity, d, VAL_FIELD_NAME);
+            addKeyValueValidationProperty(ctx, qryEntity, d, VAL_FIELD_NAME);
         }
 
         processIndexes(qryEntity, d);
@@ -619,7 +619,7 @@ public class QueryUtils {
      * @param name Field name.
      * @throws IgniteCheckedException
      */
-    private static void addSpecialValidateProp(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d, 
+    private static void addKeyValueValidationProperty(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d, 
         String name) throws IgniteCheckedException {
 
         Map<String, Object> dfltVals = qryEntity.getDefaultFieldValues();
