@@ -995,6 +995,12 @@ public class GridToStringBuilder {
         buf.a('}');
     }
 
+    /**
+     * Writes overflow message to buffer if needed.
+     *
+     * @param buf String builder buffer.
+     * @param size Size to compare with limit.
+     */
     private static void checkOverflow(SBLimitedLength buf, int size) {
         int overflow = size - COLLECTION_LIMIT;
 
