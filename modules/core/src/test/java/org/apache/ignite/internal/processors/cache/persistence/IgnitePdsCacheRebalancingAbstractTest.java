@@ -319,7 +319,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testTopologyChangesWithConstantLoad() throws Exception {
-        final long timeOut = U.currentTimeMillis() + 2 * 60 * 1000;
+        final long timeOut = U.currentTimeMillis() + 10 * 60 * 1000;
 
         final int entriesCnt = 10_000;
         final int maxNodesCnt = 4;
