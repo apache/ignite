@@ -171,7 +171,9 @@ class GridDhtPartitionSupplier {
         AffinityTopologyVersion curTop = grp.affinity().lastVersion();
         AffinityTopologyVersion demTop = d.topologyVersion();
 
-        if (curTop.compareTo(demTop) > 0) {
+        boolean sameAssignm = grp.affinity().cachedAffinity(curTop).clientEventChange();
+
+        if (curTop.compareTo(demTop) > 0 && !sameAssignm) {
             if (log.isDebugEnabled())
                 log.debug("Demand request outdated [grp=" + grp.cacheOrGroupName()
                         + ", currentTopVer=" + curTop
