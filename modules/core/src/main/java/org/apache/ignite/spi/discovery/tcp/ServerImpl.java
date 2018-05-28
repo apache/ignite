@@ -2882,9 +2882,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             boolean newNextNode = false;
 
+            // Used only if spi.topChangeTries > 0
+            CrossRingMessageSendState sndState = null;
+
             UUID locNodeId = getLocalNodeId();
 
-            while (true) {
+            ringLoop: while (true) {
                 TcpDiscoveryNode newNext = ring.nextNode(failedNodes);
 
                 if (newNext == null) {
@@ -2964,11 +2967,63 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 openSock = true;
 
                                 // Handshake.
-                                spi.writeToSocket(sock, out, new TcpDiscoveryHandshakeRequest(locNodeId),
+                                TcpDiscoveryHandshakeRequest hndMsg = new TcpDiscoveryHandshakeRequest(locNodeId);
+
+                                // Topology treated as changes if next node is not available.
+                                hndMsg.changeTopology(sndState != null && !sndState.isNext());
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Sending handshake [hndMsg=" + hndMsg + ", sndState=" + sndState + ']');
+
+                                spi.writeToSocket(sock, out, hndMsg,
                                     timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null,
                                     timeoutHelper.nextTimeoutChunk(ackTimeout0));
+
+                                if (log.isDebugEnabled())
+                                    log.info("Handshake response: " + res);
+
+                                if (res.changeTopology() && sndState != null) {
+                                    // Remote node checked connection to it's previous and got success.
+                                    TcpDiscoveryNode previousNode = sndState.previousNode();
+
+                                    if (previousNode != null) {
+                                        if (log.isDebugEnabled())
+                                            log.info("Got previous node: [previousNode=" + previousNode + ", sndState=" + sndState + ']');
+
+                                        failedNodes.remove(previousNode);
+                                    }
+                                    else {
+                                        if (log.isDebugEnabled())
+                                            log.info("Previous node is null, sndState=" + sndState);
+
+                                        newNextNode = false;
+
+                                        next = previousNode;
+                                    }
+
+                                    U.closeQuiet(sock);
+
+                                    sock = null;
+
+                                    if (sndState.isFailed()) {
+                                        U.warn(log, "Unable to join next nodes in a ring, " +
+                                            "it seems local node experiencing connectivity issues. Segmenting local node. " +
+                                            "This made to avoid case when one node fails a big part of cluster, to disable" +
+                                            " that behavior set TcpDiscoverySpi.setTopologyChangeTries() to non-positive number. " +
+                                            "[topChangeTries=" + spi.topChangeTries + ']');
+
+                                        notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+
+                                        return; // Nothing to do here.
+                                    }
+
+                                    if (previousNode != null && spi.topChangeDelay > 0)
+                                        Thread.sleep(spi.topChangeDelay);
+
+                                    continue ringLoop;
+                                }
 
                                 if (locNodeId.equals(res.creatorNodeId())) {
                                     if (log.isDebugEnabled())
@@ -3036,6 +3091,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                     next.lastSuccessfulAddress(addr);
                                 }
+                            }
+                            catch (InterruptedException e) {
+                                log.error("Interrupted on waiting topology change delay interval: " +
+                                    "[topChangeDelay=" + spi.topChangeDelay + ']', e);
+
+                                Thread.currentThread().interrupt();
+
+                                return;
                             }
                             catch (IOException | IgniteCheckedException e) {
                                 if (errs == null)
@@ -3259,7 +3322,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 } // Iterating node's addresses.
 
                 if (!sent) {
-                    if (!failedNodes.contains(next)) {
+                    if (sndState == null && spi.topChangeTries > 0)
+                        sndState = new CrossRingMessageSendState();
+
+                    boolean failedNextNode = sndState == null || sndState.failedNextNode(next);
+
+                    if (failedNextNode && !failedNodes.contains(next)) {
                         failedNodes.add(next);
 
                         if (state == CONNECTED) {
@@ -3273,6 +3341,42 @@ class ServerImpl extends TcpDiscoveryImpl {
                             U.warn(log, "Failed to send message to next node [msg=" + msg + ", next=" + next +
                                 ", errMsg=" + (err != null ? err.getMessage() : "N/A") + ']');
                         }
+                    }
+                    else if (!failedNextNode && sndState != null && sndState.isPrevious()) {
+                        TcpDiscoveryNode prev = sndState.previousNode();
+
+                        U.warn(log, "Failed to send message to next node, try previous [msg=" + msg + ", next=" + next +
+                            ", prev=" + prev + ']');
+
+                        if (prev != null) {
+                            failedNodes.remove(prev);
+
+                            if (spi.topChangeDelay > 0) {
+                                try {
+                                    Thread.sleep(spi.topChangeDelay);
+                                }
+                                catch (InterruptedException e) {
+                                    log.error("Interrupted on waiting topology change delay interval: " +
+                                        "[topChangeDelay=" + spi.topChangeDelay + ']', e);
+
+                                    Thread.currentThread().interrupt();
+
+                                    return;
+                                }
+                            }
+                        }
+                    }
+
+                    if (sndState != null && sndState.isFailed()) {
+                        U.warn(log, "Unable to join next nodes in a ring, " +
+                            "it seems local node experiencing connectivity issues. Segmenting local node. " +
+                            "This made to avoid case when one node fails a big part of cluster, to disable" +
+                            " that behavior set TcpDiscoverySpi.setTopologyChangeTries() to non-positive number. " +
+                            "[topChangeTries=" + spi.topChangeTries + ']');
+
+                        notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+
+                        return; // Nothing to do here.
                     }
 
                     next = null;
@@ -5854,6 +5958,27 @@ class ServerImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
 
+                    if (req.changeTopology()) {
+                        // Node cannot connect to it's next (local node previous).
+                        // Need to check connectivity to it.
+                        Set<TcpDiscoveryNode> failed;
+
+                        synchronized (mux) {
+                            failed = failedNodes.keySet();
+                        }
+
+                        TcpDiscoveryNode previous = ring.previousNode(failed);
+
+                        if (previous != null && !previous.id().equals(nodeId)) {
+                            boolean ok = pingNode(previous); // Check exchange time?
+
+                            if (log.isDebugEnabled())
+                                log.debug("Previous node node ping result: [res=" + ok + ", previous=" + previous + ']');
+
+                            res.changeTopology(ok); // now it means all fine for me, fuck off
+                        }
+                    }
+
                     if (req.client())
                         res.clientAck(true);
 
@@ -6832,5 +6957,118 @@ class ServerImpl extends TcpDiscoveryImpl {
         public void sock(Socket sock) {
             this.sock = sock;
         }
+    }
+
+    /**
+     *
+     */
+    private enum RingMessageSendState {
+        /** */
+        NEXT,
+
+        /** */
+        NEW_NEXT,
+
+        /** */
+        PREVIOUS,
+
+        /** */
+        FAILED
+    }
+
+    /**
+     * Initial state is {@link RingMessageSendState#NEXT}.<br>
+     * States could be switched:<br>
+     * {@link RingMessageSendState#NEXT} => {@link RingMessageSendState#NEW_NEXT} when next node failed.<br>
+     * {@link RingMessageSendState#NEW_NEXT} => {@link RingMessageSendState#NEW_NEXT} when next node failed.<br>
+     * {@link RingMessageSendState#NEW_NEXT} => {@link RingMessageSendState#PREVIOUS} when new next node has
+     * connection to it's previous node and forces local node to try it again.<br>
+     * {@link RingMessageSendState#PREVIOUS} => {@link RingMessageSendState#PREVIOUS} when previously tried node
+     * has connection to it's previous and forces local node to try it again.<br>
+     * {@link RingMessageSendState#PREVIOUS} => {@link RingMessageSendState#NEXT} when local node came back
+     * to initial next node and no topology changes should be performed.<br>
+     * {@link RingMessageSendState#PREVIOUS} => {@link RingMessageSendState#FAILED} when all tries exhausted and
+     * all new next nodes have connections to their previous nodes. That means local node has connectivity
+     * issue and should be stopped.<br>
+     */
+    private class CrossRingMessageSendState {
+        /** */
+        private RingMessageSendState state = RingMessageSendState.NEXT;
+
+        /** */
+        private LinkedList<TcpDiscoveryNode> testNodes = new LinkedList<>();
+
+        /** */
+        private int tries;
+
+        /**
+         * @return {@code True} if state is {@link RingMessageSendState#NEXT}.
+         */
+        boolean isNext() {
+            return state == RingMessageSendState.NEXT;
+        }
+
+        /**
+         * @return {@code True} if state is {@link RingMessageSendState#PREVIOUS}.
+         */
+        boolean isPrevious() {
+            return state == RingMessageSendState.PREVIOUS;
+        }
+
+        /**
+         * @return {@code True} if state is {@link RingMessageSendState#FAILED}.
+         */
+        boolean isFailed() {
+            return state == RingMessageSendState.FAILED;
+        }
+
+        /**
+         * Add next node to failed.
+         *
+         * @param next Next failed node.
+         * @return {@code True} if failed node added.
+         */
+        boolean failedNextNode(TcpDiscoveryNode next) {
+            if (state == RingMessageSendState.NEXT || state == RingMessageSendState.NEW_NEXT) {
+                state = RingMessageSendState.NEW_NEXT;
+
+                testNodes.addFirst(next);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * @return Previous node or {@code null} if no previous nodes left or incorrect state.
+         */
+        @Nullable TcpDiscoveryNode previousNode() {
+            if (state == RingMessageSendState.NEW_NEXT || state == RingMessageSendState.PREVIOUS) {
+                state = RingMessageSendState.PREVIOUS;
+
+                TcpDiscoveryNode previous = testNodes.pollFirst();
+
+                if (previous == null) {
+                    if (++tries == spi.topChangeTries) {
+                        state = RingMessageSendState.FAILED;
+
+                        return null;
+                    }
+
+                    state = RingMessageSendState.NEXT;
+                }
+
+                return previous;
+            }
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(CrossRingMessageSendState.class, this);
+        }
+
     }
 }

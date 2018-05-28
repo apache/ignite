@@ -55,9 +55,9 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpiInternalListener;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -277,6 +277,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Maximum ack timeout value for receiving message acknowledgement in milliseconds (value is <tt>600,000ms</tt>). */
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
+    /** Default tries to fail next node. */
+    public static final int DFLT_TOPOLOGY_CHANGE_TRIES = 3;
+
+    public static final int DFLT_TOPOLOGY_CHANGE_DELAY = 500;
+
     /** Ssl message pattern for StreamCorruptedException. */
     private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
 
@@ -310,6 +315,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
 
     /** Size of topology snapshots history. */
     protected int topHistSize = DFLT_TOP_HISTORY_SIZE;
+
+    /** Tries to tries to fail next node. */
+    protected int topChangeTries = DFLT_TOPOLOGY_CHANGE_TRIES;
+
+    /** Delay to wait before trying to re-connect to previously failed node. */
+    protected long topChangeDelay = DFLT_TOPOLOGY_CHANGE_DELAY;
 
     /** Grid discovery listener. */
     protected volatile DiscoverySpiListener lsnr;
@@ -992,6 +1003,62 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
         this.topHistSize = topHistSize;
 
         return this;
+    }
+
+    /**
+     * Gets number of tries to fail next node. For more info see
+     * {@link #setTopologyChangeTries(int)}.
+     *
+     * @return Number of tries to fail next node.
+     */
+    public int getTopologyChangeTries() {
+        return topChangeTries;
+    }
+
+    /**
+     * Sets number of tries to fail next node.
+     * <p>In case local node has
+     * temporary connectivity issues with part of the cluster, it may sequentially fail nodes
+     * one-by-one till successfully connect to one that has a fine connection with.
+     * This leads to fail of big number of nodes.
+     * </p>
+     * <p>
+     *     To overcome that issue, local node will do a sequential connection tries as before,
+     *     but now, successfully connected node will check if previous in a ring could be accessed
+     *     via network. If yes, then local node will try to connect already checked nodes in
+     *     reversed order unless will try again the regular next node. In other words,
+     *     node will recheck all nodes supposed as failed. This is one try.
+     * </p>
+     * <p>
+     *     Default is {@link #DFLT_TOPOLOGY_CHANGE_TRIES}.
+     * </p>
+     *
+     * @param topChangeTries Number of tries to fail next node. {@code 0} means node will not
+     * recheck failed nodes.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public void setTopologyChangeTries(int topChangeTries) {
+        this.topChangeTries = topChangeTries;
+    }
+
+    /**
+     * Gets delay between previous node rechecks. For more details see
+     * {@link #setTopologyChangeTries(int)}.
+     *
+     * @return Delay between previous node rechecks in millisecs.
+     */
+    public long getTopologyChangeDelay() {
+        return topChangeDelay;
+    }
+
+    /**
+     * Sets delay between previous node rechecks. For more details see
+     * {@link #setTopologyChangeTries(int)}.
+     *
+     * @param topChangeDelay delay between previous node rechecks in millisecs.
+     */
+    public void setTopologyChangeDelay(long topChangeDelay) {
+        this.topChangeDelay = topChangeDelay;
     }
 
     /** {@inheritDoc} */

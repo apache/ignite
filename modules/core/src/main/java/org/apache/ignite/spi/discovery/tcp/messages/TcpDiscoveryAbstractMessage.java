@@ -46,6 +46,9 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     protected static final int CLIENT_RECON_SUCCESS_FLAG_POS = 2;
 
     /** */
+    protected static final int CHANGE_TOPOLOGY_FLAG_POS = 3;
+
+    /** */
     protected static final int CLIENT_ACK_FLAG_POS = 4;
 
     /** */
@@ -231,6 +234,14 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
         setFlag(FORCE_FAIL_FLAG_POS, force);
     }
 
+    public boolean changeTopology() {
+        return getFlag(CHANGE_TOPOLOGY_FLAG_POS);
+    }
+
+    public void changeTopology(boolean changeTop) {
+        setFlag(CHANGE_TOPOLOGY_FLAG_POS, changeTop);
+    }
+
     /**
      * @return Pending message index.
      */
@@ -324,6 +335,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryAbstractMessage.class, this, "isClient", getFlag(CLIENT_FLAG_POS));
+        return S.toString(TcpDiscoveryAbstractMessage.class, this, "isClient", getFlag(CLIENT_FLAG_POS), "isChangeTopology", getFlag(CHANGE_TOPOLOGY_FLAG_POS));
     }
 }
