@@ -58,7 +58,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     public static final int MAX_HANDSHAKE_MSG_SIZE = 128;
 
     /** Connection-related metadata key. */
-    private static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+    static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
