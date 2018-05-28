@@ -92,9 +92,9 @@ public class GridCacheRebalancingCancelTest extends GridCommonAbstractTest {
         GridDhtPartitionDemander.RebalanceFuture fut = (GridDhtPartitionDemander.RebalanceFuture)ignite1.context().
             cache().internalCache(DHT_PARTITIONED_CACHE).preloader().rebalanceFuture();
 
-        String client = getTestIgniteInstanceName(2);
+        String igniteClntName = getTestIgniteInstanceName(2);
 
-        startGrid(client, optimize(getConfiguration(client).setClientMode(true)));
+        startGrid(igniteClntName, optimize(getConfiguration(igniteClntName).setClientMode(true)));
 
         // Resend delayed rebalance messages.
         TestRecordingCommunicationSpi.spi(ignite0).stopBlock(true);
