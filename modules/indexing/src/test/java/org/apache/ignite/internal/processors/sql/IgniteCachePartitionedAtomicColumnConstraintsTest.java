@@ -52,6 +52,8 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
     /** */
     private static final String STR_ORG_CACHE_NAME = "STR_ORG";
+    
+    private static final String STR_ORG_WITH_FIELDS_CACHE_NAME = "STR_ORG_WITH_FIELDS";
 
     /** */
     private static final String OBJ_CACHE_NAME = "ORG_ADDRESS";
@@ -90,6 +92,11 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
 
         jcache(grid(0), cacheConfiguration(new QueryEntity(String.class.getName(), Organization.class.getName())
             .setMaxLengthInfo(strOrgMaxLengthInfo)), STR_ORG_CACHE_NAME);
+
+        jcache(grid(0), cacheConfiguration(new QueryEntity(String.class.getName(), Organization.class.getName())
+            .addQueryField("name", "java.lang.String", "name")
+            .addQueryField("address", "java.lang.String", "address")
+            .setMaxLengthInfo(strOrgMaxLengthInfo)), STR_ORG_WITH_FIELDS_CACHE_NAME);
     }
 
     /**
@@ -152,7 +159,19 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testPutTooLongKeyFail2() throws Exception {
-        IgniteCache<String, Organization> cache = jcache(0, STR_ORG_CACHE_NAME);
+        doCheckPutTooLongKeyFail2(STR_ORG_CACHE_NAME);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTooLongKeyFail3() throws Exception {
+        doCheckPutTooLongKeyFail2(STR_ORG_WITH_FIELDS_CACHE_NAME);
+    }
+
+
+    private void doCheckPutTooLongKeyFail2(String cacheName) {
+        IgniteCache<String, Organization> cache = jcache(0, cacheName);
 
         T2<String, Organization> val = new T2<>("123456", new Organization("1"));
 
@@ -221,7 +240,18 @@ public class IgniteCachePartitionedAtomicColumnConstraintsTest extends GridCommo
      * @throws Exception If failed.
      */
     public void testPutLongKey2() throws Exception {
-        IgniteCache<String, Organization> cache = jcache(0, STR_ORG_CACHE_NAME);
+        doCheckPutLongKey2(STR_ORG_CACHE_NAME);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutLongKey3() throws Exception {
+        doCheckPutLongKey2(STR_ORG_WITH_FIELDS_CACHE_NAME);
+    }
+
+    private void doCheckPutLongKey2(String cacheName) {
+        IgniteCache<String, Organization> cache = jcache(0, cacheName);
 
         T2<String, Organization> key2 = new T2<>("12345", new Organization("1"));
 

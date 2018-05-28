@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -542,6 +543,7 @@ public class QueryUtils {
      */
     public static void processBinaryMeta(GridKernalContext ctx, QueryEntity qryEntity, QueryTypeDescriptorImpl d)
         throws IgniteCheckedException {
+        LinkedHashMap<String, String> fields = qryEntity.getFields();
         Set<String> keyFields = qryEntity.getKeyFields();
         Set<String> notNulls = qryEntity.getNotNullFields();
         Map<String, Object> dlftVals = qryEntity.getDefaultFieldValues();
@@ -559,13 +561,13 @@ public class QueryUtils {
         if (hasKeyFields && !isKeyClsSqlType) {
             //ensure that 'keyFields' is case sensitive subset of 'fields'
             for (String keyField : keyFields) {
-                if (!qryEntity.getFields().containsKey(keyField))
+                if (!fields.containsKey(keyField))
                     throw new IgniteCheckedException("QueryEntity 'keyFields' property must be a subset of keys " +
                         "from 'fields' property (case sensitive): " + keyField);
             }
         }
 
-        for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
+        for (Map.Entry<String, String> entry : fields.entrySet()) {
             Boolean isKeyField;
 
             if (isKeyClsSqlType) // We don't care about keyFields in this case - it might be null, or empty, or anything
@@ -593,9 +595,15 @@ public class QueryUtils {
             d.addProperty(prop, false);
         }
 
-        //Only if constraints applied to {@code _KEY} or {@code _VAL} field.
-        if (F.isEmpty(qryEntity.getFields()) && !F.isEmpty(maxLengthInfo)) {
+        //Only if constraints applied to {@code _KEY}.
+        if (!F.isEmpty(maxLengthInfo) && maxLengthInfo.containsKey(KEY_FIELD_NAME) && 
+            !fields.containsKey(KEY_FIELD_NAME)) {
             addSpecialValidateProp(ctx, qryEntity, d, KEY_FIELD_NAME);
+        }
+
+        //Only if constraints applied to {@code _VAL}.
+        if (!F.isEmpty(maxLengthInfo) && maxLengthInfo.containsKey(VAL_FIELD_NAME) &&
+            !fields.containsKey(VAL_FIELD_NAME)) {
             addSpecialValidateProp(ctx, qryEntity, d, VAL_FIELD_NAME);
         }
 
