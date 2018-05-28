@@ -166,10 +166,12 @@ public class GridDhtPartitionDemander {
     void stop() {
         try {
             rebalanceFut.cancel();
+
             latestRebFut.cancel();
         }
         catch (Exception ignored) {
             rebalanceFut.onDone(false);
+
             latestRebFut.onDone(false);
         }
 
