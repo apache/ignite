@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.util.lang.GridCursor;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.worker.GridWorker;
 
@@ -127,8 +128,11 @@ public class VacuumWorker  extends GridWorker {
                 }
 
                 if (!prevKey.equals(row.key())) {
-                    if (cleanupRows != null && !cleanupRows.isEmpty())
+                    if (!F.isEmpty(cleanupRows)) {
                         cleanup(part, prevKey, cleanupRows, cctx, metrics);
+
+                        cleanupRows = null;
+                    }
 
                     if (shared && curCacheId != row.cacheId()) {
                         curCacheId = row.cacheId();
@@ -149,7 +153,7 @@ public class VacuumWorker  extends GridWorker {
                 metrics.addScannedRowsCount(1);
             }
 
-            if (cleanupRows != null && !cleanupRows.isEmpty())
+            if (!F.isEmpty(cleanupRows))
                 cleanup(part, prevKey, cleanupRows, cctx, metrics);
 
             metrics.addSearchNanoTime(System.nanoTime() - startNanoTime - metrics.cleanupNanoTime());
