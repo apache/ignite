@@ -260,11 +260,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         ignite0.cluster().active(true);
 
-        ignite0.cache(CACHE).rebalance().get();
-        ignite1.cache(CACHE).rebalance().get();
-        ignite2.cache(CACHE).rebalance().get();
-        ignite3.cache(CACHE).rebalance().get();
-
         awaitPartitionMapExchange();
 
         IgniteCache<Integer, Integer> cache1 = ignite0.cache(CACHE);
@@ -272,15 +267,13 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         for (int i = 0; i < 1000; i++)
             cache1.put(i, i);
 
-        ignite0.context().cache().context().database().waitForCheckpoint("test");
-        ignite1.context().cache().context().database().waitForCheckpoint("test");
+        forceCheckpoint(ignite0);
+        forceCheckpoint(ignite1);
 
         info("++++++++++ After checkpoint");
 
         ignite2.close();
         ignite3.close();
-
-        resetBaselineTopology();
 
         ignite0.resetLostPartitions(Collections.singletonList(cache1.getName()));
 
@@ -301,10 +294,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         ignite2 = startGrid(2);
         ignite3 = startGrid(3);
 
-        resetBaselineTopology();
-
-        ignite2.cache(CACHE).rebalance().get();
-        ignite3.cache(CACHE).rebalance().get();
+        awaitPartitionMapExchange();
 
         IgniteCache<Integer, Integer> cache2 = ignite2.cache(CACHE);
         IgniteCache<Integer, Integer> cache3 = ignite3.cache(CACHE);
