@@ -33,8 +33,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Time;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -360,7 +362,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         evt = ctx.event();
     }
 
-    /** For test purposes only. */
+    /**
+     * For test purposes only.
+     *
+     * @param ioFactory IO factory.
+     */
     public void setFileIOFactory(FileIOFactory ioFactory) {
         this.ioFactory = ioFactory;
     }
@@ -1329,6 +1335,29 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             checkFiles(0, false, null, null);
     }
 
+    /** {@inheritDoc} */
+    public void cleanupWalDirectories() throws IgniteCheckedException {
+        try {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(walWorkDir.toPath())) {
+                for (Path path : files)
+                    Files.delete(path);
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to cleanup wal work directory: " + walWorkDir, e);
+        }
+
+        try {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(walArchiveDir.toPath())) {
+                for (Path path : files)
+                    Files.delete(path);
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to cleanup wal archive directory: " + walArchiveDir, e);
+        }
+    }
+
     /**
      * Clears whole the file, fills with zeros for Default mode.
      *
@@ -1591,29 +1620,21 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     if (stopped)
                         break;
 
-                    try {
-                        final SegmentArchiveResult res = archiveSegment(toArchive);
+                    final SegmentArchiveResult res = archiveSegment(toArchive);
 
-                        synchronized (this) {
-                            while (locked.containsKey(toArchive) && !stopped)
-                                wait();
+                    synchronized (this) {
+                        while (locked.containsKey(toArchive) && !stopped)
+                            wait();
 
-                            // Then increase counter to allow rollover on clean working file
-                            changeLastArchivedIndexAndNotifyWaiters(toArchive);
+                        // Then increase counter to allow rollover on clean working file
+                        changeLastArchivedIndexAndNotifyWaiters(toArchive);
 
-                            notifyAll();
-                        }
-
-                        if (evt.isRecordable(EventType.EVT_WAL_SEGMENT_ARCHIVED))
-                            evt.record(new WalSegmentArchivedEvent(cctx.discovery().localNode(),
-                                res.getAbsIdx(), res.getDstArchiveFile()));
+                        notifyAll();
                     }
-                    catch (IgniteCheckedException e) {
-                        synchronized (this) {
-                            cleanErr = e;
 
-                            notifyAll();
-                        }
+                    if (evt.isRecordable(EventType.EVT_WAL_SEGMENT_ARCHIVED)) {
+                        evt.record(new WalSegmentArchivedEvent(cctx.discovery().localNode(),
+                            res.getAbsIdx(), res.getDstArchiveFile()));
                     }
                 }
             }

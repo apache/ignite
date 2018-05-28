@@ -85,6 +85,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
+import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -524,7 +525,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!U.mkdirs(cpDir))
                 throw new IgniteCheckedException("Could not create directory for checkpoint metadata: " + cpDir);
 
-            cleanupCheckpointDirectory();
+            cleanupTempCheckpointDirectory();
 
             final FileLockHolder preLocked = kernalCtx.pdsFolderResolver()
                 .resolveFolders()
@@ -542,7 +543,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Cleanup checkpoint directory from all temporary files {@link #FILE_TMP_SUFFIX}.
      */
-    private void cleanupCheckpointDirectory() throws IgniteCheckedException {
+    private void cleanupTempCheckpointDirectory() throws IgniteCheckedException {
         try {
             try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath(), new DirectoryStream.Filter<Path>() {
                 @Override
@@ -550,6 +551,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     return path.endsWith(FILE_TMP_SUFFIX);
                 }
             })) {
+                for (Path path : files)
+                    Files.delete(path);
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to cleanup checkpoint directory from temporary files: " + cpDir, e);
+        }
+    }
+
+    /**
+     * Cleanup checkpoint directory.
+     */
+    public void cleanupCheckpointDirectory() throws IgniteCheckedException {
+        try {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath())) {
                 for (Path path : files)
                     Files.delete(path);
             }
@@ -1056,6 +1072,51 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         memMetrics.pageMemory(pageMem);
 
         return pageMem;
+    }
+
+    /**
+     * @param memoryProvider0 Memory provider.
+     * @param memMetrics Memory metrics.
+     * @return Wrapped memory provider.
+     */
+    @Override protected DirectMemoryProvider wrapMetricsMemoryProvider(
+            final DirectMemoryProvider memoryProvider0,
+            final DataRegionMetricsImpl memMetrics
+    ) {
+        return new DirectMemoryProvider() {
+            private AtomicInteger checkPointBufferIdxCnt = new AtomicInteger();
+
+            private final DirectMemoryProvider memProvider = memoryProvider0;
+
+            @Override public void initialize(long[] chunkSizes) {
+                memProvider.initialize(chunkSizes);
+
+                checkPointBufferIdxCnt.set(chunkSizes.length);
+            }
+
+            @Override public void shutdown() {
+                memProvider.shutdown();
+            }
+
+            @Override public DirectMemoryRegion nextRegion() {
+                DirectMemoryRegion nextMemoryRegion = memProvider.nextRegion();
+
+                if (nextMemoryRegion == null)
+                    return null;
+
+                int idx = checkPointBufferIdxCnt.decrementAndGet();
+
+                long chunkSize = nextMemoryRegion.size();
+
+                // Checkpoint chunk last in the long[] chunkSizes.
+                if (idx != 0)
+                    memMetrics.updateOffHeapSize(chunkSize);
+                else
+                    memMetrics.updateCheckpointBufferSize(chunkSize);
+
+                return nextMemoryRegion;
+            }
+        };
     }
 
     /**

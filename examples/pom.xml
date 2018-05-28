@@ -46,6 +46,17 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-spring</artifactId>
             <version>${project.version}</version>
+            <!--Remove exclusion while upgrading ignite-spring version to 5.0-->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-beans</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -57,11 +68,6 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-indexing</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-       <dependency>
-            <groupId>org.apache.ignite</groupId>
-            <artifactId>ignite-ml</artifactId>
             <version>${project.version}</version>
         </dependency>
 
