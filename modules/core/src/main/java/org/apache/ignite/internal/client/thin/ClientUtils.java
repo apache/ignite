@@ -398,7 +398,6 @@ final class ClientUtils {
                             .setValueFieldName(reader.readString());
 
                         boolean isCliVer1_2 = ver.compareTo(VER_1_2_0) >= 0;
-                        
 
                         Collection<QueryField> qryFields = ClientUtils.collection(
                             in,
