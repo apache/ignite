@@ -211,7 +211,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         long total = startSize;
 
-        long allocChunkSize = Math.max((maxSize - startSize) / (SEG_CNT - 1), 256 * 1024 * 1024);
+        long allocChunkSize = Math.max((maxSize - startSize) / (SEG_CNT - 1), 256L * 1024 * 1024);
 
         int lastIdx = 0;
 
@@ -231,7 +231,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         if (lastIdx != SEG_CNT - 1)
             chunks = Arrays.copyOf(chunks, lastIdx + 1);
 
-        directMemoryProvider.initialize(chunks);
+        if (segments == null)
+            directMemoryProvider.initialize(chunks);
 
         addSegment(null);
     }

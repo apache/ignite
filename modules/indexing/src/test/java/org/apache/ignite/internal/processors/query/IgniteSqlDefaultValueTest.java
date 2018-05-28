@@ -72,13 +72,6 @@ public class IgniteSqlDefaultValueTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         Collection<String> tblNames = new ArrayList<>();
 

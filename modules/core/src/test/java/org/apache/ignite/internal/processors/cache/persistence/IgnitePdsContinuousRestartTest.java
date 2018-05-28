@@ -83,7 +83,7 @@ public class IgnitePdsContinuousRestartTest extends GridCommonAbstractTest {
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setMaxSize(400 * 1024 * 1024)
+                    .setMaxSize(400L * 1024 * 1024)
                     .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY)
             .setCheckpointFrequency(checkpointDelay);

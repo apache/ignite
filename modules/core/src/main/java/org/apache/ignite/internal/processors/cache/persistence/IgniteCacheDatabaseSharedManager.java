@@ -79,7 +79,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     static final String SYSTEM_DATA_REGION_NAME = "sysMemPlc";
 
     /** Minimum size of memory chunk */
-    private static final long MIN_PAGE_MEMORY_SIZE = 10 * 1024 * 1024;
+    private static final long MIN_PAGE_MEMORY_SIZE = 10L * 1024 * 1024;
 
     /** Maximum initial size on 32-bit JVM */
     private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
@@ -732,6 +732,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * No-op for non-persistent storage.
      */
     public void checkpointReadUnlock() {
+        // No-op.
+    }
+
+    /**
+     * No-op for non-persistent storage.
+     */
+    public void cleanupCheckpointDirectory() throws IgniteCheckedException {
         // No-op.
     }
 

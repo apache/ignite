@@ -99,11 +99,6 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
         startGridsMultiThreaded(gridCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @return Cache mode.
      */
