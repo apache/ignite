@@ -22,7 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicStampedReference;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerDiedException;
 import org.apache.ignite.internal.util.worker.GridWorkerFailureException;
@@ -49,8 +49,8 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     /** */
     private volatile long lastCheckStartTimestamp = System.currentTimeMillis();
 
-    /** Atomic pair of checker thread and check counter. */
-    private AtomicStampedReference<Thread> lastChecker = new AtomicStampedReference<>(Thread.currentThread(), 0);
+    /** Last thread that performed the check. Null reference denotes "checking is in progress". */
+    private AtomicReference<Thread> lastChecker = new AtomicReference<>(Thread.currentThread());
 
     /**
      * Adds worker to the registry.
@@ -106,71 +106,56 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
 
     /** {@inheritDoc} */
     @Override public void onIdle(GridWorker w) throws GridWorkerFailureException {
-        if (System.currentTimeMillis() - lastCheckStartTimestamp <= CHECK_INTERVAL_MS)
+        Thread prevCheckerThread = lastChecker.get();
+
+        if (prevCheckerThread == null ||
+            System.currentTimeMillis() - lastCheckStartTimestamp <= CHECK_INTERVAL_MS ||
+            !lastChecker.compareAndSet(prevCheckerThread, null))
             return;
 
-        System.err.println("PEERCHECK: thread " + Thread.currentThread().getName() + " detects time to check");
+        try {
+            lastCheckStartTimestamp = System.currentTimeMillis();
 
-        // Prevent further races on successful lastCheckerThread CAS.
-        lastCheckStartTimestamp = System.currentTimeMillis();
-
-        Thread prevCheckerThread = lastChecker.getReference();
-
-        int prevCheckCnt = lastChecker.getStamp();
-
-        System.err.println("PEERCHECK: thread " + Thread.currentThread().getName() + " attempts CAS:" + prevCheckerThread + "," + Thread.currentThread() + " -> " + prevCheckCnt + "," + (prevCheckCnt + 1));
-
-        if (!lastChecker.compareAndSet(prevCheckerThread, Thread.currentThread(), prevCheckCnt, prevCheckCnt + 1)
-            || lastChecker.getStamp() != prevCheckCnt + 1
-            || lastChecker.getReference() != Thread.currentThread())
-            // TODO IGNITE-6587: WTF? Still allows 2 threads to pass simultaneously.
-            // No use to recover lastCheckStartTimestamp: some other thread is starting a check concurrently.
-            return;
-
-        System.err.println("PEERCHECK: thread " + Thread.currentThread().getName() + " succeeds to CAS");
-
-        // Due to thread scheduling issues, there is no strict guaranty that only one thread will run the code below
-        // at a time, but the only downside of this is the concurrent use of registeredWorkers iterator,
-        // which is acceptable.
-
-        for (int i = 0; i < NO_OF_WORKERS_TO_CHECK_AT_ONCE; i++) {
-            if (!checkIter.hasNext()) {
-                checkIter = registeredWorkers.entrySet().iterator();
-
-                if (!checkIter.hasNext())
-                    return;
-            }
-
-            GridWorker worker = checkIter.next().getValue();
-
-            Thread runner = worker.runner();
-
-            if (runner != null && runner != Thread.currentThread()) {
-                System.err.println("PEERCHECK: thread " + Thread.currentThread().getName() + " checks worker " + worker);
-
-                if (!runner.isAlive()) {
-                    // In normal operation GridWorker implementation guarantees:
-                    // worker termination happens before its removal from registeredWorkers.
-                    // That is, if worker is dead, but still resides in registeredWorkers
-                    // then something went wrong, the only extra thing is to test
-                    // whether the iterator refers to actual state of registeredWorkers.
-                    GridWorker workerAgain = registeredWorkers.get(worker.runner().getName());
-
-                    if (workerAgain != null && workerAgain == worker)
-                        throw new GridWorkerDiedException(worker);
-
+            for (int i = 0; i < NO_OF_WORKERS_TO_CHECK_AT_ONCE; i++) {
+                if (!checkIter.hasNext()) {
                     checkIter = registeredWorkers.entrySet().iterator();
+
+                    if (!checkIter.hasNext())
+                        return;
                 }
 
-                if (System.currentTimeMillis() - worker.heartbeatTimeMillis() > worker.criticalHeartbeatTimeoutMs()) {
-                    GridWorker workerAgain = registeredWorkers.get(worker.runner().getName());
+                GridWorker worker = checkIter.next().getValue();
 
-                    if (workerAgain != null && workerAgain == worker)
-                        throw new GridWorkerIsHangingException(worker);
+                Thread runner = worker.runner();
 
-                    checkIter = registeredWorkers.entrySet().iterator();
+                if (runner != null && runner != Thread.currentThread()) {
+                    if (!runner.isAlive()) {
+                        // In normal operation GridWorker implementation guarantees:
+                        // worker termination happens before its removal from registeredWorkers.
+                        // That is, if worker is dead, but still resides in registeredWorkers
+                        // then something went wrong, the only extra thing is to test
+                        // whether the iterator refers to actual state of registeredWorkers.
+                        GridWorker workerAgain = registeredWorkers.get(worker.runner().getName());
+
+                        if (workerAgain != null && workerAgain == worker)
+                            throw new GridWorkerDiedException(worker);
+
+                        checkIter = registeredWorkers.entrySet().iterator();
+                    }
+
+                    if (System.currentTimeMillis() - worker.heartbeatTimeMillis() > worker.criticalHeartbeatTimeoutMs()) {
+                        GridWorker workerAgain = registeredWorkers.get(worker.runner().getName());
+
+                        if (workerAgain != null && workerAgain == worker)
+                            throw new GridWorkerIsHangingException(worker);
+
+                        checkIter = registeredWorkers.entrySet().iterator();
+                    }
                 }
             }
+        }
+        finally {
+            lastChecker.set(Thread.currentThread());
         }
     }
 }
