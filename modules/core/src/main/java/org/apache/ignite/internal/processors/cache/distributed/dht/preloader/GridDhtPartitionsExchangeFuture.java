@@ -523,6 +523,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * @return {@code True} if there are caches to start.
+     */
+    public boolean hasCachesToStart() {
+        return exchActions != null && !exchActions.cacheStartRequests().isEmpty();
+    }
+
+    /**
      * @return First event discovery event.
      *
      */
@@ -1158,7 +1165,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         boolean distributed = true;
 
         // Do not perform distributed partition release in case of cluster activation or caches start.
-        if (activateCluster() || (exchangeActions() != null && !exchangeActions().cacheGroupsToStart().isEmpty()))
+        if (activateCluster() || hasCachesToStart())
             distributed = false;
 
         // On first phase we wait for finishing all local tx updates, atomic updates and lock releases on all nodes.
@@ -2606,7 +2613,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
 
             // Don't validate partitions state in case of caches start.
-            boolean skipValidation = exchangeActions() != null && !exchangeActions().cacheGroupsToStart().isEmpty();
+            boolean skipValidation = hasCachesToStart();
 
             if (!skipValidation)
                 validatePartitionsState();
