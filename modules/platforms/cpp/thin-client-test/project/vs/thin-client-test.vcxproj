@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\auth_test.cpp" />
     <ClCompile Include="..\..\src\ignite_client_test.cpp" />
     <ClCompile Include="..\..\src\ssl_test.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_boost.cpp" />
@@ -47,6 +48,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\config\auth-32.xml" />
+    <None Include="..\..\config\auth-default.xml" />
+    <None Include="..\..\config\auth.xml" />
     <None Include="..\..\config\cache-32.xml" />
     <None Include="..\..\config\cache-default.xml" />
     <None Include="..\..\config\cache.xml" />

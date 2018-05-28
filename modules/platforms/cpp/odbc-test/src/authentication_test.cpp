@@ -32,7 +32,7 @@
 
 #include "test_utils.h"
 #include "odbc_test_suite.h"
-#include "../../core-test/include/ignite/test_type.h"
+#include "test_type.h"
 
 using namespace ignite;
 using namespace ignite::common;
