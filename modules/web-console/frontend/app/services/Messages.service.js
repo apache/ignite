@@ -64,9 +64,9 @@ export default ['IgniteMessages', ['$alert', ($alert) => {
 
         let title = err ? errorMessage(message, err) : errorMessage(null, message);
 
-        if (title.startsWith('Failed to authenticate remote client (invalid credentials?)'))
+        if (title.includes('Failed to authenticate remote client (invalid credentials?)'))
             title = 'Failed to authenticate in cluster with provided credentials';
-        else if (title.startsWith('Authorization failed'))
+        else if (title.includes('Authorization failed'))
             title = 'Access denied. You are not authorized to access this functionality.<br/> Contact your cluster administrator.';
 
         msgModal = $alert({type, title, duration});
