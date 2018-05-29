@@ -56,9 +56,4 @@ public class IgnitePdsAtomicCacheHistoricalRebalancingTest extends IgnitePdsAtom
         if (!walRebalanceInvoked)
             throw new AssertionError("WAL rebalance hasn't been invoked.");
     }
-
-    /** {@inheritDoc} */
-    @Override public void testRebalancingOnRestartAfterCheckpoint() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8610");
-    }
 }

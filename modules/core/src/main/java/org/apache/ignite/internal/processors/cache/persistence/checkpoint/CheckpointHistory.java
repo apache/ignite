@@ -207,7 +207,7 @@ public class CheckpointHistory {
 
         chp.walFilesDeleted(deleted);
 
-        if (!chp.hasDelta())
+        if (!chp.hasDelta() && chp.checkpointEntry() != null)
             cctx.wal().allowCompressionUntil(chp.checkpointEntry().checkpointMark());
 
         return removed;
@@ -221,7 +221,7 @@ public class CheckpointHistory {
      * @param partCntrSince Partition counter or {@code null} to search for minimal counter.
      * @return Checkpoint entry or {@code null} if failed to search.
      */
-    @Nullable public WALPointer searchPartitionCounter(int grpId, int part, @Nullable Long partCntrSince) {
+    @Nullable public WALPointer searchPartitionCounter(int grpId, int part, long partCntrSince) {
         CheckpointEntry entry = searchCheckpointEntry(grpId, part, partCntrSince);
 
         if (entry == null)
@@ -238,61 +238,40 @@ public class CheckpointHistory {
      * @param partCntrSince Partition counter or {@code null} to search for minimal counter.
      * @return Checkpoint entry or {@code null} if failed to search.
      */
-    @Nullable public CheckpointEntry searchCheckpointEntry(int grpId, int part, @Nullable Long partCntrSince) {
-        boolean hasGap = false;
-        CheckpointEntry first = null;
-
-        for (Long cpTs : checkpoints()) {
+    @Nullable public CheckpointEntry searchCheckpointEntry(int grpId, int part, long partCntrSince) {
+        for (Long cpTs : checkpoints(true)) {
             try {
                 CheckpointEntry entry = entry(cpTs);
 
                 Long foundCntr = entry.partitionCounter(cctx, grpId, part);
 
-                if (foundCntr != null) {
-                    if (partCntrSince == null) {
-                        if (hasGap) {
-                            first = entry;
-
-                            hasGap = false;
-                        }
-
-                        if (first == null)
-                            first = entry;
-                    }
-                    else if (foundCntr <= partCntrSince) {
-                        first = entry;
-
-                        hasGap = false;
-                    }
-                    else
-                        return hasGap ? null : first;
-                }
-                else
-                    hasGap = true;
+                if (foundCntr != null && foundCntr <= partCntrSince)
+                    return entry;
             }
             catch (IgniteCheckedException ignore) {
-                // Treat exception the same way as a gap.
-                hasGap = true;
+                break;
             }
         }
 
-        return hasGap ? null : first;
+        return null;
     }
 
     /**
-     * Finds and reserves earliest valid checkpoint for each given groups and partitions.
+     * Finds and reserves earliest valid checkpoint for each of given groups and partitions.
      *
-     * @param applicableGroupsAndPartitions Groups and partitions to find and reserve earliest valid checkpoint.
+     * @param groupsAndPartitions Groups and partitions to find and reserve earliest valid checkpoint.
      *
      * @return Map (groupId, Map (partitionId, earliest valid checkpoint to history search)).
      */
     public Map<Integer, Map<Integer, CheckpointEntry>> searchAndReserveCheckpoints(
-        final Map<Integer, Set<Integer>> applicableGroupsAndPartitions
+        final Map<Integer, Set<Integer>> groupsAndPartitions
     ) {
-        if (F.isEmpty(applicableGroupsAndPartitions))
+        if (F.isEmpty(groupsAndPartitions))
             return Collections.emptyMap();
 
         final Map<Integer, Map<Integer, CheckpointEntry>> res = new HashMap<>();
+
+        CheckpointEntry prevReserved = null;
 
         // Iterate over all possible checkpoints starting from latest and moving to earliest.
         for (Long cpTs : checkpoints(true)) {
@@ -307,54 +286,67 @@ public class CheckpointHistory {
                 if (!reserved)
                     break;
 
-                // If WAL was disabled locally or globally after this checkpoint exclude such group from search.
-                for (Integer grpId : applicableGroupsAndPartitions.keySet())
-                    if (walWasDisabledForCp(grpId, chpEntry))
-                        applicableGroupsAndPartitions.remove(grpId);
+                for (Integer grpId : groupsAndPartitions.keySet())
+                    if (!isCheckpointApplicableForGroup(grpId, chpEntry))
+                        groupsAndPartitions.remove(grpId);
 
-                Map<Integer, CheckpointEntry.GroupState> cpGroupStates = chpEntry.groupState(cctx);
-
-                // If group state wasn't persisted, exclude such group from search.
-                for (Integer grpId : applicableGroupsAndPartitions.keySet())
-                    if (!cpGroupStates.containsKey(grpId))
-                        applicableGroupsAndPartitions.remove(grpId);
-
-                // No more applicable groups left, release history and stop searching.
-                if (applicableGroupsAndPartitions.isEmpty()) {
+                // All groups are no more applicable, release history and stop searching.
+                if (groupsAndPartitions.isEmpty()) {
                     cctx.wal().release(chpEntry.checkpointMark());
 
                     break;
                 }
 
-                for (Map.Entry<Integer, CheckpointEntry.GroupState> state : cpGroupStates.entrySet()) {
+                // Release previous checkpoint marker.
+                if (prevReserved != null)
+                    cctx.wal().release(prevReserved.checkpointMark());
+
+                prevReserved = chpEntry;
+
+                for (Map.Entry<Integer, CheckpointEntry.GroupState> state : chpEntry.groupState(cctx).entrySet()) {
                     int grpId = state.getKey();
                     CheckpointEntry.GroupState cpGroupState = state.getValue();
 
-                    Set<Integer> applicablePartitions = applicableGroupsAndPartitions.get(grpId);
+                    Set<Integer> applicablePartitions = groupsAndPartitions.get(grpId);
 
                     if (F.isEmpty(applicablePartitions))
                         continue;
 
-                    for (Integer partId : applicableGroupsAndPartitions.get(grpId)) {
+                    for (Integer partId : groupsAndPartitions.get(grpId)) {
                         int pIdx = cpGroupState.indexByPartition(partId);
 
                         if (pIdx >= 0)
                             res.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, chpEntry);
-                        else // Partition is no more applicable for history search, exclude
+                        else // Partition is no more applicable for history search, exclude partition from searching.
                             applicablePartitions.remove(partId);
                     }
                 }
             }
             catch (IgniteCheckedException ex) {
-                U.error(log, "Failed to read checkpoint entry: " + (chpEntry != null ? chpEntry : "none"), ex);
+                U.error(log, "Failed to process checkpoint: " + (chpEntry != null ? chpEntry : "none"), ex);
             }
         }
 
         return res;
     }
 
-    public boolean walWasDisabledForCp(int grpId, CheckpointEntry cp) {
-        // metastorage read...
-        return false;
+    /**
+     * Checkpoint is not applicable when:
+     * 1) WAL was disabled somewhere after given checkpoint.
+     * 2) Checkpoint doesn't contain specified {@code grpId}.
+     *
+     * @param grpId Group ID.
+     * @param cp Checkpoint.
+     */
+    private boolean isCheckpointApplicableForGroup(int grpId, CheckpointEntry cp) throws IgniteCheckedException {
+        GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager) cctx.database();
+
+        if (dbMgr.walWasDisabledAfterCp(cp.timestamp(), grpId))
+            return false;
+
+        if (!cp.groupState(cctx).containsKey(grpId))
+            return false;
+
+        return true;
     }
 }

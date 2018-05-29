@@ -483,6 +483,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (!kernalCtx.clientNode()) {
             checkpointer = new Checkpointer(cctx.igniteInstanceName(), "db-checkpoint-thread", log);
 
+            cpHistory = new CheckpointHistory(kernalCtx);
+
             IgnitePageStoreManager store = cctx.pageStore();
 
             assert store instanceof FilePageStoreManager : "Invalid page store manager was created: " + store;
@@ -1692,18 +1694,31 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (reservedForExchange == null)
             return;
 
+        FileWALPointer earliestPtr = null;
+
         for (Map.Entry<Integer, Map<Integer, T2<Long, WALPointer>>> e : reservedForExchange.entrySet()) {
             for (Map.Entry<Integer, T2<Long, WALPointer>> e0 : e.getValue().entrySet()) {
-                try {
-                    cctx.wal().release(e0.getValue().get2());
-                }
-                catch (IgniteCheckedException ex) {
-                    U.error(log, "Could not release history lock", ex);
-                }
+                FileWALPointer ptr = (FileWALPointer) e0.getValue().get2();
+
+                if (earliestPtr == null || ptr.index() < earliestPtr.index())
+                    earliestPtr = ptr;
             }
         }
 
         reservedForExchange = null;
+
+        if (earliestPtr == null)
+            return;
+
+        assert cctx.wal().reserved(earliestPtr)
+            : "Earliest checkpoint WAL pointer is not reserved for exchange: " + earliestPtr;
+
+        try {
+            cctx.wal().release(earliestPtr);
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Failed to release earliest checkpoint WAL pointer: " + earliestPtr, e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -2743,7 +2758,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @return Checkpoint history.
      */
-    public CheckpointHistory checkpointHistory() {
+    @Nullable public CheckpointHistory checkpointHistory() {
         return cpHistory;
     }
 
@@ -4273,7 +4288,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return {@code true} if WAL was disabled after checkpoint with timestamp {@code cpTs}.
      * @throws IgniteCheckedException If failed to check.
      */
-    private boolean walWasDisabledAfterCp(Long cpTs, int grpId) throws IgniteCheckedException {
+    public boolean walWasDisabledAfterCp(Long cpTs, int grpId) throws IgniteCheckedException {
         return metaStorage.read(walDisabledAfterCpAndGroupIdToKey(cpTs, grpId)) != null;
     }
 

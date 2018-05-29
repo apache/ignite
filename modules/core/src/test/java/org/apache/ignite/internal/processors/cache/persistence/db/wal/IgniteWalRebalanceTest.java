@@ -209,8 +209,6 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWithLocalWalChange() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8610");
-
         System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, "true");
 
         IgniteEx crd = (IgniteEx) startGrids(4);
