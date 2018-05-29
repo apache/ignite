@@ -50,7 +50,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.datastructures.CacheSetHeader;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader;
@@ -58,7 +57,6 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueProxy;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeaderKey;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeaderV2;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.internal.processors.datastructures.GridTransactionalCacheQueueImpl;
@@ -84,7 +82,7 @@ import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Non collocated IgniteSet will use separate cache if all nodes in cluster is not older then specified version. */
     // TODO Set current snapshot version before merge.
-    public static final IgniteProductVersion SEPARATE_CACHE_SET_SINCE = IgniteProductVersion.fromString("2.5.0");
+    public static final IgniteProductVersion SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE = IgniteProductVersion.fromString("2.5.0");
 
     /** Known classes which are safe to use on server nodes. */
     private static final Collection<Class<?>> KNOWN_CLS = new HashSet<>();
@@ -429,22 +427,23 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         try {
             GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
-            CacheSetHeader hdr;
+            GridCacheSetHeader hdr;
 
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
             if (create) {
-                hdr = U.isIgniteVersionAtLeast(SEPARATE_CACHE_SET_SINCE, cctx.grid().cluster().nodes()) ?
-                    new GridCacheSetHeaderV2(IgniteUuid.randomUuid(), collocated) :
-                    new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
+                if (U.isIgniteVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE, cctx.grid().cluster().nodes()))
+                    hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated, GridCacheSetHeader.V2);
+                else
+                    hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated, GridCacheSetHeader.V1);
 
-                CacheSetHeader old = (CacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
+                GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
 
                 if (old != null)
                     hdr = old;
             }
             else
-                hdr = (CacheSetHeader)cache.get(key);
+                hdr = (GridCacheSetHeader)cache.get(key);
 
             if (hdr == null)
                 return null;

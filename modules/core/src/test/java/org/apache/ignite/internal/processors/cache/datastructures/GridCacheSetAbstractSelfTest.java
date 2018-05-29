@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -48,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -59,6 +56,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader.V2;
 
 /**
  * Cache set tests.
@@ -809,7 +807,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         GridCacheContext cctx = GridTestUtils.getFieldValue(set0, "cctx");
 
-        boolean separateCacheMode = !compatibilityMode(set0) && !set0.collocated();
+        boolean separateCacheMode = version(set0) == V2 && !set0.collocated();
 
         for (int i = 0; i < gridCount(); i++) {
             GridCacheAdapter cache = grid(i).context().cache().internalCache(cctx.name());
@@ -1039,7 +1037,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set3 = ignite.set("set3", colCfg);
         IgniteSet set4 = ignite.set("set4", colCfg);
 
-        if (!compatibilityMode(set4) && !set4.collocated())
+        if (!set4.collocated() && version(set4) == V2)
             assertTrue(cctx(set3).cacheId() != cctx(set4).cacheId());
         else
             assertTrue(cctx(set3).cacheId() == cctx(set4).cacheId());
@@ -1062,7 +1060,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set7 = ignite.set("set7", colCfg);
         IgniteSet set8 = ignite.set("set8", colCfg);
 
-        if (!compatibilityMode(set8) && !set8.collocated())
+        if (!set8.collocated() && version(set8) == V2)
             assertTrue(cctx(set7).cacheId() != cctx(set8).cacheId());
         else
             assertTrue(cctx(set7).cacheId() == cctx(set8).cacheId());
@@ -1152,74 +1150,6 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         set1.close();
         set3.close();
-    }
-
-    /**
-     * Basic compatibility check.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCompatibility() throws Exception {
-        if (gridCount() < 2)
-            return;
-
-        Ignite node = grid(0);
-
-        IgniteProductVersion currVer = node.version();
-        IgniteProductVersion newVer = new IgniteProductVersion(currVer.major(), currVer.minor(),
-            (byte) (currVer.maintenance() + 1), currVer.revisionTimestamp(), currVer.revisionHash());
-
-        setUpSeparateCacheModeSince(newVer);
-
-        IgniteSet<Integer> v1set0 = grid(0).set("v1set", config(false));
-
-        assertTrue(compatibilityMode(v1set0));
-
-        setUpSeparateCacheModeSince(currVer);
-
-        IgniteSet<Integer> v2set1 = grid(1).set("v2set", config(false));
-        IgniteSet<Integer> v1set1 = grid(1).set("v1set", config(false));
-
-        assertFalse(compatibilityMode(v2set1));
-        assertTrue(compatibilityMode(v1set1));
-
-        assertSame(v1set1, grid(1).set("v1set", null));
-        assertNotSame(v1set0, v1set1);
-
-        assertEquals(v1set0.size(), v1set1.size());
-
-        assertTrue(v1set0.add(1));
-        assertFalse(v1set1.add(1));
-
-        assertEquals(v1set0.size(), v1set1.size());
-        assertEquals(1, v1set1.size());
-
-        assertTrue(v1set1.remove(1));
-        assertFalse(v1set0.remove(1));
-
-        assertEquals(v1set0.size(), v1set1.size());
-        assertEquals(0, v1set1.size());
-
-        v2set1.close();
-        v1set1.close();
-    }
-
-    /**
-     * Set up {@link IgniteProductVersion} from which data structure manager can create IgniteSet version
-     * that is using separate cache.
-     *
-     * @param ver Ignite product version from which new version of IgniteSet can be created.
-     * @throws Exception If Failed.
-     */
-    private void setUpSeparateCacheModeSince(IgniteProductVersion ver) throws Exception {
-        Field field = CacheDataStructuresManager.class.getDeclaredField("SEPARATE_CACHE_SET_SINCE");
-        field.setAccessible(true);
-
-        Field modifiers = Field.class.getDeclaredField("modifiers");
-        modifiers.setAccessible(true);
-        modifiers.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-
-        field.set(null, ver);
     }
 
     /**

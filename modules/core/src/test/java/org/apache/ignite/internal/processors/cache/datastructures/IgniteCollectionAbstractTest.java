@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueAdapter;
+import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -148,14 +149,14 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
 
     /**
      * @param set Ignite set.
-     * @return {@code True} if this instance of IgniteSet is compatible with older Ignite version.
+     * @return Version of header.
      */
-    protected boolean compatibilityMode(IgniteSet set) {
+    protected int version(IgniteSet set) {
         IgniteSet impl = set;
 
         if (set instanceof GridCacheSetProxy)
             impl = ((GridCacheSetProxy)set).delegate();
 
-        return Boolean.TRUE.equals(GridTestUtils.getFieldValue(impl, "compatibilityMode"));
+        return GridTestUtils.getFieldValue(impl, "hdrVer");
     }
 }

@@ -17,21 +17,26 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import java.io.EOFException;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
  * Cache set header.
- *
- * @deprecated Replaced by {@link GridCacheSetHeaderV2}.
  */
-@Deprecated
-public class GridCacheSetHeader implements CacheSetHeader {
+public class GridCacheSetHeader implements GridCacheInternal, Externalizable {
+    /** Initial implementation. Collocated and non-collocated IgniteSet versions uses shared cache. */
+    public static final int V1 = 1;
+
+    /** Non-collocated version of IgniteSet uses separate cache. */
+    public static final int V2 = 2;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,6 +45,9 @@ public class GridCacheSetHeader implements CacheSetHeader {
 
     /** */
     private boolean collocated;
+
+    /** */
+    private int ver = V1;
 
     /**
      * Required by {@link Externalizable}.
@@ -51,10 +59,12 @@ public class GridCacheSetHeader implements CacheSetHeader {
     /**
      * @param id Set UUID.
      * @param collocated Collocation flag.
+     * @param ver Header version.
      */
-    public GridCacheSetHeader(IgniteUuid id, boolean collocated) {
+    public GridCacheSetHeader(IgniteUuid id, boolean collocated, int ver) {
         this.id = id;
         this.collocated = collocated;
+        this.ver = ver;
     }
 
     /**
@@ -71,16 +81,30 @@ public class GridCacheSetHeader implements CacheSetHeader {
         return collocated;
     }
 
+    /**
+     * @return Header version.
+     */
+    public int version() {
+        return ver;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, id);
         out.writeBoolean(collocated);
+        out.writeInt(ver);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        id = U.readGridUuid(in);
-        collocated = in.readBoolean();
+        try {
+            id = U.readGridUuid(in);
+            collocated = in.readBoolean();
+            ver = in.readInt();
+        }
+        catch (EOFException ignore) {
+            // No-op.
+        }
     }
 
     /** {@inheritDoc} */
