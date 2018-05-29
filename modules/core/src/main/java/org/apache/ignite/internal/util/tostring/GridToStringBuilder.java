@@ -86,6 +86,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_
  */
 public class GridToStringBuilder {
     /** */
+    private static final Object[] EMPTY_ARRAY = new Object[0];
+
+    /** */
     private static final Map<String, GridToStringClassDescriptor> classCache = new HashMap<>();
 
     /** */
@@ -939,7 +942,7 @@ public class GridToStringBuilder {
             else if (val instanceof Map)
                 addMap(buf, (Map<?, ?>) val, objs);
             else
-                toStringImpl((Class)val.getClass(), buf, val, new Object[] {}, new Object[] {}, null, 0, false);
+                toStringImpl((Class)val.getClass(), buf, val, EMPTY_ARRAY, EMPTY_ARRAY, null, 0, false);
         }
         finally {
             objs.remove(val);
