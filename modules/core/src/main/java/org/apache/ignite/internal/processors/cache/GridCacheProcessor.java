@@ -784,9 +784,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheData.sql(sql);
 
-        boolean template = cacheName.endsWith("*");
-
-        if (!template) {
+        if (GridCacheUtils.isCacheTemplateName(cacheName))
+            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
+        else {
             if (caches.containsKey(cacheName)) {
                 throw new IgniteCheckedException("Duplicate cache name found (check configuration and " +
                     "assign unique name to each cache): " + cacheName);
@@ -799,8 +799,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             addStoredCache(caches, cacheData, cacheName, cacheType, true);
         }
-        else
-            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
     }
 
     /**
@@ -3442,7 +3440,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             if (cfg.getName() != null) {
-                if (cfg.getName().endsWith("*")) {
+                if (GridCacheUtils.isCacheTemplateName(cfg.getName())) {
                     if (cfg.getName().length() > 1) {
                         if (wildcardNameCfgs == null)
                             wildcardNameCfgs = new ArrayList<>();
