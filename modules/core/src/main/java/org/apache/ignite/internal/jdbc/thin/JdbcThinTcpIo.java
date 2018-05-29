@@ -121,6 +121,9 @@ public class JdbcThinTcpIo {
     /** Mutex. */
     private final Object mux = new Object();
 
+    /** Current protocol version used to connection to Ignite. */
+    private ClientListenerProtocolVersion srvProtocolVer;
+
     /**
      * Constructor.
      *
@@ -342,6 +345,8 @@ public class JdbcThinTcpIo {
             }
             else
                 igniteVer = new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
+
+            srvProtocolVer = ver;
         }
         else {
             short maj = reader.readShort();
@@ -350,12 +355,12 @@ public class JdbcThinTcpIo {
 
             String err = reader.readString();
 
-            ClientListenerProtocolVersion srvProtocolVer = ClientListenerProtocolVersion.create(maj, min, maintenance);
+            ClientListenerProtocolVersion srvProtoVer0 = ClientListenerProtocolVersion.create(maj, min, maintenance);
 
-            if (srvProtocolVer.compareTo(VER_2_5_0) < 0 && !F.isEmpty(connProps.getUsername())) {
-                throw new SQLException("Authentication doesn't support by remote server[driverProtocolVer=" + CURRENT_VER +
-                    ", remoteNodeProtocolVer=" + srvProtocolVer + ", err=" + err + ", url=" + connProps.getUrl() + ']',
-                    SqlStateCode.CONNECTION_REJECTED);
+            if (srvProtoVer0.compareTo(VER_2_5_0) < 0 && !F.isEmpty(connProps.getUsername())) {
+                throw new SQLException("Authentication doesn't support by remote server[driverProtocolVer="
+                    + CURRENT_VER + ", remoteNodeProtocolVer=" + srvProtoVer0 + ", err=" + err
+                    + ", url=" + connProps.getUrl() + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
             if (VER_2_4_0.equals(srvProtocolVer) || VER_2_3_0.equals(srvProtocolVer) ||
@@ -402,8 +407,11 @@ public class JdbcThinTcpIo {
 
         boolean accepted = reader.readBoolean();
 
-        if (accepted)
+        if (accepted) {
             igniteVer = new IgniteProductVersion((byte)2, (byte)1, (byte)0, "Unknown", 0L, null);
+
+            srvProtocolVer = VER_2_1_0;
+        }
         else {
             short maj = reader.readShort();
             short min = reader.readShort();
@@ -435,7 +443,7 @@ public class JdbcThinTcpIo {
         }
 
         try {
-            if (!igniteVer.greaterThanEqual(2, 5, 0)) {
+            if (!isUnorderedStreamSupported()) {
                 throw new SQLException("Streaming without response doesn't supported by server [driverProtocolVer="
                     + CURRENT_VER + ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
             }
@@ -618,5 +626,14 @@ public class JdbcThinTcpIo {
      */
     IgniteProductVersion igniteVersion() {
         return igniteVer;
+    }
+
+    /**
+     * @return {@code true} If the unordered streaming supported.
+     */
+    boolean isUnorderedStreamSupported() {
+        assert srvProtocolVer != null;
+
+        return srvProtocolVer.compareTo(VER_2_5_0) >= 0;
     }
 }

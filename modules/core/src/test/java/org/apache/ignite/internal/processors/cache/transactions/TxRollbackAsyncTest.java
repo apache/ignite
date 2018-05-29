@@ -601,6 +601,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      *
      */
     public void testMixedAsyncRollbackTypes() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8509");
+
         final Ignite client = startClient();
 
         final AtomicBoolean stop = new AtomicBoolean();

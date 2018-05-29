@@ -73,8 +73,6 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         versions.clear();
-
-        super.afterTestsStopped();
     }
 
     /**

@@ -75,11 +75,6 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
         startGrids(NODE_CNT);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @return {@code True} if use client discovery.
      */

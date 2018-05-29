@@ -72,11 +72,6 @@ public class IgniteCacheOffheapIndexScanTest extends GridCommonAbstractTest {
         cache = grid(0).cache(DEFAULT_CACHE_NAME);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

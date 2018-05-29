@@ -34,8 +34,6 @@ public class TxRollbackOnTimeoutNoDeadlockDetectionTest extends TxRollbackOnTime
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         System.clearProperty(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS);
     }
 

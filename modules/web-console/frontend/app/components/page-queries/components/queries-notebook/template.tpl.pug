@@ -78,8 +78,8 @@ mixin notebook-rename
 
 mixin notebook-error
     h2 Failed to load notebook
-    label.col-sm-12 Notebook not accessible any more. Go back to configuration or open to another notebook.
-    button.h3.btn.btn-primary(ui-sref='default-state') Back to configuration
+    label.col-sm-12 Notebook not accessible any more. Go back to notebooks list.
+    button.h3.btn.btn-primary(ui-sref='default-state') Leave Notebook
 
 mixin paragraph-rename
     .col-sm-6(ng-hide='paragraph.edit')
@@ -304,7 +304,7 @@ mixin paragraph-scan
 mixin paragraph-query
     .row.panel-heading(bs-collapse-toggle)
         +paragraph-rename
-    .panel-collapse(role='tabpanel' bs-collapse-target)
+    .panel-collapse.ng-animate-disabled(role='tabpanel' bs-collapse-target)
         .col-sm-12
             .col-xs-8.col-sm-9(style='border-right: 1px solid #eee')
                 .sql-editor(ignite-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "sql", require: ["ace/ext/language_tools"],' +

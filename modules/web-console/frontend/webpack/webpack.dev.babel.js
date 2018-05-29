@@ -63,6 +63,9 @@ export default merge(commonCfg, {
         ]
     },
     devServer: {
+        headers: {
+            'Content-Security-Policy': `script-src 'self' 'unsafe-inline' 'unsafe-eval' data: http: https:;`
+        },
         compress: true,
         historyApiFallback: true,
         disableHostCheck: true,
@@ -78,7 +81,7 @@ export default merge(commonCfg, {
                 target: `http://localhost:${backendPort}`,
                 ws: true
             },
-            '/api/v1/*': {
+            '/api/*': {
                 target: `http://localhost:${backendPort}`
             }
         },

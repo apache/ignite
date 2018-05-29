@@ -703,7 +703,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         catch (IgniteCheckedException e) {
             log.warning("Failed to start continuous query.", e);
 
-            cctx.kernalContext().continuous().stopRoutine(id);
+            if (id != null)
+                cctx.kernalContext().continuous().stopRoutine(id);
 
             throw new IgniteCheckedException("Failed to start continuous query.", e);
         }
