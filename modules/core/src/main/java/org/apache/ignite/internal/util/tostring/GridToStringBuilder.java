@@ -928,9 +928,9 @@ public class GridToStringBuilder {
 
         try {
             if (valClass.isArray())
-                addArr(buf, valClass, val);
+                addArray(buf, valClass, val);
             else if (val instanceof Collection)
-                addCol(buf, (Collection) val);
+                addCollection(buf, (Collection) val);
             else if (val instanceof Map)
                 addMap(buf, (Map<?, ?>) val);
             else
@@ -947,7 +947,7 @@ public class GridToStringBuilder {
      * @param buf String builder buffer.
      * @param col Array object.
      */
-    private static void addCol(SBLimitedLength buf, Collection col) {
+    private static void addCollection(SBLimitedLength buf, Collection col) {
         buf.a(col.getClass().getSimpleName()).a(" [");
 
         int cnt = 0;
@@ -1247,7 +1247,7 @@ public class GridToStringBuilder {
      * @param arrType Type of the array.
      * @param obj Array object.
      */
-    private static void addArr(SBLimitedLength buf, Class arrType, Object obj) {
+    private static void addArray(SBLimitedLength buf, Class arrType, Object obj) {
         if (obj == null)
             return;
 
