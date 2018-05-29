@@ -49,12 +49,11 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.4.0: adds default values for columns feature. */
     static final ClientListenerProtocolVersion VER_2_4_0 = ClientListenerProtocolVersion.create(2, 4, 0);
 
-    /** Version 2.5.0: adds precision, scale, maximum length for columns feature.*/
-    //TODO: update to 2.6 before merge 
-    static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
+    /** Version 2.6.0: adds precision, scale, maximum length for columns feature.*/
+    static final ClientListenerProtocolVersion VER_2_6_0 = ClientListenerProtocolVersion.create(2, 6, 0);
 
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_6_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -82,7 +81,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
-        SUPPORTED_VERS.add(VER_2_5_0);
+        SUPPORTED_VERS.add(VER_2_6_0);
         SUPPORTED_VERS.add(VER_2_4_0);
         SUPPORTED_VERS.add(VER_2_3_0);
         SUPPORTED_VERS.add(VER_2_1_5);
