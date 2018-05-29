@@ -239,6 +239,7 @@ ln -sf %{_log}/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 %doc README.txt
 %doc NOTICE
 %doc RELEASE_NOTES.txt
+%doc MIGRATION_GUIDE.txt
 %license LICENSE
 
 

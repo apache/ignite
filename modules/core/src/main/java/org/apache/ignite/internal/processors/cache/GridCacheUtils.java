@@ -1866,6 +1866,14 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param cacheName Name of cache or cache template.
+     * @return {@code true} if cache name ends with asterisk (*), and therefire is a template name.
+     */
+    public static boolean isCacheTemplateName(String cacheName) {
+        return cacheName.endsWith("*");
+    }
+
+    /**
      *
      */
     public interface BackupPostProcessingClosure extends IgniteInClosure<Collection<GridCacheEntryInfo>>,

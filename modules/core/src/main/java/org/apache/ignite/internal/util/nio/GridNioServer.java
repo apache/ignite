@@ -1829,7 +1829,7 @@ public class GridNioServer<T> {
                     if (err == null)
                         lsnr.onFailure(SYSTEM_WORKER_TERMINATION,
                             new IllegalStateException("Thread " + name() + " is terminated unexpectedly"));
-                    else if (err instanceof InterruptedException)
+                    else
                         lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
                 }
                 else if (err != null)
