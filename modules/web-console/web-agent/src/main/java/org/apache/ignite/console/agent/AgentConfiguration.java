@@ -110,7 +110,7 @@ public class AgentConfiguration {
      * @param tokens Tokens.
      */
     public void tokens(List<String> tokens) {
-        this.tokens = new ArrayList<>(tokens);
+        this.tokens = tokens;
     }
 
     /**
@@ -138,7 +138,7 @@ public class AgentConfiguration {
      * @param nodeURIs Node URIs.
      */
     public void nodeURIs(List<String> nodeURIs) {
-        this.nodeURIs = new ArrayList<>(nodeURIs);
+        this.nodeURIs = nodeURIs;
     }
 
     /**
@@ -238,7 +238,7 @@ public class AgentConfiguration {
         String val = (String)props.remove("tokens");
 
         if (val != null)
-            tokens(Arrays.asList(val.split(",")));
+            tokens(new ArrayList<>(Arrays.asList(val.split(","))));
 
         val = (String)props.remove("server-uri");
 
@@ -248,7 +248,7 @@ public class AgentConfiguration {
         val = (String)props.remove("node-uri");
 
         if (val != null)
-            nodeURIs(Arrays.asList(val.split(",")));
+            nodeURIs(new ArrayList<>(Arrays.asList(val.split(","))));
 
         val = (String)props.remove("node-login");
 
@@ -267,35 +267,35 @@ public class AgentConfiguration {
     }
 
     /**
-     * @param cmd Command.
+     * @param cfg Config to merge with.
      */
-    public void merge(AgentConfiguration cmd) {
+    public void merge(AgentConfiguration cfg) {
         if (tokens == null)
-            tokens(cmd.tokens());
+            tokens(cfg.tokens());
 
         if (srvUri == null)
-            serverUri(cmd.serverUri());
+            serverUri(cfg.serverUri());
 
         if (srvUri == null)
             serverUri(DFLT_SERVER_URI);
 
         if (nodeURIs == null)
-            nodeURIs(cmd.nodeURIs());
+            nodeURIs(cfg.nodeURIs());
 
         if (nodeURIs == null)
             nodeURIs(Collections.singletonList(DFLT_NODE_URI));
 
         if (agentUser == null)
-            agentUser(cmd.agentUser());
+            agentUser(cfg.agentUser());
 
         if (agentPwd == null)
-            agentPassword(cmd.agentPassword());
+            agentPassword(cfg.agentPassword());
 
         if (driversFolder == null)
-            driversFolder(cmd.driversFolder());
+            driversFolder(cfg.driversFolder());
 
         if (disableDemo == null)
-            disableDemo(cmd.disableDemo());
+            disableDemo(cfg.disableDemo());
     }
 
     /** {@inheritDoc} */
