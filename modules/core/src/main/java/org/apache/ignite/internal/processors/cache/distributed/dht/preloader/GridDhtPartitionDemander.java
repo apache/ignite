@@ -304,6 +304,8 @@ public class GridDhtPartitionDemander {
 
             final RebalanceFuture oldFut = rebalanceFut;
 
+            final RebalanceFuture ltstFut = latestRebFut;
+
             final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId);
 
             if (!grp.localWalEnabled())
@@ -314,8 +316,8 @@ public class GridDhtPartitionDemander {
                     }
                 });
 
-            if (oldFut.isInitial())
-                fut.listen(f -> oldFut.onDone(f.result()));
+            if (ltstFut.isInitial())
+                fut.listen(f -> ltstFut.onDone(f.result()));
 
             if (forcedRebFut != null)
                 forcedRebFut.add(fut);
@@ -347,9 +349,9 @@ public class GridDhtPartitionDemander {
                 oldFut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                     @Override public void applyx(IgniteInternalFuture<Boolean> fut0) {
                         try {
-                            fut.onDone(fut0.get());
-
                             fut.sendRebalanceFinishedEvent();
+
+                            fut.onDone(fut0.get());
                         }
                         catch (IgniteCheckedException e) {
                             fut.cancel();
@@ -382,6 +384,8 @@ public class GridDhtPartitionDemander {
                 else {
                     if (!oldFut.isInitial())
                         oldFut.cancel();
+                    else
+                        fut.listen(f -> oldFut.onDone(f.result()));
 
                     rebalanceFut = fut;
 
