@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -42,25 +41,22 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import javax.management.ObjectName;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -118,6 +114,9 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntry;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointEntryType;
+import org.apache.ignite.internal.processors.cache.persistence.checkpoint.CheckpointHistory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -164,7 +163,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static java.nio.file.StandardOpenOption.READ;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
@@ -249,37 +247,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     };
 
     /** */
-    private static final Comparator<File> CP_TS_COMPARATOR = new Comparator<File>() {
-        /** {@inheritDoc} */
-        @Override public int compare(File o1, File o2) {
-            Matcher m1 = CP_FILE_NAME_PATTERN.matcher(o1.getName());
-            Matcher m2 = CP_FILE_NAME_PATTERN.matcher(o2.getName());
-
-            boolean s1 = m1.matches();
-            boolean s2 = m2.matches();
-
-            assert s1 : "Failed to match CP file: " + o1.getAbsolutePath();
-            assert s2 : "Failed to match CP file: " + o2.getAbsolutePath();
-
-            long ts1 = Long.parseLong(m1.group(1));
-            long ts2 = Long.parseLong(m2.group(1));
-
-            int res = Long.compare(ts1, ts2);
-
-            if (res == 0) {
-                CheckpointEntryType type1 = CheckpointEntryType.valueOf(m1.group(3));
-                CheckpointEntryType type2 = CheckpointEntryType.valueOf(m2.group(3));
-
-                assert type1 != type2 : "o1=" + o1.getAbsolutePath() + ", o2=" + o2.getAbsolutePath();
-
-                res = type1 == CheckpointEntryType.START ? -1 : 1;
-            }
-
-            return res;
-        }
-    };
-
-    /** */
     private static final String MBEAN_NAME = "DataStorageMetrics";
 
     /** */
@@ -323,6 +290,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private long checkpointFreq;
 
     /** */
+    private CheckpointHistory cpHistory;
+
+    /** */
     private FilePageStoreManager storeMgr;
 
     /** Checkpoint metadata directory ("cp"), contains files with checkpoint start and end */
@@ -336,9 +306,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** */
     private final Collection<DbCheckpointListener> lsnrs = new CopyOnWriteArrayList<>();
-
-    /** Checkpoint history. */
-    private final CheckpointHistory checkpointHist = new CheckpointHistory();
 
     /** */
     private boolean stopping;
@@ -362,7 +329,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final long lockWaitTime;
 
     /** */
-    private final int maxCpHistMemSize;
+    private final boolean truncateWalOnCpFinish;
 
     /** */
     private Map</*grpId*/Integer, Map</*partId*/Integer, T2</*updCntr*/Long, WALPointer>>> reservedForExchange;
@@ -418,6 +385,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         checkpointFreq = persistenceCfg.getCheckpointFrequency();
 
+        truncateWalOnCpFinish = persistenceCfg.getWalHistorySize() != Integer.MAX_VALUE;
+
         lockWaitTime = persistenceCfg.getLockWaitTime();
 
         persStoreMetrics = new DataStorageMetricsImpl(
@@ -427,9 +396,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         );
 
         metastorageLifecycleLsnrs = ctx.internalSubscriptionProcessor().getMetastorageSubscribers();
-
-        maxCpHistMemSize = Math.min(persistenceCfg.getWalHistorySize(),
-            IgniteSystemProperties.getInteger(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, 100));
 
         ioFactory = persistenceCfg.getFileIOFactory();
     }
@@ -533,6 +499,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             final FileLockHolder preLocked = kernalCtx.pdsFolderResolver()
                 .resolveFolders()
                 .getLockedFileLockHolder();
+
             if (preLocked == null)
                 fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), kernalCtx, log);
 
@@ -591,6 +558,86 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 30_000,
                 new LinkedBlockingQueue<Runnable>()
             );
+    }
+
+    /**
+     * Retreives checkpoint history form specified {@code dir}.
+     *
+     * @param dir Checkpoint state dir.
+     */
+    private List<CheckpointEntry> cpHistory(File dir) throws IgniteCheckedException {
+        if (!dir.exists())
+            return Collections.emptyList();
+
+        try (DirectoryStream<Path> cpFiles = Files.newDirectoryStream(
+            dir.toPath(),
+            path -> CP_FILE_NAME_PATTERN.matcher(path.toFile().getName()).matches())
+        ) {
+            List<CheckpointEntry> checkpoints = new ArrayList<>();
+
+            ByteBuffer buf = ByteBuffer.allocate(16);
+            buf.order(ByteOrder.nativeOrder());
+
+            for (Path cpFile : cpFiles) {
+                CheckpointEntry cp = parseFromFile(buf, cpFile.toFile());
+
+                if (cp != null)
+                    checkpoints.add(cp);
+            }
+
+            return checkpoints;
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to load checkpoints.", e);
+        }
+    }
+
+    /**
+     * Parses checkpoint entry from given file.
+     *
+     * @param buf Temporary byte buffer.
+     * @param file Checkpoint file.
+     */
+    @Nullable private CheckpointEntry parseFromFile(ByteBuffer buf, File file) throws IgniteCheckedException {
+        Matcher matcher = CP_FILE_NAME_PATTERN.matcher(file.getName());
+
+        if (!matcher.matches())
+            return null;
+
+        CheckpointEntryType type = CheckpointEntryType.valueOf(matcher.group(3));
+
+        if (type != CheckpointEntryType.START)
+            return null;
+
+        long cpTs = Long.parseLong(matcher.group(1));
+        UUID cpId = UUID.fromString(matcher.group(2));
+
+        WALPointer ptr = readPointer(file, buf);
+
+        return createCheckPointEntry(cpTs, ptr, cpId, null, CheckpointEntryType.START);
+    }
+
+    /**
+     * Removes checkpoint start/end files belongs to given {@code cpEntry}.
+     *
+     * @param cpEntry Checkpoint entry.
+     *
+     * @throws IgniteCheckedException If failed to delete.
+     */
+    private void removeCheckpointFiles(CheckpointEntry cpEntry) throws IgniteCheckedException {
+        Path startFile = new File(cpDir.getAbsolutePath(), checkpointFileName(cpEntry, CheckpointEntryType.START)).toPath();
+        Path endFile = new File(cpDir.getAbsolutePath(), checkpointFileName(cpEntry, CheckpointEntryType.END)).toPath();
+
+        try {
+            if (Files.exists(startFile))
+                Files.delete(startFile);
+
+            if (Files.exists(endFile))
+                Files.delete(endFile);
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Failed to delete stale checkpoint files: " + cpEntry, e);
+        }
     }
 
     /** */
@@ -884,7 +931,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * Tuples are sorted by timestamp.
      *
      * @return Sorted list of tuples (node started timestamp, memory recovery pointer).
-     * @throws IgniteCheckedException
+     *
+     * @throws IgniteCheckedException If failed.
      */
     public List<T2<Long, WALPointer>> nodeStartedPointers() throws IgniteCheckedException {
         List<T2<Long, WALPointer>> res = new ArrayList<>();
@@ -1584,78 +1632,59 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         reservedForExchange = new HashMap<>();
 
-        Map</*grpId*/Integer, Set</*partId*/Integer>> parts4CheckpointHistSearch = partsForCheckpointHistorySearch();
+        Map</*grpId*/Integer, Set</*partId*/Integer>> applicableGroupsAndPartitions = partitionsApplicableForWalRebalance();
 
-        Map</*grpId*/Integer, Map</*partId*/Integer, CheckpointEntry>> lastCheckpointEntry4Grp =
-            searchLastCheckpointEntryPerPartition(parts4CheckpointHistSearch);
+        Map</*grpId*/Integer, Map</*partId*/Integer, CheckpointEntry>> earliestValidCheckpoints =
+            cpHistory.searchAndReserveCheckpoints(applicableGroupsAndPartitions);
 
         Map</*grpId*/Integer, Map</*partId*/Integer, /*updCntr*/Long>> grpPartsWithCnts = new HashMap<>();
 
-        try {
-            for (Map.Entry<Integer, Map<Integer, CheckpointEntry>> e : lastCheckpointEntry4Grp.entrySet()) {
-                Integer grpId = e.getKey();
+        for (Map.Entry<Integer, Map<Integer, CheckpointEntry>> e : earliestValidCheckpoints.entrySet()) {
+            int grpId = e.getKey();
 
-                for (Map.Entry<Integer, CheckpointEntry> e0 : e.getValue().entrySet()) {
-                    CheckpointEntry cpEntry = e0.getValue();
+            for (Map.Entry<Integer, CheckpointEntry> e0 : e.getValue().entrySet()) {
+                CheckpointEntry cpEntry = e0.getValue();
 
-                    Integer partId = e0.getKey();
+                int partId = e0.getKey();
 
-                    if (cctx.wal().reserve(cpEntry.cpMark)) {
-                        Map</*partId*/Integer, T2</*updCntr*/Long, WALPointer>> grpChpState = reservedForExchange.get(grpId);
+                assert cctx.wal().reserved(cpEntry.checkpointMark())
+                    : "WAL segment for checkpoint " + cpEntry + " has not reserved";
 
-                        Map<Integer, Long> grpCnts = grpPartsWithCnts.get(grpId);
+                Long updCntr = cpEntry.partitionCounter(cctx, grpId, partId);
 
-                        if (grpChpState == null) {
-                            reservedForExchange.put(grpId, grpChpState = new HashMap<>());
+                if (updCntr != null) {
+                    reservedForExchange.computeIfAbsent(grpId, k -> new HashMap<>())
+                        .put(partId, new T2<>(updCntr, cpEntry.checkpointMark()));
 
-                            grpPartsWithCnts.put(grpId, grpCnts = new HashMap<>());
-                        }
-
-                        Long partCnt = cpEntry.partitionCounter(cctx, grpId, partId);
-
-                        if (partCnt != null) {
-                            grpChpState.put(partId, new T2<>(partCnt, cpEntry.cpMark));
-
-                            grpCnts.put(partId, partCnt);
-                        }
-                        else
-                            cctx.wal().release(cpEntry.cpMark);
-                    }
+                    grpPartsWithCnts.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, updCntr);
                 }
             }
-        }
-        catch (IgniteCheckedException ex) {
-            U.error(log, "Error while trying to reserve history", ex);
         }
 
         return grpPartsWithCnts;
     }
 
     /**
-     *
-     * @return Map of group id -> Set parts.
+     * @return Map of group id -> Set of partitions which can be used as suppliers for WAL rebalance.
      */
-    private Map<Integer, Set<Integer>> partsForCheckpointHistorySearch() {
-        Map<Integer, Set<Integer>> part4CheckpointHistSearch = new HashMap<>();
+    private Map<Integer, Set<Integer>> partitionsApplicableForWalRebalance() {
+        Map<Integer, Set<Integer>> res = new HashMap<>();
 
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal())
                 continue;
 
-            for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
-                if (part.state() != GridDhtPartitionState.OWNING || part.dataStore().fullSize() <= walRebalanceThreshold)
-                    continue;
+            Set<Integer> partitions = StreamSupport.stream(grp.topology().currentLocalPartitions().spliterator(), false)
+                .filter(part -> part.state() == GridDhtPartitionState.OWNING)
+                .filter(part -> part.fullSize() > walRebalanceThreshold)
+                .map(GridDhtLocalPartition::id)
+                .collect(Collectors.toSet());
 
-                Set<Integer> parts = part4CheckpointHistSearch.get(grp.groupId());
-
-                if (parts == null)
-                    part4CheckpointHistSearch.put(grp.groupId(), parts = new HashSet<>());
-
-                parts.add(part.id());
-            }
+            if (!partitions.isEmpty())
+                res.put(grp.groupId(), partitions);
         }
 
-        return part4CheckpointHistSearch;
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -1679,12 +1708,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /** {@inheritDoc} */
     @Override public boolean reserveHistoryForPreloading(int grpId, int partId, long cntr) {
-        CheckpointEntry cpEntry = searchCheckpointEntry(grpId, partId, cntr);
+        CheckpointEntry cpEntry = cpHistory.searchCheckpointEntry(grpId, partId, cntr);
 
         if (cpEntry == null)
             return false;
 
-        WALPointer ptr = cpEntry.cpMark;
+        WALPointer ptr = cpEntry.checkpointMark();
 
         if (ptr == null)
             return false;
@@ -1720,13 +1749,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         reservedForPreloading.clear();
-    }
-
-    /**
-     * For debugging only. TODO: remove.
-     */
-    public Map<T2<Integer, Integer>, T2<Long, WALPointer>> reservedForPreloading() {
-        return reservedForPreloading;
     }
 
     /**
@@ -1772,150 +1794,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return null;
 
         return cp.wakeupForCheckpoint(0, reason);
-    }
-
-    /**
-     * Tries to search for a WAL pointer for the given partition counter start.
-     *
-     * @return Checkpoint entry or {@code null} if failed to search.
-     */
-    private Map<Integer, Map<Integer, CheckpointEntry>> searchLastCheckpointEntryPerPartition(
-        final Map<Integer, Set<Integer>> part4reserve
-    ) {
-        final Map<Integer, Map<Integer, CheckpointEntry>> res = new HashMap<>();
-
-        if (F.isEmpty(part4reserve))
-            return res;
-
-        for (Long cpTs : checkpointHist.checkpoints()) {
-            CheckpointEntry chpEntry = null;
-
-            try {
-                chpEntry = checkpointHist.entry(cpTs);
-
-                Map<Integer, CheckpointEntry.GroupState> grpsState = chpEntry.groupState(cctx);
-
-                if (F.isEmpty(grpsState)) {
-                    res.clear();
-
-                    continue;
-                }
-
-                for (Map.Entry<Integer, Set<Integer>> grps : part4reserve.entrySet()) {
-                    Integer grpId = grps.getKey();
-
-                    Map<Integer, CheckpointEntry> partToCheckPntEntry = res.get(grpId);
-
-                    CheckpointEntry.GroupState grpState = grpsState.get(grpId);
-
-                    if (grpState == null) {
-                        res.remove(grpId);
-
-                        continue;
-                    }
-
-                    if (partToCheckPntEntry == null)
-                        res.put(grpId, partToCheckPntEntry = new HashMap<>());
-
-                    for (Integer partId : grps.getValue()) {
-                        int idx = grpState.indexByPartition(partId);
-
-                        if (idx < 0)
-                            partToCheckPntEntry.remove(partId);
-                        else {
-                            if (partToCheckPntEntry.containsKey(partId))
-                                continue;
-
-                            partToCheckPntEntry.put(partId, chpEntry);
-                        }
-                    }
-                }
-            }
-            catch (IgniteCheckedException ex) {
-                String msg = chpEntry != null ?
-                    ", chpId=" + chpEntry.cpId + " ptr=" + chpEntry.cpMark + " ts=" + chpEntry.cpTs : "";
-
-                U.error(log, "Failed to read checkpoint entry" + msg, ex);
-
-                // Treat exception the same way as a gap.
-                res.clear();
-            }
-        }
-
-        return res;
-    }
-
-    /**
-     * Tries to search for a WAL pointer for the given partition counter start.
-     *
-     * @param grpId Cache group ID.
-     * @param part Partition ID.
-     * @param partCntrSince Partition counter or {@code null} to search for minimal counter.
-     * @return Checkpoint entry or {@code null} if failed to search.
-     */
-    @Nullable public WALPointer searchPartitionCounter(int grpId, int part, @Nullable Long partCntrSince) {
-        CheckpointEntry entry = searchCheckpointEntry(grpId, part, partCntrSince);
-
-        if (entry == null)
-            return null;
-
-        return entry.cpMark;
-    }
-
-    /**
-     * Tries to search for a WAL pointer for the given partition counter start.
-     *
-     * @param grpId Cache group ID.
-     * @param part Partition ID.
-     * @param partCntrSince Partition counter or {@code null} to search for minimal counter.
-     * @return Checkpoint entry or {@code null} if failed to search.
-     */
-    @Nullable private CheckpointEntry searchCheckpointEntry(int grpId, int part, @Nullable Long partCntrSince) {
-        boolean hasGap = false;
-        CheckpointEntry first = null;
-
-        for (Long cpTs : checkpointHist.checkpoints()) {
-            try {
-                CheckpointEntry entry = checkpointHist.entry(cpTs);
-
-                Long foundCntr = entry.partitionCounter(cctx, grpId, part);
-
-                if (foundCntr != null) {
-                    if (partCntrSince == null) {
-                        if (hasGap) {
-                            first = entry;
-
-                            hasGap = false;
-                        }
-
-                        if (first == null)
-                            first = entry;
-                    }
-                    else if (foundCntr <= partCntrSince) {
-                        first = entry;
-
-                        hasGap = false;
-                    }
-                    else
-                        return hasGap ? null : first;
-                }
-                else
-                    hasGap = true;
-            }
-            catch (IgniteCheckedException ignore) {
-                // Treat exception the same way as a gap.
-                hasGap = true;
-            }
-        }
-
-        return hasGap ? null : first;
-    }
-
-    /**
-     * @return Checkpoint history. For tests only.
-     */
-    public CheckpointHistory checkpointHistory() {
-        return checkpointHist;
     }
 
     /**
@@ -2246,7 +2124,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 finalizeCheckpointOnRecovery(status.cpStartTs, status.cpStartId, status.startPtr);
         }
 
-        checkpointHist.loadHistory(cpDir);
+        cpHistory.initialize(cpHistory(cpDir));
 
         return lastRead == null ? null : lastRead.next();
     }
@@ -2568,8 +2446,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      * @param highBound WALPointer.
      */
-    public void onWalTruncated(WALPointer highBound) {
-        checkpointHist.onWalTruncated(highBound);
+    public void onWalTruncated(WALPointer highBound) throws IgniteCheckedException {
+        List<CheckpointEntry> removedFromHistory = cpHistory.onWalTruncated(highBound);
+
+        for (CheckpointEntry cp : removedFromHistory)
+            removeCheckpointFiles(cp);
     }
 
     /**
@@ -2810,6 +2691,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
+     * @param cp Checkpoint entry.
+     * @param type Checkpoint type.
+     */
+    private static String checkpointFileName(CheckpointEntry cp, CheckpointEntryType type) {
+        return checkpointFileName(cp.timestamp(), cp.checkpointId(), type);
+    }
+
+    /**
      * Replace thread local with buffers. Thread local should provide direct buffer with one page in length.
      *
      * @param threadBuf new thread-local with buffers for the checkpoint threads.
@@ -2827,7 +2716,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      *
      * @return Checkpoint entry.
      */
-    private CheckpointEntry createCheckPointEntry(
+    public CheckpointEntry createCheckPointEntry(
         long cpTs,
         WALPointer ptr,
         UUID cpId,
@@ -2845,10 +2734,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         Map<Integer, CacheState> cacheGrpStates = null;
 
         // Create lazy checkpoint entry.
-        if ((checkpointHist.histMap.size() + 1 < maxCpHistMemSize) && rec != null)
+        if (rec != null && cpHistory.hasSpace())
             cacheGrpStates = rec.cacheGroupStates();
 
         return new CheckpointEntry(cpTs, ptr, cpId, cacheGrpStates);
+    }
+
+    /**
+     * @return Checkpoint history.
+     */
+    public CheckpointHistory checkpointHistory() {
+        return cpHistory;
     }
 
     /**
@@ -3291,8 +3187,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     success = true;
                 }
                 finally {
-                    if (success)
-                        markCheckpointEnd(chp);
+                    if (success) {
+                        try {
+                            markCheckpointEnd(chp);
+                        }
+                        catch (IgniteCheckedException e) {
+                            chp.progress.cpFinishFut.onDone(e);
+
+                            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
+                            return;
+                        }
+                    }
                 }
 
                 tracker.onEnd();
@@ -3633,7 +3539,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     cpRec,
                     CheckpointEntryType.START);
 
-                checkpointHist.addCheckpointEntry(cpEntry);
+                cpHistory.addCheckpoint(cpEntry);
 
                 GridMultiCollectionWrapper<FullPageId> cpPages = splitAndSortCpPagesIfNeeded(cpPagesTuple);
 
@@ -3733,7 +3639,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (chp.hasDelta())
                     writeCheckpointEntry(
                         tmpWriteBuf,
-                        chp.cpEntry.checkpointTimestamp(),
+                        chp.cpEntry.timestamp(),
                         chp.cpEntry.checkpointId(),
                         chp.cpEntry.checkpointMark(),
                         null,
@@ -3742,7 +3648,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 currCheckpointPagesCnt = 0;
             }
 
-            checkpointHist.onCheckpointFinished(chp);
+            List<CheckpointEntry> removedFromHistory = cpHistory.onCheckpointFinished(chp, truncateWalOnCpFinish);
+
+            for (CheckpointEntry cp : removedFromHistory)
+                removeCheckpointFiles(cp);
 
             if (chp.progress != null)
                 chp.progress.cpFinishFut.onDone();
@@ -3946,18 +3855,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      *
      */
-    private enum CheckpointEntryType {
-        /** */
-        START,
-
-        /** */
-        END
-    }
-
-    /**
-     *
-     */
-    private static class Checkpoint {
+    public static class Checkpoint {
         /** Checkpoint entry. */
         @Nullable private final CheckpointEntry cpEntry;
 
@@ -3993,8 +3891,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /**
          * @return {@code true} if this checkpoint contains at least one dirty page.
          */
-        private boolean hasDelta() {
+        public boolean hasDelta() {
             return pagesSize != 0;
+        }
+
+        /**
+         * @param walFilesDeleted Wal files deleted.
+         */
+        public void walFilesDeleted(int walFilesDeleted) {
+            this.walFilesDeleted = walFilesDeleted;
+        }
+
+        /**
+         *
+         */
+        @Nullable public CheckpointEntry checkpointEntry() {
+            return cpEntry;
         }
     }
 
@@ -4123,549 +4035,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** {@inheritDoc} */
         @Override public GridFutureAdapter finishFuture() {
             return cpFinishFut;
-        }
-    }
-
-    /**
-     * Checkpoint history. Holds chronological ordered map with {@link GridCacheDatabaseSharedManager.CheckpointEntry
-     * CheckpointEntries}. Data is loaded from corresponding checkpoint directory. This directory holds files for
-     * checkpoint start and end.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public class CheckpointHistory {
-        /**
-         * Maps checkpoint's timestamp (from CP file name) to CP entry.
-         * Using TS provides historical order of CP entries in map ( first is oldest )
-         */
-        private final NavigableMap<Long, CheckpointEntry> histMap = new ConcurrentSkipListMap<>();
-
-        /**
-         * Load history form checkpoint directory.
-         *
-         * @param dir Checkpoint state dir.
-         */
-        private void loadHistory(File dir) throws IgniteCheckedException {
-            if (!dir.exists())
-                return;
-
-            File[] files = dir.listFiles(CP_FILE_FILTER);
-
-            if (!F.isEmpty(files)) {
-                Arrays.sort(files, CP_TS_COMPARATOR);
-
-                ByteBuffer buf = ByteBuffer.allocate(16);
-                buf.order(ByteOrder.nativeOrder());
-
-                for (File file : files) {
-                    Matcher matcher = CP_FILE_NAME_PATTERN.matcher(file.getName());
-
-                    if (matcher.matches()) {
-                        CheckpointEntryType type = CheckpointEntryType.valueOf(matcher.group(3));
-
-                        if (type == CheckpointEntryType.START) {
-                            long cpTs = Long.parseLong(matcher.group(1));
-                            UUID cpId = UUID.fromString(matcher.group(2));
-
-                            WALPointer ptr = readPointer(file, buf);
-
-                            if (ptr == null)
-                                continue;
-
-                            CheckpointEntry entry = createCheckPointEntry(cpTs, ptr, cpId, null, type);
-
-                            histMap.put(cpTs, entry);
-                        }
-                    }
-                }
-            }
-        }
-
-        /**
-         * @param cpTs Checkpoint timestamp.
-         * @return Initialized entry.
-         * @throws IgniteCheckedException If failed to initialize entry.
-         */
-        private CheckpointEntry entry(Long cpTs) throws IgniteCheckedException {
-            CheckpointEntry entry = histMap.get(cpTs);
-
-            if (entry == null)
-                throw new IgniteCheckedException("Checkpoint entry was removed: " + cpTs);
-
-            return entry;
-        }
-
-        /**
-         * @return First checkpoint entry if exists. Otherwise {@code null}.
-         */
-        private CheckpointEntry firstEntry() {
-            Map.Entry<Long,CheckpointEntry> entry = histMap.firstEntry();
-
-            return entry != null ? entry.getValue() : null;
-        }
-
-        /**
-         * @return Last checkpoint entry if exists. Otherwise {@code null}.
-         */
-        private CheckpointEntry lastEntry() {
-            Map.Entry<Long,CheckpointEntry> entry = histMap.lastEntry();
-
-            return entry != null ? entry.getValue() : null;
-        }
-
-        /**
-         * Get WAL pointer to low checkpoint bound.
-         *
-         * @return WAL pointer to low checkpoint bound.
-         */
-        public WALPointer lowCheckpointBound() {
-            CheckpointEntry entry = firstEntry();
-
-            return entry != null ? entry.cpMark : null;
-        }
-
-        /**
-         * @return Collection of checkpoint timestamps.
-         */
-        public Collection<Long> checkpoints() {
-            return histMap.keySet();
-        }
-
-        /**
-         * Adds checkpoint entry after the corresponding WAL record has been written to WAL. The checkpoint itself
-         * is not finished yet.
-         *
-         * @param entry Entry to ad.
-         */
-        private void addCheckpointEntry(CheckpointEntry entry) {
-            histMap.put(entry.checkpointTimestamp(), entry);
-        }
-
-        /**
-         * Callback on truncate wal.
-         */
-        private void onWalTruncated(WALPointer ptr) {
-            FileWALPointer highBound = (FileWALPointer)ptr;
-
-            List<CheckpointEntry> cpToRemove = new ArrayList<>();
-
-            for (CheckpointEntry cpEntry : histMap.values()) {
-                FileWALPointer cpPnt = (FileWALPointer)cpEntry.checkpointMark();
-
-                if (highBound.compareTo(cpPnt) <= 0)
-                    break;
-
-                if (cctx.wal().reserved(cpEntry.checkpointMark())) {
-                    U.warn(log, "Could not clear historyMap due to WAL reservation on cpEntry " + cpEntry.cpId +
-                        ", history map size is " + histMap.size());
-
-                    break;
-                }
-
-                if (!removeCheckpointFiles(cpEntry))
-                    cpToRemove.add(cpEntry);
-            }
-
-            for (CheckpointEntry cpEntry : cpToRemove)
-                histMap.remove(cpEntry.cpTs);
-        }
-
-        /**
-         * Clears checkpoint history.
-         */
-        private void onCheckpointFinished(Checkpoint chp) {
-            int deleted = 0;
-
-            boolean dropWal = persistenceCfg.getWalHistorySize() != Integer.MAX_VALUE;
-
-            while (histMap.size() > maxCpHistMemSize) {
-                Map.Entry<Long, CheckpointEntry> entry = histMap.firstEntry();
-
-                CheckpointEntry cpEntry = entry.getValue();
-
-                if (cctx.wal().reserved(cpEntry.checkpointMark())) {
-                    U.warn(log, "Could not clear historyMap due to WAL reservation on cpEntry " + cpEntry.cpId +
-                        ", history map size is " + histMap.size());
-
-                    break;
-                }
-
-                boolean fail = removeCheckpointFiles(cpEntry);
-
-                if (!fail) {
-                    if (dropWal)
-                        deleted += cctx.wal().truncate(null, cpEntry.checkpointMark());
-
-                    histMap.remove(entry.getKey());
-                }
-                else
-                    break;
-            }
-
-            chp.walFilesDeleted = deleted;
-
-            if (!chp.cpPages.isEmpty())
-                cctx.wal().allowCompressionUntil(chp.cpEntry.checkpointMark());
-        }
-
-        /**
-         * @param cpEntry Checkpoint entry.
-         * @return {True} if delete fail.
-         */
-        private boolean removeCheckpointFiles(CheckpointEntry cpEntry) {
-            File startFile = new File(cpDir.getAbsolutePath(), cpEntry.startFile());
-            File endFile = new File(cpDir.getAbsolutePath(), cpEntry.endFile());
-
-            boolean rmvdStart = !startFile.exists() || startFile.delete();
-            boolean rmvdEnd = !endFile.exists() || endFile.delete();
-
-            boolean fail = !rmvdStart || !rmvdEnd;
-
-            if (fail) {
-                U.warn(log, "Failed to remove stale checkpoint files [startFile=" + startFile.getAbsolutePath() +
-                    ", endFile=" + endFile.getAbsolutePath() + ']');
-
-                if (histMap.size() > 2 * maxCpHistMemSize) {
-                    U.error(log, "Too many stale checkpoint entries in the map, will truncate WAL archive anyway.");
-
-                    fail = false;
-                }
-            }
-
-            return fail;
-        }
-    }
-
-    /**
-     * Checkpoint entry.
-     */
-    private static class CheckpointEntry {
-        /** Checkpoint timestamp. */
-        private long cpTs;
-
-        /** Checkpoint end mark. */
-        private WALPointer cpMark;
-
-        /** Checkpoint ID. */
-        private UUID cpId;
-
-        /** */
-        private volatile SoftReference<GroupStateLazyStore> grpStateLazyStore;
-
-        /**
-         * Checkpoint entry constructor.
-         *
-         * If {@code grpStates} is null then it will be inited lazy from wal pointer.
-         *
-         * @param cpTs Checkpoint timestamp.
-         * @param cpMark Checkpoint mark pointer.
-         * @param cpId Checkpoint ID.
-         * @param cacheGrpStates Cache groups states.
-         */
-        private CheckpointEntry(
-            long cpTs,
-            WALPointer cpMark,
-            UUID cpId,
-            @Nullable Map<Integer, CacheState> cacheGrpStates
-        ) {
-            this.cpTs = cpTs;
-            this.cpMark = cpMark;
-            this.cpId = cpId;
-            this.grpStateLazyStore = new SoftReference<>(new GroupStateLazyStore(cacheGrpStates));
-        }
-
-        /**
-         * @return Checkpoint timestamp.
-         */
-        private long checkpointTimestamp() {
-            return cpTs;
-        }
-
-        /**
-         * @return Checkpoint ID.
-         */
-        private UUID checkpointId() {
-            return cpId;
-        }
-
-        /**
-         * @return Checkpoint mark.
-         */
-        private WALPointer checkpointMark() {
-            return cpMark;
-        }
-
-        /**
-         * @return Start file name.
-         */
-        private String startFile() {
-            return checkpointFileName(cpTs, cpId, CheckpointEntryType.START);
-        }
-
-        /**
-         * @return End file name.
-         */
-        private String endFile() {
-            return checkpointFileName(cpTs, cpId, CheckpointEntryType.END);
-        }
-
-        /**
-         * @param cctx Cache shred context.
-         */
-        public Map<Integer, GroupState> groupState(
-            GridCacheSharedContext cctx
-        ) throws IgniteCheckedException {
-            GroupStateLazyStore store = initIfNeeded(cctx);
-
-            return store.grpStates;
-        }
-
-        /**
-         * @param cctx Cache shred context.
-         * @return Group lazy store.
-         */
-        private GroupStateLazyStore initIfNeeded(GridCacheSharedContext cctx) throws IgniteCheckedException {
-            GroupStateLazyStore store = grpStateLazyStore.get();
-
-            if (store == null) {
-                store = new GroupStateLazyStore();
-
-                grpStateLazyStore = new SoftReference<>(store);
-            }
-
-            store.initIfNeeded(cctx, cpMark);
-
-            return store;
-        }
-
-        /**
-         * @param cctx Cache shared context.
-         * @param grpId Cache group ID.
-         * @param part Partition ID.
-         * @return Partition counter or {@code null} if not found.
-         */
-        private Long partitionCounter(GridCacheSharedContext cctx, int grpId, int part) {
-            GroupStateLazyStore store;
-
-            try {
-                store = initIfNeeded(cctx);
-            }
-            catch (IgniteCheckedException e) {
-                return null;
-            }
-
-            return store.partitionCounter(grpId, part);
-        }
-
-        /**
-         *
-         */
-        private static class GroupState {
-            /** */
-            private int[] parts;
-
-            /** */
-            private long[] cnts;
-
-            /** */
-            private int idx;
-
-            /**
-             * @param partsCnt Partitions count.
-             */
-            private GroupState(int partsCnt) {
-                parts = new int[partsCnt];
-                cnts = new long[partsCnt];
-            }
-
-            /**
-             * @param partId Partition ID to add.
-             * @param cntr Partition counter.
-             */
-            public void addPartitionCounter(int partId, long cntr) {
-                if (idx == parts.length)
-                    throw new IllegalStateException("Failed to add new partition to the partitions state " +
-                        "(no enough space reserved) [partId=" + partId + ", reserved=" + parts.length + ']');
-
-                if (idx > 0) {
-                    if (parts[idx - 1] >= partId)
-                        throw new IllegalStateException("Adding partition in a wrong order [prev=" + parts[idx - 1] +
-                            ", cur=" + partId + ']');
-                }
-
-                parts[idx] = partId;
-
-                cnts[idx] = cntr;
-
-                idx++;
-            }
-
-            /**
-             * Gets partition counter by partition ID.
-             *
-             * @param partId Partition ID.
-             * @return Partition update counter (will return {@code -1} if partition is not present in the record).
-             */
-            public long counterByPartition(int partId) {
-                int idx = indexByPartition(partId);
-
-                return idx >= 0 ? cnts[idx] : 0;
-            }
-
-            public long size(){
-                return idx;
-            }
-
-            /**
-             * @param partId Partition ID to search.
-             * @return Non-negative index of partition if found or negative value if not found.
-             */
-            private int indexByPartition(int partId) {
-                return Arrays.binarySearch(parts, 0, idx, partId);
-            }
-
-            /** {@inheritDoc} */
-            @Override public String toString() {
-                return "GroupState [cap=" + parts.length + ", size=" + idx + ']';
-            }
-        }
-
-        /**
-         *  Group state lazy store.
-         */
-        private static class GroupStateLazyStore {
-            /** */
-            private static final AtomicIntegerFieldUpdater<GroupStateLazyStore> initGuardUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(GroupStateLazyStore.class, "initGuard");
-
-            /** Cache states. Initialized lazily. */
-            private volatile Map<Integer, GroupState> grpStates;
-
-            /** */
-            private final CountDownLatch latch;
-
-            /** */
-            @SuppressWarnings("unused")
-            private volatile int initGuard;
-
-            /** Initialization exception. */
-            private IgniteCheckedException initEx;
-
-            /**
-             * Default constructor.
-             */
-            private GroupStateLazyStore() {
-                this(null);
-            }
-
-            /**
-             * @param cacheGrpStates Cache group state.
-             */
-            private GroupStateLazyStore(Map<Integer, CacheState> cacheGrpStates) {
-                CountDownLatch latch;
-
-                if (cacheGrpStates != null) {
-                    initGuard = 1;
-
-                    this.latch = new CountDownLatch(0);
-                }
-                else
-                    this.latch = new CountDownLatch(1);
-
-                this.grpStates = remap(cacheGrpStates);
-            }
-
-            /**
-             * @param stateRec Cache group state.
-             */
-            private Map<Integer, GroupState> remap(Map<Integer, CacheState> stateRec) {
-                if (stateRec == null)
-                    return null;
-
-                Map<Integer, GroupState> grpStates = new HashMap<>(stateRec.size());
-
-                for (Integer grpId : stateRec.keySet()) {
-                    CacheState recState = stateRec.get(grpId);
-
-                    GroupState groupState = new GroupState(recState.size());
-
-                    for (int i = 0; i < recState.size(); i++) {
-                        groupState.addPartitionCounter(
-                            recState.partitionByIndex(i),
-                            recState.partitionCounterByIndex(i)
-                        );
-                    }
-
-                    grpStates.put(grpId, groupState);
-                }
-
-                return grpStates;
-            }
-
-            /**
-             * @param grpId Group id.
-             * @param part Partition id.
-             * @return Partition counter.
-             */
-            private Long partitionCounter(int grpId, int part) {
-                assert initGuard != 0 : initGuard;
-
-                if (initEx != null || grpStates == null)
-                    return null;
-
-                GroupState state = grpStates.get(grpId);
-
-                if (state != null) {
-                    long cntr = state.counterByPartition(part);
-
-                    return cntr < 0 ? null : cntr;
-                }
-
-                return null;
-            }
-
-            /**
-             * @param cctx Cache shared context.
-             * @param ptr Checkpoint wal pointer.
-             * @throws IgniteCheckedException If failed to read WAL entry.
-             */
-            private void initIfNeeded(
-                GridCacheSharedContext cctx,
-                WALPointer ptr
-            ) throws IgniteCheckedException {
-                if (initGuardUpdater.compareAndSet(this, 0, 1)) {
-                    try (WALIterator it = cctx.wal().replay(ptr)) {
-                        if (it.hasNextX()) {
-                            IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
-
-                            CheckpointRecord rec = (CheckpointRecord)tup.get2();
-
-                            Map<Integer, CacheState> stateRec = rec.cacheGroupStates();
-
-                            if (stateRec != null)
-                                this.grpStates = remap(stateRec);
-                            else
-                                grpStates = Collections.emptyMap();
-                        }
-                        else
-                            initEx = new IgniteCheckedException(
-                                "Failed to find checkpoint record at the given WAL pointer: " + ptr);
-                    }
-                    catch (IgniteCheckedException e) {
-                        initEx = e;
-
-                        throw e;
-                    }
-                    finally {
-                        latch.countDown();
-                    }
-                }
-                else {
-                    U.await(latch);
-
-                    if (initEx != null)
-                        throw initEx;
-                }
-            }
         }
     }
 
@@ -4881,8 +4250,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             else {
                 metaStorage.write(key, true);
 
-                CheckpointEntry lastCp = checkpointHist.lastEntry();
-                Long lastCpTs = lastCp != null ? lastCp.cpTs : null;
+                CheckpointEntry lastCp = cpHistory.lastCheckpoint();
+                Long lastCpTs = lastCp != null ? lastCp.timestamp() : null;
 
                 metaStorage.write(walDisabledAfterCpAndGroupIdToKey(lastCpTs, grpId), true);
             }
