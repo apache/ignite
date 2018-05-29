@@ -53,7 +53,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     private GridLongList activeCacheIds = new GridLongList();
 
     /** Per-transaction read map. */
-    @GridToStringInclude
+    @GridToStringExclude
     protected Map<IgniteTxKey, IgniteTxEntry> txMap;
 
     /** Read view on transaction map. */
