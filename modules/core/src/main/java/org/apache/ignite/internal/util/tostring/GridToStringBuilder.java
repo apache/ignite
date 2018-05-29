@@ -901,43 +901,48 @@ public class GridToStringBuilder {
      *
      * @param buf buffer to print to.
      * @param val value to print, can be {@code null}.
+     * @param objs Map with saved objects to handle recursion.
      */
-    private static void toString(SBLimitedLength buf, Object val) {
-        toString(buf, null, val);
+    private static void toString(SBLimitedLength buf, Object val, IdentityHashMap<Object, Integer> objs) {
+        toString(buf, null, val, objs);
     }
 
     /**
      * Print value with length limitation.
      *
      * @param buf buffer to print to.
-     * @param valClass value class.
+     * @param valCls value class.
      * @param val value to print.
+     * @param objs Map with saved objects to handle recursion.
      */
-    private static void toString(SBLimitedLength buf, Class<?> valClass, Object val) {
+    private static void toString(SBLimitedLength buf, Class<?> valCls, Object val,
+        IdentityHashMap<Object, Integer> objs) {
         if (val == null) {
             buf.a("null");
 
             return;
         }
 
-        if (checkObjectInBuffer(buf, val))
+        if (handleRecursion(buf, val, objs))
             return;
 
-        if (valClass == null)
-            valClass = val.getClass();
+        objs.put(val, buf.length());
+
+        if (valCls == null)
+            valCls = val.getClass();
 
         try {
-            if (valClass.isArray())
-                addArray(buf, valClass, val);
+            if (valCls.isArray())
+                addArray(buf, valCls, val, objs);
             else if (val instanceof Collection)
-                addCollection(buf, (Collection) val);
+                addCollection(buf, (Collection) val, objs);
             else if (val instanceof Map)
-                addMap(buf, (Map<?, ?>) val);
+                addMap(buf, (Map<?, ?>) val, objs);
             else
                 toStringImpl((Class)val.getClass(), buf, val, new Object[] {}, new Object[] {}, null, 0, false);
         }
         finally {
-            savedObjects.get().remove(val);
+            objs.remove(val);
         }
     }
 
@@ -946,14 +951,15 @@ public class GridToStringBuilder {
      *
      * @param buf String builder buffer.
      * @param col Array object.
+     * @param objs Map with saved objects to handle recursion.
      */
-    private static void addCollection(SBLimitedLength buf, Collection col) {
+    private static void addCollection(SBLimitedLength buf, Collection col, IdentityHashMap<Object, Integer> objs) {
         buf.a(col.getClass().getSimpleName()).a(" [");
 
         int cnt = 0;
 
         for (Object obj : col) {
-            toString(buf, obj);
+            toString(buf, obj, objs);
 
             if (++cnt == COLLECTION_LIMIT || cnt == col.size())
                 break;
@@ -971,18 +977,19 @@ public class GridToStringBuilder {
      *
      * @param buf String builder buffer.
      * @param map Array object.
+     * @param objs Map with saved objects to handle recursion.
      */
-    private static <K, V> void addMap(SBLimitedLength buf, Map<K, V> map) {
+    private static <K, V> void addMap(SBLimitedLength buf, Map<K, V> map, IdentityHashMap<Object, Integer> objs) {
         buf.a(map.getClass().getSimpleName()).a(" {");
 
         int cnt = 0;
 
         for (Map.Entry<K, V> e : map.entrySet()) {
-            toString(buf, e.getKey());
+            toString(buf, e.getKey(), objs);
 
             buf.a('=');
 
-            toString(buf, e.getValue());
+            toString(buf, e.getValue(), objs);
 
             if (++cnt == COLLECTION_LIMIT || cnt == map.size())
                 break;
@@ -1047,19 +1054,21 @@ public class GridToStringBuilder {
             return null;
         }
 
+        IdentityHashMap<Object, Integer> objs = savedObjects.get();
+
+        if (isOuterCall) {
+            buf.setLength(0);
+
+            // Real outer call will not have cached object, so method will return string later.
+            // Inner call don't need the returned string, so here we can return null.
+            if (handleRecursion(buf, obj, objs))
+                return null;
+        }
+
         try {
             GridToStringClassDescriptor cd = getClassDescriptor(cls);
 
             assert cd != null;
-
-            if (isOuterCall) {
-                buf.setLength(0);
-
-                // Real outer call will not have cached object, so method will return string later.
-                // Inner call don't need the returned string, so here we can return null.
-                if (checkObjectInBuffer(buf, obj))
-                    return null;
-            }
 
             buf.a(cd.getSimpleClassName()).a(" [");
 
@@ -1081,10 +1090,10 @@ public class GridToStringBuilder {
 
                 Class<?> fieldType = field.getType();
 
-                toString(buf, fieldType, field.get(obj));
+                toString(buf, fieldType, field.get(obj), objs);
             }
 
-            appendVals(buf, first, addNames, addVals, addSens, addLen);
+            appendVals(buf, first, addNames, addVals, addSens, addLen, objs);
 
             buf.a(']');
 
@@ -1106,7 +1115,7 @@ public class GridToStringBuilder {
             // No other option here.
             throw new IgniteException(e);
         } finally {
-            savedObjects.get().remove(obj);
+            objs.remove(obj);
         }
     }
 
@@ -1138,18 +1147,8 @@ public class GridToStringBuilder {
      * @param arr Array object.
      * @return String representation of an array.
      */
-    public static <T> String arrayToString(Class arrType, Object arr) {
-        return arrayToString(null, arrType, arr);
-    }
-
-    /**
-     * @param buf String builder buffer.
-     * @param arrType Type of the array.
-     * @param arr Array object.
-     * @return String representation of an array.
-     */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    private static <T> String arrayToString(SBLimitedLength buf, Class arrType, Object arr) {
+    private static <T> String arrayToString(Class arrType, Object arr) {
         if (arr == null)
             return "null";
 
@@ -1246,11 +1245,10 @@ public class GridToStringBuilder {
      * @param buf String builder buffer.
      * @param arrType Type of the array.
      * @param obj Array object.
+     * @param objs Map with saved objects to handle recursion.
      */
-    private static void addArray(SBLimitedLength buf, Class arrType, Object obj) {
-        if (obj == null)
-            return;
-
+    private static void addArray(SBLimitedLength buf, Class arrType, Object obj,
+        IdentityHashMap<Object, Integer> objs) {
         if (isPrimitiveArrayType(arrType)) {
             buf.a(arrayToString(arrType, obj));
 
@@ -1262,7 +1260,7 @@ public class GridToStringBuilder {
         buf.a(arrType.getSimpleName()).a(" [");
 
         for (int i = 0; i < arr.length; i++) {
-            toString(buf, arr[i]);
+            toString(buf, arr[i], objs);
 
             if (i == COLLECTION_LIMIT - 1)
                 break;
@@ -1818,7 +1816,7 @@ public class GridToStringBuilder {
 
         buf.a("[");
 
-        appendVals(buf, true, propNames, propVals, propSens, propCnt);
+        appendVals(buf, true, propNames, propVals, propSens, propCnt, savedObjects.get());
 
         buf.a(']');
 
@@ -1834,13 +1832,15 @@ public class GridToStringBuilder {
      * @param addVals Additional values to be included.
      * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
      * @param addLen How many additional values will be included.
+     * @param objs Map with saved objects to handle recursion.
      */
     private static void appendVals(SBLimitedLength buf,
         boolean first,
         Object[] addNames,
         Object[] addVals,
         boolean[] addSens,
-        int addLen)
+        int addLen,
+        IdentityHashMap<Object, Integer> objs)
     {
         if (addLen > 0) {
             for (int i = 0; i < addLen; i++) {
@@ -1863,7 +1863,7 @@ public class GridToStringBuilder {
 
                 buf.a(addNames[i]).a('=');
 
-                toString(buf, addVal);
+                toString(buf, addVal, objs);
             }
         }
     }
@@ -2016,56 +2016,50 @@ public class GridToStringBuilder {
 
     /**
      * Checks that object is already saved.
-     * In positive case this method insetrs hash to the saved object entry (if needed) and name@hash for current entry.
-     * If this is first object entry - it will be saved and nothing applied to buffer.
+     * In positive case this method inserts hash to the saved object entry (if needed) and name@hash for current entry.
+     * Further toString operations are not needed for current object.
      *
      * @param buf String builder buffer.
      * @param obj Object.
-     * @return {@code True} if object is already saved. {@code False} if it wasn't saved previously, but now is saved.
+     * @param objs Map with saved objects to handle recursion.
+     * @return {@code True} if object is already saved and name@hash was added to buffer.
+     * {@code False} if it wasn't saved previously and it should be saved.
      */
-    private static boolean checkObjectInBuffer(SBLimitedLength buf, Object obj) {
-        if (isPrimitiveArrayType(obj.getClass()))
+    private static boolean handleRecursion(SBLimitedLength buf, Object obj, IdentityHashMap<Object, Integer> objs) {
+        if (isPrimitiveArrayType(obj.getClass()) || !objs.containsKey(obj))
             return false;
 
-        IdentityHashMap<Object, Integer> objs = savedObjects.get();
+        Integer pos = objs.get(obj);
 
-        if (objs.containsKey(obj)) {
-            Integer pos = objs.get(obj);
+        if (pos == null)
+            throw new IllegalStateException("Wrong object was saved. [obj=" + obj + ']');
 
-            if (pos == null)
-                throw new IllegalStateException("Wrong object was saved. [obj=" + obj + ']');
+        String name = obj.getClass().getSimpleName();
+        String hash = '@' + Integer.toHexString(System.identityHashCode(obj));
+        String savedName = name + hash;
 
-            String name = obj.getClass().getSimpleName();
-            String hash = '@' + Integer.toHexString(System.identityHashCode(obj));
-            String savedName = name + hash;
+        if (!buf.isOverflowed() && buf.impl().indexOf(savedName, pos) != pos) {
+            buf.i(pos + name.length(), hash);
 
-            if (!buf.isOverflowed() && buf.impl().indexOf(savedName, pos) != pos) {
-                buf.i(pos + name.length(), hash);
-
-                incValues(objs, obj, hash.length());
-            }
-
-            buf.a(savedName);
-
-            return true;
+            incValues(objs, obj, hash.length());
         }
 
-        objs.put(obj, buf.length());
+        buf.a(savedName);
 
-        return false;
+        return true;
     }
 
     /**
      * Increment positions of already presented objects afterward given object.
      *
-     * @param map Map with objects already presented in the buffer.
+     * @param objs Map with objects already presented in the buffer.
      * @param obj Object.
      * @param hashLen Length of the object's hash.
      */
-    private static void incValues(IdentityHashMap<Object, Integer> map, Object obj, int hashLen) {
-        Integer baseline = map.get(obj);
+    private static void incValues(IdentityHashMap<Object, Integer> objs, Object obj, int hashLen) {
+        Integer baseline = objs.get(obj);
 
-        for (IdentityHashMap.Entry<Object, Integer> entry : map.entrySet()) {
+        for (IdentityHashMap.Entry<Object, Integer> entry : objs.entrySet()) {
             Integer pos = entry.getValue();
 
             if (pos > baseline)
