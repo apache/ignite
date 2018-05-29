@@ -468,6 +468,9 @@ public class StripedExecutor implements ExecutorService {
         /** Critical failure handler. */
         private Consumer<Throwable> errHnd;
 
+        /** */
+        private long lastOnIdleTs = U.currentTimeMillis();
+
         /**
          * @param igniteInstanceName Ignite instance name.
          * @param poolName Pool name.
@@ -537,6 +540,8 @@ public class StripedExecutor implements ExecutorService {
         /** {@inheritDoc} */
         @SuppressWarnings("NonAtomicOperationOnVolatileField")
         @Override public void body() {
+            final long onIdleTimeout = WAIT_TIMEOUT_NS / 1000;
+
             while (!stopping) {
                 Runnable cmd;
 
@@ -544,6 +549,12 @@ public class StripedExecutor implements ExecutorService {
                     updateHeartbeat();
 
                     cmd = take();
+
+                    if (U.currentTimeMillis() - lastOnIdleTs > onIdleTimeout) {
+                        onIdle();
+
+                        lastOnIdleTs = U.currentTimeMillis();
+                    }
 
                     if (cmd != null) {
                         active = true;

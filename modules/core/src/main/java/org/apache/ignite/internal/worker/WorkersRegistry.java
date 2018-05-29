@@ -38,7 +38,7 @@ public class WorkersRegistry implements GridWorkerListener, GridWorkerIdlenessHa
     private static final int NO_OF_WORKERS_TO_CHECK_AT_ONCE = 5;
 
     /** */
-    private static final long CHECK_INTERVAL_MS = 10_000;
+    private static final long CHECK_INTERVAL_MS = 3_000;
 
     /** Registered workers. */
     private final ConcurrentMap<String, GridWorker> registeredWorkers = new ConcurrentHashMap<>();

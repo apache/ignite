@@ -4213,6 +4213,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** Worker that encapsulates thread body */
         private GridWorker worker;
 
+        /** */
+        private long lastOnIdleTs = U.currentTimeMillis();
+
         /**
          * @param igniteInstanceName Ignite instance name.
          */
@@ -4242,7 +4245,23 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 while (!isInterrupted()) {
                     worker.updateHeartbeat();
 
-                    DisconnectedSessionInfo disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
+                    long millisToWait = idleConnTimeout;
+
+                    DisconnectedSessionInfo disconnectData = null;
+
+                    while (millisToWait > 0) {
+                        long start = System.currentTimeMillis();
+
+                        disconnectData = q.poll(Math.min(millisToWait, 5000), TimeUnit.MILLISECONDS);
+
+                        if (U.currentTimeMillis() - lastOnIdleTs > worker.criticalHeartbeatTimeoutMs() / 2) {
+                            worker.onIdle();
+
+                            lastOnIdleTs = U.currentTimeMillis();
+                        }
+
+                        millisToWait -= System.currentTimeMillis() - start;
+                    }
 
                     if (disconnectData != null)
                         processDisconnect(disconnectData);

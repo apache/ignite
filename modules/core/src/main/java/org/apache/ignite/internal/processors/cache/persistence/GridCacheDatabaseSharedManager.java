@@ -2963,6 +2963,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         /** */
         private long lastCpTs;
 
+        /** */
+        private long lastOnIdleTs = U.currentTimeMillis();
+
         /**
          * @param gridName Grid name.
          * @param name Thread name.
@@ -3412,6 +3415,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         wait(Math.min(remaining, waitTimeoutMs));
 
                         now = U.currentTimeMillis();
+
+                        if (now - lastOnIdleTs > waitTimeoutMs) {
+                            onIdle();
+
+                            lastOnIdleTs = now;
+                        }
                     }
                 }
             }

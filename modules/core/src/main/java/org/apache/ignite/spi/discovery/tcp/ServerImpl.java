@@ -2586,7 +2586,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private GridWorker worker;
 
         /** */
-        private long lastOnIdleTs = System.currentTimeMillis();
+        private long lastOnIdleTs = U.currentTimeMillis();
 
         /**
          */
@@ -2609,10 +2609,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             setBeforeEachPollAction(() -> {
                 worker.updateHeartbeat();
 
-                if (System.currentTimeMillis() - lastOnIdleTs > worker.criticalHeartbeatTimeoutMs() / 2) {
+                if (U.currentTimeMillis() - lastOnIdleTs > worker.criticalHeartbeatTimeoutMs() / 2) {
                     worker.onIdle();
 
-                    lastOnIdleTs = System.currentTimeMillis();
+                    lastOnIdleTs = U.currentTimeMillis();
                 }
             });
         }
@@ -5703,7 +5703,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 Socket sock;
 
-                long lastOnIdleTs = System.currentTimeMillis();
+                long lastOnIdleTs = U.currentTimeMillis();
 
                 while (!isInterrupted()) {
                     worker.updateHeartbeat();
@@ -5714,7 +5714,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     catch (SocketTimeoutException ignored) {
                         worker.onIdle();
 
-                        lastOnIdleTs = System.currentTimeMillis();
+                        lastOnIdleTs = U.currentTimeMillis();
 
                         continue;
                     }
@@ -5739,10 +5739,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     spi.stats.onServerSocketInitialized(U.currentTimeMillis() - tstamp);
 
-                    if (System.currentTimeMillis() - lastOnIdleTs > acceptTimeoutMs) {
+                    if (U.currentTimeMillis() - lastOnIdleTs > acceptTimeoutMs) {
                         worker.onIdle();
 
-                        lastOnIdleTs = System.currentTimeMillis();
+                        lastOnIdleTs = U.currentTimeMillis();
                     }
                 }
             }

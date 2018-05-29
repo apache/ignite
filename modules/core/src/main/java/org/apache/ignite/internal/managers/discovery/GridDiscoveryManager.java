@@ -2661,7 +2661,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private final long pollTimeoutMs = IgniteSystemProperties.getLong(POLL_TIMEOUT_PROP, DFLT_POLL_TIMEOUT);
 
         /** */
-        private long lastOnIdleTs = System.currentTimeMillis();
+        private long lastOnIdleTs = U.currentTimeMillis();
 
         /**
          *
@@ -2782,10 +2782,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 evt = evts.poll(pollTimeoutMs, TimeUnit.MILLISECONDS);
 
-                if (evt == null || System.currentTimeMillis() - lastOnIdleTs > pollTimeoutMs) {
+                if (evt == null || U.currentTimeMillis() - lastOnIdleTs > pollTimeoutMs) {
                     onIdle();
 
-                    lastOnIdleTs = System.currentTimeMillis();
+                    lastOnIdleTs = U.currentTimeMillis();
                 }
             } while (evt == null);
 
@@ -3331,7 +3331,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (CU.affinityNode(node, grpAff.cacheFilter)) {
                     if (grpAff.persistentCacheGrp && bltNodes != null && !bltNodes.contains(node.id())) // Filter out.
                         continue;
-                    
+
                     List<ClusterNode> nodes = cacheGrpAffNodes.get(grpId);
 
                     if (nodes == null)

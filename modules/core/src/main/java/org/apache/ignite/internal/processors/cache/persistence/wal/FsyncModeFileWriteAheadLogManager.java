@@ -1432,6 +1432,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     // once it was archived.
                 }
 
+                long lastOnIdleTs = U.currentTimeMillis();
+
                 while (!Thread.currentThread().isInterrupted() && !stopped) {
                     worker.updateHeartbeat();
 
@@ -1448,6 +1450,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         }
 
                         toArchive = lastAbsArchivedIdx + 1;
+                    }
+
+                    if (U.currentTimeMillis() - lastOnIdleTs > waitTimeoutMs) {
+                        worker.onIdle();
+
+                        lastOnIdleTs = U.currentTimeMillis();
                     }
 
                     if (stopped)

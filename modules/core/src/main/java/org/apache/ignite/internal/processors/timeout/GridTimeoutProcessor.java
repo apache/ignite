@@ -156,11 +156,19 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
         @Override protected void body() throws InterruptedException {
             Throwable err = null;
 
+            long lastOnIdleTs = U.currentTimeMillis();
+
             try {
                 while (!isCancelled()) {
                     updateHeartbeat();
 
                     long now = U.currentTimeMillis();
+
+                    if (now - lastOnIdleTs > DFLT_WAIT_TIME) {
+                        onIdle();
+
+                        lastOnIdleTs = now;
+                    }
 
                     for (Iterator<GridTimeoutObject> iter = timeoutObjs.iterator(); iter.hasNext(); ) {
                         GridTimeoutObject timeoutObj = iter.next();

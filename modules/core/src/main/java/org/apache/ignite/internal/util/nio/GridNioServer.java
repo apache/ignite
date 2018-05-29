@@ -1784,6 +1784,8 @@ public class GridNioServer<T> {
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             Throwable err = null;
 
+            long lastOnIdleTs = U.currentTimeMillis();
+
             try {
                 boolean reset = false;
 
@@ -1793,6 +1795,12 @@ public class GridNioServer<T> {
                             createSelector();
 
                         bodyInternal();
+
+                        if (U.currentTimeMillis() - lastOnIdleTs > criticalHeartbeatTimeoutMs()) {
+                            onIdle();
+
+                            lastOnIdleTs = U.currentTimeMillis();
+                        }
                     }
                     catch (IgniteCheckedException e) {
                         if (!Thread.currentThread().isInterrupted()) {
@@ -2830,6 +2838,9 @@ public class GridNioServer<T> {
         /** Selector for this thread. */
         private Selector selector;
 
+        /** */
+        private long lastOnIdleTs = U.currentTimeMillis();
+
         /**
          * @param igniteInstanceName Ignite instance name.
          * @param name Thread name.
@@ -2919,6 +2930,12 @@ public class GridNioServer<T> {
 
                     if (balancer != null)
                         balancer.run();
+
+                    if (U.currentTimeMillis() - lastOnIdleTs > criticalHeartbeatTimeoutMs() / 2) {
+                        onIdle();
+
+                        lastOnIdleTs = U.currentTimeMillis();
+                    }
                 }
             }
             // Ignore this exception as thread interruption is equal to 'close' call.

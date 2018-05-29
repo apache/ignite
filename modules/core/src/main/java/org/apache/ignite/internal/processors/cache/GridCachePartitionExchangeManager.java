@@ -2358,6 +2358,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             long cnt = 0;
 
+            long lastOnIdleTs = U.currentTimeMillis();
+
             while (!isCancelled()) {
                 updateHeartbeat();
 
@@ -2401,6 +2403,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     updateHeartbeat();
 
                     task = futQ.poll(timeout, MILLISECONDS);
+
+                    if (U.currentTimeMillis() - lastOnIdleTs > timeout) {
+                        onIdle();
+
+                        lastOnIdleTs = U.currentTimeMillis();
+                    }
 
                     if (task == null)
                         continue; // Main while loop.
@@ -2472,7 +2480,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 try {
                                     updateHeartbeat();
 
-                                    resVer = exchFut.get(rollbackTimeout > 0 ? rollbackTimeout : dumpTimeout);
+                                    long exchTimeout = rollbackTimeout > 0 ? rollbackTimeout : dumpTimeout;
+
+                                    resVer = exchFut.get(exchTimeout);
+
+                                    if (U.currentTimeMillis() - lastOnIdleTs > exchTimeout) {
+                                        onIdle();
+
+                                        lastOnIdleTs = U.currentTimeMillis();
+                                    }
 
                                     break;
                                 }

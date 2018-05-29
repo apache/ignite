@@ -1592,6 +1592,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     // once it was archived.
                 }
 
+                long lastOnIdleTs = U.currentTimeMillis();
+
                 while (!Thread.currentThread().isInterrupted() && !stopped) {
                     long toArchive;
 
@@ -1606,6 +1608,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
 
                         toArchive = lastAbsArchivedIdx + 1;
+                    }
+
+                    if (U.currentTimeMillis() - lastOnIdleTs > waitTimeoutMs) {
+                        worker.onIdle();
+
+                        lastOnIdleTs = U.currentTimeMillis();
                     }
 
                     if (stopped)
@@ -3242,6 +3250,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             Throwable err = null;
 
+            long lastOnIdleTs = U.currentTimeMillis();
+
             try {
                 while (!shutdown && !Thread.currentThread().isInterrupted()) {
                     while (waiters.isEmpty()) {
@@ -3255,6 +3265,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                             return;
                         }
+                    }
+
+                    if (U.currentTimeMillis() - lastOnIdleTs > waitTimeoutNs / 1000) {
+                        worker.onIdle();
+
+                        lastOnIdleTs = U.currentTimeMillis();
                     }
 
                     Long pos = null;
