@@ -2120,7 +2120,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     public void waitAndReplyToNode(final UUID nodeId, final GridDhtPartitionsSingleMessage msg) {
         if (log.isDebugEnabled())
-            log.debug("GridDhtPartitionsSingleMessage will be handled on completion of exchange future: " + this);
+            log.debug("Single message will be handled on completion of exchange future: " + this);
 
         listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
             @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
@@ -2140,10 +2140,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     if (node == null) {
                         if (log.isDebugEnabled())
-                            log.debug("No node found for nodeId: "
-                                + nodeId
-                                + ", handling of SingleMessage will be stopped: "
-                                + msg
+                            log.debug("No node found for nodeId: " +
+                                nodeId +
+                                ", handling of single message will be stopped: " +
+                                msg
                             );
 
                         return;
@@ -2214,6 +2214,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 ", allReceived=" + allReceived + ']');
                         }
                     }
+                    else if (log.isDebugEnabled())
+                        log.debug("Coordinator received single message it didn't expect to receive: " + msg);
 
                     break;
                 }
@@ -2894,9 +2896,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 cctx.io().send(node, fullMsg, SYSTEM_POOL);
 
                 if (log.isDebugEnabled())
-                    log.debug("FullMessage was sent to node: "
-                        + node
-                        + ", fullMsg: " + fullMsg
+                    log.debug("Full message was sent to node: " +
+                        node +
+                        ", fullMsg: " + fullMsg
                     );
             }
             catch (ClusterTopologyCheckedException e) {

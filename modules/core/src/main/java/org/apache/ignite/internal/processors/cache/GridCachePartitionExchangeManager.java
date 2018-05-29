@@ -1556,7 +1556,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(msg.exchangeId(), null, null, null, null);
 
                 if (log.isDebugEnabled())
-                    log.debug("Notifying exchange future about GridDhtPartitionsSingleMessage: " + exchFut);
+                    log.debug("Notifying exchange future about single message: " + exchFut);
 
                 exchFut.onReceiveSingleMessage(node, msg);
             }
