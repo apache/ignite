@@ -396,6 +396,60 @@ public class DataStorageMetricsImpl implements DataStorageMetricsMXBean {
         return totalAllocatedSize;
     }
 
+    /** {@inheritDoc} */
+    @Override public long getUsedCheckpointBufferPages() {
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long usedCheckpointBufferPages = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            usedCheckpointBufferPages += rm.getUsedCheckpointBufferPages();
+
+        return usedCheckpointBufferPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getUsedCheckpointBufferSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long usedCheckpointBufferSize = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            usedCheckpointBufferSize += rm.getUsedCheckpointBufferSize();
+
+        return usedCheckpointBufferSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferSize(){
+        if (!metricsEnabled)
+            return 0;
+
+        Collection<DataRegionMetrics> regionMetrics0 = regionMetrics;
+
+        if (F.isEmpty(regionMetrics0))
+            return 0;
+
+        long checkpointBufferSize = 0L;
+
+        for (DataRegionMetrics rm : regionMetrics0)
+            checkpointBufferSize += rm.getCheckpointBufferSize();
+
+        return checkpointBufferSize;
+    }
+
     /**
      * @param wal Write-ahead log manager.
      */
