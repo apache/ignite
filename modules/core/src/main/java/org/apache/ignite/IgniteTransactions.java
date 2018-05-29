@@ -124,4 +124,9 @@ public interface IgniteTransactions {
      * @throws NullPointerException if label is null.
      */
     public IgniteTransactions withLabel(String lb);
+
+    /**
+     * @return Transaction label.
+     */
+    public String label();
 }

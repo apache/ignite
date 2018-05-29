@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Collection;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.events.TransactionEvent;
+import org.apache.ignite.events.TransactionStartedEvent;
 import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -188,7 +188,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             GridEventStorageManager evt = cctx.gridEvents();
 
             if (sysCacheCtx == null /* ignoring system tx */ && evt.isRecordable(EVT_TX_STARTED))
-                evt.record(new TransactionEvent(cctx.discovery().localNode(), null, EVT_TX_STARTED, tx));
+                evt.record(new TransactionStartedEvent(cctx.discovery().localNode(), null, EVT_TX_STARTED, this));
 
             return tx;
         }
@@ -232,6 +232,11 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         A.notNull(lb, "label should not be empty.");
 
         return new IgniteTransactionsImpl<>(cctx, lb);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String label() {
+        return lb;
     }
 
     /**

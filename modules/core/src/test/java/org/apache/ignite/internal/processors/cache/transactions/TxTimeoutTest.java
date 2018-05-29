@@ -18,62 +18,27 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteEvents;
-import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.TransactionStartedEvent;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static org.apache.ignite.events.EventType.EVTS_TX;
 import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 
 /**
- * Tests transaction labels.
+ * Tests transaction timeout.
  */
-public class TxLabelTest extends GridCommonAbstractTest {
-    /**
-     * Tests transaction labels.
-     */
-    public void testLabel() throws Exception {
-        Ignite ignite = startGrid(0);
-
-        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
-
-        testLabel0(grid(0), "lbl0", cache);
-        testLabel0(grid(0), "lbl1", cache);
-
-        try {
-            testLabel0(grid(0), null, cache);
-
-            fail();
-        }
-        catch (NullPointerException e) {
-            assertTrue(e.getMessage().contains("label should not be empty."));
-        }
-    }
-
-    /**
-     * @param ignite Ignite.
-     * @param lbl Label.
-     */
-    private void testLabel0(Ignite ignite, String lbl, IgniteCache cache) {
-        try (Transaction tx = ignite.transactions().withLabel(lbl).txStart()) {
-            assertEquals(lbl, tx.label());
-
-            cache.put(0, 0);
-
-            tx.commit();
-        }
-    }
-
+public class TxTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testLabelFilledLocalGuarantee() throws Exception {
+    public void testTimeoutSetLocalGuarantee() throws Exception {
         Ignite ignite = startGrid(0);
 
         final IgniteEvents evts = ignite.events();
@@ -85,16 +50,33 @@ public class TxLabelTest extends GridCommonAbstractTest {
 
             TransactionStartedEvent evt = (TransactionStartedEvent)e;
 
-            IgniteTransactions tx = evt.tx();
+            Transaction tx = evt.tx().tx();
 
-            if (tx.label() == null)
-                tx.tx().rollback();
+            if (tx.timeout() < 200)
+                tx.rollback();
 
             return true;
         }, EVT_TX_STARTED);
 
-        try (Transaction tx = ignite.transactions().withLabel("test").txStart()) {
+        try (Transaction tx = ignite.transactions().txStart(
+            TransactionConcurrency.OPTIMISTIC,
+            TransactionIsolation.REPEATABLE_READ,
+            200,
+            2)) {
             tx.commit();
+        }
+
+        try (Transaction tx = ignite.transactions().txStart(
+            TransactionConcurrency.OPTIMISTIC,
+            TransactionIsolation.REPEATABLE_READ,
+            100,
+            2)) {
+            tx.commit();
+
+            fail("Should fail prior this line.");
+        }
+        catch (TransactionRollbackException ignored) {
+            // No-op.
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
@@ -110,7 +92,7 @@ public class TxLabelTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testLabelFilledRemoteGuarantee() throws Exception {
+    public void testTimeoutSetRemoteGuarantee() throws Exception {
         Ignite ignite = startGrid(0);
         Ignite remote = startGrid(1);
 
@@ -124,20 +106,28 @@ public class TxLabelTest extends GridCommonAbstractTest {
 
                 TransactionStartedEvent evt = (TransactionStartedEvent)e;
 
-                IgniteTransactions tx = evt.tx();
+                Transaction tx = evt.tx().tx();
 
-                if (tx.label() == null)
-                    tx.tx().rollback();
+                if (tx.timeout() == 0)
+                    tx.rollback();
 
                 return true;
             },
             EVT_TX_STARTED);
 
-        try (Transaction tx = ignite.transactions().withLabel("test").txStart()) {
+        try (Transaction tx = ignite.transactions().txStart(
+            TransactionConcurrency.OPTIMISTIC,
+            TransactionIsolation.REPEATABLE_READ,
+            100,
+            2)) {
             tx.commit();
         }
 
-        try (Transaction tx = remote.transactions().withLabel("test").txStart()) {
+        try (Transaction tx = remote.transactions().txStart(
+            TransactionConcurrency.OPTIMISTIC,
+            TransactionIsolation.REPEATABLE_READ,
+            100,
+            2)) {
             tx.commit();
         }
 

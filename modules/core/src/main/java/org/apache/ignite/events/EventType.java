@@ -995,7 +995,7 @@ public interface EventType {
      * {@link IgniteEvents#localListen(IgnitePredicate, int...)} method to
      * subscribe to all transaction events.
      *
-     * @see TransactionEvent
+     * @see TransactionStartedEvent
      */
     public static final int[] EVTS_TX = {
         EVT_TX_STARTED
