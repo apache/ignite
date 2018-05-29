@@ -44,6 +44,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
@@ -722,10 +723,28 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Checkpoint read-lock for atomic caches.
+     * @param cctx Cache context.
+     */
+    public void checkpointReadLock(GridCacheContext cctx) {
+        if (cctx.group().persistenceEnabled())
+            checkpointReadLock();
+    }
+
+    /**
      * No-op for non-persistent storage.
      */
     public void checkpointReadLock() {
         // No-op.
+    }
+
+    /**
+     * Checkpoint read-unlock for atomic caches.
+     * @param cctx Cache context.
+     */
+    public void checkpointReadUnlock(GridCacheContext cctx) {
+        if (cctx.group().persistenceEnabled())
+            checkpointReadUnlock();
     }
 
     /**
