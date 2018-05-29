@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -454,11 +455,15 @@ public class MvccUtils {
      * @param txId Transaction ID.
      * @return Currently started active user transaction, or {@code null} if none started.
      */
-    @Nullable private static GridNearTxLocal activeTx(GridKernalContext ctx, @Nullable GridCacheVersion txId) {
+    @Nullable private static GridNearTxLocal activeTx(GridKernalContext ctx, @Nullable GridCacheVersion txId) throws IgniteCheckedException {
         GridNearTxLocal tx = tx(ctx, txId);
 
         if (tx != null) {
-            assert tx.state() == TransactionState.ACTIVE;
+            if (tx.state() != TransactionState.ACTIVE) {
+                tx.setRollbackOnly();
+
+                throw new IgniteTxRollbackCheckedException("Failed to get active transaction. Transaction has been completed: [tx=" + tx + "]");
+            }
 
             return tx;
         }
@@ -469,8 +474,9 @@ public class MvccUtils {
     /**
      * @param ctx Grid kernal context.
      * @return Currently started active user transaction, or {@code null} if none started.
+     * @throws IgniteSQLException If failed.
      */
-    @Nullable public static GridNearTxLocal activeSqlTx(GridKernalContext ctx) {
+    @Nullable public static GridNearTxLocal activeSqlTx(GridKernalContext ctx) throws IgniteSQLException {
         return activeSqlTx(ctx, null);
     }
 
@@ -478,9 +484,18 @@ public class MvccUtils {
      * @param ctx Grid kernal context.
      * @param txId Transaction ID.
      * @return Currently started active user transaction, or {@code null} if none started.
+     * @throws IgniteSQLException If failed.
      */
-    @Nullable public static GridNearTxLocal activeSqlTx(GridKernalContext ctx, GridCacheVersion txId) {
-        GridNearTxLocal tx = activeTx(ctx, txId);
+    @Nullable public static GridNearTxLocal activeSqlTx(GridKernalContext ctx, GridCacheVersion txId) throws IgniteSQLException {
+        GridNearTxLocal tx;
+        try {
+            tx = activeTx(ctx, txId);
+        }
+        catch (IgniteTxRollbackCheckedException e) {
+            throw new IgniteSQLException("Transaction is already completed.", IgniteQueryErrorCode.TRANSACTION_COMPLETED);
+        } catch (IgniteCheckedException e) {
+            throw new IgniteSQLException(e.getMessage(), e);
+        }
 
         if (tx != null && !tx.isOperationAllowed(true))
             throw new IgniteSQLException("SQL queries and cache operations " +

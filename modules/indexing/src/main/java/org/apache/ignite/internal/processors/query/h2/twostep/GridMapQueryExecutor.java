@@ -469,38 +469,50 @@ public class GridMapQueryExecutor {
 
         GridH2SelectForUpdateTxDetails txReq = req.txDetails();
 
-        if (txReq != null) {
-            // Prepare to run queries.
-            GridCacheContext<?, ?> mainCctx = mainCacheContext(cacheIds);
+        try {
+            if (txReq != null) {
+                // Prepare to run queries.
+                GridCacheContext<?, ?> mainCctx = mainCacheContext(cacheIds);
 
-            if (mainCctx == null || mainCctx.atomic() || !mainCctx.mvccEnabled() || cacheIds.size() != 1)
-                throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
-                    "that involve single transactional cache.");
+                if (mainCctx == null || mainCctx.atomic() || !mainCctx.mvccEnabled() || cacheIds.size() != 1)
+                    throw new IgniteSQLException("SELECT FOR UPDATE is supported only for queries " +
+                        "that involve single transactional cache.");
 
-            GridDhtTransactionalCacheAdapter txCache = (GridDhtTransactionalCacheAdapter)mainCctx.cache();
+                GridDhtTransactionalCacheAdapter txCache = (GridDhtTransactionalCacheAdapter)mainCctx.cache();
 
-            if (!node.isLocal()) {
-                tx = txCache.initTxTopologyVersion(
-                    node.id(),
-                    node,
-                    txReq.version(),
-                    txReq.futureId(),
-                    txReq.miniId(),
-                    txReq.firstClientRequest(),
-                    req.topologyVersion(),
-                    txReq.threadId(),
-                    txReq.timeout(),
-                    txReq.subjectId(),
-                    txReq.taskNameHash());
+                if (!node.isLocal()) {
+                    tx = txCache.initTxTopologyVersion(
+                        node.id(),
+                        node,
+                        txReq.version(),
+                        txReq.futureId(),
+                        txReq.miniId(),
+                        txReq.firstClientRequest(),
+                        req.topologyVersion(),
+                        txReq.threadId(),
+                        txReq.timeout(),
+                        txReq.subjectId(),
+                        txReq.taskNameHash());
+                }
+                else {
+                    tx = MvccUtils.activeSqlTx(ctx, txReq.version());
+
+                    assert tx != null;
+                }
             }
-            else {
-                tx = MvccUtils.activeSqlTx(ctx, txReq.version());
-
-                assert tx != null;
-            }
+            else
+                tx = null;
         }
-        else
-            tx = null;
+        catch (IgniteException | IgniteCheckedException e) {
+            // send error if TX was not initialized properly.
+            releaseReservations();
+
+            U.error(log, "Failed to execute local query.", e);
+
+            sendError(node, req.requestId(), e);
+
+            return;
+        }
 
         AtomicInteger runCntr;
         CompoundLockFuture lockFut;

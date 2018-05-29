@@ -111,6 +111,9 @@ public final class IgniteQueryErrorCode {
     /** Transaction type mismatch (SQL/non SQL). */
     public final static int TRANSACTION_TYPE_MISMATCH = 5003;
 
+    /** Transaction is already completed. */
+    public final static int TRANSACTION_COMPLETED = 5004;
+
     /** */
     private IgniteQueryErrorCode() {
         // No-op.

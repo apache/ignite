@@ -273,7 +273,7 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
         }
         finally {
             try {
-                execute(node(), "COMMIT");
+                execute(node(), "ROLLBACK");
             }
             catch (Throwable e) {
                 // No-op.

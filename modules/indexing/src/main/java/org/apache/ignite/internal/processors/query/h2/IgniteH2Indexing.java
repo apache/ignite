@@ -1213,14 +1213,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             };
         }
         catch (IgniteCheckedException | RuntimeException | Error e) {
-            if (mvccEnabled && (tx = MvccUtils.tx(ctx)) != null)
+            if (mvccEnabled && (tx != null || (tx = MvccUtils.tx(ctx)) != null))
                 tx.setRollbackOnly();
 
             throw e;
-        }
-        finally {
-            if (mvccEnabled && (tx != null || (tx = MvccUtils.tx(ctx)) != null) && tx.isRollbackOnly())
-                U.close(tx, log);
         }
     }
 
@@ -1891,10 +1887,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         NestedTxMode nestedTxMode = qry instanceof SqlFieldsQueryEx ? ((SqlFieldsQueryEx)qry).getNestedTxMode() :
             NestedTxMode.DEFAULT;
 
-        GridNearTxLocal tx = null;
+        GridNearTxLocal tx = MvccUtils.mvccEnabled(ctx) ? MvccUtils.tx(ctx) : null;
 
-        if (MvccUtils.mvccEnabled(ctx))
-            tx = MvccUtils.activeSqlTx(ctx);
+        if (tx != null && !tx.isOperationAllowed(true))
+            throw new IgniteSQLException("SQL queries and cache operations " +
+                "may not be used in the same transaction.", IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
 
         if (cmd instanceof SqlBeginTransactionCommand) {
             if (tx != null) {
@@ -1948,7 +1945,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("ThrowFromFinallyBlock")
     private void doCommit(@NotNull GridNearTxLocal tx) throws IgniteCheckedException {
         try {
-            tx.commit();
+            if (!tx.isRollbackOnly())
+                tx.commit();
         }
         finally {
             closeTx(tx);
@@ -1989,7 +1987,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
         @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, MvccQueryTracker tracker,
         GridQueryCancel cancel) {
-        GridNearTxLocal tx = null;
         boolean mvccEnabled = MvccUtils.mvccEnabled(ctx), startTx = autoStartTx(qry);
 
         try {
@@ -2075,14 +2072,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return res;
         }
         catch (RuntimeException | Error e) {
+            GridNearTxLocal tx;
+
             if (mvccEnabled && (tx = MvccUtils.tx(ctx)) != null)
                 tx.setRollbackOnly();
 
             throw e;
-        }
-        finally {
-            if (mvccEnabled && (tx != null || (tx = MvccUtils.tx(ctx)) != null) && tx.isRollbackOnly())
-                U.close(tx, log);
         }
     }
 
@@ -2374,10 +2369,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!MvccUtils.mvccEnabled(ctx))
             return false;
 
-        // Let's do this call before anything else so that we always check tx type properly.
-        GridNearTxLocal tx = MvccUtils.activeSqlTx(ctx);
-
-        return qry instanceof SqlFieldsQueryEx && !((SqlFieldsQueryEx)qry).isAutoCommit() && tx == null;
+        return qry instanceof SqlFieldsQueryEx && !((SqlFieldsQueryEx)qry).isAutoCommit() && MvccUtils.tx(ctx) == null;
     }
 
     /** {@inheritDoc} */
