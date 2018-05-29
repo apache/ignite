@@ -75,7 +75,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE
  *
  */
 public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter
-    implements IgniteChangeGlobalStateSupport, CheckpointLockStateChecker {
+    implements IgniteChangeGlobalStateSupport, CheckpointLockStateChecker, CheckpointReadLocker {
     /** DataRegionConfiguration name reserved for internal caches. */
     static final String SYSTEM_DATA_REGION_NAME = "sysMemPlc";
 
@@ -723,28 +723,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Checkpoint read-lock for atomic caches.
-     * @param cctx Cache context.
-     */
-    public void checkpointReadLock(GridCacheContext cctx) {
-        if (cctx.group().persistenceEnabled())
-            checkpointReadLock();
-    }
-
-    /**
      * No-op for non-persistent storage.
      */
-    public void checkpointReadLock() {
+    @Override public void checkpointReadLock() {
         // No-op.
-    }
-
-    /**
-     * Checkpoint read-unlock for atomic caches.
-     * @param cctx Cache context.
-     */
-    public void checkpointReadUnlock(GridCacheContext cctx) {
-        if (cctx.group().persistenceEnabled())
-            checkpointReadUnlock();
     }
 
     /**

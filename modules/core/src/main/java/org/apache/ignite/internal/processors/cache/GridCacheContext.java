@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTran
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLocker;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager;
@@ -271,6 +272,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Local node's MAC address. */
     private String locMacs;
 
+    /** */
+    private CheckpointReadLocker checkpointReadLocker;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -396,6 +400,11 @@ public class GridCacheContext<K, V> implements Externalizable {
         locMacs = localNode().attribute(ATTR_MACS);
 
         assert locMacs != null;
+
+        if (grp.persistenceEnabled())
+            checkpointReadLocker = sharedCtx.database();
+        else
+            checkpointReadLocker = CheckpointReadLocker.NOOP;
     }
 
     /**
@@ -2265,6 +2274,13 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         if (isNear())
             near().dht().context().statisticsEnabled = statisticsEnabled;
+    }
+
+    /**
+     * @return Checkpoint read locker for atomic operation.
+     */
+    public CheckpointReadLocker checkpointReadLocker() {
+        return checkpointReadLocker;
     }
 
     /** {@inheritDoc} */
