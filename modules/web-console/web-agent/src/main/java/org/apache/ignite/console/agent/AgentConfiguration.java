@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -109,7 +110,7 @@ public class AgentConfiguration {
      * @param tokens Tokens.
      */
     public void tokens(List<String> tokens) {
-        this.tokens = tokens;
+        this.tokens = new ArrayList<>(tokens);
     }
 
     /**
@@ -137,7 +138,7 @@ public class AgentConfiguration {
      * @param nodeURIs Node URIs.
      */
     public void nodeURIs(List<String> nodeURIs) {
-        this.nodeURIs = nodeURIs;
+        this.nodeURIs = new ArrayList<>(nodeURIs);
     }
 
     /**
