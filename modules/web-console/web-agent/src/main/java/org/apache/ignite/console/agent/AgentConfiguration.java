@@ -324,9 +324,12 @@ public class AgentConfiguration {
             sb.append('\n');
         }
 
-        sb.append("URI to Ignite node REST server  : ").append(nodeURIs == null ? DFLT_NODE_URI : String.join(", ", nodeURIs)).append('\n');
+        sb.append("URI to Ignite node REST server  : ")
+            .append(nodeURIs == null ? DFLT_NODE_URI : String.join(", ", nodeURIs)).append('\n');
+
         if (agentUser != null)
             sb.append("Login to Ignite node REST server: ").append(agentUser).append('\n');
+
         sb.append("URI to Ignite Console server    : ").append(srvUri == null ? DFLT_SERVER_URI : srvUri).append('\n');
         sb.append("Path to agent property file     : ").append(configPath()).append('\n');
 
