@@ -250,12 +250,12 @@ public class AgentConfiguration {
         if (val != null)
             nodeURIs(new ArrayList<>(Arrays.asList(val.split(","))));
 
-        val = (String)props.remove("node-login");
+        val = (String)props.remove("agent-user");
 
         if (val != null)
             agentUser(val);
 
-        val = (String)props.remove("node-password");
+        val = (String)props.remove("agent-password");
 
         if (val != null)
             agentPassword(val);

@@ -65,6 +65,8 @@ module.exports.factory = (settings, agentsHnd, errors) => {
                             prop.push('#Uncomment following options if needed:');
                             prop.push('#node-uri=http://localhost:8080');
                             prop.push('#driver-folder=./jdbc-drivers');
+                            prop.push('#agent-user=ignite');
+                            prop.push('#agent-password=ignite');
 
                             zip.file(`${folder}/default.properties`, prop.join('\n'));
 
