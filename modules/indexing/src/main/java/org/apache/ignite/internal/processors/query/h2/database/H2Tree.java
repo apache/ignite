@@ -42,6 +42,8 @@ import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
+
 /**
  */
 public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
@@ -213,7 +215,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             // for rows that don't have links like H2's SimpleRow.
             int linksCmpRes = 0;
 
-            if (!update && row instanceof CacheSearchRow) {
+            if (row instanceof CacheSearchRow) {
                 long link1 = ((H2RowLinkIO)io).getLink(pageAddr, idx);
 
                 long link2 = ((CacheSearchRow)row).link();
@@ -255,8 +257,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                     break;
             }
 
-            if (lastIdxUsed == cols.length)
-                return linksCmpRes; // Fall back to links comparison if all columns are equal.
+            if (lastIdxUsed == cols.length && row instanceof CacheSearchRow)
+                return linksCmpRes; // Fall back to links comparison if all inline columns are equal.
 
             SearchRow rowData = getRow(io, pageAddr, idx);
 
@@ -279,8 +281,19 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                     return InlineIndexHelper.fixSort(c, col.sortType);
             }
 
-            // Fall back to links comparison if all columns are equal.
-            return linksCmpRes;
+            if (row instanceof CacheSearchRow)
+                return linksCmpRes; // Fall back to links comparison if all index columns are equal.
+
+            // We've had no luck comparing rows by index fields or links. Let's use keys as last resort.
+            Value k1 = rowData.getValue(KEY_COL);
+
+            Value k2 = row.getValue(KEY_COL);
+
+            if (k1 != null && k2 != null)
+                return compareValues(k1, k2);
+            else
+                return 0;
+
         }
     }
 
