@@ -903,10 +903,7 @@ public class GridToStringBuilder {
      * @param val value to print, can be {@code null}.
      */
     private static void toString(SBLimitedLength buf, Object val) {
-        if (val == null)
-            buf.a("null");
-        else
-            toString(buf, val.getClass(), val);
+        toString(buf, null, val);
     }
 
     /**
@@ -925,6 +922,9 @@ public class GridToStringBuilder {
 
         if (checkObjectInBuffer(buf, val))
             return;
+
+        if (valClass == null)
+            valClass = val.getClass();
 
         try {
             if (valClass.isArray())
