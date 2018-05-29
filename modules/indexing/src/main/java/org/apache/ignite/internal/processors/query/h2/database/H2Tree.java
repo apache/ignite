@@ -215,7 +215,11 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             // for rows that don't have links like H2's SimpleRow.
             int linksCmpRes = 0;
 
-            if (row instanceof CacheSearchRow) {
+            // We should not use links on update - when we try to replace a record,
+            // we shouldn't let the link make us miss what we're searching for.
+            boolean relyOnLinks = !update && row instanceof CacheSearchRow;
+
+            if (relyOnLinks) {
                 long link1 = ((H2RowLinkIO)io).getLink(pageAddr, idx);
 
                 long link2 = ((CacheSearchRow)row).link();
@@ -257,7 +261,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                     break;
             }
 
-            if (lastIdxUsed == cols.length && row instanceof CacheSearchRow)
+            if (lastIdxUsed == cols.length && relyOnLinks)
                 return linksCmpRes; // Fall back to links comparison if all inline columns are equal.
 
             SearchRow rowData = getRow(io, pageAddr, idx);
@@ -281,7 +285,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                     return InlineIndexHelper.fixSort(c, col.sortType);
             }
 
-            if (row instanceof CacheSearchRow)
+            if (relyOnLinks)
                 return linksCmpRes; // Fall back to links comparison if all index columns are equal.
 
             // We've had no luck comparing rows by index fields or links. Let's use keys as last resort.
