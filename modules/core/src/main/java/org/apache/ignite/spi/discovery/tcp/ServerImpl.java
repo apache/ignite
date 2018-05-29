@@ -3602,11 +3602,26 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (err == null)
                     err = spi.getSpiContext().validateNode(node, msg.gridDiscoveryData().unmarshalJoiningNodeData(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), false, log));
 
+                if(err == null) {
+                    for (Map.Entry<Long, Collection<ClusterNode>> entry : topHist.entrySet()) {
+                        if(entry.getValue().contains(node)) {
+                            String msg1 = "Node tries to re-join cluster with the same id: [node=" + node + "]." +
+                                " Ignore join request.";
+
+                            String msg2 = "Node tries to re-join cluster with the same id: [node=" + node + "].";
+
+                            err = new IgniteNodeValidationResult(node.id(), msg1, msg2);
+
+                            break;
+                        }
+                    }
+                }
+
                 if (err != null) {
                     final IgniteNodeValidationResult err0 = err;
 
                     if (log.isDebugEnabled())
-                        log.debug("Node validation failed [res=" + err + ", node=" + node + ']');
+                        log.debug("Node validation failed [res=" + err0 + ", node=" + node + ']');
 
                     utilityPool.execute(
                         new Runnable() {
