@@ -115,6 +115,8 @@ public class FailureProcessor extends GridProcessorAdapter {
         if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
             reserveBuf = null;
 
+        U.dumpThreads(log);
+
         boolean invalidated = hnd.onFailure(ignite, failureCtx);
 
         if (invalidated) {
