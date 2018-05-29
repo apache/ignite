@@ -472,7 +472,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 if (log.isDebugEnabled())
                     log.debug("Closing client session: " + ses.remoteAddress().toString());
 
-                ses.close();
+                srv.close(ses);
             }
         }
     }

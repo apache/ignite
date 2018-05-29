@@ -93,8 +93,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
 
         cfg.setClientConnectorConfiguration(
             new ClientConnectorConfiguration()
-                .setPort(jdbcPorts.get(getTestIgniteInstanceIndex(name)))
-                .setIdleTimeout(2_000));
+                .setPort(jdbcPorts.get(getTestIgniteInstanceIndex(name))));
 
         return cfg;
     }

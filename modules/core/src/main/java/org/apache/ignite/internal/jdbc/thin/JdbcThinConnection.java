@@ -145,6 +145,8 @@ public class JdbcThinConnection implements Connection {
             if (connected)
                 return;
 
+            assert !closed;
+
             cliIo.start();
 
             connected = true;
