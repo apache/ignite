@@ -62,6 +62,11 @@ namespace ignite_test
      * @return New node.
      */
     ignite::Ignite StartCrossPlatformServerNode(const char* cfgFile, const char* name);
+
+    /**
+     * Remove all the LFS artifacts.
+     */
+    void ClearLfs();
 }
 
 #endif // _IGNITE_THIN_CLIENT_TEST_TEST_UTILS

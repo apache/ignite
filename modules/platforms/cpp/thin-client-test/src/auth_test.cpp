@@ -36,12 +36,16 @@ class AuthTestSuiteFixture
 public:
     AuthTestSuiteFixture()
     {
+        ignite_test::ClearLfs();
+
         serverNode = ignite_test::StartCrossPlatformServerNode("auth.xml", "ServerNode");
     }
 
     ~AuthTestSuiteFixture()
     {
         ignite::Ignition::StopAll(false);
+
+        ignite_test::ClearLfs();
     }
 
 private:
