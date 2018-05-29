@@ -2660,6 +2660,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** */
         private final long pollTimeoutMs = IgniteSystemProperties.getLong(POLL_TIMEOUT_PROP, DFLT_POLL_TIMEOUT);
 
+        /** */
+        private long lastOnIdleTs = System.currentTimeMillis();
+
         /**
          *
          */
@@ -2776,9 +2779,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     return;
 
                 updateHeartbeat();
-                onIdle();
 
                 evt = evts.poll(pollTimeoutMs, TimeUnit.MILLISECONDS);
+
+                if (evt == null || System.currentTimeMillis() - lastOnIdleTs > pollTimeoutMs) {
+                    onIdle();
+
+                    lastOnIdleTs = System.currentTimeMillis();
+                }
             } while (evt == null);
 
             int type = evt.get1();

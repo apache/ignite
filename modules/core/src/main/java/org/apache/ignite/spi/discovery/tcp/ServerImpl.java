@@ -2585,6 +2585,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Worker that encapsulates thread body */
         private GridWorker worker;
 
+        /** */
+        private long lastOnIdleTs = System.currentTimeMillis();
+
         /**
          */
         RingMessageWorker() {
@@ -2605,7 +2608,12 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             setBeforeEachPollAction(() -> {
                 worker.updateHeartbeat();
-                worker.onIdle();
+
+                if (System.currentTimeMillis() - lastOnIdleTs > worker.criticalHeartbeatTimeoutMs() / 2) {
+                    worker.onIdle();
+
+                    lastOnIdleTs = System.currentTimeMillis();
+                }
             });
         }
 
@@ -5695,14 +5703,19 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 Socket sock;
 
+                long lastOnIdleTs = System.currentTimeMillis();
+
                 while (!isInterrupted()) {
                     worker.updateHeartbeat();
-                    worker.onIdle();
 
                     try {
                         sock = srvrSock.accept();
                     }
                     catch (SocketTimeoutException ignored) {
+                        worker.onIdle();
+
+                        lastOnIdleTs = System.currentTimeMillis();
+
                         continue;
                     }
 
@@ -5725,6 +5738,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                     reader.start();
 
                     spi.stats.onServerSocketInitialized(U.currentTimeMillis() - tstamp);
+
+                    if (System.currentTimeMillis() - lastOnIdleTs > acceptTimeoutMs) {
+                        worker.onIdle();
+
+                        lastOnIdleTs = System.currentTimeMillis();
+                    }
                 }
             }
             catch (IOException e) {
