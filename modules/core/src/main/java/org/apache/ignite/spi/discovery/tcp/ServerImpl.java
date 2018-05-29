@@ -3583,36 +3583,53 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                final IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
+                IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
 
-                if (err != null) {
+                if(err == null) {
+                    for (Map.Entry<Long, Collection<ClusterNode>> entry : topHist.entrySet()) {
+                        if(entry.getValue().contains(node)) {
+                            String msg1 = "Node tries to re-join cluster with the same id: [node=" + node + "]." +
+                                " Ignore join request.";
+
+                            String msg2 = "Node tries to re-join cluster with the same id: [node=" + node + "].";
+
+                            err = new IgniteNodeValidationResult(node.id(), msg1, msg2);
+
+                            break;
+                        }
+                    }
+                }
+
+                final IgniteNodeValidationResult err0 = err;
+
+                if (err0 != null) {
                     if (log.isDebugEnabled())
-                        log.debug("Node validation failed [res=" + err + ", node=" + node + ']');
+                        log.debug("Node validation failed [res=" + err0 + ", node=" + node + ']');
 
                     utilityPool.execute(
                         new Runnable() {
                             @Override public void run() {
-                                boolean ping = node.id().equals(err.nodeId()) ? pingNode(node) : pingNode(err.nodeId());
+                                boolean ping = node.id().equals(err0.nodeId()) ? pingNode(node) : pingNode(err0.nodeId());
 
                                 if (!ping) {
                                     if (log.isDebugEnabled())
                                         log.debug("Conflicting node has already left, need to wait for event. " +
                                             "Will ignore join request for now since it will be recent [req=" + msg +
-                                            ", err=" + err.message() + ']');
+                                            ", err=" + err0.message() + ']');
 
                                     // Ignore join request.
                                     return;
                                 }
 
-                                LT.warn(log, err.message());
+                                LT.warn(log, err0.message());
 
                                 // Always output in debug.
                                 if (log.isDebugEnabled())
-                                    log.debug(err.message());
+                                    log.debug(err0.message());
 
                                 try {
                                     trySendMessageDirectly(node,
-                                        new TcpDiscoveryCheckFailedMessage(locNodeId, err.sendMessage()));
+                                        new TcpDiscoveryCheckFailedMessage(locNodeId, err0.sendMessage()));
                                 }
                                 catch (IgniteSpiException e) {
                                     if (log.isDebugEnabled())
