@@ -2724,7 +2724,7 @@ object visor extends VisorTag {
             val n = try
                 s.substring(0, s.length - 1).toLong
             catch {
-                case _: NumberFormatException =>
+                case (_:  NumberFormatException | _: StringIndexOutOfBoundsException)  =>
                     throw new IllegalArgumentException("Time frame size is not numeric in: " + s)
             }
 
