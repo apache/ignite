@@ -338,7 +338,8 @@ public class GridDhtPartitionDemander {
 
             // 1) Related discovery event did not cause affinity assignment change.
             // We should wait for current rebalanceFut completion and than assign results to latestRebFut.
-            if (grp.affinity().cachedAffinity(topVer).clientEventChange() && !assignments.isEmpty()) {
+            if (grp.affinity().cachedAffinity(topVer).clientEventChange() &&
+                !assignments.isEmpty() && !oldFut.isInitial()) {
                 if (log.isDebugEnabled())
                     log.debug("Affinity assignments does not changed. Will skip rebalance [topVer=" +
                         topVer + ", rebalanceId=" + rebalanceId + ", grp=" + grp.cacheOrGroupName() + "]");
@@ -357,11 +358,6 @@ public class GridDhtPartitionDemander {
                 });
             }
             else {
-                rebalanceFut = fut;
-
-                if (!oldFut.isInitial())
-                    oldFut.cancel();
-
                 // 2) Current assignments can be cancelled due to ExchageWorker has another pending exchanges.
                 if (assignments.cancelled()) { // Pending exchange.
                     if (log.isDebugEnabled())
@@ -384,6 +380,11 @@ public class GridDhtPartitionDemander {
                 }
                 // 4) Assignments checked and rebalance need to be continued.
                 else {
+                    if (!oldFut.isInitial())
+                        oldFut.cancel();
+
+                    rebalanceFut = fut;
+
                     return () -> {
                         if (next != null)
                             fut.listen(f -> {
