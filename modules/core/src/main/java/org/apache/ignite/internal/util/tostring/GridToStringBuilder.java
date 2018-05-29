@@ -926,6 +926,12 @@ public class GridToStringBuilder {
             return;
         }
 
+        if (isPrimitiveArrayType(val.getClass())) {
+            buf.a(val);
+
+            return;
+        }
+
         if (handleRecursion(buf, val, objs))
             return;
 
@@ -1151,7 +1157,7 @@ public class GridToStringBuilder {
      * @return String representation of an array.
      */
     @SuppressWarnings({"ConstantConditions", "unchecked"})
-    private static <T> String arrayToString(Class arrType, Object arr) {
+    public static <T> String arrayToString(Class arrType, Object arr) {
         if (arr == null)
             return "null";
 
@@ -2029,7 +2035,7 @@ public class GridToStringBuilder {
      * {@code False} if it wasn't saved previously and it should be saved.
      */
     private static boolean handleRecursion(SBLimitedLength buf, Object obj, IdentityHashMap<Object, Integer> objs) {
-        if (isPrimitiveArrayType(obj.getClass()) || !objs.containsKey(obj))
+        if (!objs.containsKey(obj))
             return false;
 
         Integer pos = objs.get(obj);
