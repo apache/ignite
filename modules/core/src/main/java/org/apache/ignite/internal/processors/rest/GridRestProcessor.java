@@ -847,7 +847,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 GridRestTaskRequest taskReq = (GridRestTaskRequest)req;
                 name = taskReq.taskName();
 
-                // We should extract real task name wrapped by VisorGatewayTask.
+                // We should extract task name wrapped by VisorGatewayTask.
                 if (VisorGatewayTask.class.getName().equals(name))
                     name = (String)taskReq.params().get(WRAPPED_TASK_IDX);
 

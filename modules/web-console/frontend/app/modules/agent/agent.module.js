@@ -19,7 +19,7 @@ import angular from 'angular';
 
 import AgentModal from './AgentModal.service';
 import AgentManager from './AgentManager.service';
-import ClusterCredentials from  './credentials/agent-credentials.service';
+import ClusterCredentials from './credentials/agent-credentials.service';
 
 angular
     .module('ignite-console.agent', [])

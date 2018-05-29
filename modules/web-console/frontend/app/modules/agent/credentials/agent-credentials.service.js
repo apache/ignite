@@ -39,7 +39,10 @@ export default class ClusterCredentials {
     /**
      * @return {ng.IPromise}
      */
-    askCredentials() {
+    askCredentials(cluster) {
+        if (cluster.hasCredentials())
+            return Promise.resolve(cluster.credentials());
+
         return this.$q((resolve, reject) => {
             this.$modal({
                 templateUrl,
@@ -51,11 +54,13 @@ export default class ClusterCredentials {
 
                         $scope.cancel = () => {
                             reject(new CancellationError());
+
                             $scope.$hide();
                         };
 
                         $scope.login = () => {
                             resolve(this.credentials);
+
                             $scope.$hide();
                         };
                     }]

@@ -39,6 +39,7 @@ class ConnectionState {
         this.cluster = cluster;
         this.clusters = [];
         this.state = State.DISCONNECTED;
+        this.creds = {};
     }
 
     updateCluster(cluster) {
@@ -46,6 +47,18 @@ class ConnectionState {
         this.cluster.connected = !!_.find(this.clusters, {id: this.cluster.id});
 
         return cluster;
+    }
+
+    hasCredentials() {
+        return this.cluster && this.cluster.secured && !_.isEmpty(this.creds);
+    }
+
+    credentials() {
+        return this.creds;
+    }
+
+    setCredentials(newCreds) {
+        this.creds = newCreds;
     }
 
     update(demo, count, clusters) {
@@ -94,10 +107,10 @@ class ConnectionState {
 }
 
 export default class IgniteAgentManager {
-    static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', 'AgentModal', 'UserNotifications', 'IgniteVersion', 'ClusterCredentials', 'IgniteMessages'];
+    static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', 'AgentModal', 'UserNotifications', 'IgniteVersion', 'ClusterCredentials'];
 
-    constructor($root, $q, $transitions, socketFactory, AgentModal, UserNotifications, Version, ClusterCredentials, Messages) {
-        Object.assign(this, {$root, $q, $transitions, socketFactory, AgentModal, UserNotifications, Version, ClusterCredentials, Messages});
+    constructor($root, $q, $transitions, socketFactory, AgentModal, UserNotifications, Version, ClusterCredentials) {
+        Object.assign(this, {$root, $q, $transitions, socketFactory, AgentModal, UserNotifications, Version, ClusterCredentials});
 
         this.promises = new Set();
 
@@ -430,6 +443,15 @@ export default class IgniteAgentManager {
             });
     }
 
+    _authError(err, cluster) {
+        const msg = _.get(err, 'message', '');
+
+        if (msg.startsWith('Failed to authenticate remote client (invalid credentials?)'))
+            cluster.setCredentials({});
+
+        throw err;
+    }
+
     /**
      * Execute REST command.
      *
@@ -439,7 +461,9 @@ export default class IgniteAgentManager {
      * @private
      */
     _restCommand(cmd, args) {
-        return ClusterCredentials.askCredentials()
+        const cluster = this.connectionSbj.getValue();
+
+        return this.ClusterCredentials.askCredentials(cluster)
             .then((creds) => {
                 const params = {
                     cmd,
@@ -449,9 +473,12 @@ export default class IgniteAgentManager {
 
                 _.assign(params, args);
 
+                if (!cluster.hasCredentials())
+                    cluster.setCredentials(creds);
+
                 return this._rest('node:rest', params);
             })
-            .catch(Messages.showError);
+            .catch((err) => this._authError(err, cluster));
     }
 
     /**
@@ -570,9 +597,16 @@ export default class IgniteAgentManager {
 
         nids = _.isArray(nids) ? nids.join(';') : maskNull(nids);
 
-        return ClusterCredentials.askCredentials()
-            .then((creds) => this._rest('node:visor', taskId, nids, creds.user, creds.password, ...args))
-            .catch(Messages.showError);
+        const cluster = this.connectionSbj.getValue();
+
+        return this.ClusterCredentials.askCredentials(cluster)
+            .then((creds) => {
+                if (!cluster.hasCredentials())
+                    cluster.setCredentials(creds);
+
+                return this._rest('node:visor', taskId, nids, creds.user, creds.password, ...args);
+            })
+            .catch((err) => this._authError(err, cluster));
     }
 
     /**
