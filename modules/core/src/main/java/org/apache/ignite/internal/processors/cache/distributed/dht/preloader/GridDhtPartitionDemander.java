@@ -307,6 +307,21 @@ public class GridDhtPartitionDemander {
 
                     metrics.clearRebalanceCounters();
 
+                    for (GridDhtPartitionDemandMessage msg : assignments.values()) {
+                        for (Integer partId : msg.partitions().fullSet()) {
+                            metrics.onRebalancingKeysCountEstimateReceived(grp.topology().globalPartSizes().get(partId));
+                        }
+
+                        CachePartitionPartialCountersMap histMap = msg.partitions().historicalMap();
+
+                        for (int i = 0; i < histMap.size(); i++) {
+                            long from = histMap.initialUpdateCounterAt(i);
+                            long to = histMap.updateCounterAt(i);
+
+                            metrics.onRebalancingKeysCountEstimateReceived(to - from);
+                        }
+                    }
+
                     metrics.startRebalance(0);
 
                     rebalanceFut.listen(f -> metrics.clearRebalanceCounters());

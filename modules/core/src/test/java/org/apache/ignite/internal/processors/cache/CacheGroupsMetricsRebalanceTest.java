@@ -225,29 +225,27 @@ public class CacheGroupsMetricsRebalanceTest extends GridCommonAbstractTest {
 
                 log.info("Wait until keys left will be less than: " + keysLine);
 
-                try {
-                    while (finishRebalanceLatch.getCount() != 0) {
-                        CacheMetrics m = ig2.cache(CACHE1).localMetrics();
+                while (true) {
+                    CacheMetrics m = ig2.cache(CACHE1).localMetrics();
 
-                        long keyLeft = m.getKeysToRebalanceLeft();
+                    long keyLeft = m.getKeysToRebalanceLeft();
 
-                        if (keyLeft > 0 && keyLeft < keysLine)
-                            latch.countDown();
+                    if (keyLeft > 0 && keyLeft < keysLine) {
+                        latch.countDown();
 
-                        log.info("Keys left: " + m.getKeysToRebalanceLeft());
-
-                        try {
-                            Thread.sleep(1_000);
-                        }
-                        catch (InterruptedException e) {
-                            log.warning("Interrupt thread", e);
-
-                            Thread.currentThread().interrupt();
-                        }
+                        break;
                     }
-                }
-                finally {
-                    latch.countDown();
+
+                    log.info("Keys left: " + m.getKeysToRebalanceLeft());
+
+                    try {
+                        Thread.sleep(1_000);
+                    }
+                    catch (InterruptedException e) {
+                        log.warning("Interrupt thread", e);
+
+                        Thread.currentThread().interrupt();
+                    }
                 }
             }
         });

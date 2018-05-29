@@ -119,6 +119,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /** */
     private final int parts;
 
+    private volatile Map<Integer, Long> globalPartSizes;
+
     /**
      * @param cctx Context.
      * @param discoCache Discovery data cache.
@@ -707,6 +709,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         GridDhtPartitionFullMap partMap,
         @Nullable CachePartitionFullCountersMap cntrMap,
         Set<Integer> partsToReload,
+        @Nullable Map<Integer, Long> partSizes,
         @Nullable AffinityTopologyVersion msgTopVer) {
         if (log.isDebugEnabled())
             log.debug("Updating full partition map [exchVer=" + exchangeVer + ", parts=" + fullMapString() + ']');
@@ -809,6 +812,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
             if (cntrMap != null)
                 this.cntrMap = new CachePartitionFullCountersMap(cntrMap);
+
+            if (partSizes != null)
+                this.globalPartSizes = partSizes;
 
             consistencyCheck();
 
@@ -1221,6 +1227,32 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     @Override public Map<Integer, Long> partitionSizes() {
         return Collections.emptyMap();
     }
+
+    @Override @Nullable public Map<Integer, Long> globalPartSizes() {
+        lock.readLock().lock();
+
+        try {
+            if (globalPartSizes == null)
+                return Collections.emptyMap();
+
+            return Collections.unmodifiableMap(globalPartSizes);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override public void globalPartSizes(@Nullable Map<Integer, Long> partSizes) {
+        lock.writeLock().lock();
+
+        try {
+            this.globalPartSizes = partSizes;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
 
     /** {@inheritDoc} */
     @Override public boolean rebalanceFinished(AffinityTopologyVersion topVer) {
