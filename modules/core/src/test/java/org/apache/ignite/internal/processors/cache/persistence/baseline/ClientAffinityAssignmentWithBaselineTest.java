@@ -18,9 +18,11 @@ package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -41,6 +43,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -82,7 +85,7 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     private static final String FLAKY_NODE_NAME = "flaky";
 
     /** Entries. */
-    private static final int ENTRIES = 50_000;
+    private static final int ENTRIES = 3_000;
 
     /** Flaky node wal path. */
     public static final String FLAKY_WAL_PATH = "flakywal";
@@ -140,6 +143,10 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
             cfg.setCacheConfiguration(clientConfigs.toArray(new CacheConfiguration[clientConfigs.size()]));
         else
             cfg.setCacheConfiguration(srvConfigs.toArray(new CacheConfiguration[srvConfigs.size()]));
+
+        // Enforce different mac adresses to emulate distributed environment by default.
+        cfg.setUserAttributes(Collections.singletonMap(
+            IgniteNodeAttributes.ATTR_MACS_OVERRIDE, UUID.randomUUID().toString()));
 
         return cfg;
     }
@@ -440,7 +447,6 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         tryChangeBaselineDown(ig0, fullBlt, DEFAULT_NODES_COUNT - 2, loadError, threadProgressTracker);
 
         stopLoad.set(true);
-
     }
 
     /**
