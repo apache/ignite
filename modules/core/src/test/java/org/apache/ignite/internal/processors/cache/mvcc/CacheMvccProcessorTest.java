@@ -60,14 +60,14 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
 
         MvccProcessor mvccProcessor = grid.context().coordinators();
 
-        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccProcessor.MVCC_OP_COUNTER_NA)));
+        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA)));
 
-        mvccProcessor.updateState(new MvccVersionImpl(1, 1, MvccProcessor.MVCC_OP_COUNTER_NA), TxState.PREPARED);
-        mvccProcessor.updateState(new MvccVersionImpl(1, 2, MvccProcessor.MVCC_OP_COUNTER_NA), TxState.PREPARED);
-        mvccProcessor.updateState(new MvccVersionImpl(1, 3, MvccProcessor.MVCC_OP_COUNTER_NA), TxState.COMMITTED);
-        mvccProcessor.updateState(new MvccVersionImpl(1, 4, MvccProcessor.MVCC_OP_COUNTER_NA), TxState.ABORTED);
-        mvccProcessor.updateState(new MvccVersionImpl(1, 5, MvccProcessor.MVCC_OP_COUNTER_NA), TxState.ABORTED);
-        mvccProcessor.updateState(new MvccVersionImpl(1, 6, MvccProcessor.MVCC_OP_COUNTER_NA), TxState.PREPARED);
+        mvccProcessor.updateState(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED);
+        mvccProcessor.updateState(new MvccVersionImpl(1, 2, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED);
+        mvccProcessor.updateState(new MvccVersionImpl(1, 3, MvccUtils.MVCC_OP_COUNTER_NA), TxState.COMMITTED);
+        mvccProcessor.updateState(new MvccVersionImpl(1, 4, MvccUtils.MVCC_OP_COUNTER_NA), TxState.ABORTED);
+        mvccProcessor.updateState(new MvccVersionImpl(1, 5, MvccUtils.MVCC_OP_COUNTER_NA), TxState.ABORTED);
+        mvccProcessor.updateState(new MvccVersionImpl(1, 6, MvccUtils.MVCC_OP_COUNTER_NA), TxState.PREPARED);
 
         if (persistence) {
             stopGrid(0, false);
@@ -78,20 +78,20 @@ public class CacheMvccProcessorTest extends CacheMvccAbstractTest {
             mvccProcessor = grid.context().coordinators();
         }
 
-        assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccProcessor.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 2, MvccProcessor.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.COMMITTED, mvccProcessor.state(new MvccVersionImpl(1, 3, MvccProcessor.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.ABORTED, mvccProcessor.state(new MvccVersionImpl(1, 4, MvccProcessor.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.ABORTED, mvccProcessor.state(new MvccVersionImpl(1, 5, MvccProcessor.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 6, MvccProcessor.MVCC_OP_COUNTER_NA)));
+        assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA)));
+        assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 2, MvccUtils.MVCC_OP_COUNTER_NA)));
+        assertEquals(TxState.COMMITTED, mvccProcessor.state(new MvccVersionImpl(1, 3, MvccUtils.MVCC_OP_COUNTER_NA)));
+        assertEquals(TxState.ABORTED, mvccProcessor.state(new MvccVersionImpl(1, 4, MvccUtils.MVCC_OP_COUNTER_NA)));
+        assertEquals(TxState.ABORTED, mvccProcessor.state(new MvccVersionImpl(1, 5, MvccUtils.MVCC_OP_COUNTER_NA)));
+        assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 6, MvccUtils.MVCC_OP_COUNTER_NA)));
 
-        mvccProcessor.removeUntil(new MvccVersionImpl(1, 5, MvccProcessor.MVCC_OP_COUNTER_NA));
+        mvccProcessor.removeUntil(new MvccVersionImpl(1, 5, MvccUtils.MVCC_OP_COUNTER_NA));
 
-        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccProcessor.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 2, MvccProcessor.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 3, MvccProcessor.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 4, MvccProcessor.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 5, MvccProcessor.MVCC_OP_COUNTER_NA)));
-        assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 6, MvccProcessor.MVCC_OP_COUNTER_NA)));
+        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 1, MvccUtils.MVCC_OP_COUNTER_NA)));
+        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 2, MvccUtils.MVCC_OP_COUNTER_NA)));
+        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 3, MvccUtils.MVCC_OP_COUNTER_NA)));
+        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 4, MvccUtils.MVCC_OP_COUNTER_NA)));
+        assertEquals(TxState.NA, mvccProcessor.state(new MvccVersionImpl(1, 5, MvccUtils.MVCC_OP_COUNTER_NA)));
+        assertEquals(TxState.PREPARED, mvccProcessor.state(new MvccVersionImpl(1, 6, MvccUtils.MVCC_OP_COUNTER_NA)));
     }
 }

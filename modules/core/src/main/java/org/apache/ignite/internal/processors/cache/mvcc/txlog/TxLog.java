@@ -46,7 +46,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 
 /**
  *
@@ -403,7 +404,7 @@ public class TxLog implements DbCheckpointListener {
          * @param primary Flag if this is primary node.
          */
         TxLogUpdateClosure(long major, long minor, byte newState, boolean primary) {
-            assert major > 0 && minor > MVCC_COUNTER_NA && newState != TxState.NA;
+            assert major > MVCC_CRD_COUNTER_NA && minor > MVCC_COUNTER_NA && newState != TxState.NA;
             this.major = major;
             this.minor = minor;
             this.newState = newState;

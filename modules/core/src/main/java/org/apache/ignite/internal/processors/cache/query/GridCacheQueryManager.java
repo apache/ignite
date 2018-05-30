@@ -413,7 +413,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     /**
      * @param key Key.
      * @param prevRow Previous row.
-     * @param newVer Mvcc version for remove operation.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     public void remove(KeyCacheObject key, @Nullable CacheDataRow prevRow)

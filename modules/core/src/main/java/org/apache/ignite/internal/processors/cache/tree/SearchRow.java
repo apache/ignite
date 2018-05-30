@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 
 /**
  *
@@ -78,17 +81,17 @@ public class SearchRow implements CacheSearchRow {
 
     /** {@inheritDoc} */
     @Override public long mvccCoordinatorVersion() {
-        return 0;
+        return MVCC_CRD_COUNTER_NA;
     }
 
     /** {@inheritDoc} */
     @Override public long mvccCounter() {
-        return MvccProcessor.MVCC_COUNTER_NA;
+        return MVCC_COUNTER_NA;
     }
 
     /** {@inheritDoc} */
     @Override public int mvccOperationCounter() {
-        return MvccProcessor.MVCC_OP_COUNTER_NA;
+        return MVCC_OP_COUNTER_NA;
     }
 
     /** {@inheritDoc} */

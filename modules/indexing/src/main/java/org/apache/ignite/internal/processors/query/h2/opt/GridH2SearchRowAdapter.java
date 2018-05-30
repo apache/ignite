@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.store.Data;
 import org.h2.value.Value;
+
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 
 /**
  * Dummy H2 search row adadpter.
@@ -104,16 +107,16 @@ public abstract class GridH2SearchRowAdapter implements GridH2SearchRow {
 
     /** {@inheritDoc} */
     @Override public long mvccCoordinatorVersion() {
-        return 0;
+        return MVCC_CRD_COUNTER_NA;
     }
 
     /** {@inheritDoc} */
     @Override public long mvccCounter() {
-        return MvccProcessor.MVCC_COUNTER_NA;
+        return MVCC_COUNTER_NA;
     }
 
     /** {@inheritDoc} */
     @Override public int mvccOperationCounter() {
-        return MvccProcessor.MVCC_OP_COUNTER_NA;
+        return MVCC_OP_COUNTER_NA;
     }
 }

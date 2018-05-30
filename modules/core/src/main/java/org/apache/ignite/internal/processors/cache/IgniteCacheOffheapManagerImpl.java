@@ -45,10 +45,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Cac
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteRebalanceIteratorImpl;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -104,10 +102,14 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_START_CNTR;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_START_OP_CNTR;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.INITIAL_VERSION;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compareNewVersion;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.state;
 import static org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager.EMPTY_CURSOR;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
 
@@ -1317,7 +1319,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         protected long initCntr;
 
         /** Mvcc remove handler. */
-        private final PageHandler<MvccVersion, Boolean> mvccUpdateMarker = new MarkUpdatedHandler();
+        private final PageHandler<MvccVersion, Boolean> mvccUpdateMarker = new MvccMarkUpdatedHandler();
 
         /**
          * @param partId Partition number.
@@ -1558,15 +1560,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 boolean newVal = false;
 
                 // null is passed for loaded from store.
-                MvccSnapshot mvccSnapshot;
-
                 if (mvccVer == null) {
-                    mvccSnapshot = new MvccSnapshotWithoutTxs(1L, MVCC_START_CNTR, MVCC_START_OP_CNTR, 0L);
+                    mvccVer = INITIAL_VERSION;
 
                     newVal = true;
                 }
-                else
-                    mvccSnapshot = new MvccSnapshotWithoutTxs(mvccVer.coordinatorVersion(), mvccVer.counter(), mvccVer.operationCounter(), 0);
+
+                MvccSnapshot mvccSnapshot = new MvccSnapshotWithoutTxs(
+                    mvccVer.coordinatorVersion(),
+                    mvccVer.counter(),
+                    mvccVer.operationCounter(),
+                    MVCC_COUNTER_NA);
 
                 if (val != null)
                     val.valueBytes(coCtx);
@@ -2049,11 +2053,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             }
         }
 
-        /**
-         * @param cctx Cache context.
-         * @param cleanupRows Rows to cleanup.
-         * @throws IgniteCheckedException If failed.
-         */
+        /** {@inheritDoc} */
         @Override public void cleanup(GridCacheContext cctx, @Nullable List<MvccLinkAwareSearchRow> cleanupRows)
             throws IgniteCheckedException {
             if (cleanupRows != null) {
@@ -2308,12 +2308,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
             List<IgniteBiTuple<Object, MvccVersion>> res = new ArrayList<>();
 
-            long crd = 0, cntr = MvccProcessor.MVCC_COUNTER_NA; int opCntr = MvccProcessor.MVCC_OP_COUNTER_NA;
+            long crd = MVCC_CRD_COUNTER_NA, cntr = MVCC_COUNTER_NA; int opCntr = MVCC_OP_COUNTER_NA;
 
             while (cur.next()) {
                 CacheDataRow row = cur.get();
 
-                if (MvccUtils.compareNewVersion(row, crd, cntr, opCntr) != 0) // deleted row
+                if (compareNewVersion(row, crd, cntr, opCntr) != 0) // deleted row
                     res.add(F.t(null, row.newMvccVersion()));
 
                 res.add(F.t(row.value(), row.mvccVersion()));
@@ -2648,7 +2648,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /**
      * Mvcc remove handler.
      */
-    private final class MarkUpdatedHandler extends PageHandler<MvccVersion, Boolean> {
+    private final class MvccMarkUpdatedHandler extends PageHandler<MvccVersion, Boolean> {
         /** {@inheritDoc} */
         @Override public Boolean run(int cacheId, long pageId, long page, long pageAddr, PageIO io, Boolean walPlc,
             MvccVersion newVer, int itemId) throws IgniteCheckedException {
@@ -2661,9 +2661,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             long newCrd = iox.newMvccCoordinator(pageAddr, offset);
             long newCntr = iox.newMvccCounter(pageAddr, offset);
 
-            assert newCrd == 0 || grp.shared().coordinators().state(newCrd, newCntr) == TxState.ABORTED;
+            assert newCrd == MVCC_CRD_COUNTER_NA || state(grp, newCrd, newCntr) == TxState.ABORTED;
 
-            iox.markRemoved(pageAddr, offset, newVer);
+            iox.updateNewVersion(pageAddr, offset, newVer);
 
             if (isWalDeltaRecordNeeded(grp.dataRegion().pageMemory(), cacheId, pageId, page, ctx.wal(), walPlc))
                 ctx.wal().log(new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId,

@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
@@ -179,7 +178,7 @@ public class MvccUpdateDataRowNative extends MvccDataRow implements BPlusTree.Tr
 
     /** {@inheritDoc} */
     @Override public int mvccOperationCounter() {
-        return MvccProcessor.MVCC_START_OP_CNTR;
+        return MvccUtils.MVCC_START_OP_CNTR;
     }
 
     /**

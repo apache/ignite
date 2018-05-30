@@ -98,6 +98,12 @@ import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE_COORDINATOR;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_READ_OP_CNTR;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_START_CNTR;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_START_OP_CNTR;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccEnabled;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_ID;
 import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LOG_CACHE_NAME;
 
@@ -123,28 +129,13 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     };
 
     /** */
-    public static final long MVCC_COUNTER_NA = 0L;
-
-    /** */
-    public static final long MVCC_START_CNTR = 1L;
-
-    /** */
-    public static final int MVCC_OP_COUNTER_NA = 0;
-
-    /** */
-    public static final int MVCC_START_OP_CNTR = 1;
-
-    /** */
-    public static final int MVCC_READ_OP_CNTR = Integer.MAX_VALUE;
-
-    /** */
     private volatile MvccCoordinator curCrd;
 
     /** */
     private final AtomicLong mvccCntr = new AtomicLong(MVCC_START_CNTR);
 
     /** */
-    private final GridAtomicLong committedCntr = new GridAtomicLong(MVCC_START_CNTR);
+    private final GridAtomicLong committedCntr = new GridAtomicLong(MVCC_COUNTER_NA);
 
     /** */
     private final Map<Long, Long> activeTxs = new ConcurrentHashMap<>();
@@ -312,19 +303,6 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         }
 
         return fut;
-    }
-
-    /**
-     * Checks whether the transaction with given version is active.
-     * @param crdVer Mvcc coordinator version.
-     * @param cntr Mvcc counter.
-     * @return {@code True} If active.
-     * @throws IgniteCheckedException If fails.
-     */
-    public boolean isActive(long crdVer, long cntr) throws IgniteCheckedException {
-        byte state = state(crdVer, cntr);
-
-        return !(state == TxState.COMMITTED || state == TxState.ABORTED);
     }
 
     /**
@@ -752,7 +730,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
         onTxDone(msg.txCounter(), msg.futureId() >= 0);
 
         if (msg.queryCounter() != MVCC_COUNTER_NA) {
-            if (msg.queryCoordinatorVersion() == 0)
+            if (msg.queryCoordinatorVersion() == MVCC_CRD_COUNTER_NA)
                 onQueryDone(nodeId, msg.queryCounter());
             else
                 prevCrdQueries.onQueryDone(nodeId, msg.queryCoordinatorVersion(), msg.queryCounter());
@@ -900,7 +878,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
      * Launches vacuum workers and scheduler.
      */
     private void startVacuum() {
-        if (!ctx.clientNode() && MvccUtils.mvccEnabled(ctx)) {
+        if (!ctx.clientNode() && mvccEnabled(ctx)) {
             assert vacuumWorkers == null;
             assert cleanupQueue == null;
 
@@ -924,7 +902,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
      * Stops vacuum worker and scheduler.
      */
     private void stopVacuum() {
-        if (!ctx.clientNode() && MvccUtils.mvccEnabled(ctx)) {
+        if (!ctx.clientNode() && mvccEnabled(ctx)) {
             if (vacuumWorkers != null) {
                 // Stop vacuum workers.
                 U.cancel(vacuumWorkers);
@@ -1364,7 +1342,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
                 else {
                     try {
                         MvccVersion cleanupVer = new MvccVersionImpl(snapshot.coordinatorVersion(),
-                            snapshot.cleanupVersion(), Integer.MAX_VALUE);
+                            snapshot.cleanupVersion(), MVCC_READ_OP_CNTR);
 
                         if (log.isDebugEnabled())
                             log.debug("Started vacuum with cleanup version=" + cleanupVer + '.');

@@ -24,7 +24,6 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
@@ -40,6 +39,11 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compare;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isActive;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
 
 /**
@@ -152,7 +156,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
             // may be already locked
             if (lockCrd != mvccCrd || lockCntr != mvccCntr) {
-                if (cctx.kernalContext().coordinators().isActive(lockCrd, lockCntr)) {
+                if (isActive(cctx, lockCrd, lockCntr)) {
                     resCrd = lockCrd;
                     resCntr = lockCntr;
 
@@ -180,7 +184,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
         if (isFlagsSet(FIRST)) {
             oldRow = tree.getRow(io, pageAddr, idx, RowData.LINK_WITH_HEADER);
 
-            boolean removed = oldRow.newMvccCoordinatorVersion() != 0;
+            boolean removed = oldRow.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA;
 
             long rowCrd, rowCntr; int rowOpCntr;
 
@@ -195,7 +199,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 rowOpCntr = oldRow.mvccOperationCounter();
             }
 
-            if (MvccUtils.compare(mvccSnapshot, rowCrd, rowCntr) == 0) {
+            if (compare(mvccSnapshot, rowCrd, rowCntr) == 0) {
                 res = mvccOpCntr == rowOpCntr ? ResultType.VERSION_FOUND :
                     removed ? ResultType.PREV_NULL : ResultType.PREV_NOT_NULL;
 
@@ -210,7 +214,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
         if (!isFlagsSet(LAST_FOUND)) {
             if (!(resCrd == rowCrd && resCntr == rowCntr)) { // It's possible it is a chain of aborted changes
-                byte txState = cctx.kernalContext().coordinators().state(rowCrd, rowCntr);
+                byte txState = MvccUtils.state(cctx, rowCrd, rowCntr);
 
                 if (txState == TxState.COMMITTED) {
                     if (oldRow.link() != rowLink)
@@ -218,7 +222,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
 
                     boolean removed = false;
 
-                    if (oldRow.newMvccCoordinatorVersion() != 0) {
+                    if (oldRow.newMvccCoordinatorVersion() != MVCC_CRD_COUNTER_NA) {
                         if (oldRow.newMvccCoordinatorVersion() == rowCrd && oldRow.newMvccCounter() == rowCntr)
                             // Row was deleted by the same Tx it was created
                             txState = TxState.COMMITTED;
@@ -227,7 +231,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                             txState = TxState.ABORTED;
                         else
                             // Check with TxLog if removed version is committed;
-                            txState = cctx.shared().coordinators().state(oldRow.newMvccCoordinatorVersion(), oldRow.newMvccCounter());
+                            txState = MvccUtils.state(cctx, oldRow.newMvccCoordinatorVersion(), oldRow.newMvccCounter());
 
                         if (!(txState == TxState.COMMITTED || txState == TxState.ABORTED))
                             throw new IllegalStateException("Unexpected state: " + txState);
@@ -345,9 +349,9 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             case LOCKED:
             case VERSION_MISMATCH:
 
-                assert resCrd != 0 && resCntr != 0;
+                assert resCrd != MVCC_CRD_COUNTER_NA && resCntr != MVCC_COUNTER_NA;
 
-                return new MvccVersionImpl(resCrd, resCntr, MvccProcessor.MVCC_OP_COUNTER_NA);
+                return new MvccVersionImpl(resCrd, resCntr, MVCC_OP_COUNTER_NA);
             default:
 
                 throw new IllegalStateException("Unexpected result type: " + resultType());

@@ -29,8 +29,10 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_OP_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.INITIAL_VERSION;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
 
 /**
@@ -76,6 +78,7 @@ public class MvccDataRow extends DataRow {
      * @param rowData Data.
      * @param crdVer Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
+     * @param mvccOpCntr Mvcc operation counter.
      */
     public MvccDataRow(CacheGroupContext grp,
         int hash,
@@ -87,9 +90,10 @@ public class MvccDataRow extends DataRow {
         int mvccOpCntr) {
         super(grp, hash, link, part, rowData);
 
-        assert MvccUtils.mvccVersionIsValid(crdVer, mvccCntr);
+        assert MvccUtils.mvccVersionIsValid(crdVer, mvccCntr, mvccOpCntr);
 
-        assert rowData == RowData.LINK_ONLY || this.mvccCrd == crdVer && this.mvccCntr == mvccCntr;
+        assert rowData == RowData.LINK_ONLY
+            || this.mvccCrd == crdVer && this.mvccCntr == mvccCntr && this.mvccOpCntr == mvccOpCntr;
 
         if (rowData == RowData.LINK_ONLY) {
             this.mvccCrd = crdVer;
@@ -117,7 +121,7 @@ public class MvccDataRow extends DataRow {
         this.mvccOpCntr = mvccVer.operationCounter();
 
         if (newMvccVer == null) {
-            newMvccCrd = 0;
+            newMvccCrd = MVCC_CRD_COUNTER_NA;
             newMvccCntr = MVCC_COUNTER_NA;
             newMvccOpCntr = MVCC_OP_COUNTER_NA;
         }
@@ -142,7 +146,7 @@ public class MvccDataRow extends DataRow {
         newMvccCntr = PageUtils.getLong(addr, off + 28);
         newMvccOpCntr = PageUtils.getInt(addr, off + 36);
 
-        assert newMvccCrd == 0 || MvccUtils.mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
+        assert newMvccCrd == MVCC_CRD_COUNTER_NA || MvccUtils.mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
 
         return MVCC_INFO_SIZE;
     }

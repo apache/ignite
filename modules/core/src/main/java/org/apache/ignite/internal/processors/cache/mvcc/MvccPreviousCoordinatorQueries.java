@@ -162,11 +162,10 @@ class MvccPreviousCoordinatorQueries {
      * @param cntr Counter.
      */
     void onQueryDone(UUID nodeId, long crdVer, long cntr) {
-        assert crdVer != 0;
-        assert cntr != MvccProcessor.MVCC_COUNTER_NA;
+        assert crdVer != MvccUtils.MVCC_CRD_COUNTER_NA && cntr != MvccUtils.MVCC_COUNTER_NA;
 
         synchronized (this) {
-            MvccVersion mvccCntr = new MvccVersionImpl(crdVer, cntr, MvccProcessor.MVCC_OP_COUNTER_NA);
+            MvccVersion mvccCntr = new MvccVersionImpl(crdVer, cntr, MvccUtils.MVCC_OP_COUNTER_NA);
 
             Map<MvccVersion, Integer> nodeQueries = activeQueries.get(nodeId);
 

@@ -19,10 +19,12 @@ package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 
 /**
  *
@@ -63,14 +65,14 @@ public class MvccAckRequestTx implements MvccMessage {
      * @return Query counter.
      */
     public long queryCounter() {
-        return MvccProcessor.MVCC_COUNTER_NA;
+        return MVCC_COUNTER_NA;
     }
 
     /**
      * @return Query coordinator version.
      */
     public long queryCoordinatorVersion() {
-        return 0;
+        return MVCC_CRD_COUNTER_NA;
     }
 
     /** {@inheritDoc} */

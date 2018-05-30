@@ -229,33 +229,68 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     }
 
     /**
-     * Marks row as removed by new version.
-     *
      * @param pageAddr Page address.
      * @param dataOff Data offset.
-     * @param newVer New version.
+     * @param ver New version.
      */
-    public void markRemoved(long pageAddr, int dataOff, MvccVersion newVer) {
+    public void updateVersion(long pageAddr, int dataOff, MvccVersion ver) {
         long addr = pageAddr + dataOff;
 
-        markRemoved(addr, newVer.coordinatorVersion(), newVer.counter(), newVer.operationCounter());
+        updateVersion(addr, ver.coordinatorVersion(), ver.counter(), ver.operationCounter());
     }
 
     /**
-     * Marks row as removed by new version.
-     *
      * @param pageAddr Page address.
      * @param itemId Item ID.
      * @param pageSize Page size.
      * @param mvccCrd Mvcc coordinator.
      * @param mvccCntr Mvcc counter.
+     * @param mvccOpCntr Operation counter.
      */
-    public void markRemoved(long pageAddr, int itemId, int pageSize, long mvccCrd, long mvccCntr, int mvccOpCntr) {
+    public void updateVersion(long pageAddr, int itemId, int pageSize, long mvccCrd, long mvccCntr, int mvccOpCntr) {
         int dataOff = getDataOffset(pageAddr, itemId, pageSize);
 
         long addr = pageAddr + dataOff + (isFragmented(pageAddr, dataOff) ? 10 : 2);
 
-        markRemoved(addr, mvccCrd, mvccCntr, mvccOpCntr);
+        updateVersion(addr, mvccCrd, mvccCntr, mvccOpCntr);
+    }
+
+    /**
+     * @param addr Address.
+     * @param mvccCrd Mvcc coordinator.
+     * @param mvccCntr Mvcc counter.
+     */
+    private void updateVersion(long addr, long mvccCrd, long mvccCntr, int mvccOpCntr) {
+        PageUtils.putLong(addr, 0, mvccCrd);
+        PageUtils.putLong(addr, 8, mvccCntr);
+        PageUtils.putInt(addr, 16, mvccOpCntr);
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param dataOff Data offset.
+     * @param newVer New version.
+     */
+    public void updateNewVersion(long pageAddr, int dataOff, MvccVersion newVer) {
+        long addr = pageAddr + dataOff;
+
+        updateNewVersion(addr, newVer.coordinatorVersion(), newVer.counter(), newVer.operationCounter());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param itemId Item ID.
+     * @param pageSize Page size.
+     * @param mvccCrd Mvcc coordinator.
+     * @param mvccCntr Mvcc counter.
+     * @param mvccOpCntr Operation counter.
+     */
+    public void updateNewVersion(long pageAddr, int itemId, int pageSize, long mvccCrd, long mvccCntr, int mvccOpCntr) {
+        int dataOff = getDataOffset(pageAddr, itemId, pageSize);
+
+        long addr = pageAddr + dataOff + (isFragmented(pageAddr, dataOff) ? 10 : 2);
+
+        updateNewVersion(addr, mvccCrd, mvccCntr, mvccOpCntr);
     }
 
     /**
@@ -265,7 +300,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
      * @param mvccCrd Mvcc coordinator.
      * @param mvccCntr Mvcc counter.
      */
-    private void markRemoved(long addr, long mvccCrd, long mvccCntr, int mvccOpCntr) {
+    private void updateNewVersion(long addr, long mvccCrd, long mvccCntr, int mvccOpCntr) {
         // Skip xid_min.
         addr += 20;
 
