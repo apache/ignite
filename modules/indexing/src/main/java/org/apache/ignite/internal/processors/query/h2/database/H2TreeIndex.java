@@ -121,7 +121,7 @@ public class H2TreeIndex extends GridH2IndexBase {
             IgniteCacheDatabaseSharedManager db = cctx.shared().database();
 
             for (int i = 0; i < segments.length; i++) {
-                db.checkpointReadLock();
+                cctx.group().checkpointReadLocker().checkpointReadLock();
 
                 try {
                     RootPage page = getMetaPage(name, i);
@@ -146,7 +146,7 @@ public class H2TreeIndex extends GridH2IndexBase {
                     };
                 }
                 finally {
-                    db.checkpointReadUnlock();
+                    cctx.group().checkpointReadLocker().checkpointReadUnlock();
                 }
             }
         }

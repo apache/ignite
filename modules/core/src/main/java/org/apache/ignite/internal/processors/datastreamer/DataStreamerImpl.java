@@ -2140,7 +2140,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
             try {
                 for (Entry<KeyCacheObject, CacheObject> e : entries) {
-                    cctx.shared().database().checkpointReadLock();
+                    cctx.group().checkpointReadLocker().checkpointReadLock();
 
                     try {
                         e.getKey().finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
@@ -2218,7 +2218,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         throw new IgniteException("Failed to set initial value for cache entry.", ex);
                     }
                     finally {
-                        cctx.shared().database().checkpointReadUnlock();
+                        cctx.group().checkpointReadLocker().checkpointReadUnlock();
                     }
                 }
             }

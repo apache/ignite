@@ -462,7 +462,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         try (GridCloseableIterator<CacheDataRow> it = grp.isLocal() ? iterator(cctx.cacheId(), cacheDataStores().iterator()) :
             evictionSafeIterator(cctx.cacheId(), cacheDataStores().iterator())) {
             while (it.hasNext()) {
-                cctx.checkpointReadLocker().checkpointReadLock();
+                grp.checkpointReadLocker().checkpointReadLock();
 
                 try {
                     KeyCacheObject key = it.next().key();
@@ -483,7 +483,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     }
                 }
                 finally {
-                    cctx.checkpointReadLocker().checkpointReadUnlock();
+                    grp.checkpointReadLocker().checkpointReadUnlock();
                 }
             }
         }

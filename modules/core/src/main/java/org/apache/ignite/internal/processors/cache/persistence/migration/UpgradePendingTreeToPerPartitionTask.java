@@ -126,7 +126,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
 
         final IgniteCacheDatabaseSharedManager db = grp.shared().database();
 
-        db.checkpointReadLock();
+        grp.checkpointReadLocker().checkpointReadLock();
         try {
             IndexStorage indexStorage = ((GridCacheOffheapManager)grp.offheap()).getIndexStorage();
 
@@ -153,7 +153,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
             );
         }
         finally {
-            db.checkpointReadUnlock();
+            grp.checkpointReadLocker().checkpointReadUnlock();
         }
 
         processPendingTree(grp, oldPendingTree);
@@ -161,12 +161,12 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
         if (Thread.currentThread().isInterrupted())
             return;
 
-        db.checkpointReadLock();
+        grp.checkpointReadLocker().checkpointReadLock();
         try {
             oldPendingTree.destroy();
         }
         finally {
-            db.checkpointReadUnlock();
+            grp.checkpointReadLocker().checkpointReadUnlock();
         }
     }
 
@@ -195,7 +195,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
         while (!Thread.currentThread().isInterrupted()) {
             int cnt = 0;
 
-            db.checkpointReadLock();
+            grp.checkpointReadLocker().checkpointReadLock();
             try {
                 GridCursor<PendingRow> cursor = oldPendingEntries.find(row, null, WITHOUT_KEY);
 
@@ -233,7 +233,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                     break;
             }
             finally {
-                db.checkpointReadUnlock();
+                grp.checkpointReadLocker().checkpointReadUnlock();
             }
         }
 

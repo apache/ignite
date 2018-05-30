@@ -580,13 +580,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         int partId = store.partId();
 
-        ctx.database().checkpointReadLock();
+        grp.checkpointReadLocker().checkpointReadLock();
 
         try {
             saveStoreMetadata(store, null, false, true);
         }
         finally {
-            ctx.database().checkpointReadUnlock();
+            grp.checkpointReadLocker().checkpointReadUnlock();
         }
 
         ((GridCacheDatabaseSharedManager)ctx.database()).schedulePartitionDestroy(grp.groupId(), partId);
@@ -1196,7 +1196,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (init.compareAndSet(false, true)) {
                 IgniteCacheDatabaseSharedManager dbMgr = ctx.database();
 
-                dbMgr.checkpointReadLock();
+                grp.checkpointReadLocker().checkpointReadLock();
                 try {
                     Metas metas = getOrAllocatePartitionMetas();
 
@@ -1311,7 +1311,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 finally {
                     latch.countDown();
 
-                    dbMgr.checkpointReadUnlock();
+                    grp.checkpointReadLocker().checkpointReadUnlock();
                 }
             }
             else {
@@ -1681,7 +1681,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (delegate0 == null)
                 return;
 
-            ctx.database().checkpointReadLock();
+            grp.checkpointReadLocker().checkpointReadLock();
             try {
                 // Clear persistent pendingTree
                 if (pendingTree != null) {
@@ -1703,7 +1703,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 delegate0.clear(cacheId);
             }
             finally {
-                ctx.database().checkpointReadUnlock();
+                grp.checkpointReadLocker().checkpointReadUnlock();
             }
         }
 
@@ -1742,7 +1742,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (part == null || part.state() != OWNING || pendingTree.size() == 0)
                 return 0;
 
-            cctx.shared().database().checkpointReadLock();
+            grp.checkpointReadLocker().checkpointReadLock();
             try {
                 if (!part.reserve())
                     return 0;
@@ -1798,7 +1798,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 }
             }
             finally {
-                cctx.shared().database().checkpointReadUnlock();
+                grp.checkpointReadLocker().checkpointReadUnlock();
             }
         }
 

@@ -1302,7 +1302,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                         try {
                             GridCacheEntryEx entry = cache0.entryEx(info.key(), topVer);
 
-                            cctx.shared().database().checkpointReadLock();
+                            cctx.group().checkpointReadLocker().checkpointReadLock();
 
                             try {
                                 if (entry.initialValue(info.value(),
@@ -1319,7 +1319,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                 }
                             }
                             finally {
-                                cctx.shared().database().checkpointReadUnlock();
+                                cctx.group().checkpointReadLocker().checkpointReadUnlock();
                             }
                         }
                         catch (IgniteCheckedException e) {

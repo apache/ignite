@@ -2485,7 +2485,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     // TODO: https://issues.apache.org/jira/browse/IGNITE-6097
                     grp.offheap().onPartitionInitialCounterUpdated(i, 0);
 
-                    checkpointReadLock();
+                    grp.checkpointReadLocker().checkpointReadLock();
 
                     try {
                         long partMetaId = pageMem.partitionMetaPageId(grpId, i);
@@ -2526,7 +2526,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                     }
                     finally {
-                        checkpointReadUnlock();
+                        grp.checkpointReadLocker().checkpointReadUnlock();
                     }
                 }
                 else if (restore != null) {

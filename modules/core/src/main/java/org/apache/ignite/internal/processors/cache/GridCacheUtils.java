@@ -1729,7 +1729,7 @@ public class GridCacheUtils {
                 while (true) {
                     GridCacheEntryEx entry = null;
 
-                    cctx.shared().database().checkpointReadLock();
+                    cctx.group().checkpointReadLocker().checkpointReadLock();
 
                     try {
                         entry = colocated.entryEx(key, topVer);
@@ -1761,7 +1761,7 @@ public class GridCacheUtils {
                         if (entry != null)
                             cctx.evicts().touch(entry, topVer);
 
-                        cctx.shared().database().checkpointReadUnlock();
+                        cctx.group().checkpointReadLocker().checkpointReadUnlock();
                     }
                 }
             }

@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsEvictor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLocker;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
@@ -157,6 +158,10 @@ public class CacheGroupContext {
     /** */
     private volatile boolean globalWalEnabled;
 
+    /** */
+    private CheckpointReadLocker checkpointReadLocker;
+
+
     /**
      * @param grpId Group ID.
      * @param ctx Context.
@@ -215,6 +220,8 @@ public class CacheGroupContext {
         caches = new ArrayList<>();
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
+
+        checkpointReadLocker = persistenceEnabled() ? ctx.database() : CheckpointReadLocker.NOOP;
     }
 
     /**
@@ -1052,6 +1059,13 @@ public class CacheGroupContext {
         persistLocalWalState(enabled);
 
         this.localWalEnabled = enabled;
+    }
+
+    /**
+     * @return Checkpoint read locker for atomic operation.
+     */
+    public CheckpointReadLocker checkpointReadLocker() {
+        return checkpointReadLocker;
     }
 
     /**

@@ -831,7 +831,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         CachePartialUpdateCheckedException err = null;
 
-        ctx.shared().database().checkpointReadLock();
+        ctx.group().checkpointReadLocker().checkpointReadLock();
 
         try {
             ctx.shared().database().ensureFreeSpace(ctx.dataRegion());
@@ -939,7 +939,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             }
         }
         finally {
-            ctx.shared().database().checkpointReadUnlock();
+            ctx.group().checkpointReadLocker().checkpointReadUnlock();
         }
 
         if (err != null)

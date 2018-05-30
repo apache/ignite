@@ -716,7 +716,7 @@ public class GridDhtPartitionDemander {
 
             GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
 
-            ctx.database().checkpointReadLock();
+            grp.checkpointReadLocker().checkpointReadLock();
 
             try {
                 // Preload.
@@ -787,7 +787,7 @@ public class GridDhtPartitionDemander {
                 }
             }
             finally {
-                ctx.database().checkpointReadUnlock();
+                grp.checkpointReadLocker().checkpointReadUnlock();
             }
 
             // Only request partitions based on latest topology version.

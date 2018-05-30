@@ -306,7 +306,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     {
         boolean needRefresh;
 
-        ctx.database().checkpointReadLock();
+        grp.checkpointReadLocker().checkpointReadLock();
 
         try {
             U.writeLock(lock);
@@ -326,7 +326,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
         }
         finally {
-            ctx.database().checkpointReadUnlock();
+            grp.checkpointReadLocker().checkpointReadUnlock();
         }
 
         return needRefresh;
@@ -462,7 +462,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         boolean affReady,
         boolean updateMoving)
         throws IgniteCheckedException {
-        ctx.database().checkpointReadLock();
+        grp.checkpointReadLocker().checkpointReadLock();
 
         try {
             synchronized (ctx.exchange().interruptLock()) {
@@ -569,7 +569,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
         }
         finally {
-            ctx.database().checkpointReadUnlock();
+            grp.checkpointReadLocker().checkpointReadUnlock();
         }
     }
 
@@ -674,7 +674,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             ", affVer=" + grp.affinity().lastVersion() +
             ", fut=" + exchFut + ']';
 
-        ctx.database().checkpointReadLock();
+        grp.checkpointReadLocker().checkpointReadLock();
 
         try {
 
@@ -787,7 +787,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
         }
         finally {
-            ctx.database().checkpointReadUnlock();
+            grp.checkpointReadLocker().checkpointReadUnlock();
         }
 
         return changed;
@@ -895,7 +895,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         boolean created = false;
 
-        ctx.database().checkpointReadLock();
+        grp.checkpointReadLocker().checkpointReadLock();
 
         try {
             lock.writeLock().lock();
@@ -948,7 +948,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
         }
         finally {
-            ctx.database().checkpointReadUnlock();
+            grp.checkpointReadLocker().checkpointReadUnlock();
         }
 
         if (created && ctx.pageStore() != null) {
@@ -1337,7 +1337,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         assert partMap != null;
 
-        ctx.database().checkpointReadLock();
+        grp.checkpointReadLocker().checkpointReadLock();
 
         try {
             lock.writeLock().lock();
@@ -1565,7 +1565,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
         }
         finally {
-            ctx.database().checkpointReadUnlock();
+            grp.checkpointReadLocker().checkpointReadUnlock();
         }
     }
 
@@ -1691,7 +1691,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             return false;
         }
 
-        ctx.database().checkpointReadLock();
+        grp.checkpointReadLocker().checkpointReadLock();
 
         try {
             lock.writeLock().lock();
@@ -1824,7 +1824,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
         }
         finally {
-            ctx.database().checkpointReadUnlock();
+            grp.checkpointReadLocker().checkpointReadUnlock();
         }
     }
 
@@ -1949,7 +1949,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public boolean detectLostPartitions(AffinityTopologyVersion resTopVer, DiscoveryEvent discoEvt) {
-        ctx.database().checkpointReadLock();
+        grp.checkpointReadLocker().checkpointReadLock();
 
         try {
             lock.writeLock().lock();
@@ -2028,13 +2028,13 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
         }
         finally {
-            ctx.database().checkpointReadUnlock();
+            grp.checkpointReadLocker().checkpointReadUnlock();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void resetLostPartitions(AffinityTopologyVersion resTopVer) {
-        ctx.database().checkpointReadLock();
+        grp.checkpointReadLocker().checkpointReadLock();
 
         try {
             lock.writeLock().lock();
@@ -2069,7 +2069,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
         }
         finally {
-            ctx.database().checkpointReadUnlock();
+            grp.checkpointReadLocker().checkpointReadUnlock();
         }
     }
 
@@ -2107,7 +2107,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Override public Map<UUID, Set<Integer>> resetOwners(Map<Integer, Set<UUID>> ownersByUpdCounters, Set<Integer> haveHistory) {
         Map<UUID, Set<Integer>> result = new HashMap<>();
 
-        ctx.database().checkpointReadLock();
+        grp.checkpointReadLocker().checkpointReadLock();
 
         try {
             lock.writeLock().lock();
@@ -2185,7 +2185,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
         }
         finally {
-            ctx.database().checkpointReadUnlock();
+            grp.checkpointReadLocker().checkpointReadUnlock();
         }
 
         return result;
@@ -2510,7 +2510,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void onEvicted(GridDhtLocalPartition part, boolean updateSeq) {
-        ctx.database().checkpointReadLock();
+        grp.checkpointReadLocker().checkpointReadLock();
 
         try {
             lock.writeLock().lock();
@@ -2534,7 +2534,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
         }
         finally {
-            ctx.database().checkpointReadUnlock();
+            grp.checkpointReadLocker().checkpointReadUnlock();
         }
     }
 

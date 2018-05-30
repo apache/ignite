@@ -2463,13 +2463,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         ttlAndExpireTimeExtras(ttl, expireTime);
 
-        cctx.shared().database().checkpointReadLock();
+        cctx.group().checkpointReadLocker().checkpointReadLock();
 
         try {
             storeValue(val, expireTime, ver, null);
         }
         finally {
-            cctx.shared().database().checkpointReadUnlock();
+            cctx.group().checkpointReadLocker().checkpointReadUnlock();
         }
     }
 
@@ -3419,13 +3419,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (log.isTraceEnabled())
             log.trace("onExpired clear [key=" + key + ", entry=" + System.identityHashCode(this) + ']');
 
-        cctx.shared().database().checkpointReadLock();
+        cctx.group().checkpointReadLocker().checkpointReadLock();
 
         try {
             removeValue();
         }
         finally {
-            cctx.shared().database().checkpointReadUnlock();
+            cctx.group().checkpointReadLocker().checkpointReadUnlock();
         }
 
         if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {

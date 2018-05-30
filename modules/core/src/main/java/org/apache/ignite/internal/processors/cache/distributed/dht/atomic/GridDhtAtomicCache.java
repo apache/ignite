@@ -1695,7 +1695,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         IgniteCacheExpiryPolicy expiry = null;
 
-        ctx.checkpointReadLocker().checkpointReadLock();
+        ctx.group().checkpointReadLocker().checkpointReadLock();
 
         try {
             ctx.shared().database().ensureFreeSpace(ctx.dataRegion());
@@ -1791,7 +1791,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             return;
         }
         finally {
-            ctx.checkpointReadLocker().checkpointReadUnlock();
+            ctx.group().checkpointReadLocker().checkpointReadUnlock();
         }
 
         if (res.remapTopologyVersion() != null) {
@@ -3131,7 +3131,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
-        ctx.checkpointReadLocker().checkpointReadLock();
+        ctx.group().checkpointReadLocker().checkpointReadLock();
 
         try {
             for (int i = 0; i < req.size(); i++) {
@@ -3228,7 +3228,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         }
         finally {
-            ctx.checkpointReadLocker().checkpointReadUnlock();
+            ctx.group().checkpointReadLocker().checkpointReadUnlock();
         }
 
         GridDhtAtomicUpdateResponse dhtRes = null;

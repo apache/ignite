@@ -994,7 +994,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             GridIterator<CacheDataRow> it0 = grp.offheap().partitionIterator(id);
 
             while (it0.hasNext()) {
-                ctx.database().checkpointReadLock();
+                grp.checkpointReadLocker().checkpointReadLock();
 
                 try {
                     CacheDataRow row = it0.next();
@@ -1045,7 +1045,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     break; // Partition is already concurrently cleared and evicted.
                 }
                 finally {
-                    ctx.database().checkpointReadUnlock();
+                    grp.checkpointReadLocker().checkpointReadUnlock();
                 }
             }
 
@@ -1088,7 +1088,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         while (it.hasNext()) {
             GridCacheMapEntry cached = null;
 
-            ctx.database().checkpointReadLock();
+            grp.checkpointReadLocker().checkpointReadLock();
 
             try {
                 cached = it.next();
@@ -1126,7 +1126,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
             }
             finally {
-                ctx.database().checkpointReadUnlock();
+                grp.checkpointReadLocker().checkpointReadUnlock();
             }
         }
     }

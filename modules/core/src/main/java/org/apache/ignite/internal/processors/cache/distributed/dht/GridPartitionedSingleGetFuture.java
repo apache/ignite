@@ -666,7 +666,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param ver Version.
      */
     private void setResult(@Nullable CacheObject val, @Nullable GridCacheVersion ver) {
-        cctx.shared().database().checkpointReadLock();
+        cctx.group().checkpointReadLocker().checkpointReadLock();
 
         try {
             assert !skipVals;
@@ -690,7 +690,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             onDone(e);
         }
         finally {
-            cctx.shared().database().checkpointReadUnlock();
+            cctx.group().checkpointReadLocker().checkpointReadUnlock();
         }
     }
 

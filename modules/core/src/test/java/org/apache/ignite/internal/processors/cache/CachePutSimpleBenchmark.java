@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,6 +30,8 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -63,6 +67,9 @@ public class CachePutSimpleBenchmark extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setCacheConfiguration(cacheConfigurations());
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+            new DataRegionConfiguration().setName("asd").setPersistenceEnabled(true)));
 
         return cfg;
     }
@@ -142,6 +149,45 @@ public class CachePutSimpleBenchmark extends GridCommonAbstractTest {
 
             System.out.println("+++ " + (System.currentTimeMillis() - t0));
         }
+    }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutAll() throws Exception {
+        final int KEYS = 100_000;
+
+        ignite(0).cluster().active(true);
+
+        final AtomicInteger cnt = new AtomicInteger();
+
+        final IgniteCache<Integer, Integer> cache = ignite(0).cache(CACHE_NAME);
+
+        while (true) {
+            cnt.set(0);
+            cache.clear();
+
+            long t0 = System.currentTimeMillis();
+
+            GridTestUtils.runMultiThreaded(new Runnable() {
+                @Override public void run() {
+                    while (cnt.get() < KEYS) {
+                        Map<Integer, Integer> m = new HashMap<>();
+
+                        for (int i = 0; i < 1000; ++i) {
+                            Integer key = ThreadLocalRandom.current().nextInt();
+
+                            cache.put(key, key);
+                        }
+
+                        cache.putAll(m);
+
+                        cnt.addAndGet(1000);
+                    }
+                }
+            }, 10, "put");
+
+            System.out.println("+++ " + (System.currentTimeMillis() - t0));
+        }
     }
 }
