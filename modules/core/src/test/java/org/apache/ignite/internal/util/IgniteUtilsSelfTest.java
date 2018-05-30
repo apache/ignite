@@ -852,7 +852,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testIsIgniteVersionAtLeast() {
+    public void testIsOldestNodeVersionAtLeast() {
         IgniteProductVersion v240 = IgniteProductVersion.fromString("2.4.0");
         IgniteProductVersion v241 = IgniteProductVersion.fromString("2.4.1");
         IgniteProductVersion v250 = IgniteProductVersion.fromString("2.5.0");
@@ -870,10 +870,10 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         TcpDiscoveryNode node250ts = new TcpDiscoveryNode();
         node250ts.version(v250ts);
 
-        assertTrue(U.isIgniteVersionAtLeast(v240, Arrays.asList(node240, node241, node250, node250ts)));
-        assertFalse(U.isIgniteVersionAtLeast(v241, Arrays.asList(node240, node241, node250, node250ts)));
-        assertTrue(U.isIgniteVersionAtLeast(v250, Arrays.asList(node250, node250ts)));
-        assertTrue(U.isIgniteVersionAtLeast(v250ts, Arrays.asList(node250, node250ts)));
+        assertTrue(U.isOldestNodeVersionAtLeast(v240, Arrays.asList(node240, node241, node250, node250ts)));
+        assertFalse(U.isOldestNodeVersionAtLeast(v241, Arrays.asList(node240, node241, node250, node250ts)));
+        assertTrue(U.isOldestNodeVersionAtLeast(v250, Arrays.asList(node250, node250ts)));
+        assertTrue(U.isOldestNodeVersionAtLeast(v250ts, Arrays.asList(node250, node250ts)));
     }
 
     /**

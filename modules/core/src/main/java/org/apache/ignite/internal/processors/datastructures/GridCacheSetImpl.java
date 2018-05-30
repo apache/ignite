@@ -60,7 +60,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.SET;
-import static org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader.V1;
 import static org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader.V2;
 
 /**
@@ -100,8 +99,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /** Access to affinityRun() and affinityCall() functions. */
     private final IgniteCompute compute;
 
-    /** Set header version. */
-    private final int hdrVer;
+    /** {@code True} If IgniteSet instance uses a separate cache to store its elements. */
+    private final boolean separatedCache;
 
     /**
      * @param ctx Cache context.
@@ -121,7 +120,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         this.setKey = new GridCacheSetHeaderKey(name);
         this.log = ctx.logger(GridCacheSetImpl.class);
         this.hdrPart = ctx.affinity().partition(setKey);
-        this.hdrVer = hdr.version();
+        this.separatedCache = (!collocated && hdr.version() == V2);
     }
 
     /** {@inheritDoc} */
@@ -158,7 +157,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         try {
             onAccess();
 
-            if (!collocated && hdrVer == V2) {
+            if (separatedCache) {
                 // Non collocated IgniteSet uses a separate cache which contains additional header element.
                 return cache.sizeAsync(new CachePeekMode[] {}).get() - 1;
             }
@@ -409,7 +408,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
             ctx.kernalContext().dataStructures().removeSet(name, ctx);
 
-            if (!collocated && hdrVer == V2)
+            if (separatedCache)
                 ctx.kernalContext().cache().dynamicDestroyCache(ctx.cache().name(), false, true, false);
         }
         catch (IgniteCheckedException e) {
@@ -421,7 +420,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @return Closeable iterator.
      */
     protected GridCloseableIterator<T> iterator0() {
-        return collocated || hdrVer == V1 ? sharedCacheIterator() : cacheIterator();
+        return separatedCache ? cacheIterator() : sharedCacheIterator();
     }
 
     /**
@@ -625,7 +624,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      */
     private SetItemKey itemKey(Object item) {
         return collocated ? new CollocatedSetItemKey(name, id, item) :
-            new GridCacheSetItemKey(hdrVer == V1 ? id : null, item);
+            new GridCacheSetItemKey(separatedCache ? null : id, item);
     }
 
     /** {@inheritDoc} */

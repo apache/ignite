@@ -10417,11 +10417,11 @@ public abstract class IgniteUtils {
     /**
      * Check that node Ignite product version is not less then specified.
      *
-     * @param ver Target Ignote pdouct version.
+     * @param ver Target Ignite product version.
      * @param nodes Cluster nodes.
      * @return {@code True} if ignite product version of all nodes is not less then {@code ver}.
      */
-    public static boolean isIgniteVersionAtLeast(IgniteProductVersion ver, Iterable<ClusterNode> nodes) {
+    public static boolean isOldestNodeVersionAtLeast(IgniteProductVersion ver, Iterable<ClusterNode> nodes) {
         for (ClusterNode node : nodes) {
             if (node.version().compareToIgnoreTimestamp(ver) < 0)
                 return false;

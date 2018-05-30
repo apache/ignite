@@ -147,16 +147,17 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
             return GridTestUtils.getFieldValue(set, GridCacheSetImpl.class, "ctx");
     }
 
+
     /**
      * @param set Ignite set.
-     * @return Version of header.
+     * @return {@code True} if this instance of IgniteSet is using shared cache.
      */
-    protected int version(IgniteSet set) {
+    protected boolean sharedCacheMode(IgniteSet set) {
         IgniteSet impl = set;
 
         if (set instanceof GridCacheSetProxy)
             impl = ((GridCacheSetProxy)set).delegate();
 
-        return GridTestUtils.getFieldValue(impl, "hdrVer");
+        return !(Boolean)GridTestUtils.getFieldValue(impl, "separatedCache");
     }
 }

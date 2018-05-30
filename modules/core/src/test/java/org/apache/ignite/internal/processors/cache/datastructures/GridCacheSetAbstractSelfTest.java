@@ -807,12 +807,12 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         GridCacheContext cctx = GridTestUtils.getFieldValue(set0, "cctx");
 
-        boolean separateCacheMode = version(set0) == V2 && !set0.collocated();
+        boolean sharedCacheMode = sharedCacheMode(set0);
 
         for (int i = 0; i < gridCount(); i++) {
             GridCacheAdapter cache = grid(i).context().cache().internalCache(cctx.name());
 
-            if (separateCacheMode) {
+            if (!sharedCacheMode) {
                 assertNull("Internal cache should be destroyed in non-shared cache mode: " + cctx.name(), cache);
 
                 continue;
@@ -1037,10 +1037,10 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set3 = ignite.set("set3", colCfg);
         IgniteSet set4 = ignite.set("set4", colCfg);
 
-        if (!set4.collocated() && version(set4) == V2)
-            assertTrue(cctx(set3).cacheId() != cctx(set4).cacheId());
-        else
+        if (sharedCacheMode(set4))
             assertTrue(cctx(set3).cacheId() == cctx(set4).cacheId());
+        else
+            assertTrue(cctx(set3).cacheId() != cctx(set4).cacheId());
 
         assertTrue(cctx(set1).groupId() == cctx(set3).groupId());
         assertTrue(cctx(set3).groupId() == cctx(set4).groupId());
@@ -1060,10 +1060,10 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set7 = ignite.set("set7", colCfg);
         IgniteSet set8 = ignite.set("set8", colCfg);
 
-        if (!set8.collocated() && version(set8) == V2)
-            assertTrue(cctx(set7).cacheId() != cctx(set8).cacheId());
-        else
+        if (sharedCacheMode(set8))
             assertTrue(cctx(set7).cacheId() == cctx(set8).cacheId());
+        else
+            assertTrue(cctx(set7).cacheId() != cctx(set8).cacheId());
 
         assertTrue(cctx(set3).cacheId() != cctx(set7).cacheId());
         assertTrue(cctx(set3).groupId() == cctx(set7).groupId());

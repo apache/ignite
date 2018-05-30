@@ -432,10 +432,10 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
             if (create) {
-                if (U.isIgniteVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE, cctx.grid().cluster().nodes()))
-                    hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated, GridCacheSetHeader.V2);
-                else
-                    hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated, GridCacheSetHeader.V1);
+                int hdrVer = U.isOldestNodeVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE,
+                    cctx.grid().cluster().nodes()) ? GridCacheSetHeader.V2 : GridCacheSetHeader.V1;
+
+                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated, hdrVer);
 
                 GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
 
