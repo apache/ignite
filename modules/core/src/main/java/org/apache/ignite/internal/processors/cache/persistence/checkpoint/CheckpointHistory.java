@@ -1,6 +1,5 @@
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -309,12 +308,7 @@ public class CheckpointHistory {
                     if (F.isEmpty(applicablePartitions))
                         continue;
 
-                    // Partition is no more applicable, because state doesn't contain it.
-                    for (Integer partId : applicablePartitions)
-                        if (!groupsAndPartitions.get(grpId).contains(partId))
-                            applicablePartitions.remove(partId);
-
-                    for (Integer partId : groupsAndPartitions.get(grpId)) {
+                    for (Integer partId : applicablePartitions) {
                         int pIdx = cpGroupState.indexByPartition(partId);
 
                         if (pIdx >= 0)
@@ -323,6 +317,11 @@ public class CheckpointHistory {
                             applicablePartitions.remove(partId);
                     }
                 }
+
+                // Remove groups from search with empty set of applicable partitions.
+                for (Map.Entry<Integer, Set<Integer>> e : groupsAndPartitions.entrySet())
+                    if (e.getValue().isEmpty())
+                        groupsAndPartitions.remove(e.getKey());
             }
             catch (IgniteCheckedException ex) {
                 U.error(log, "Failed to process checkpoint: " + (chpEntry != null ? chpEntry : "none"), ex);

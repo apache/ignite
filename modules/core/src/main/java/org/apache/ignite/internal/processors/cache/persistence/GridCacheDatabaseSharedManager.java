@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -56,7 +55,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import javax.management.ObjectName;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -219,32 +217,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Checkpoint file temporary suffix. This is needed to safe writing checkpoint markers through temporary file and renaming. */
     public static final String FILE_TMP_SUFFIX = ".tmp";
 
-    /** Node started file patter. */
-    private static final Pattern NODE_STARTED_FILE_NAME_PATTERN = Pattern.compile("(\\d+)-node-started\\.bin");
-
     /** Node started file suffix. */
     public static final String NODE_STARTED_FILE_NAME_SUFFIX = "-node-started.bin";
-
-    /** */
-    private static final FileFilter CP_FILE_FILTER = new FileFilter() {
-        @Override public boolean accept(File f) {
-            return CP_FILE_NAME_PATTERN.matcher(f.getName()).matches();
-        }
-    };
-
-    /** */
-    private static final FileFilter NODE_STARTED_FILE_FILTER = new FileFilter() {
-        @Override public boolean accept(File f) {
-            return f.getName().endsWith(NODE_STARTED_FILE_NAME_SUFFIX);
-        }
-    };
-
-    /** */
-    private static final Comparator<GridDhtLocalPartition> ASC_PART_COMPARATOR = new Comparator<GridDhtLocalPartition>() {
-        @Override public int compare(GridDhtLocalPartition a, GridDhtLocalPartition b) {
-            return Integer.compare(a.id(), b.id());
-        }
-    };
 
     /** */
     private static final String MBEAN_NAME = "DataStorageMetrics";
@@ -517,12 +491,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private void cleanupTempCheckpointDirectory() throws IgniteCheckedException {
         try {
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath(), new DirectoryStream.Filter<Path>() {
-                @Override
-                public boolean accept(Path path) throws IOException {
-                    return path.endsWith(FILE_TMP_SUFFIX);
-                }
-            })) {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(
+                cpDir.toPath(),
+                path -> path.endsWith(FILE_TMP_SUFFIX))
+            ) {
                 for (Path path : files)
                     Files.delete(path);
             }
@@ -548,31 +520,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     *
-     */
-    private void initDataBase() {
-        if (persistenceCfg.getCheckpointThreads() > 1)
-            asyncRunner = new IgniteThreadPoolExecutor(
-                "checkpoint-runner",
-                cctx.igniteInstanceName(),
-                persistenceCfg.getCheckpointThreads(),
-                persistenceCfg.getCheckpointThreads(),
-                30_000,
-                new LinkedBlockingQueue<Runnable>()
-            );
-    }
-
-    /**
      * Retreives checkpoint history form specified {@code dir}.
      *
-     * @param dir Checkpoint state dir.
+     * @return List of checkpoints.
      */
-    private List<CheckpointEntry> cpHistory(File dir) throws IgniteCheckedException {
-        if (!dir.exists())
+    private List<CheckpointEntry> retreiveHistory() throws IgniteCheckedException {
+        if (!cpDir.exists())
             return Collections.emptyList();
 
         try (DirectoryStream<Path> cpFiles = Files.newDirectoryStream(
-            dir.toPath(),
+            cpDir.toPath(),
             path -> CP_FILE_NAME_PATTERN.matcher(path.toFile().getName()).matches())
         ) {
             List<CheckpointEntry> checkpoints = new ArrayList<>();
@@ -590,7 +547,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return checkpoints;
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to load checkpoints.", e);
+            throw new IgniteCheckedException("Failed to load checkpoint history.", e);
         }
     }
 
@@ -761,6 +718,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (fileLockHolder != null)
                 fileLockHolder = new FileLockHolder(storeMgr.workDir().getPath(), cctx.kernalContext(), log);
         }
+    }
+
+    /**
+     *
+     */
+    private void initDataBase() {
+        if (persistenceCfg.getCheckpointThreads() > 1)
+            asyncRunner = new IgniteThreadPoolExecutor(
+                "checkpoint-runner",
+                cctx.igniteInstanceName(),
+                persistenceCfg.getCheckpointThreads(),
+                persistenceCfg.getCheckpointThreads(),
+                30_000,
+                new LinkedBlockingQueue<Runnable>()
+            );
     }
 
     /**
@@ -939,44 +911,43 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     public List<T2<Long, WALPointer>> nodeStartedPointers() throws IgniteCheckedException {
         List<T2<Long, WALPointer>> res = new ArrayList<>();
 
-        File[] files = cpDir.listFiles(NODE_STARTED_FILE_FILTER);
+        try (DirectoryStream<Path> nodeStartedFiles = Files.newDirectoryStream(
+            cpDir.toPath(),
+            path -> path.toFile().getName().endsWith(NODE_STARTED_FILE_NAME_SUFFIX))
+        ) {
+            ByteBuffer buf = ByteBuffer.allocate(20);
+            buf.order(ByteOrder.nativeOrder());
 
-        Arrays.sort(files, new Comparator<File>() {
-            @Override public int compare(File o1, File o2) {
-                String n1 = o1.getName();
-                String n2 = o2.getName();
+            for (Path path : nodeStartedFiles) {
+                File f = path.toFile();
 
-                long ts1 = Long.valueOf(n1.substring(0, n1.length() - NODE_STARTED_FILE_NAME_SUFFIX.length()));
-                long ts2 = Long.valueOf(n2.substring(0, n2.length() - NODE_STARTED_FILE_NAME_SUFFIX.length()));
+                String name = f.getName();
 
-                return Long.compare(ts1, ts2);
-            }
-        });
+                Long ts = Long.valueOf(name.substring(0, name.length() - NODE_STARTED_FILE_NAME_SUFFIX.length()));
 
-        ByteBuffer buf = ByteBuffer.allocate(20);
-        buf.order(ByteOrder.nativeOrder());
+                try (FileIO io = ioFactory.create(f, READ)) {
+                    io.read(buf);
 
-        for (File f : files){
-            String name = f.getName();
+                    buf.flip();
 
-            Long ts = Long.valueOf(name.substring(0, name.length() - NODE_STARTED_FILE_NAME_SUFFIX.length()));
+                    FileWALPointer ptr = new FileWALPointer(
+                        buf.getLong(), buf.getInt(), buf.getInt());
 
-            try (FileIO io = ioFactory.create(f, READ)) {
-                io.read(buf);
+                    res.add(new T2<>(ts, ptr));
 
-                buf.flip();
-
-                FileWALPointer ptr = new FileWALPointer(
-                    buf.getLong(), buf.getInt(), buf.getInt());
-
-                res.add(new T2<Long, WALPointer>(ts, ptr));
-
-                buf.clear();
-            }
-            catch (IOException e) {
-                throw new IgniteCheckedException("Failed to read node started marker file: " + f.getAbsolutePath(), e);
+                    buf.clear();
+                }
+                catch (IOException e) {
+                    throw new PersistentStorageIOException("Failed to read node started marker file: " + f.getAbsolutePath(), e);
+                }
             }
         }
+        catch (IOException e) {
+            throw new PersistentStorageIOException("Failed to retreive node started files.", e);
+        }
+
+        // Sort start markers by file timestamp.
+        res.sort(Comparator.comparingLong(IgniteBiTuple::get1));
 
         return res;
     }
@@ -1233,7 +1204,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param partFile Partition file.
      */
     private int resolvePageSizeFromPartitionFile(Path partFile) throws IOException, IgniteCheckedException {
-        try (FileIO fileIO = persistenceCfg.getFileIOFactory().create(partFile.toFile())) {
+        try (FileIO fileIO = ioFactory.create(partFile.toFile())) {
             int minimalHdr = FilePageStore.HEADER_SIZE;
 
             if (fileIO.size() < minimalHdr)
@@ -1443,13 +1414,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             PageMemoryEx pageMem = (PageMemoryEx)gctx.dataRegion().pageMemory();
 
-            Collection<Integer> grpIds = destroyed.get(pageMem);
-
-            if (grpIds == null) {
-                grpIds = new HashSet<>();
-
-                destroyed.put(pageMem, grpIds);
-            }
+            Collection<Integer> grpIds = destroyed.computeIfAbsent(pageMem, k -> new HashSet<>());
 
             grpIds.add(tup.get1().groupId());
 
@@ -1676,14 +1641,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (grp.isLocal())
                 continue;
 
-            Set<Integer> partitions = StreamSupport.stream(grp.topology().currentLocalPartitions().spliterator(), false)
-                .filter(part -> part.state() == GridDhtPartitionState.OWNING)
-                .filter(part -> part.fullSize() > walRebalanceThreshold)
-                .map(GridDhtLocalPartition::id)
-                .collect(Collectors.toSet());
-
-            if (!partitions.isEmpty())
-                res.put(grp.groupId(), partitions);
+            for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
+                if (locPart.state() == GridDhtPartitionState.OWNING && locPart.fullSize() > walRebalanceThreshold)
+                    res.computeIfAbsent(grp.groupId(), k -> new HashSet<>()).add(locPart.id());
+            }
         }
 
         return res;
@@ -2139,7 +2100,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 finalizeCheckpointOnRecovery(status.cpStartTs, status.cpStartId, status.startPtr);
         }
 
-        cpHistory.initialize(cpHistory(cpDir));
+        cpHistory.initialize(retreiveHistory());
 
         return lastRead == null ? null : lastRead.next();
     }
