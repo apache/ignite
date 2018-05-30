@@ -947,7 +947,7 @@ public class GridToStringBuilder {
             else if (val instanceof Map)
                 addMap(buf, (Map<?, ?>) val, objs);
             else
-                toStringImpl((Class)val.getClass(), buf, val, EMPTY_ARRAY, EMPTY_ARRAY, null, 0, false);
+                toStringImpl((Class) cls, buf, val, EMPTY_ARRAY, EMPTY_ARRAY, null, 0, false);
         }
         finally {
             objs.remove(val);
@@ -1129,10 +1129,10 @@ public class GridToStringBuilder {
      * @return True - if given class is primitive and is possible to call object's toString().
      */
     private static boolean isPrimitiveWraper(Class cls) {
-        return cls == Byte.class || cls == Short.class || cls == Integer.class || cls == Long.class ||
-            cls == Float.class || cls == Double.class  || cls == Boolean.class || cls == Character.class ||
-            cls == String.class || cls == StringBuilder.class || ByteBuffer.class.isAssignableFrom(cls) ||
-            cls == UUID.class || cls == Class.class;
+        return cls.isPrimitive() || cls == Byte.class || cls == Short.class || cls == Integer.class ||
+            cls == Long.class || cls == Float.class || cls == Double.class  || cls == Boolean.class ||
+            cls == Character.class || cls == String.class || cls == CharSequence.class ||
+            ByteBuffer.class.isAssignableFrom(cls) || cls == UUID.class || cls == Class.class;
     }
 
     /**
