@@ -98,8 +98,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             .setRebalanceBatchesPrefetchCount(2)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
-        CacheConfiguration ccfg2 = cacheConfiguration("indexed")
+        CacheConfiguration ccfg2 = cacheConfiguration(INDEXED_CACHE)
             .setBackups(2)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         QueryEntity qryEntity = new QueryEntity(Integer.class.getName(), TestValue.class.getName());
@@ -315,7 +316,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         final int entriesCnt = 10_000;
         final int maxNodesCnt = 4;
-        final int topChanges = 20;
+        final int topChanges = 30;
 
         final AtomicBoolean stop = new AtomicBoolean();
 
