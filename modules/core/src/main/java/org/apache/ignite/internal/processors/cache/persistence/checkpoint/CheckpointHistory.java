@@ -207,9 +207,6 @@ public class CheckpointHistory {
 
         chp.walFilesDeleted(deleted);
 
-        if (!chp.hasDelta() && chp.checkpointEntry() != null)
-            cctx.wal().allowCompressionUntil(chp.checkpointEntry().checkpointMark());
-
         return removed;
     }
 
@@ -311,6 +308,11 @@ public class CheckpointHistory {
 
                     if (F.isEmpty(applicablePartitions))
                         continue;
+
+                    // Partition is no more applicable, because state doesn't contain it.
+                    for (Integer partId : applicablePartitions)
+                        if (!groupsAndPartitions.get(grpId).contains(partId))
+                            applicablePartitions.remove(partId);
 
                     for (Integer partId : groupsAndPartitions.get(grpId)) {
                         int pIdx = cpGroupState.indexByPartition(partId);

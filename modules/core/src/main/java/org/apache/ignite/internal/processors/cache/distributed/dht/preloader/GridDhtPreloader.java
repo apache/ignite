@@ -223,6 +223,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 // If partition was destroyed recreate it.
                 if (part.state() == EVICTED) {
+                    part.awaitDestroy();
+
                     part = top.localPartition(p, topVer, true);
                 }
 
@@ -231,7 +233,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 ClusterNode histSupplier = null;
 
                 if (grp.persistenceEnabled() && exchFut != null) {
-                    UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p);
+                    UUID nodeId = exchFut.partitionHistorySupplier(grp.groupId(), p, part.initialUpdateCounter());
 
                     if (nodeId != null)
                         histSupplier = ctx.discovery().node(nodeId);

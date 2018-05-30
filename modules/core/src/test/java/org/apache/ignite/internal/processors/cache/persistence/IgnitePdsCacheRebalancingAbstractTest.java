@@ -291,10 +291,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         info(">>> Done puts...");
 
-        ignite2 = startGrid(2);
-        ignite3 = startGrid(3);
+        startGridsMultiThreaded(2, 2);
 
         awaitPartitionMapExchange();
+
+        ignite2 = grid(2);
+        ignite3 = grid(3);
 
         IgniteCache<Integer, Integer> cache2 = ignite2.cache(CACHE);
         IgniteCache<Integer, Integer> cache3 = ignite3.cache(CACHE);

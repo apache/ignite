@@ -3651,16 +3651,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     ((PageMemoryEx)memPlc.pageMemory()).finishCheckpoint();
                 }
 
-                if (chp.hasDelta())
-                    writeCheckpointEntry(
-                        tmpWriteBuf,
-                        chp.cpEntry.timestamp(),
-                        chp.cpEntry.checkpointId(),
-                        chp.cpEntry.checkpointMark(),
-                        null,
-                        CheckpointEntryType.END);
-
                 currCheckpointPagesCnt = 0;
+            }
+
+            if (chp.hasDelta()) {
+                writeCheckpointEntry(
+                    tmpWriteBuf,
+                    chp.cpEntry.timestamp(),
+                    chp.cpEntry.checkpointId(),
+                    chp.cpEntry.checkpointMark(),
+                    null,
+                    CheckpointEntryType.END);
+
+                cctx.wal().allowCompressionUntil(chp.checkpointEntry().checkpointMark());
             }
 
             List<CheckpointEntry> removedFromHistory = cpHistory.onCheckpointFinished(chp, truncateWalOnCpFinish);

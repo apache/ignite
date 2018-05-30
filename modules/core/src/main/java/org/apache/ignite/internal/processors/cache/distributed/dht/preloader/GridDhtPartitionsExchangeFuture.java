@@ -434,8 +434,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param partId Partition ID.
      * @return ID of history supplier node or null if it doesn't exist.
      */
-    @Nullable public UUID partitionHistorySupplier(int grpId, int partId) {
-        return partHistSuppliers.getSupplier(grpId, partId);
+    @Nullable public UUID partitionHistorySupplier(int grpId, int partId, long cntr) {
+        return partHistSuppliers.getSupplier(grpId, partId, cntr);
     }
 
     /**

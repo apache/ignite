@@ -255,7 +255,7 @@ public class CheckpointEntry {
          */
         private Map<Integer, GroupState> remap(Map<Integer, CacheState> stateRec) {
             if (stateRec == null)
-                return null;
+                return Collections.emptyMap();
 
             Map<Integer, GroupState> grpStates = new HashMap<>(stateRec.size());
 
@@ -317,7 +317,7 @@ public class CheckpointEntry {
 
                         Map<Integer, CacheState> stateRec = rec.cacheGroupStates();
 
-                        grpStates = stateRec != null ? remap(stateRec) : Collections.emptyMap();
+                        grpStates = remap(stateRec);
                     }
                     else
                         initEx = new IgniteCheckedException(
