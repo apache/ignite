@@ -99,12 +99,9 @@ public class GridCacheRebalancingCancelTest extends GridCommonAbstractTest {
         // Resend delayed rebalance messages.
         TestRecordingCommunicationSpi.spi(ignite0).stopBlock(true);
 
-        // Previous rebalance future should not be cancelled.
-        fut.get(5_000, TimeUnit.MILLISECONDS);
-
-        assertFalse(fut.isCancelled());
-        assertTrue(fut.isDone());
-
         waitForRebalancing();
+
+        // Previous rebalance future should not be cancelled.
+        assertTrue(fut.result());
     }
 }

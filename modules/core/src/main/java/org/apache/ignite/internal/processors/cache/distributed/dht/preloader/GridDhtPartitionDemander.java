@@ -106,7 +106,7 @@ public class GridDhtPartitionDemander {
 
     /**
      * Affinity assigments may not be changed during new discovery event (e.g. JOIN, LEFT). We should keep the last
-     * seen rebalance future and should not cancel currnet active rebalance on same assigments. This future would
+     * seen rebalance future and should not cancel current active rebalance on same assigments. This future would
      * be notified when {@link GridDhtPartitionDemander#rebalanceFut} finished their work.
      */
     @GridToStringInclude
