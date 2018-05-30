@@ -729,8 +729,6 @@ public class GridDhtPartitionDemander {
         try {
             AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
-            GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
-
             ctx.database().checkpointReadLock();
 
             try {
@@ -764,11 +762,16 @@ public class GridDhtPartitionDemander {
                                         break;
                                     }
 
-                                    if (grp.sharedGroup() && (cctx == null || cctx.cacheId() != entry.cacheId()))
-                                        cctx = ctx.cacheContext(entry.cacheId());
-
-                                    if (cctx != null && cctx.statisticsEnabled())
-                                        cctx.cache().metrics0().onRebalanceKeyReceived();
+                                    if (grp.sharedGroup()) {
+                                        for (GridCacheContext cctx : grp.caches()) {
+                                            if (cctx.statisticsEnabled())
+                                                cctx.cache().metrics0().onRebalanceKeyReceived();
+                                        }
+                                    }
+                                    else {
+                                        if (grp.singleCacheContext().statisticsEnabled())
+                                            grp.singleCacheContext().cache().metrics0().onRebalanceKeyReceived();
+                                    }
                                 }
 
                                 // If message was last for this partition,
