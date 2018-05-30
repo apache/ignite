@@ -261,43 +261,47 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                     break;
             }
 
-            if (lastIdxUsed == cols.length && relyOnLinks)
-                return linksCmpRes; // Fall back to links comparison if all inline columns are equal.
+            SearchRow rowData = null;
 
-            SearchRow rowData = getRow(io, pageAddr, idx);
+            if (lastIdxUsed < cols.length) {
+                rowData = getRow(io, pageAddr, idx);
 
-            for (int i = lastIdxUsed, len = cols.length; i < len; i++) {
-                IndexColumn col = cols[i];
-                int idx0 = col.column.getColumnId();
+                for (int i = lastIdxUsed, len = cols.length; i < len; i++) {
+                    IndexColumn col = cols[i];
+                    int idx0 = col.column.getColumnId();
 
-                Value v2 = row.getValue(idx0);
+                    Value v2 = row.getValue(idx0);
 
-                if (v2 == null) {
-                    // Can't compare further.
-                    return 0;
+                    if (v2 == null) {
+                        // Can't compare further.
+                        return 0;
+                    }
+
+                    Value v1 = rowData.getValue(idx0);
+
+                    int c = compareValues(v1, v2);
+
+                    if (c != 0)
+                        return InlineIndexHelper.fixSort(c, col.sortType);
                 }
-
-                Value v1 = rowData.getValue(idx0);
-
-                int c = compareValues(v1, v2);
-
-                if (c != 0)
-                    return InlineIndexHelper.fixSort(c, col.sortType);
             }
 
-            if (relyOnLinks)
-                return linksCmpRes; // Fall back to links comparison if all index columns are equal.
+            if (!relyOnLinks) {
+                if (rowData == null)
+                    rowData = getRow(io, pageAddr, idx);
 
-            // We've had no luck comparing rows by index fields or links. Let's use keys as last resort.
-            Value k1 = rowData.getValue(KEY_COL);
+                // We've had no luck comparing rows by index fields or links. Let's use keys as last resort.
+                Value k1 = rowData.getValue(KEY_COL);
 
-            Value k2 = row.getValue(KEY_COL);
+                Value k2 = row.getValue(KEY_COL);
 
-            if (k1 != null && k2 != null)
-                return compareValues(k1, k2);
+                if (k1 != null && k2 != null)
+                    return compareValues(k1, k2);
+                else
+                    return 0;
+            }
             else
-                return 0;
-
+                return linksCmpRes;
         }
     }
 
