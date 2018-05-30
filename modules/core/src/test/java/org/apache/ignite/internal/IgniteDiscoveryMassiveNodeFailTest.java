@@ -122,7 +122,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      */
     private long waitTime() {
-        return delay * tries * 2 + 1000;
+        return delay * tries * 2 + 5000;
     }
 
     /**
