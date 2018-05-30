@@ -43,6 +43,6 @@ public abstract class GridWorkerFailureException extends RuntimeException {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridWorker.class, worker);
+        return "[class=" + getClass().getSimpleName() + ", worker=" + S.toString(GridWorker.class, worker) + ']';
     }
 }
