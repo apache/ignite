@@ -494,7 +494,7 @@ public class DmlStatementsProcessor {
 
             DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
-            GridNearTxLocal tx = MvccUtils.activeSqlTx(cctx.kernalContext());
+            GridNearTxLocal tx = MvccUtils.activeTx(cctx.kernalContext());
 
             boolean implicit = (tx == null);
 

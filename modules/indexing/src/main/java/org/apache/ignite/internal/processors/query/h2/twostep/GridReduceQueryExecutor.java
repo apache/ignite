@@ -568,7 +568,7 @@ public class GridReduceQueryExecutor {
 
             List<Integer> cacheIds = qry.cacheIds();
 
-            final GridNearTxLocal curTx = MvccUtils.mvccEnabled(ctx) ? MvccUtils.activeSqlTx(ctx) : null;
+            final GridNearTxLocal curTx = MvccUtils.mvccEnabled(ctx) ? MvccUtils.activeTx(ctx) : null;
 
             final GridNearTxSelectForUpdateFuture sfuFut;
 

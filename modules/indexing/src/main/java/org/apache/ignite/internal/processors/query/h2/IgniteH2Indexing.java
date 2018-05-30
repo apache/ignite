@@ -1071,7 +1071,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     throw new IgniteSQLException("SELECT FOR UPDATE query requires transactional " +
                         "cache with MVCC enabled.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-                tx = MvccUtils.activeSqlTx(this.ctx);
+                tx = MvccUtils.activeTx(this.ctx);
 
                 if (tx != null) {
                     int tm1 = (int)tx.remainingTime(), tm2 = timeout;
@@ -1666,7 +1666,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 MvccUtils.mvccTracker(ctx.cache().context().cacheContext(qry.cacheIds().get(0)), startTx) : mvccTracker;
 
             if (qry.forUpdate())
-                qry.forUpdate(MvccUtils.activeSqlTx(ctx) != null);
+                qry.forUpdate(MvccUtils.activeTx(ctx) != null);
 
             return new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
@@ -1889,10 +1889,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridNearTxLocal tx = MvccUtils.mvccEnabled(ctx) ? MvccUtils.tx(ctx) : null;
 
-        if (tx != null && !tx.isOperationAllowed(true))
-            throw new IgniteSQLException("SQL queries and cache operations " +
-                "may not be used in the same transaction.", IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
-
         if (cmd instanceof SqlBeginTransactionCommand) {
             if (tx != null) {
                 if (nestedTxMode == null)
@@ -1990,7 +1986,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         boolean mvccEnabled = MvccUtils.mvccEnabled(ctx), startTx = autoStartTx(qry);
 
         try {
-
             List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry, cliCtx);
 
             if (res != null)
@@ -2369,7 +2364,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!MvccUtils.mvccEnabled(ctx))
             return false;
 
-        return qry instanceof SqlFieldsQueryEx && !((SqlFieldsQueryEx)qry).isAutoCommit() && MvccUtils.tx(ctx) == null;
+        return qry instanceof SqlFieldsQueryEx && !((SqlFieldsQueryEx)qry).isAutoCommit() && MvccUtils.activeTx(ctx) == null;
     }
 
     /** {@inheritDoc} */
@@ -3251,7 +3246,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!MvccUtils.mvccEnabled(ctx))
             return;
 
-        GridNearTxLocal tx = MvccUtils.activeSqlTx(ctx);
+        GridNearTxLocal tx = MvccUtils.activeTx(ctx);
 
         if (tx != null)
             doRollback(tx);

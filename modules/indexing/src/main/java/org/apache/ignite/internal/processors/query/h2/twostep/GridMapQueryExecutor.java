@@ -82,7 +82,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2DmlRespo
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2SelectForUpdateTxDetails;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -495,7 +494,7 @@ public class GridMapQueryExecutor {
                         txReq.taskNameHash());
                 }
                 else {
-                    tx = MvccUtils.activeSqlTx(ctx, txReq.version());
+                    tx = MvccUtils.activeTx(ctx, txReq.version());
 
                     assert tx != null;
                 }
