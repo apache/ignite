@@ -23,6 +23,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 /** Thrown when {@link GridWorker} has failed in some way. */
 public abstract class GridWorkerFailureException extends RuntimeException {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private final GridWorker worker;
 
     /** */
