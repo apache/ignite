@@ -238,9 +238,7 @@ public class GridDhtPartitionDemander {
      * @return {@code True} if topology changed.
      */
     private boolean topologyChanged(RebalanceFuture fut) {
-        return
-            !grp.affinity().lastVersion().equals(fut.topologyVersion()) || // Topology already changed.
-                fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
+        return fut != rebalanceFut;
     }
 
     /**
@@ -250,6 +248,10 @@ public class GridDhtPartitionDemander {
      */
     void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
         lastExchangeFut = lastFut;
+    }
+
+    public void updateTopology(AffinityTopologyVersion top){
+        rebalanceFut.topVer = top;
     }
 
     /**
@@ -939,7 +941,7 @@ public class GridDhtPartitionDemander {
         private final GridDhtPartitionExchangeId exchId;
 
         /** Topology version. */
-        private final AffinityTopologyVersion topVer;
+        private volatile AffinityTopologyVersion topVer;
 
         /** Unique (per demander) rebalance id. */
         private final long rebalanceId;

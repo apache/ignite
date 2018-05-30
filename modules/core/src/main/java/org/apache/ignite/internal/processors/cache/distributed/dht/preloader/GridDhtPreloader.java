@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -45,6 +47,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
@@ -84,6 +87,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** */
     private boolean stopped;
+
+    /** */
+    private volatile Set<Integer> affParts = new HashSet<>();
 
     /**
      * @param grp Cache group.
@@ -165,14 +171,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut) {
+    @Override public T2<GridDhtPreloaderAssignments, Boolean> generateAssignments(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut) {
         assert exchFut == null || exchFut.isDone();
 
         // No assignments for disabled preloader.
         GridDhtPartitionTopology top = grp.topology();
 
         if (!grp.rebalanceEnabled())
-            return new GridDhtPreloaderAssignments(exchId, top.readyTopologyVersion());
+            return new T2(new GridDhtPreloaderAssignments(exchId, top.readyTopologyVersion()), false);
 
         int partCnt = grp.affinity().partitions();
 
@@ -197,7 +203,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 assignments.cancelled(true);
 
-                return assignments;
+                return new T2(assignments, false);
             }
 
             // If partition belongs to local node.
@@ -288,7 +294,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
         }
 
-        return assignments;
+        Set<Integer> parts = new HashSet<>();
+
+        parts.addAll(aff.primaryPartitions(ctx.localNodeId()));
+        parts.addAll(aff.backupPartitions(ctx.localNodeId()));
+
+        boolean affChanged = !affParts.equals(parts);
+
+        affParts = parts;
+
+        return new T2(assignments, affChanged);
     }
 
     /** {@inheritDoc} */
@@ -377,6 +392,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut
     ) {
         return demander.addAssignments(assignments, forceRebalance, rebalanceId, next, forcedRebFut);
+    }
+
+    @Override public void updateTopology(AffinityTopologyVersion top) {
+        demander.updateTopology(top);
     }
 
     /**
