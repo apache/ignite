@@ -32,6 +32,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -166,20 +167,12 @@ public class AgentLauncher {
     /**
      * On disconnect listener.
      */
-    private static final Emitter.Listener onDisconnect = new Emitter.Listener() {
-        @Override public void call(Object... args) {
-            log.error("Connection closed: {}", args);
-        }
-    };
+    private static final Emitter.Listener onDisconnect = args -> log.error("Connection closed: {}", args);
 
     /**
      * On token reset listener.
      */
-    private static final Emitter.Listener onLogWarning = new Emitter.Listener() {
-        @Override public void call(Object... args) {
-            log.warn(String.valueOf(args[0]));
-        }
-    };
+    private static final Emitter.Listener onLogWarning = args -> log.warn(String.valueOf(args[0]));
 
     /**
      * @param fmt Format string.
@@ -279,7 +272,7 @@ public class AgentLauncher {
 
             String tokens = String.valueOf(readPassword("Enter security tokens separated by comma: "));
 
-            cfg.tokens(Arrays.asList(tokens.trim().split(",")));
+            cfg.tokens(new ArrayList<>(Arrays.asList(tokens.trim().split(","))));
         }
 
         // Create proxy authenticator using passed properties.

@@ -383,10 +383,10 @@ public class ClusterListener implements AutoCloseable {
     /**
      * @param ver Cluster version.
      * @param nid Node ID.
-     * @return Cluster active state and secured .
+     * @return Cluster active state.
      * @throws IOException If failed to collect cluster active state.
      */
-    public T2<Boolean, Boolean> active(IgniteProductVersion ver, UUID nid) throws IOException {
+    public boolean active(IgniteProductVersion ver, UUID nid) throws IOException {
         Map<String, Object> params = U.newHashMap(10);
 
         boolean v23 = ver.compareTo(IGNITE_2_3) >= 0;
@@ -417,16 +417,14 @@ public class ClusterListener implements AutoCloseable {
 
         switch (res.getStatus()) {
             case STATUS_SUCCESS:
-                active =  v23 ? Boolean.valueOf(res.getData()) : res.getData().contains("\"active\":true");
+                active =  v23 ? Boolean.parseBoolean(res.getData()) : res.getData().contains("\"active\":true");
                 break;
 
             default:
                 throw new IOException(res.getError());
         }
 
-        boolean secured = !F.isEmpty(res.getSessionToken());
-
-        return new T2<>(active, secured);
+        return active;
     }
 
     /** */
@@ -446,10 +444,10 @@ public class ClusterListener implements AutoCloseable {
                         if (newTop.differentCluster(top))
                             log.info("Connection successfully established to cluster with nodes: " + newTop.nid8());
 
-                        T2<Boolean, Boolean> state = active(newTop.clusterVersion(), F.first(newTop.getNids()));
+                        boolean active = active(newTop.clusterVersion(), F.first(newTop.getNids()));
 
-                        newTop.setActive(state.get1());
-                        newTop.setSecured(state.get2());
+                        newTop.setActive(active);
+                        newTop.setSecured(!F.isEmpty(res.getSessionToken()));
 
                         top = newTop;
 
