@@ -24,6 +24,9 @@ import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 /** Thrown when {@link GridWorker} is hanging. */
 public class GridWorkerIsHangingException extends GridWorkerFailureException {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     public GridWorkerIsHangingException(GridWorker worker) {
         super(worker);
     }

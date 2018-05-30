@@ -24,6 +24,9 @@ import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 /** Thrown when {@link GridWorker} has been terminated unexpectedly. */
 public class GridWorkerDiedException extends GridWorkerFailureException {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     public GridWorkerDiedException(GridWorker worker) {
         super(worker);
     }
