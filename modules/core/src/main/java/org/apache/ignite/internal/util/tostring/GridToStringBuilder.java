@@ -52,6 +52,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_INCLUDE_
 /**
  * Provides auto-generation framework for {@code toString()} output.
  * <p>
+ * In case of recursion, repeatable objects will be shown as "ClassName@hash".
+ * But fields will be printed only for the first entry to prevent recursion.
+ * <p>
  * Default exclusion policy (can be overridden with {@link GridToStringInclude}
  * annotation):
  * <ul>
