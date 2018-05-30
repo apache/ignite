@@ -2564,7 +2564,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         busy = false;
                     }
 
-                    if (assignsMap != null && affChanged) {
+                    if (assignsMap != null) {
                         int size = assignsMap.size();
 
                         NavigableMap<Integer, List<Integer>> orderMap = new TreeMap<>();
@@ -2597,27 +2597,31 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             for (Integer grpId : orderMap.get(order)) {
                                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                                GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
+                                if (affChanged) {
+                                    GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
 
-                                if (assigns != null)
-                                    assignsCancelled |= assigns.cancelled();
+                                    if (assigns != null)
+                                        assignsCancelled |= assigns.cancelled();
 
-                                // Cancels previous rebalance future (in case it's not done yet).
-                                // Sends previous rebalance stopped event (if necessary).
-                                // Creates new rebalance future.
-                                // Sends current rebalance started event (if necessary).
-                                // Finishes cache sync future (on empty assignments).
-                                Runnable cur = grp.preloader().addAssignments(assigns,
-                                    forcePreload,
-                                    cnt,
-                                    r,
-                                    forcedRebFut);
+                                    // Cancels previous rebalance future (in case it's not done yet).
+                                    // Sends previous rebalance stopped event (if necessary).
+                                    // Creates new rebalance future.
+                                    // Sends current rebalance started event (if necessary).
+                                    // Finishes cache sync future (on empty assignments).
+                                    Runnable cur = grp.preloader().addAssignments(assigns,
+                                        forcePreload,
+                                        cnt,
+                                        r,
+                                        forcedRebFut);
 
-                                if (cur != null) {
-                                    rebList.add(grp.cacheOrGroupName());
+                                    if (cur != null) {
+                                        rebList.add(grp.cacheOrGroupName());
 
-                                    r = cur;
+                                        r = cur;
+                                    }
                                 }
+                                else
+                                    grp.preloader().updateTopology(resVer);
                             }
                         }
 
@@ -2650,17 +2654,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             U.log(log, "Skipping rebalancing (nothing scheduled) " +
                                 "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
                                 ", node=" + exchId.nodeId() + ']');
-                    }
-                    else {
-                        if (assignsMap != null) {
-                            for (Map.Entry<Integer, GridDhtPreloaderAssignments> e : assignsMap.entrySet()) {
-                                int grpId = e.getKey();
-
-                                CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
-
-                                grp.preloader().updateTopology(resVer);
-                            }
-                        }
                     }
                 }
                 catch (IgniteInterruptedCheckedException e) {
