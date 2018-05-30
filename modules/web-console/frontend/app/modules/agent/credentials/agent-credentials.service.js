@@ -18,6 +18,8 @@
 import templateUrl from './template.tpl.pug';
 import {CancellationError} from 'app/errors/CancellationError';
 
+const DFLT_CREDS = {user: '', password: ''};
+
 export default class ClusterCredentials {
     static $inject = ['$modal', '$q'];
 
@@ -37,10 +39,13 @@ export default class ClusterCredentials {
     }
 
     /**
-     * @return {ng.IPromise}
+     * @return {Promise<{user: string, password: string}>}
      */
     askCredentials(cluster) {
-        if (cluster.hasCredentials())
+        if (!cluster)
+            return Promise.resolve(DFLT_CREDS);
+
+        if (!cluster.needsCredentials())
             return Promise.resolve(cluster.credentials());
 
         return this.$q((resolve, reject) => {

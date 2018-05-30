@@ -49,8 +49,8 @@ class ConnectionState {
         return cluster;
     }
 
-    hasCredentials() {
-        return this.cluster && this.cluster.secured && !_.isEmpty(this.creds);
+    needsCredentials() {
+        return this.cluster && this.cluster.secured && _.isEmpty(this.creds);
     }
 
     credentials() {
@@ -473,7 +473,7 @@ export default class IgniteAgentManager {
 
                 _.assign(params, args);
 
-                if (!cluster.hasCredentials())
+                if (cluster.needsCredentials())
                     cluster.setCredentials(creds);
 
                 return this._rest('node:rest', params);
@@ -601,7 +601,7 @@ export default class IgniteAgentManager {
 
         return this.ClusterCredentials.askCredentials(cluster)
             .then((creds) => {
-                if (!cluster.hasCredentials())
+                if (cluster.needsCredentials())
                     cluster.setCredentials(creds);
 
                 return this._rest('node:visor', taskId, nids, creds.user, creds.password, ...args);
