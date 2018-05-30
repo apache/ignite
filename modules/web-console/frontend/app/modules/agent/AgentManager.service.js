@@ -463,7 +463,8 @@ export default class IgniteAgentManager {
     _restCommand(cmd, args) {
         const cluster = this.connectionSbj.getValue();
 
-        return this.ClusterCredentials.askCredentials(cluster)
+        return this.ClusterCredentials
+            .askCredentials(cluster)
             .then((creds) => {
                 const params = {
                     cmd,
@@ -599,7 +600,8 @@ export default class IgniteAgentManager {
 
         const cluster = this.connectionSbj.getValue();
 
-        return this.ClusterCredentials.askCredentials(cluster)
+        return this.ClusterCredentials
+            .askCredentials(cluster)
             .then((creds) => {
                 if (cluster.needsCredentials())
                     cluster.setCredentials(creds);

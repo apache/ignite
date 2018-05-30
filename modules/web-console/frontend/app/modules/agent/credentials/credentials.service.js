@@ -15,27 +15,38 @@
  * limitations under the License.
  */
 
-import templateUrl from './template.tpl.pug';
+import template from './template.pug';
+
 import {CancellationError} from 'app/errors/CancellationError';
 
 const DFLT_CREDS = {user: '', password: ''};
 
-export default class ClusterCredentials {
+class controller {
+    static $inject = ['deferred'];
+
+    /**
+     * @param deferred
+     */
+    constructor(deferred) {
+        this.data = {};
+        this.deferred = deferred;
+    }
+
+    login() {
+        this.deferred.resolve(this.data);
+    }
+}
+
+export default class ModalCredentials {
     static $inject = ['$modal', '$q'];
 
     /**
      * @param {mgcrea.ngStrap.modal.IModalService} $modal
-     * @param {ng.IQService} $q
+     * @param $q
      */
     constructor($modal, $q) {
         this.$modal = $modal;
-
         this.$q = $q;
-
-        this.credentials = {
-            user: '',
-            password: ''
-        };
     }
 
     /**
@@ -48,28 +59,23 @@ export default class ClusterCredentials {
         if (!cluster.needsCredentials())
             return Promise.resolve(cluster.credentials());
 
-        return this.$q((resolve, reject) => {
-            this.$modal({
-                templateUrl,
-                backdrop: true,
-                onBeforeHide: () => reject(new CancellationError()),
-                controller: [
-                    '$scope', ($scope) => {
-                        $scope.credentials = this.credentials;
+        const deferred = this.$q.defer();
 
-                        $scope.cancel = () => {
-                            reject(new CancellationError());
-
-                            $scope.$hide();
-                        };
-
-                        $scope.login = () => {
-                            resolve(this.credentials);
-
-                            $scope.$hide();
-                        };
-                    }]
-            });
+        const modal = this.$modal({
+            template,
+            resolve: {
+                deferred: () => deferred
+            },
+            controller,
+            controllerAs: '$ctrl',
+            show: true
         });
+
+        const modalHide = modal.hide;
+
+        modal.hide = () => deferred.reject(new CancellationError());
+
+        return deferred.promise
+            .finally(modalHide);
     }
 }
