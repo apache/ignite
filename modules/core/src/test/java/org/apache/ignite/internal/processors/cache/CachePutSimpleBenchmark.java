@@ -68,8 +68,8 @@ public class CachePutSimpleBenchmark extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfigurations());
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setName("asd").setPersistenceEnabled(true)));
+//        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
+//            new DataRegionConfiguration().setName("asd").setPersistenceEnabled(true)));
 
         return cfg;
     }
@@ -110,7 +110,7 @@ public class CachePutSimpleBenchmark extends GridCommonAbstractTest {
         CacheConfiguration<Integer, Integer> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setCacheMode(cacheMode);
-        ccfg.setAtomicityMode(ATOMIC);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setWriteSynchronizationMode(syncMode);
 
         if (cacheMode == PARTITIONED)

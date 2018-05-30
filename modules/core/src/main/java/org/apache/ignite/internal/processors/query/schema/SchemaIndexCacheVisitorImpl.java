@@ -198,7 +198,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                     KeyCacheObject key = cursor.get().key();
 
                     if (!locked) {
-                        cctx.shared().database().checkpointReadLock();
+                        cctx.group().checkpointReadLocker().checkpointReadLock();
 
                         locked = true;
                     }
@@ -206,7 +206,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                     processKey(key, clo);
 
                     if (++cntr % BATCH_SIZE == 0) {
-                        cctx.shared().database().checkpointReadUnlock();
+                        cctx.group().checkpointReadLocker().checkpointReadUnlock();
 
                         locked = false;
                     }

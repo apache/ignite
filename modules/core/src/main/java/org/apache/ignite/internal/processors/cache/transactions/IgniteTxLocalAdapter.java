@@ -503,7 +503,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             WALPointer ptr = null;
 
-            cctx.database().checkpointReadLock();
+            boolean checkpointReadLocked = false;
 
             try {
                 cctx.tm().txContext(this);
@@ -515,6 +515,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                  */
                 for (IgniteTxEntry txEntry : commitEntries) {
                     GridCacheContext cacheCtx = txEntry.context();
+
+                    if (!checkpointReadLocked && cacheCtx.group().persistenceEnabled()) {
+                        cctx.database().checkpointReadLock();
+
+                        checkpointReadLocked = true;
+                    }
 
                     GridDrType drType = cacheCtx.isDrEnabled() ? DR_PRIMARY : DR_NONE;
 
@@ -890,7 +896,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     "(transaction will be rolled back): " + this, e);
             }
             finally {
-                cctx.database().checkpointReadUnlock();
+                if (checkpointReadLocked)
+                    cctx.database().checkpointReadUnlock();
 
                 cctx.tm().resetContext();
             }

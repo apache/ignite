@@ -347,7 +347,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
-            cctx.database().checkpointReadLock();
+            cacheCtx.group().checkpointReadLocker().checkpointReadLock();
 
             try {
                 if ((txEntry.op() == CREATE || txEntry.op() == UPDATE) &&
@@ -512,7 +512,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 assert false : "Got entry removed exception while holding transactional lock on entry [e=" + e + ", cached=" + cached + ']';
             }
             finally {
-                cctx.database().checkpointReadUnlock();
+                cacheCtx.group().checkpointReadLocker().checkpointReadLock();
             }
         }
     }
@@ -1827,7 +1827,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                         GridDrType drType = cacheCtx.isDrEnabled() ? GridDrType.DR_PRELOAD : GridDrType.DR_NONE;
 
-                        cctx.database().checkpointReadLock();
+                        cacheCtx.group().checkpointReadLocker().checkpointReadLock();
 
                         try {
                             if (entry.initialValue(info.value(),
@@ -1861,7 +1861,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                     "will retry): " + entry);
                         }
                         finally {
-                            cctx.database().checkpointReadUnlock();
+                            cacheCtx.group().checkpointReadLocker().checkpointReadLock();
                         }
                     }
                 }

@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateTxResult;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLocker;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -415,6 +416,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
      */
     @SuppressWarnings({"CatchGenericClass"})
     private void commitIfLocked() throws IgniteCheckedException {
+        CheckpointReadLocker checkpointLocker = CheckpointReadLocker.NOOP;
+
         if (state() == COMMITTING) {
             for (IgniteTxEntry txEntry : writeEntries()) {
                 assert txEntry != null : "Missing transaction entry for tx: " + this;
@@ -445,6 +448,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), topologyVersion()));
                     }
                 }
+
+                if (txEntry.context().group().persistenceEnabled())
+                    checkpointLocker = cctx.database();
             }
 
             // Only one thread gets to commit.
@@ -480,7 +486,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                     WALPointer ptr = null;
 
-                    cctx.database().checkpointReadLock();
+                    checkpointLocker.checkpointReadLock();
 
                     try {
                         Collection<IgniteTxEntry> entries = near() || cctx.snapshot().needTxReadLogging() ? allEntries() : writeEntries();
@@ -769,7 +775,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                         }
                     }
                     finally {
-                        cctx.database().checkpointReadUnlock();
+                        checkpointLocker.checkpointReadUnlock();
 
                         if (wrapper != null)
                             wrapper.initialize(ret);
