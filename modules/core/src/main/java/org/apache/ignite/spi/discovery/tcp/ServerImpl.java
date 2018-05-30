@@ -5958,7 +5958,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     TcpDiscoveryHandshakeResponse res =
                         new TcpDiscoveryHandshakeResponse(locNodeId, locNode.internalOrder());
 
-                    if (req.changeTopology()) {
+                    if (req.client())
+                        res.clientAck(true);
+                    else if (req.changeTopology()) {
                         // Node cannot connect to it's next (local node previous).
                         // Need to check connectivity to it.
                         Set<TcpDiscoveryNode> failed;
@@ -5978,9 +5980,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             res.changeTopology(ok); // now it means all fine for me, fuck off
                         }
                     }
-
-                    if (req.client())
-                        res.clientAck(true);
 
                     spi.writeToSocket(sock, res, spi.getEffectiveSocketTimeout(srvSock));
 
