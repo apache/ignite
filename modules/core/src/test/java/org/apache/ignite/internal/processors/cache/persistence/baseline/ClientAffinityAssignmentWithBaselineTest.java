@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,6 +38,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -45,6 +47,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -520,6 +523,89 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
     }
 
     /**
+     * Tests that if dynamic cache has no affinity nodes at the moment of start,
+     * it will still work correctly when affinity nodes will appear.
+     */
+    public void testDynamicCacheStartNoAffinityNodes() throws Exception {
+        fail("IGNITE-8652");
+
+        IgniteEx ig0 = startGrid(0);
+
+        ig0.cluster().active(true);
+        
+        IgniteEx client = (IgniteEx)startGrid("client");
+
+        CacheConfiguration<Integer, String> dynamicCacheCfg = new CacheConfiguration<Integer, String>()
+            .setName("dyn")
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setBackups(2)
+            .setNodeFilter(new ConsistentIdNodeFilter((Serializable)ig0.localNode().consistentId()));
+
+        IgniteCache<Integer, String> dynamicCache = client.getOrCreateCache(dynamicCacheCfg);
+        
+        for (int i = 1; i < 4; i++)
+            startGrid(i);
+
+        resetBaselineTopology();
+
+        for (int i = 0; i < ENTRIES; i++)
+            dynamicCache.put(i, "abacaba" + i);
+        
+        AtomicBoolean releaseTx = new AtomicBoolean(false);
+        CountDownLatch allTxsDoneLatch = new CountDownLatch(10);
+        
+        for (int i = 0; i < 10; i++) {
+            final int i0 = i;
+            
+            GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try (Transaction tx = client.transactions().txStart(TransactionConcurrency.PESSIMISTIC,
+                        TransactionIsolation.REPEATABLE_READ)) {
+                        dynamicCache.put(i0, "txtxtxtx" + i0);
+                        
+                        while (!releaseTx.get())
+                            LockSupport.parkNanos(1_000_000);
+                        
+                        tx.commit();
+                        
+                        System.out.println("Tx #" + i0 + " committed");
+                    }
+                    catch (Throwable t) {
+                        System.out.println("Tx #" + i0 + " failed");
+                        
+                        t.printStackTrace();
+                    }
+                    finally {
+                        allTxsDoneLatch.countDown();
+                    }
+                }
+            });
+        }
+        
+        GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    startGrid(4);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        U.sleep(1_000);
+
+        releaseTx.set(true);
+
+        allTxsDoneLatch.await();
+
+        for (int i = 0; i < 10_000; i++)
+            assertEquals("txtxtxtx" + (i % 10), dynamicCache.get(i % 10));
+    }
+
+    /**
      * Tests that join of non-baseline node while long transactions are running won't break cache started on client join.
      */
     public void testClientJoinCacheLongTransactionNodeStart() throws Exception {
@@ -864,5 +950,25 @@ public class ClientAffinityAssignmentWithBaselineTest extends GridCommonAbstract
         }
 
         fail("No progress in load thread");
+    }
+
+    /**
+     * Accepts all nodes except one with specified consistent ID.
+     */
+    private static class ConsistentIdNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** Consistent ID. */
+        private final Serializable consId0;
+
+        /**
+         * @param consId0 Consistent ID.
+         */
+        public ConsistentIdNodeFilter(Serializable consId0) {
+            this.consId0 = consId0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode node) {
+            return !node.consistentId().equals(consId0);
+        }
     }
 }

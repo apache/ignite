@@ -1819,18 +1819,18 @@ class ClusterCachesInfo {
                             return CU.isPersistentCache(startedCacheCfg, crdDsCfg);
                         }
                         catch (IgniteCheckedException e) {
-                            log.error("Can't unmarshal remote data storage configuration [remoteNode=" + srvNode +
-                                ", cacheName=" + startedCacheCfg.getName() + "]", e);
+                            U.error(log, "Failed to unmarshal remote data storage configuration [remoteNode=" +
+                                srvNode + ", cacheName=" + startedCacheCfg.getName() + "]", e);
                         }
                     }
                     else {
-                        log.error("Remote marshalled data storage configuration is absent [remoteNode=" + srvNode +
+                        U.error(log, "Remote marshalled data storage configuration is absent [remoteNode=" + srvNode +
                             ", cacheName=" + startedCacheCfg.getName() + ", dsCfg=" + dsCfgBytes + "]");
                     }
                 }
             }
 
-            log.error("Can't find affinity server node with data storage configuration for starting cache " +
+            U.error(log, "Failed to find affinity server node with data storage configuration for starting cache " +
                 "[cacheName=" + startedCacheCfg.getName() + ", aliveSrvNodes=" + aliveSrvNodes + "]");
 
             return false;
