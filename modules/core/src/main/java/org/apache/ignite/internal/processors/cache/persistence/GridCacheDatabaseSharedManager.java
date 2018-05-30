@@ -3478,6 +3478,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         now = U.currentTimeMillis();
 
                         if (now - lastOnIdleTs > waitTimeoutMs) {
+                            updateHeartbeat();
+
                             onIdle();
 
                             lastOnIdleTs = now;

@@ -1640,6 +1640,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                     }
 
                     if (U.currentTimeMillis() - lastOnIdleTs > waitTimeoutMs) {
+                        worker.updateHeartbeat();
+
                         worker.onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();

@@ -2410,6 +2410,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     task = futQ.poll(timeout, MILLISECONDS);
 
+                    if (task == null)
+                        updateHeartbeat();
+
                     if (U.currentTimeMillis() - lastOnIdleTs > timeout) {
                         onIdle();
 
@@ -2499,6 +2502,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     break;
                                 }
                                 catch (IgniteFutureTimeoutCheckedException ignored) {
+                                    updateHeartbeat();
+
                                     if (nextDumpTime <= U.currentTimeMillis()) {
                                         U.warn(diagnosticLog, "Failed to wait for partition map exchange [" +
                                             "topVer=" + exchFut.initialVersion() +

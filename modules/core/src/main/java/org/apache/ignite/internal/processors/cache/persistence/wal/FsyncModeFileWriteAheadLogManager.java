@@ -1487,6 +1487,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     }
 
                     if (U.currentTimeMillis() - lastOnIdleTs > waitTimeoutMs) {
+                        worker.updateHeartbeat();
+
                         worker.onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();

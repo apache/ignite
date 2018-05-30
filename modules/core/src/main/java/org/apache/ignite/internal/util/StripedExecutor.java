@@ -806,7 +806,7 @@ public class StripedExecutor implements ExecutorService {
         @Override Runnable take() {
             long waitTimeout = WAIT_TIMEOUT_NS / 1000;
 
-            long startedAt = System.currentTimeMillis();
+            long startedAt = U.currentTimeMillis();
 
             for (;;) {
                 Runnable r = queue.poll();
@@ -814,10 +814,10 @@ public class StripedExecutor implements ExecutorService {
                 if (r != null)
                     return r;
 
-                if (System.currentTimeMillis() - startedAt > waitTimeout) {
+                if (U.currentTimeMillis() - startedAt > waitTimeout) {
                     updateHeartbeat();
 
-                    startedAt = System.currentTimeMillis();
+                    startedAt = U.currentTimeMillis();
                 }
             }
         }

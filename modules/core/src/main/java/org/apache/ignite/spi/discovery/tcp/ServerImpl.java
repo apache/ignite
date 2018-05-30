@@ -5712,6 +5712,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         sock = srvrSock.accept();
                     }
                     catch (SocketTimeoutException ignored) {
+                        worker.updateHeartbeat();
+
                         worker.onIdle();
 
                         lastOnIdleTs = U.currentTimeMillis();

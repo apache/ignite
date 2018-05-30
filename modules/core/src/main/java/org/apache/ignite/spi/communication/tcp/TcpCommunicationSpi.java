@@ -4254,6 +4254,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                         disconnectData = q.poll(Math.min(millisToWait, 5000), TimeUnit.MILLISECONDS);
 
+                        if (disconnectData == null)
+                            worker.updateHeartbeat();
+
                         if (U.currentTimeMillis() - lastOnIdleTs > worker.criticalHeartbeatTimeoutMs() / 2) {
                             worker.onIdle();
 

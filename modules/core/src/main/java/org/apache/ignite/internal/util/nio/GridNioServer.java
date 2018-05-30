@@ -1790,6 +1790,8 @@ public class GridNioServer<T> {
                 boolean reset = false;
 
                 while (!closed) {
+                    updateHeartbeat();
+
                     try {
                         if (reset)
                             createSelector();
@@ -2154,6 +2156,8 @@ public class GridNioServer<T> {
                             else
                                 processSelectedKeysOptimized(selectedKeys.flip());
                         }
+                        else
+                            updateHeartbeat();
                     }
                     finally {
                         select = false;
@@ -2927,6 +2931,8 @@ public class GridNioServer<T> {
                     if (selector.select(2000) > 0)
                         // Walk through the ready keys collection and process date requests.
                         processSelectedKeys(selector.selectedKeys());
+                    else
+                        updateHeartbeat();
 
                     if (balancer != null)
                         balancer.run();

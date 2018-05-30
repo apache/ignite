@@ -2782,6 +2782,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 evt = evts.poll(pollTimeoutMs, TimeUnit.MILLISECONDS);
 
+                if (evt == null)
+                    updateHeartbeat();
+
                 if (evt == null || U.currentTimeMillis() - lastOnIdleTs > pollTimeoutMs) {
                     onIdle();
 
