@@ -914,19 +914,21 @@ public class GridToStringBuilder {
      * Print value with length limitation.
      *
      * @param buf buffer to print to.
-     * @param valCls value class.
+     * @param cls value class.
      * @param val value to print.
      * @param objs Map with saved objects to handle recursion.
      */
-    private static void toString(SBLimitedLength buf, Class<?> valCls, Object val,
-        IdentityHashMap<Object, Integer> objs) {
+    private static void toString(SBLimitedLength buf, Class<?> cls, Object val, IdentityHashMap<Object, Integer> objs) {
         if (val == null) {
             buf.a("null");
 
             return;
         }
 
-        if (isPrimitiveArrayType(val.getClass())) {
+        if (cls == null)
+            cls = val.getClass();
+
+        if (isPrimitiveWraper(cls)) {
             buf.a(val);
 
             return;
@@ -937,12 +939,9 @@ public class GridToStringBuilder {
 
         objs.put(val, buf.length());
 
-        if (valCls == null)
-            valCls = val.getClass();
-
         try {
-            if (valCls.isArray())
-                addArray(buf, valCls, val, objs);
+            if (cls.isArray())
+                addArray(buf, cls, val, objs);
             else if (val instanceof Collection)
                 addCollection(buf, (Collection) val, objs);
             else if (val instanceof Map)
@@ -976,7 +975,7 @@ public class GridToStringBuilder {
             buf.a(", ");
         }
 
-        checkOverflow(buf, col.size());
+        handleOverflow(buf, col.size());
 
         buf.a(']');
     }
@@ -1006,7 +1005,7 @@ public class GridToStringBuilder {
             buf.a(", ");
         }
 
-        checkOverflow(buf, map.size());
+        handleOverflow(buf, map.size());
 
         buf.a('}');
     }
@@ -1017,7 +1016,7 @@ public class GridToStringBuilder {
      * @param buf String builder buffer.
      * @param size Size to compare with limit.
      */
-    private static void checkOverflow(SBLimitedLength buf, int size) {
+    private static void handleOverflow(SBLimitedLength buf, int size) {
         int overflow = size - COLLECTION_LIMIT;
 
         if (overflow > 0)
@@ -1057,12 +1056,6 @@ public class GridToStringBuilder {
         assert addNames.length == addVals.length;
         assert addLen <= addNames.length;
 
-        if (isPrimitiveWraper(cls)) {
-            buf.a(String.valueOf(obj));
-
-            return null;
-        }
-
         IdentityHashMap<Object, Integer> objs = savedObjects.get();
 
         if (isOuterCall) {
@@ -1073,6 +1066,9 @@ public class GridToStringBuilder {
             if (handleRecursion(buf, obj, objs))
                 return null;
         }
+
+        if (isPrimitiveWraper(cls))
+            return buf.a(String.valueOf(obj)).toString();
 
         try {
             GridToStringClassDescriptor cd = getClassDescriptor(cls);
@@ -1258,7 +1254,7 @@ public class GridToStringBuilder {
      */
     private static void addArray(SBLimitedLength buf, Class arrType, Object obj,
         IdentityHashMap<Object, Integer> objs) {
-        if (isPrimitiveArrayType(arrType)) {
+        if (arrType.getComponentType().isPrimitive()) {
             buf.a(arrayToString(arrType, obj));
 
             return;
@@ -1278,19 +1274,9 @@ public class GridToStringBuilder {
                 buf.a(", ");
         }
 
-        checkOverflow(buf, arr.length);
+        handleOverflow(buf, arr.length);
 
         buf.a(']');
-    }
-
-    /**
-     * @param cls Class to check.
-     * @return {@code True} if given class is class of primitive array. {@code False} otherwise.
-     */
-    private static boolean isPrimitiveArrayType(Class cls) {
-        return cls.equals(byte[].class) || cls.equals(boolean[].class) || cls.equals(short[].class) ||
-            cls.equals(int[].class) || cls.equals(long[].class) || cls.equals(float[].class) ||
-            cls.equals(double[].class) || cls.equals(char[].class) || cls.equals(Class[].class);
     }
 
     /**

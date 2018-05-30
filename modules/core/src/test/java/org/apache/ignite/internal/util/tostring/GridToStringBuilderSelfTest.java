@@ -168,9 +168,11 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         /** */
         @GridToStringInclude
         String name;
+
         /** */
         @GridToStringInclude
         Node next;
+
         /** */
         @GridToStringInclude
         Node[] nodes;
