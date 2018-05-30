@@ -234,10 +234,24 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
         setFlag(FORCE_FAIL_FLAG_POS, force);
     }
 
+    /**
+     * Gets topology change flag.<br>
+     * {@code True} in request means node intent to fail nodes in a ring, in
+     * response - topology change denied.
+     *
+     * @return Change topology flag.
+     */
     public boolean changeTopology() {
         return getFlag(CHANGE_TOPOLOGY_FLAG_POS);
     }
 
+    /**
+     * Gets topology change flag.<br>
+     * {@code True} in request means node intent to fail nodes in a ring, in
+     * response - topology change denied.
+     *
+     * @param changeTop Change topology flag.
+     */
     public void changeTopology(boolean changeTop) {
         setFlag(CHANGE_TOPOLOGY_FLAG_POS, changeTop);
     }
