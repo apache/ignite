@@ -216,8 +216,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             U.error(log, "Failed to process entry expiration: " + e, e);
         }
         catch (IgniteException e) {
-            if (e.hasCause(NodeStoppingException.class))
-                log.warning("Failed to expire because node is stopped", e);
+            if (e.hasCause(NodeStoppingException.class)) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to expire because node is stopped: " + e);
+            }
             else
                 throw e;
         }
