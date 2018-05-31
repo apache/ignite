@@ -36,9 +36,6 @@ const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], '2.5.2']
 
 // Error codes from o.a.i.internal.processors.restGridRestResponse.java
 
-/** Command failed. */
-const STATUS_FAILED = 1;
-
 /** Authentication failure. */
 const STATUS_AUTH_FAILED = 2;
 
@@ -62,8 +59,12 @@ class ConnectionState {
         return cluster;
     }
 
+    secured() {
+        return this.cluster.secured;
+    }
+
     needsCredentials() {
-        return this.cluster && this.cluster.secured && _.isEmpty(this.creds);
+        return _.isEmpty(this.creds);
     }
 
     credentials() {
@@ -72,6 +73,10 @@ class ConnectionState {
 
     setCredentials(newCreds) {
         this.creds = newCreds;
+    }
+
+    resetCredentials() {
+        this.creds = {};
     }
 
     update(demo, count, clusters) {
@@ -444,29 +449,27 @@ export default class IgniteAgentManager {
      * @returns {Promise}
      * @private
      */
-    _rest(event, ...args) {
+    _rest(event, cluster, ...args) {
         return this._emit(event, _.get(this.connectionSbj.getValue(), 'cluster.id'), ...args)
             .then((data) => {
+                if (_.has(data, 'status')) {
+                    const status = data.status;
+
+                    if (cluster && status === STATUS_AUTH_FAILED) {
+                        cluster.resetCredentials();
+
+                        throw new Error('Failed to authenticate in cluster with provided credentials');
+                    }
+
+                    if (status === STATUS_SECURITY_CHECK_FAILED)
+                        throw new Error('Access denied. You are not authorized to access this functionality. Contact your cluster administrator.');
+                }
+
                 if (data.zipped)
                     return this.pool.postMessage(data.data);
 
                 return data;
             });
-    }
-
-    _authError(err, cluster) {
-        const code = _.get(err, 'code', STATUS_FAILED);
-
-        if (code === STATUS_AUTH_FAILED) {
-            cluster.setCredentials({});
-
-            throw new Error('Failed to authenticate in cluster with provided credentials');
-        }
-
-        if (code === STATUS_SECURITY_CHECK_FAILED)
-            throw new Error('Access denied. You are not authorized to access this functionality. Contact your cluster administrator.');
-
-        throw err;
     }
 
     /**
@@ -478,28 +481,25 @@ export default class IgniteAgentManager {
      * @private
      */
     _restCommand(cmd, args) {
+        const params = {
+            cmd,
+            ...args
+        };
+
         const cluster = this.connectionSbj.getValue();
 
-        return this.ClusterCredentials
-            .askCredentials(cluster)
-            .then((creds) => {
-                const params = {
-                    cmd,
-                    user: creds.user,
-                    password: creds.password
-                };
+        if (cluster.secured()) {
+            return this.ClusterCredentials
+                .askCredentials(cluster)
+                .then((creds) => {
+                    params.user = creds.user;
+                    params.password = creds.password;
 
-                _.assign(params, args);
+                    return this._rest('node:rest', cluster, params);
+                });
+        }
 
-                return this._rest('node:rest', params)
-                    .then((data) => {
-                        if (cluster.needsCredentials())
-                            cluster.setCredentials(creds);
-
-                        return data;
-                    });
-            })
-            .catch((err) => this._authError(err, cluster));
+        return this._rest('node:rest', null, params);
     }
 
     /**
@@ -620,17 +620,13 @@ export default class IgniteAgentManager {
 
         const cluster = this.connectionSbj.getValue();
 
-        return this.ClusterCredentials
-            .askCredentials(cluster)
-            .then((creds) => this._rest('node:visor', taskId, nids, creds.user, creds.password, ...args)
-                .then((data) => {
-                    if (cluster.needsCredentials())
-                        cluster.setCredentials(creds);
+        if (cluster.secured()) {
+            return this.ClusterCredentials
+                .askCredentials(cluster)
+                .then((creds) => this._rest('node:visor', cluster, taskId, nids, creds.user, creds.password, ...args));
+        }
 
-                    return data;
-                })
-            )
-            .catch((err) => this._authError(err, cluster));
+        return this._rest('node:visor', null, taskId, nids, null, null, ...args);
     }
 
     /**

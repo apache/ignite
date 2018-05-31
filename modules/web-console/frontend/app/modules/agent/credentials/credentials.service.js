@@ -22,17 +22,21 @@ import {CancellationError} from 'app/errors/CancellationError';
 const DFLT_CREDS = {user: '', password: ''};
 
 class controller {
-    static $inject = ['deferred'];
+    static $inject = ['cluster', 'deferred'];
 
     /**
+     * @param cluster
      * @param deferred
      */
-    constructor(deferred) {
-        this.data = {};
+    constructor(cluster, deferred) {
+        this.cluster = cluster;
         this.deferred = deferred;
+
+        this.data = {};
     }
 
     login() {
+        this.cluster.setCredentials(this.data);
         this.deferred.resolve(this.data);
     }
 }
@@ -64,6 +68,7 @@ export default class ModalCredentials {
         const modal = this.$modal({
             template,
             resolve: {
+                cluster: () => cluster,
                 deferred: () => deferred
             },
             controller,

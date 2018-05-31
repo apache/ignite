@@ -29,14 +29,6 @@ module.exports = {
     implements: 'browsers-handler',
     inject: ['configure', 'errors', 'mongo'],
     factory: (configure, errors, mongo) => {
-        class RestError extends Error {
-            constructor(code, message) {
-                super(message);
-
-                this.code = code;
-            }
-        }
-
         class BrowserSockets {
             constructor() {
                 this.sockets = new Map();
@@ -207,7 +199,7 @@ module.exports = {
                             return JSON.parse(res.data);
                         }
 
-                        throw new RestError(res.status, res.error);
+                        return res;
                     });
             }
 
@@ -282,7 +274,7 @@ module.exports = {
                             if (data.finished)
                                 return cb(null, data.result);
 
-                            cb(this.errorTransformer(data.error));
+                            cb(null, data);
                         })
                         .catch((err) => cb(this.errorTransformer(err)));
                 });
