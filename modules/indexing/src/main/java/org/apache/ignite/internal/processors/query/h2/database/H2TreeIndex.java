@@ -242,7 +242,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            assert !cctx.group().checkpointReadLocker().checkpointLockIsHeldByThread();
+            assert cctx.group().checkpointReadLocker().checkpointLockIsHeldByThread();
 
             return tree.putx(row);
         }
