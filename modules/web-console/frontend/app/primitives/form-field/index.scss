@@ -160,6 +160,20 @@
                 box-shadow: none;
             }
         }
+
+        // Added right offset to appearance of input for invalid password
+        & > input[type='email'].ng-invalid.ng-touched,
+        & > input[type='text'].ng-invalid.ng-touched,
+        & > input[type='password'].ng-invalid.ng-touched {
+            padding-right: 36px;
+        }
+
+        // Added right offset to appearance of dropdown for invalid data
+        & > button.select-toggle.ng-invalid.ng-touched {
+            &:after {
+                right: 36px;
+            }
+        }
     }
 
     &__errors {
