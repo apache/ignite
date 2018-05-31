@@ -39,7 +39,6 @@ import org.apache.ignite.console.agent.rest.RestResult;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -357,9 +356,9 @@ public class ClusterListener implements AutoCloseable {
      * @throws IOException If failed to execute.
      */
     private RestResult restCommand(Map<String, Object> params) throws IOException {
-        if (!F.isEmpty(cfg.agentUser()) && !F.isEmpty(cfg.agentPassword())) {
-            params.put("user", cfg.agentUser());
-            params.put("password", cfg.agentPassword());
+        if (!F.isEmpty(cfg.nodeLogin()) && !F.isEmpty(cfg.nodePassword())) {
+            params.put("user", cfg.nodeLogin());
+            params.put("password", cfg.nodePassword());
         }
 
         return restExecutor.sendRequest(cfg.nodeURIs(), params, null);
@@ -413,18 +412,16 @@ public class ClusterListener implements AutoCloseable {
 
         RestResult res = restCommand(params);
 
-        boolean active;
-
         switch (res.getStatus()) {
             case STATUS_SUCCESS:
-                active =  v23 ? Boolean.parseBoolean(res.getData()) : res.getData().contains("\"active\":true");
-                break;
+                if (v23)
+                    return Boolean.valueOf(res.getData());
+
+                return res.getData().contains("\"active\":true");
 
             default:
                 throw new IOException(res.getError());
         }
-
-        return active;
     }
 
     /** */

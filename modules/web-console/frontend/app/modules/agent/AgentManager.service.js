@@ -34,6 +34,18 @@ const State = {
 const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
 const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], '2.5.2'];
 
+// Error codes from o.a.i.internal.processors.restGridRestResponse.java
+
+/** Command failed. */
+const STATUS_FAILED = 1;
+
+/** Authentication failure. */
+const STATUS_AUTH_FAILED = 2;
+
+/** Security check failed. */
+const STATUS_SECURITY_CHECK_FAILED = 3;
+
+
 class ConnectionState {
     constructor(cluster) {
         this.agents = [];
@@ -204,8 +216,6 @@ export default class IgniteAgentManager {
     }
 
     updateCluster(newCluster) {
-        console.log('Secured cluster: ' + newCluster.secured);
-
         const state = this.connectionSbj.getValue();
 
         const oldCluster = _.find(state.clusters, (cluster) => cluster.id === newCluster.id);
@@ -445,10 +455,16 @@ export default class IgniteAgentManager {
     }
 
     _authError(err, cluster) {
-        const msg = _.get(err, 'message', '');
+        const code = _.get(err, 'code', STATUS_FAILED);
 
-        if (msg.startsWith('Failed to authenticate remote client (invalid credentials?)'))
+        if (code === STATUS_AUTH_FAILED) {
             cluster.setCredentials({});
+
+            throw new Error('Failed to authenticate in cluster with provided credentials');
+        }
+
+        if (code === STATUS_SECURITY_CHECK_FAILED)
+            throw new Error('Access denied. You are not authorized to access this functionality. Contact your cluster administrator.');
 
         throw err;
     }
@@ -475,10 +491,13 @@ export default class IgniteAgentManager {
 
                 _.assign(params, args);
 
-                if (cluster.needsCredentials())
-                    cluster.setCredentials(creds);
+                return this._rest('node:rest', params)
+                    .then((data) => {
+                        if (cluster.needsCredentials())
+                            cluster.setCredentials(creds);
 
-                return this._rest('node:rest', params);
+                        return data;
+                    });
             })
             .catch((err) => this._authError(err, cluster));
     }
@@ -603,12 +622,14 @@ export default class IgniteAgentManager {
 
         return this.ClusterCredentials
             .askCredentials(cluster)
-            .then((creds) => {
-                if (cluster.needsCredentials())
-                    cluster.setCredentials(creds);
+            .then((creds) => this._rest('node:visor', taskId, nids, creds.user, creds.password, ...args)
+                .then((data) => {
+                    if (cluster.needsCredentials())
+                        cluster.setCredentials(creds);
 
-                return this._rest('node:visor', taskId, nids, creds.user, creds.password, ...args);
-            })
+                    return data;
+                })
+            )
             .catch((err) => this._authError(err, cluster));
     }
 
