@@ -22,12 +22,9 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.preprocessing.binarization.BinarizationPreprocessor;
-import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainer;
 import org.apache.ignite.ml.preprocessing.imputer.ImputerPreprocessor;
 import org.apache.ignite.ml.preprocessing.imputer.ImputerTrainer;
 import org.apache.ignite.ml.preprocessing.imputer.ImputingStrategy;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -66,7 +63,7 @@ public class ImputerTrainerTest {
         data.put(3, new double[] {Double.NaN, 10, 100});
         data.put(4, new double[] {0, 2, 100});
 
-        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, (k, v) -> true, parts);
 
         ImputerTrainer<Integer, double[]> imputerTrainer = new ImputerTrainer<Integer, double[]>()
             .withImputingStrategy(ImputingStrategy.MOST_FREQUENT);

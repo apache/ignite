@@ -36,7 +36,7 @@ public class LocalDatasetBuilderTest {
         for (int i = 0; i < 100; i++)
             data.put(i, i);
 
-        LocalDatasetBuilder<Integer, Integer> builder = new LocalDatasetBuilder<>(data, 10);
+        LocalDatasetBuilder<Integer, Integer> builder = new LocalDatasetBuilder<>(data, (k, v) -> true,10);
 
         LocalDataset<Serializable, TestPartitionData> dataset = builder.build(
             (upstream, upstreamSize) -> null,
@@ -62,6 +62,44 @@ public class LocalDatasetBuilderTest {
 
            for (int i = 0; i < 10; i++)
                assertEquals(partIdx * 10 + i, arr[i]);
+        });
+
+        assertEquals(10, cnt.intValue());
+    }
+
+    /** Tests {@code build()} method with predicate. */
+    @Test
+    public void testBuildWithPredicate() {
+        Map<Integer, Integer> data = new HashMap<>();
+        for (int i = 0; i < 100; i++)
+            data.put(i, i);
+
+        LocalDatasetBuilder<Integer, Integer> builder = new LocalDatasetBuilder<>(data, (k, v) -> k % 2 == 0,10);
+
+        LocalDataset<Serializable, TestPartitionData> dataset = builder.build(
+            (upstream, upstreamSize) -> null,
+            (upstream, upstreamSize, ctx) -> {
+                int[] arr = new int[Math.toIntExact(upstreamSize)];
+
+                int ptr = 0;
+                while (upstream.hasNext())
+                    arr[ptr++] = upstream.next().getValue();
+
+                return new TestPartitionData(arr);
+            }
+        );
+
+        AtomicLong cnt = new AtomicLong();
+
+        dataset.compute((partData, partIdx) -> {
+            cnt.incrementAndGet();
+
+            int[] arr = partData.data;
+
+            assertEquals(5, arr.length);
+
+            for (int i = 0; i < 5; i++)
+                assertEquals((partIdx * 5 + i) * 2, arr[i]);
         });
 
         assertEquals(10, cnt.intValue());

@@ -20,6 +20,7 @@ package org.apache.ignite.ml.dataset.impl.cache.util;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import javax.cache.Cache;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 
 /**
@@ -33,36 +34,49 @@ public class UpstreamCursorAdapter<K, V> implements Iterator<UpstreamEntry<K, V>
     /** Cache entry iterator. */
     private final Iterator<Cache.Entry<K, V>> delegate;
 
-    /** Size. */
-    private long cnt;
+    /** Predicate that filters {@code upstream} data. */
+    private final IgniteBiPredicate<K, V> pred;
+
+    /** Next entry returned by the delegate iterator. */
+    private Cache.Entry<K, V> nextEntry;
 
     /**
      * Constructs a new instance of iterator.
      *
      * @param delegate Cache entry iterator.
+     * @param pred Predicate that filters {@code upstream} data.
      */
-    UpstreamCursorAdapter(Iterator<Cache.Entry<K, V>> delegate, long cnt) {
+    UpstreamCursorAdapter(Iterator<Cache.Entry<K, V>> delegate, IgniteBiPredicate<K, V> pred) {
         this.delegate = delegate;
-        this.cnt = cnt;
+        this.pred = pred;
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() {
-        return delegate.hasNext() && cnt > 0;
+        findNext();
+
+        return nextEntry != null;
     }
 
     /** {@inheritDoc} */
     @Override public UpstreamEntry<K, V> next() {
-        if (cnt == 0)
+        if (!hasNext())
             throw new NoSuchElementException();
 
-        cnt--;
+        Cache.Entry<K, V> next = nextEntry;
 
-        Cache.Entry<K, V> next = delegate.next();
-
-        if (next == null)
-            return null;
+        nextEntry = null;
 
         return new UpstreamEntry<>(next.getKey(), next.getValue());
+    }
+
+    /** Finds a next entry returned by delegate iterator. */
+    private void findNext() {
+        while (nextEntry == null && delegate.hasNext()) {
+            Cache.Entry<K, V> entry = delegate.next();
+
+            if (pred.apply(entry.getKey(), entry.getValue()))
+                nextEntry = entry;
+        }
     }
 }

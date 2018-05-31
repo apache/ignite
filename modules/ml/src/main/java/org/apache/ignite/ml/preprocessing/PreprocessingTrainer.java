@@ -56,7 +56,7 @@ public interface PreprocessingTrainer<K, V, T, R> {
     public default IgniteBiFunction<K, V, R> fit(Ignite ignite, IgniteCache<K, V> cache,
         IgniteBiFunction<K, V, T> basePreprocessor) {
         return fit(
-            new CacheBasedDatasetBuilder<>(ignite, cache),
+            new CacheBasedDatasetBuilder<>(ignite, cache, (k, v) -> true),
             basePreprocessor
         );
     }
@@ -72,7 +72,7 @@ public interface PreprocessingTrainer<K, V, T, R> {
     public default IgniteBiFunction<K, V, R> fit(Map<K, V> data, int parts,
         IgniteBiFunction<K, V, T> basePreprocessor) {
         return fit(
-            new LocalDatasetBuilder<>(data, parts),
+            new LocalDatasetBuilder<>(data, (k, v) -> true, parts),
             basePreprocessor
         );
     }

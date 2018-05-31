@@ -152,7 +152,7 @@ public class LocalModelsTest {
             .withK(1);
 
         KMeansModel knnMdl = trainer.fit(
-            new LocalDatasetBuilder<>(data, 2),
+            new LocalDatasetBuilder<>(data, (k, v) -> true, 2),
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2]
         );

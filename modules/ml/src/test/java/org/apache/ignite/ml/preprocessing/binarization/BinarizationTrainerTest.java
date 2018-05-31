@@ -60,7 +60,7 @@ public class BinarizationTrainerTest {
         data.put(3, new double[] {4, 10, 100});
         data.put(4, new double[] {0, 22, 300});
 
-        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, (k, v) -> true, parts);
 
         BinarizationTrainer<Integer, double[]> binarizationTrainer = new BinarizationTrainer<Integer, double[]>()
             .withThreshold(10);
