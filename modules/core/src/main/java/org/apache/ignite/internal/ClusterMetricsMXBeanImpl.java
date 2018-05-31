@@ -364,25 +364,29 @@ public class ClusterMetricsMXBeanImpl implements ClusterMetricsMXBean {
     /** {@inheritDoc} */
     @Override public int getTotalBaselineNodes() {
         Collection<BaselineNode> baselineNodes = cluster.ignite().cluster().currentBaselineTopology();
+
         return baselineNodes != null ? baselineNodes.size() : 0;
     }
 
     /** {@inheritDoc} */
     @Override public int getActiveBaselineNodes() {
         Collection<BaselineNode> baselineNodes = cluster.ignite().cluster().currentBaselineTopology();
+
         if (baselineNodes != null && !baselineNodes.isEmpty()) {
-            Set<Object> ids = new HashSet<>(baselineNodes.size());
-            for (BaselineNode baselineNode : baselineNodes) {
-                ids.add(baselineNode.consistentId());
-            }
+            Set<Object> bltIds = new HashSet<>(baselineNodes.size());
+
+            for (BaselineNode baselineNode : baselineNodes)
+                bltIds.add(baselineNode.consistentId());
+
             int count = 0;
-            for (ClusterNode node : cluster.forServers().nodes()) {
-                if (ids.contains(node.consistentId())) {
+
+            for (ClusterNode node : cluster.forServers().nodes())
+                if (bltIds.contains(node.consistentId()))
                     count++;
-                }
-            }
+
             return count;
         }
+
         return 0;
     }
 

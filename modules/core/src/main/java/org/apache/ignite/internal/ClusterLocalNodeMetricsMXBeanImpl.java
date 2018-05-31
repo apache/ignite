@@ -334,20 +334,21 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
         return node.metrics().getTotalNodes();
     }
 
+    /** {@inheritDoc} */
     @Override public int getTotalBaselineNodes() {
         if (!node.isClient() && !node.isDaemon()) {
             List<? extends BaselineNode> baselineNodes = discoMgr.baselineNodes(discoMgr.topologyVersionEx());
-            if (baselineNodes != null) {
-                for (BaselineNode baselineNode : baselineNodes) {
-                    if (baselineNode.consistentId().equals(node.consistentId())) {
+
+            if (baselineNodes != null)
+                for (BaselineNode baselineNode : baselineNodes)
+                    if (baselineNode.consistentId().equals(node.consistentId()))
                         return 1;
-                    }
-                }
-            }
         }
+
         return 0;
     }
 
+    /** {@inheritDoc} */
     @Override public int getActiveBaselineNodes() {
         return getTotalBaselineNodes();
     }
