@@ -34,7 +34,7 @@ public class JdbcUtils {
      * @param ignite Ignite node.
      * @param range Data key range.
      */
-    static void fillData(BenchmarkConfiguration cfg,  IgniteEx ignite, long range, CacheAtomicityMode atomicMode) {
+    public static void fillData(BenchmarkConfiguration cfg,  IgniteEx ignite, long range, CacheAtomicityMode atomicMode) {
         println(cfg, "Create table...");
 
         String withExpr = atomicMode != null ? " WITH \"atomicity=" + atomicMode.name() + "\";" : ";";
