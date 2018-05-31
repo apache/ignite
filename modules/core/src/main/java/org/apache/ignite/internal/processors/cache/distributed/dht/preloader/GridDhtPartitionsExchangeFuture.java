@@ -2395,7 +2395,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             CounterWithNodes maxCntr = maxCntrs.get(part.id());
 
             if (maxCntr == null && cntr == 0) {
-                CounterWithNodes cntrObj = new CounterWithNodes(0, 0, cctx.localNodeId());
+                CounterWithNodes cntrObj = new CounterWithNodes(0, 0L, cctx.localNodeId());
 
                 for (UUID nodeId : msgs.keySet()) {
                     if (top.partitionState(nodeId, part.id()) == GridDhtPartitionState.OWNING)
@@ -3878,9 +3878,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
          * @param cnt Count.
          * @param firstNode Node ID.
          */
-        private CounterWithNodes(long cnt, long size, UUID firstNode) {
+        private CounterWithNodes(long cnt, @Nullable Long size, UUID firstNode) {
             this.cnt = cnt;
-            this.size = size;
+            this.size = size != null ? size : 0;
 
             nodes.add(firstNode);
         }
