@@ -57,7 +57,8 @@ public class ImputingExampleWithMostFrequentValues {
                 .fit(ignite, persons, featureExtractor);
 
             // Creates a cache based simple dataset containing features and providing standard dataset API.
-            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, preprocessor)) {
+            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, (k, v) -> true,
+                preprocessor)) {
                 // Calculation of the mean value. This calculation will be performed in map-reduce manner.
                 double[] mean = dataset.mean();
                 System.out.println("Mean \n\t" + Arrays.toString(mean));

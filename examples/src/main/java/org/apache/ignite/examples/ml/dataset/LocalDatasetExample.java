@@ -41,6 +41,7 @@ public class LocalDatasetExample {
             // Creates a local simple dataset containing features and providing standard dataset API.
             try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(
                 persons,
+                (k, v) -> true,
                 2,
                 (k, v) -> new double[]{ v.getAge(), v.getSalary() }
             )) {

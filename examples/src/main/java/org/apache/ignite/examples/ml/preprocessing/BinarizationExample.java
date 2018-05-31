@@ -28,7 +28,6 @@ import org.apache.ignite.ml.dataset.DatasetFactory;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.preprocessing.binarization.BinarizationTrainer;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 
 /**
  * Example that shows how to use binarization preprocessor to binarize data.
@@ -58,7 +57,8 @@ public class BinarizationExample {
 
 
             // Creates a cache based simple dataset containing features and providing standard dataset API.
-            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, preprocessor)) {
+            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, (k, v) -> true,
+                preprocessor)) {
                 // Calculation of the mean value. This calculation will be performed in map-reduce manner.
                 double[] mean = dataset.mean();
                 System.out.println("Mean \n\t" + Arrays.toString(mean));
