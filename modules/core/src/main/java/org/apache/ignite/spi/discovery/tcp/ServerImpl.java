@@ -2866,7 +2866,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             sendMessageToClients(msg);
 
-            Collection<TcpDiscoveryNode> failedNodes;
+            List<TcpDiscoveryNode> failedNodes;
 
             TcpDiscoverySpiState state;
 
@@ -2986,21 +2986,21 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 if (res.changeTopology() && sndState != null) {
                                     // Remote node checked connection to it's previous and got success.
-                                    TcpDiscoveryNode previousNode = sndState.previousNode();
+                                    boolean previousNode = sndState.previousNode();
 
-                                    if (previousNode != null) {
+                                    if (previousNode) {
                                         if (log.isDebugEnabled())
-                                            log.info("Got previous node: [previousNode=" + previousNode + ", sndState=" + sndState + ']');
+                                            log.info("Got previous node: [sndState=" + sndState + ']');
 
-                                        failedNodes.remove(previousNode);
+                                        failedNodes.remove(failedNodes.size() - 1);
                                     }
                                     else {
                                         if (log.isDebugEnabled())
-                                            log.info("Previous node is null, sndState=" + sndState);
+                                            log.info("No previous node, recovering next node, sndState=" + sndState);
 
                                         newNextNode = false;
 
-                                        next = previousNode;
+                                        next = ring.nextNode(failedNodes);
                                     }
 
                                     U.closeQuiet(sock);
@@ -3019,7 +3019,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         return; // Nothing to do here.
                                     }
 
-                                    if (previousNode != null && spi.topChangeDelay > 0)
+                                    if (previousNode && spi.topChangeDelay > 0)
                                         Thread.sleep(spi.topChangeDelay);
 
                                     continue ringLoop;
@@ -3325,7 +3325,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (sndState == null && spi.topChangeTries > 0)
                         sndState = new CrossRingMessageSendState();
 
-                    boolean failedNextNode = sndState == null || sndState.failedNextNode(next);
+                    boolean failedNextNode = sndState == null || sndState.failedNextNode();
 
                     if (failedNextNode && !failedNodes.contains(next)) {
                         failedNodes.add(next);
@@ -3343,13 +3343,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                     }
                     else if (!failedNextNode && sndState != null && sndState.isPrevious()) {
-                        TcpDiscoveryNode prev = sndState.previousNode();
+                        boolean prev = sndState.previousNode();
 
                         U.warn(log, "Failed to send message to next node, try previous [msg=" + msg + ", next=" + next +
                             ", prev=" + prev + ']');
 
-                        if (prev != null) {
-                            failedNodes.remove(prev);
+                        if (prev) {
+                            failedNodes.remove(failedNodes.size() - 1);
 
                             if (spi.topChangeDelay > 0) {
                                 try {
@@ -6995,7 +6995,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private RingMessageSendState state = RingMessageSendState.NEXT;
 
         /** */
-        private LinkedList<TcpDiscoveryNode> testNodes = new LinkedList<>();
+        private int failedNodes;
 
         /** */
         private int tries;
@@ -7024,14 +7024,13 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * Add next node to failed.
          *
-         * @param next Next failed node.
          * @return {@code True} if failed node added.
          */
-        boolean failedNextNode(TcpDiscoveryNode next) {
+        boolean failedNextNode() {
             if (state == RingMessageSendState.NEXT || state == RingMessageSendState.NEW_NEXT) {
                 state = RingMessageSendState.NEW_NEXT;
 
-                testNodes.addFirst(next);
+                failedNodes++;
 
                 return true;
             }
@@ -7042,26 +7041,26 @@ class ServerImpl extends TcpDiscoveryImpl {
         /**
          * @return Previous node or {@code null} if no previous nodes left or incorrect state.
          */
-        @Nullable TcpDiscoveryNode previousNode() {
+        boolean previousNode() {
             if (state == RingMessageSendState.NEW_NEXT || state == RingMessageSendState.PREVIOUS) {
                 state = RingMessageSendState.PREVIOUS;
 
-                TcpDiscoveryNode previous = testNodes.pollFirst();
+                if (--failedNodes <= 0) {
+                    failedNodes = 0;
 
-                if (previous == null) {
                     if (++tries == spi.topChangeTries) {
                         state = RingMessageSendState.FAILED;
 
-                        return null;
+                        return false;
                     }
 
                     state = RingMessageSendState.NEXT;
                 }
 
-                return previous;
+                return true;
             }
 
-            return null;
+            return false;
         }
 
         /** {@inheritDoc} */
