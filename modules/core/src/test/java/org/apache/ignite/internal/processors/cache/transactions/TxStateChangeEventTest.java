@@ -81,7 +81,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
      *
      */
     private void test(boolean loc) throws Exception {
-        Ignite ignite = startGrid(0);
+        Ignite ignite = startGrids(5);
 
         final IgniteEvents evts = ignite.events();
 
@@ -108,28 +108,27 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
 
         IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
+        // create & commit
         try (Transaction tx = ignite.transactions().withLabel(lb).txStart(
-            TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE, timeout, 3)) {
+            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE, timeout, 3)) {
             cache.put(1, 1);
 
             tx.commit();
         }
 
-        assertTrue(creation.get() &&
+        assertTrue(
+            creation.get() &&
             commit.get() &&
             !rollback.get() &&
             !suspend.get() &&
             !resume.get());
 
-        creation.set(false);
-        commit.set(false);
-        rollback.set(false);
-        suspend.set(false);
-        resume.set(false);
+        clear();
 
+        // create & suspend & resume & commit
         try (Transaction tx = ignite.transactions().withLabel(lb).txStart(
             TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE, timeout, 3)) {
-            cache.put(1, 1);
+            cache.put(2, 7);
 
             tx.suspend();
 
@@ -137,14 +136,41 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
 
             tx.resume();
 
-            tx.rollback();
+            tx.commit();
         }
 
-        assertTrue(creation.get() &&
-            !commit.get() &&
-            rollback.get() &&
+        assertTrue(
+            creation.get() &&
+            commit.get() &&
+            !rollback.get() &&
             suspend.get() &&
             resume.get());
+
+        clear();
+
+        // create & rollback (pessimistic)
+        try (Transaction tx = ignite.transactions().withLabel(lb).txStart(
+            TransactionConcurrency.PESSIMISTIC, TransactionIsolation.SERIALIZABLE, timeout, 3)) {
+            cache.put(4, 5);
+        }
+
+        assertTrue(
+            creation.get() &&
+            !commit.get() &&
+            rollback.get() &&
+            !suspend.get() &&
+            !resume.get());
+    }
+
+    /**
+     *
+     */
+    private void clear() {
+        creation.set(false);
+        commit.set(false);
+        rollback.set(false);
+        suspend.set(false);
+        resume.set(false);
     }
 
     /**
