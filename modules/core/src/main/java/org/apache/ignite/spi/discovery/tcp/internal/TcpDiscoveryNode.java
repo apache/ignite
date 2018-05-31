@@ -469,9 +469,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         if (!cacheCliInit) {
             Boolean clientModeAttr = ((ClusterNode) this).attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
 
-            assert clientModeAttr != null : this;
-
-            cacheCli = clientModeAttr;
+            cacheCli = clientModeAttr != null && clientModeAttr;
 
             cacheCliInit = true;
         }
