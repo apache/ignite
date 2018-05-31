@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -34,8 +35,6 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
-import org.apache.ignite.internal.processors.authentication.UserManagementOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -58,7 +57,6 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
-import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityContextHolder;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
@@ -97,6 +95,9 @@ public class DdlStatementsProcessor {
     /** Indexing. */
     IgniteH2Indexing idx;
 
+    /** Logger. */
+    private IgniteLogger log;
+
     /**
      * Initialize message handlers and this' fields needed for further operation.
      *
@@ -106,6 +107,8 @@ public class DdlStatementsProcessor {
     public void start(final GridKernalContext ctx, IgniteH2Indexing idx) {
         this.ctx = ctx;
         this.idx = idx;
+
+        log = ctx.log(DdlStatementsProcessor.class);
     }
 
     /**
@@ -240,12 +243,18 @@ public class DdlStatementsProcessor {
             return H2Utils.zeroCursor();
         }
         catch (SchemaOperationException e) {
+            log.error("DDL operation performer with error.", e);
+
             throw convert(e);
         }
         catch (IgniteSQLException e) {
+            log.error("DDL operation performer with error.", e);
+
             throw e;
         }
         catch (Exception e) {
+            log.error("DDL operation performer with error.", e);
+
             throw new IgniteSQLException(e.getMessage(), e);
         }
     }

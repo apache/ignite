@@ -217,7 +217,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             }
             finally {
                 if (locked)
-                    cctx.shared().database().checkpointReadUnlock();
+                    cctx.group().checkpointReadLocker().checkpointReadUnlock();
             }
         }
         finally {
