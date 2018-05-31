@@ -57,8 +57,7 @@ public class BinarizationExample {
 
 
             // Creates a cache based simple dataset containing features and providing standard dataset API.
-            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, (k, v) -> true,
-                preprocessor)) {
+            try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(ignite, persons, preprocessor)) {
                 // Calculation of the mean value. This calculation will be performed in map-reduce manner.
                 double[] mean = dataset.mean();
                 System.out.println("Mean \n\t" + Arrays.toString(mean));

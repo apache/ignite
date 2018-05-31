@@ -43,7 +43,6 @@ public class CacheBasedDatasetExample {
             try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(
                 ignite,
                 persons,
-                (k, v) -> true,
                 (k, v) -> new double[]{ v.getAge(), v.getSalary() }
             )) {
                 // Calculation of the mean value. This calculation will be performed in map-reduce manner.

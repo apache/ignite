@@ -63,7 +63,6 @@ public class AlgorithmSpecificDatasetExample {
             try (AlgorithmSpecificDataset dataset = DatasetFactory.create(
                 ignite,
                 persons,
-                (k, v) -> true,
                 (upstream, upstreamSize) -> new AlgorithmSpecificPartitionContext(),
                 new SimpleLabeledDatasetDataBuilder<Integer, Person, AlgorithmSpecificPartitionContext>(
                     (k, v) -> new double[] {v.getAge()},

@@ -57,6 +57,17 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     private final IgniteBiPredicate<K, V> pred;
 
     /**
+     * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset} with default
+     * predicate that passes all upstream entries to dataset.
+     *
+     * @param ignite Ignite instance.
+     * @param upstreamCache Ignite Cache with {@code upstream} data.
+     */
+    public CacheBasedDatasetBuilder(Ignite ignite, IgniteCache<K, V> upstreamCache) {
+        this(ignite, upstreamCache, (a, b) -> true);
+    }
+
+    /**
      * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset}.
      *
      * @param ignite Ignite instance.

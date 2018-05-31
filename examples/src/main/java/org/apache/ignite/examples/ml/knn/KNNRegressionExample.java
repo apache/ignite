@@ -57,7 +57,7 @@ public class KNNRegressionExample {
                 KNNRegressionTrainer trainer = new KNNRegressionTrainer();
 
                 KNNRegressionModel knnMdl = (KNNRegressionModel) trainer.fit(
-                    new CacheBasedDatasetBuilder<>(ignite, dataCache, (k, v) -> true),
+                    new CacheBasedDatasetBuilder<>(ignite, dataCache),
                     (k, v) -> Arrays.copyOfRange(v, 1, v.length),
                     (k, v) -> v[0]
                 ).withK(5)

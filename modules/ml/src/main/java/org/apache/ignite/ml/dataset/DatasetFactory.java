@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
@@ -100,7 +99,6 @@ public class DatasetFactory {
      *
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
-     * @param pred Predicate that filters {@code upstream} data.
      * @param partCtxBuilder Partition {@code context} builder.
      * @param partDataBuilder Partition {@code data} builder.
      * @param <K> Type of a key in {@code upstream} data.
@@ -110,10 +108,10 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V, C extends Serializable, D extends AutoCloseable> Dataset<C, D> create(
-        Ignite ignite, IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> pred,
-        PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+        Ignite ignite, IgniteCache<K, V> upstreamCache, PartitionContextBuilder<K, V, C> partCtxBuilder,
+        PartitionDataBuilder<K, V, C, D> partDataBuilder) {
         return create(
-            new CacheBasedDatasetBuilder<>(ignite, upstreamCache, pred),
+            new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             partCtxBuilder,
             partDataBuilder
         );
@@ -149,7 +147,6 @@ public class DatasetFactory {
      *
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
-     * @param pred Predicate that filters {@code upstream} data.
      * @param partCtxBuilder Partition {@code context} builder.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
@@ -158,10 +155,10 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V, C extends Serializable> SimpleDataset<C> createSimpleDataset(Ignite ignite,
-        IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> pred, PartitionContextBuilder<K, V, C> partCtxBuilder,
+        IgniteCache<K, V> upstreamCache, PartitionContextBuilder<K, V, C> partCtxBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor) {
         return createSimpleDataset(
-            new CacheBasedDatasetBuilder<>(ignite, upstreamCache, pred),
+            new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             partCtxBuilder,
             featureExtractor
         );
@@ -198,7 +195,6 @@ public class DatasetFactory {
      *
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
-     * @param pred Predicate that filters {@code upstream} data.
      * @param partCtxBuilder Partition {@code context} builder.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
      * @param lbExtractor Label extractor used to extract labels and buikd {@link SimpleLabeledDatasetData}.
@@ -208,10 +204,10 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V, C extends Serializable> SimpleLabeledDataset<C> createSimpleLabeledDataset(Ignite ignite,
-        IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> pred, PartitionContextBuilder<K, V, C> partCtxBuilder,
+        IgniteCache<K, V> upstreamCache, PartitionContextBuilder<K, V, C> partCtxBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
         return createSimpleLabeledDataset(
-            new CacheBasedDatasetBuilder<>(ignite, upstreamCache, pred),
+            new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             partCtxBuilder,
             featureExtractor,
             lbExtractor
@@ -245,16 +241,15 @@ public class DatasetFactory {
      *
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
-     * @param pred Predicate that filters {@code upstream} data.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Dataset.
      */
     public static <K, V> SimpleDataset<EmptyContext> createSimpleDataset(Ignite ignite, IgniteCache<K, V> upstreamCache,
-        IgniteBiPredicate<K, V> pred, IgniteBiFunction<K, V, double[]> featureExtractor) {
+        IgniteBiFunction<K, V, double[]> featureExtractor) {
         return createSimpleDataset(
-            new CacheBasedDatasetBuilder<>(ignite, upstreamCache, pred),
+            new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             featureExtractor
         );
     }
@@ -289,7 +284,6 @@ public class DatasetFactory {
      *
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
-     * @param pred Predicate that filters {@code upstream} data.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
      * @param lbExtractor Label extractor used to extract labels and buikd {@link SimpleLabeledDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
@@ -297,10 +291,10 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(Ignite ignite,
-        IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> pred,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
+        IgniteCache<K, V> upstreamCache, IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, double[]> lbExtractor) {
         return createSimpleLabeledDataset(
-            new CacheBasedDatasetBuilder<>(ignite, upstreamCache, pred),
+            new CacheBasedDatasetBuilder<>(ignite, upstreamCache),
             featureExtractor,
             lbExtractor
         );
@@ -312,7 +306,6 @@ public class DatasetFactory {
      * {@code context} and {@code data}.
      *
      * @param upstreamMap {@code Map} with {@code upstream} data.
-     * @param pred Predicate that filters {@code upstream} data.
      * @param partitions Number of partitions {@code upstream} {@code Map} will be divided on.
      * @param partCtxBuilder Partition {@code context} builder.
      * @param partDataBuilder Partition {@code data} builder.
@@ -323,10 +316,10 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V, C extends Serializable, D extends AutoCloseable> Dataset<C, D> create(
-        Map<K, V> upstreamMap, IgniteBiPredicate<K, V> pred, int partitions,
-        PartitionContextBuilder<K, V, C> partCtxBuilder, PartitionDataBuilder<K, V, C, D> partDataBuilder) {
+        Map<K, V> upstreamMap, int partitions, PartitionContextBuilder<K, V, C> partCtxBuilder,
+        PartitionDataBuilder<K, V, C, D> partDataBuilder) {
         return create(
-            new LocalDatasetBuilder<>(upstreamMap, pred, partitions),
+            new LocalDatasetBuilder<>(upstreamMap, partitions),
             partCtxBuilder,
             partDataBuilder
         );
@@ -338,7 +331,6 @@ public class DatasetFactory {
      * allows to use any desired type of partition {@code context}.
      *
      * @param upstreamMap {@code Map} with {@code upstream} data.
-     * @param pred Predicate that filters {@code upstream} data.
      * @param partitions Number of partitions {@code upstream} {@code Map} will be divided on.
      * @param partCtxBuilder Partition {@code context} builder.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleDatasetData}.
@@ -348,10 +340,10 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V, C extends Serializable> SimpleDataset<C> createSimpleDataset(Map<K, V> upstreamMap,
-        IgniteBiPredicate<K, V> pred, int partitions, PartitionContextBuilder<K, V, C> partCtxBuilder,
+        int partitions, PartitionContextBuilder<K, V, C> partCtxBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor) {
         return createSimpleDataset(
-            new LocalDatasetBuilder<>(upstreamMap, pred, partitions),
+            new LocalDatasetBuilder<>(upstreamMap, partitions),
             partCtxBuilder,
             featureExtractor
         );
@@ -363,7 +355,6 @@ public class DatasetFactory {
      * {@link SimpleLabeledDatasetData}, but allows to use any desired type of partition {@code context}.
      *
      * @param upstreamMap {@code Map} with {@code upstream} data.
-     * @param pred Predicate that filters {@code upstream} data.
      * @param partitions Number of partitions {@code upstream} {@code Map} will be divided on.
      * @param partCtxBuilder Partition {@code context} builder.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
@@ -374,11 +365,10 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V, C extends Serializable> SimpleLabeledDataset<C> createSimpleLabeledDataset(
-        Map<K, V> upstreamMap, IgniteBiPredicate<K, V> pred, int partitions,
-        PartitionContextBuilder<K, V, C> partCtxBuilder, IgniteBiFunction<K, V, double[]> featureExtractor,
-        IgniteBiFunction<K, V, double[]> lbExtractor) {
+        Map<K, V> upstreamMap, int partitions, PartitionContextBuilder<K, V, C> partCtxBuilder,
+        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
         return createSimpleLabeledDataset(
-            new LocalDatasetBuilder<>(upstreamMap, pred, partitions),
+            new LocalDatasetBuilder<>(upstreamMap, partitions),
             partCtxBuilder,
             featureExtractor, lbExtractor
         );
@@ -390,17 +380,16 @@ public class DatasetFactory {
      * {@link SimpleDatasetData}.
      *
      * @param upstreamMap {@code Map} with {@code upstream} data.
-     * @param pred Predicate that filters {@code upstream} data.
      * @param partitions Number of partitions {@code upstream} {@code Map} will be divided on.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleDatasetData}.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
      * @return Dataset.
      */
-    public static <K, V> SimpleDataset<EmptyContext> createSimpleDataset(Map<K, V> upstreamMap,
-        IgniteBiPredicate<K, V> pred, int partitions, IgniteBiFunction<K, V, double[]> featureExtractor) {
+    public static <K, V> SimpleDataset<EmptyContext> createSimpleDataset(Map<K, V> upstreamMap, int partitions,
+        IgniteBiFunction<K, V, double[]> featureExtractor) {
         return createSimpleDataset(
-            new LocalDatasetBuilder<>(upstreamMap, pred, partitions),
+            new LocalDatasetBuilder<>(upstreamMap, partitions),
             featureExtractor
         );
     }
@@ -411,7 +400,6 @@ public class DatasetFactory {
      * partition {@code data} to be {@link SimpleLabeledDatasetData}.
      *
      * @param upstreamMap {@code Map} with {@code upstream} data.
-     * @param pred Predicate that filters {@code upstream} data.
      * @param partitions Number of partitions {@code upstream} {@code Map} will be divided on.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
      * @param lbExtractor Label extractor used to extract labels and build {@link SimpleLabeledDatasetData}.
@@ -420,10 +408,10 @@ public class DatasetFactory {
      * @return Dataset.
      */
     public static <K, V> SimpleLabeledDataset<EmptyContext> createSimpleLabeledDataset(Map<K, V> upstreamMap,
-        IgniteBiPredicate<K, V> pred, int partitions, IgniteBiFunction<K, V, double[]> featureExtractor,
+        int partitions, IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, double[]> lbExtractor) {
         return createSimpleLabeledDataset(
-            new LocalDatasetBuilder<>(upstreamMap, pred, partitions),
+            new LocalDatasetBuilder<>(upstreamMap, partitions),
             featureExtractor,
             lbExtractor
         );

@@ -48,6 +48,17 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     private final IgniteBiPredicate<K, V> pred;
 
     /**
+     * Constructs a new instance of local dataset builder that makes {@link LocalDataset} with default predicate that
+     * passes all upstream entries to dataset.
+     *
+     * @param upstreamMap {@code Map} with upstream data.
+     * @param partitions Number of partitions.
+     */
+    public LocalDatasetBuilder(Map<K, V> upstreamMap, int partitions) {
+        this(upstreamMap, (a, b) -> true, partitions);
+    }
+
+    /**
      * Constructs a new instance of local dataset builder that makes {@link LocalDataset}.
      *
      * @param upstreamMap {@code Map} with upstream data.
