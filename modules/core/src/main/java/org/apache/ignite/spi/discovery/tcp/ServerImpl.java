@@ -5977,7 +5977,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             if (log.isDebugEnabled())
                                 log.debug("Previous node node ping result: [res=" + ok + ", previous=" + previous + ']');
 
-                            res.changeTopology(ok); // now it means all fine for me, fuck off
+                            res.changeTopology(ok); // Now it means all fine for me, re-check your connections.
                         }
                     }
 
