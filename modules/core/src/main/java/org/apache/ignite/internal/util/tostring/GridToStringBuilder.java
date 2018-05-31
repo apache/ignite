@@ -314,7 +314,7 @@ public class GridToStringBuilder {
         try {
             newStr = lenLim.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 5, true);
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 5);
         }
         finally {
             queue.offer(tmp);
@@ -405,7 +405,7 @@ public class GridToStringBuilder {
         try {
             newStr = lenLim.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 6, true);
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 6);
         }
         finally {
             queue.offer(tmp);
@@ -504,7 +504,7 @@ public class GridToStringBuilder {
         try {
             newStr = lenLim.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 7, true);
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 7);
         }
         finally {
             queue.offer(tmp);
@@ -607,7 +607,7 @@ public class GridToStringBuilder {
         try {
             newStr = lenLim.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 4, true);
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 4);
         }
         finally {
             queue.offer(tmp);
@@ -699,7 +699,7 @@ public class GridToStringBuilder {
         try {
             newStr = lenLim.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 3, true);
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 3);
         }
         finally {
             queue.offer(tmp);
@@ -776,7 +776,7 @@ public class GridToStringBuilder {
         try {
             newStr = lenLim.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 2, true);
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 2);
         }
         finally {
             queue.offer(tmp);
@@ -840,7 +840,7 @@ public class GridToStringBuilder {
         try {
             newStr = lenLim.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 1, true);
+            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 1);
         }
         finally {
             queue.offer(tmp);
@@ -879,7 +879,7 @@ public class GridToStringBuilder {
             newStr = lenLim.length() == 0;
 
             return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, tmp.getAdditionalNames(),
-                tmp.getAdditionalValues(), null, 0, true);
+                tmp.getAdditionalValues(), null, 0);
         }
         finally {
             queue.offer(tmp);
@@ -921,6 +921,7 @@ public class GridToStringBuilder {
      * @param val value to print.
      * @param objs Map with saved objects to handle recursion.
      */
+    @SuppressWarnings({"unchecked"})
     private static void toString(SBLimitedLength buf, Class<?> cls, Object val, IdentityHashMap<Object, Integer> objs) {
         if (val == null) {
             buf.a("null");
@@ -950,7 +951,7 @@ public class GridToStringBuilder {
             else if (val instanceof Map)
                 addMap(buf, (Map<?, ?>) val, objs);
             else
-                toStringImpl((Class) cls, buf, val, EMPTY_ARRAY, EMPTY_ARRAY, null, 0, false);
+                toStringImpl0((Class) cls, buf, val, EMPTY_ARRAY, EMPTY_ARRAY, null, 0, objs);
         }
         finally {
             objs.remove(val);
@@ -1036,11 +1037,9 @@ public class GridToStringBuilder {
      * @param addVals Additional values to be included.
      * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
      * @param addLen How many additional values will be included.
-     * @param isOuterCall Flag to reset string builder.
      * @return String presentation of the given object.
      * @param <T> Type of object.
      */
-    @SuppressWarnings({"unchecked"})
     private static <T> String toStringImpl(
         Class<T> cls,
         SBLimitedLength buf,
@@ -1048,8 +1047,7 @@ public class GridToStringBuilder {
         Object[] addNames,
         Object[] addVals,
         @Nullable boolean[] addSens,
-        int addLen,
-        boolean isOuterCall
+        int addLen
     ) {
         assert cls != null;
         assert buf != null;
@@ -1059,23 +1057,48 @@ public class GridToStringBuilder {
         assert addNames.length == addVals.length;
         assert addLen <= addNames.length;
 
+        if (isPrimitiveWraper(cls))
+            return String.valueOf(obj);
+
         IdentityHashMap<Object, Integer> objs = savedObjects.get();
 
-        if (isOuterCall)
-            buf.setLength(0);
+        buf.setLength(0);
 
-        if (isPrimitiveWraper(cls))
-            return buf.a(String.valueOf(obj)).toString();
+        objs.put(obj, buf.length());
 
-        if (isOuterCall) {
-            // Outer call will not have cached object, so method will return string later.
-            // Inner call don't need the returned string, so here we can return null.
-            if (handleRecursion(buf, obj, objs))
-                return null;
-
-            objs.put(obj, buf.length());
+        try {
+            return toStringImpl0(cls, buf, obj, addNames, addVals, addSens, addLen, objs);
         }
+        finally {
+            objs.remove(obj);
+        }
+    }
 
+    /**
+     * Creates an uniformed string presentation for the given object.
+     *
+     * @param cls Class of the object.
+     * @param buf String builder buffer.
+     * @param obj Object for which to get string presentation.
+     * @param addNames Names of additional values to be included.
+     * @param addVals Additional values to be included.
+     * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
+     * @param addLen How many additional values will be included.
+     * @param objs Map with saved objects to handle recursion.
+     * @return String presentation of the given object.
+     * @param <T> Type of object.
+     */
+    @SuppressWarnings({"unchecked"})
+    private static <T> String toStringImpl0(
+        Class<T> cls,
+        SBLimitedLength buf,
+        T obj,
+        Object[] addNames,
+        Object[] addVals,
+        @Nullable boolean[] addSens,
+        int addLen,
+        IdentityHashMap<Object, Integer> objs
+    ) {
         try {
             GridToStringClassDescriptor cd = getClassDescriptor(cls);
 
@@ -1125,8 +1148,6 @@ public class GridToStringBuilder {
 
             // No other option here.
             throw new IgniteException(e);
-        } finally {
-            objs.remove(obj);
         }
     }
 
