@@ -171,17 +171,17 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
-    public void testRebalancingWithTtlExpirable2() throws Exception {
+    public void testStartStopAfterRebalanceWithTtlExpirable() throws Exception {
         try {
             IgniteEx srv = startGrid(0);
             startGrid(1);
             srv.cluster().active(true);
 
-            ExpiryPolicy policy = CreatedExpiryPolicy.factoryOf(Duration.ONE_DAY).create();
+            ExpiryPolicy plc = CreatedExpiryPolicy.factoryOf(Duration.ONE_DAY).create();
 
             IgniteCache<Integer, byte[]> cache0 = srv.cache(CACHE_NAME);
 
-            fillCache(cache0.withExpiryPolicy(policy));
+            fillCache(cache0.withExpiryPolicy(plc));
 
             srv = startGrid(2);
 
