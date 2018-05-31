@@ -1061,17 +1061,20 @@ public class GridToStringBuilder {
 
         IdentityHashMap<Object, Integer> objs = savedObjects.get();
 
-        if (isOuterCall) {
+        if (isOuterCall)
             buf.setLength(0);
-
-            // Real outer call will not have cached object, so method will return string later.
-            // Inner call don't need the returned string, so here we can return null.
-            if (handleRecursion(buf, obj, objs))
-                return null;
-        }
 
         if (isPrimitiveWraper(cls))
             return buf.a(String.valueOf(obj)).toString();
+
+        if (isOuterCall) {
+            // Outer call will not have cached object, so method will return string later.
+            // Inner call don't need the returned string, so here we can return null.
+            if (handleRecursion(buf, obj, objs))
+                return null;
+
+            objs.put(obj, buf.length());
+        }
 
         try {
             GridToStringClassDescriptor cd = getClassDescriptor(cls);
