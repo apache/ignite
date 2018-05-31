@@ -17,20 +17,20 @@
 
 package org.apache.ignite.events;
 
-import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.transactions.Transaction;
 
 /**
- * Event indicates transaction creation.
+ * Event indicates transaction state change.
  *
  * @see EventType#EVTS_TX
  */
-public class TransactionStartedEvent extends EventAdapter {
+public class TransactionStateChangedEvent extends EventAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Tx. */
-    private IgniteTransactions tx;
+    private Transaction tx;
 
     /**
      * @param node Node.
@@ -38,7 +38,7 @@ public class TransactionStartedEvent extends EventAdapter {
      * @param type Type.
      * @param tx Tx.
      */
-    public TransactionStartedEvent(ClusterNode node, String msg, int type, IgniteTransactions tx) {
+    public TransactionStateChangedEvent(ClusterNode node, String msg, int type, Transaction tx) {
         super(node, msg, type);
 
         assert tx != null;
@@ -49,7 +49,7 @@ public class TransactionStartedEvent extends EventAdapter {
     /**
      *
      */
-    public IgniteTransactions tx() {
+    public Transaction tx() {
         return tx;
     }
 }

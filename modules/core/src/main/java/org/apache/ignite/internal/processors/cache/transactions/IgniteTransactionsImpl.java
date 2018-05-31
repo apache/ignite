@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.Collection;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.events.TransactionStartedEvent;
 import org.apache.ignite.internal.IgniteTransactionsEx;
-import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -33,12 +31,10 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionMetrics;
+import org.apache.ignite.transactions.TransactionException;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 
 /**
  * Grid transactions implementation.
@@ -185,11 +181,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
             assert tx != null;
 
-            GridEventStorageManager evt = cctx.gridEvents();
-
-            if (sysCacheCtx == null /* ignoring system tx */ && evt.isRecordable(EVT_TX_STARTED))
-                evt.record(new TransactionStartedEvent(cctx.discovery().localNode(), null, EVT_TX_STARTED, this));
-
             return tx;
         }
         finally {
@@ -232,11 +223,6 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         A.notNull(lb, "label should not be empty.");
 
         return new IgniteTransactionsImpl<>(cctx, lb);
-    }
-
-    /** {@inheritDoc} */
-    @Override public String label() {
-        return lb;
     }
 
     /**

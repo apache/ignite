@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.events.TransactionStartedEvent;
+import org.apache.ignite.events.TransactionStateChangedEvent;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -34,7 +34,7 @@ import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 /**
  * Tests transaction timeout.
  */
-public class TxTimeoutTest extends GridCommonAbstractTest {
+public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
     /**
      *
      */
@@ -46,11 +46,11 @@ public class TxTimeoutTest extends GridCommonAbstractTest {
         evts.enableLocal(EVTS_TX);
 
         evts.localListen((IgnitePredicate<Event>)e -> {
-            assert e instanceof TransactionStartedEvent;
+            assert e instanceof TransactionStateChangedEvent;
 
-            TransactionStartedEvent evt = (TransactionStartedEvent)e;
+            TransactionStateChangedEvent evt = (TransactionStateChangedEvent)e;
 
-            Transaction tx = evt.tx().tx();
+            Transaction tx = evt.tx();
 
             if (tx.timeout() < 200)
                 tx.rollback();
@@ -59,18 +59,12 @@ public class TxTimeoutTest extends GridCommonAbstractTest {
         }, EVT_TX_STARTED);
 
         try (Transaction tx = ignite.transactions().txStart(
-            TransactionConcurrency.OPTIMISTIC,
-            TransactionIsolation.REPEATABLE_READ,
-            200,
-            2)) {
+            TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 200, 2)) {
             tx.commit();
         }
 
         try (Transaction tx = ignite.transactions().txStart(
-            TransactionConcurrency.OPTIMISTIC,
-            TransactionIsolation.REPEATABLE_READ,
-            100,
-            2)) {
+            TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
             tx.commit();
 
             fail("Should fail prior this line.");
@@ -80,6 +74,96 @@ public class TxTimeoutTest extends GridCommonAbstractTest {
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
+            tx.commit();
+
+            fail("Should fail prior this line.");
+        }
+        catch (TransactionRollbackException ignored) {
+            // No-op.
+        }
+    }
+
+    /**
+     *
+     */
+    public void testLabelFilledLocalGuarantee() throws Exception {
+        Ignite ignite = startGrid(0);
+
+        final IgniteEvents evts = ignite.events();
+
+        evts.enableLocal(EVTS_TX);
+
+        evts.localListen((IgnitePredicate<Event>)e -> {
+            assert e instanceof TransactionStateChangedEvent;
+
+            TransactionStateChangedEvent evt = (TransactionStateChangedEvent)e;
+
+            Transaction tx = evt.tx();
+
+            if (tx.label() == null)
+                tx.rollback();
+
+            return true;
+        }, EVT_TX_STARTED);
+
+        try (Transaction tx = ignite.transactions().withLabel("test").txStart()) {
+            tx.commit();
+        }
+
+        try (Transaction tx = ignite.transactions().txStart()) {
+            tx.commit();
+
+            fail("Should fail prior this line.");
+        }
+        catch (TransactionRollbackException ignored) {
+            // No-op.
+        }
+    }
+
+    /**
+     *
+     */
+    public void testLabelFilledRemoteGuarantee() throws Exception {
+        Ignite ignite = startGrid(0);
+        Ignite remote = startGrid(1);
+
+        final IgniteEvents evts = ignite.events();
+
+        evts.enableLocal(EVTS_TX);
+
+        evts.remoteListen(null,
+            (IgnitePredicate<Event>)e -> {
+                assert e instanceof TransactionStateChangedEvent;
+
+                TransactionStateChangedEvent evt = (TransactionStateChangedEvent)e;
+
+                Transaction tx = evt.tx();
+
+                if (tx.label() == null)
+                    tx.rollback();
+
+                return true;
+            },
+            EVT_TX_STARTED);
+
+        try (Transaction tx = ignite.transactions().withLabel("test").txStart()) {
+            tx.commit();
+        }
+
+        try (Transaction tx = remote.transactions().withLabel("test").txStart()) {
+            tx.commit();
+        }
+
+        try (Transaction tx = ignite.transactions().txStart()) {
+            tx.commit();
+
+            fail("Should fail prior this line.");
+        }
+        catch (TransactionRollbackException ignored) {
+            // No-op.
+        }
+
+        try (Transaction tx = remote.transactions().txStart()) {
             tx.commit();
 
             fail("Should fail prior this line.");
@@ -102,11 +186,11 @@ public class TxTimeoutTest extends GridCommonAbstractTest {
 
         evts.remoteListen(null,
             (IgnitePredicate<Event>)e -> {
-                assert e instanceof TransactionStartedEvent;
+                assert e instanceof TransactionStateChangedEvent;
 
-                TransactionStartedEvent evt = (TransactionStartedEvent)e;
+                TransactionStateChangedEvent evt = (TransactionStateChangedEvent)e;
 
-                Transaction tx = evt.tx().tx();
+                Transaction tx = evt.tx();
 
                 if (tx.timeout() == 0)
                     tx.rollback();
@@ -116,18 +200,12 @@ public class TxTimeoutTest extends GridCommonAbstractTest {
             EVT_TX_STARTED);
 
         try (Transaction tx = ignite.transactions().txStart(
-            TransactionConcurrency.OPTIMISTIC,
-            TransactionIsolation.REPEATABLE_READ,
-            100,
-            2)) {
+            TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
             tx.commit();
         }
 
         try (Transaction tx = remote.transactions().txStart(
-            TransactionConcurrency.OPTIMISTIC,
-            TransactionIsolation.REPEATABLE_READ,
-            100,
-            2)) {
+            TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
             tx.commit();
         }
 

@@ -43,8 +43,10 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.TransactionStateChangedEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
+import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -65,8 +67,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVer
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -80,7 +82,9 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -88,6 +92,10 @@ import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_TX_COMMITTED;
+import static org.apache.ignite.events.EventType.EVT_TX_RESUMED;
+import static org.apache.ignite.events.EventType.EVT_TX_ROLLED_BACK;
+import static org.apache.ignite.events.EventType.EVT_TX_SUSPENDED;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.CREATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
@@ -1008,6 +1016,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     protected final boolean state(TransactionState state, boolean timedOut) {
         boolean valid = false;
 
+        int evtType = -1;
+
         TransactionState prev;
 
         boolean notify = false;
@@ -1020,6 +1030,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             switch (state) {
                 case ACTIVE: {
                     valid = prev == SUSPENDED;
+
+                    evtType = EVT_TX_RESUMED;
 
                     break;
                 }
@@ -1054,6 +1066,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                     valid = prev == COMMITTING;
 
+                    evtType = EVT_TX_COMMITTED;
+
                     break;
                 }
 
@@ -1062,6 +1076,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                         notify = true;
 
                     valid = prev == ROLLING_BACK;
+
+                    evtType = EVT_TX_ROLLED_BACK;
 
                     break;
                 }
@@ -1082,6 +1098,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 case SUSPENDED: {
                     valid = prev == ACTIVE;
 
+                    evtType = EVT_TX_SUSPENDED;
+
                     break;
                 }
             }
@@ -1094,6 +1112,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                 if (log.isDebugEnabled())
                     log.debug("Changed transaction state [prev=" + prev + ", new=" + this.state + ", tx=" + this + ']');
+
+                if (evtType != -1)
+                    recordStateChangedEvent(evtType);
 
                 notifyAll();
             }
@@ -1160,6 +1181,17 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         return valid;
     }
 
+    /**
+     * @param type Event type.
+     */
+    public void recordStateChangedEvent(int type){
+        GridEventStorageManager evt = cctx.gridEvents();
+
+        if (!system() /* ignoring system tx */ && evt.isRecordable(type))
+            evt.record(new TransactionStateChangedEvent(
+                cctx.discovery().localNode(), null, type, proxy()));
+    }
+
     /** {@inheritDoc} */
     @Override public void endVersion(GridCacheVersion endVer) {
         this.endVer = endVer;
@@ -1201,6 +1233,13 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** {@inheritDoc} */
     @Override public final void systemInvalidate(boolean sysInvalidate) {
         this.sysInvalidate = sysInvalidate;
+    }
+
+    /**
+     * @return Public API proxy.
+     */
+    public TransactionProxy proxy() {
+        return new DefaultTransactionProxyImpl(this);
     }
 
     /** {@inheritDoc} */
@@ -2410,6 +2449,141 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             long duration = ct - tx.startTime();
 
             return S.toString(TxFinishFuture.class, this, "duration", duration);
+        }
+    }
+
+    /**
+     * Default proxy.
+     */
+    private static class DefaultTransactionProxyImpl implements TransactionProxy{
+        /** Tx. */
+        private IgniteTxAdapter tx;
+
+        /**
+         * @param tx Tx.
+         */
+        public DefaultTransactionProxyImpl(IgniteTxAdapter tx) {
+            this.tx = tx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteUuid xid() {
+            return tx.xid();
+        }
+
+        /** {@inheritDoc} */
+        @Override public UUID nodeId() {
+            return tx.nodeId();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long threadId() {
+            return tx.threadId();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long startTime() {
+            return tx.startTime();
+        }
+
+        /** {@inheritDoc} */
+        @Override public TransactionIsolation isolation() {
+            return tx.isolation();
+        }
+
+        /** {@inheritDoc} */
+        @Override public TransactionConcurrency concurrency() {
+            return tx.concurrency();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean implicit() {
+            return tx.implicit();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isInvalidate() {
+            return tx.isInvalidate();
+        }
+
+        /** {@inheritDoc} */
+        @Override public TransactionState state() {
+            return tx.state();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long timeout() {
+            return tx.timeout();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long timeout(long timeout) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean setRollbackOnly() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isRollbackOnly() {
+            return tx.isRollbackOnly();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void commit() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteFuture<Void> commitAsync() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void rollback() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteFuture<Void> rollbackAsync() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resume() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void suspend() throws IgniteException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String label() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteAsyncSupport withAsync() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isAsync() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <R> IgniteFuture<R> future() {
+            throw new UnsupportedOperationException();
         }
     }
 }
