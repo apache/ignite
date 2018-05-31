@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
@@ -292,7 +293,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         info(">>> Done puts...");
 
-        startGridsMultiThreaded(2, 2);
+        startGrid(2);
+        startGrid(3);
 
         awaitPartitionMapExchange();
 
@@ -316,9 +318,10 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         final int entriesCnt = 10_000;
         final int maxNodesCnt = 4;
-        final int topChanges = 30;
+        final int topChanges = 50;
 
         final AtomicBoolean stop = new AtomicBoolean();
+        final AtomicBoolean suspend = new AtomicBoolean();
 
         final ConcurrentMap<Integer, TestValue> map = new ConcurrentHashMap<>();
 
@@ -340,6 +343,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 while (true) {
                     if (stop.get())
                         return null;
+
+                    if (suspend.get()) {
+                        U.sleep(10);
+
+                        continue;
+                    }
 
                     int k = ThreadLocalRandom.current().nextInt(entriesCnt);
                     int v1 = ThreadLocalRandom.current().nextInt();
@@ -391,6 +400,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
             }
         }, 1, "load-runner");
 
+        boolean[] changes = new boolean[] {false, false, true, true};
+
         try {
             for (int it = 0; it < topChanges; it++) {
                 if (U.currentTimeMillis() > timeOut)
@@ -400,7 +411,9 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
                 boolean add;
 
-                if (nodesCnt.get() <= maxNodesCnt / 2)
+                if (it < changes.length)
+                    add = changes[it];
+                else if (nodesCnt.get() <= maxNodesCnt / 2)
                     add = true;
                 else if (nodesCnt.get() >= maxNodesCnt)
                     add = false;
@@ -413,6 +426,15 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                     stopGrid(nodesCnt.decrementAndGet());
 
                 awaitPartitionMapExchange();
+
+                suspend.set(true);
+
+                U.sleep(200);
+
+                for (Map.Entry<Integer, TestValue> entry : map.entrySet())
+                    assertEquals(it + " " + Integer.toString(entry.getKey()), entry.getValue(), cache.get(entry.getKey()));
+
+                suspend.set(false);
             }
         }
         finally {

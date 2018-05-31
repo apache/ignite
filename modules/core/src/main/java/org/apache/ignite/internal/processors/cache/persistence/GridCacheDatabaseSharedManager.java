@@ -235,8 +235,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Prefix for meta store records which means that WAL was disabled locally for some group. */
     private static final String WAL_LOCAL_KEY_PREFIX = WAL_KEY_PREFIX + "local-disabled-";
 
-    /** Prefix for meta store records which means that WAL was disabled after some checkpoint has done. */
-    private static final String WAL_DISABLED_PREFIX = WAL_KEY_PREFIX + "cp-disabled-";
+    /** Prefix for meta store records which means that checkpoint entry for some group is not applicable for WAL rebalance. */
+    private static final String CHECKPOINT_INAPPLICABLE_FOR_REBALANCE = "cp-wal-rebalance-inapplicable-";
 
     /** WAL marker predicate for meta store. */
     private static final IgnitePredicate<String> WAL_KEY_PREFIX_PRED = new IgnitePredicate<String>() {
@@ -1628,6 +1628,25 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
 
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            if (grp.cacheOrGroupName().equals("indexed") || grp.cacheOrGroupName().equals("cache")) {
+                Map<Integer, Long> availableCounters = grpPartsWithCnts.get(grp.groupId());
+
+                if (availableCounters == null || availableCounters.isEmpty()) {
+                    log.error("No update counters " + cctx.localNodeId());
+                }
+                else {
+                    SB sb = new SB();
+
+                    for (Map.Entry<Integer, Long> e : availableCounters.entrySet()) {
+                        sb.a(e.getKey() + " = " + e.getValue() + "; ");
+                    }
+
+                    log.error("Update counters: [" + sb.toString() + "]");
+                }
+            }
+        }
+
         return grpPartsWithCnts;
     }
 
@@ -1814,19 +1833,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         File dir = cpDir;
 
         if (!dir.exists()) {
-            // TODO: remove excessive logging after GG-12116 fix.
-            File[] files = dir.listFiles();
-
-            if (files != null && files.length > 0) {
-                log.warning("Read checkpoint status: cpDir.exists() is false, cpDir.listFiles() is: " +
-                    Arrays.toString(files));
-            }
-
-            if (Files.exists(dir.toPath()))
-                log.warning("Read checkpoint status: cpDir.exists() is false, Files.exists(cpDir) is true.");
-
-            if (log.isInfoEnabled())
-                log.info("Read checkpoint status: checkpoint directory is not found.");
+            log.warning("Read checkpoint status: checkpoint directory is not found.");
 
             return new CheckpointStatus(0, startId, startPtr, endId, endPtr);
         }
@@ -3442,7 +3449,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     ArrayList<GridDhtLocalPartition> parts = new ArrayList<>();
 
                     for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
-                        parts.add(part);
+                        if (part.state() == GridDhtPartitionState.OWNING)
+                            parts.add(part);
 
                     CacheState state = new CacheState(parts.size());
 
@@ -4229,10 +4237,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             else {
                 metaStorage.write(key, true);
 
-                CheckpointEntry lastCp = cpHistory.lastCheckpoint();
-                Long lastCpTs = lastCp != null ? lastCp.timestamp() : null;
-
-                metaStorage.write(walDisabledAfterCpAndGroupIdToKey(lastCpTs, grpId), true);
+                lastCheckpointInapplicableForWalRebalance(grpId);
             }
         }
         catch (IgniteCheckedException e) {
@@ -4245,15 +4250,38 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Checks that after checkpoint with timestamp {@code cpTs} WAL was disabled for given group {@code grpId}.
+     * Checks that checkpoint with timestamp {@code cpTs} is inapplicable as start point for WAL rebalance for given group {@code grpId}.
      *
      * @param cpTs Checkpoint timestamp.
      * @param grpId Group ID.
-     * @return {@code true} if WAL was disabled after checkpoint with timestamp {@code cpTs}.
+     * @return {@code true} if checkpoint {@code cpTs} is inapplicable as start point for WAL rebalance for {@code grpId}.
      * @throws IgniteCheckedException If failed to check.
      */
-    public boolean walWasDisabledAfterCp(Long cpTs, int grpId) throws IgniteCheckedException {
-        return metaStorage.read(walDisabledAfterCpAndGroupIdToKey(cpTs, grpId)) != null;
+    public boolean isCheckpointInapplicableForWalRebalance(Long cpTs, int grpId) throws IgniteCheckedException {
+        return metaStorage.read(checkpointInapplicableCpAndGroupIdToKey(cpTs, grpId)) != null;
+    }
+
+    /**
+     * Set last checkpoint as inapplicable for WAL rebalance for given group {@code grpId}.
+     *
+     * @param grpId Group ID.
+     */
+    public void lastCheckpointInapplicableForWalRebalance(int grpId) {
+        checkpointReadLock();
+
+        try {
+            CheckpointEntry lastCp = cpHistory.lastCheckpoint();
+            Long lastCpTs = lastCp != null ? lastCp.timestamp() : null;
+
+            if (lastCpTs != null)
+                metaStorage.write(checkpointInapplicableCpAndGroupIdToKey(lastCpTs, grpId), true);
+        }
+        catch (IgniteCheckedException e) {
+            log.error("Failed to mark last checkpoint as inapplicable for WAL rebalance for group: " + grpId, e);
+        }
+        finally {
+            checkpointReadUnlock();
+        }
     }
 
     /**
@@ -4300,14 +4328,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Convert checkpoint timestamp and cache group ID to WAL state key.
+     * Convert checkpoint timestamp and cache group ID to key for {@link #CHECKPOINT_INAPPLICABLE_FOR_REBALANCE} metastorage records.
      *
      * @param cpTs Checkpoint timestamp.
      * @param grpId Group ID.
      * @return Key.
      */
-    private static String walDisabledAfterCpAndGroupIdToKey(Long cpTs, int grpId) {
-        return WAL_DISABLED_PREFIX + (cpTs != null ? cpTs : "none") + "-" + grpId;
+    private static String checkpointInapplicableCpAndGroupIdToKey(long cpTs, int grpId) {
+        return CHECKPOINT_INAPPLICABLE_FOR_REBALANCE + cpTs + "-" + grpId;
     }
 
     /**

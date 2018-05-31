@@ -15,6 +15,7 @@ import org.apache.ignite.internal.pagemem.wal.record.CacheState;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -262,16 +263,21 @@ public class CheckpointEntry {
             for (Integer grpId : stateRec.keySet()) {
                 CacheState recState = stateRec.get(grpId);
 
-                GroupState groupState = new GroupState(recState.size());
+                GroupState grpState = new GroupState(recState.size());
 
                 for (int i = 0; i < recState.size(); i++) {
-                    groupState.addPartitionCounter(
+                    byte partState = recState.stateByIndex(i);
+
+                    if (GridDhtPartitionState.fromOrdinal(partState) != GridDhtPartitionState.OWNING)
+                        continue;
+
+                    grpState.addPartitionCounter(
                         recState.partitionByIndex(i),
                         recState.partitionCounterByIndex(i)
                     );
                 }
 
-                grpStates.put(grpId, groupState);
+                grpStates.put(grpId, grpState);
             }
 
             return grpStates;

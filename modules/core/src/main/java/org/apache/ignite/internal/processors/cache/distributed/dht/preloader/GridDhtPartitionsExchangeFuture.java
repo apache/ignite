@@ -2404,7 +2404,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 Long localCntr = localReserved.get(p);
 
                 if (localCntr != null && localCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
-                    partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, minCntr);
+                    partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localCntr);
+
+                    log.warning("Added: " + cctx.localNodeId() + " " + p + " " + localCntr);
 
                     haveHistory.add(p);
 
@@ -2416,7 +2418,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 Long histCntr = e0.getValue().partitionHistoryCounters(top.groupId()).get(p);
 
                 if (histCntr != null && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
-                    partHistSuppliers.put(e0.getKey(), top.groupId(), p, minCntr);
+                    partHistSuppliers.put(e0.getKey(), top.groupId(), p, histCntr);
+
+                    log.warning("Added: " + e0.getKey() + " " + p + " " + histCntr);
 
                     haveHistory.add(p);
 

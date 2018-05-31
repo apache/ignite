@@ -1010,7 +1010,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             long from = partMap.initialUpdateCounterAt(idx);
                             long to = partMap.updateCounterAt(idx);
 
-                            if (entry.partitionCounter() >= from && entry.partitionCounter() <= to) {
+                            if (entry.partitionCounter() > from && entry.partitionCounter() <= to) {
                                 if (entry.partitionCounter() == to)
                                     reachedPartitionEnd = true;
 
@@ -1046,7 +1046,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      * Data entry row.
      */
-    private static class DataEntryRow implements CacheDataRow {
+    public static class DataEntryRow implements CacheDataRow {
         /** */
         private final DataEntry entry;
 
@@ -1105,6 +1105,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public int cacheId() {
             return entry.cacheId();
+        }
+
+        public DataEntry entry() {
+            return entry;
         }
     }
 

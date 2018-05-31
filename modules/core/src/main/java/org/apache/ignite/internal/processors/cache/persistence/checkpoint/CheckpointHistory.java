@@ -342,7 +342,7 @@ public class CheckpointHistory {
     private boolean isCheckpointApplicableForGroup(int grpId, CheckpointEntry cp) throws IgniteCheckedException {
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager) cctx.database();
 
-        if (dbMgr.walWasDisabledAfterCp(cp.timestamp(), grpId))
+        if (dbMgr.isCheckpointInapplicableForWalRebalance(cp.timestamp(), grpId))
             return false;
 
         if (!cp.groupState(cctx).containsKey(grpId))
