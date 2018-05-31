@@ -2329,6 +2329,26 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
     }
 
+    private void assignPartitionSizes(GridDhtPartitionTopology top) {
+        Map<Integer, Long> partSizes = new HashMap<>();
+
+        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
+            GridDhtPartitionsSingleMessage singleMsg = e.getValue();
+
+            GridDhtPartitionMap partMap = singleMsg.partitions().get(top.groupId());
+
+            for (Map.Entry<Integer, GridDhtPartitionState> e0 : partMap.entrySet()) {
+                int p = e0.getKey();
+                GridDhtPartitionState state = e0.getValue();
+
+                if (state == GridDhtPartitionState.OWNING)
+                    partSizes.put(p, singleMsg.partitionSizes(top.groupId()).get(p));
+            }
+        }
+
+        top.globalPartSizes(partSizes);
+    }
+
     /**
      * Collects and determines new owners of partitions for all nodes for given {@code top}.
      *
@@ -2878,16 +2898,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (grpDesc.config().getCacheMode() == CacheMode.LOCAL)
                 continue;
 
-//            if (!CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()))
-//                continue;
-
             CacheGroupContext grpCtx = cctx.cache().cacheGroup(e.getKey());
 
             GridDhtPartitionTopology top = grpCtx != null ?
                 grpCtx.topology() :
                 cctx.exchange().clientTopology(e.getKey(), events().discoveryCache());
 
-            assignPartitionStates(top);
+            if (!CU.isPersistentCache(grpDesc.config(), cctx.gridConfig().getDataStorageConfiguration()))
+                assignPartitionSizes(top);
+            else
+                assignPartitionStates(top);
         }
     }
 
