@@ -298,13 +298,14 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         parts.addAll(aff.primaryPartitions(ctx.localNodeId()));
         parts.addAll(aff.backupPartitions(ctx.localNodeId()));
 
-        boolean affChanged = false;
+        boolean affNotChanged = false;
 
         if (!affParts.isEmpty())
-            affChanged = !affParts.equals(parts);
+            affNotChanged = affParts.equals(parts);
 
-        assert aff.clientEventChange() == affChanged : "Affinity clientEventChange working not as excepted. [clientEventChanged=" +
-            aff.clientEventChange() + ", parts=" + parts + ", affParts=" + affParts + "]";
+        assert !aff.clientEventChange() || aff.clientEventChange() == affNotChanged :
+            "Affinity clientEventChange working not as excepted. [clientEventChanged=" + aff.clientEventChange() +
+                ", affNotChanged=" + affNotChanged + "]";
 
         affParts = parts;
 
