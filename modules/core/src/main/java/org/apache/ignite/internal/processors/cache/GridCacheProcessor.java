@@ -179,6 +179,7 @@ import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isPersistentCache;
 
 /**
  * Cache processor.
@@ -748,9 +749,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheData.sql(sql);
 
-        boolean template = cacheName.endsWith("*");
-
-        if (!template) {
+        if (GridCacheUtils.isCacheTemplateName(cacheName))
+            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
+        else {
             if (caches.containsKey(cacheName)) {
                 throw new IgniteCheckedException("Duplicate cache name found (check configuration and " +
                     "assign unique name to each cache): " + cacheName);
@@ -763,8 +764,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             addStoredCache(caches, cacheData, cacheName, cacheType, true);
         }
-        else
-            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
     }
 
     /**
@@ -2797,7 +2796,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             if (cfg.getName() != null) {
-                if (cfg.getName().endsWith("*")) {
+                if (GridCacheUtils.isCacheTemplateName(cfg.getName())) {
                     if (cfg.getName().length() > 1) {
                         if (wildcardNameCfgs == null)
                             wildcardNameCfgs = new ArrayList<>();
@@ -3294,8 +3293,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert desc != null;
 
         if (sharedCtx.pageStore() != null && !sharedCtx.kernalContext().clientNode() &&
-            CU.isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration()))
+            isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration()))
             sharedCtx.pageStore().storeCacheData(desc.toStoredData(), true);
+    }
+
+    /**
+     * Remove all persistent files for all registered caches.
+     */
+    public void cleanupCachesDirectories() throws IgniteCheckedException {
+        if (sharedCtx.pageStore() == null || sharedCtx.kernalContext().clientNode())
+            return;
+
+        for (DynamicCacheDescriptor desc : cacheDescriptors().values()) {
+            if (isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration()))
+                sharedCtx.pageStore().cleanupPersistentSpace(desc.cacheConfiguration());
+        }
     }
 
     /**
