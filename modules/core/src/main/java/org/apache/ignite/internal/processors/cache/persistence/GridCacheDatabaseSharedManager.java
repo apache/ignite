@@ -3239,6 +3239,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             return;
                         }
 
+                        updateHeartbeat();
+
                         // Must re-check shutdown flag here because threads may have skipped some pages.
                         // If so, we should not put finish checkpoint mark.
                         if (shutdownNow) {
@@ -3258,6 +3260,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 }
 
                                 updStoreEntry.getKey().sync();
+
+                                updateHeartbeat();
 
                                 syncedPagesCntr.addAndGet(updStoreEntry.getValue().intValue());
                             }
