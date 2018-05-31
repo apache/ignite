@@ -1184,12 +1184,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @param type Event type.
      */
-    public void recordStateChangedEvent(int type){
+    protected void recordStateChangedEvent(int type){
         GridEventStorageManager evt = cctx.gridEvents();
 
         if (!system() /* ignoring system tx */ && evt.isRecordable(type))
-            evt.record(new TransactionStateChangedEvent(
-                cctx.discovery().localNode(), null, type, proxy()));
+            evt.record(new TransactionStateChangedEvent(cctx.discovery().localNode(), null, type, proxy()));
     }
 
     /** {@inheritDoc} */

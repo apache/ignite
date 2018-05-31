@@ -783,7 +783,7 @@ public interface EventType {
     /**
      * Built-in event type: Transaction has been started.
      * <p>
-     * Fired for each started transactions except system transactions.
+     * Fired for each started transaction except system transactions.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -795,7 +795,7 @@ public interface EventType {
     /**
      * Built-in event type: Transaction has been committed.
      * <p>
-     * Fired for each committed transactions except system transactions.
+     * Fired for each committed transaction except system transactions.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -807,7 +807,7 @@ public interface EventType {
     /**
      * Built-in event type: Transaction has been rolled back.
      * <p>
-     * Fired for each rolled back transactions except system transactions.
+     * Fired for each rolled back transaction except system transactions.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -819,7 +819,7 @@ public interface EventType {
     /**
      * Built-in event type: Transaction has been suspended.
      * <p>
-     * Fired for each started suspended except system transactions.
+     * Fired for each suspended transaction except system transactions.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.
@@ -831,7 +831,7 @@ public interface EventType {
     /**
      * Built-in event type: Transaction has been resumed.
      * <p>
-     * Fired for each resumed transactions except system transactions.
+     * Fired for each resumed transaction except system transactions.
      * <p>
      * NOTE: all types in range <b>from 1 to 1000 are reserved</b> for
      * internal Ignite events and should not be used by user-defined events.

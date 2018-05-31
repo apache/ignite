@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.TransactionStateChangedEvent;
@@ -32,7 +33,7 @@ import static org.apache.ignite.events.EventType.EVTS_TX;
 import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
 
 /**
- * Tests transaction timeout.
+ * Tests transaction rollback on incorrect tx params.
  */
 public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
     /**
@@ -58,13 +59,19 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
             return true;
         }, EVT_TX_STARTED);
 
+        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
         try (Transaction tx = ignite.transactions().txStart(
             TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 200, 2)) {
+            cache.put(1,1);
+
             tx.commit();
         }
 
         try (Transaction tx = ignite.transactions().txStart(
             TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
+            cache.put(1,2);
+
             tx.commit();
 
             fail("Should fail prior this line.");
@@ -74,6 +81,8 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
+            cache.put(1,3);
+
             tx.commit();
 
             fail("Should fail prior this line.");
@@ -106,11 +115,17 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
             return true;
         }, EVT_TX_STARTED);
 
+        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
         try (Transaction tx = ignite.transactions().withLabel("test").txStart()) {
+            cache.put(1,1);
+
             tx.commit();
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
+            cache.put(1,2);
+
             tx.commit();
 
             fail("Should fail prior this line.");
@@ -146,15 +161,23 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
             },
             EVT_TX_STARTED);
 
+        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
         try (Transaction tx = ignite.transactions().withLabel("test").txStart()) {
+            cache.put(1,1);
+
             tx.commit();
         }
 
         try (Transaction tx = remote.transactions().withLabel("test").txStart()) {
+            cache.put(1,2);
+
             tx.commit();
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
+            cache.put(1,3);
+
             tx.commit();
 
             fail("Should fail prior this line.");
@@ -164,6 +187,8 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         }
 
         try (Transaction tx = remote.transactions().txStart()) {
+            cache.put(1,4);
+
             tx.commit();
 
             fail("Should fail prior this line.");
@@ -199,17 +224,25 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
             },
             EVT_TX_STARTED);
 
+        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
         try (Transaction tx = ignite.transactions().txStart(
             TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
+            cache.put(1,1);
+
             tx.commit();
         }
 
         try (Transaction tx = remote.transactions().txStart(
             TransactionConcurrency.OPTIMISTIC, TransactionIsolation.REPEATABLE_READ, 100, 2)) {
+            cache.put(1,2);
+
             tx.commit();
         }
 
         try (Transaction tx = ignite.transactions().txStart()) {
+            cache.put(1,3);
+
             tx.commit();
 
             fail("Should fail prior this line.");
@@ -219,6 +252,8 @@ public class TxRollbackOnIncorrectParamsTest extends GridCommonAbstractTest {
         }
 
         try (Transaction tx = remote.transactions().txStart()) {
+            cache.put(1,4);
+
             tx.commit();
 
             fail("Should fail prior this line.");

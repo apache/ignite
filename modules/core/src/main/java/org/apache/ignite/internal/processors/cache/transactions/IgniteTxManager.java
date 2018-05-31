@@ -534,6 +534,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         sysThreadMap.put(new TxThreadKey(tx.threadId(), cacheCtx.cacheId()), tx);
                 }
 
+                // tx.state(newState) does not cover tx start case.
                 ((GridNearTxLocal)tx).recordStateChangedEvent(EVT_TX_STARTED);
             }
 
