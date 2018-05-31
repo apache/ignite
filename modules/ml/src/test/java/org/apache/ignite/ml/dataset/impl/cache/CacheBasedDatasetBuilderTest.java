@@ -63,11 +63,7 @@ public class CacheBasedDatasetBuilderTest extends GridCommonAbstractTest {
      */
     public void testBuild() {
         IgniteCache<Integer, String> upstreamCache = createTestCache(100, 10);
-        CacheBasedDatasetBuilder<Integer, String> builder = new CacheBasedDatasetBuilder<>(
-            ignite,
-            upstreamCache,
-            (k, v) -> true
-        );
+        CacheBasedDatasetBuilder<Integer, String> builder = new CacheBasedDatasetBuilder<>(ignite, upstreamCache);
 
         CacheBasedDataset<Integer, String, Long, AutoCloseable> dataset = builder.build(
             (upstream, upstreamSize) -> upstreamSize,

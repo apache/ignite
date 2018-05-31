@@ -60,7 +60,7 @@ public class LSQROnHeapTest {
         data.put(1, new double[]{2, -2, 4, -2});
         data.put(2, new double[]{-1, 0.5, -1, 0});
 
-        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, (k, v) -> true, parts);
+        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
@@ -83,7 +83,7 @@ public class LSQROnHeapTest {
         data.put(1, new double[]{2, -2, 4, -2});
         data.put(2, new double[]{-1, 0.5, -1, 0});
 
-        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, (k, v) -> true, parts);
+        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
         LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,
@@ -114,7 +114,7 @@ public class LSQROnHeapTest {
         data.put(8, new double[] {0.20702671, 0.92864654, 0.32721202, -0.09047503, 31.61484949});
         data.put(9, new double[] {-0.37890345, -0.04846179, -0.84122753, -1.14667474, -124.92598583});
 
-        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, (k, v) -> true, 1);
+        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, 1);
 
         try (LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
             datasetBuilder,

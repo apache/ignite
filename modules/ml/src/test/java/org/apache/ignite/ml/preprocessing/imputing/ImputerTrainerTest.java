@@ -63,7 +63,7 @@ public class ImputerTrainerTest {
         data.put(3, new double[] {Double.NaN, 10, 100});
         data.put(4, new double[] {0, 2, 100});
 
-        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, (k, v) -> true, parts);
+        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
         ImputerTrainer<Integer, double[]> imputerTrainer = new ImputerTrainer<Integer, double[]>()
             .withImputingStrategy(ImputingStrategy.MOST_FREQUENT);

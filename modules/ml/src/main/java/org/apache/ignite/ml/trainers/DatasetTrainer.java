@@ -61,7 +61,7 @@ public interface DatasetTrainer<M extends Model, L> {
     public default <K, V> M fit(Ignite ignite, IgniteCache<K, V> cache, IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
         return fit(
-            new CacheBasedDatasetBuilder<>(ignite, cache, (k, v) -> true),
+            new CacheBasedDatasetBuilder<>(ignite, cache),
             featureExtractor,
             lbExtractor
         );
@@ -81,7 +81,7 @@ public interface DatasetTrainer<M extends Model, L> {
     public default <K, V> M fit(Map<K, V> data, int parts, IgniteBiFunction<K, V, double[]> featureExtractor,
         IgniteBiFunction<K, V, L> lbExtractor) {
         return fit(
-            new LocalDatasetBuilder<>(data, (k, v) -> true, parts),
+            new LocalDatasetBuilder<>(data, parts),
             featureExtractor,
             lbExtractor
         );
