@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -84,6 +86,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** */
     private boolean stopped;
+
+    /** */
+    private volatile Set<Integer> affParts = new HashSet<>();
 
     /**
      * @param grp Cache group.
@@ -287,6 +292,18 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 }
             }
         }
+
+        Set<Integer> parts = new HashSet<>();
+
+        parts.addAll(aff.primaryPartitions(ctx.localNodeId()));
+        parts.addAll(aff.backupPartitions(ctx.localNodeId()));
+
+        boolean affChanged = affParts.equals(parts);
+
+        affParts = parts;
+
+        assert aff.clientEventChange() == affChanged : "Affinity clientEventChange working not as excepted. [clientEventChanged=" +
+            aff.clientEventChange() + ", affChanged=" + affChanged + "]";
 
         return assignments;
     }
