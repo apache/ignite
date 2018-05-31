@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.locks.LockSupport;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -40,6 +39,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
@@ -169,8 +169,9 @@ public class ComputeUtils {
             long cnt = computeCount(upstreamCache, qry);
 
             if (cnt > 0) {
-                try (QueryCursor<Cache.Entry<K, V>> cursor = upstreamCache.query(qry)) {
-                    return partDataBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator()), cnt, ctx);
+                try (QueryCursor<UpstreamEntry<K, V>> cursor = upstreamCache.query(qry,
+                    e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
+                    return partDataBuilder.build(cursor.iterator(), cnt, ctx);
                 }
             }
 
@@ -206,8 +207,9 @@ public class ComputeUtils {
             long cnt = computeCount(locUpstreamCache, qry);
 
             C ctx;
-            try (QueryCursor<Cache.Entry<K, V>> cursor = locUpstreamCache.query(qry)) {
-                ctx = ctxBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator()), cnt);
+            try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,
+                e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
+                ctx = ctxBuilder.build(cursor.iterator(), cnt);
             }
 
             IgniteCache<Integer, C> datasetCache = locIgnite.cache(datasetCacheName);
@@ -265,8 +267,9 @@ public class ComputeUtils {
     }
 
     private static  <K, V> long computeCount(IgniteCache<K, V> cache, ScanQuery<K, V> qry) {
-        try (QueryCursor<Cache.Entry<K, V>> cursor = cache.query(qry)) {
-            return computeCount(new UpstreamCursorAdapter<>(cursor.iterator()));
+        try (QueryCursor<UpstreamEntry<K, V>> cursor = cache.query(qry,
+            e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
+            return computeCount(cursor.iterator());
         }
     }
 
