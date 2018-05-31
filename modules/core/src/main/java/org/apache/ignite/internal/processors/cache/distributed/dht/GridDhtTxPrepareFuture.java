@@ -512,7 +512,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 assert false : "Got entry removed exception while holding transactional lock on entry [e=" + e + ", cached=" + cached + ']';
             }
             finally {
-                cacheCtx.group().checkpointReadLocker().checkpointReadLock();
+                cacheCtx.group().checkpointReadLocker().checkpointReadUnlock();
             }
         }
     }
@@ -1861,7 +1861,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                                     "will retry): " + entry);
                         }
                         finally {
-                            cacheCtx.group().checkpointReadLocker().checkpointReadLock();
+                            cacheCtx.group().checkpointReadLocker().checkpointReadUnlock();
                         }
                     }
                 }

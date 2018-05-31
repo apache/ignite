@@ -161,7 +161,6 @@ public class CacheGroupContext {
     /** */
     private CheckpointReadLocker checkpointReadLocker;
 
-
     /**
      * @param grpId Group ID.
      * @param ctx Context.
@@ -1062,7 +1061,7 @@ public class CacheGroupContext {
     }
 
     /**
-     * @return Checkpoint read locker for atomic operation.
+     * @return Reference to checkpoint read locker.
      */
     public CheckpointReadLocker checkpointReadLocker() {
         return checkpointReadLocker;

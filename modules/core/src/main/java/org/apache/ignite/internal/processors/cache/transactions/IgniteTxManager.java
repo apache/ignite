@@ -1701,7 +1701,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                     throw new IgniteCheckedException("Entry lock has been cancelled for transaction: " + tx);
                 }
                 finally {
-                    cacheCtx.group().checkpointReadLocker().checkpointReadLock();
+                    cacheCtx.group().checkpointReadLocker().checkpointReadUnlock();
                 }
             }
         }
