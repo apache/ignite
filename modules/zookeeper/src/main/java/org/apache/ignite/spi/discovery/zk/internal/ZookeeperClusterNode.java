@@ -169,11 +169,6 @@ public class ZookeeperClusterNode implements IgniteClusterNode, Externalizable, 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isCacheClient() {
-        return isClient();
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public <T> T attribute(String name) {
         // Even though discovery SPI removes this attribute after authentication, keep this check for safety.
         if (IgniteNodeAttributes.ATTR_SECURITY_CREDENTIALS.equals(name))

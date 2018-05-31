@@ -141,30 +141,26 @@ public class Ignition {
     }
 
     /**
-     * Sets client mode static flag.
+     * Sets client mode thread-local flag.
      * <p>
      * This flag used when node is started if {@link IgniteConfiguration#isClientMode()}
      * is {@code null}. When {@link IgniteConfiguration#isClientMode()} is set this flag is ignored.
-     * It is recommended to use {@link DiscoverySpi} in client mode too.
      *
      * @param clientMode Client mode flag.
      * @see IgniteConfiguration#isClientMode()
-     * @see TcpDiscoverySpi#setForceServerMode(boolean)
      */
     public static void setClientMode(boolean clientMode) {
         IgnitionEx.setClientMode(clientMode);
     }
 
     /**
-     * Gets client mode static flag.
+     * Gets client mode thread-local flag.
      * <p>
      * This flag used when node is started if {@link IgniteConfiguration#isClientMode()}
      * is {@code null}. When {@link IgniteConfiguration#isClientMode()} is set this flag is ignored.
-     * It is recommended to use {@link DiscoverySpi} in client mode too.
      *
      * @return Client mode flag.
      * @see IgniteConfiguration#isClientMode()
-     * @see TcpDiscoverySpi#setForceServerMode(boolean)
      */
     public static boolean isClientMode() {
         return IgnitionEx.isClientMode();
