@@ -121,11 +121,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         startGrids(3);
 
-        Ignite g4 = grid(2);
+        Ignite g2 = grid(2);
 
-        IgniteDataStreamer<Object, Object> dataLdr = g4.dataStreamer(DEFAULT_CACHE_NAME);
-
-        dataLdr.perNodeBufferSize(32);
+        IgniteDataStreamer<Object, Object> dataLdr = g2.dataStreamer(DEFAULT_CACHE_NAME);
 
         List<IgniteFuture> futures = new ArrayList<>(501);
 
@@ -138,12 +136,11 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
         catch (CacheException ignored) {
             failed = true;
         }
-        finally {
-            assertTrue(failed);
+        
+        assertTrue(failed);
 
-            for (IgniteFuture fut : futures)
-                assertTrue(fut.isDone());
-        }
+        for (IgniteFuture fut : futures)
+            assertTrue(fut.isDone());
     }
 
     /**
