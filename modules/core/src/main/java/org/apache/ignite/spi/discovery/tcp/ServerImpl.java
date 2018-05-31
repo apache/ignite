@@ -7039,7 +7039,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * @return Previous node or {@code null} if no previous nodes left or incorrect state.
+         * @return {@code False} if no previous nodes left or incorrect state.
          */
         boolean previousNode() {
             if (state == RingMessageSendState.NEW_NEXT || state == RingMessageSendState.PREVIOUS) {
