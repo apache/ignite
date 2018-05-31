@@ -22,6 +22,7 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.cache.configuration.Factory;
@@ -35,6 +36,8 @@ import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
+import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.nio.GridNioAsyncNotifyFilter;
@@ -438,9 +441,9 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /**
      * ClientProcessorMXBean interface.
      */
-    public class ClientProcessorMXBeanImpl implements ClientProcessorMXBean {
+    private class ClientProcessorMXBeanImpl implements ClientProcessorMXBean {
         /** {@inheritDoc} */
-        @Override public List<String> getActiveSessions() {
+        @Override public List<String> getActiveConnections() {
             Collection<? extends GridNioSession> sessions = srv.sessions();
 
             List<String> res = new ArrayList<>(sessions.size());
@@ -451,29 +454,80 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 if (connCtx == null || ses.closeTime() != 0)
                     continue; // Skip non-initialized or closed session.
 
-                String client = ses.remoteAddress().toString();
+                String desc = clientConnectionDescription(ses, connCtx);
 
-                res.add(client);
+                res.add(desc);
             }
 
             return res;
         }
 
         /** {@inheritDoc} */
-        @Override public void dropAllSessions() {
+        @Override public void dropAllConnections() {
             Collection<? extends GridNioSession> sessions = srv.sessions();
 
             for (GridNioSession ses : sessions) {
                 ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
 
                 if (connCtx == null || ses.closeTime() != 0)
-                    continue; // Skip non-initialized session.
-
-                if (log.isDebugEnabled())
-                    log.debug("Closing client session: " + ses.remoteAddress().toString());
+                    continue; // Skip non-initialized or closed session.
 
                 srv.close(ses);
+
+                log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean dropConnectionById(UUID id) {
+            assert id != null;
+
+            Collection<? extends GridNioSession> sessions = srv.sessions();
+
+            for (GridNioSession ses : sessions) {
+                ClientListenerConnectionContext connCtx = ses.meta(CONN_CTX_META_KEY);
+
+                if (connCtx == null || !connCtx.connectionId().equals(id))
+                    continue;
+
+                if (ses.closeTime() != 0) {
+                    if (log.isDebugEnabled())
+                        log.debug("Client session is already closed: " + clientConnectionDescription(ses, connCtx));
+
+                    return false;
+                }
+
+                srv.close(ses);
+
+                log.info("Client session has been dropped: " + clientConnectionDescription(ses, connCtx));
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /**
+         * Compose connection description string.
+         * @param ses client NIO session.
+         * @param ctx client connection context.
+         * @return connection description
+         */
+        private String clientConnectionDescription(GridNioSession ses, ClientListenerConnectionContext ctx) {
+            StringBuilder sb = new StringBuilder();
+
+            if(ctx instanceof JdbcConnectionContext)
+                sb.append("JdbcClient [");
+            else if(ctx instanceof OdbcConnectionContext)
+                sb.append("OdbcClient [");
+            else
+                sb.append("PlatformClient [");
+
+            sb.append("id="+ctx.connectionId());
+            sb.append(", rmtAddr="+ses.remoteAddress().toString());
+            sb.append(", locAddr="+ses.localAddress().toString());
+
+            return sb.append(']').toString();
         }
     }
 }

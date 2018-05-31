@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -70,6 +71,9 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
     /** Request handler. */
     private OdbcRequestHandler handler = null;
 
+    /** Connection ID. */
+    private UUID connID;
+
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
         SUPPORTED_VERS.add(VER_2_3_0);
@@ -88,6 +92,13 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
+
+        connID = UUID.randomUUID();
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID connectionId() {
+        return connID;
     }
 
     /** {@inheritDoc} */

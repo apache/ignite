@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 
@@ -24,6 +25,11 @@ import org.apache.ignite.internal.binary.BinaryReaderExImpl;
  * SQL listener connection context.
  */
 public interface ClientListenerConnectionContext {
+    /**
+     * @return Current connection id.
+     */
+    UUID connectionId();
+
     /**
      * @param ver Version to check.
      * @return {@code true} if version is supported.

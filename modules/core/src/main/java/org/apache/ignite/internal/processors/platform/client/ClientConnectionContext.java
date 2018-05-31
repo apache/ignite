@@ -73,6 +73,9 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
     /** Security context or {@code null} if security is disabled. */
     private SecurityContext secCtx = null;
 
+    /** Connection ID. */
+    private UUID connID;
+
     /**
      * Ctor.
      *
@@ -87,6 +90,8 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
         parser = new ClientMessageParser(ctx);
 
         this.maxCursors = maxCursors;
+
+        connID = UUID.randomUUID();
     }
 
     /**
@@ -105,6 +110,11 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
      */
     public GridKernalContext kernalContext() {
         return kernalCtx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID connectionId() {
+        return connID;
     }
 
     /** {@inheritDoc} */

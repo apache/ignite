@@ -249,20 +249,15 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
 
             // Find node which client is connected to.
             for (int i = 0; i < NODES_CNT; i++) {
-                ClientProcessorMXBean mxBean = clientProcessorBean(i);
+                serverMxBean = clientProcessorBean(i);
 
-                assertNotNull(mxBean);
-
-                if (!mxBean.getActiveSessions().isEmpty()) {
-                    serverMxBean = mxBean;
-
+                if (!serverMxBean.getActiveConnections().isEmpty())
                     break;
-                }
             }
 
             assertNotNull("No ClientConnections MXBean found.", serverMxBean);
 
-            serverMxBean.dropAllSessions();
+            serverMxBean.dropAllConnections();
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -320,7 +315,7 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
 
             assertNotNull(mxBean);
 
-            activeClients.addAll(mxBean.getActiveSessions());
+            activeClients.addAll(mxBean.getActiveConnections());
         }
         return activeClients;
     }

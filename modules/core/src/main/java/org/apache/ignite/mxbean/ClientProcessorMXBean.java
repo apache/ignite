@@ -18,6 +18,7 @@
 package org.apache.ignite.mxbean;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * MXBean interface that provides access to ODBC\JDBC\Thin client connections.
@@ -25,16 +26,31 @@ import java.util.List;
 @MXBeanDescription("MBean that provides access to client connections.")
 public interface ClientProcessorMXBean {
     /**
-     * Returns list of active sessions.
+     * Returns list of active connections.
      *
      * @return Sessions.
      */
-    @MXBeanDescription("List of active sessions.")
-    List<String> getActiveSessions();
+    @MXBeanDescription("List of active connections.")
+    List<String> getActiveConnections();
 
     /**
-     * Drop all active sessions.
+     * Drop all active connections.
      */
-    @MXBeanDescription("List of active sessions.")
-    void dropAllSessions();
+    @MXBeanDescription("List of active connections.")
+    void dropAllConnections();
+
+    /**
+     * Drops client connection by {@code id}, if exists.
+     *
+     * @param id connection id.
+     * @return {@code True} if connection has been dropped successfully, {@code false} otherwise.
+     */
+    @MXBeanDescription("Drop client connection by id.")
+    @MXBeanParametersNames(
+        "id"
+    )
+    @MXBeanParametersDescriptions(
+        "Client connection id."
+    )
+    public boolean dropConnectionById(UUID id);
 }
