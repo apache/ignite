@@ -164,12 +164,13 @@ public class ComputeUtils {
             ScanQuery<K, V> qry = new ScanQuery<>();
             qry.setLocal(true);
             qry.setPartition(part);
+            qry.setFilter(pred);
 
-            long cnt = computeCount(upstreamCache, pred, part);
+            long cnt = computeCount(upstreamCache, qry);
 
             if (cnt > 0) {
                 try (QueryCursor<Cache.Entry<K, V>> cursor = upstreamCache.query(qry)) {
-                    return partDataBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator(), pred), cnt, ctx);
+                    return partDataBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator()), cnt, ctx);
                 }
             }
 
@@ -200,12 +201,13 @@ public class ComputeUtils {
             ScanQuery<K, V> qry = new ScanQuery<>();
             qry.setLocal(true);
             qry.setPartition(part);
+            qry.setFilter(pred);
 
-            long cnt = computeCount(locUpstreamCache, pred, part);
+            long cnt = computeCount(locUpstreamCache, qry);
 
             C ctx;
             try (QueryCursor<Cache.Entry<K, V>> cursor = locUpstreamCache.query(qry)) {
-                ctx = ctxBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator(), pred), cnt);
+                ctx = ctxBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator()), cnt);
             }
 
             IgniteCache<Integer, C> datasetCache = locIgnite.cache(datasetCacheName);
@@ -262,13 +264,9 @@ public class ComputeUtils {
         datasetCache.put(part, ctx);
     }
 
-    private static  <K, V> long computeCount(IgniteCache<K, V> cache, IgniteBiPredicate<K, V> pred, int part) {
-        ScanQuery<K, V> qry = new ScanQuery<>();
-        qry.setLocal(true);
-        qry.setPartition(part);
-
+    private static  <K, V> long computeCount(IgniteCache<K, V> cache, ScanQuery<K, V> qry) {
         try (QueryCursor<Cache.Entry<K, V>> cursor = cache.query(qry)) {
-            return computeCount(new UpstreamCursorAdapter<>(cursor.iterator(), pred));
+            return computeCount(new UpstreamCursorAdapter<>(cursor.iterator()));
         }
     }
 
