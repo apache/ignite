@@ -1189,7 +1189,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         "PendingEntries-" + partId,
                         grp.dataRegion().pageMemory(),
                         pendingTreeRoot.pageId().pageId(),
-                        reuseList,
+                        freeList,
                         pendingTreeRoot.isAllocated()) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
