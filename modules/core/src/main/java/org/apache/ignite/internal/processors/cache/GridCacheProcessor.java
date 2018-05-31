@@ -2037,6 +2037,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             freeList,
             reuseList,
             exchTopVer,
+            desc.persistenceEnabled(),
             desc.walEnabled()
         );
 

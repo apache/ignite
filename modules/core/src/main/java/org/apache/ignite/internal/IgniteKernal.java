@@ -200,10 +200,10 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMXBean;
 import org.apache.ignite.mxbean.StripedExecutorMXBean;
-import org.apache.ignite.mxbean.WorkersControlMXBean;
 import org.apache.ignite.mxbean.ThreadPoolMXBean;
-import org.apache.ignite.mxbean.TransactionsMXBean;
 import org.apache.ignite.mxbean.TransactionMetricsMxBean;
+import org.apache.ignite.mxbean.TransactionsMXBean;
+import org.apache.ignite.mxbean.WorkersControlMXBean;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
@@ -1569,7 +1569,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         // Stick in network context into attributes.
         add(ATTR_IPS, (ips.isEmpty() ? "" : ips));
-        add(ATTR_MACS, (macs.isEmpty() ? "" : macs));
+
+        Map<String, ?> userAttrs = configuration().getUserAttributes();
+
+        if (userAttrs != null && userAttrs.get(IgniteNodeAttributes.ATTR_MACS_OVERRIDE) != null)
+            add(ATTR_MACS, (Serializable)userAttrs.get(IgniteNodeAttributes.ATTR_MACS_OVERRIDE));
+        else
+            add(ATTR_MACS, (macs.isEmpty() ? "" : macs));
 
         // Stick in some system level attributes
         add(ATTR_JIT_NAME, U.getCompilerMx() == null ? "" : U.getCompilerMx().getName());
