@@ -1558,6 +1558,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (log.isDebugEnabled())
                     log.debug("Notifying exchange future about single message: " + exchFut);
 
+                if (msg.client() && !exchFut.isDone()) {
+                    if (exchFut.initialVersion().compareTo(readyAffinityVersion()) <= 0) {
+                        U.warn(log, "Client node tries to reconnect but its exchange " +
+                            "info is cleaned up from exchange history." +
+                            " Consider increasing 'IGNITE_EXCHANGE_HISTORY_SIZE' property " +
+                            "or start clients in  smaller batches."
+                        );
+
+                        exchFut.forceClientReconnect(node, msg);
+
+                        return;
+                    }
+                }
+
                 exchFut.onReceiveSingleMessage(node, msg);
             }
         }
@@ -2651,7 +2665,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     assert cctx.discovery().reconnectSupported();
 
                     U.warn(log,"Local node failed to complete partition map exchange due to " +
-                        "network issues, will try to reconnect to cluster", e);
+                        "exception, will try to reconnect to cluster: " + e.getMessage(), e);
 
                     cctx.discovery().reconnect();
 
