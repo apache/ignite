@@ -73,7 +73,6 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 
 /**
@@ -242,10 +241,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     {
         waitInitialization();
 
-        // Non collocated mode enabled only for PARTITIONED cache.
-        final boolean colloc0 = create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
-
-        return queue0(name, cap, colloc0, create);
+        return queue0(name, cap, colloc, create);
     }
 
     /**
@@ -400,13 +396,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable public <T> IgniteSet<T> set(final String name,
         boolean colloc,
         final boolean create)
-        throws IgniteCheckedException
-    {
-        // Non collocated mode enabled only for PARTITIONED cache.
-        final boolean colloc0 =
-            create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
-
-        return set0(name, colloc0, create);
+        throws IgniteCheckedException {
+        return set0(name, colloc, create);
     }
 
     /**
