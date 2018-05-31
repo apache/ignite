@@ -190,4 +190,14 @@ public interface GridNioSession {
      * @param msg System message to send.
      */
     public void systemMessage(Object msg);
+
+    /**
+     * @return {@code True} if session compressed.
+     */
+    public boolean isCompressed();
+
+    /**
+     * @param isCompressed Flag indicating whether session compressed.
+     */
+    public void setCompressed(boolean isCompressed);
 }

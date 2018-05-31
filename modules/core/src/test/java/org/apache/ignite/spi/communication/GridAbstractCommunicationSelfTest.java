@@ -26,11 +26,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
+import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -44,7 +46,9 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_COMPRESSION_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 
 /**
@@ -76,6 +80,9 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
     /** */
     protected boolean useSsl = false;
+
+    /** */
+    @Nullable protected Factory<CompressionEngine> compressionEngineFactory = null;
 
     /**
      *
@@ -323,11 +330,18 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
             GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "igniteInstanceName", "grid-" + i);
 
-            if (useSsl) {
+            if (useSsl || compressionEngineFactory != null) {
                 IgniteMock ignite = GridTestUtils.getFieldValue(spi, IgniteSpiAdapter.class, "ignite");
 
-                IgniteConfiguration cfg = ignite.configuration()
-                    .setSslContextFactory(GridTestUtils.sslFactory());
+                IgniteConfiguration cfg = ignite.configuration();
+
+                if (useSsl)
+                    cfg.setSslContextFactory(GridTestUtils.sslFactory());
+
+                if (compressionEngineFactory != null) {
+                    cfg.setNetworkCompressionFactory(compressionEngineFactory);
+                    cfg.setCompressionEnabled(true);
+                }
 
                 ignite.setStaticCfg(cfg);
             }
@@ -336,6 +350,9 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
             node.setAttributes(spi.getNodeAttributes());
             node.setAttribute(ATTR_MACS, F.concat(U.allLocalMACs(), ", "));
+
+            if (compressionEngineFactory != null)
+                node.setAttribute(ATTR_COMPRESSION_ENABLED, true);
 
             node.order(i + 1);
 
