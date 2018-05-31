@@ -1962,6 +1962,18 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param millis Time to sleep.
+     */
+    public static void doSleep(long millis) {
+        try {
+            U.sleep(millis);
+        }
+        catch (Exception e) {
+            throw new IgniteException();
+        }
+    }
+
+    /**
      *
      */
     private static interface WriteReplaceOwner {
@@ -2261,7 +2273,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         /**
          * @param ignite Ignite.
-         * @param cache Cache.
+         * @param cache cache.
          */
         public abstract void run(Ignite ignite, IgniteCache<K, V> cache) throws Exception;
     }

@@ -75,6 +75,9 @@ public class GridNioSessionImpl implements GridNioSession {
     /** Accepted flag. */
     private final boolean accepted;
 
+    /** For debug purposes. */
+    private volatile boolean markedForClose;
+
     /**
      * @param filterChain Chain.
      * @param locAddr Local address.
@@ -153,6 +156,8 @@ public class GridNioSessionImpl implements GridNioSession {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridNioFuture<Boolean> close() {
+        markedForClose = true;
+
         try {
             return filterChain.onSessionClose(this);
         }
