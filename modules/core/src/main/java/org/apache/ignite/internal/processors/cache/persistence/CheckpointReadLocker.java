@@ -22,9 +22,13 @@ package org.apache.ignite.internal.processors.cache.persistence;
  * A persistence cache group contains thee rerefence to the real database implementation to lock checkpoint.
  * A in-memory cache group contains {@link CheckpointReadLocker#NOOP} instance.
  */
-public interface CheckpointReadLocker {
+public interface CheckpointReadLocker extends CheckpointLockStateChecker {
     /** No-op implementation of the checkpoint locker. */
     public CheckpointReadLocker NOOP = new CheckpointReadLocker() {
+        @Override public boolean checkpointLockIsHeldByThread() {
+            return true;
+        }
+
         @Override public void checkpointReadLock() {
             // No-op.
         }

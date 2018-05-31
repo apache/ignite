@@ -221,7 +221,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            assert cctx.shared().database().checkpointLockIsHeldByThread();
+            assert cctx.group().checkpointReadLocker().checkpointLockIsHeldByThread();
 
             return tree.put(row);
         }
@@ -242,7 +242,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            assert cctx.shared().database().checkpointLockIsHeldByThread();
+            assert !cctx.group().checkpointReadLocker().checkpointLockIsHeldByThread();
 
             return tree.putx(row);
         }
@@ -263,7 +263,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            assert cctx.shared().database().checkpointLockIsHeldByThread();
+            assert cctx.group().checkpointReadLocker().checkpointLockIsHeldByThread();
 
             return tree.remove(row);
         }
@@ -284,7 +284,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             H2Tree tree = treeForRead(seg);
 
-            assert cctx.shared().database().checkpointLockIsHeldByThread();
+            assert cctx.group().checkpointReadLocker().checkpointLockIsHeldByThread();
 
             return tree.removex(row);
         }
@@ -353,7 +353,7 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public void destroy(boolean rmvIndex) {
         try {
             if (cctx.affinityNode() && rmvIndex) {
-                assert cctx.shared().database().checkpointLockIsHeldByThread();
+                assert cctx.group().checkpointReadLocker().checkpointLockIsHeldByThread();
 
                 for (int i = 0; i < segments.length; i++) {
                     H2Tree tree = segments[i];

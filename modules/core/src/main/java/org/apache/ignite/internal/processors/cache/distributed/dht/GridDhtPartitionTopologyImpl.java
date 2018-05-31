@@ -816,7 +816,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private GridDhtLocalPartition getOrCreatePartition(int p) {
         assert lock.isWriteLockedByCurrentThread();
 
-        assert !grp.persistenceEnabled() || ctx.database().checkpointLockIsHeldByThread();
+        assert grp.checkpointReadLocker().checkpointLockIsHeldByThread();
 
         GridDhtLocalPartition loc = locParts.get(p);
 

@@ -1267,7 +1267,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-                assert !grp.persistenceEnabled() || cctx.shared().database().checkpointLockIsHeldByThread();
+                assert grp.checkpointReadLocker().checkpointLockIsHeldByThread();
 
                 dataTree.invoke(new SearchRow(cacheId, key), CacheDataRowAdapter.RowData.NO_KEY, c);
 
@@ -1362,7 +1362,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 CacheDataRow old;
 
-                assert cctx.shared().database().checkpointLockIsHeldByThread();
+                assert grp.checkpointReadLocker().checkpointLockIsHeldByThread();
 
                 if (canUpdateOldRow(cctx, oldRow, dataRow) && rowStore.updateRow(oldRow.link(), dataRow)) {
                     old = oldRow;
@@ -1442,7 +1442,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             try {
                 int cacheId = grp.sharedGroup() ? cctx.cacheId() : CU.UNDEFINED_CACHE_ID;
 
-                assert !grp.persistenceEnabled() || cctx.shared().database().checkpointLockIsHeldByThread();
+                assert grp.checkpointReadLocker().checkpointLockIsHeldByThread();
 
                 CacheDataRow oldRow = dataTree.remove(new SearchRow(cacheId, key));
 

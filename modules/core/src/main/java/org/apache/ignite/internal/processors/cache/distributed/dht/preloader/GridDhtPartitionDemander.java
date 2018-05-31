@@ -845,7 +845,7 @@ public class GridDhtPartitionDemander {
         GridCacheEntryInfo entry,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
-        assert ctx.database().checkpointLockIsHeldByThread();
+        assert grp.checkpointReadLocker().checkpointLockIsHeldByThread();
 
         try {
             GridCacheEntryEx cached = null;

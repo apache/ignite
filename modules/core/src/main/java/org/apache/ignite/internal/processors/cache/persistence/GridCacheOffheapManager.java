@@ -109,7 +109,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /** {@inheritDoc} */
     @Override protected void initDataStructures() throws IgniteCheckedException {
-        assert ctx.database().checkpointLockIsHeldByThread();
+        assert grp.checkpointReadLocker().checkpointLockIsHeldByThread();
 
         Metas metas = getOrAllocateCacheMetas();
 
@@ -1213,7 +1213,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         reuseRoot.isAllocated()) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
-                            assert grp.shared().database().checkpointLockIsHeldByThread();
+                            assert grp.checkpointReadLocker().checkpointLockIsHeldByThread();
 
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
@@ -1232,7 +1232,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         treeRoot.isAllocated()) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
-                            assert grp.shared().database().checkpointLockIsHeldByThread();
+                            assert grp.checkpointReadLocker().checkpointLockIsHeldByThread();
 
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
@@ -1249,7 +1249,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         pendingTreeRoot.isAllocated()) {
                         /** {@inheritDoc} */
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
-                            assert grp.shared().database().checkpointLockIsHeldByThread();
+                            assert grp.checkpointReadLocker().checkpointLockIsHeldByThread();
 
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
@@ -1570,7 +1570,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             long expireTime,
             @Nullable CacheDataRow oldRow
         ) throws IgniteCheckedException {
-            assert ctx.database().checkpointLockIsHeldByThread();
+            assert grp.checkpointReadLocker().checkpointLockIsHeldByThread();
 
             CacheDataStore delegate = init0(false);
 
@@ -1585,7 +1585,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             GridCacheVersion ver,
             long expireTime,
             @Nullable CacheDataRow oldRow) throws IgniteCheckedException {
-            assert ctx.database().checkpointLockIsHeldByThread();
+            assert grp.checkpointReadLocker().checkpointLockIsHeldByThread();
 
             CacheDataStore delegate = init0(false);
 
@@ -1595,7 +1595,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void invoke(GridCacheContext cctx, KeyCacheObject key, OffheapInvokeClosure c)
             throws IgniteCheckedException {
-            assert ctx.database().checkpointLockIsHeldByThread();
+            assert grp.checkpointReadLocker().checkpointLockIsHeldByThread();
 
             CacheDataStore delegate = init0(false);
 
@@ -1605,7 +1605,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public void remove(GridCacheContext cctx, KeyCacheObject key, int partId)
             throws IgniteCheckedException {
-            assert ctx.database().checkpointLockIsHeldByThread();
+            assert grp.checkpointReadLocker().checkpointLockIsHeldByThread();
 
             CacheDataStore delegate = init0(false);
 

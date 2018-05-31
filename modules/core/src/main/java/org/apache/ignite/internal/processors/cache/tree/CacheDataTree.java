@@ -77,7 +77,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         this.rowStore = rowStore;
         this.grp = grp;
 
-        assert !grp.dataRegion().config().isPersistenceEnabled() || grp.shared().database().checkpointLockIsHeldByThread();
+        assert grp.checkpointReadLocker().checkpointLockIsHeldByThread();
 
         initTree(initNew);
     }
