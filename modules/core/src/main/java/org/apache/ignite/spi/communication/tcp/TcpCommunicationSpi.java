@@ -2649,8 +2649,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
                 while (retry);
             }
-            catch (IgniteCheckedException e) {
-                throw new IgniteSpiException("Failed to send message to remote node: " + node, e);
+            catch (Throwable t) {
+                log.error("Failed to send message to remote node [node=" + node + ", msg=" + msg + ']', t);
+
+                if (t instanceof Error)
+                    throw (Error)t;
+
+                if (t instanceof RuntimeException)
+                    throw (RuntimeException)t;
+
+                throw new IgniteSpiException("Failed to send message to remote node: " + node, t);
             }
             finally {
                 if (client != null && removeNodeClient(node.id(), client))
@@ -3169,6 +3177,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (!recoveryDesc.reserve()) {
                         U.closeQuiet(ch);
+
+                        // Ensure the session is closed.
+                        GridNioSession ses = recoveryDesc.session();
+
+                        if (ses != null) {
+                            while(ses.closeTime() == 0)
+                                ses.close();
+                        }
 
                         return null;
                     }
