@@ -171,7 +171,11 @@ public class ComputeUtils {
             if (cnt > 0) {
                 try (QueryCursor<UpstreamEntry<K, V>> cursor = upstreamCache.query(qry,
                     e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
-                    return partDataBuilder.build(cursor.iterator(), cnt, ctx);
+
+                    Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(cursor.iterator(), cnt,
+                        "Cache expected to be not modified during dataset data building");
+
+                    return partDataBuilder.build(iter, cnt, ctx);
                 }
             }
 
@@ -209,7 +213,11 @@ public class ComputeUtils {
             C ctx;
             try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,
                 e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
-                ctx = ctxBuilder.build(cursor.iterator(), cnt);
+
+                Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(cursor.iterator(), cnt,
+                    "Cache expected to be not modified during dataset context building");
+
+                ctx = ctxBuilder.build(iter, cnt);
             }
 
             IgniteCache<Integer, C> datasetCache = locIgnite.cache(datasetCacheName);
