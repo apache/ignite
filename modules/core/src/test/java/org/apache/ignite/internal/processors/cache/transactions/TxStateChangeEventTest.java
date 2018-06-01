@@ -106,7 +106,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
 
                     checkEvent((TransactionStateChangedEvent)e);
 
-                    return true;
+                    return false;
                 },
                 EVTS_TX);
 
@@ -209,7 +209,6 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
             }
 
             case EVT_TX_ROLLED_BACK: {
-                assertFalse(commit.get());
                 assertEquals(tx.state(), TransactionState.ROLLED_BACK);
 
                 rollback.set(true);
