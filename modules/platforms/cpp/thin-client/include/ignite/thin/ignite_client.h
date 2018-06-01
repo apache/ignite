@@ -20,6 +20,8 @@
 
 #include <ignite/common/concurrent.h>
 
+#include <ignite/thin/cache/cache_client.h>
+
 namespace ignite
 {
     namespace impl
@@ -63,7 +65,70 @@ namespace ignite
              */
             static IgniteClient Start(const IgniteClientConfiguration& cfg);
 
+            /**
+             * Get cache.
+             *
+             * @param name Cache name.
+             * @return Cache.
+             */
+            template<typename K, typename V>
+            cache::CacheClient<K, V> GetCache(const char* name)
+            {
+                return cache::CacheClient<K, V>(InternalGetCache(name));
+            }
+    
+            /**
+             * Get or create cache.
+             *
+             * @param name Cache name.
+             * @return Cache.
+             */
+            template<typename K, typename V>
+            cache::CacheClient<K, V> GetOrCreateCache(const char* name)
+            {
+                return cache::CacheClient<K, V>(InternalGetOrCreateCache(name));
+            }
+    
+            /**
+             * Create cache.
+             *
+             * @param name Cache name.
+             * @return Cache.
+             */
+            template<typename K, typename V>
+            cache::CacheClient<K, V> CreateCache(const char* name)
+            {
+                return cache::CacheClient<K, V>(InternalCreateCache(name));
+            }
+    
         private:
+            /**
+             * Get cache.
+             * Internal call.
+             *
+             * @param name Cache name.
+             * @return Cache.
+             */
+            impl::thin::cache::CacheClientImpl* InternalGetCache(const char* name);
+    
+            /**
+             * Get or create cache.
+             * Internal call.
+             *
+             * @param name Cache name.
+             * @return Cache.
+             */
+            impl::thin::cache::CacheClientImpl* InternalGetOrCreateCache(const char* name);
+    
+            /**
+             * Create cache.
+             * Internal call.
+             *
+             * @param name Cache name.
+             * @return Cache.
+             */
+            impl::thin::cache::CacheClientImpl* InternalCreateCache(const char* name);
+
             /**
              * Constructor.
              *

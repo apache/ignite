@@ -15,7 +15,11 @@
  * limitations under the License.
  */
 
+#include <ignite/impl/thin/utility.h>
 #include <ignite/impl/thin/ignite_client_impl.h>
+#include <ignite/impl/thin/cache/cache_client_impl.h>
+#include <ignite/impl/thin/message.h>
+#include <ignite/impl/thin/response_status.h>
 
 namespace ignite
 {
@@ -25,7 +29,7 @@ namespace ignite
         {
             IgniteClientImpl::IgniteClientImpl(const ignite::thin::IgniteClientConfiguration& cfg) :
                 cfg(cfg),
-                router(cfg)
+                router(new DataRouter(cfg))
             {
                 // No-op.
             }
@@ -37,8 +41,57 @@ namespace ignite
 
             void IgniteClientImpl::Start()
             {
-                router.Connect();
+                router.Get()->Connect();
             }
-        }   
+
+            cache::CacheClientImpl* IgniteClientImpl::GetCache(const char* name)
+            {
+                CheckCacheName(name);
+
+                int32_t cacheId = utility::GetCacheId(name);
+
+                return new cache::CacheClientImpl(router, name, cacheId);
+            }
+
+            cache::CacheClientImpl* IgniteClientImpl::GetOrCreateCache(const char* name)
+            {
+                CheckCacheName(name);
+                
+                int32_t cacheId = utility::GetCacheId(name);
+
+                GetOrCreateCacheWithNameRequest req(name);
+                Response rsp;
+
+                router.Get()->SyncMessage(req, rsp);
+
+                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
+                
+                return new cache::CacheClientImpl(router, name, cacheId);
+            }
+
+            cache::CacheClientImpl* IgniteClientImpl::CreateCache(const char* name)
+            {
+                CheckCacheName(name);
+
+                int32_t cacheId = utility::GetCacheId(name);
+
+                CreateCacheWithNameRequest req(name);
+                Response rsp;
+
+                router.Get()->SyncMessage(req, rsp);
+
+                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
+                
+                return new cache::CacheClientImpl(router, name, cacheId);
+            }
+
+            void IgniteClientImpl::CheckCacheName(const char* name)
+            {
+                if (!name || !strlen(name))
+                    throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_ARGUMENT, "Specified cache name is not allowed");
+            }
+        }
     }
 }

@@ -21,6 +21,7 @@
 
 #include <ignite/common/utils.h>
 #include <ignite/impl/thin/utility.h>
+#include "ignite/binary/binary.h"
 
 namespace ignite
 {
@@ -188,6 +189,25 @@ namespace ignite
                     }
 
                     return static_cast<uint16_t>(intPort);
+                }
+
+                int32_t GetCacheId(const char* cacheName)
+                {
+                    if (!cacheName)
+                        return 0;
+
+                    int32_t hash = 0;
+
+                    int i = 0;
+
+                    while (cacheName[i])
+                    {
+                        hash = 31 * hash + cacheName[i];
+
+                        ++i;
+                    }
+
+                    return hash;
                 }
             }
         }

@@ -66,6 +66,14 @@ namespace ignite
                  * @return @c Port value on success and zero on failure.
                  */
                 uint16_t ParsePort(const std::string& value);
+
+                /**
+                 * Get cache ID for the name.
+                 *
+                 * @param cacheName Cache name.
+                 * @return Cache ID.
+                 */
+                int32_t GetCacheId(const char* cacheName);
             }
         }
     }

@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_SSL_SECURE_SOCKET_CLIENT
-#define _IGNITE_ODBC_SSL_SECURE_SOCKET_CLIENT
+#ifndef _IGNITE_IMPL_THIN_SSL_SECURE_SOCKET_CLIENT
+#define _IGNITE_IMPL_THIN_SSL_SECURE_SOCKET_CLIENT
 
 #include <stdint.h>
 #include <string>
@@ -184,4 +184,4 @@ namespace ignite
     }
 }
 
-#endif //_IGNITE_ODBC_SSL_SECURE_SOCKET_CLIENT
+#endif //_IGNITE_IMPL_THIN_SSL_SECURE_SOCKET_CLIENT

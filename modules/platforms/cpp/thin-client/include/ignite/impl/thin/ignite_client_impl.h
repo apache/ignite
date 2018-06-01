@@ -57,12 +57,44 @@ namespace ignite
                  */
                 void Start();
 
+                /**
+                 * Get cache.
+                 *
+                 * @param name Cache name.
+                 * @return Cache.
+                 */
+                cache::CacheClientImpl* GetCache(const char* name);
+    
+                /**
+                 * Get or create cache.
+                 *
+                 * @param name Cache name.
+                 * @return Cache.
+                 */
+                cache::CacheClientImpl* GetOrCreateCache(const char* name);
+    
+                /**
+                 * Create cache.
+                 *
+                 * @param name Cache name.
+                 * @return Cache.
+                 */
+                cache::CacheClientImpl* CreateCache(const char* name);
+
             private:
+                /**
+                 * Check cache name.
+                 *
+                 * @param name Cache name.
+                 * @throw IgniteError if the name is not valid.
+                 */
+                static void CheckCacheName(const char* name);
+
                 /** Configuration. */
                 const ignite::thin::IgniteClientConfiguration cfg;
 
                 /** Data router. */
-                DataRouter router;
+                SP_DataRouter router;
             };
         }
     }

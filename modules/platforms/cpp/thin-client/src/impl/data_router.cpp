@@ -30,16 +30,6 @@
 #include <ignite/impl/thin/ssl/secure_socket_client.h>
 #include <ignite/impl/thin/net/tcp_socket_client.h>
 
-namespace
-{
-#pragma pack(push, 1)
-    struct OdbcProtocolHeader
-    {
-        int32_t len;
-    };
-#pragma pack(pop)
-}
-
 
 namespace ignite
 {
@@ -61,10 +51,10 @@ namespace ignite
                 supportedArray + (sizeof(supportedArray) / sizeof(supportedArray[0])));
 
             DataRouter::DataRouter(const ignite::thin::IgniteClientConfiguration& cfg) :
+                ioTimeout(DEFALT_IO_TIMEOUT),
+                connectionTimeout(DEFALT_CONNECT_TIMEOUT),
                 socket(),
-                timeout(0),
-                loginTimeout(DEFALT_CONNECT_TIMEOUT),
-                parser(VERSION_CURRENT),
+                currentVersion(VERSION_CURRENT),
                 config(cfg)
             {
                 // No-op.
@@ -118,17 +108,7 @@ namespace ignite
                 if (socket.get() == 0)
                     throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "Connection is not established");
 
-                int32_t newLen = static_cast<int32_t>(len + sizeof(OdbcProtocolHeader));
-
-                common::FixedSizeArray<int8_t> msg(newLen);
-
-                OdbcProtocolHeader *hdr = reinterpret_cast<OdbcProtocolHeader*>(msg.GetData());
-
-                hdr->len = static_cast<int32_t>(len);
-
-                memcpy(msg.GetData() + sizeof(OdbcProtocolHeader), data, len);
-
-                OperationResult::T res = SendAll(msg.GetData(), msg.GetSize(), timeout);
+                OperationResult::T res = SendAll(data, len, timeout);
 
                 if (res == OperationResult::TIMEOUT)
                     return false;
@@ -163,16 +143,20 @@ namespace ignite
                 return OperationResult::SUCCESS;
             }
 
-            bool DataRouter::Receive(std::vector<int8_t>& msg, int32_t timeout)
+            bool DataRouter::Receive(interop::InteropMemory& msg, int32_t timeout)
             {
+                // Minimal size of the response message: 8 byte reqId + 4 byte status.
+                enum { MIN_RES_SIZE = 4 + 8 };
+
+                assert(msg.Capacity() > 4);
+
                 if (socket.get() == 0)
                     throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_STATE, "DataRouter is not established");
 
-                msg.clear();
+                // Message size
+                msg.Length(4);
 
-                OdbcProtocolHeader hdr = { 0 };
-
-                OperationResult::T res = ReceiveAll(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr), timeout);
+                OperationResult::T res = ReceiveAll(msg.Data(), static_cast<size_t>(msg.Length()), timeout);
 
                 if (res == OperationResult::TIMEOUT)
                     return false;
@@ -180,25 +164,29 @@ namespace ignite
                 if (res == OperationResult::FAIL)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message header");
 
-                if (hdr.len < 0)
+                interop::InteropInputStream inStream(&msg);
+
+                int32_t msgLen = inStream.ReadInt32();
+
+                if (msgLen < MIN_RES_SIZE)
                 {
                     Close();
 
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Protocol error: Message length is negative");
+                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Protocol error: Message length is less than minimally allowed");
                 }
 
-                if (hdr.len == 0)
-                    return false;
+                if (msg.Capacity() < msgLen + 4)
+                    msg.Reallocate(msgLen + 4);
 
-                msg.resize(hdr.len);
-
-                res = ReceiveAll(&msg[0], hdr.len, timeout);
+                res = ReceiveAll(msg.Data() + 4, msgLen, timeout);
 
                 if (res == OperationResult::TIMEOUT)
                     return false;
 
                 if (res == OperationResult::FAIL)
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Can not receive message body");
+                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Connection failure: Can not receive message body");
 
                 return true;
             }
@@ -229,50 +217,85 @@ namespace ignite
 
             bool DataRouter::MakeRequestHandshake(const ProtocolVersion& propVer, ProtocolVersion& resVer)
             {
-                HandshakeRequest req(config);
-                HandshakeResponse rsp;
-
-                parser.SetProtocolVersion(propVer);
+                currentVersion = propVer;
 
                 resVer = ProtocolVersion();
+                bool accepted = false;
 
                 try
                 {
                     // Workaround for some Linux systems that report connection on non-blocking
                     // sockets as successful but fail to establish real connection.
-                    bool sent = InternalSyncMessage(req, rsp, loginTimeout);
-
-                    if (!sent)
-                    {
-                        //TODO: implement logging
-                        //"Failed to get handshake response (Did you forget to enable SSL?).");
-
-                        return false;
-                    }
+                    accepted = Handshake(propVer, resVer);
                 }
                 catch (const IgniteError&)
                 {
-                    //TODO: implement logging
                     return false;
                 }
 
-                if (!rsp.IsAccepted())
-                {
-                    //TODO: implement logging
-                    //constructor << "Node rejected handshake message. ";
-
-                    //if (!rsp.GetError().empty())
-                    //    constructor << "Additional info: " << rsp.GetError() << " ";
-
-                    //constructor << "Current node Apache Ignite version: " << rsp.GetCurrentVer().ToString() << ", "
-                    //            << "driver protocol version introduced in version: " << protocolVersion.ToString() << ".";
-
-                    resVer = rsp.GetCurrentVer();
-
+                if (!accepted)
                     return false;
-                }
 
                 resVer = propVer;
+
+                return true;
+            }
+
+            bool DataRouter::Handshake(const ProtocolVersion& propVer, ProtocolVersion& resVer)
+            {
+                // Allocating 4KB to lessen number of reallocations.
+                enum { BUFFER_SIZE = 1024 * 4 };
+                
+                common::concurrent::CsLockGuard lock(ioMutex);
+
+                interop::InteropUnpooledMemory mem(BUFFER_SIZE);
+                interop::InteropOutputStream outStream(&mem);
+                binary::BinaryWriterImpl writer(&outStream, 0);
+                
+                writer.WriteInt8(RequestType::HANDSHAKE);
+
+                writer.WriteInt16(propVer.GetMajor());
+                writer.WriteInt16(propVer.GetMinor());
+                writer.WriteInt16(propVer.GetMaintenance());
+
+                writer.WriteInt8(ClientType::THIN_CLIENT);
+
+                writer.WriteString(config.GetUser());
+                writer.WriteString(config.GetPassword());
+
+                bool success = Send(mem.Data(), outStream.Position(), connectionTimeout);
+
+                if (!success)
+                    return false;
+
+                success = Receive(mem, connectionTimeout);
+
+                if (!success)
+                    return false;
+
+                interop::InteropInputStream inStream(&mem);
+
+                inStream.Position(4);
+
+                binary::BinaryReaderImpl reader(&inStream);
+                
+                bool accepted = reader.ReadBool();
+                
+                if (!accepted)
+                {
+                    int16_t major = reader.ReadInt16();
+                    int16_t minor = reader.ReadInt16();
+                    int16_t maintenance = reader.ReadInt16();
+
+                    resVer = ProtocolVersion(major, minor, maintenance);
+
+                    std::string error;
+                    reader.ReadString(error);
+
+                    reader.ReadInt32();
+
+                    return false;
+                }
 
                 return true;
             }
@@ -323,7 +346,7 @@ namespace ignite
 
                     for (uint16_t port = addr.port; port <= addr.port + addr.range; ++port)
                     {
-                        connected = socket->Connect(addr.host.c_str(), port, loginTimeout);
+                        connected = socket->Connect(addr.host.c_str(), port, connectionTimeout);
 
                         if (connected)
                         {

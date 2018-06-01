@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_SSL_SSL_BINDINGS
-#define _IGNITE_ODBC_SSL_SSL_BINDINGS
+#ifndef _IGNITE_IMPL_THIN_SSL_SSL_BINDINGS
+#define _IGNITE_IMPL_THIN_SSL_SSL_BINDINGS
 
 #include <openssl/ssl.h>
 #include <openssl/conf.h>
@@ -357,4 +357,4 @@ namespace ignite
     }
 }
 
-#endif //_IGNITE_ODBC_SSL_SSL_BINDINGS
+#endif //_IGNITE_IMPL_THIN_SSL_SSL_BINDINGS

@@ -45,27 +45,129 @@ namespace ignite
             {
                 enum Type
                 {
+                    /** Resource close. */
+                    RESOURCE_CLOSE = 0,
+                    
+                    /** Handshake. */
                     HANDSHAKE = 1,
+
+                    /** Cache get names. */
+                    CACHE_GET_NAMES = 1050,
+
+                    /** Cache create with name. */
+                    CACHE_CREATE_WITH_NAME = 1051,
+
+                    /** Cache get or create with name. */
+                    CACHE_GET_OR_CREATE_WITH_NAME = 1052,
+
+                    /** Cache destroy. */
+                    CACHE_DESTROY = 1056,
+
+                    /** Cache get. */
+                    CACHE_GET = 1000,
+
+                    /** Cache put. */
+                    CACHE_PUT = 1001,
+
+                    /** Cache contains key. */
+                    CACHE_CONTAINS_KEY = 1011,
+
+                    /** Cache contains keys. */
+                    CACHE_CONTAINS_KEYS = 1012,
+
+                    /** Get size. */
+                    CACHE_GET_SIZE = 1020,
+
+                    /** Get all. */
+                    CACHE_GET_ALL = 1003,
+
+                    /** Put all. */
+                    CACHE_PUT_ALL = 1004,
+
+                    /** Cache replace. */
+                    CACHE_REPLACE = 1009,
+
+                    /** Cache remove all. */
+                    CACHE_REMOVE_ALL = 1019,
+
+                    /** Cache remove key. */
+                    CACHE_REMOVE_KEY = 1016,
+
+                    /** Cache remove keys. */
+                    CACHE_REMOVE_KEYS = 1018,
+
+                    /** Cache clear. */
+                    CACHE_CLEAR = 1013,
+
+                    /** Cache clear key. */
+                    CACHE_CLEAR_KEY = 1014,
+
+                    /** Cache clear keys. */
+                    CACHE_CLEAR_KEYS = 1015,
+
+                    /** Cache replace if equals. */
+                    CACHE_REPLACE_IF_EQUALS = 1010,
+
+                    /** Cache remove if equals. */
+                    CACHE_REMOVE_IF_EQUALS = 1017,
+
+                    /** Cache get and put. */
+                    CACHE_GET_AND_PUT = 1005,
+
+                    /** Cache get and remove. */
+                    CACHE_GET_AND_REMOVE = 1007,
+
+                    /** Cache get and replace. */
+                    CACHE_GET_AND_REPLACE = 1006,
+
+                    /** Cache put if absent. */
+                    CACHE_PUT_IF_ABSENT = 1002,
+
+                    /** Cache get and put if absent. */
+                    CACHE_GET_AND_PUT_IF_ABSENT = 1008,
                 };
             };
 
             /**
-             * Handshake request.
+             * Request.
+             *
+             * @tparam OpCode Operation code.
              */
-            class HandshakeRequest
+            template<int32_t OpCode>
+            class Request
+            {
+            public:
+                /**
+                 * Get operation code.
+                 *
+                 * @return Operation code.
+                 */
+                static int32_t GetOperationCode()
+                {
+                    return OpCode;
+                }
+            };
+
+            /**
+             * Get or create cache request.
+             */
+            class GetOrCreateCacheWithNameRequest : public Request<RequestType::CACHE_GET_OR_CREATE_WITH_NAME>
             {
             public:
                 /**
                  * Constructor.
                  *
-                 * @param config Configuration.
+                 * @param name Cache name.
                  */
-                HandshakeRequest(const ignite::thin::IgniteClientConfiguration& config);
+                GetOrCreateCacheWithNameRequest(const std::string& name);
 
                 /**
                  * Destructor.
                  */
-                ~HandshakeRequest();
+                ~GetOrCreateCacheWithNameRequest()
+                {
+                    // No-op.
+                }
 
                 /**
                  * Write request using provided writer.
@@ -76,51 +178,64 @@ namespace ignite
 
             private:
                 /** Configuration. */
-                const ignite::thin::IgniteClientConfiguration& config;
+                std::string name;
             };
 
             /**
-             * Handshake response.
+             * Get or create cache request.
              */
-            class HandshakeResponse
+            class CreateCacheWithNameRequest : public Request<RequestType::CACHE_CREATE_WITH_NAME>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param name Cache name.
+                 */
+                CreateCacheWithNameRequest(const std::string& name);
+
+                /**
+                 * Destructor.
+                 */
+                ~CreateCacheWithNameRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Configuration. */
+                std::string name;
+            };
+
+            /**
+             * General response.
+             */
+            class Response
             {
             public:
                 /**
                  * Constructor.
                  */
-                HandshakeResponse();
+                Response();
 
                 /**
                  * Destructor.
                  */
-                ~HandshakeResponse();
+                virtual ~Response();
 
                 /**
-                 * Check if the handshake has been accepted.
-                 * @return True if the handshake has been accepted.
+                 * Read response using provided reader.
+                 * @param reader Reader.
+                 * @param ver Protocol version.
                  */
-                bool IsAccepted() const
-                {
-                    return accepted;
-                }
-
-                /**
-                 * Current host Apache Ignite version.
-                 * @return Current host Apache Ignite version.
-                 */
-                const ProtocolVersion& GetCurrentVer() const
-                {
-                    return currentVer;
-                }
-
-                /**
-                 * Get optional error.
-                 * @return Optional error message.
-                 */
-                const std::string& GetError() const
-                {
-                    return error;
-                }
+                void Read(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver);
 
                 /**
                  * Get request processing status.
@@ -132,23 +247,29 @@ namespace ignite
                 }
 
                 /**
-                 * Read response using provided reader.
-                 * @param reader Reader.
+                 * Get resulting error.
+                 * @return Error.
                  */
-                void Read(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+                const std::string& GetError() const
+                {
+                    return error;
+                }
+
+            protected:
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl&, const ProtocolVersion&)
+                {
+                    // No-op.
+                }
 
             private:
-                /** Handshake accepted. */
-                bool accepted;
-
-                /** Node's protocol version. */
-                ProtocolVersion currentVer;
-
-                /** Optional error message. */
-                std::string error;
-
                 /** Request processing status. */
                 int32_t status;
+
+                /** Error message. */
+                std::string error;
             };
         }
     }

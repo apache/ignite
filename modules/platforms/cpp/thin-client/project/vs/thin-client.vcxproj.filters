@@ -14,6 +14,12 @@
     <Filter Include="Code\impl\ssl">
       <UniqueIdentifier>{46739e07-2e4d-400b-bba2-902d96158c44}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Code\cache">
+      <UniqueIdentifier>{143c6ccd-4c0a-4ac3-a6a5-23aa030288db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\cache">
+      <UniqueIdentifier>{372189a3-2442-47b1-bd75-7fe916a586ec}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\impl\ignite_client_impl.cpp">
@@ -57,9 +63,6 @@
     <ClInclude Include="..\..\include\ignite\impl\thin\message.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\thin\parser.h">
-      <Filter>Code\impl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\thin\protocol_version.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
@@ -92,6 +95,12 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\thin\utility.h">
       <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\thin\cache\cache_client.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\cache\cache_client_impl.h">
+      <Filter>Code\impl\cache</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

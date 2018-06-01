@@ -164,12 +164,12 @@
     <ClCompile Include="..\..\src\impl\utility.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\impl\thin\cache\cache_client_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\data_router.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\ignite_client_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\message.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\net\end_point.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\net\tcp_socket_client.h" />
-    <ClInclude Include="..\..\include\ignite\impl\thin\parser.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\protocol_version.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\response_status.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\socket_client.h" />
@@ -177,6 +177,7 @@
     <ClInclude Include="..\..\include\ignite\impl\thin\ssl\ssl_bindings.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\ssl\ssl_gateway.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\utility.h" />
+    <ClInclude Include="..\..\include\ignite\thin\cache\cache_client.h" />
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h" />
     <ClInclude Include="..\..\include\ignite\thin\ignite_client_configuration.h" />
     <ClInclude Include="..\..\include\ignite\thin\ssl_mode.h" />

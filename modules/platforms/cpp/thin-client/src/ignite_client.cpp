@@ -24,6 +24,21 @@ namespace ignite
 {
     namespace thin
     {
+        impl::thin::cache::CacheClientImpl * IgniteClient::InternalGetCache(const char * name)
+        {
+            return impl.Get()->GetCache(name);
+        }
+
+        impl::thin::cache::CacheClientImpl* IgniteClient::InternalGetOrCreateCache(const char* name)
+        {
+            return impl.Get()->GetOrCreateCache(name);
+        }
+
+        impl::thin::cache::CacheClientImpl* IgniteClient::InternalCreateCache(const char* name)
+        {
+            return impl.Get()->CreateCache(name);
+        }
+
         IgniteClient::IgniteClient(common::concurrent::SharedPointer<impl::thin::IgniteClientImpl>& impl)
         {
             this->impl.Swap(impl);

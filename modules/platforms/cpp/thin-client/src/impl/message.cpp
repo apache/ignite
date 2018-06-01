@@ -24,61 +24,48 @@ namespace ignite
     {
         namespace thin
         {
-            HandshakeRequest::HandshakeRequest(const ignite::thin::IgniteClientConfiguration& config) :
-                config(config)
+            GetOrCreateCacheWithNameRequest::GetOrCreateCacheWithNameRequest(const std::string& name) :
+                name(name)
             {
                 // No-op.
             }
 
-            HandshakeRequest::~HandshakeRequest()
+            void GetOrCreateCacheWithNameRequest::Write(binary::BinaryWriterImpl& writer,
+                const ProtocolVersion&) const
+            {
+                writer.WriteString(name);
+            }
+
+            CreateCacheWithNameRequest::CreateCacheWithNameRequest(const std::string& name) :
+                name(name)
             {
                 // No-op.
             }
 
-            void HandshakeRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+            void CreateCacheWithNameRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
             {
-                writer.WriteInt8(RequestType::HANDSHAKE);
-
-                writer.WriteInt16(ver.GetMajor());
-                writer.WriteInt16(ver.GetMinor());
-                writer.WriteInt16(ver.GetMaintenance());
-
-                writer.WriteInt8(ClientType::THIN_CLIENT);
-
-                writer.WriteString(config.GetUser());
-                writer.WriteString(config.GetPassword());
+                writer.WriteString(name);
             }
 
-            HandshakeResponse::HandshakeResponse():
-                accepted(false),
-                currentVer(),
-                error(),
+            Response::Response():
                 status(ResponseStatus::FAILED)
             {
                 // No-op.
             }
 
-            HandshakeResponse::~HandshakeResponse()
+            Response::~Response()
             {
                 // No-op.
             }
 
-            void HandshakeResponse::Read(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            void Response::Read(binary::BinaryReaderImpl& reader, const ProtocolVersion& ver)
             {
-                accepted = reader.ReadBool();
-                
-                if (!accepted)
-                {
-                    int16_t major = reader.ReadInt16();
-                    int16_t minor = reader.ReadInt16();
-                    int16_t maintenance = reader.ReadInt16();
+                status = reader.ReadInt32();
 
-                    currentVer = ProtocolVersion(major, minor, maintenance);
-
+                if (status == ResponseStatus::SUCCESS)
+                    ReadOnSuccess(reader, ver);
+                else
                     reader.ReadString(error);
-
-                    status = reader.ReadInt32();
-                }
             }
         }
     }
