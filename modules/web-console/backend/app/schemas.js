@@ -1138,7 +1138,8 @@ module.exports.factory = function(mongoose) {
             qryType: String,
             nonCollocatedJoins: {type: Boolean, default: false},
             enforceJoinOrder: {type: Boolean, default: false},
-            lazy: {type: Boolean, default: false}
+            lazy: {type: Boolean, default: false},
+            collocated: Boolean
         }]
     });
 

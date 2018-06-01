@@ -54,8 +54,6 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
 
         Properties props = U.field(IgniteProperties.class, "PROPS");

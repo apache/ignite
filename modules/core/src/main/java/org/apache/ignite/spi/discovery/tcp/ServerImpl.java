@@ -4212,9 +4212,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
 
-                    dataPacket.joiningNodeClient(msg.client());
-
                     assert dataPacket != null : msg;
+
+                    dataPacket.joiningNodeClient(msg.client());
 
                     if (dataPacket.hasJoiningNodeData())
                         spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));

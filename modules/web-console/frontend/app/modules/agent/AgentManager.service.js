@@ -32,6 +32,7 @@ const State = {
 };
 
 const LAZY_QUERY_SINCE = [['2.1.4-p1', '2.2.0'], '2.2.1'];
+const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], '2.5.2'];
 
 class ConnectionState {
     constructor(cluster) {
@@ -557,15 +558,19 @@ export default class IgniteAgentManager {
      * @param {Boolean} local Flag whether to execute query locally.
      * @param {int} pageSz
      * @param {Boolean} lazy query flag.
+     * @param {Boolean} collocated Collocated query.
      * @returns {Promise}
      */
-    querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy) {
+    querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy, collocated) {
         if (this.available('2.0.0')) {
-            const task = this.available(...LAZY_QUERY_SINCE) ?
-                this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy) :
-                this.visorTask('querySqlX2', nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz);
+            let args = [cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz];
 
-            return task.then(({error, result}) => {
+            if (this.available(COLLOCATED_QUERY_SINCE))
+                args = [...args, lazy, collocated];
+            else if (this.available(...LAZY_QUERY_SINCE))
+                args = [...args, lazy];
+
+            return this.visorTask('querySqlX2', nid, ...args).then(({error, result}) => {
                 if (_.isEmpty(error))
                     return result;
 
@@ -615,9 +620,10 @@ export default class IgniteAgentManager {
      * @param {Boolean} replicatedOnly Flag whether query contains only replicated tables.
      * @param {Boolean} local Flag whether to execute query locally.
      * @param {Boolean} lazy query flag.
+     * @param {Boolean} collocated Collocated query.
      * @returns {Promise}
      */
-    querySqlGetAll(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, lazy) {
+    querySqlGetAll(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, lazy, collocated) {
         // Page size for query.
         const pageSz = 1024;
 
@@ -635,7 +641,7 @@ export default class IgniteAgentManager {
                 });
         };
 
-        return this.querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy)
+        return this.querySql(nid, cacheName, query, nonCollocatedJoins, enforceJoinOrder, replicatedOnly, local, pageSz, lazy, collocated)
             .then(fetchResult);
     }
 

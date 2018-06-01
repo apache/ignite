@@ -30,6 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
@@ -87,6 +88,12 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** Maximum size for delete queue. */
     public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, 200_000);
+
+    /** ONLY FOR TEST PURPOSES: force test checkpoint on partition eviction. */
+    private static boolean forceTestCheckpointOnEviction = IgniteSystemProperties.getBoolean("TEST_CHECKPOINT_ON_EVICTION", false);
+
+    /** ONLY FOR TEST PURPOSES: partition id where test checkpoint was enforced during eviction. */
+    static volatile Integer partWhereTestCheckpointEnforced;
 
     /** Maximum size for {@link #rmvQueue}. */
     private final int rmvQueueMaxSize;
@@ -208,6 +215,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         try {
             store = grp.offheap().createCacheDataStore(id);
+
+            // Log partition creation for further crash recovery purposes.
+            if (grp.walEnabled())
+                ctx.wal().log(new PartitionMetaStateRecord(grp.groupId(), id, state(), updateCounter()));
 
             // Inject row cache cleaner on store creation
             // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group
@@ -1037,6 +1048,16 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     ctx.database().checkpointReadUnlock();
                 }
             }
+
+            if (forceTestCheckpointOnEviction) {
+                if (partWhereTestCheckpointEnforced == null && cleared >= fullSize()) {
+                    ctx.database().forceCheckpoint("test").finishFuture().get();
+
+                    log.warning("Forced checkpoint by test reasons for partition: " + this);
+
+                    partWhereTestCheckpointEnforced = id;
+                }
+            }
         }
         catch (NodeStoppingException e) {
             if (log.isDebugEnabled())
@@ -1331,10 +1352,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      */
     class ClearFuture extends GridFutureAdapter<Boolean> {
         /** Flag indicates that eviction callback was registered on the current future. */
-        private volatile boolean evictionCallbackRegistered;
+        private volatile boolean evictionCbRegistered;
 
         /** Flag indicates that clearing callback was registered on the current future. */
-        private volatile boolean clearingCallbackRegistered;
+        private volatile boolean clearingCbRegistered;
 
         /** Flag indicates that future with all callbacks was finished. */
         private volatile boolean finished;
@@ -1353,25 +1374,29 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
          * @param updateSeq If {@code true} update topology sequence after successful eviction.
          */
         private void registerEvictionCallback(boolean updateSeq) {
-            if (evictionCallbackRegistered)
+            if (evictionCbRegistered)
                 return;
 
             synchronized (this) {
                 // Double check
-                if (evictionCallbackRegistered)
+                if (evictionCbRegistered)
                     return;
 
-                evictionCallbackRegistered = true;
+                evictionCbRegistered = true;
 
                 // Initiates partition eviction and destroy.
                 listen(f -> {
-                    if (f.error() != null) {
-                        rent.onDone(f.error());
-                    } else if (f.isDone()) {
+                    try {
+                        // Check for errors.
+                        f.get();
+
                         finishEviction(updateSeq);
                     }
+                    catch (Exception e) {
+                        rent.onDone(e);
+                    }
 
-                    evictionCallbackRegistered = false;
+                    evictionCbRegistered = false;
                 });
             }
         }
@@ -1380,21 +1405,21 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
          * Registers clearing callback on the future.
          */
         private void registerClearingCallback() {
-            if (clearingCallbackRegistered)
+            if (clearingCbRegistered)
                 return;
 
             synchronized (this) {
                 // Double check
-                if (clearingCallbackRegistered)
+                if (clearingCbRegistered)
                     return;
 
-                clearingCallbackRegistered = true;
+                clearingCbRegistered = true;
 
                 // Recreate cache data store in case of allowed fast eviction, and reset clear flag.
                 listen(f -> {
                     clear = false;
 
-                    clearingCallbackRegistered = false;
+                    clearingCbRegistered = false;
                 });
             }
         }
@@ -1447,8 +1472,8 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                     reset();
 
                     finished = false;
-                    evictionCallbackRegistered = false;
-                    clearingCallbackRegistered = false;
+                    evictionCbRegistered = false;
+                    clearingCbRegistered = false;
                 }
 
                 if (evictionRequested)
