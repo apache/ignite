@@ -44,8 +44,8 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     /** Number of partitions. */
     private final int partitions;
 
-    /** Predicate that filters {@code upstream} data. */
-    private final IgniteBiPredicate<K, V> pred;
+    /** Filter for {@code upstream} data. */
+    private final IgniteBiPredicate<K, V> filter;
 
     /**
      * Constructs a new instance of local dataset builder that makes {@link LocalDataset} with default predicate that
@@ -62,12 +62,12 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      * Constructs a new instance of local dataset builder that makes {@link LocalDataset}.
      *
      * @param upstreamMap {@code Map} with upstream data.
-     * @param pred Predicate that filters {@code upstream} data.
+     * @param filter Filter for {@code upstream} data.
      * @param partitions Number of partitions.
      */
-    public LocalDatasetBuilder(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> pred, int partitions) {
+    public LocalDatasetBuilder(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> filter, int partitions) {
         this.upstreamMap = upstreamMap;
-        this.pred = pred;
+        this.filter = filter;
         this.partitions = partitions;
     }
 
@@ -80,7 +80,7 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
         Map<K, V> filteredMap = new HashMap<>();
         upstreamMap.forEach((key, val) -> {
-            if (pred.apply(key, val))
+            if (filter.apply(key, val))
                 filteredMap.put(key, val);
         });
 

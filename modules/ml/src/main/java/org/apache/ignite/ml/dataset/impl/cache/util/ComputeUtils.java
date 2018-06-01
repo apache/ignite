@@ -135,7 +135,7 @@ public class ComputeUtils {
      *
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
-     * @param pred Predicate that filters {@code upstream} data.
+     * @param filter Filter for {@code upstream} data.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param datasetId Dataset ID.
      * @param part Partition index.
@@ -147,7 +147,7 @@ public class ComputeUtils {
      * @return Partition {@code data}.
      */
     public static <K, V, C extends Serializable, D extends AutoCloseable> D getData(Ignite ignite,
-        String upstreamCacheName, IgniteBiPredicate<K, V> pred, String datasetCacheName, UUID datasetId, int part,
+        String upstreamCacheName, IgniteBiPredicate<K, V> filter, String datasetCacheName, UUID datasetId, int part,
         PartitionDataBuilder<K, V, C, D> partDataBuilder) {
 
         PartitionDataStorage dataStorage = (PartitionDataStorage)ignite
@@ -164,7 +164,7 @@ public class ComputeUtils {
             ScanQuery<K, V> qry = new ScanQuery<>();
             qry.setLocal(true);
             qry.setPartition(part);
-            qry.setFilter(pred);
+            qry.setFilter(filter);
 
             long cnt = computeCount(upstreamCache, qry);
 
@@ -188,7 +188,7 @@ public class ComputeUtils {
      *
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
-     * @param pred Predicate that filters {@code upstream} data.
+     * @param filter Filter for {@code upstream} data.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param ctxBuilder Partition {@code context} builder.
      * @param <K> Type of a key in {@code upstream} data.
@@ -196,7 +196,7 @@ public class ComputeUtils {
      * @param <C> Type of a partition {@code context}.
      */
     public static <K, V, C extends Serializable> void initContext(Ignite ignite, String upstreamCacheName,
-        IgniteBiPredicate<K, V> pred, String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder, int retries,
+        IgniteBiPredicate<K, V> filter, String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder, int retries,
         int interval) {
         affinityCallWithRetries(ignite, Arrays.asList(datasetCacheName, upstreamCacheName), part -> {
             Ignite locIgnite = Ignition.localIgnite();
@@ -206,7 +206,7 @@ public class ComputeUtils {
             ScanQuery<K, V> qry = new ScanQuery<>();
             qry.setLocal(true);
             qry.setPartition(part);
-            qry.setFilter(pred);
+            qry.setFilter(filter);
 
             long cnt = computeCount(locUpstreamCache, qry);
 
@@ -233,7 +233,7 @@ public class ComputeUtils {
      *
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
-     * @param pred Predicate that filters {@code upstream} data.
+     * @param filter Filter for {@code upstream} data.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param ctxBuilder Partition {@code context} builder.
      * @param retries Number of retries for the case when one of partitions not found on the node.
@@ -242,9 +242,9 @@ public class ComputeUtils {
      * @param <C> Type of a partition {@code context}.
      */
     public static <K, V, C extends Serializable> void initContext(Ignite ignite, String upstreamCacheName,
-        IgniteBiPredicate<K, V> pred, String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder,
+        IgniteBiPredicate<K, V> filter, String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder,
         int retries) {
-        initContext(ignite, upstreamCacheName, pred, datasetCacheName, ctxBuilder, retries, 0);
+        initContext(ignite, upstreamCacheName, filter, datasetCacheName, ctxBuilder, retries, 0);
     }
 
     /**
@@ -275,7 +275,7 @@ public class ComputeUtils {
     }
 
     /**
-     * Computes number of entries selected from the cache ny the query.
+     * Computes number of entries selected from the cache by the query.
      *
      * @param cache Ignite cache with upstream data.
      * @param qry Cache query.

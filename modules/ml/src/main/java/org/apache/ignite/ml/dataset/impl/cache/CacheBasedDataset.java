@@ -56,8 +56,8 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
     /** Ignite Cache with {@code upstream} data. */
     private final IgniteCache<K, V> upstreamCache;
 
-    /** Predicate that filters {@code upstream} data. */
-    private final IgniteBiPredicate<K, V> pred;
+    /** Filter for {@code upstream} data. */
+    private final IgniteBiPredicate<K, V> filter;
 
     /** Ignite Cache with partition {@code context}. */
     private final IgniteCache<Integer, C> datasetCache;
@@ -74,17 +74,17 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
      *
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
-     * @param pred Predicate that filters {@code upstream} data.
+     * @param filter Filter for {@code upstream} data.
      * @param datasetCache Ignite Cache with partition {@code context}.
      * @param partDataBuilder Partition {@code data} builder.
      * @param datasetId Dataset ID.
      */
-    public CacheBasedDataset(Ignite ignite, IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> pred,
+    public CacheBasedDataset(Ignite ignite, IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
         IgniteCache<Integer, C> datasetCache, PartitionDataBuilder<K, V, C, D> partDataBuilder,
         UUID datasetId) {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
-        this.pred = pred;
+        this.filter = filter;
         this.datasetCache = datasetCache;
         this.partDataBuilder = partDataBuilder;
         this.datasetId = datasetId;
@@ -101,7 +101,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
             D data = ComputeUtils.getData(
                 Ignition.localIgnite(),
                 upstreamCacheName,
-                pred,
+                filter,
                 datasetCacheName,
                 datasetId,
                 part,
@@ -130,7 +130,7 @@ public class CacheBasedDataset<K, V, C extends Serializable, D extends AutoClose
             D data = ComputeUtils.getData(
                 Ignition.localIgnite(),
                 upstreamCacheName,
-                pred,
+                filter,
                 datasetCacheName,
                 datasetId,
                 part,
