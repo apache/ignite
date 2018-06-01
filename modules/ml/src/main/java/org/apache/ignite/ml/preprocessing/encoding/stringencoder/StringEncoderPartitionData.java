@@ -20,18 +20,17 @@ package org.apache.ignite.ml.preprocessing.encoding.stringencoder;
 import java.util.Map;
 
 /**
- * Partition data used in imputer preprocessor.
+ * Partition data used in String Encoder preprocessor.
  *
  * @see StringEncoderTrainer
  * @see StringEncoderPreprocessor
  */
 public class StringEncoderPartitionData implements AutoCloseable {
-    /** Most frequent values. */
+    /** Frequencies of categories for each categorial feature presented as strings. */
     private Map<String, Integer>[] categoryFrequencies;
 
     /**
-     * Constructs a new instance of imputing partition data.
-     *
+     * Constructs a new instance of String Encoder partition data.
      */
     public StringEncoderPartitionData() {
     }
@@ -48,7 +47,7 @@ public class StringEncoderPartitionData implements AutoCloseable {
     /**
      * Sets the array of maps of frequencies by value in partition for each feature in the dataset.
      *
-     * @param encodingValues The given value.
+     * @param categoryFrequencies The given value.
      * @return The partition data.
      */
     public StringEncoderPartitionData withCategoryFrequencies(Map<String, Integer>[] categoryFrequencies) {

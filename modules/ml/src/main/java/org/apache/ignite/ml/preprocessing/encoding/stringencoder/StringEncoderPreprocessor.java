@@ -38,12 +38,12 @@ public class StringEncoderPreprocessor<K, V> implements IgniteBiFunction<K, V, d
     private final IgniteBiFunction<K, V, String[]> basePreprocessor;
 
     /**
-     * Constructs a new instance of imputing preprocessor.
+     * Constructs a new instance of String Encoder preprocessor.
      *
      * @param basePreprocessor Base preprocessor.
      */
     public StringEncoderPreprocessor(Map<String, Integer>[] encodingValues,
-                                     IgniteBiFunction<K, V, String[]> basePreprocessor) {
+        IgniteBiFunction<K, V, String[]> basePreprocessor) {
         this.encodingValues = encodingValues;
         this.basePreprocessor = basePreprocessor;
     }
@@ -60,8 +60,10 @@ public class StringEncoderPreprocessor<K, V> implements IgniteBiFunction<K, V, d
         double[] res = new double[tmp.length];
 
         for (int i = 0; i < res.length; i++) {
-            if(encodingValues[i].containsKey(tmp[i])) res[i] = encodingValues[i].get(tmp[i]);
-            else throw new UnknownStringValue(tmp[i]);
+            if (encodingValues[i].containsKey(tmp[i]))
+                res[i] = encodingValues[i].get(tmp[i]);
+            else
+                throw new UnknownStringValue(tmp[i]);
         }
         return res;
     }

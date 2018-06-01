@@ -24,7 +24,6 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPreprocessor;
 import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
-import org.apache.ignite.ml.preprocessing.imputer.ImputerTrainer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -32,7 +31,7 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Tests for {@link ImputerTrainer}.
+ * Tests for {@link StringEncoderTrainer}.
  */
 @RunWith(Parameterized.class)
 public class StringEncoderTrainerTest {

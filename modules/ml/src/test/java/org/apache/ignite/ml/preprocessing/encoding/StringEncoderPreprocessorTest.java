@@ -17,33 +17,48 @@
 
 package org.apache.ignite.ml.preprocessing.encoding;
 
-import org.apache.ignite.ml.preprocessing.imputer.ImputerPreprocessor;
+import java.util.HashMap;
+import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPreprocessor;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Tests for {@link ImputerPreprocessor}.
+ * Tests for {@link StringEncoderPreprocessor}.
  */
 public class StringEncoderPreprocessorTest {
     /** Tests {@code apply()} method. */
     @Test
     public void testApply() {
-        double[][] data = new double[][]{
-            {Double.NaN, 20, 3},
-            {2, Double.NaN, 8},
-            {Double.NaN, Double.NaN, Double.NaN},
+        String[][] data = new String[][]{
+            {"1", "Moscow", "A"},
+            {"2", "Moscow", "B"},
+            {"2", "Moscow", "B"},
         };
 
-        ImputerPreprocessor<Integer, double[]> preprocessor = new ImputerPreprocessor<>(
-            new double[]{1.1, 10.1, 100.1},
+        StringEncoderPreprocessor<Integer, String[]> preprocessor = new StringEncoderPreprocessor<Integer, String[]>(
+            new HashMap[]{new HashMap() {
+                {
+                    put("1", 1);
+                    put("2", 0);
+                }
+            }, new HashMap() {
+                {
+                    put("Moscow", 0);
+                }
+            }, new HashMap() {
+                {
+                    put("A", 1);
+                    put("B", 0);
+                }
+            }},
             (k, v) -> v
         );
 
         double[][] postProcessedData = new double[][]{
-            {1.1, 20, 3},
-            {2, 10.1, 8},
-            {1.1, 10.1, 100.1},
+            {1.0, 0.0, 1.0},
+            {0.0, 0.0, 0.0},
+            {0.0, 0.0, 0.0},
         };
 
        for (int i = 0; i < data.length; i++)
