@@ -452,6 +452,18 @@ public class GridReduceQueryExecutor {
         List<Integer> cacheIds, int[] parts) {
         GridCacheContext<?, ?> cctx = cacheContext(cacheIds.get(0));
 
+        //if the first cache is not partitioned, find it (if it is) and move it to index 0
+        if(!cctx.isPartitioned()){
+            for(int cacheId = 1; cacheId < cacheIds.size(); cacheId++){
+                GridCacheContext<?, ?> currentCctx = cacheContext(cacheIds.get(cacheId));
+                if(currentCctx.isPartitioned()) {
+                    Collections.swap(cacheIds, 0, cacheId);
+                    cctx = currentCctx;
+                    break;
+                }
+            }
+        }
+
         Map<ClusterNode, IntArray> map = stableDataNodesMap(topVer, cctx, parts);
 
         Set<ClusterNode> nodes = map.keySet();
@@ -491,8 +503,13 @@ public class GridReduceQueryExecutor {
             else
                 disjoint = !extraNodes.equals(nodes);
 
-            if (disjoint)
-                return null; // Retry.
+            if (disjoint) {
+                if (isPreloadingActive(cacheIds))
+                    return null; // Retry.
+                else
+                    throw new CacheException("Caches have distinct sets of data nodes [cache1=" + cctx.name() +
+                            ", cache2=" + extraCacheName + "]");
+            }
 
         }
 
