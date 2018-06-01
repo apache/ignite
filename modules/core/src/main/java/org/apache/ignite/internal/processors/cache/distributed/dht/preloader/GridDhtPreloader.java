@@ -298,7 +298,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         parts.addAll(aff.primaryPartitions(ctx.localNodeId()));
         parts.addAll(aff.backupPartitions(ctx.localNodeId()));
 
-        boolean affNotChanged = false;
+        boolean affNotChanged = true;
 
         if (!affParts.isEmpty())
             affNotChanged = affParts.equals(parts);

@@ -41,7 +41,7 @@
         <!-- Do not log beyond INFO level. -->
         <filter class="org.apache.log4j.varia.LevelRangeFilter">
             <param name="levelMin" value="DEBUG"/>
-            <param name="levelMax" value="INFO"/>
+            <param name="levelMax" value="OFF"/>
         </filter>
     </appender>
 
@@ -90,11 +90,9 @@
      </category>
     -->
 
-    <!--
-    <category name="org.apache.ignite.cache.msg">
-        <level value="DEBUG"/>
+    <category name=" org.apache.ignite.internal.processors.cache.distributed.dht.preloader">
+        <level value="INFO"/>
     </category>
-    -->
 
     <!-- Disable all open source debugging. -->
     <category name="org">
@@ -108,7 +106,7 @@
     <!-- Default settings. -->
     <root>
         <!-- Print at info by default. -->
-        <level value="INFO"/>
+        <level value="OFF"/>
 
         <!-- Append to file and console. -->
         <appender-ref ref="FILE"/>
