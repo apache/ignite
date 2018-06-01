@@ -68,10 +68,6 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
         return null;
     }
 
-    private char lastSymbol(UUID uuid) {
-        return uuid.toString().charAt(uuid.toString().length() - 1);
-    }
-
     /**
      * @param nodeId Node ID to check.
      * @return Reservations for the given node.

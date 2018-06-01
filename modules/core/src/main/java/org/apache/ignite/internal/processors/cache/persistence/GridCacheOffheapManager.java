@@ -1046,7 +1046,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     /**
      * Data entry row.
      */
-    public static class DataEntryRow implements CacheDataRow {
+    private static class DataEntryRow implements CacheDataRow {
         /** */
         private final DataEntry entry;
 
@@ -1105,10 +1105,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** {@inheritDoc} */
         @Override public int cacheId() {
             return entry.cacheId();
-        }
-
-        public DataEntry entry() {
-            return entry;
         }
     }
 

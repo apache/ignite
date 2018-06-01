@@ -2555,13 +2555,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         for (IgniteBiTuple<PageMemory, Collection<FullPageId>> e : cpEntities)
             ((PageMemoryEx)e.get1()).finishCheckpoint();
 
-        prepareCheckpointEntry(
+        CheckpointEntry cp = prepareCheckpointEntry(
             tmpWriteBuf,
             cpTs,
             cpId,
             walPtr,
             null,
             CheckpointEntryType.END);
+
+        writeCheckpointEntry(tmpWriteBuf, cp, CheckpointEntryType.END);
 
         cctx.pageStore().finishRecover();
 
@@ -3648,7 +3650,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 writeCheckpointEntry(tmpWriteBuf, cp, CheckpointEntryType.END);
 
-                cctx.wal().allowCompressionUntil(chp.checkpointEntry().checkpointMark());
+                cctx.wal().allowCompressionUntil(chp.cpEntry.checkpointMark());
             }
 
             List<CheckpointEntry> removedFromHistory = cpHistory.onCheckpointFinished(chp, truncateWalOnCpFinish);
@@ -3903,13 +3905,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         public void walFilesDeleted(int walFilesDeleted) {
             this.walFilesDeleted = walFilesDeleted;
-        }
-
-        /**
-         *
-         */
-        @Nullable public CheckpointEntry checkpointEntry() {
-            return cpEntry;
         }
     }
 
