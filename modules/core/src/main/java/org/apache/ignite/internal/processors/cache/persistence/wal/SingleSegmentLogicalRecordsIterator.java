@@ -86,9 +86,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     private static RecordSerializerFactory initLogicalRecordsSerializerFactory(GridCacheSharedContext sharedCtx)
         throws IgniteCheckedException {
 
-        return new RecordSerializerFactoryImpl(sharedCtx)
-            .recordDeserializeFilter(new LogicalRecordsFilter())
-            .marshalledMode(true);
+        return new RecordSerializerFactoryImpl(sharedCtx, new LogicalRecordsFilter()).marshalledMode(true);
     }
 
     /** {@inheritDoc} */
