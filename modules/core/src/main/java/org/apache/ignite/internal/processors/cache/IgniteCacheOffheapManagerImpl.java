@@ -86,7 +86,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 @SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
     /** */
-    public static final int UNWIND_THROTTLING_TIMEOUT = 500;
+    public static final int UNWIND_THROTTLING_TIMEOUT = 100;
 
     /** */
     protected GridCacheSharedContext ctx;
