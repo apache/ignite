@@ -74,11 +74,11 @@ public class IgniteConnectionConcurrentReserveAndRemoveTest extends GridCommonAb
     public void test() throws Exception {
         IgniteEx svr = startGrid(0);
 
-        Ignite c1 = startGrid("client1");
+        final Ignite c1 = startGrid("client1");
 
         assertTrue(c1.configuration().isClientMode());
 
-        Ignite c2 = startGrid("client2");
+        final Ignite c2 = startGrid("client2");
 
         assertTrue(c2.configuration().isClientMode());
 
@@ -87,7 +87,7 @@ public class IgniteConnectionConcurrentReserveAndRemoveTest extends GridCommonAb
 
         spi2.blockMessages(TcpCommunicationSpi.HandshakeMessage2.class, c1.name());
 
-        AtomicInteger cnt = new AtomicInteger();
+        final AtomicInteger cnt = new AtomicInteger();
 
         cnt.getAndAdd(c1.compute(c1.cluster().forNodeId(c2.cluster().localNode().id())).call(new TestClosure()));
 
