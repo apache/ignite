@@ -277,10 +277,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Maximum ack timeout value for receiving message acknowledgement in milliseconds (value is <tt>600,000ms</tt>). */
     public static final long DFLT_MAX_ACK_TIMEOUT = 10 * 60 * 1000;
 
-    /** Default tries to fail next node. */
-    public static final int DFLT_TOPOLOGY_CHANGE_TRIES = 3;
-
-    public static final int DFLT_TOPOLOGY_CHANGE_DELAY = 500;
+    /** Default connection recovery timeout in ms. */
+    public static final long DFLT_CONNECTION_RECOVERY_TIMEOUT = 10000;
 
     /** Ssl message pattern for StreamCorruptedException. */
     private static Pattern sslMsgPattern = Pattern.compile("invalid stream header: 150\\d0\\d00");
@@ -316,11 +314,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     /** Size of topology snapshots history. */
     protected int topHistSize = DFLT_TOP_HISTORY_SIZE;
 
-    /** Tries to tries to fail next node. */
-    protected int topChangeTries = DFLT_TOPOLOGY_CHANGE_TRIES;
-
-    /** Delay to wait before trying to re-connect to previously failed node. */
-    protected long topChangeDelay = DFLT_TOPOLOGY_CHANGE_DELAY;
+    /** Default connection recovery timeout in ms. */
+    protected long connRecoveryTimeout = DFLT_CONNECTION_RECOVERY_TIMEOUT;
 
     /** Grid discovery listener. */
     protected volatile DiscoverySpiListener lsnr;
@@ -1006,59 +1001,51 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
     }
 
     /**
-     * Gets number of tries to fail next node. For more info see
-     * {@link #setTopologyChangeTries(int)}.
+     * Gets timeout that defines how long server node would try to recovery connection.<br>
+     * See {@link #setConnectionRecoveryTimeout(long)} for details.
      *
-     * @return Number of tries to fail next node.
+     * @return Timeout that defines how long server node would try to recovery connection.
      */
-    public int getTopologyChangeTries() {
-        return topChangeTries;
+    public long getConnectionRecoveryTimeout() {
+        return connRecoveryTimeout;
     }
 
     /**
-     * Sets number of tries to fail next node.
-     * <p>In case local node has
-     * temporary connectivity issues with part of the cluster, it may sequentially fail nodes
-     * one-by-one till successfully connect to one that has a fine connection with.
+     * @return Connection recovery timeout that is not greater than failureDetectionTimeout if enabled.
+     */
+    long getEffectiveConnectionRecoveryTimeout() {
+        if (failureDetectionTimeoutEnabled() && failureDetectionTimeout() < connRecoveryTimeout)
+            return failureDetectionTimeout();
+
+        return connRecoveryTimeout;
+    }
+
+    /**
+     * Sets timeout that defines how long server node would try to recovery connection.
+     * <p>In case local node has temporary connectivity issues with part of the cluster,
+     * it may sequentially fail nodes one-by-one till successfully connect to one that
+     * has a fine connection with.
      * This leads to fail of big number of nodes.
      * </p>
      * <p>
-     *     To overcome that issue, local node will do a sequential connection tries as before,
-     *     but now, successfully connected node will check if previous in a ring could be accessed
-     *     via network. If yes, then local node will try to connect already checked nodes in
-     *     reversed order unless will try again the regular next node. In other words,
-     *     node will recheck all nodes supposed as failed. This is one try.
+     *     To overcome that issue, local node will do a sequential connection tries to next
+     *     nodes. But if new next node has connection to previous it forces local node to
+     *     retry connect to previous. These tries will last till timeout will not
+     *     finished. When timeout is over, but no success in connecting to nodes it will
+     *     segment itself.
      * </p>
      * <p>
-     *     Default is {@link #DFLT_TOPOLOGY_CHANGE_TRIES}.
+     *     Cannot be greater than {@link #failureDetectionTimeout()}.
+     * </p>
+     * <p>
+     *     Default is {@link #DFLT_CONNECTION_RECOVERY_TIMEOUT}.
      * </p>
      *
-     * @param topChangeTries Number of tries to fail next node. {@code 0} means node will not
-     * recheck failed nodes.
+     * @param connRecoveryTimeout Timeout that defines how long server node would try to recovery connection.
+     * {@code 0} means node will not recheck failed nodes.
      */
-    @IgniteSpiConfiguration(optional = true)
-    public void setTopologyChangeTries(int topChangeTries) {
-        this.topChangeTries = topChangeTries;
-    }
-
-    /**
-     * Gets delay between previous node rechecks. For more details see
-     * {@link #setTopologyChangeTries(int)}.
-     *
-     * @return Delay between previous node rechecks in millisecs.
-     */
-    public long getTopologyChangeDelay() {
-        return topChangeDelay;
-    }
-
-    /**
-     * Sets delay between previous node rechecks. For more details see
-     * {@link #setTopologyChangeTries(int)}.
-     *
-     * @param topChangeDelay delay between previous node rechecks in millisecs.
-     */
-    public void setTopologyChangeDelay(long topChangeDelay) {
-        this.topChangeDelay = topChangeDelay;
+    public void setConnectionRecoveryTimeout(long connRecoveryTimeout) {
+        this.connRecoveryTimeout = connRecoveryTimeout;
     }
 
     /** {@inheritDoc} */

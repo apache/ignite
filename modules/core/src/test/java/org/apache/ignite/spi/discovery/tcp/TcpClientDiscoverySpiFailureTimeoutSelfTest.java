@@ -95,7 +95,7 @@ public class TcpClientDiscoverySpiFailureTimeoutSelfTest extends TcpClientDiscov
         TcpDiscoverySpi spi = useTestSpi ? new TestTcpDiscoverySpi2() : super.getDiscoverySpi();
 
         if (disableTopChangeRecovery)
-            spi.setTopologyChangeTries(0);
+            spi.setConnectionRecoveryTimeout(0);
 
         return spi;
     }

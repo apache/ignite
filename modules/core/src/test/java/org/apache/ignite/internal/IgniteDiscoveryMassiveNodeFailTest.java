@@ -53,10 +53,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
     private volatile boolean forceFail = true;
 
     /** */
-    private long delay = TcpDiscoverySpi.DFLT_TOPOLOGY_CHANGE_DELAY;
-
-    /** */
-    private int tries = TcpDiscoverySpi.DFLT_TOPOLOGY_CHANGE_TRIES;
+    private long timeout;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -68,15 +65,23 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        disco.setTopologyChangeTries(tries);
-        disco.setTopologyChangeDelay(delay);
+        disco.setConnectionRecoveryTimeout(timeout);
 
         return cfg;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
         stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        timeout = 2_000;
     }
 
     /**
@@ -85,7 +90,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMassiveFail() throws Exception {
-        tries = 0; // Disable previous node check.
+        timeout = 0; // Disable previous node check.
 
         startGrids(5);
 
@@ -122,7 +127,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      *
      */
     private long waitTime() {
-        return delay * tries * 2 + 5000;
+        return timeout + 5000;
     }
 
     /**
@@ -131,8 +136,6 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMassiveFailSelfKill() throws Exception {
-        tries = TcpDiscoverySpi.DFLT_TOPOLOGY_CHANGE_TRIES;
-
         startGrids(5);
 
         grid(0).events().enabledEvents();
@@ -168,8 +171,6 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMassiveFailAndRecovery() throws Exception {
-        tries = TcpDiscoverySpi.DFLT_TOPOLOGY_CHANGE_TRIES;
-
         startGrids(5);
 
         grid(0).events().enabledEvents();
@@ -194,7 +195,7 @@ public class IgniteDiscoveryMassiveNodeFailTest extends GridCommonAbstractTest {
 
         forceFail = true;
 
-        doSleep(delay * 2); // wait 1 try
+        doSleep(timeout / 4); // wait 1 try
 
         forceFail = false;
 
