@@ -138,6 +138,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         DataStorageConfiguration dsCfg = new DataStorageConfiguration()
             .setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4)
             .setPageSize(1024)
+            .setCheckpointFrequency(10 * 1000)
             .setWalMode(WALMode.LOG_ONLY)
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setName("dfltDataRegion")

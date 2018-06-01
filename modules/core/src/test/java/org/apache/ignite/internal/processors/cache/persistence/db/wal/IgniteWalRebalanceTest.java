@@ -287,6 +287,81 @@ public class IgniteWalRebalanceTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Test that WAL rebalance is not invoked if there are gaps in WAL history due to global WAL disabling.
+     *
+     * @throws Exception If failed.
+     */
+    public void testWithGlobalWalChange() throws Exception {
+        // Prepare some data.
+        IgniteEx crd = (IgniteEx) startGrids(3);
+
+        crd.cluster().active(true);
+
+        final int entryCnt = PARTS_CNT * 10;
+
+        {
+            IgniteCache<Object, Object> cache = crd.cache(CACHE_NAME);
+
+            for (int k = 0; k < entryCnt; k++)
+                cache.put(k, new IndexedObject(k - 1));
+        }
+
+        stopAllGrids();
+
+        // Rewrite data with globally disabled WAL.
+        crd = (IgniteEx) startGrids(2);
+
+        crd.cluster().active(true);
+
+        crd.cluster().disableWal(CACHE_NAME);
+
+        IgniteCache<Object, Object> cache = crd.cache(CACHE_NAME);
+
+        int grpId = crd.cachex(CACHE_NAME).context().groupId();
+
+        for (int k = 0; k < entryCnt; k++)
+            cache.put(k, new IndexedObject(k));
+
+        crd.cluster().enableWal(CACHE_NAME);
+
+        // This node shouldn't rebalance data using WAL, because it was disabled on other nodes.
+        IgniteEx ignite = startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        Set<Long> topVers = ((WalRebalanceCheckingCommunicationSpi) ignite.configuration().getCommunicationSpi())
+            .walRebalanceVersions(grpId);
+
+        Assert.assertFalse(topVers.contains(ignite.cluster().topologyVersion()));
+
+        stopGrid(2);
+
+        // Fix actual state to have start point in WAL to rebalance from.
+        forceCheckpoint();
+
+        // After another rewriting data with enabled WAL, node should rebalance this diff using WAL rebalance.
+        for (int k = 0; k < entryCnt; k++)
+            cache.put(k, new IndexedObject(k + 1));
+
+        ignite = startGrid(2);
+
+        awaitPartitionMapExchange();
+
+        topVers = ((WalRebalanceCheckingCommunicationSpi) ignite.configuration().getCommunicationSpi())
+            .walRebalanceVersions(grpId);
+
+        Assert.assertTrue(topVers.contains(ignite.cluster().topologyVersion()));
+
+        // Check data consistency.
+        for (Ignite ig : G.allGrids()) {
+            IgniteCache<Object, Object> cache1 = ig.cache(CACHE_NAME);
+
+            for (int k = 0; k < entryCnt; k++)
+                assertEquals(new IndexedObject(k + 1), cache1.get(k));
+        }
+    }
+
+    /**
      *
      */
     private static class IndexedObject {

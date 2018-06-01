@@ -595,7 +595,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 Files.delete(endFile);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Failed to delete stale checkpoint files: " + cpEntry, e);
+            throw new PersistentStorageIOException("Failed to delete stale checkpoint files: " + cpEntry, e);
         }
     }
 
@@ -1601,8 +1601,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         Map</*grpId*/Integer, Set</*partId*/Integer>> applicableGroupsAndPartitions = partitionsApplicableForWalRebalance();
 
-        Map</*grpId*/Integer, Map</*partId*/Integer, CheckpointEntry>> earliestValidCheckpoints =
-            cpHistory.searchAndReserveCheckpoints(applicableGroupsAndPartitions);
+        Map</*grpId*/Integer, Map</*partId*/Integer, CheckpointEntry>> earliestValidCheckpoints;
+
+        checkpointReadLock();
+
+        try {
+            earliestValidCheckpoints = cpHistory.searchAndReserveCheckpoints(applicableGroupsAndPartitions);
+        }
+        finally {
+            checkpointReadUnlock();
+        }
 
         Map</*grpId*/Integer, Map</*partId*/Integer, /*updCntr*/Long>> grpPartsWithCnts = new HashMap<>();
 
@@ -1624,25 +1632,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         .put(partId, new T2<>(updCntr, cpEntry.checkpointMark()));
 
                     grpPartsWithCnts.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, updCntr);
-                }
-            }
-        }
-
-        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (grp.cacheOrGroupName().equals("indexed") || grp.cacheOrGroupName().equals("cache")) {
-                Map<Integer, Long> availableCounters = grpPartsWithCnts.get(grp.groupId());
-
-                if (availableCounters == null || availableCounters.isEmpty()) {
-                    log.error("No update counters " + cctx.localNodeId());
-                }
-                else {
-                    SB sb = new SB();
-
-                    for (Map.Entry<Integer, Long> e : availableCounters.entrySet()) {
-                        sb.a(e.getKey() + " = " + e.getValue() + "; ");
-                    }
-
-                    log.error("Update counters: [" + sb.toString() + "]");
                 }
             }
         }
@@ -2566,7 +2555,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         for (IgniteBiTuple<PageMemory, Collection<FullPageId>> e : cpEntities)
             ((PageMemoryEx)e.get1()).finishCheckpoint();
 
-        writeCheckpointEntry(
+        prepareCheckpointEntry(
             tmpWriteBuf,
             cpTs,
             cpId,
@@ -2588,43 +2577,61 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Writes into specified file checkpoint entry containing WAL pointer to checkpoint record.
+     * Prepares checkpoint entry containing WAL pointer to checkpoint record.
+     * Writes into given {@code ptrBuf} WAL pointer content.
      *
-     * @param cpId Checkpoint ID.
-     * @param ptr Wal pointer of current checkpoint.
+     * @param entryBuf Buffer to fill
+     * @param cpTs Checkpoint timestamp.
+     * @param cpId Checkpoint id.
+     * @param ptr WAL pointer containing record.
+     * @param rec Checkpoint WAL record.
+     * @param type Checkpoint type.
+     * @return Checkpoint entry.
      */
-    private CheckpointEntry writeCheckpointEntry(
-        ByteBuffer tmpWriteBuf,
+    private CheckpointEntry prepareCheckpointEntry(
+        ByteBuffer entryBuf,
         long cpTs,
         UUID cpId,
         WALPointer ptr,
-        CheckpointRecord rec,
+        @Nullable CheckpointRecord rec,
         CheckpointEntryType type
-    ) throws IgniteCheckedException {
+    ) {
         assert ptr instanceof FileWALPointer;
 
         FileWALPointer filePtr = (FileWALPointer)ptr;
 
-        String fileName = checkpointFileName(cpTs, cpId, type);
+        entryBuf.rewind();
+
+        entryBuf.putLong(filePtr.index());
+
+        entryBuf.putInt(filePtr.fileOffset());
+
+        entryBuf.putInt(filePtr.length());
+
+        entryBuf.flip();
+
+        return createCheckPointEntry(cpTs, ptr, cpId, rec, type);
+    }
+
+    /**
+     * Writes checkpoint entry buffer {@code entryBuf} to specified checkpoint file with 2-phase protocol.
+     *
+     * @param entryBuf Checkpoint entry buffer to write.
+     * @param cp Checkpoint entry.
+     * @param type Checkpoint entry type.
+     * @throws PersistentStorageIOException If failed to write checkpoint entry.
+     */
+    public void writeCheckpointEntry(ByteBuffer entryBuf, CheckpointEntry cp, CheckpointEntryType type) throws PersistentStorageIOException {
+        String fileName = checkpointFileName(cp, type);
         String tmpFileName = fileName + FILE_TMP_SUFFIX;
 
         try {
             try (FileIO io = ioFactory.create(Paths.get(cpDir.getAbsolutePath(), skipSync ? fileName : tmpFileName).toFile(),
-                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+                StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
 
-                tmpWriteBuf.rewind();
+                io.write(entryBuf);
 
-                tmpWriteBuf.putLong(filePtr.index());
-
-                tmpWriteBuf.putInt(filePtr.fileOffset());
-
-                tmpWriteBuf.putInt(filePtr.length());
-
-                tmpWriteBuf.flip();
-
-                io.write(tmpWriteBuf);
-
-                tmpWriteBuf.clear();
+                entryBuf.clear();
 
                 if (!skipSync)
                     io.force(true);
@@ -2632,14 +2639,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (!skipSync)
                 Files.move(Paths.get(cpDir.getAbsolutePath(), tmpFileName), Paths.get(cpDir.getAbsolutePath(), fileName));
-
-            return createCheckPointEntry(cpTs, ptr, cpId, rec, type);
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Failed to write checkpoint entry [ptr=" + filePtr
-                    + ", cpTs=" + cpTs
-                    + ", cpId=" + cpId
-                    + ", type=" + type + "]", e);
+            throw new PersistentStorageIOException("Failed to write checkpoint entry [ptr=" + cp.checkpointMark()
+                + ", cpTs=" + cp.timestamp()
+                + ", cpId=" + cp.checkpointId()
+                + ", type=" + type + "]", e);
         }
     }
 
@@ -2711,12 +2716,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         assert cpId != null;
         assert type != null;
 
-        if (type != CheckpointEntryType.START)
-            return null;
-
         Map<Integer, CacheState> cacheGrpStates = null;
 
-        // Create lazy checkpoint entry.
+        // Do not hold groups state in-memory if there is no space in the checkpoint history to prevent possible OOM.
+        // In this case the actual group states will be readed from WAL by demand.
         if (rec != null && cpHistory.hasSpace())
             cacheGrpStates = rec.cacheGroupStates();
 
@@ -3391,13 +3394,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             final CheckpointProgress curr;
 
+            CheckpointEntry cp = null;
+
             IgniteBiTuple<Collection<GridMultiCollectionWrapper<FullPageId>>, Integer> cpPagesTuple;
 
             tracker.onLockWaitStart();
 
             boolean hasPages;
 
+            boolean hasPartitionsToDestroy;
+
             IgniteFuture snapFut = null;
+
+            long cpTs = System.currentTimeMillis();
+
+            // This can happen in an unlikely event of two checkpoints happening
+            // within a currentTimeMillis() granularity window.
+            if (cpTs == lastCpTs)
+                cpTs++;
+
+            lastCpTs = cpTs;
 
             checkpointLock.writeLock().lock();
 
@@ -3470,12 +3486,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 hasPages = hasPageForWrite(cpPagesTuple.get1());
 
-                if (hasPages || curr.nextSnapshot || !curr.destroyQueue.pendingReqs.isEmpty()) {
+                hasPartitionsToDestroy = !curr.destroyQueue.pendingReqs.isEmpty();
+
+                if (hasPages || curr.nextSnapshot || hasPartitionsToDestroy) {
                     // No page updates for this checkpoint are allowed from now on.
                     cpPtr = cctx.wal().log(cpRec);
 
                     if (cpPtr == null)
                         cpPtr = CheckpointStatus.NULL_PTR;
+                }
+
+                if (hasPages || hasPartitionsToDestroy) {
+                    cp = prepareCheckpointEntry(
+                        tmpWriteBuf,
+                        cpTs,
+                        cpRec.checkpointId(),
+                        cpPtr,
+                        cpRec,
+                        CheckpointEntryType.START);
+
+                    cpHistory.addCheckpoint(cp);
                 }
             }
             finally {
@@ -3496,8 +3526,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 }
             }
 
-            if (hasPages || !curr.destroyQueue.pendingReqs.isEmpty()) {
+            if (hasPages || hasPartitionsToDestroy) {
                 assert cpPtr != null;
+                assert cp != null;
 
                 tracker.onWalCpRecordFsyncStart();
 
@@ -3506,24 +3537,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 tracker.onWalCpRecordFsyncEnd();
 
-                long cpTs = System.currentTimeMillis();
-
-                // This can happen in an unlikely event of two checkpoints happening
-                // within a currentTimeMillis() granularity window.
-                if (cpTs == lastCpTs)
-                    cpTs++;
-
-                lastCpTs = cpTs;
-
-                CheckpointEntry cpEntry = writeCheckpointEntry(
-                    tmpWriteBuf,
-                    cpTs,
-                    cpRec.checkpointId(),
-                    cpPtr,
-                    cpRec,
-                    CheckpointEntryType.START);
-
-                cpHistory.addCheckpoint(cpEntry);
+                writeCheckpointEntry(tmpWriteBuf, cp, CheckpointEntryType.START);
 
                 GridMultiCollectionWrapper<FullPageId> cpPages = splitAndSortCpPagesIfNeeded(cpPagesTuple);
 
@@ -3540,7 +3554,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             curr.reason)
                         );
 
-                return new Checkpoint(cpEntry, cpPages, curr);
+                return new Checkpoint(cp, cpPages, curr);
             }
             else {
                 if (curr.nextSnapshot)
@@ -3624,13 +3638,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
 
             if (chp.hasDelta()) {
-                writeCheckpointEntry(
+                CheckpointEntry cp = prepareCheckpointEntry(
                     tmpWriteBuf,
                     chp.cpEntry.timestamp(),
                     chp.cpEntry.checkpointId(),
                     chp.cpEntry.checkpointMark(),
                     null,
                     CheckpointEntryType.END);
+
+                writeCheckpointEntry(tmpWriteBuf, cp, CheckpointEntryType.END);
 
                 cctx.wal().allowCompressionUntil(chp.checkpointEntry().checkpointMark());
             }
@@ -3952,16 +3968,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     *
+     * Data class representing the state of running/scheduled checkpoint.
      */
     private static class CheckpointProgress {
-        /** */
+        /** Scheduled time of checkpoint. */
         private volatile long nextCpTs;
 
-        /** */
+        /** Checkpoint begin phase future. */
         private GridFutureAdapter cpBeginFut = new GridFutureAdapter<>();
 
-        /** */
+        /** Checkpoint finish phase future. */
         private GridFutureAdapter cpFinishFut = new GridFutureAdapter<Void>() {
             @Override protected boolean onDone(@Nullable Void res, @Nullable Throwable err, boolean cancel) {
                 if (err != null && !cpBeginFut.isDone())
@@ -3971,13 +3987,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         };
 
-        /** */
+        /** Flag indicates that snapshot operation will be performed after checkpoint. */
         private volatile boolean nextSnapshot;
 
-        /** */
+        /** Flag indicates that checkpoint is started. */
         private volatile boolean started;
 
-        /** */
+        /** Snapshot operation that should be performed if {@link #nextSnapshot} set to true. */
         private volatile SnapshotOperation snapshotOperation;
 
         /** Partitions destroy queue. */
@@ -4264,23 +4280,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Set last checkpoint as inapplicable for WAL rebalance for given group {@code grpId}.
      *
+     * NOTE: This operation should be invoked within {@link #checkpointLock}.
+     *
      * @param grpId Group ID.
      */
     public void lastCheckpointInapplicableForWalRebalance(int grpId) {
-        checkpointReadLock();
-
         try {
+            // Check last recorded checkpoint and current running checkpoint.
             CheckpointEntry lastCp = cpHistory.lastCheckpoint();
-            Long lastCpTs = lastCp != null ? lastCp.timestamp() : null;
+            long lastCpTs = lastCp != null ? lastCp.timestamp() : 0;
 
-            if (lastCpTs != null)
+            if (lastCpTs != 0)
                 metaStorage.write(checkpointInapplicableCpAndGroupIdToKey(lastCpTs, grpId), true);
         }
         catch (IgniteCheckedException e) {
             log.error("Failed to mark last checkpoint as inapplicable for WAL rebalance for group: " + grpId, e);
-        }
-        finally {
-            checkpointReadUnlock();
         }
     }
 

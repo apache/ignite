@@ -56,21 +56,16 @@ public class IgniteDhtPartitionHistorySuppliersMap implements Serializable {
         if (map == null)
             return null;
 
-        UUID result = null;
-
         for (Map.Entry<UUID, Map<T2<Integer, Integer>, Long>> e : map.entrySet()) {
             UUID supplierNode = e.getKey();
 
             Long historyCounter = e.getValue().get(new T2<>(grpId, partId));
 
-            if (historyCounter != null && historyCounter <= cntrSince) {
-                if (result == null || lastSymbol(result) < lastSymbol(supplierNode))
-                    result = supplierNode;
-
-            }
+            if (historyCounter != null && historyCounter <= cntrSince)
+                return supplierNode;
         }
 
-        return result;
+        return null;
     }
 
     private char lastSymbol(UUID uuid) {

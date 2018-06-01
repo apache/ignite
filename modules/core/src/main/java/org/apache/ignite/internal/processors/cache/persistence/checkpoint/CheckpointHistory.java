@@ -1,9 +1,27 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.persistence.checkpoint;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -25,9 +43,9 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 
 /**
- * Checkpoint history. Holds chronological ordered map with {@link CheckpointEntry
- * CheckpointEntries}. Data is loaded from corresponding checkpoint directory. This directory holds files for
- * checkpoint start and end.
+ * Checkpoint history. Holds chronological ordered map with {@link CheckpointEntry CheckpointEntries}.
+ * Data is loaded from corresponding checkpoint directory.
+ * This directory holds files for checkpoint start and end.
  */
 public class CheckpointHistory {
     /** Logger. */
@@ -160,7 +178,7 @@ public class CheckpointHistory {
                 break;
 
             if (cctx.wal().reserved(cpEntry.checkpointMark())) {
-                U.warn(log, "Could not clear historyMap due to WAL reservation on cpEntry " + cpEntry.checkpointId() +
+                U.warn(log, "Could not clear historyMap due to WAL reservation on cp: " + cpEntry +
                     ", history map size is " + histMap.size());
 
                 break;
@@ -308,14 +326,25 @@ public class CheckpointHistory {
                     if (F.isEmpty(applicablePartitions))
                         continue;
 
+                    Set<Integer> inapplicablePartitions = null;
+
                     for (Integer partId : applicablePartitions) {
                         int pIdx = cpGroupState.indexByPartition(partId);
 
                         if (pIdx >= 0)
                             res.computeIfAbsent(grpId, k -> new HashMap<>()).put(partId, chpEntry);
-                        else // Partition is no more applicable for history search, exclude partition from searching.
-                            applicablePartitions.remove(partId);
+                        else {
+                            if (inapplicablePartitions == null)
+                                inapplicablePartitions = new HashSet<>();
+
+                            // Partition is no more applicable for history search, exclude partition from searching.
+                            inapplicablePartitions.add(partId);
+                        }
                     }
+
+                    if (!F.isEmpty(inapplicablePartitions))
+                        for (Integer partId : inapplicablePartitions)
+                            applicablePartitions.remove(partId);
                 }
 
                 // Remove groups from search with empty set of applicable partitions.

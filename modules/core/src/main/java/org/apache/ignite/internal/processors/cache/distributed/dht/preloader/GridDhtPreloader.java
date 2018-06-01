@@ -238,10 +238,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                     if (nodeId != null)
                         histSupplier = ctx.discovery().node(nodeId);
-
-                    if (grp.cacheOrGroupName().equals("indexed") || grp.cacheOrGroupName().equals("cache")) {
-                        log.warning("Requested " + grp.cacheOrGroupName() + " " + p + " " + part.initialUpdateCounter() + " = " + histSupplier);
-                    }
                 }
 
                 if (histSupplier != null) {
@@ -295,8 +291,16 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
         }
 
-        if (!assignments.isEmpty() && grp.persistenceEnabled())
-            ((GridCacheDatabaseSharedManager) ctx.database()).lastCheckpointInapplicableForWalRebalance(grp.groupId());
+        if (!assignments.isEmpty() && grp.persistenceEnabled()) {
+            ctx.database().checkpointReadLock();
+
+            try {
+                ((GridCacheDatabaseSharedManager) ctx.database()).lastCheckpointInapplicableForWalRebalance(grp.groupId());
+            }
+            finally {
+                ctx.database().checkpointReadUnlock();
+            }
+        }
 
         return assignments;
     }

@@ -430,12 +430,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Retreives the node which has WAL history since {@code cntrSince}.
+     *
      * @param grpId Cache group ID.
      * @param partId Partition ID.
+     * @param cntrSince Partition update counter since history supplying is requested.
      * @return ID of history supplier node or null if it doesn't exist.
      */
-    @Nullable public UUID partitionHistorySupplier(int grpId, int partId, long cntr) {
-        return partHistSuppliers.getSupplier(grpId, partId, cntr);
+    @Nullable public UUID partitionHistorySupplier(int grpId, int partId, long cntrSince) {
+        return partHistSuppliers.getSupplier(grpId, partId, cntrSince);
     }
 
     /**
@@ -2406,8 +2409,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (localCntr != null && localCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
                     partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, localCntr);
 
-                    log.warning("Added: " + cctx.localNodeId() + " " + p + " " + localCntr);
-
                     haveHistory.add(p);
 
                     continue;
@@ -2419,8 +2420,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 if (histCntr != null && histCntr <= minCntr && maxCntrObj.nodes.contains(e0.getKey())) {
                     partHistSuppliers.put(e0.getKey(), top.groupId(), p, histCntr);
-
-                    log.warning("Added: " + e0.getKey() + " " + p + " " + histCntr);
 
                     haveHistory.add(p);
 
