@@ -3982,7 +3982,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /** {@inheritDoc} */
-    public TransactionProxy proxy() {
+    @Override public TransactionProxy proxy() {
         if (proxy == null)
             proxy = new TransactionProxyImpl(this, cctx, false);
 
