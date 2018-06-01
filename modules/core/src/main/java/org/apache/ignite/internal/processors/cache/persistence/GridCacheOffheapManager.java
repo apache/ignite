@@ -1737,7 +1737,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int amount) throws IgniteCheckedException {
             CacheDataStore delegate0 = init0(true);
 
-            if (delegate0 == null || nextCleanTime > System.currentTimeMillis())
+            long now = U.currentTimeMillis();
+
+            if (delegate0 == null || nextCleanTime > now)
                 return 0;
 
             assert pendingTree != null : "Partition data store was not initialized.";
@@ -1745,8 +1747,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int cleared = purgeExpiredInternal(cctx, c, amount);
 
             // Throttle if there is nothing to clean anymore.
-            if (cleared < amount)
-                nextCleanTime = System.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
+            if (cleared == 0)
+                nextCleanTime = now + UNWIND_THROTTLING_TIMEOUT;
 
             return cleared;
         }

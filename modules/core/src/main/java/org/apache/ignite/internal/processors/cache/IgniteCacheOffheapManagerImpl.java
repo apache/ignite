@@ -1044,7 +1044,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         // Throttle if there is nothing to clean anymore.
         if (cleared < amount)
-            nextCleanTime = System.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
+            nextCleanTime = U.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
 
         return amount != -1 && cleared >= amount;
     }
