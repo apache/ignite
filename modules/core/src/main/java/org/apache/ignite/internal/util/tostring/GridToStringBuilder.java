@@ -932,7 +932,10 @@ public class GridToStringBuilder {
         if (cls == null)
             cls = val.getClass();
 
-        if (isPrimitiveWraper(cls)) {
+        boolean isCol = val instanceof Collection;
+        boolean isMap = val instanceof Map;
+
+        if (cls.isPrimitive() || !cls.getName().startsWith("org.apache.ignite") && !cls.isArray() && !isCol && !isMap) {
             buf.a(val);
 
             return;
@@ -946,9 +949,9 @@ public class GridToStringBuilder {
         try {
             if (cls.isArray())
                 addArray(buf, cls, val, svdObjs);
-            else if (val instanceof Collection)
+            else if (isCol)
                 addCollection(buf, (Collection) val, svdObjs);
-            else if (val instanceof Map)
+            else if (isMap)
                 addMap(buf, (Map<?, ?>) val, svdObjs);
             else
                 toStringImpl0((Class) cls, buf, val, EMPTY_ARRAY, EMPTY_ARRAY, null, 0, svdObjs);
@@ -1057,9 +1060,6 @@ public class GridToStringBuilder {
         assert addNames.length == addVals.length;
         assert addLen <= addNames.length;
 
-        if (isPrimitiveWraper(cls))
-            return String.valueOf(obj);
-
         IdentityHashMap<Object, Integer> svdObjs = savedObjects.get();
 
         buf.setLength(0);
@@ -1149,17 +1149,6 @@ public class GridToStringBuilder {
             // No other option here.
             throw new IgniteException(e);
         }
-    }
-
-    /**
-     * @param cls Class to be checked.
-     * @return True - if given class is primitive and is possible to call object's toString().
-     */
-    private static boolean isPrimitiveWraper(Class cls) {
-        return cls.isPrimitive() || cls == Byte.class || cls == Short.class || cls == Integer.class ||
-            cls == Long.class || cls == Float.class || cls == Double.class  || cls == Boolean.class ||
-            cls == Character.class || cls == String.class || cls == CharSequence.class ||
-            ByteBuffer.class.isAssignableFrom(cls) || cls == UUID.class || cls == Class.class;
     }
 
     /**
