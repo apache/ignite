@@ -3211,7 +3211,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 if (stopping)
                     throw new IgniteSpiException("Node is stopping.");
 
-                if (addr.getAddress().isLoopbackAddress() && addr.getPort() == boundTcpPort) {
+                if (addr.getAddress().equals(locHost) && addr.getPort() == boundTcpPort) {
                     if (log.isDebugEnabled())
                         log.debug("Skipping local address [addr=" + addr +
                             ", locAddrs=" + node.attribute(createSpiAttributeName(ATTR_ADDRS)) +
