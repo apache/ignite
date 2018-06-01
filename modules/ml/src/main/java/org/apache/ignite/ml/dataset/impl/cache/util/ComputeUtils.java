@@ -266,6 +266,15 @@ public class ComputeUtils {
         datasetCache.put(part, ctx);
     }
 
+    /**
+     * Computes number of entries selected from the cache ny the query.
+     *
+     * @param cache Ignite cache with upstream data.
+     * @param qry Cache query.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return Number of entries supplied by the iterator.
+     */
     private static  <K, V> long computeCount(IgniteCache<K, V> cache, ScanQuery<K, V> qry) {
         try (QueryCursor<UpstreamEntry<K, V>> cursor = cache.query(qry,
             e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
