@@ -86,6 +86,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 @SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
     /** */
+    public static final int UNWIND_THROTTLING_TIMEOUT = 500;
+
+    /** */
     protected GridCacheSharedContext ctx;
 
     /** */
@@ -105,6 +108,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
     /** */
     protected volatile boolean hasPendingEntries;
+
+    /** Timestamp when next clean try will be allowed. */
+    private volatile long nextCleanTime;
 
     /** */
     private final GridAtomicLong globalRmvId = new GridAtomicLong(U.currentTimeMillis() * 1000_000);
@@ -1029,12 +1035,36 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     ) throws IgniteCheckedException {
         assert !cctx.isNear() : cctx.name();
 
-        if (!hasPendingEntries || pendingEntries == null)
+        if (!hasPendingEntries || nextCleanTime > U.currentTimeMillis())
             return false;
 
-        GridCacheVersion obsoleteVer = null;
+        assert pendingEntries != null;
 
+        int cleared = expireInternal(cctx, c, amount);
+
+        // Throttle if there is nothing to clean anymore.
+        if (cleared < amount)
+            nextCleanTime = System.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
+
+        return amount != -1 && cleared >= amount;
+    }
+
+
+    /**
+     * @param cctx Cache context.
+     * @param c Closure.
+     * @param amount Limit of processed entries by single call, {@code -1} for no limit.
+     * @return cleared entries count.
+     * @throws IgniteCheckedException If failed.
+     */
+    private int expireInternal(
+            GridCacheContext cctx,
+            IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
+        int amount
+    ) throws IgniteCheckedException {
         long now = U.currentTimeMillis();
+
+        GridCacheVersion obsoleteVer = null;
 
         GridCursor<PendingRow> cur;
 
@@ -1044,17 +1074,17 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             cur = pendingEntries.find(null, new PendingRow(CU.UNDEFINED_CACHE_ID, now, 0));
 
         if (!cur.next())
-            return false;
-
-        int cleared = 0;
+            return 0;
 
         if (!busyLock.enterBusy())
-            return false;
+            return 0;
 
         try {
+            int cleared = 0;
+
             do {
                 if (amount != -1 && cleared > amount)
-                    return true;
+                    return cleared;
 
                 PendingRow row = cur.get();
 
@@ -1076,12 +1106,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 cleared++;
             }
             while (cur.next());
+
+            return cleared;
         }
         finally {
             busyLock.leaveBusy();
         }
-
-        return false;
     }
 
     /** {@inheritDoc} */
