@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncN
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTopologyChangeTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnIncorrectParamsTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxStateChangeEventTest;
 
 /**
  * Test suite.
@@ -88,6 +89,7 @@ public class IgniteCacheTestSuite6 extends TestSuite {
 
         suite.addTestSuite(TxLabelTest.class);
         suite.addTestSuite(TxRollbackOnIncorrectParamsTest.class);
+        suite.addTestSuite(TxStateChangeEventTest.class);
 
         suite.addTestSuite(TxMultiCacheAsyncOpsTest.class);
 
