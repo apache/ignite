@@ -623,7 +623,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         ver = (IgniteProductVersion)in.readObject();
         clientRouterNodeId = U.readUuid(in);
 
-        if (isClient())
+        if (clientRouterNodeId() != null)
             consistentId = consistentIdAttr != null ? consistentIdAttr : id;
         else
             consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
