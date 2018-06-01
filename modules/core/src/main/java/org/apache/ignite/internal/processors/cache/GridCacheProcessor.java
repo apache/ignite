@@ -90,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.dr.GridCacheDrManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointReadLocker;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -2278,6 +2279,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (ExchangeActions.CacheActionData action : exchActions.cacheStopRequests()) {
                 CacheGroupContext gctx = cacheGrps.get(action.descriptor().groupId());
 
+                CheckpointReadLocker checkpointLocker = sharedCtx.database();
+
                 // Cancel all operations blocking gateway
                 if (gctx != null) {
                     final String msg = "Failed to wait for topology update, cache group is stopping.";
@@ -2286,17 +2289,19 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     // for correct cache proxy restart. For more details see
                     // IgniteCacheProxy.cacheException()
                     gctx.affinity().cancelFutures(new CacheStoppedException(msg));
+
+                    checkpointLocker = gctx.checkpointReadLocker();
                 }
 
                 stopGateway(action.request());
 
-                gctx.checkpointReadLocker().checkpointReadLock();
+                checkpointLocker.checkpointReadLock();
 
                 try {
                     prepareCacheStop(action.request().cacheName(), action.request().destroy());
                 }
                 finally {
-                    gctx.checkpointReadLocker().checkpointReadUnlock();
+                    checkpointLocker.checkpointReadUnlock();
                 }
             }
 
