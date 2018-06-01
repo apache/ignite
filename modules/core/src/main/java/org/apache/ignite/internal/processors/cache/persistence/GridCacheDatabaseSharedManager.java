@@ -3467,8 +3467,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     ArrayList<GridDhtLocalPartition> parts = new ArrayList<>();
 
                     for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
-                        if (part.state() == GridDhtPartitionState.OWNING)
-                            parts.add(part);
+                        parts.add(part);
 
                     CacheState state = new CacheState(parts.size());
 
