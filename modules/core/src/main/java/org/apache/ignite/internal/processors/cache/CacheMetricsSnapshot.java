@@ -21,8 +21,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.Collection;
+import java.util.Map;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -351,9 +352,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
      * Constructs merged cache metrics.
      *
      * @param loc Metrics for cache on local node.
-     * @param metrics Metrics for merge.
+     * @param nodesToMetrics Nodes to metrics mapping. Needed for metrics merging.
      */
-    public CacheMetricsSnapshot(CacheMetrics loc, Collection<CacheMetrics> metrics) {
+    public CacheMetricsSnapshot(CacheMetrics loc, Map<ClusterNode, CacheMetrics> nodesToMetrics) {
         cacheName = loc.name();
         isEmpty = loc.isEmpty();
         isWriteBehindEnabled = loc.isWriteBehindEnabled();
@@ -376,7 +377,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         isValidForReading = loc.isValidForReading();
         isValidForWriting = loc.isValidForWriting();
 
-        for (CacheMetrics e : metrics) {
+        for (Map.Entry<ClusterNode, CacheMetrics> nodeToMetrics : nodesToMetrics.entrySet()) {
+            CacheMetrics e = nodeToMetrics.getValue();
+
             reads += e.getCacheGets();
             puts += e.getCachePuts();
             hits += e.getCacheHits();
@@ -400,7 +403,10 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
             offHeapMisses += e.getOffHeapMisses();
             offHeapEntriesCnt += e.getOffHeapEntriesCount();
             heapEntriesCnt += e.getHeapEntriesCount();
-            offHeapPrimaryEntriesCnt += e.getOffHeapPrimaryEntriesCount();
+
+            if (!nodeToMetrics.getKey().isClient())
+                offHeapPrimaryEntriesCnt += e.getOffHeapPrimaryEntriesCount();
+
             offHeapBackupEntriesCnt += e.getOffHeapBackupEntriesCount();
             offHeapAllocatedSize += e.getOffHeapAllocatedSize();
 
@@ -476,7 +482,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
             rebalancingKeysRate += e.getRebalancingKeysRate();
         }
 
-        int size = metrics.size();
+        int size = nodesToMetrics.size();
 
         if (size > 1) {
             putAvgTimeNanos /= size;
