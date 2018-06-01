@@ -204,8 +204,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx, SearchRow row)
-        throws IgniteCheckedException {
+    @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx,
+        SearchRow row, boolean update) throws IgniteCheckedException {
         if (inlineSize() == 0)
             return compareRows(getRow(io, pageAddr, idx), row);
         else {
@@ -255,8 +255,10 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                     break;
             }
 
+            SearchRow rowData = null;
+
             if (lastIdxUsed < cols.length) {
-                SearchRow rowData = getRow(io, pageAddr, idx);
+                rowData = getRow(io, pageAddr, idx);
 
                 for (int i = lastIdxUsed, len = cols.length; i < len; i++) {
                     IndexColumn col = cols[i];

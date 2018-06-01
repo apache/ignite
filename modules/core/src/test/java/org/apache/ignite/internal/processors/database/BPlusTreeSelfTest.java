@@ -2390,7 +2390,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected int compare(BPlusIO<Long> io, long pageAddr, int idx, Long n2)
+        @Override protected int compare(BPlusIO<Long> io, long pageAddr, int idx, Long n2, boolean update)
             throws IgniteCheckedException {
             Long n1 = io.getLookupRow(this, pageAddr, idx);
 
