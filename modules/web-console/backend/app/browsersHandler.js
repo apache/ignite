@@ -212,7 +212,7 @@ module.exports = {
 
             nodeListeners(sock) {
                 // Return command result from grid to browser.
-                sock.on('node:rest', (clusterId, params, cb) => {
+                sock.on('node:rest', ({clusterId, params}, cb) => {
                     const demo = sock.request._query.IgniteDemoMode === 'true';
                     const token = sock.request.user.token;
 
@@ -241,12 +241,9 @@ module.exports = {
                 this.registerVisorTask('toggleClusterState', internalVisor('misc.VisorChangeGridActiveStateTask'), internalVisor('misc.VisorChangeGridActiveStateTaskArg'));
 
                 // Return command result from grid to browser.
-                sock.on('node:visor', (clusterId, taskId, nids, user, password, ...args) => {
+                sock.on('node:visor', ({clusterId, taskId, nids, user, password, args = []} = {}, cb) => {
                     const demo = sock.request._query.IgniteDemoMode === 'true';
                     const token = sock.request.user.token;
-
-                    const cb = _.last(args);
-                    args = _.dropRight(args);
 
                     const desc = this._visorTasks.get(taskId);
 
@@ -268,13 +265,10 @@ module.exports = {
 
                     this.executeOnNode(agent, demo, params)
                         .then((data) => {
-                            if (data.zipped)
-                                return cb(null, data);
-
-                            if (data.finished)
+                            if (data.finished && !data.zipped)
                                 return cb(null, data.result);
 
-                            cb(null, data);
+                            return cb(null, data);
                         })
                         .catch((err) => cb(this.errorTransformer(err)));
                 });

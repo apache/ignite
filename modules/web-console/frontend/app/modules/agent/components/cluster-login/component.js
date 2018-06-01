@@ -15,16 +15,38 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import _ from 'lodash';
 
-import AgentModal from './AgentModal.service';
-import AgentManager from './AgentManager.service';
+import template from './template.pug';
 
-import clusterLogin from './components/cluster-login';
+export const component = {
+    name: 'clusterLogin',
+    bindings: {
+        onLogin: '=',
+        onHide: '='
+    },
+    controller: class {
+        sesTtls = [
+            {label: '5 min', value: 300000},
+            {label: '10 min', value: 600000},
+            {label: '15 min', value: 900000},
+            {label: '20 min', value: 1200000},
+            {label: '25 min', value: 1500000},
+            {label: '30 min', value: 1800000}
+        ];
 
-angular
-    .module('ignite-console.agent', [
-        clusterLogin.name
-    ])
-    .service('AgentModal', AgentModal)
-    .service('AgentManager', AgentManager);
+        constructor() {
+            this.data = {
+                sesTtl: _.last(this.sesTtls).value
+            };
+        }
+
+        login() {
+            if (this.form.$invalid)
+                return;
+
+            this.onLogin(this.data);
+        }
+    },
+    template
+};

@@ -16,15 +16,11 @@
  */
 
 import angular from 'angular';
+import {component} from './component';
+import service from './service';
 
-import AgentModal from './AgentModal.service';
-import AgentManager from './AgentManager.service';
-
-import clusterLogin from './components/cluster-login';
-
-angular
-    .module('ignite-console.agent', [
-        clusterLogin.name
+export default angular
+    .module('ignite-console.agent.cluster-login', [
     ])
-    .service('AgentModal', AgentModal)
-    .service('AgentManager', AgentManager);
+    .service(service.name, service)
+    .component(component.name, component);

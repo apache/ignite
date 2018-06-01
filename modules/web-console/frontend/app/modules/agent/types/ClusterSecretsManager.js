@@ -15,16 +15,38 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import {ClusterSecrets} from './ClusterSecrets';
 
-import AgentModal from './AgentModal.service';
-import AgentManager from './AgentManager.service';
+export class ClusterSecretsManager {
+    /** @type {Map<String, ClusterSecrets>} */
+    memoryCache = new Map();
 
-import clusterLogin from './components/cluster-login';
+    /**
+     * @param {String} clusterId
+     */
+    has(clusterId) {
+        return this.memoryCache.has(clusterId);
+    }
 
-angular
-    .module('ignite-console.agent', [
-        clusterLogin.name
-    ])
-    .service('AgentModal', AgentModal)
-    .service('AgentManager', AgentManager);
+    /**
+     * @param {String} clusterId
+     */
+    get(clusterId) {
+        return this.memoryCache.get(clusterId);
+    }
+
+    /**
+     * @param {String} clusterId
+     * @param {ClusterSecrets} secrets
+     */
+    save(clusterId, secrets) {
+        this.memoryCache.set(clusterId, secrets);
+    }
+
+    /**
+     * @param {String} clusterId
+     */
+    reset(clusterId) {
+        this.memoryCache.delete(clusterId);
+    }
+}

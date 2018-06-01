@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+export class ClusterSecrets {
+    /** @type {String} */
+    login;
 
-import AgentModal from './AgentModal.service';
-import AgentManager from './AgentManager.service';
+    /** @type {String} */
+    password;
 
-import clusterLogin from './components/cluster-login';
-
-angular
-    .module('ignite-console.agent', [
-        clusterLogin.name
-    ])
-    .service('AgentModal', AgentModal)
-    .service('AgentManager', AgentManager);
+    /** @type {Number} */
+    sessionTtl;
+}
