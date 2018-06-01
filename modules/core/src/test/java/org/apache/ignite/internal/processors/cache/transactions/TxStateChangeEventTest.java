@@ -33,6 +33,7 @@ import org.apache.ignite.transactions.TransactionState;
 
 import static org.apache.ignite.events.EventType.EVTS_TX;
 import static org.apache.ignite.events.EventType.EVT_TX_COMMITTED;
+import static org.apache.ignite.events.EventType.EVT_TX_PREPARED;
 import static org.apache.ignite.events.EventType.EVT_TX_RESUMED;
 import static org.apache.ignite.events.EventType.EVT_TX_ROLLED_BACK;
 import static org.apache.ignite.events.EventType.EVT_TX_STARTED;
@@ -62,6 +63,9 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
 
     /** Resume. */
     private AtomicBoolean resume = new AtomicBoolean();
+
+    /** Prepare. */
+    private AtomicBoolean prepare = new AtomicBoolean();
 
     /**
      *
@@ -106,7 +110,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
                 },
                 EVTS_TX);
 
-        IgniteCache cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+        IgniteCache cache = ignite.getOrCreateCache(defaultCacheConfiguration().setBackups(2));
 
         // create & commit
         try (Transaction tx = ignite.transactions().withLabel(lb).txStart(
@@ -118,10 +122,11 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
 
         assertTrue(
             creation.get() &&
-            commit.get() &&
-            !rollback.get() &&
-            !suspend.get() &&
-            !resume.get());
+                commit.get() &&
+                !rollback.get() &&
+                !suspend.get() &&
+                !resume.get() &&
+                prepare.get());
 
         clear();
 
@@ -141,10 +146,11 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
 
         assertTrue(
             creation.get() &&
-            commit.get() &&
-            !rollback.get() &&
-            suspend.get() &&
-            resume.get());
+                commit.get() &&
+                !rollback.get() &&
+                suspend.get() &&
+                resume.get()&&
+                prepare.get());
 
         clear();
 
@@ -156,10 +162,11 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
 
         assertTrue(
             creation.get() &&
-            !commit.get() &&
-            rollback.get() &&
-            !suspend.get() &&
-            !resume.get());
+                !commit.get() &&
+                rollback.get() &&
+                !suspend.get() &&
+                !resume.get()&&
+                !prepare.get());
     }
 
     /**
@@ -171,6 +178,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
         rollback.set(false);
         suspend.set(false);
         resume.set(false);
+        prepare.set(false);
     }
 
     /**
@@ -179,21 +187,20 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
     private void checkEvent(TransactionStateChangedEvent evt) {
         Transaction tx = evt.tx();
 
-        assertEquals(tx.timeout(), timeout);
+        assertTrue(tx.timeout() > 0); // Remote tx has relative timeout
 
         switch (evt.type()) {
             case EVT_TX_STARTED: {
+                assertEquals(lb, tx.label());
                 assertFalse(creation.get());
                 assertEquals(tx.state(), TransactionState.ACTIVE);
 
-                if (lb.equals(tx.label()))
-                    creation.set(true);
+                creation.set(true);
 
                 break;
             }
 
             case EVT_TX_COMMITTED: {
-                assertFalse(commit.get());
                 assertEquals(tx.state(), TransactionState.COMMITTED);
 
                 commit.set(true);
@@ -211,6 +218,7 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
             }
 
             case EVT_TX_SUSPENDED: {
+                assertEquals(lb, tx.label());
                 assertFalse(commit.get());
                 assertEquals(tx.state(), TransactionState.SUSPENDED);
 
@@ -220,10 +228,19 @@ public class TxStateChangeEventTest extends GridCommonAbstractTest {
             }
 
             case EVT_TX_RESUMED: {
+                assertEquals(lb, tx.label());
                 assertFalse(commit.get());
                 assertEquals(tx.state(), TransactionState.ACTIVE);
 
                 resume.set(true);
+
+                break;
+            }
+
+            case EVT_TX_PREPARED: {
+                assertEquals(tx.state(), TransactionState.PREPARED);
+
+                prepare.set(true);
 
                 break;
             }

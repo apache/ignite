@@ -93,6 +93,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_TX_COMMITTED;
+import static org.apache.ignite.events.EventType.EVT_TX_PREPARED;
 import static org.apache.ignite.events.EventType.EVT_TX_RESUMED;
 import static org.apache.ignite.events.EventType.EVT_TX_ROLLED_BACK;
 import static org.apache.ignite.events.EventType.EVT_TX_SUSPENDED;
@@ -1042,6 +1043,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 }
                 case PREPARED: {
                     valid = prev == PREPARING;
+
+                    evtType = EVT_TX_PREPARED;
 
                     break;
                 }
