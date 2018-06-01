@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -31,13 +32,16 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.FileDescriptor;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.NotNull;
@@ -76,17 +80,19 @@ public class IgniteWalIteratorFactory {
      * @throws IgniteCheckedException if failed to read files
      */
     public WALIterator iterator(@NotNull File... filesOrDirs) throws IgniteCheckedException {
-        return iterator(new IteratorParametersBuilder().files(filesOrDirs));
+        return iterator(new IteratorParametersBuilder().filesOrDirs(filesOrDirs));
     }
 
-    public WALIterator iterator(@NotNull IteratorParametersBuilder iteratorParametersBuilder) throws IgniteCheckedException {
+    public WALIterator iterator(
+        @NotNull IteratorParametersBuilder iteratorParametersBuilder
+    ) throws IgniteCheckedException {
         iteratorParametersBuilder.validate();
 
         return new StandaloneWalRecordsIterator(log,
             prepareSharedCtx(iteratorParametersBuilder),
             iteratorParametersBuilder.ioFactory,
             resolveWalFiles(
-                iteratorParametersBuilder.files,
+                iteratorParametersBuilder.filesOrDirs,
                 iteratorParametersBuilder
             ),
             iteratorParametersBuilder.filter,
@@ -95,6 +101,43 @@ public class IgniteWalIteratorFactory {
         );
     }
 
+    public List<T2<Long, Long>> hasGaps(@NotNull File... filesOrDirs) throws IgniteCheckedException {
+        return hasGaps(new IteratorParametersBuilder().filesOrDirs(filesOrDirs));
+    }
+
+    public List<T2<Long, Long>> hasGaps(
+        @NotNull IteratorParametersBuilder iteratorParametersBuilder
+    ) throws IgniteCheckedException {
+        iteratorParametersBuilder.validate();
+
+        List<T2<Long, Long>> gaps = new ArrayList<>();
+
+        List<FileDescriptor> descriptors = resolveWalFiles(
+            iteratorParametersBuilder.filesOrDirs,
+            iteratorParametersBuilder
+        );
+
+        Iterator<FileDescriptor> it = descriptors.iterator();
+
+        FileDescriptor prevFd = null;
+
+        while (it.hasNext()) {
+            FileDescriptor nextFd = it.next();
+
+            if (prevFd == null) {
+                prevFd = nextFd;
+
+                continue;
+            }
+
+            if (prevFd.idx() + 1 != nextFd.idx())
+                gaps.add(new T2<>(prevFd.idx(), nextFd.idx()));
+
+            prevFd = nextFd;
+        }
+
+        return gaps;
+    }
 
     /**
      * This methods checks all provided files to be correct WAL segment.
@@ -104,17 +147,15 @@ public class IgniteWalIteratorFactory {
      * @param iteratorParametersBuilder IteratorParametersBuilder.
      * @return list of file descriptors with checked header records, having correct file index is set
      */
-    private List<FileDescriptor> resolveWalFiles(File[] files, IteratorParametersBuilder iteratorParametersBuilder) {
-        FileIOFactory ioFactory = iteratorParametersBuilder.ioFactory;
-
-        if (files == null || files.length == 0)
+    private List<FileDescriptor> resolveWalFiles(File[] filesOrDirs, IteratorParametersBuilder iteratorParametersBuilder) {
+        if (filesOrDirs == null || filesOrDirs.length == 0)
             return Collections.emptyList();
 
-        final List<FileDescriptor> resultingDescs = new ArrayList<>();
+        final List<FileDescriptor> descriptors = new ArrayList<>();
 
-        for (File file : files) {
+        for (File file : filesOrDirs) {
             if (file.isDirectory()) {
-                resultingDescs.addAll(resolveWalFiles(file.listFiles(), iteratorParametersBuilder));
+                descriptors.addAll(resolveWalFiles(file.listFiles(), iteratorParametersBuilder));
 
                 continue;
             }
@@ -122,10 +163,14 @@ public class IgniteWalIteratorFactory {
             if (file.length() < HEADER_RECORD_SIZE)
                 continue;  // Filter out this segment as it is too short.
 
+            FileIOFactory ioFactory = iteratorParametersBuilder.ioFactory;
+
+            FileDescriptor ds = new FileDescriptor(file);
+
             FileWALPointer ptr;
 
             try (
-                FileIO fileIO = ioFactory.create(file);
+                FileIO fileIO = ds.isCompressed() ? new UnzipFileIO(file) : ioFactory.create(file);
                 ByteBufferExpander buf = new ByteBufferExpander(HEADER_RECORD_SIZE, ByteOrder.nativeOrder())
             ) {
                 final DataInput in = new FileInput(fileIO, buf);
@@ -133,7 +178,7 @@ public class IgniteWalIteratorFactory {
                 // Header record must be agnostic to the serializer version.
                 final int type = in.readUnsignedByte();
 
-                if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE) {
+                if (type == RecordType.STOP_ITERATION_RECORD_TYPE) {
                     if (log.isInfoEnabled())
                         log.info("Reached logical end of the segment for file " + file);
 
@@ -145,15 +190,15 @@ public class IgniteWalIteratorFactory {
             catch (IOException e) {
                 U.warn(log, "Failed to scan index from file [" + file + "]. Skipping this file during iteration", e);
 
-                continue; // Filter out this segment
+                continue; // Filter out this segment.
             }
 
-            resultingDescs.add(new FileDescriptor(file, ptr.index()));
+            descriptors.add(new FileDescriptor(file, ptr.index()));
         }
 
-        Collections.sort(resultingDescs);
+        Collections.sort(descriptors);
 
-        return resultingDescs;
+        return descriptors;
     }
 
     /**
@@ -181,7 +226,7 @@ public class IgniteWalIteratorFactory {
 
     public static class IteratorParametersBuilder {
         /** */
-        private File[] files;
+        private File[] filesOrDirs;
 
         /** */
         private int pageSize;
@@ -208,59 +253,87 @@ public class IgniteWalIteratorFactory {
          */
         @Nullable private File marshallerMappingFileStoreDir;
 
-        @Nullable private IgniteBiPredicate<WALRecord.RecordType, WALPointer> filter;
+        /** */
+        @Nullable private IgniteBiPredicate<RecordType, WALPointer> filter;
 
-        public IteratorParametersBuilder files(File... files) {
-            this.files = files;
+        /**
+         *
+         */
+        public IteratorParametersBuilder filesOrDirs(File... filesOrDirs) {
+            this.filesOrDirs = filesOrDirs;
 
             return this;
         }
 
+        /**
+         *
+         */
         public IteratorParametersBuilder pageSize(int pageSize) {
             this.pageSize = pageSize;
 
             return this;
         }
 
+        /**
+         *
+         */
         public IteratorParametersBuilder bufferSize(int bufferSize) {
             this.bufferSize = bufferSize;
 
             return this;
         }
 
+        /**
+         *
+         */
         public IteratorParametersBuilder keepBinary(boolean keepBinary) {
             this.keepBinary = keepBinary;
 
             return this;
         }
 
+        /**
+         *
+         */
         public IteratorParametersBuilder ioFactory(FileIOFactory ioFactory) {
             this.ioFactory = ioFactory;
 
             return this;
         }
 
+        /**
+         *
+         */
         public IteratorParametersBuilder binaryMetadataFileStoreDir(File binaryMetadataFileStoreDir) {
             this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;
 
             return this;
         }
 
+        /**
+         *
+         */
         public IteratorParametersBuilder marshallerMappingFileStoreDir(File marshallerMappingFileStoreDir) {
             this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
 
             return this;
         }
 
-        public IteratorParametersBuilder filter(IgniteBiPredicate<WALRecord.RecordType, WALPointer> filter) {
+        /**
+         *
+         */
+        public IteratorParametersBuilder filter(IgniteBiPredicate<RecordType, WALPointer> filter) {
             this.filter = filter;
 
             return this;
         }
 
+        /**
+         *
+         */
         public IteratorParametersBuilder copy() {
             return new IteratorParametersBuilder()
-                .files(files)
+                .filesOrDirs(filesOrDirs)
                 .pageSize(pageSize)
                 .bufferSize(bufferSize)
                 .keepBinary(keepBinary)
@@ -270,6 +343,9 @@ public class IgniteWalIteratorFactory {
                 .filter(filter);
         }
 
+        /**
+         *
+         */
         public void validate() throws IgniteCheckedException {
 
         }

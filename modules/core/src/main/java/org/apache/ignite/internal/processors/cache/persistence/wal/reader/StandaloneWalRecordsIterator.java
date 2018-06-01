@@ -65,6 +65,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     @Nullable
     private List<FileDescriptor> walFileDescriptors;
 
+    private int curIdx = 0;
+
     /** Keep binary. This flag disables converting of non primitive types (BinaryObjects) */
     private boolean keepBinary;
 
@@ -109,7 +111,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param walFiles files for file-by-file iteration mode
      */
     private void init(List<FileDescriptor> walFiles) throws IgniteCheckedException {
-        curWalSegmIdx = walFiles.get(0).idx();
+        curWalSegmIdx = walFiles.get(curIdx).idx();
 
         walFileDescriptors = walFiles;
 
@@ -127,8 +129,10 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         curWalSegmIdx++;
 
+        curIdx++;
+
         // curHandle.workDir is false
-        final FileDescriptor fd = walFileDescriptors.get((int)curWalSegmIdx + 1);
+        final FileDescriptor fd = walFileDescriptors.get(curIdx);
 /*
         if (walFilesDir != null) {
             File segmentFile = new File(walFilesDir,
@@ -148,7 +152,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         }*/
 
         if (log.isDebugEnabled())
-            log.debug("Reading next file [absIdx=" + curWalSegmIdx + ", file=" + fd.getFile().getAbsolutePath() + ']');
+            log.debug("Reading next file [absIdx=" + curWalSegmIdx + ", file=" + fd.file().getAbsolutePath() + ']');
 
         assert fd != null;
 

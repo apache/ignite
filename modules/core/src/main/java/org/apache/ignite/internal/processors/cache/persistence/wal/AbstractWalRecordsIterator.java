@@ -91,21 +91,21 @@ public abstract class AbstractWalRecordsIterator
      * @param sharedCtx Shared context.
      * @param serializerFactory Serializer of current version to read headers.
      * @param ioFactory ioFactory for file IO access.
-     * @param bufSize buffer for reading records size.
+     * @param initialReadBufferSize buffer for reading records size.
      */
     protected AbstractWalRecordsIterator(
         @NotNull final IgniteLogger log,
         @NotNull final GridCacheSharedContext sharedCtx,
         @NotNull final RecordSerializerFactory serializerFactory,
         @NotNull final FileIOFactory ioFactory,
-        final int bufSize
+        final int initialReadBufferSize
     ) {
         this.log = log;
         this.sharedCtx = sharedCtx;
         this.serializerFactory = serializerFactory;
         this.ioFactory = ioFactory;
 
-        buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
+        buf = new ByteBufferExpander(initialReadBufferSize, ByteOrder.nativeOrder());
     }
 
     /** {@inheritDoc} */
@@ -225,8 +225,11 @@ public abstract class AbstractWalRecordsIterator
             if (e instanceof WalSegmentTailReachedException)
                 throw (WalSegmentTailReachedException)e;
 
-            if (!(e instanceof SegmentEofException))
+            if (!(e instanceof SegmentEofException)){
                 handleRecordException(e, actualFilePtr);
+
+                throw new IgniteCheckedException(e);
+            }
 
             return null;
         }

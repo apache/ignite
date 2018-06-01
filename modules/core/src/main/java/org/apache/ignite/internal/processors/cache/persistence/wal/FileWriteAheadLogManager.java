@@ -92,6 +92,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator.AbstractFileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
@@ -2292,7 +2293,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * WAL file descriptor.
      */
     public static class FileDescriptor implements
-        Comparable<FileDescriptor>, AbstractWalRecordsIterator.AbstractFileDescriptor {
+        Comparable<FileDescriptor>, AbstractFileDescriptor {
         /** */
         protected final File file;
 
@@ -2360,13 +2361,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return (int)(idx ^ (idx >>> 32));
-        }
-
-        /**
-         * @return absolute pathname string of this file descriptor pathname.
-         */
-        public File getFile() {
-            return file;
         }
 
         /**

@@ -118,7 +118,8 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
 
     /** {@inheritDoc} */
     @Override public RecordSerializerFactoryImpl recordDeserializeFilter(
-        IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter) {
+        IgniteBiPredicate<WALRecord.RecordType, WALPointer> readTypeFilter
+    ) {
         this.recordDeserializeFilter = readTypeFilter;
 
         return this;
