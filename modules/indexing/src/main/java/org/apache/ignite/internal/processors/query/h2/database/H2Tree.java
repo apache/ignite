@@ -42,8 +42,6 @@ import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
-
 /**
  */
 public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
@@ -206,8 +204,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx,
-        SearchRow row, boolean update) throws IgniteCheckedException {
+    @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx, SearchRow row)
+        throws IgniteCheckedException {
         if (inlineSize() == 0)
             return compareRows(getRow(io, pageAddr, idx), row);
         else {
@@ -215,11 +213,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
             // for rows that don't have links like H2's SimpleRow.
             int linksCmpRes = 0;
 
-            // We should not use links on update - when we try to replace a record,
-            // we shouldn't let the link make us miss what we're searching for.
-            boolean relyOnLinks = !update && row instanceof CacheSearchRow;
-
-            if (relyOnLinks) {
+            if (row instanceof CacheSearchRow) {
                 long link1 = ((H2RowLinkIO)io).getLink(pageAddr, idx);
 
                 long link2 = ((CacheSearchRow)row).link();
@@ -261,10 +255,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                     break;
             }
 
-            SearchRow rowData = null;
-
             if (lastIdxUsed < cols.length) {
-                rowData = getRow(io, pageAddr, idx);
+                SearchRow rowData = getRow(io, pageAddr, idx);
 
                 for (int i = lastIdxUsed, len = cols.length; i < len; i++) {
                     IndexColumn col = cols[i];
@@ -286,22 +278,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                 }
             }
 
-            if (!relyOnLinks) {
-                if (rowData == null)
-                    rowData = getRow(io, pageAddr, idx);
-
-                // We've had no luck comparing rows by index fields or links. Let's use keys as last resort.
-                Value k1 = rowData.getValue(KEY_COL);
-
-                Value k2 = row.getValue(KEY_COL);
-
-                if (k1 != null && k2 != null)
-                    return compareValues(k1, k2);
-                else
-                    return 0;
-            }
-            else
-                return linksCmpRes;
+            return linksCmpRes;
         }
     }
 
