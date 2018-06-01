@@ -53,8 +53,8 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
     /** Ignite Cache with {@code upstream} data. */
     private final IgniteCache<K, V> upstreamCache;
 
-    /** Predicate that filters {@code upstream} data. */
-    private final IgniteBiPredicate<K, V> pred;
+    /** Filter for {@code upstream} data. */
+    private final IgniteBiPredicate<K, V> filter;
 
     /**
      * Constructs a new instance of cache based dataset builder that makes {@link CacheBasedDataset} with default
@@ -72,12 +72,12 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
      *
      * @param ignite Ignite instance.
      * @param upstreamCache Ignite Cache with {@code upstream} data.
-     * @param pred Predicate that filters {@code upstream} data.
+     * @param filter Filter for {@code upstream} data.
      */
-    public CacheBasedDatasetBuilder(Ignite ignite, IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> pred) {
+    public CacheBasedDatasetBuilder(Ignite ignite, IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter) {
         this.ignite = ignite;
         this.upstreamCache = upstreamCache;
-        this.pred = pred;
+        this.filter = filter;
     }
 
     /** {@inheritDoc} */
@@ -101,13 +101,13 @@ public class CacheBasedDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
         ComputeUtils.initContext(
             ignite,
             upstreamCache.getName(),
-            pred,
+            filter,
             datasetCache.getName(),
             partCtxBuilder,
             RETRIES,
             RETRY_INTERVAL
         );
 
-        return new CacheBasedDataset<>(ignite, upstreamCache, pred, datasetCache, partDataBuilder, datasetId);
+        return new CacheBasedDataset<>(ignite, upstreamCache, filter, datasetCache, partDataBuilder, datasetId);
     }
 }
