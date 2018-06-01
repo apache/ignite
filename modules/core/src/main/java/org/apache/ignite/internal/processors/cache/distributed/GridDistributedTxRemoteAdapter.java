@@ -449,7 +449,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     }
                 }
 
-                if (txEntry.context().group().persistenceEnabled())
+                if (checkpointLocker == CheckpointReadLocker.NOOP && txEntry.context().group().persistenceEnabled())
                     checkpointLocker = cctx.database();
             }
 
