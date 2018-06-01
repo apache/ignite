@@ -456,6 +456,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             if (ctx.isStopping()) {
                 ex = new NodeStoppingException("Node is stopping.");
+
                 ex.addSuppressed(e);
             }
 
