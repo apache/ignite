@@ -204,8 +204,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx, SearchRow row)
-        throws IgniteCheckedException {
+    @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx,
+        SearchRow row) throws IgniteCheckedException {
         if (inlineSize() == 0)
             return compareRows(getRow(io, pageAddr, idx), row);
         else {
@@ -255,27 +255,28 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                     break;
             }
 
-            if (lastIdxUsed < cols.length) {
-                SearchRow rowData = getRow(io, pageAddr, idx);
+            if (lastIdxUsed == cols.length)
+                return linksCmpRes;
 
-                for (int i = lastIdxUsed, len = cols.length; i < len; i++) {
-                    IndexColumn col = cols[i];
-                    int idx0 = col.column.getColumnId();
+            SearchRow rowData = getRow(io, pageAddr, idx);
 
-                    Value v2 = row.getValue(idx0);
+            for (int i = lastIdxUsed, len = cols.length; i < len; i++) {
+                IndexColumn col = cols[i];
+                int idx0 = col.column.getColumnId();
 
-                    if (v2 == null) {
-                        // Can't compare further.
-                        return 0;
-                    }
+                Value v2 = row.getValue(idx0);
 
-                    Value v1 = rowData.getValue(idx0);
-
-                    int c = compareValues(v1, v2);
-
-                    if (c != 0)
-                        return InlineIndexHelper.fixSort(c, col.sortType);
+                if (v2 == null) {
+                    // Can't compare further.
+                    return 0;
                 }
+
+                Value v1 = rowData.getValue(idx0);
+
+                int c = compareValues(v1, v2);
+
+                if (c != 0)
+                    return InlineIndexHelper.fixSort(c, col.sortType);
             }
 
             return linksCmpRes;
