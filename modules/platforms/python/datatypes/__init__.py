@@ -17,6 +17,7 @@ import ctypes
 import socket
 
 from datatypes.class_configs import simple_type_config
+from datatypes.type_codes import *
 
 
 def simple_data_object(connection: socket.socket):
@@ -35,5 +36,28 @@ def simple_data_object(connection: socket.socket):
         },
     )
     buffer += connection.recv(ctypes.sizeof(simple_type_config[type_code][1]))
+    data_object = data_class.from_buffer_copy(buffer)
+    return data_object
+
+
+def string_object(connection: socket.socket):
+    buffer = connection.recv(1)
+    type_code = int.from_bytes(buffer, byteorder='little')
+    assert type_code == TC_STRING, 'Can not create string: wrong type code.'
+    length_buffer = connection.recv(4)
+    length = int.from_bytes(length_buffer, byteorder='little')
+    data_class = type(
+        'String',
+        (ctypes.LittleEndianStructure,),
+        {
+            '_pack_': 1,
+            '_fields_': [
+                ('type_code', ctypes.c_byte),
+                ('length', ctypes.c_int),
+                ('data', ctypes.c_char * length),
+            ],
+        },
+    )
+    buffer += length_buffer + connection.recv(length)
     data_object = data_class.from_buffer_copy(buffer)
     return data_object

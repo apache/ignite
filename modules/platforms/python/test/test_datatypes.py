@@ -15,7 +15,7 @@
 
 import pytest
 
-from datatypes import simple_data_object
+from datatypes import simple_data_object, string_object
 from datatypes.type_codes import *
 
 
@@ -58,3 +58,18 @@ def test_float(conn, expected_value):
     float_var = simple_data_object(conn)
     assert float_var.type_code == TC_FLOAT
     assert float_var.value == expected_value
+
+
+@pytest.mark.parametrize(
+    'conn, expected_length, expected_data',
+    [
+        (MockSocket(b'\x09\x02\x00\x00\x00\x20\x20'), 2, '  '),
+        (MockSocket(b'\x09\x03\x00\x00\x00\x61\x62\x63'), 3, 'abc'),
+        (MockSocket(b'\x09\x04\x00\x00\x00\xf0\x9f\x98\xbc'), 4, '😼'),
+    ]
+)
+def test_string(conn,  expected_length, expected_data):
+    string_var = string_object(conn)
+    assert string_var.type_code == TC_STRING
+    assert string_var.length == expected_length
+    assert string_var.data.decode('utf-8') == expected_data
