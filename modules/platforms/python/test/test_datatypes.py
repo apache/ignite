@@ -15,7 +15,7 @@
 
 import pytest
 
-from datatypes import BaseDataType
+from datatypes import simple_data_object
 from datatypes.type_codes import *
 
 
@@ -42,6 +42,19 @@ class MockSocket:
     ]
 )
 def test_byte(conn, expected_value):
-    byte_var = BaseDataType(conn)
+    byte_var = simple_data_object(conn)
     assert byte_var.type_code == TC_BYTE
     assert byte_var.value == expected_value
+
+
+@pytest.mark.parametrize(
+    'conn, expected_value',
+    [
+        (MockSocket(b'\x05\x00\x00\x00\xc0'), -2),
+        (MockSocket(b'\x05\x00\x00\x00\x40'), 2),
+    ]
+)
+def test_float(conn, expected_value):
+    float_var = simple_data_object(conn)
+    assert float_var.type_code == TC_FLOAT
+    assert float_var.value == expected_value
