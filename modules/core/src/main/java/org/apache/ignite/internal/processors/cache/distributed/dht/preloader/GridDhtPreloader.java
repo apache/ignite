@@ -85,6 +85,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** */
     private boolean stopped;
 
+    /** */
+    private volatile AffinityTopologyVersion prevAssignTopVer;
+
     /**
      * @param grp Cache group.
      */
@@ -187,7 +190,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
+        AffinityAssignment prevAff = grp.affinity().cachedAffinity(prevAssignTopVer == null ? topVer : prevAssignTopVer);
+
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
+
+        boolean isAffChanged = false;
 
         for (int p = 0; p < partCnt; p++) {
             if (ctx.exchange().hasPendingExchange()) {
@@ -203,6 +210,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             // If partition belongs to local node.
             if (aff.get(p).contains(ctx.localNode())) {
                 GridDhtLocalPartition part = top.localPartition(p);
+
+                isAffChanged &= !prevAff.get(p).contains(ctx.localNode());
 
                 assert part != null;
                 assert part.id() == p;
@@ -287,6 +296,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 }
             }
         }
+
+        prevAssignTopVer = topVer;
+
+        assignments.changed(isAffChanged);
 
         return assignments;
     }

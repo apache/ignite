@@ -40,6 +40,12 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     private boolean cancelled;
 
     /**
+     * Newly created assignments are changed by default if {@link GridDhtPreloader#generateAssignments} method
+     * did not prove the opposite one.
+     */
+    private boolean changed = true;
+
+    /**
      * @param exchangeId Exchange ID.
      * @param topVer Last join order.
      */
@@ -63,6 +69,20 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
      */
     public void cancelled(boolean cancelled) {
         this.cancelled = cancelled;
+    }
+
+    /**
+     * @return {@code True} if current assigments are changed from previous generated.
+     */
+    public boolean changed() {
+        return changed;
+    }
+
+    /**
+     * @param changed {@code True} if current assigments are changed from previous generated.
+     */
+    public void changed(boolean changed) {
+        this.changed = changed;
     }
 
     /**
