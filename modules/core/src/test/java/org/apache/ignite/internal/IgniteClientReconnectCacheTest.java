@@ -38,7 +38,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -50,6 +49,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
@@ -68,15 +68,15 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionRollbackException;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.values;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -89,6 +89,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  *
@@ -99,6 +100,9 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
     /** */
     private static final String STATIC_CACHE = "static-cache";
+
+    /** */
+    private static final int CACHE_PUTS_CNT = 3;
 
     /** */
     private UUID nodeId;
@@ -123,7 +127,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             nodeId = null;
         }
 
-        CacheConfiguration ccfg = new CacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setName(STATIC_CACHE);
 
@@ -155,13 +159,13 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         IgniteEx client = startGrid(SRV_CNT);
 
-        final TestTcpDiscoverySpi clientSpi = spi(client);
+        final IgniteDiscoverySpi clientSpi = spi0(client);
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        DiscoverySpi srvSpi = ignite(0).configuration().getDiscoverySpi();
 
-        final IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>());
+        final IgniteCache<Object, Object> cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         final IgniteCache<Object, Object> staticCache = client.cache(STATIC_CACHE);
 
@@ -169,11 +173,10 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         assertEquals(1, staticCache.get(1));
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setName("nearCache");
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         final IgniteCache<Object, Object> nearCache = client.getOrCreateCache(ccfg, new NearCacheConfiguration<>());
 
@@ -189,7 +192,11 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         log.info("Block reconnect.");
 
-        clientSpi.writeLatch = new CountDownLatch(1);
+        DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
+
+        clientSpi.setInternalListener(lsnr);
+
+        lsnr.startBlockJoin();
 
         final AtomicReference<IgniteInternalFuture> blockPutRef = new AtomicReference<>();
 
@@ -212,7 +219,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                             catch (CacheException e) {
                                 log.info("Expected exception: " + e);
 
-                                IgniteClientDisconnectedException e0 = (IgniteClientDisconnectedException) e.getCause();
+                                IgniteClientDisconnectedException e0 = (IgniteClientDisconnectedException)e.getCause();
 
                                 e0.reconnectFuture().get();
                             }
@@ -226,7 +233,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                     }));
 
                     disconnectLatch.countDown();
-                } else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                }
+                else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
                     info("Reconnected: " + evt);
 
                     assertEquals(0, disconnectLatch.getCount());
@@ -254,11 +262,11 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         log.info("Allow reconnect.");
 
-        clientSpi.writeLatch.countDown();
+        lsnr.stopBlockJoin();
 
         assertTrue(reconnectLatch.await(5000, MILLISECONDS));
 
-        checkCacheDiscoveryData(srv, client, null, true, true, false);
+        checkCacheDiscoveryData(srv, client, DEFAULT_CACHE_NAME, true, true, false);
 
         checkCacheDiscoveryData(srv, client, "nearCache", true, true, true);
 
@@ -290,13 +298,13 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         IgniteEx srv2 = startGrid(SRV_CNT + 1);
 
-        Integer key = primaryKey(srv2.cache(null));
+        Integer key = primaryKey(srv2.cache(DEFAULT_CACHE_NAME));
 
         cache.put(key, 4);
 
         assertEquals(4, cache.get(key));
 
-        checkCacheDiscoveryData(srv2, client, null, true, true, false);
+        checkCacheDiscoveryData(srv2, client, DEFAULT_CACHE_NAME, true, true, false);
 
         checkCacheDiscoveryData(srv2, client, "nearCache", true, true, true);
 
@@ -319,9 +327,9 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         IgniteEx client = startGrid(SRV_CNT);
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(PARTITIONED);
@@ -341,7 +349,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                     tx.commit();
 
                     fail();
-                } catch (IgniteClientDisconnectedException e) {
+                }
+                catch (IgniteClientDisconnectedException e) {
                     log.info("Expected error: " + e);
 
                     assertNotNull(e.reconnectFuture());
@@ -351,7 +360,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                     txs.txStart();
 
                     fail();
-                } catch (IgniteClientDisconnectedException e) {
+                }
+                catch (IgniteClientDisconnectedException e) {
                     log.info("Expected error: " + e);
 
                     assertNotNull(e.reconnectFuture());
@@ -381,12 +391,51 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      * @throws Exception If failed.
      */
+    public void testTxStateAfterClientReconnect() throws Exception {
+        clientMode = true;
+
+        IgniteEx client = startGrid(SRV_CNT);
+
+        Ignite srv = ignite(0);
+
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
+
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(1);
+
+        IgniteCache<Object, Object> cache = client.getOrCreateCache(ccfg);
+
+        final IgniteTransactions txs = client.transactions();
+
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                Transaction tx = txs.txStart(concurrency, isolation);
+
+                cache.put(1, 1);
+
+                reconnectClientNode(client, srv, null);
+
+                GridTestUtils.assertThrowsWithCause(() -> {
+                    tx.commit();
+
+                    return null;
+                }, TransactionRollbackException.class);
+            }
+        }
+
+        clientMode = false;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testReconnectTransactionInProgress1() throws Exception {
         clientMode = true;
 
         IgniteEx client = startGrid(SRV_CNT);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(PARTITIONED);
@@ -409,19 +458,22 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     private void reconnectTransactionInProgress1(IgniteEx client,
         final TransactionConcurrency txConcurrency,
         final IgniteCache<Object, Object> cache)
-        throws Exception
-    {
-        Ignite srv = clientRouter(client);
+        throws Exception {
+        Ignite srv = ignite(0);
 
-        final TestTcpDiscoverySpi clientSpi = spi(client);
-        final TestTcpDiscoverySpi srvSpi = spi(srv);
+        final IgniteDiscoverySpi clientSpi = spi0(client);
+        final DiscoverySpi srvSpi = spi0(srv);
 
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
         final CountDownLatch reconnectLatch = new CountDownLatch(1);
 
         log.info("Block reconnect.");
 
-        clientSpi.writeLatch = new CountDownLatch(1);
+        DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
+
+        clientSpi.setInternalListener(lsnr);
+
+        lsnr.startBlockJoin();
 
         client.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
@@ -429,7 +481,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                     info("Disconnected: " + evt);
 
                     disconnectLatch.countDown();
-                } else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                }
+                else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
                     info("Reconnected: " + evt);
 
                     reconnectLatch.countDown();
@@ -528,7 +581,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         assertTrue(putFailed.await(5000, MILLISECONDS));
 
-        clientSpi.writeLatch.countDown();
+        lsnr.stopBlockJoin();
 
         waitReconnectEvent(reconnectLatch);
 
@@ -543,7 +596,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         final IgniteEx client = startGrid(SRV_CNT);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(PARTITIONED);
@@ -580,17 +633,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             new CI1<IgniteCache<Object, Object>>() {
                 @Override public void apply(IgniteCache<Object, Object> cache) {
                     try (Transaction tx = client.transactions().txStart(txConcurrency, REPEATABLE_READ)) {
-                        log.info("Put1: " + key);
-
-                        cache.put(key, key);
-
-                        Integer key2 = key + 1;
-
-                        log.info("Put2: " + key2);
-
-                        cache.put(key2, key2);
-
-                        log.info("Commit [key1=" + key + ", key2=" + key2 + ']');
+                        for (int i = 0; i < CACHE_PUTS_CNT; ++i)
+                            cache.put(key + i, key + i);
 
                         tx.commit();
                     }
@@ -611,9 +655,9 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         IgniteEx client = startGrid(SRV_CNT);
 
-        Ignite srv = clientRouter(client);
+        Ignite srv = ignite(0);
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        DiscoverySpi srvSpi = spi0(srv);
 
         TestCommunicationSpi coordCommSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
@@ -650,7 +694,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             log.info("Expected error: " + e);
         }
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName("newCache");
 
@@ -698,7 +742,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 try {
-                    Ignition.start(optimize(getConfiguration(getTestIgniteInstanceName(SRV_CNT))));
+                    startGrid(optimize(getConfiguration(getTestIgniteInstanceName(SRV_CNT))));
 
                     // Commented due to IGNITE-4473, because
                     // IgniteClientDisconnectedException won't
@@ -729,7 +773,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             }
         });
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        DiscoverySpi srvSpi = spi0(srv);
 
         try {
             if (!joinLatch.await(10_000, MILLISECONDS)) {
@@ -793,42 +837,34 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         int cnt = 0;
 
         for (CacheAtomicityMode atomicityMode : CacheAtomicityMode.values()) {
-            CacheAtomicWriteOrderMode[] writeOrders =
-                atomicityMode == ATOMIC ? values() : new CacheAtomicWriteOrderMode[]{CLOCK};
+            for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
+                CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-            for (CacheAtomicWriteOrderMode writeOrder : writeOrders) {
-                for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
-                    CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+                ccfg.setAtomicityMode(atomicityMode);
 
-                    ccfg.setAtomicityMode(atomicityMode);
+                ccfg.setName("cache-" + cnt++);
 
-                    ccfg.setAtomicWriteOrderMode(writeOrder);
+                ccfg.setWriteSynchronizationMode(syncMode);
 
-                    ccfg.setName("cache-" + cnt++);
+                if (syncMode != FULL_ASYNC) {
+                    Class<?> cls = (ccfg.getAtomicityMode() == ATOMIC) ?
+                        GridNearAtomicUpdateResponse.class : GridNearTxPrepareResponse.class;
 
-                    ccfg.setWriteSynchronizationMode(syncMode);
+                    log.info("Test cache put [atomicity=" + atomicityMode +
+                        ", syncMode=" + syncMode + ']');
 
-                    if (syncMode != FULL_ASYNC) {
-                        Class<?> cls = (ccfg.getAtomicityMode() == ATOMIC) ?
-                            GridNearAtomicUpdateResponse.class : GridNearTxPrepareResponse.class;
-
-                        log.info("Test cache put [atomicity=" + atomicityMode +
-                            ", writeOrder=" + writeOrder +
-                            ", syncMode=" + syncMode + ']');
-
-                        checkOperationInProgressFails(client, ccfg, cls, putOp);
-
-                        client.destroyCache(ccfg.getName());
-                    }
-
-                    log.info("Test cache get [atomicity=" + atomicityMode + ", syncMode=" + syncMode + ']');
-
-                    checkOperationInProgressFails(client, ccfg, GridNearSingleGetResponse.class, getOp);
-
-                    checkOperationInProgressFails(client, ccfg, GridNearGetResponse.class, getAllOp);
+                    checkOperationInProgressFails(client, ccfg, cls, putOp);
 
                     client.destroyCache(ccfg.getName());
                 }
+
+                log.info("Test cache get [atomicity=" + atomicityMode + ", syncMode=" + syncMode + ']');
+
+                checkOperationInProgressFails(client, ccfg, GridNearSingleGetResponse.class, getOp);
+
+                checkOperationInProgressFails(client, ccfg, GridNearGetResponse.class, getAllOp);
+
+                client.destroyCache(ccfg.getName());
             }
         }
     }
@@ -845,11 +881,11 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         final Ignite srv = clientRouter(client);
 
-        final IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>());
+        final IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         reconnectClientNode(client, srv, new Runnable() {
             @Override public void run() {
-                srv.destroyCache(null);
+                srv.destroyCache(DEFAULT_CACHE_NAME);
             }
         });
 
@@ -859,11 +895,11 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             }
         }, IllegalStateException.class, null);
 
-        checkCacheDiscoveryData(srv, client, null, false, false, false);
+        checkCacheDiscoveryData(srv, client, DEFAULT_CACHE_NAME, false, false, false);
 
-        IgniteCache<Object, Object> clientCache0 = client.getOrCreateCache(new CacheConfiguration<>());
+        IgniteCache<Object, Object> clientCache0 = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
-        checkCacheDiscoveryData(srv, client, null, true, true, false);
+        checkCacheDiscoveryData(srv, client, DEFAULT_CACHE_NAME, true, true, false);
 
         clientCache0.put(1, 1);
 
@@ -882,16 +918,16 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         final Ignite srv = clientRouter(client);
 
-        final IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>());
+        final IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         assertEquals(ATOMIC,
             clientCache.getConfiguration(CacheConfiguration.class).getAtomicityMode());
 
         reconnectClientNode(client, srv, new Runnable() {
             @Override public void run() {
-                srv.destroyCache(null);
+                srv.destroyCache(DEFAULT_CACHE_NAME);
 
-                CacheConfiguration ccfg = new CacheConfiguration();
+                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                 ccfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -899,17 +935,11 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             }
         });
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return clientCache.get(1);
-            }
-        }, IllegalStateException.class, null);
+        checkCacheDiscoveryData(srv, client, DEFAULT_CACHE_NAME, true, false, false);
 
-        checkCacheDiscoveryData(srv, client, null, true, false, false);
+        IgniteCache<Object, Object> clientCache0 = client.cache(DEFAULT_CACHE_NAME);
 
-        IgniteCache<Object, Object> clientCache0 = client.cache(null);
-
-        checkCacheDiscoveryData(srv, client, null, true, true, false);
+        checkCacheDiscoveryData(srv, client, DEFAULT_CACHE_NAME, true, true, false);
 
         assertEquals(TRANSACTIONAL,
             clientCache0.getConfiguration(CacheConfiguration.class).getAtomicityMode());
@@ -931,8 +961,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         final Ignite srv = clientRouter(client);
 
-        final IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>());
-        final IgniteCache<Object, Object> srvCache = srv.cache(null);
+        final IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
+        final IgniteCache<Object, Object> srvCache = srv.cache(DEFAULT_CACHE_NAME);
 
         assertNotNull(srvCache);
 
@@ -974,7 +1004,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
         final CountDownLatch reconnectLatch = new CountDownLatch(1);
 
-        final IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>());
+        final IgniteCache<Object, Object> clientCache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         clientCache.put(1, new TestClass1());
 
@@ -1012,12 +1042,12 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             }
         }, IllegalStateException.class, null);
 
-        IgniteCache<Object, Object> srvCache = srv.getOrCreateCache(new CacheConfiguration<>());
+        IgniteCache<Object, Object> srvCache = srv.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         srvCache.put(1, new TestClass1());
         srvCache.put(2, new TestClass2());
 
-        IgniteCache<Object, Object> clientCache2 = client.cache(null);
+        IgniteCache<Object, Object> clientCache2 = client.cache(DEFAULT_CACHE_NAME);
 
         assertNotNull(clientCache2);
 
@@ -1039,11 +1069,15 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         List<IgniteCache> caches = new ArrayList<>();
 
         for (int i = 0; i < CLIENTS; i++) {
-            Ignite client = startGrid(SRV_CNT + i);
+            int g = SRV_CNT + i;
+
+            IgniteEx client = startGrid(g);
+
+            info(">>>>> Started client: " + g);
 
             addListener(client, disconnectLatch, reconnectLatch);
 
-            IgniteCache cache = client.getOrCreateCache(new CacheConfiguration<>());
+            IgniteCache cache = client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
             assertNotNull(cache);
 
@@ -1074,11 +1108,11 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         for (int i = 0; i < SRV_CNT + CLIENTS; i++) {
             Ignite ignite = grid(i);
 
-            ClusterGroup grp = ignite.cluster().forCacheNodes(null);
+            ClusterGroup grp = ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
 
             assertEquals(0, grp.nodes().size());
 
-            grp = ignite.cluster().forClientNodes(null);
+            grp = ignite.cluster().forClientNodes(DEFAULT_CACHE_NAME);
 
             assertEquals(0, grp.nodes().size());
         }
@@ -1103,7 +1137,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      * @throws Exception If failed.
      */
     private void reconnectMultinode(boolean longHist) throws Exception {
-        grid(0).createCache(new CacheConfiguration<>());
+        grid(0).createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         clientMode = true;
 
@@ -1114,7 +1148,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         for (int i = 0; i < CLIENTS; i++) {
             Ignite client = startGrid(SRV_CNT + i);
 
-            assertNotNull(client.getOrCreateCache(new CacheConfiguration<>()));
+            assertNotNull(client.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)));
 
             clients.add(client);
         }
@@ -1127,7 +1161,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                 @Override public Void call() throws Exception {
                     int idx = nodeIdx.incrementAndGet();
 
-                    for (int i  = 0; i < 25; i++) {
+                    for (int i = 0; i < 25; i++) {
                         startGrid(idx);
 
                         stopGrid(idx);
@@ -1149,7 +1183,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             final int expNodes = CLIENTS + srvNodes;
 
             for (final Ignite client : clients) {
-                IgniteCache<Object, Object> cache = client.cache(null);
+                IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
 
                 assertNotNull(cache);
 
@@ -1159,17 +1193,17 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
-                        ClusterGroup grp = client.cluster().forCacheNodes(null);
+                        ClusterGroup grp = client.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
 
                         return grp.nodes().size() == expNodes;
                     }
                 }, 5000);
 
-                ClusterGroup grp = client.cluster().forCacheNodes(null);
+                ClusterGroup grp = client.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
 
                 assertEquals(CLIENTS + srvNodes, grp.nodes().size());
 
-                grp = client.cluster().forClientNodes(null);
+                grp = client.cluster().forClientNodes(DEFAULT_CACHE_NAME);
 
                 assertEquals(CLIENTS, grp.nodes().size());
             }
@@ -1179,17 +1213,17 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
                 GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
-                        ClusterGroup grp = ignite.cluster().forCacheNodes(null);
+                        ClusterGroup grp = ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
 
                         return grp.nodes().size() == expNodes;
                     }
                 }, 5000);
 
-                ClusterGroup grp = ignite.cluster().forCacheNodes(null);
+                ClusterGroup grp = ignite.cluster().forCacheNodes(DEFAULT_CACHE_NAME);
 
                 assertEquals(CLIENTS + srvNodes, grp.nodes().size());
 
-                grp = ignite.cluster().forClientNodes(null);
+                grp = ignite.cluster().forClientNodes(DEFAULT_CACHE_NAME);
 
                 assertEquals(CLIENTS, grp.nodes().size());
             }
@@ -1214,10 +1248,10 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         Ignite client = startGrid(SRV_CNT);
 
-        CacheConfiguration<Integer, Integer> ccfg1 = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg1 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg1.setName("cache1");
 
-        CacheConfiguration<Integer, Integer> ccfg2 = new CacheConfiguration<>();
+        CacheConfiguration<Integer, Integer> ccfg2 = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg2.setName("cache2");
 
         final Ignite srv = grid(0);
@@ -1266,27 +1300,37 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     /**
      *
      */
-    static class TestClass1 implements Serializable {}
+    static class TestClass1 implements Serializable {
+        // No-op.
+    }
 
     /**
      *
      */
-    static class TestClass2 implements Serializable {}
+    static class TestClass2 implements Serializable {
+        // No-op.
+    }
 
     /**
      *
      */
-    static class TestClass3 implements Serializable {}
+    static class TestClass3 implements Serializable {
+        // No-op.
+    }
 
     /**
      *
      */
-    static class TestClass4 implements Serializable {}
+    static class TestClass4 implements Serializable {
+        // No-op.
+    }
 
     /**
      *
      */
-    static class TestClass5 implements Serializable {}
+    static class TestClass5 implements Serializable {
+        // No-op.
+    }
 
     /**
      * @param client Client.
@@ -1295,15 +1339,16 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      * @param c Cache operation closure.
      * @throws Exception If failed.
      */
-    private void checkOperationInProgressFails(IgniteEx client,
+    private void checkOperationInProgressFails(final IgniteEx client,
         final CacheConfiguration<Object, Object> ccfg,
         Class<?> msgToBlock,
         final IgniteInClosure<IgniteCache<Object, Object>> c)
-        throws Exception
-    {
-        Ignite srv = clientRouter(client);
+        throws Exception {
+        Ignite srv = ignite(0);
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        final UUID id = client.localNode().id();
+
+        DiscoverySpi srvSpi = spi0(srv);
 
         final IgniteCache<Object, Object> cache = client.getOrCreateCache(ccfg);
 
@@ -1318,6 +1363,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                 IgniteClientDisconnectedException e0 = null;
 
                 try {
+                    assertEquals(id, client.localNode().id());
+
                     c.apply(cache);
 
                     fail();
@@ -1341,6 +1388,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
                 e0.reconnectFuture().get();
 
+                assertNotEquals(id, client.localNode().id());
+
                 c.apply(cache);
 
                 return null;
@@ -1363,6 +1412,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                 ((TestCommunicationSpi)grid(i).configuration().getCommunicationSpi()).stopBlock(false);
         }
 
+        assertNotEquals(id, client.localNode().id());
+
         cache.put(1, 1);
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -1381,29 +1432,43 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
      * @param cacheExists Cache exists flag.
      * @param clientCache {@code True} if client node has client cache.
      * @param clientNear {@code True} if client node has near-enabled client cache.
+     * @throws Exception If failed.
      */
     private void checkCacheDiscoveryData(Ignite srv,
         Ignite client,
-        String cacheName,
+        final String cacheName,
         boolean cacheExists,
-        boolean clientCache,
-        boolean clientNear)
-    {
-        GridDiscoveryManager srvDisco = ((IgniteKernal)srv).context().discovery();
+        final boolean clientCache,
+        boolean clientNear) throws Exception {
+        final GridDiscoveryManager srvDisco = ((IgniteKernal)srv).context().discovery();
         GridDiscoveryManager clientDisco = ((IgniteKernal)client).context().discovery();
 
         ClusterNode srvNode = ((IgniteKernal)srv).localNode();
-        ClusterNode clientNode = ((IgniteKernal)client).localNode();
+        final ClusterNode clientNode = ((IgniteKernal)client).localNode();
 
         assertFalse(srvDisco.cacheAffinityNode(clientNode, cacheName));
         assertFalse(clientDisco.cacheAffinityNode(clientNode, cacheName));
 
         assertEquals(cacheExists, srvDisco.cacheAffinityNode(srvNode, cacheName));
 
-        if (clientNear)
+        if (clientNear) {
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return srvDisco.cacheNearNode(clientNode, cacheName);
+                }
+            }, 5000));
+
             assertTrue(srvDisco.cacheNearNode(clientNode, cacheName));
-        else
+        }
+        else {
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return F.eq(clientCache, srvDisco.cacheClientNode(clientNode, cacheName));
+                }
+            }, 5000));
+
             assertEquals(clientCache, srvDisco.cacheClientNode(clientNode, cacheName));
+        }
 
         assertEquals(cacheExists, clientDisco.cacheAffinityNode(srvNode, cacheName));
 

@@ -47,7 +47,7 @@ class BinaryMetadataCollector implements BinaryWriter {
     private final BinaryInternalMapper mapper;
 
     /** Collected metadata. */
-    private final Map<String, Integer> meta = new HashMap<>();
+    private final Map<String, BinaryFieldMetadata> meta = new HashMap<>();
 
     /** Schema builder. */
     private BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
@@ -68,7 +68,7 @@ class BinaryMetadataCollector implements BinaryWriter {
     /**
      * @return Field meta data.
      */
-    Map<String, Integer> meta() {
+    Map<String, BinaryFieldMetadata> meta() {
         return meta;
     }
 
@@ -269,18 +269,19 @@ class BinaryMetadataCollector implements BinaryWriter {
     private void add(String name, BinaryWriteMode mode) throws BinaryObjectException {
         assert name != null;
 
-        int fieldTypeId = mode.typeId();
+        int typeId = mode.typeId();
+        int fieldId = mapper.fieldId(typeId, name);
 
-        Integer oldFieldTypeId = meta.put(name, fieldTypeId);
+        BinaryFieldMetadata oldFieldMeta = meta.put(name, new BinaryFieldMetadata(typeId, fieldId));
 
-        if (oldFieldTypeId != null && !oldFieldTypeId.equals(fieldTypeId)) {
+        if (oldFieldMeta != null && oldFieldMeta.typeId() != typeId) {
             throw new BinaryObjectException(
                 "Field is written twice with different types [" + "typeName=" + typeName + ", fieldName=" + name +
-                ", fieldTypeName1=" + BinaryUtils.fieldTypeName(oldFieldTypeId) +
-                ", fieldTypeName2=" + BinaryUtils.fieldTypeName(fieldTypeId) + ']'
+                ", fieldTypeName1=" + BinaryUtils.fieldTypeName(oldFieldMeta.typeId()) +
+                ", fieldTypeName2=" + BinaryUtils.fieldTypeName(typeId) + ']'
             );
         }
 
-        schemaBuilder.addField(mapper.fieldId(typeId, name));
+        schemaBuilder.addField(fieldId);
     }
 }

@@ -126,7 +126,7 @@ public class GridCachePartitionedAtomicSequenceTxSelfTest extends GridCommonAbst
     public void testIsolation() {
         IgniteAtomicSequence seq = ignite(0).atomicSequence(SEQ_NAME, 0, true);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
         ccfg.setAtomicityMode(TRANSACTIONAL);
 
         IgniteCache<Object, Object> cache = ignite(0).getOrCreateCache(ccfg);

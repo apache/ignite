@@ -18,14 +18,21 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.zip.CRC32;
+import java.util.zip.Checksum;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.lucene.store.BufferedChecksum;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.Accountables;
 
 /**
  * A memory-resident {@link IndexOutput} implementation.
  */
-public class GridLuceneOutputStream extends IndexOutput {
+public class GridLuceneOutputStream extends IndexOutput implements Accountable {
     /** Off-heap page size. */
     static final int BUFFER_SIZE = 32 * 1024;
 
@@ -50,12 +57,17 @@ public class GridLuceneOutputStream extends IndexOutput {
     /** */
     private final GridUnsafeMemory mem;
 
+    /** */
+    private final Checksum crc;
+
     /**
      * Constructor.
      *
      * @param f File.
      */
     public GridLuceneOutputStream(GridLuceneFile f) {
+        super("RAMOutputStream(name=\"noname\")");
+
         file = f;
 
         mem = f.getDirectory().memory();
@@ -64,6 +76,8 @@ public class GridLuceneOutputStream extends IndexOutput {
         // first needed buffer lazily
         currBufIdx = -1;
         currBuf = 0;
+
+        crc = new BufferedChecksum(new CRC32());
     }
 
     /**
@@ -77,31 +91,19 @@ public class GridLuceneOutputStream extends IndexOutput {
         bufLength = 0;
 
         file.setLength(0);
+        crc.reset();
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         flush();
+
+        file.releaseRef();
     }
 
     /** {@inheritDoc} */
-    @Override public void seek(long pos) throws IOException {
-        // set the file length in case we seek back
-        // and flush() has not been called yet
-        setFileLength();
-
-        if (pos < bufStart || pos >= bufStart + bufLength) {
-            currBufIdx = (int)(pos / BUFFER_SIZE);
-
-            switchCurrentBuffer();
-        }
-
-        bufPosition = (int)(pos % BUFFER_SIZE);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long length() {
-        return file.getLength();
+    @Override public long getChecksum() throws IOException {
+        return crc.getValue();
     }
 
     /** {@inheritDoc} */
@@ -112,12 +114,16 @@ public class GridLuceneOutputStream extends IndexOutput {
             switchCurrentBuffer();
         }
 
+        crc.update(b);
+
         mem.writeByte(currBuf + bufPosition++, b);
     }
 
     /** {@inheritDoc} */
     @Override public void writeBytes(byte[] b, int offset, int len) throws IOException {
         assert b != null;
+
+        crc.update(b, offset, len);
 
         while (len > 0) {
             if (bufPosition == bufLength) {
@@ -159,23 +165,14 @@ public class GridLuceneOutputStream extends IndexOutput {
             file.setLength(pointer);
     }
 
-    /** {@inheritDoc} */
-    @Override public void flush() throws IOException {
+    /** Forces any buffered output to be written. */
+    private void flush() throws IOException {
         setFileLength();
     }
 
     /** {@inheritDoc} */
     @Override public long getFilePointer() {
         return currBufIdx < 0 ? 0 : bufStart + bufPosition;
-    }
-
-    /**
-     * Returns byte usage of all buffers.
-     *
-     * @return Bytes used.
-     */
-    public long sizeInBytes() {
-        return (long)file.numBuffers() * (long)BUFFER_SIZE;
     }
 
     /** {@inheritDoc} */
@@ -211,28 +208,13 @@ public class GridLuceneOutputStream extends IndexOutput {
         }
     }
 
-    /**
-     * For direct usage by {@link GridLuceneInputStream}.
-     *
-     * @param ptr Pointer.
-     * @param len Length.
-     * @throws IOException If failed.
-     */
-    void writeBytes(long ptr, int len) throws IOException {
-        while (len > 0) {
-            if (bufPosition == bufLength) {
-                currBufIdx++;
-                switchCurrentBuffer();
-            }
+    /** {@inheritDoc} */
+    @Override public long ramBytesUsed() {
+        return file.getSizeInBytes();
+    }
 
-            int remainInBuf = BUFFER_SIZE - bufPosition;
-            int bytesToCp = len < remainInBuf ? len : remainInBuf;
-
-            mem.copyMemory(ptr, currBuf + bufPosition, bytesToCp);
-
-            ptr += bytesToCp;
-            len -= bytesToCp;
-            bufPosition += bytesToCp;
-        }
+    /** {@inheritDoc} */
+    @Override public Collection<Accountable> getChildResources() {
+        return Collections.singleton(Accountables.namedAccountable("file", file));
     }
 }

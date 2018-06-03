@@ -21,6 +21,7 @@ import java.util.Collection;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisCommand;
 import org.apache.ignite.internal.processors.rest.protocols.tcp.redis.GridRedisMessage;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 
 /**
  * Command handler.
@@ -32,8 +33,9 @@ public interface GridRedisCommandHandler {
     public Collection<GridRedisCommand> supportedCommands();
 
     /**
+     * @param ses Session.
      * @param msg Request message.
      * @return Future.
      */
-    public IgniteInternalFuture<GridRedisMessage> handleAsync(GridRedisMessage msg);
+    public IgniteInternalFuture<GridRedisMessage> handleAsync(GridNioSession ses, GridRedisMessage msg);
 }

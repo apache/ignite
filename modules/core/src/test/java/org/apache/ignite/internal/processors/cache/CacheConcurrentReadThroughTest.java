@@ -86,10 +86,8 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
 
         assertTrue(client.configuration().isClientMode());
 
-        IgniteCompute compute = client.compute().withAsync();
-
         for (int iter = 0; iter < 10; iter++) {
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             final String cacheName = "test-" + iter;
 
@@ -107,7 +105,7 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
             Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
             for (int i = 0; i < SYS_THREADS * 3; i++) {
-                compute.run(new IgniteRunnable() {
+                futs.add(client.compute().runAsync(new IgniteRunnable() {
                     @IgniteInstanceResource
                     private transient Ignite ignite;
 
@@ -119,9 +117,7 @@ public class CacheConcurrentReadThroughTest extends GridCommonAbstractTest {
                         if (v == null)
                             throw new IgniteException("Failed to get value");
                     }
-                });
-
-                futs.add(compute.future());
+                }));
             }
 
             for (IgniteFuture<?> fut : futs)

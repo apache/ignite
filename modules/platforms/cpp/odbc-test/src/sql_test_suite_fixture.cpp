@@ -29,7 +29,11 @@ namespace ignite
         dbc(NULL),
         stmt(NULL)
     {
+#ifdef IGNITE_TESTS_32
+        grid = StartNode("queries-test-32.xml");
+#else
         grid = StartNode("queries-test.xml");
+#endif
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
 
@@ -47,7 +51,7 @@ namespace ignite
         BOOST_REQUIRE(dbc != NULL);
 
         // Connect string
-        SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;CACHE=cache";
+        SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache";
 
         SQLCHAR outstr[ODBC_BUFFER_SIZE];
         SQLSMALLINT outstrlen;
@@ -106,6 +110,10 @@ namespace ignite
 
         ret = SQLFetch(stmt);
         BOOST_CHECK(ret == SQL_NO_DATA);
+
+        ret = SQLFreeStmt(stmt, SQL_CLOSE);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
     template<>
@@ -306,7 +314,7 @@ namespace ignite
         Date actual = common::MakeDateGmt(res.year, res.month, res.day);
         BOOST_REQUIRE_EQUAL(actual.GetSeconds(), expected.GetSeconds());
     }
-    
+
     template<>
     void SqlTestSuiteFixture::CheckSingleResult<Timestamp>(const char* request, const Timestamp& expected)
     {

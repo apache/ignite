@@ -25,14 +25,18 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.yardstick.io.FileUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.ApplicationContext;
@@ -42,7 +46,6 @@ import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkServer;
 import org.yardstickframework.BenchmarkUtils;
 
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 
 /**
@@ -60,12 +63,17 @@ public class IgniteNode implements BenchmarkServer {
         // No-op.
     }
 
-    /** */
+    /**
+     * @param clientMode Run node in client mode.
+     */
     public IgniteNode(boolean clientMode) {
         this.clientMode = clientMode;
     }
 
-    /** */
+    /**
+     * @param clientMode Run node in client mode.
+     * @param ignite Use exist ignite instance.
+     */
     public IgniteNode(boolean clientMode, Ignite ignite) {
         this.clientMode = clientMode;
         this.ignite = ignite;
@@ -77,11 +85,17 @@ public class IgniteNode implements BenchmarkServer {
 
         BenchmarkUtils.jcommander(cfg.commandLineArguments(), args, "<ignite-node>");
 
+        if (args.clientNodesAfterId() >= 0 && cfg.memberId() > args.clientNodesAfterId())
+            clientMode = true;
+
         IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> tup = loadConfiguration(args.configuration());
 
         IgniteConfiguration c = tup.get1();
 
         assert c != null;
+
+        if (args.cleanWorkDirectory())
+            FileUtils.cleanDirectory(U.workDirectory(c.getWorkDirectory(), c.getIgniteHome()));
 
         ApplicationContext appCtx = tup.get2();
 
@@ -101,16 +115,18 @@ public class IgniteNode implements BenchmarkServer {
                 if (args.isNearCache()) {
                     NearCacheConfiguration nearCfg = new NearCacheConfiguration();
 
-                    if (args.getNearCacheSize() != 0)
-                        nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(args.getNearCacheSize()));
+                    int nearCacheSize = args.getNearCacheSize();
+
+                    if (nearCacheSize != 0)
+                        nearCfg.setNearEvictionPolicy(new LruEvictionPolicy(nearCacheSize));
 
                     cc.setNearConfiguration(nearCfg);
                 }
 
-                cc.setWriteSynchronizationMode(args.syncMode());
+                if (args.cacheGroup() != null)
+                    cc.setGroupName(args.cacheGroup());
 
-                if (args.orderMode() != null)
-                    cc.setAtomicWriteOrderMode(args.orderMode());
+                cc.setWriteSynchronizationMode(args.syncMode());
 
                 cc.setBackups(args.backups());
 
@@ -123,15 +139,6 @@ public class IgniteNode implements BenchmarkServer {
                         ccc.setHost(args.restTcpHost());
 
                     c.setConnectorConfiguration(ccc);
-                }
-
-                if (args.isOffHeap()) {
-                    cc.setOffHeapMaxMemory(0);
-
-                    if (args.isOffheapValues())
-                        cc.setMemoryMode(OFFHEAP_VALUES);
-                    else
-                        cc.setEvictionPolicy(new LruEvictionPolicy(50000));
                 }
 
                 cc.setReadThrough(args.isStoreEnabled());
@@ -157,6 +164,26 @@ public class IgniteNode implements BenchmarkServer {
             commSpi = new TcpCommunicationSpi();
 
         c.setCommunicationSpi(commSpi);
+
+        if (args.getPageSize() != DataStorageConfiguration.DFLT_PAGE_SIZE) {
+            DataStorageConfiguration memCfg = c.getDataStorageConfiguration();
+
+            if (memCfg == null) {
+                memCfg = new DataStorageConfiguration();
+
+                c.setDataStorageConfiguration(memCfg);
+            }
+
+            memCfg.setPageSize(args.getPageSize());
+        }
+
+        if (args.persistentStoreEnabled()) {
+            DataStorageConfiguration pcCfg = new DataStorageConfiguration();
+
+            c.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
+
+            c.setDataStorageConfiguration(pcCfg);
+        }
 
         ignite = IgniteSpring.start(c, appCtx);
 

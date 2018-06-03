@@ -152,7 +152,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * Check whether caches has no transactions after salvage timeout.
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
-     * @param prepare Whether to prepare transaction state (i.e. call {@link GridNearTxLocal#prepare()}).
+     * @param prepare Whether to prepare transaction state (i.e. call {@link GridNearTxLocal#prepare(boolean)}).
      * @throws Exception If failed.
      */
     private void checkSalvageAfterTimeout(TransactionConcurrency mode, boolean prepare) throws Exception {
@@ -171,7 +171,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to prepare transaction state
-     *                (i.e. call {@link GridNearTxLocal#prepare()}).
+     *                (i.e. call {@link GridNearTxLocal#prepare(boolean)}).
      * @throws Exception If failed.
      */
     private void checkSalvageBeforeTimeout(TransactionConcurrency mode, boolean prepare) throws Exception {
@@ -181,8 +181,8 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
         List<Integer> dhtSizes = new ArrayList<>(GRID_CNT - 1);
 
         for (int i = 1; i < GRID_CNT; i++) {
-            nearSizes.add(near(i).context().tm().txs().size());
-            dhtSizes.add(dht(i).context().tm().txs().size());
+            nearSizes.add(near(i).context().tm().activeTransactions().size());
+            dhtSizes.add(dht(i).context().tm().activeTransactions().size());
         }
 
         stopNodeAndSleep(SALVAGE_TIMEOUT - DELTA_BEFORE);
@@ -197,13 +197,13 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * Start new transaction on the grid(0) and put some keys to it.
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
-     * @param prepare Whether to prepare transaction state (i.e. call {@link GridNearTxLocal#prepare()}).
+     * @param prepare Whether to prepare transaction state (i.e. call {@link GridNearTxLocal#prepare(boolean)}).
      * @throws Exception If failed.
      */
     private void startTxAndPutKeys(final TransactionConcurrency mode, final boolean prepare) throws Exception {
         Ignite ignite = grid(0);
 
-        final Collection<Integer> keys = nearKeys(ignite.cache(null), KEY_CNT, 0);
+        final Collection<Integer> keys = nearKeys(ignite.cache(DEFAULT_CACHE_NAME), KEY_CNT, 0);
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
@@ -216,7 +216,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
                         c.put(key, "val" + key);
 
                     if (prepare)
-                        ((TransactionProxyImpl)tx).tx().prepare();
+                        ((TransactionProxyImpl)tx).tx().prepare(true);
                 }
                 catch (IgniteCheckedException e) {
                     info("Failed to put keys to cache: " + e.getMessage());
@@ -234,7 +234,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private void stopNodeAndSleep(long timeout) throws Exception {
-        stopGrid(0);
+        stopGrid(getTestIgniteInstanceName(0), false, false);
 
         info("Stopped grid.");
 
@@ -247,7 +247,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * @param ctx Cache context.
      */
     private void checkTxsEmpty(GridCacheContext ctx) {
-        Collection txs = ctx.tm().txs();
+        Collection txs = ctx.tm().activeTransactions();
 
         assert txs.isEmpty() : "Not all transactions were salvaged: " + txs;
     }
@@ -259,7 +259,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      * @param exp Expected amount of transactions.
      */
     private void checkTxsNotEmpty(GridCacheContext ctx, int exp) {
-        int size = ctx.tm().txs().size();
+        int size = ctx.tm().activeTransactions().size();
 
         assertEquals("Some transactions were salvaged unexpectedly", exp, size);
     }

@@ -33,20 +33,13 @@ public class IgniteConcurrentEntryProcessorAccessStopTest extends GridCommonAbst
         startGrid();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * Tests concurrent instance shutdown.
      *
      * @throws Exception If failed.
      */
     public void testConcurrentAccess() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         Ignite ignite = grid();
 

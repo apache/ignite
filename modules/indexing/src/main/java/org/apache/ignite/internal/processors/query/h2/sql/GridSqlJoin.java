@@ -93,6 +93,13 @@ public class GridSqlJoin extends GridSqlElement {
         return child(ON_CHILD);
     }
 
+    /**
+     * @return {@code true} If this is a LEFT OUTER JOIN.
+     */
+    public boolean isLeftOuter() {
+        return leftOuter;
+    }
+
     /** {@inheritDoc} */
     @Override public String getSQL() {
         StatementBuilder buff = new StatementBuilder();

@@ -40,7 +40,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Near cache lock request.
+ * Near cache lock request to primary node. 'Near' means 'Initiating node' here, not 'Near Cache'.
  */
 public class GridNearLockRequest extends GridDistributedLockRequest {
     /** */
@@ -54,6 +54,9 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
 
     /** */
     private static final int SYNC_COMMIT_FLAG_MASK = 0x04;
+
+    /** */
+    private static final int NEAR_CACHE_FLAG_MASK = 0x08;
 
     /** Topology version. */
     private AffinityTopologyVersion topVer;
@@ -137,8 +140,8 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         boolean skipStore,
         boolean keepBinary,
         boolean firstClientReq,
+        boolean nearCache,
         boolean addDepInfo
-
     ) {
         super(
             cacheId,
@@ -171,6 +174,14 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
         setFlag(syncCommit, SYNC_COMMIT_FLAG_MASK);
         setFlag(firstClientReq, FIRST_CLIENT_REQ_FLAG_MASK);
         setFlag(retVal, NEED_RETURN_VALUE_FLAG_MASK);
+        setFlag(nearCache, NEAR_CACHE_FLAG_MASK);
+    }
+
+    /**
+     * @return {@code True} if near cache enabled on originating node.
+     */
+    public boolean nearCache() {
+        return isFlag(NEAR_CACHE_FLAG_MASK);
     }
 
     /**
@@ -500,7 +511,7 @@ public class GridNearLockRequest extends GridDistributedLockRequest {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 51;
     }
 

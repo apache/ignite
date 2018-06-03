@@ -29,7 +29,6 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -39,6 +38,7 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -238,6 +238,16 @@ abstract class TcpDiscoveryImpl {
     public abstract void spiStart(@Nullable String igniteInstanceName) throws IgniteSpiException;
 
     /**
+     * Will start TCP server if applicable and not started yet.
+     *
+     * @return Port this instance bound to.
+     * @throws IgniteSpiException If failed.
+     */
+    public int boundPort() throws IgniteSpiException {
+        return 0;
+    }
+
+    /**
      * @throws IgniteSpiException If failed.
      */
     public abstract void spiStop() throws IgniteSpiException;
@@ -282,11 +292,16 @@ abstract class TcpDiscoveryImpl {
     public abstract void brakeConnection();
 
     /**
+     * @param maxHops Maximum hops for {@link TcpDiscoveryRingLatencyCheckMessage}.
+     */
+    public abstract void checkRingLatency(int maxHops);
+
+    /**
      * <strong>FOR TEST ONLY!!!</strong>
      *
-     * @return Worker thread.
+     * @return Worker threads.
      */
-    protected abstract IgniteSpiThread workerThread();
+    protected abstract Collection<IgniteSpiThread> threads();
 
     /**
      * @throws IgniteSpiException If failed.
@@ -311,8 +326,9 @@ abstract class TcpDiscoveryImpl {
             }
             catch (IgniteSpiException e) {
                 LT.error(log, e, "Failed to register local node address in IP finder on start " +
-                    "(retrying every 2000 ms).");
-            }
+                    "(retrying every " + spi.getReconnectDelay() + " ms; " +
+                    "change 'reconnectDelay' to configure the frequency of retries).");
+            };
 
             if (start > 0 && (U.currentTimeMillis() - start) > spi.getJoinTimeout())
                 throw new IgniteSpiException(
@@ -322,7 +338,7 @@ abstract class TcpDiscoveryImpl {
                         "[joinTimeout=" + spi.getJoinTimeout() + ']');
 
             try {
-                U.sleep(2000);
+                U.sleep(spi.getReconnectDelay());
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);

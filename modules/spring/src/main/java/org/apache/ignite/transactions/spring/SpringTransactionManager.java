@@ -338,9 +338,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         this.igniteInstanceName = igniteInstanceName;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public void afterPropertiesSet() throws Exception {
         assert ignite == null;
 
@@ -364,9 +362,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         log = ignite.log();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected Object doGetTransaction() throws TransactionException {
         IgniteTransactionObject txObj = new IgniteTransactionObject();
 
@@ -376,9 +372,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         return txObj;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void doBegin(Object transaction, TransactionDefinition definition) throws TransactionException {
         if (definition.getIsolationLevel() == TransactionDefinition.ISOLATION_READ_UNCOMMITTED)
             throw new InvalidIsolationLevelException("Ignite does not support READ_UNCOMMITTED isolation level.");
@@ -419,9 +413,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void doCommit(DefaultTransactionStatus status) throws TransactionException {
         IgniteTransactionObject txObj = (IgniteTransactionObject)status.getTransaction();
         Transaction tx = txObj.getTransactionHolder().getTransaction();
@@ -437,9 +429,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
         IgniteTransactionObject txObj = (IgniteTransactionObject)status.getTransaction();
         Transaction tx = txObj.getTransactionHolder().getTransaction();
@@ -455,9 +445,20 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
+    @Override protected void doSetRollbackOnly(DefaultTransactionStatus status) throws TransactionException {
+        IgniteTransactionObject txObj = (IgniteTransactionObject)status.getTransaction();
+        Transaction tx = txObj.getTransactionHolder().getTransaction();
+
+        assert tx != null;
+
+        if (status.isDebug() && log.isDebugEnabled())
+            log.debug("Setting Ignite transaction rollback-only: " + tx);
+
+        tx.setRollbackOnly();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void doCleanupAfterCompletion(Object transaction) {
         IgniteTransactionObject txObj = (IgniteTransactionObject)transaction;
 
@@ -473,18 +474,14 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         txObj.getTransactionHolder().clear();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected boolean isExistingTransaction(Object transaction) throws TransactionException {
         IgniteTransactionObject txObj = (IgniteTransactionObject)transaction;
 
         return (txObj.getTransactionHolder() != null && txObj.getTransactionHolder().isTransactionActive());
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public Object getResourceFactory() {
         return this.ignite;
     }

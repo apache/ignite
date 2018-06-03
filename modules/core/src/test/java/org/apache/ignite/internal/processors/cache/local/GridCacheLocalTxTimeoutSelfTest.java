@@ -141,7 +141,7 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
         Transaction tx = null;
 
         try {
-            IgniteCache<Integer, String> cache = ignite.cache(null);
+            IgniteCache<Integer, String> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
             tx = ignite.transactions().txStart(concurrency, isolation, 50, 0);
 

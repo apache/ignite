@@ -124,7 +124,7 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
             if (dynamicCache)
                 ignite.getOrCreateCache(cacheConfiguration());
 
-            try (final DataStreamerImpl dataLdr = (DataStreamerImpl)ignite.dataStreamer(null)) {
+            try (final DataStreamerImpl dataLdr = (DataStreamerImpl)ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
                 Random rnd = new Random();
 
                 long endTime = U.currentTimeMillis() + 15_000;

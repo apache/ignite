@@ -18,15 +18,18 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import javax.cache.Cache;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -44,8 +47,22 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static int QRY_PARALLELISM_LVL = 97;
+    private static final String ORG_CACHE_NAME = "org";
 
+    /** */
+    private static final String PERSON_CAHE_NAME = "pers";
+
+    /** */
+    private static final int ORG_CACHE_SIZE = 500;
+
+    /** */
+    private static final int PERSON_CACHE_SIZE = 1000;
+
+    /** */
+    private static final int ORPHAN_ROWS = 10;
+
+    /** */
+    private static int QRY_PARALLELISM_LVL = 97;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -66,9 +83,21 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /** @return number of nodes to be prestarted. */
+    protected int nodesCount() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrids(nodesCount());
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopAllGrids(true);
+        super.afterTest();
+
+        grid(0).destroyCaches(Arrays.asList(PERSON_CAHE_NAME, ORG_CACHE_NAME));
     }
 
     /**
@@ -77,7 +106,7 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
      * @param idxTypes Indexed types.
      * @return Cache configuration.
      */
-    private static <K, V> CacheConfiguration<K, V> cacheConfig(String name, boolean partitioned, Class<?>... idxTypes) {
+    protected <K, V> CacheConfiguration<K, V> cacheConfig(String name, boolean partitioned, Class<?>... idxTypes) {
         return new CacheConfiguration<K, V>()
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
@@ -87,123 +116,243 @@ public class IgniteSqlSegmentedIndexSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testSegmentedIndex() throws Exception {
+        ignite(0).createCache(cacheConfig(PERSON_CAHE_NAME, true, Integer.class, Person.class));
+        ignite(0).createCache(cacheConfig(ORG_CACHE_NAME, true, Integer.class, Organization.class));
+
+        fillCache();
+
+        checkDistributedQueryWithSegmentedIndex();
+
+        checkLocalQueryWithSegmentedIndex();
+
+        checkLocalSizeQueryWithSegmentedIndex();
+    }
+
+    /**
+     * Check correct index snapshots with segmented indices.
+     * @throws Exception If failed.
+     */
+    public void testSegmentedIndexReproducableResults() throws Exception {
+        ignite(0).createCache(cacheConfig(ORG_CACHE_NAME, true, Integer.class, Organization.class));
+
+        IgniteCache<Object, Object> cache = ignite(0).cache(ORG_CACHE_NAME);
+
+        // Unequal entries distribution among partitions.
+        int expSize = nodesCount() * QRY_PARALLELISM_LVL *  3 / 2;
+
+        for (int i = 0; i < expSize; i++)
+            cache.put(i, new Organization("org-" + i));
+
+        String select0 = "select * from \"org\".Organization o";
+
+        // Check for stable results.
+        for(int i = 0; i < 10; i++) {
+            List<List<?>> res = cache.query(new SqlFieldsQuery(select0)).getAll();
+
+            assertEquals(expSize, res.size());
+        }
+    }
+
+    /**
+     * Checks correct <code>select count(*)</code> result with segmented indices.
+     * @throws Exception If failed.
+     */
+    public void testSegmentedIndexSizeReproducableResults() throws Exception {
+        ignite(0).createCache(cacheConfig(ORG_CACHE_NAME, true, Integer.class, Organization.class));
+
+        IgniteCache<Object, Object> cache = ignite(0).cache(ORG_CACHE_NAME);
+
+        // Unequal entries distribution among partitions.
+        long expSize = nodesCount() * QRY_PARALLELISM_LVL *  3 / 2;
+
+        for (int i = 0; i < expSize; i++)
+            cache.put(i, new Organization("org-" + i));
+
+        String select0 = "select count(*) from \"org\".Organization o";
+
+        // Check for stable results.
+        for(int i = 0; i < 10; i++) {
+            List<List<?>> res = cache.query(new SqlFieldsQuery(select0)).getAll();
+
+            assertEquals(expSize, res.get(0).get(0));
+        }
+    }
+
+    /**
      * Run tests on single-node grid
+     *
      * @throws Exception If failed.
      */
-    public void testSingleNodeIndexSegmentation() throws Exception {
-        startGridsMultiThreaded(1, true);
+    public void testSegmentedIndexWithEvictionPolicy() throws Exception {
+        final IgniteCache<Object, Object> cache = ignite(0).createCache(
+            cacheConfig(ORG_CACHE_NAME, true, Integer.class, Organization.class)
+                .setEvictionPolicy(new FifoEvictionPolicy(10))
+                .setOnheapCacheEnabled(true));
 
-        ignite(0).createCache(cacheConfig("pers", true, Integer.class, Person.class));
-        ignite(0).createCache(cacheConfig("org", true, Integer.class, Organization.class));
+        final long SIZE = 20;
 
-        fillCache();
+        for (int i = 0; i < SIZE; i++)
+            cache.put(i, new Organization("org-" + i));
 
-        checkDistributedQueryWithSegmentedIndex();
+        String select0 = "select name from \"org\".Organization";
 
-        checkLocalQueryWithSegmentedIndex();
+        List<List<?>> res = cache.query(new SqlFieldsQuery(select0)).getAll();
+
+        assertEquals(SIZE, res.size());
+    }
+
+    /**
+     * Verifies that <code>select count(*)</code> return valid result on a single-node grid.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSizeOnSegmentedIndexWithEvictionPolicy() throws Exception {
+        final IgniteCache<Object, Object> cache = ignite(0).createCache(
+            cacheConfig(ORG_CACHE_NAME, true, Integer.class, Organization.class)
+                .setEvictionPolicy(new FifoEvictionPolicy(10))
+                .setOnheapCacheEnabled(true));
+
+        final long SIZE = 20;
+
+        for (int i = 0; i < SIZE; i++)
+            cache.put(i, new Organization("org-" + i));
+
+        String select0 = "select count(*) from \"org\".Organization";
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery(select0)).getAll();
+
+        assertEquals(SIZE, res.get(0).get(0));
     }
 
     /**
      * Run tests on multi-node grid
+     *
      * @throws Exception If failed.
      */
-    public void testMultiNodeIndexSegmentation() throws Exception {
-        startGridsMultiThreaded(4, true);
-
-        ignite(0).createCache(cacheConfig("pers", true, Integer.class, Person.class));
-        ignite(0).createCache(cacheConfig("org", true, Integer.class, Organization.class));
+    public void testSegmentedPartitionedWithReplicated() throws Exception {
+        ignite(0).createCache(cacheConfig(PERSON_CAHE_NAME, true, Integer.class, Person.class));
+        ignite(0).createCache(cacheConfig(ORG_CACHE_NAME, false, Integer.class, Organization.class));
 
         fillCache();
 
         checkDistributedQueryWithSegmentedIndex();
 
         checkLocalQueryWithSegmentedIndex();
-    }
 
-    /**
-     * Run tests on multi-node grid
-     * @throws Exception If failed.
-     */
-    public void testMultiNodeSegmentedPartitionedWithReplicated() throws Exception {
-        startGridsMultiThreaded(4, true);
-
-        ignite(0).createCache(cacheConfig("pers", true, Integer.class, Person.class));
-        ignite(0).createCache(cacheConfig("org", false, Integer.class, Organization.class));
-
-        fillCache();
-
-        checkDistributedQueryWithSegmentedIndex();
-
-        checkLocalQueryWithSegmentedIndex();
+        checkLocalSizeQueryWithSegmentedIndex();
     }
 
     /**
      * Check distributed joins.
+     *
      * @throws Exception If failed.
      */
     public void checkDistributedQueryWithSegmentedIndex() throws Exception {
-        IgniteCache<Integer, Person> c1 = ignite(0).cache("pers");
+        for (int i = 0; i < nodesCount(); i++) {
+            IgniteCache<Integer, Person> c1 = ignite(i).cache(PERSON_CAHE_NAME);
 
-        int expectedPersons = 0;
+            long expPersons = 0;
 
-        for (Cache.Entry<Integer, Person> e : c1) {
-            final Integer orgId = e.getValue().orgId;
+            for (Cache.Entry<Integer, Person> e : c1) {
+                final Integer orgId = e.getValue().orgId;
 
-            if (10 <= orgId && orgId < 500)
-                expectedPersons++;
+                // We have as orphan ORG rows as orphan PERSON rows.
+                if (ORPHAN_ROWS <= orgId && orgId < 500)
+                    expPersons++;
+            }
+
+            String select0 = "select o.name n1, p.name n2 from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
+
+            List<List<?>> res = c1.query(new SqlFieldsQuery(select0).setDistributedJoins(true)).getAll();
+
+            assertEquals(expPersons, res.size());
         }
-
-        String select0 = "select o.name n1, p.name n2 from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
-
-        List<List<?>> result = c1.query(new SqlFieldsQuery(select0).setDistributedJoins(true)).getAll();
-
-        assertEquals(expectedPersons, result.size());
     }
 
     /**
      * Test local query.
+     *
      * @throws Exception If failed.
      */
     public void checkLocalQueryWithSegmentedIndex() throws Exception {
-        IgniteCache<Integer, Person> c1 = ignite(0).cache("pers");
-        IgniteCache<Integer, Organization> c2 = ignite(0).cache("org");
+        for (int i = 0; i < nodesCount(); i++) {
+            final Ignite node = ignite(i);
 
-        Set<Integer> localOrgIds = new HashSet<>();
+            IgniteCache<Integer, Person> c1 = node.cache(PERSON_CAHE_NAME);
+            IgniteCache<Integer, Organization> c2 = node.cache(ORG_CACHE_NAME);
 
-        for(Cache.Entry<Integer, Organization> e : c2.localEntries())
-            localOrgIds.add(e.getKey());
+            Set<Integer> locOrgIds = new HashSet<>();
 
-        int expectedPersons = 0;
+            for (Cache.Entry<Integer, Organization> e : c2.localEntries())
+                locOrgIds.add(e.getKey());
 
-        for (Cache.Entry<Integer, Person> e : c1.localEntries()) {
-            final Integer orgId = e.getValue().orgId;
+            long expPersons = 0;
 
-            if (localOrgIds.contains(orgId))
-                expectedPersons++;
+            for (Cache.Entry<Integer, Person> e : c1.localEntries()) {
+                final Integer orgId = e.getValue().orgId;
+
+                if (locOrgIds.contains(orgId))
+                    expPersons++;
+            }
+
+            String select0 = "select o.name n1, p.name n2 from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
+
+            List<List<?>> res = c1.query(new SqlFieldsQuery(select0).setLocal(true)).getAll();
+
+            assertEquals(expPersons, res.size());
         }
+    }
 
-        String select0 = "select o.name n1, p.name n2 from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
+    /**
+     * Verifies that local <code>select count(*)</code> query returns a correct result.
+     *
+     * @throws Exception If failed.
+     */
+    public void checkLocalSizeQueryWithSegmentedIndex() throws Exception {
+        for (int i = 0; i < nodesCount(); i++) {
+            final Ignite node = ignite(i);
 
-        List<List<?>> result = c1.query(new SqlFieldsQuery(select0).setLocal(true)).getAll();
+            IgniteCache<Integer, Person> c1 = node.cache(PERSON_CAHE_NAME);
+            IgniteCache<Integer, Organization> c2 = node.cache(ORG_CACHE_NAME);
 
-        assertEquals(expectedPersons, result.size());
+            Set<Integer> locOrgIds = new HashSet<>();
+
+            for (Cache.Entry<Integer, Organization> e : c2.localEntries())
+                locOrgIds.add(e.getKey());
+
+            int expPersons = 0;
+
+            for (Cache.Entry<Integer, Person> e : c1.localEntries()) {
+                final Integer orgId = e.getValue().orgId;
+
+                if (locOrgIds.contains(orgId))
+                    expPersons++;
+            }
+
+            String select0 = "select count(*) from \"pers\".Person p, \"org\".Organization o where p.orgId = o._key";
+
+            List<List<?>> res = c1.query(new SqlFieldsQuery(select0).setLocal(true)).getAll();
+
+            assertEquals((long) expPersons, res.get(0).get(0));
+        }
     }
 
     /** */
     private void fillCache() {
-        IgniteCache<Object, Object> c1 = ignite(0).cache("pers");
+        IgniteCache<Object, Object> c1 = ignite(0).cache(PERSON_CAHE_NAME);
+        IgniteCache<Object, Object> c2 = ignite(0).cache(ORG_CACHE_NAME);
 
-        IgniteCache<Object, Object> c2 = ignite(0).cache("org");
-
-        final int orgCount = 500;
-
-        for (int i = 0; i < orgCount; i++)
+        for (int i = 0; i < ORG_CACHE_SIZE; i++)
             c2.put(i, new Organization("org-" + i));
 
         final Random random = new Random();
 
-        for (int i = 0; i < 1000; i++) {
-            int orgID = 10 + random.nextInt(orgCount + 10);
+        for (int i = 0; i < PERSON_CACHE_SIZE; i++) {
+            // We have as orphan ORG rows as orphan PERSON rows.
+            int orgID = ORPHAN_ROWS + random.nextInt(ORG_CACHE_SIZE + ORPHAN_ROWS);
 
             c1.put(i, new Person(orgID, "pers-" + i));
         }

@@ -33,6 +33,11 @@
         </file>
 
         <file>
+            <source>MIGRATION_GUIDE.txt</source>
+            <outputDirectory>/</outputDirectory>
+        </file>
+
+        <file>
             <source>config/ignite-log4j.xml</source>
             <outputDirectory>/config</outputDirectory>
         </file>
@@ -63,7 +68,6 @@
                 <exclude>igniterouter.bat</exclude>
                 <exclude>**/build-classpath.bat</exclude>
                 <exclude>ignitevisorcmd.bat</exclude>
-                <exclude>ignite-schema-import.bat</exclude>
             </excludes>
         </fileSet>
 
@@ -80,7 +84,6 @@
                 <exclude>**/build-classpath.sh</exclude>
                 <exclude>**/service.sh</exclude>
                 <exclude>ignitevisorcmd.sh</exclude>
-                <exclude>ignite-schema-import.sh</exclude>
             </excludes>
         </fileSet>
 

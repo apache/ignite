@@ -35,9 +35,6 @@ public class CacheCheckpointSpiSecondCacheSelfTest extends GridCommonAbstractTes
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Data cache name. */
-    private static final String DATA_CACHE = null;
-
     /** Checkpoints cache name. */
     private static final String CP_CACHE = "checkpoints";
 
@@ -58,7 +55,7 @@ public class CacheCheckpointSpiSecondCacheSelfTest extends GridCommonAbstractTes
 
         CacheConfiguration cacheCfg1 = defaultCacheConfiguration();
 
-        cacheCfg1.setName(DATA_CACHE);
+        cacheCfg1.setName(DEFAULT_CACHE_NAME);
         cacheCfg1.setCacheMode(REPLICATED);
         cacheCfg1.setWriteSynchronizationMode(FULL_SYNC);
 
@@ -83,7 +80,7 @@ public class CacheCheckpointSpiSecondCacheSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testSecondCachePutRemove() throws Exception {
-        IgniteCache<Integer, Integer> data = grid().cache(DATA_CACHE);
+        IgniteCache<Integer, Integer> data = grid().cache(DEFAULT_CACHE_NAME);
         IgniteCache<Integer, String> cp = grid().cache(CP_CACHE);
 
         data.put(1, 1);

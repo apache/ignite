@@ -33,11 +33,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.ignite.console.agent.AgentConfiguration;
+import org.apache.ignite.console.agent.db.DbMetadataReader;
+import org.apache.ignite.console.agent.db.DbSchema;
+import org.apache.ignite.console.agent.db.DbTable;
 import org.apache.ignite.console.demo.AgentMetadataDemo;
-import org.apache.ignite.schema.parser.DbMetadataReader;
-import org.apache.ignite.schema.parser.DbTable;
 import org.apache.log4j.Logger;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.console.agent.AgentUtils.resolvePath;
 
 /**
@@ -51,22 +53,25 @@ public class DatabaseListener {
     private final File driversFolder;
 
     /** */
+    private final DbMetadataReader dbMetaReader;
+
+    /** */
     private final AbstractListener schemasLsnr = new AbstractListener() {
         @Override public Object execute(Map<String, Object> args) throws Exception {
             String driverPath = null;
 
-            if (args.containsKey("driverPath"))
-                driverPath = args.get("driverPath").toString();
+            if (args.containsKey("jdbcDriverJar"))
+                driverPath = args.get("jdbcDriverJar").toString();
 
-            if (!args.containsKey("driverClass"))
+            if (!args.containsKey("jdbcDriverClass"))
                 throw new IllegalArgumentException("Missing driverClass in arguments: " + args);
 
-            String driverCls = args.get("driverClass").toString();
+            String driverCls = args.get("jdbcDriverClass").toString();
 
-            if (!args.containsKey("url"))
+            if (!args.containsKey("jdbcUrl"))
                 throw new IllegalArgumentException("Missing url in arguments: " + args);
 
-            String url = args.get("url").toString();
+            String url = args.get("jdbcUrl").toString();
 
             if (!args.containsKey("info"))
                 throw new IllegalArgumentException("Missing info in arguments: " + args);
@@ -79,23 +84,23 @@ public class DatabaseListener {
         }
     };
 
+    /** */
     private final AbstractListener metadataLsnr = new AbstractListener() {
-        @SuppressWarnings("unchecked")
         @Override public Object execute(Map<String, Object> args) throws Exception {
             String driverPath = null;
 
-            if (args.containsKey("driverPath"))
-                driverPath = args.get("driverPath").toString();
+            if (args.containsKey("jdbcDriverJar"))
+                driverPath = args.get("jdbcDriverJar").toString();
 
-            if (!args.containsKey("driverClass"))
+            if (!args.containsKey("jdbcDriverClass"))
                 throw new IllegalArgumentException("Missing driverClass in arguments: " + args);
 
-            String driverCls = args.get("driverClass").toString();
+            String driverCls = args.get("jdbcDriverClass").toString();
 
-            if (!args.containsKey("url"))
+            if (!args.containsKey("jdbcUrl"))
                 throw new IllegalArgumentException("Missing url in arguments: " + args);
 
-            String url = args.get("url").toString();
+            String url = args.get("jdbcUrl").toString();
 
             if (!args.containsKey("info"))
                 throw new IllegalArgumentException("Missing info in arguments: " + args);
@@ -118,6 +123,7 @@ public class DatabaseListener {
         }
     };
 
+    /** */
     private final AbstractListener availableDriversLsnr = new AbstractListener() {
         @Override public Object execute(Map<String, Object> args) throws Exception {
             if (driversFolder == null) {
@@ -150,7 +156,7 @@ public class DatabaseListener {
                     URL url = new URL("jar", null,
                         "file:" + (win ? "/" : "") + file.getPath() + "!/META-INF/services/java.sql.Driver");
 
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), UTF_8))) {
                         String jdbcDriverCls = reader.readLine();
 
                         res.add(new JdbcDriver(file.getName(), jdbcDriverCls));
@@ -176,6 +182,7 @@ public class DatabaseListener {
      */
     public DatabaseListener(AgentConfiguration cfg) {
         driversFolder = resolvePath(cfg.driversFolder() == null ? "jdbc-drivers" : cfg.driversFolder());
+        dbMetaReader = new DbMetadataReader();
     }
 
     /**
@@ -184,7 +191,7 @@ public class DatabaseListener {
      * @param jdbcUrl JDBC URL.
      * @param jdbcInfo Properties to connect to database.
      * @return Connection to database.
-     * @throws SQLException
+     * @throws SQLException If failed to connect.
      */
     private Connection connect(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
         Properties jdbcInfo) throws SQLException {
@@ -194,7 +201,7 @@ public class DatabaseListener {
         if (!new File(jdbcDriverJarPath).isAbsolute() && driversFolder != null)
             jdbcDriverJarPath = new File(driversFolder, jdbcDriverJarPath).getPath();
 
-        return DbMetadataReader.getInstance().connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo);
+        return dbMetaReader.connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo);
     }
 
     /**
@@ -203,21 +210,30 @@ public class DatabaseListener {
      * @param jdbcUrl JDBC URL.
      * @param jdbcInfo Properties to connect to database.
      * @return Collection of schema names.
-     * @throws SQLException
+     * @throws SQLException If failed to collect schemas.
      */
-    protected Collection<String> schemas(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
+    protected DbSchema schemas(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl,
         Properties jdbcInfo) throws SQLException {
         if (log.isDebugEnabled())
             log.debug("Start collecting database schemas [drvJar=" + jdbcDriverJarPath +
                 ", drvCls=" + jdbcDriverCls + ", jdbcUrl=" + jdbcUrl + "]");
 
         try (Connection conn = connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo)) {
-            Collection<String> schemas = DbMetadataReader.getInstance().schemas(conn);
+            String catalog = conn.getCatalog();
+
+            if (catalog == null) {
+                String[] parts = jdbcUrl.split("[/:=]");
+
+                catalog = parts.length > 0 ? parts[parts.length - 1] : "NONE";
+            }
+
+            Collection<String> schemas = dbMetaReader.schemas(conn);
 
             if (log.isDebugEnabled())
-                log.debug("Finished collection of schemas [jdbcUrl=" + jdbcUrl + ", count=" + schemas.size() + "]");
+                log.debug("Finished collection of schemas [jdbcUrl=" + jdbcUrl + ", catalog=" + catalog +
+                    ", count=" + schemas.size() + "]");
 
-            return schemas;
+            return new DbSchema(catalog, schemas);
         }
         catch (Throwable e) {
             log.error("Failed to collect schemas", e);
@@ -261,7 +277,7 @@ public class DatabaseListener {
                 ", drvCls=" + jdbcDriverCls + ", jdbcUrl=" + jdbcUrl + "]");
 
         try (Connection conn = connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo)) {
-            Collection<DbTable> metadata = DbMetadataReader.getInstance().metadata(conn, schemas, tblsOnly);
+            Collection<DbTable> metadata = dbMetaReader.metadata(conn, schemas, tblsOnly);
 
             if (log.isDebugEnabled())
                 log.debug("Finished collection of metadata [jdbcUrl=" + jdbcUrl + ", count=" + metadata.size() + "]");

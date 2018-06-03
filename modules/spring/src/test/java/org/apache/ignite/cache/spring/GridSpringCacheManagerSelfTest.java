@@ -66,7 +66,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration cache = new CacheConfiguration();
+        CacheConfiguration cache = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         cache.setName(CACHE_NAME);
 
@@ -89,11 +89,6 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -390,7 +385,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDynamicCacheEvict() throws Exception {
-        CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheCfg.setName(DYNAMIC_CACHE_NAME);
 
@@ -417,7 +412,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDynamicCacheEvictAll() throws Exception {
-        CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheCfg.setName(DYNAMIC_CACHE_NAME);
 

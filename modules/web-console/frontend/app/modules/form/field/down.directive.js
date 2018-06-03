@@ -17,14 +17,20 @@
 
 export default ['igniteFormFieldDown', ['$tooltip', ($tooltip) => {
     const controller = ['$element', function($element) {
-        $tooltip($element, { title: 'Move item down' });
+        const ctrl = this;
 
-        this.down = () => {
-            const i = this.models.indexOf(this.model);
+        this.$onInit = () => {
+            $tooltip($element, { title: 'Move item down' });
 
-            this.models.splice(i, 1);
-            this.models.splice(i + 1, 0, this.model);
+            ctrl.down = () => {
+                const i = ctrl.models.indexOf(ctrl.model);
+
+                ctrl.models.splice(i, 1);
+                ctrl.models.splice(i + 1, 0, ctrl.model);
+            };
         };
+
+
     }];
 
     return {
@@ -34,6 +40,6 @@ export default ['igniteFormFieldDown', ['$tooltip', ($tooltip) => {
             models: '=models'
         },
         controller,
-        controllerAs: '$ctrl'
+        controllerAs: 'vm'
     };
 }]];

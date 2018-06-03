@@ -93,7 +93,7 @@ public class IgniteCacheScanPredicateDeploymentSelfTest extends GridCommonAbstra
         awaitPartitionMapExchange();
 
         try {
-            IgniteCache<Object, Object> cache = grid(3).cache(null);
+            IgniteCache<Object, Object> cache = grid(3).cache(DEFAULT_CACHE_NAME);
 
             // It is important that there are no too many keys.
             for (int i = 0; i < 1; i++)

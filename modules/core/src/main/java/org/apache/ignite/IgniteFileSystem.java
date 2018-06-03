@@ -31,7 +31,7 @@ import org.apache.ignite.igfs.IgfsPathSummary;
 import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
 import org.apache.ignite.igfs.mapreduce.IgfsTask;
 import org.apache.ignite.lang.IgniteAsyncSupport;
-import org.apache.ignite.lang.IgniteAsyncSupported;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
@@ -74,7 +74,7 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
     /**
      * Gets IGFS name.
      *
-     * @return IGFS name, or {@code null} for default file system.
+     * @return IGFS name.
      */
     public String name();
 
@@ -202,13 +202,13 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      * corresponding time will not be changed.
      *
      * @param path Path to update.
-     * @param accessTime Optional last access time to set. Value {@code -1} does not update access time.
      * @param modificationTime Optional last modification time to set. Value {@code -1} does not update
      *      modification time.
+     * @param accessTime Optional last access time to set. Value {@code -1} does not update access time.
      * @throws IgfsPathNotFoundException If target was not found.
      * @throws IgniteException If error occurred.
      */
-    public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException;
+    public void setTimes(IgfsPath path, long modificationTime, long accessTime) throws IgniteException;
 
     /**
      * Gets affinity block locations for data blocks of the file, i.e. the nodes, on which the blocks
@@ -265,19 +265,23 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
     public long size(IgfsPath path) throws IgniteException;
 
     /**
-     * Formats the file system removing all existing entries from it.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
+     * Formats the file system removing all existing entries from it, but not removing anything in secondary
+     * file system (if any).
      *
-     * @throws IgniteException In case format has failed.
+     * @throws IgniteException In case clear failed.
      */
-    @IgniteAsyncSupported
-    public void format() throws IgniteException;
+    public void clear() throws IgniteException;
+
+    /**
+     * Formats the file system removing all existing entries from it, but not removing anything in secondary
+     * file system (if any).
+     *
+     * @return Future representing pending completion of the clear operation.
+     */
+    public IgniteFuture<Void> clearAsync() throws IgniteException;
 
     /**
      * Executes IGFS task.
-     * <p>
-     * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param task Task to execute.
      * @param rslvr Optional resolver to control split boundaries.
@@ -286,9 +290,22 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteException If execution failed.
      */
-    @IgniteAsyncSupported
     public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, @Nullable T arg) throws IgniteException;
+
+    /**
+     * Executes IGFS task asynchronously.
+     *
+     * @param task Task to execute.
+     * @param rslvr Optional resolver to control split boundaries.
+     * @param paths Collection of paths to be processed within this task.
+     * @param arg Optional task argument.
+     * @return a Future representing pending completion of the task.
+     * @throws IgniteException If execution failed.
+     */
+    public <T, R> IgniteFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
+        Collection<IgfsPath> paths, @Nullable T arg) throws IgniteException;
+
 
     /**
      * Executes IGFS task with overridden maximum range length (see
@@ -307,8 +324,26 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteException If execution failed.
      */
-    @IgniteAsyncSupported
     public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
+        Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
+        throws IgniteException;
+
+    /**
+     * Executes IGFS task asynchronously with overridden maximum range length (see
+     * {@link org.apache.ignite.configuration.FileSystemConfiguration#getMaximumTaskRangeLength()} for more information).
+     *
+     * @param task Task to execute.
+     * @param rslvr Optional resolver to control split boundaries.
+     * @param paths Collection of paths to be processed within this task.
+     * @param skipNonExistentFiles Whether to skip non existent files. If set to {@code true} non-existent files will
+     *     be ignored. Otherwise an exception will be thrown.
+     * @param maxRangeLen Optional maximum range length. If {@code 0}, then by default all consecutive
+     *      IGFS blocks will be included.
+     * @param arg Optional task argument.
+     * @return a Future representing pending completion of the task.
+     * @throws IgniteException If execution failed.
+     */
+    public <T, R> IgniteFuture<R> executeAsync(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
         Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
         throws IgniteException;
 
@@ -324,9 +359,22 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteException If execution failed.
      */
-    @IgniteAsyncSupported
     public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) throws IgniteException;
+
+    /**
+     * Executes IGFS task asynchronously.
+     *
+     * @param taskCls Task class to execute.
+     * @param rslvr Optional resolver to control split boundaries.
+     * @param paths Collection of paths to be processed within this task.
+     * @param arg Optional task argument.
+     * @return a Future representing pending completion of the task.
+     * @throws IgniteException If execution failed.
+     */
+    public <T, R> IgniteFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
+        @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) throws IgniteException;
+
 
     /**
      * Executes IGFS task with overridden maximum range length (see
@@ -344,8 +392,25 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteException If execution failed.
      */
-    @IgniteAsyncSupported
     public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
+        @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
+        long maxRangeLen, @Nullable T arg) throws IgniteException;
+
+    /**
+     * Executes IGFS task asynchronously with overridden maximum range length (see
+     * {@link org.apache.ignite.configuration.FileSystemConfiguration#getMaximumTaskRangeLength()} for more information).
+     *
+     * @param taskCls Task class to execute.
+     * @param rslvr Optional resolver to control split boundaries.
+     * @param paths Collection of paths to be processed within this task.
+     * @param skipNonExistentFiles Whether to skip non existent files. If set to {@code true} non-existent files will
+     *     be ignored. Otherwise an exception will be thrown.
+     * @param maxRangeLen Maximum range length.
+     * @param arg Optional task argument.
+     * @return a Future representing pending completion of the task.
+     * @throws IgniteException If execution failed.
+     */
+    public <T, R> IgniteFuture<R> executeAsync(Class<? extends IgfsTask<T, R>> taskCls,
         @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) throws IgniteException;
 
@@ -473,5 +538,6 @@ public interface IgniteFileSystem extends IgniteAsyncSupport {
     public long usedSpaceSize() throws IgniteException;
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public IgniteFileSystem withAsync();
 }

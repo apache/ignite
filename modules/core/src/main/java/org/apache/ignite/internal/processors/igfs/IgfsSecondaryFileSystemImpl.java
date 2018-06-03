@@ -119,8 +119,8 @@ class IgfsSecondaryFileSystemImpl implements IgfsSecondaryFileSystem {
     }
 
     /** {@inheritDoc} */
-    @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) throws IgniteException {
-        igfs.setTimes(path, accessTime, modificationTime);
+    @Override public void setTimes(IgfsPath path, long modificationTime, long accessTime) throws IgniteException {
+        igfs.setTimes(path, modificationTime, accessTime);
     }
 
     /** {@inheritDoc} */

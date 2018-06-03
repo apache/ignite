@@ -118,20 +118,10 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         assert G.allGrids().size() == GRID_CNT;
 
         for (int i = 0; i < KEY_CNT; i++) {
-            grid(0).cache(null).put(i, i);
+            grid(0).cache(DEFAULT_CACHE_NAME).put(i, i);
 
             grid(0).cache(NON_DFLT_CACHE_NAME).put(i, i);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        for (int i = 0; i < GRID_CNT; i++)
-            stopGrid(i);
-
-        assert G.allGrids().isEmpty();
     }
 
     /**
@@ -276,8 +266,8 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void applyx() throws IgniteCheckedException {
-            assert ignite.cluster().localNode().id().equals(ignite.affinity(null).mapKeyToNode(affKey).id());
-            assert ignite.cluster().localNode().id().equals(ignite.affinity(null).mapKeyToNode(key).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(affKey).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id());
         }
     }
 
@@ -412,8 +402,8 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object call() throws IgniteCheckedException {
-            assert ignite.cluster().localNode().id().equals(ignite.affinity(null).mapKeyToNode(affKey).id());
-            assert ignite.cluster().localNode().id().equals(ignite.affinity(null).mapKeyToNode(key).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(affKey).id());
+            assert ignite.cluster().localNode().id().equals(ignite.affinity(DEFAULT_CACHE_NAME).mapKeyToNode(key).id());
 
             return null;
         }

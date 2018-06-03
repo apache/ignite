@@ -22,8 +22,7 @@ package org.apache.ignite.internal.processors.cache;
  */
 public interface CachePartitionExchangeWorkerTask {
     /**
-     * @return {@code True} if task denotes standard exchange task, {@code false} if this is a custom task which
-     * must be executed from within exchange thread.
+     * @return {@code False} if exchange merge should stop if this task is found in exchange worker queue.
      */
-    boolean isExchange();
+    boolean skipForExchangeMerge();
 }

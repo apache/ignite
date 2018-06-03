@@ -47,11 +47,6 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         assert grid(0).cluster().nodes().size() == gridCount();
     }
@@ -100,6 +95,6 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
      * @return Cache.
      */
     @Override protected <K, V> IgniteCache<K, V> jcache() {
-        return grid(0).cache(null);
+        return grid(0).cache(DEFAULT_CACHE_NAME);
     }
 }

@@ -29,6 +29,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -68,7 +69,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Hadoop external communication class.
@@ -229,7 +229,7 @@ public class HadoopExternalCommunication {
     private ShmemAcceptWorker shmemAcceptWorker;
 
     /** Shared memory workers. */
-    private final Collection<ShmemWorker> shmemWorkers = new ConcurrentLinkedDeque8<>();
+    private final Collection<ShmemWorker> shmemWorkers = new ConcurrentLinkedDeque<>();
 
     /** Clients. */
     private final ConcurrentMap<UUID, HadoopCommunicationClient> clients = GridConcurrentFactory.newMap();
@@ -1004,7 +1004,10 @@ public class HadoopExternalCommunication {
 
                 HandshakeFinish fin = new HandshakeFinish();
 
-                GridNioSession ses = nioSrvr.createSession(ch, F.asMap(HANDSHAKE_FINISH_META, fin)).get();
+                GridNioFuture<GridNioSession> sesFut =
+                    nioSrvr.createSession(ch, F.<Integer, Object>asMap(HANDSHAKE_FINISH_META, fin), false, null);
+
+                GridNioSession ses = sesFut.get();
 
                 client = new HadoopTcpNioCommunicationClient(ses);
 

@@ -101,15 +101,15 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         if (clientMode && ((igniteInstanceName.charAt(igniteInstanceName.length() - 1) - '0') & 1) != 0)
             cfg.setClientMode(true);
         else
-            disc.setMaxMissedClientHeartbeats(50);
+            cfg.setClientFailureDetectionTimeout(50000);
 
-        disc.setHeartbeatFrequency(500);
         disc.setIpFinder(IP_FINDER);
         disc.setAckTimeout(1000);
         disc.setSocketTimeout(1000);
 
         cfg.setCacheConfiguration(cCfg);
         cfg.setDiscoverySpi(disc);
+        cfg.setMetricsUpdateFrequency(500);
 
         return cfg;
     }
@@ -125,7 +125,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
         }
 
         for (int i = 0; i < PERM_NODES_CNT + TMP_NODES_CNT; i++)
-            F.rand(alive).cache(null).put(i, String.valueOf(i));
+            F.rand(alive).cache(DEFAULT_CACHE_NAME).put(i, String.valueOf(i));
     }
 
     /** {@inheritDoc} */
@@ -169,8 +169,6 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testAlivesClient() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1583");
-
         clientMode = true;
 
         doTestAlive();
@@ -180,16 +178,20 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
      * Waits while topology on all nodes became equals to the expected size.
      *
      * @param nodesCnt Expected nodes count.
-     * @throws InterruptedException If interrupted.
+     * @throws Exception If interrupted.
      */
     @SuppressWarnings("BusyWait")
-    private void awaitDiscovery(long nodesCnt) throws InterruptedException {
-        for (Ignite g : alive) {
-            ((TcpDiscoverySpi)g.configuration().getDiscoverySpi()).waitForClientMessagePrecessed();
+    private void awaitDiscovery(int nodesCnt) throws Exception {
+        if (tcpDiscovery()) {
+            for (Ignite g : alive) {
+                ((TcpDiscoverySpi)g.configuration().getDiscoverySpi()).waitForClientMessagePrecessed();
 
-            while (g.cluster().nodes().size() != nodesCnt)
-                Thread.sleep(10);
+                while (g.cluster().nodes().size() != nodesCnt)
+                    Thread.sleep(10);
+            }
         }
+        else
+            waitForTopology(nodesCnt);
     }
 
     /**

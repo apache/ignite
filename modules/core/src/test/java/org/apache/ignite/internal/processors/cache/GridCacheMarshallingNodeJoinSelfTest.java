@@ -55,7 +55,7 @@ public class GridCacheMarshallingNodeJoinSelfTest extends GridCommonAbstractTest
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        CacheConfiguration<Integer, TestObject> cacheCfg = new CacheConfiguration<>();
+        CacheConfiguration<Integer, TestObject> cacheCfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
@@ -78,11 +78,6 @@ public class GridCacheMarshallingNodeJoinSelfTest extends GridCommonAbstractTest
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGridsMultiThreaded(2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -116,7 +111,7 @@ public class GridCacheMarshallingNodeJoinSelfTest extends GridCommonAbstractTest
             }
         }, 1);
 
-        IgniteCache<Integer, TestObject> cache = ignite(0).cache(null);
+        IgniteCache<Integer, TestObject> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = ignite(0).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
             cache.get(0);

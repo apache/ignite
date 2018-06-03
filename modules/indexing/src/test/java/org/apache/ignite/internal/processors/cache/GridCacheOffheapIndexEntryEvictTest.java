@@ -32,11 +32,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
@@ -59,18 +57,13 @@ public class GridCacheOffheapIndexEntryEvictTest extends GridCommonAbstractTest 
 
         cfg.setNetworkTimeout(2000);
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
-
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
-        cacheCfg.setOffHeapMaxMemory(0);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setMemoryMode(OFFHEAP_TIERED);
         cacheCfg.setEvictionPolicy(null);
-        cacheCfg.setSqlOnheapRowCacheSize(10);
         cacheCfg.setIndexedTypes(Integer.class, TestValue.class);
         cacheCfg.setNearConfiguration(null);
 
@@ -84,16 +77,11 @@ public class GridCacheOffheapIndexEntryEvictTest extends GridCommonAbstractTest 
         startGrids(1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
     public void testQueryWhenLocked() throws Exception {
-        IgniteCache<Integer, TestValue> cache = grid(0).cache(null);
+        IgniteCache<Integer, TestValue> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         List<Lock> locks = new ArrayList<>();
 
@@ -127,7 +115,7 @@ public class GridCacheOffheapIndexEntryEvictTest extends GridCommonAbstractTest 
     public void testUpdates() throws Exception {
         final int ENTRIES = 500;
 
-        IgniteCache<Integer, TestValue> cache = grid(0).cache(null);
+        IgniteCache<Integer, TestValue> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         for (int i = 0; i < ENTRIES; i++) {
             for (int j = 0; j < 3; j++) {

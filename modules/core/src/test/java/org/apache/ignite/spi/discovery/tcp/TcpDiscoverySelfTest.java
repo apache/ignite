@@ -44,6 +44,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -52,6 +53,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.continuous.StartRoutineAckDiscoveryMessage;
@@ -77,8 +79,9 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryConnectionCheckMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryCustomEventMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHeartbeatMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryMetricsUpdateMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
@@ -154,15 +157,13 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         spi.setNetworkTimeout(2500);
 
-        spi.setHeartbeatFrequency(1000);
-
-        spi.setMaxMissedHeartbeats(3);
-
         spi.setIpFinderCleanFrequency(5000);
 
         spi.setJoinTimeout(5000);
 
         cfg.setDiscoverySpi(spi);
+
+        cfg.setFailureDetectionTimeout(7500);
 
         if (ccfgs != null)
             cfg.setCacheConfiguration(ccfgs);
@@ -173,12 +174,16 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeProperties();
 
+        cfg.setMetricsUpdateFrequency(1000);
+
         if (!igniteInstanceName.contains("LoopbackProblemTest"))
             cfg.setLocalHost("127.0.0.1");
 
         if (igniteInstanceName.contains("testFailureDetectionOnNodePing")) {
             spi.setReconnectCount(1); // To make test faster: on Windows 1 connect takes 1 second.
-            spi.setHeartbeatFrequency(40000);
+
+            cfg.setMetricsUpdateFrequency(40000);
+            cfg.setClientFailureDetectionTimeout(41000);
         }
 
         cfg.setConnectorConfiguration(null);
@@ -433,7 +438,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         assertFalse("Ping is ok for node " + failedNodeId + ", but had to fail.", res);
 
-        // Heartbeat interval is 40 seconds, but we should detect node failure faster.
+        // Metrics update interval is 40 seconds, but we should detect node failure faster.
         assert cnt.await(7, SECONDS);
     }
 
@@ -1344,7 +1349,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                CacheConfiguration ccfg = new CacheConfiguration();
+                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                 ccfg.setName(CACHE_NAME);
 
@@ -1614,7 +1619,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             @Override public Void call() throws Exception {
                 log.info("Create test cache");
 
-                CacheConfiguration ccfg = new CacheConfiguration();
+                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                 ccfg.setName(CACHE_NAME);
 
@@ -1751,7 +1756,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             waitNodeStop(ignite0.name());
 
-            ignite1.getOrCreateCache(new CacheConfiguration<>()).put(1, 1);
+            ignite1.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)).put(1, 1);
 
             startGrid(2);
 
@@ -1907,9 +1912,9 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             startGrid(1);
 
-            ignite0.createCache(new CacheConfiguration<>()); // Send custom message.
+            ignite0.createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME)); // Send custom message.
 
-            ignite0.destroyCache(null); // Send custom message.
+            ignite0.destroyCache(DEFAULT_CACHE_NAME); // Send custom message.
 
             stopGrid(1);
 
@@ -2023,7 +2028,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < ccfgs.length; i++) {
                 CacheConfiguration ccfg = new CacheConfiguration();
 
-                ccfg.setName(i == 0 ? null : ("static-cache-" + i));
+                ccfg.setName(i == 0 ? DEFAULT_CACHE_NAME : ("static-cache-" + i));
 
                 ccfgs[i] = ccfg;
             }
@@ -2046,7 +2051,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             assertTrue(clientNode.configuration().isClientMode());
 
-            CacheConfiguration ccfg = new CacheConfiguration();
+            CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
             ccfg.setName("c1");
 
             clientNode.createCache(ccfg);
@@ -2060,6 +2065,42 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             assertTrue(TestDiscoveryDataDuplicateSpi.checkNodeAdded);
             assertTrue(TestDiscoveryDataDuplicateSpi.checkClientNodeAddFinished);
             assertFalse(TestDiscoveryDataDuplicateSpi.fail);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFailedNodeRestoreConnection() throws Exception {
+        try {
+            TestRestoreConnectedSpi.startTest = false;
+
+            for (int i = 1; i < 5; i++) {
+                nodeSpi.set(new TestRestoreConnectedSpi(3));
+
+                startGrid(i);
+            }
+
+            awaitPartitionMapExchange();
+
+            info("Start fail test");
+
+            TestRestoreConnectedSpi.startTest = true;
+
+            waitNodeStop(getTestIgniteInstanceName(3));
+
+            U.sleep(5000);
+
+            for (int i = 1; i < 5; i++) {
+                if (i != 3) {
+                    Ignite node = ignite(i);
+
+                    assertEquals(3, node.cluster().nodes().size());
+                }
+            }
         }
         finally {
             stopAllGrids();
@@ -2101,7 +2142,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         int cntr = 0;
 
         for (Ignite ignite : allNodes) {
-            CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+            CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
             ccfg.setName("cache-" + cntr++);
 
@@ -2130,8 +2171,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         static volatile int marshalledItems;
 
         /** {@inheritDoc} */
-        @Override public TcpDiscoverySpi setDataExchange(final DiscoverySpiDataExchange exchange) {
-            return super.setDataExchange(new DiscoverySpiDataExchange() {
+        @Override public void setDataExchange(final DiscoverySpiDataExchange exchange) {
+            super.setDataExchange(new DiscoverySpiDataExchange() {
                 @Override public DiscoveryDataBag collect(DiscoveryDataBag dataBag) {
                     DiscoveryDataBag bag = exchange.collect(dataBag);
 
@@ -2165,6 +2206,77 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * User class used in {@link #testSystemMarshallerTypesFilteredOut()} test to feed into marshaller cache.
      */
     private static class Employee { }
+
+    /**
+     *
+     */
+    private static class TestRestoreConnectedSpi extends TcpDiscoverySpi {
+        /** */
+        static volatile boolean startTest;
+
+        /** */
+        private long sleepEndTime;
+
+        /** */
+        private long errNodeOrder;
+
+        /** */
+        private ClusterNode errNext;
+
+        /**
+         * @param errNodeOrder
+         */
+        TestRestoreConnectedSpi(long errNodeOrder) {
+            this.errNodeOrder = errNodeOrder;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(ClusterNode node,
+            Socket sock,
+            OutputStream out,
+            TcpDiscoveryAbstractMessage msg,
+            long timeout) throws IOException, IgniteCheckedException {
+            if (startTest && !(msg instanceof TcpDiscoveryConnectionCheckMessage)) {
+                if (node.order() == errNodeOrder) {
+                    log.info("Fail write on message send [node=" + node.id() + ", msg=" + msg + ']');
+
+                    throw new SocketTimeoutException();
+                }
+                else if (locNode.order() == errNodeOrder) {
+                    if (sleepEndTime == 0) {
+                        errNext = node;
+
+                        sleepEndTime = System.currentTimeMillis() + 3000;
+                    }
+
+                    long sleepTime = sleepEndTime - System.currentTimeMillis();
+
+                    if (sleepTime > 0) {
+                        log.info("Start sleep on message send: " + msg);
+
+                        try {
+                            U.sleep(sleepTime);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            log.error("Interrupted on socket write: " + e, e);
+
+                            throw new IOException(e);
+                        }
+
+                        log.info("Stop sleep on message send: " + msg);
+
+                        if (node.equals(errNext)) {
+                            log.info("Fail write after sleep [node=" + node.id() + ", msg=" + msg + ']');
+
+                            throw new SocketTimeoutException();
+                        }
+                    }
+                }
+            }
+
+            super.writeToSocket(node, sock, out, msg, timeout);
+        }
+    }
 
     /**
      *
@@ -2252,7 +2364,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             long timeout) throws IOException, IgniteCheckedException {
             boolean add = msgIds.add(msg.id());
 
-            if (checkDuplicates && !add && !(msg instanceof TcpDiscoveryHeartbeatMessage)) {
+            if (checkDuplicates && !add && !(msg instanceof TcpDiscoveryMetricsUpdateMessage)) {
                 log.error("Send duplicated message: " + msg);
 
                 failed = true;

@@ -84,7 +84,6 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
-        cfg.setStartSize(700000);
         cfg.setWriteSynchronizationMode(FULL_ASYNC);
         cfg.setEvictionPolicy(null);
         cfg.setBackups(1);
@@ -114,7 +113,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
             long misses = 0;
 
             for (int i = 0; i < GRID_CNT; i++) {
-                CacheMetrics m = grid(i).cache(null).localMetrics();
+                CacheMetrics m = grid(i).cache(DEFAULT_CACHE_NAME).localMetrics();
 
                 hits += m.getCacheHits();
                 misses += m.getCacheMisses();
@@ -135,7 +134,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      * @param g Grid.
      */
     private static void realTimePopulate(final Ignite g) {
-        try (IgniteDataStreamer<Integer, Long> ldr = g.dataStreamer(null)) {
+        try (IgniteDataStreamer<Integer, Long> ldr = g.dataStreamer(DEFAULT_CACHE_NAME)) {
             // Sets max values to 1 so cache metrics have correct values.
             ldr.perNodeParallelOperations(1);
 

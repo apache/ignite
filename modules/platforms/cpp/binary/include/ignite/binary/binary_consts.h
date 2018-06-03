@@ -23,8 +23,6 @@
 #ifndef _IGNITE_BINARY_BINARY_CONSTS
 #define _IGNITE_BINARY_BINARY_CONSTS
 
-#include <ignite/common/common.h>
-
 namespace ignite 
 {
     namespace binary 
@@ -32,53 +30,59 @@ namespace ignite
         /**
          * Binary collection types.
          */
-        enum CollectionType 
+        struct CollectionType 
         {
-            /** 
-             * Undefined. Maps to ArrayList in Java.
-             */
-            IGNITE_COLLECTION_UNDEFINED = 0,
+            enum Type
+            {
+                /**
+                 * Undefined. Maps to ArrayList in Java.
+                 */
+                UNDEFINED = 0,
 
-            /** 
-             * Array list. Maps to ArrayList in Java.
-             */
-            IGNITE_COLLECTION_ARRAY_LIST = 1,
-            
-            /**
-             * Linked list. Maps to LinkedList in Java.
-             */
-            IGNITE_COLLECTION_LINKED_LIST = 2,
-            
-            /**
-             * Hash set. Maps to HashSet in Java.
-             */
-            IGNITE_COLLECTION_HASH_SET = 3,
-            
-            /**
-             * Linked hash set. Maps to LinkedHashSet in Java.
-             */
-            IGNITE_COLLECTION_LINKED_HASH_SET = 4
+                /** 
+                 * Array list. Maps to ArrayList in Java.
+                 */
+                ARRAY_LIST = 1,
+
+                /**
+                 * Linked list. Maps to LinkedList in Java.
+                 */
+                LINKED_LIST = 2,
+
+                /**
+                 * Hash set. Maps to HashSet in Java.
+                 */
+                HASH_SET = 3,
+
+                /**
+                 * Linked hash set. Maps to LinkedHashSet in Java.
+                 */
+                LINKED_HASH_SET = 4
+            };
         };
 
         /**
          * Binary map types.
          */
-        enum MapType 
+        struct MapType 
         {
-            /**
-             * Undefined. Maps to HashMap in Java.
-             */
-            IGNITE_MAP_UNDEFINED = 0,
-            
-            /**
-             * Hash map. Maps to HashMap in Java.
-             */
-            IGNITE_MAP_HASH_MAP = 1,
-            
-            /**
-             * Linked hash map. Maps to LinkedHashMap in Java.
-             */
-            IGNITE_MAP_LINKED_HASH_MAP = 2
+            enum Type
+            {
+                /**
+                 * Undefined. Maps to HashMap in Java.
+                 */
+                UNDEFINED = 0,
+
+                /**
+                 * Hash map. Maps to HashMap in Java.
+                 */
+                HASH_MAP = 1,
+
+                /**
+                 * Linked hash map. Maps to LinkedHashMap in Java.
+                 */
+                LINKED_HASH_MAP = 2
+            };
         };
     }
 }

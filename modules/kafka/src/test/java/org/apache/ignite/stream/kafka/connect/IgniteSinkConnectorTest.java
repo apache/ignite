@@ -134,11 +134,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         grid = startGrid("igniteServerNode", cfg);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     public void testSinkPutsWithoutTransformation() throws Exception {
         Map<String, String> sinkProps = makeSinkProps(Utils.join(TOPICS, ","));
 
@@ -161,8 +156,7 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
      */
     private void testSinkPuts(Map<String, String> sinkProps, boolean keyless) throws Exception {
         FutureCallback<Herder.Created<ConnectorInfo>> cb = new FutureCallback<>(new Callback<Herder.Created<ConnectorInfo>>() {
-            @Override
-            public void onCompletion(Throwable error, Herder.Created<ConnectorInfo> info) {
+            @Override public void onCompletion(Throwable error, Herder.Created<ConnectorInfo> info) {
                 if (error != null)
                     throw new RuntimeException("Failed to create a job!");
             }

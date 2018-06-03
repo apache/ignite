@@ -42,6 +42,9 @@ public interface GridComponent {
         /** */
         CACHE_PROC,
 
+        /** State process. */
+        STATE_PROC,
+
         /** */
         PLUGIN,
 
@@ -49,7 +52,19 @@ public interface GridComponent {
         CLUSTER_PROC,
 
         /** */
-        MARSHALLER_PROC
+        DISCOVERY_PROC,
+
+        /** */
+        MARSHALLER_PROC,
+
+        /** */
+        BINARY_PROC,
+
+        /** Query processor. */
+        QUERY_PROC,
+
+        /** Authentication processor. */
+        AUTH_PROC
     }
 
     /**
@@ -72,9 +87,11 @@ public interface GridComponent {
      * Callback that notifies that kernal has successfully started,
      * including all managers and processors.
      *
+     * @param active Cluster active flag (note: should be used carefully since state can
+     *     change concurrently).
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void onKernalStart() throws IgniteCheckedException;
+    public void onKernalStart(boolean active) throws IgniteCheckedException;
 
     /**
      * Callback to notify that kernal is about to stop.
@@ -131,6 +148,9 @@ public interface GridComponent {
      * @return Validation result or {@code null} in case of success.
      */
     @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node);
+
+    /** */
+    @Nullable public IgniteNodeValidationResult validateNode(ClusterNode node, DiscoveryDataBag.JoiningNodeDiscoveryData discoData);
 
     /**
      * Gets unique component type to distinguish components providing discovery data. Must return non-null value

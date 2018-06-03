@@ -31,6 +31,11 @@
         /// </summary>
         public string PluginProperty { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether plugin should check cache operations.
+        /// </summary>
+        public bool SkipCacheCheck { get; set; }
+
         /** <inheritdoc /> */
         public int? PluginConfigurationClosureFactoryId
         {

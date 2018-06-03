@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowFactory;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2PlainRowFactory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.engine.Session;
@@ -41,6 +42,7 @@ import org.h2.index.IndexType;
 import org.h2.result.Row;
 import org.h2.result.SearchRow;
 import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.table.TableFilter;
 import org.h2.value.Value;
@@ -184,8 +186,8 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder) {
-        return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, false);
+    @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder, HashSet<Column> allColumnsSet) {
+        return getCostRangeIndex(masks, getRowCountApproximation(), filters, filter, sortOrder, false, allColumnsSet);
     }
 
     /** {@inheritDoc} */
@@ -250,6 +252,9 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
          *
          */
         private void goNext() {
+            if (off == streams.length)
+                return; // All streams are done.
+
             if (streams[off].next())
                 bubbleUp(streams, off, streamCmp);
             else
@@ -363,7 +368,7 @@ public final class GridMergeIndexSorted extends GridMergeIndex {
             if (!iter.hasNext())
                 return false;
 
-            cur = GridH2RowFactory.create(iter.next());
+            cur = GridH2PlainRowFactory.create(iter.next());
 
             return true;
         }

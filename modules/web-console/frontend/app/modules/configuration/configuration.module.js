@@ -17,10 +17,6 @@
 
 import angular from 'angular';
 
-
-import igniteSidebar from './Sidebar.provider';
-import IgniteVersion from './Version.service';
-
 import IgniteClusterDefaults from './generator/defaults/Cluster.service';
 import IgniteClusterPlatformDefaults from './generator/defaults/Cluster.platform.service';
 import IgniteCacheDefaults from './generator/defaults/Cache.service';
@@ -40,21 +36,17 @@ import IgniteGeneratorProperties from './generator/Properties.service';
 import IgniteReadmeGenerator from './generator/Readme.service';
 import IgniteCustomGenerator from './generator/Custom.service';
 
-import igniteSidebarDirective from './sidebar.directive';
 
 // Ignite events groups.
 angular
 .module('ignite-console.configuration', [
 
 ])
-.provider(...igniteSidebar)
-.directive(...igniteSidebarDirective)
 .service('IgniteConfigurationGenerator', () => IgniteConfigurationGenerator)
 .service('IgnitePlatformGenerator', IgnitePlatformGenerator)
 .service('SpringTransformer', () => IgniteSpringTransformer)
 .service('JavaTransformer', () => IgniteJavaTransformer)
 .service('IgniteSharpTransformer', SharpTransformer)
-.service('IgniteVersion', IgniteVersion)
 .service('IgniteEventGroups', IgniteEventGroups)
 .service('IgniteClusterDefaults', IgniteClusterDefaults)
 .service('IgniteClusterPlatformDefaults', IgniteClusterPlatformDefaults)

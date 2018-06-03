@@ -70,7 +70,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
     @SuppressWarnings("unchecked")
     public void testInternalKeysPreloading() throws Exception {
         try {
-            IgniteCache<Object, Object> cache = grid(0).cache(null);
+            IgniteCache<Object, Object> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
             for (int i = 0; i < ENTRY_CNT; i++)
                 cache.put(new GridCacheQueueHeaderKey("queue" + i), 1);
@@ -80,7 +80,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
             for (int i = 0; i < ENTRY_CNT; i++) {
                 GridCacheQueueHeaderKey internalKey = new GridCacheQueueHeaderKey("queue" + i);
 
-                Collection<ClusterNode> nodes = grid(0).affinity(null).mapKeyToPrimaryAndBackups(internalKey);
+                Collection<ClusterNode> nodes = grid(0).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(internalKey);
 
                 for (ClusterNode n : nodes) {
                     Ignite g = findGridForNodeId(n.id());
@@ -88,7 +88,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
                     assertNotNull(g);
 
                     assertTrue("Affinity node doesn't contain internal key [key=" + internalKey + ", node=" + n + ']',
-                        ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht().containsKey(internalKey));
+                        ((GridNearCacheAdapter)((IgniteKernal)g).internalCache(DEFAULT_CACHE_NAME)).dht().containsKey(internalKey));
                 }
             }
         }

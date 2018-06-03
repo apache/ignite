@@ -28,15 +28,25 @@ class IgniteSqlRDD[R: ClassTag, T, K, V](
     ic: IgniteContext,
     cacheName: String,
     cacheCfg: CacheConfiguration[K, V],
-    qry: Query[T],
+    var qry: Query[T],
     conv: (T) ⇒ R,
-    keepBinary: Boolean
+    keepBinary: Boolean,
+    partitions: Array[Partition] = Array(IgnitePartition(0))
 ) extends IgniteAbstractRDD[R, K, V](ic, cacheName, cacheCfg, keepBinary) {
     override def compute(split: Partition, context: TaskContext): Iterator[R] = {
-        new IgniteQueryIterator[T, R](ensureCache().query(qry).iterator(), conv)
+        val cur = ensureCache().query(qry)
+
+        TaskContext.get().addTaskCompletionListener((_) ⇒ cur.close())
+
+        new IgniteQueryIterator[T, R](cur.iterator(), conv)
     }
 
-    override protected def getPartitions: Array[Partition] = {
-        Array(new IgnitePartition(0))
-    }
+    override protected def getPartitions: Array[Partition] = partitions
+}
+
+object IgniteSqlRDD {
+    def apply[R: ClassTag, T, K, V](ic: IgniteContext, cacheName: String, cacheCfg: CacheConfiguration[K, V],
+        qry: Query[T], conv: (T) ⇒ R, keepBinary: Boolean,
+        partitions: Array[Partition] = Array(IgnitePartition(0))): IgniteSqlRDD[R, T, K, V] =
+        new IgniteSqlRDD(ic, cacheName, cacheCfg, qry, conv, keepBinary, partitions)
 }

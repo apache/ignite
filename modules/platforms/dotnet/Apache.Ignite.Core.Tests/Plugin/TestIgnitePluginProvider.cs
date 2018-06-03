@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Tests.Plugin
         {
             Started = true;
 
-            EnsureIgniteWorks();
+            EnsureIgniteWorks(!Context.PluginConfiguration.SkipCacheCheck);
         }
 
         /** <inheritdoc /> */

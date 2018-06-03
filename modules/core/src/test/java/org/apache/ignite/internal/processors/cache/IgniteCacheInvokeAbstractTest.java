@@ -70,6 +70,28 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testInternalInvokeNullable() throws Exception {
+        IgniteInternalCache<Integer, Integer> cache = grid(0).cachex(DEFAULT_CACHE_NAME);
+
+        EntryProcessor<Integer, Integer, Void> processor = new NullableProcessor();
+
+        for (final Integer key : keys()) {
+            log.info("Test invoke with a nullable result [key=" + key + ']');
+
+            EntryProcessorResult<Void> result = cache.invoke(key, processor);
+            EntryProcessorResult<Void> resultAsync = cache.invokeAsync(key, processor).get();
+
+            assertNotNull(result);
+            assertNotNull(resultAsync);
+
+            assertNull(result.get());
+            assertNull(resultAsync.get());
+        }
+    }
+
+    /**
      * @param cache Cache.
      * @param txMode Not null transaction concurrency mode if explicit transaction should be started.
      * @throws Exception If failed.
@@ -178,13 +200,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             checkValue(key, 63);
 
-            IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
-
-            assertTrue(asyncCache.isAsync());
-
-            assertNull(asyncCache.invoke(key, incProcessor));
-
-            IgniteFuture<Integer> fut = asyncCache.future();
+            IgniteFuture<Integer> fut = cache.invokeAsync(key, incProcessor);
 
             assertNotNull(fut);
 
@@ -484,13 +500,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
                 checkValue(key, null);
         }
 
-        IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
-
-        assertTrue(asyncCache.isAsync());
-
-        assertNull(asyncCache.invokeAll(keys, new IncrementProcessor()));
-
-        IgniteFuture<Map<Integer, EntryProcessorResult<Integer>>> fut = asyncCache.future();
+        IgniteFuture<Map<Integer, EntryProcessorResult<Integer>>> fut = cache.invokeAllAsync(keys, new IncrementProcessor());
 
         Map<Integer, EntryProcessorResult<Integer>> resMap = fut.get();
 
@@ -509,9 +519,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         for (Integer key : keys)
             invokeMap.put(key, incProcessor);
 
-        assertNull(asyncCache.invokeAll(invokeMap));
-
-        fut = asyncCache.future();
+        fut = cache.invokeAllAsync(invokeMap);
 
         resMap = fut.get();
 
@@ -552,10 +560,10 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
             for (int i = 0; i < gridCount(); i++) {
                 IgniteCache<Object, Object> cache = jcache(i);
 
-                Object val = cache.localPeek(key, CachePeekMode.ONHEAP);
+                Object val = cache.localPeek(key);
 
                 if (val == null)
-                    assertFalse(ignite(0).affinity(null).isPrimaryOrBackup(ignite(i).cluster().localNode(), key));
+                    assertFalse(ignite(0).affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(ignite(i).cluster().localNode(), key));
                 else
                     assertEquals("Unexpected value for grid " + i, expVal, val);
             }
@@ -779,6 +787,17 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ExceptionProcessor.class, this);
+        }
+    }
+
+    /**
+     * EntryProcessor which always returns {@code null}.
+     */
+    private static class NullableProcessor implements EntryProcessor<Integer, Integer, Void> {
+        /** {@inheritDoc} */
+        @Override public Void process(MutableEntry<Integer, Integer> e,
+            Object... arguments) throws EntryProcessorException {
+            return null;
         }
     }
 

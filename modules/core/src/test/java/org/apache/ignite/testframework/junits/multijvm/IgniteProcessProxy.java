@@ -19,12 +19,19 @@ package org.apache.ignite.testframework.junits.multijvm;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import javax.cache.CacheException;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.DataRegionMetricsAdapter;
+import org.apache.ignite.DataStorageMetricsAdapter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -39,18 +46,23 @@ import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteQueue;
-import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.DataStorageMetrics;
+import org.apache.ignite.Ignition;
+import org.apache.ignite.MemoryMetrics;
+import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -61,6 +73,7 @@ import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -71,6 +84,7 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -93,6 +107,9 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** Property that specify alternative {@code JAVA_HOME}. */
     private static final String TEST_MULTIJVM_JAVA_HOME = "test.multijvm.java.home";
+
+    /** Waiting milliseconds of the left of a node to topology. */
+    private static final long NODE_LEFT_TIMEOUT = 30_000L;
 
     /** Jvm process with ignite instance. */
     private final transient GridJavaProcess proc;
@@ -124,30 +141,37 @@ public class IgniteProcessProxy implements IgniteEx {
      * @param cfg Configuration.
      * @param log Logger.
      * @param locJvmGrid Local JVM grid.
+     * @throws Exception On error.
+     */
+    public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean discovery)
+        throws Exception {
+        this(cfg, log, locJvmGrid, discovery, Collections.emptyList());
+    }
+
+
+    /**
+     * @param cfg Configuration.
+     * @param log Logger.
+     * @param locJvmGrid Local JVM grid.
      * @param resetDiscovery Reset DiscoverySpi at the configuration.
      * @throws Exception On error.
      */
-    public IgniteProcessProxy(IgniteConfiguration cfg, IgniteLogger log, Ignite locJvmGrid, boolean resetDiscovery)
+    public IgniteProcessProxy(
+        IgniteConfiguration cfg,
+        IgniteLogger log,
+        Ignite locJvmGrid,
+        boolean resetDiscovery,
+        List<String> additionalArgs
+    )
         throws Exception {
         this.cfg = cfg;
         this.locJvmGrid = locJvmGrid;
-        this.log = log.getLogger("jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
+        this.log = logger(log, "jvm-" + id.toString().substring(0, id.toString().indexOf('-')));
 
-        String cfgFileName = IgniteNodeRunner.storeToFile(cfg.setNodeId(id), resetDiscovery);
+        String params = params(cfg, resetDiscovery);
 
-        Collection<String> filteredJvmArgs = new ArrayList<>();
-
-        Marshaller marsh = cfg.getMarshaller();
-
-        if (marsh != null)
-            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
-
-        for (String arg : U.jvmArgs()) {
-            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
-                arg.startsWith("-cp") || arg.startsWith("-classpath") ||
-                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
-                filteredJvmArgs.add(arg);
-        }
+        Collection<String> filteredJvmArgs = filteredJvmArgs();
+        filteredJvmArgs.addAll(additionalArgs);
 
         final CountDownLatch rmtNodeStartedLatch = new CountDownLatch(1);
 
@@ -155,8 +179,8 @@ public class IgniteProcessProxy implements IgniteEx {
             locJvmGrid.events().localListen(new NodeStartedListener(id, rmtNodeStartedLatch), EventType.EVT_NODE_JOINED);
 
         proc = GridJavaProcess.exec(
-            IgniteNodeRunner.class.getCanonicalName(),
-            cfgFileName, // Params.
+            igniteNodeRunnerClassName(),
+            params,
             this.log,
             // Optional closure to be called each time wrapped process prints line to system.out or system.err.
             new IgniteInClosure<String>() {
@@ -181,6 +205,68 @@ public class IgniteProcessProxy implements IgniteEx {
             throw new IllegalStateException("There was found instance assotiated with " + cfg.getIgniteInstanceName() +
                 ", instance= " + prevVal + ". New started node was stopped.");
         }
+    }
+
+    /**
+     * Creates new logger instance based on given logger and given category.
+     *
+     * @param log Base logger.
+     * @param ctgr Category.
+     * @return Initiated logger.
+     * @throws Exception In case of an error.
+     */
+    protected IgniteLogger logger(IgniteLogger log, Object ctgr) throws Exception {
+        return log.getLogger(ctgr);
+    }
+
+    /**
+     * Gets Ignite node runner class name.
+     *
+     * @return Node runner class name.
+     * @throws Exception In case of an error.
+     */
+    protected String igniteNodeRunnerClassName() throws Exception {
+        return IgniteNodeRunner.class.getCanonicalName();
+    }
+
+    /**
+     * Creates parameters which will be passed to new Ignite Process as command line arguments.
+     *
+     * @param cfg Configuration.
+     * @param resetDiscovery Reset DiscoverySpi at the configuration.
+     * @return Params to be passed to new Ignite process.
+     * @throws Exception In case of an error.
+     */
+    protected String params(IgniteConfiguration cfg, boolean resetDiscovery) throws Exception {
+        return IgniteNodeRunner.storeToFile(cfg.setNodeId(id), resetDiscovery);
+    }
+
+    /**
+     * Creates list of JVM arguments to be used to start new Ignite process in separate JVM.
+     *
+     * @return JVM arguments.
+     * @throws Exception In case of an error.
+     */
+    protected Collection<String> filteredJvmArgs() throws Exception {
+        Collection<String> filteredJvmArgs = new ArrayList<>();
+
+        filteredJvmArgs.add("-ea");
+
+        Marshaller marsh = cfg.getMarshaller();
+
+        if (marsh != null)
+            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + marsh.getClass().getName());
+        else
+            filteredJvmArgs.add("-D" + IgniteTestResources.MARSH_CLASS_NAME + "=" + BinaryMarshaller.class.getName());
+
+        for (String arg : U.jvmArgs()) {
+            if (arg.startsWith("-Xmx") || arg.startsWith("-Xms") ||
+                arg.startsWith("-cp") || arg.startsWith("-classpath") ||
+                (marsh != null && arg.startsWith("-D" + IgniteTestResources.MARSH_CLASS_NAME)))
+                filteredJvmArgs.add(arg);
+        }
+
+        return filteredJvmArgs;
     }
 
     /**
@@ -233,12 +319,39 @@ public class IgniteProcessProxy implements IgniteEx {
      *
      * @param igniteInstanceName Ignite instance name.
      * @param cancel If {@code true} then all jobs currently will be cancelled.
+     * @throws Exception In case of the node stopping error.
      */
-    public static void stop(String igniteInstanceName, boolean cancel) {
-        IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
+    public static void stop(String igniteInstanceName, boolean cancel) throws Exception {
+        final IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
 
         if (proxy != null) {
-            proxy.remoteCompute().run(new StopGridTask(igniteInstanceName, cancel));
+            final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
+            final UUID rmNodeId = proxy.getId();
+
+            proxy.locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
+                @Override public boolean applyx(Event e) {
+                    if (((DiscoveryEvent)e).eventNode().id().equals(rmNodeId)) {
+                        rmtNodeStoppedLatch.countDown();
+
+                        return false;
+                    }
+
+                    return true;
+                }
+            }, EventType.EVT_NODE_LEFT);
+
+            try {
+                proxy.remoteCompute().runAsync(new StopGridTask(igniteInstanceName, cancel));
+
+                if (!rmtNodeStoppedLatch.await(NODE_LEFT_TIMEOUT, TimeUnit.MILLISECONDS))
+                    throw new IllegalStateException("Remote node has not stopped [id=" + rmNodeId + ']');
+            }
+            catch (Throwable t) {
+                proxy.log().error("Failed to stop grid [igniteInstanceName=" + igniteInstanceName +
+                    ", cancel=" + cancel + ']', t);
+
+                throw t;
+            }
 
             gridProxies.remove(igniteInstanceName, proxy);
         }
@@ -253,6 +366,9 @@ public class IgniteProcessProxy implements IgniteEx {
         A.notNull(igniteInstanceName, "igniteInstanceName");
 
         IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
+
+        if (proxy == null)
+            return;
 
         if (proxy == null)
             return;
@@ -315,6 +431,15 @@ public class IgniteProcessProxy implements IgniteEx {
         return id;
     }
 
+    /**
+     * @throws Exception If failed to kill.
+     */
+    public void kill() throws Exception {
+        getProcess().kill();
+
+        gridProxies.remove(cfg.getGridName(), this);
+    }
+
     /** {@inheritDoc} */
     @Override public String name() {
         return cfg.getIgniteInstanceName();
@@ -337,11 +462,6 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
-        throw new UnsupportedOperationException("Operation isn't supported yet.");
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -372,7 +492,7 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
+    @Nullable @Override public IgniteFileSystem igfsx(String name) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -398,6 +518,16 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public GridKernalContext context() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    @Override
+    public boolean isRebalanceEnabled() {
+        return true;
+    }
+
+    @Override
+    public void rebalanceEnabled(boolean rebalanceEnabled) {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -523,7 +653,18 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public <K, V> IgniteBiTuple<IgniteCache<K, V>, Boolean> getOrCreateCache0(
+        CacheConfiguration<K, V> cacheCfg, boolean sql) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean destroyCache0(String cacheName, boolean sql) throws CacheException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -569,7 +710,19 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteAtomicSequence atomicSequence(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteAtomicLong atomicLong(String name, AtomicConfiguration cfg, long initVal,
+        boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -580,12 +733,24 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public <T> IgniteAtomicReference<T> atomicReference(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, boolean create) throws IgniteException {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
     @Override  public <T, S> IgniteAtomicStamped<T, S> atomicStamped(
         String name,
         @Nullable T initVal,
         @Nullable S initStamp,
         boolean create) throws IgniteException
     {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, AtomicConfiguration cfg,
+        @Nullable T initVal, @Nullable S initStamp, boolean create) throws IgniteException {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
     }
 
@@ -629,6 +794,41 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /** {@inheritDoc} */
+    @Override public void resetLostPartitions(Collection<String> cacheNames) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<DataRegionMetrics> dataRegionMetrics() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DataRegionMetrics dataRegionMetrics(String memPlcName) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public DataStorageMetrics dataStorageMetrics() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<MemoryMetrics> memoryMetrics() {
+        return DataRegionMetricsAdapter.collectionOf(dataRegionMetrics());
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public MemoryMetrics memoryMetrics(String memPlcName) {
+        return DataRegionMetricsAdapter.valueOf(dataRegionMetrics(memPlcName));
+    }
+
+    /** {@inheritDoc} */
+    @Override public PersistenceMetrics persistentStoreMetrics() {
+        return DataStorageMetricsAdapter.valueOf(dataStorageMetrics());
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() throws IgniteException {
         if (locJvmGrid != null) {
             final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
@@ -668,6 +868,16 @@ public class IgniteProcessProxy implements IgniteEx {
         return new AffinityProcessProxy<>(cacheName, this);
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean active() {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void active(boolean active) {
+        throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
     /**
      * @return Jvm process in which grid node started.
      */
@@ -691,7 +901,8 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
-     *
+     * Executes {@link Ignition#stop(String, boolean)} with given arguments in a separated thread, doesn't wait up the
+     * fulfillment.
      */
     private static class StopGridTask implements IgniteRunnable {
         /** Ignite instance name. */
@@ -711,7 +922,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            G.stop(igniteInstanceName, cancel);
+            CompletableFuture.runAsync(() -> G.stop(igniteInstanceName, cancel));
         }
     }
 

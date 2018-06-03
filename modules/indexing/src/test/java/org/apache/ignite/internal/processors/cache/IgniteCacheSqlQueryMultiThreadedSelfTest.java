@@ -59,7 +59,7 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
 
         c.setDiscoverySpi(disco);
 
-        CacheConfiguration<?,?> ccfg = new CacheConfiguration();
+        CacheConfiguration<?,?> ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setNearConfiguration(null);
@@ -83,18 +83,11 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
         awaitPartitionMapExchange();
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        final IgniteCache<Integer, Person> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Person> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.clear();
 
@@ -125,7 +118,7 @@ public class IgniteCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testQueryPut() throws Exception {
-        final IgniteCache<Integer, Person> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Person> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
         cache.clear();
 

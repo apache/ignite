@@ -52,7 +52,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -135,11 +135,6 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(gridCount());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -547,7 +542,7 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
 
         ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-        final Map<Integer, T2<Integer, Long>> map = new ConcurrentHashMap8<>();
+        final Map<Integer, T2<Integer, Long>> map = new ConcurrentHashMap<>();
         final CountDownLatch latch = new CountDownLatch(10);
 
         qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {

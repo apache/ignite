@@ -73,6 +73,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
         cc.setCacheMode(mode);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setEvictionPolicy(new EvictionPolicy());
+        cc.setOnheapCacheEnabled(true);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         NearCacheConfiguration nearCfg = new NearCacheConfiguration();

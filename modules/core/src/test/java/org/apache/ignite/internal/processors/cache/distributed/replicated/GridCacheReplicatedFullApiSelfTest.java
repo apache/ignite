@@ -47,13 +47,4 @@ public class GridCacheReplicatedFullApiSelfTest extends GridCacheAbstractFullApi
 
         return c;
     }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
-
-        cfg.setSwapEnabled(true);
-
-        return cfg;
-    }
 }

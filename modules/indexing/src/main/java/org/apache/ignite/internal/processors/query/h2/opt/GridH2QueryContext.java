@@ -21,16 +21,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.processors.query.h2.twostep.MapQueryLazyWorker;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
@@ -43,17 +43,13 @@ public class GridH2QueryContext {
     private static final ThreadLocal<GridH2QueryContext> qctx = new ThreadLocal<>();
 
     /** */
-    private static final ConcurrentMap<Key, GridH2QueryContext> qctxs = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<Key, GridH2QueryContext> qctxs = new ConcurrentHashMap<>();
 
     /** */
     private final Key key;
 
     /** */
     private volatile boolean cleared;
-
-    /** Index snapshots. */
-    @GridToStringInclude
-    private Map<Long, Object> snapshots;
 
     /** */
     private List<GridReservable> reservations;
@@ -87,6 +83,9 @@ public class GridH2QueryContext {
 
     /** */
     private GridH2CollocationModel qryCollocationMdl;
+
+    /** */
+    private MapQueryLazyWorker lazyWorker;
 
     /**
      * @param locNodeId Local node ID.
@@ -248,51 +247,6 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @param idxId Index ID.
-     * @param snapshot Index snapshot.
-     */
-    public void putSnapshot(long idxId, Object snapshot) {
-        assert snapshot != null;
-        assert get() == null : "need to snapshot indexes before setting query context for correct visibility";
-
-        if (snapshot instanceof GridReservable && !((GridReservable)snapshot).reserve())
-            throw new IllegalStateException("Must be already reserved before.");
-
-        if (snapshots == null)
-            snapshots = new HashMap<>();
-
-        if (snapshots.put(idxId, snapshot) != null)
-            throw new IllegalStateException("Index already snapshoted.");
-    }
-
-    /**
-     * Clear taken snapshots.
-     */
-    public void clearSnapshots() {
-        if (F.isEmpty(snapshots))
-            return;
-
-        for (Object snapshot : snapshots.values()) {
-            if (snapshot instanceof GridReservable)
-                ((GridReservable)snapshot).release();
-        }
-
-        snapshots = null;
-    }
-
-    /**
-     * @param idxId Index ID.
-     * @return Index snapshot or {@code null} if none.
-     */
-    @SuppressWarnings("unchecked")
-    public <T> T getSnapshot(long idxId) {
-        if (snapshots == null)
-            return null;
-
-        return (T)snapshots.get(idxId);
-    }
-
-    /**
      * @param batchLookupId Batch lookup ID.
      * @param streams Range streams.
      */
@@ -363,13 +317,6 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @return If indexes were snapshotted before query execution.
-     */
-    public boolean hasIndexSnapshots() {
-        return snapshots != null;
-    }
-
-    /**
      * Sets current thread local context. This method must be called when all the non-volatile properties are
      * already set to ensure visibility for other threads.
      *
@@ -408,7 +355,7 @@ public class GridH2QueryContext {
 
         for (Key key : qctxs.keySet()) {
             if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId) && key.qryId == qryId && key.type == type)
-                res |= doClear(new Key(locNodeId, nodeId, qryId, key.segmentId, type), false);
+                res |= doClear(key, false);
         }
 
         return res;
@@ -429,7 +376,10 @@ public class GridH2QueryContext {
 
         assert x.key.equals(key);
 
-        x.clearContext(nodeStop);
+        if (x.lazyWorker() != null)
+            x.lazyWorker().stop(nodeStop);
+        else
+            x.clearContext(nodeStop);
 
         return true;
     }
@@ -437,10 +387,9 @@ public class GridH2QueryContext {
     /**
      * @param nodeStop Node is stopping.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void clearContext(boolean nodeStop) {
         cleared = true;
-
-        clearSnapshots();
 
         List<GridReservable> r = reservations;
 
@@ -537,6 +486,23 @@ public class GridH2QueryContext {
      */
     public GridH2QueryContext pageSize(int pageSize) {
         this.pageSize = pageSize;
+
+        return this;
+    }
+
+    /**
+     * @return Lazy worker, if any, or {@code null} if none.
+     */
+    public MapQueryLazyWorker lazyWorker() {
+        return lazyWorker;
+    }
+
+    /**
+     * @param lazyWorker Lazy worker, if any, or {@code null} if none.
+     * @return {@code this}.
+     */
+    public GridH2QueryContext lazyWorker(MapQueryLazyWorker lazyWorker) {
+        this.lazyWorker = lazyWorker;
 
         return this;
     }
@@ -642,6 +608,9 @@ public class GridH2QueryContext {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
+            if (o == null || !(o instanceof SourceKey))
+                return false;
+
             SourceKey srcKey = (SourceKey)o;
 
             return batchLookupId == srcKey.batchLookupId && segmentId == srcKey.segmentId &&

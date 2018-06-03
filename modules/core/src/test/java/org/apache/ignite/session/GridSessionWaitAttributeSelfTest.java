@@ -24,8 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -109,12 +107,6 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGrid(1);
         startGrid(2);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-        stopGrid(2);
     }
 
     /**
@@ -215,11 +207,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
 
         ignite1.compute().localDeployTask(TestSessionTask.class, TestSessionTask.class.getClassLoader());
 
-        IgniteCompute comp = ignite1.compute().withAsync();
-
-        comp.execute(TestSessionTask.class.getName(), type);
-
-        ComputeTaskFuture<?> fut = comp.future();
+        ComputeTaskFuture<?> fut = ignite1.compute().executeAsync(TestSessionTask.class.getName(), type);
 
         fut.getTaskSession().mapFuture().get();
 
@@ -254,7 +242,6 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
      * @param ses Session.
      * @param prefix Prefix.
      * @param type Type.
-     * @throws IgniteCheckedException If failed.
      */
     private static void checkSessionAttributes(ComputeTaskSession ses, String prefix, WaitAttributeType type) {
         assert ses != null;

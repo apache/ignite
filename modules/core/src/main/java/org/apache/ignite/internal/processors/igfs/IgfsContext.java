@@ -177,21 +177,6 @@ public class IgfsContext {
     }
 
     /**
-     * @param node Node.
-     * @param topic Topic.
-     * @param msg Message.
-     * @param plc Policy.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void send(ClusterNode node, Object topic, IgfsCommunicationMessage msg, byte plc)
-        throws IgniteCheckedException {
-        if (!kernalContext().localNodeId().equals(node.id()))
-            msg.prepareMarshal(kernalContext().config().getMarshaller());
-
-        kernalContext().io().sendToCustomTopic(node, topic, msg, plc);
-    }
-
-    /**
      * Checks if given node is a IGFS node.
      *
      * @param node Node to check.

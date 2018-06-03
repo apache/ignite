@@ -18,7 +18,9 @@
 package org.apache.ignite.cache.spring;
 
 import java.io.Serializable;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLock;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
 
@@ -32,13 +34,18 @@ class SpringCache implements Cache {
     /** */
     private final IgniteCache<Object, Object> cache;
 
+    /** */
+    private final SpringCacheManager mgr;
+
     /**
      * @param cache Cache.
+     * @param mgr Manager
      */
-    SpringCache(IgniteCache<Object, Object> cache) {
+    SpringCache(IgniteCache<Object, Object> cache, SpringCacheManager mgr) {
         assert cache != null;
 
         this.cache = cache;
+        this.mgr = mgr;
     }
 
     /** {@inheritDoc} */
@@ -74,6 +81,40 @@ class SpringCache implements Cache {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public <T> T get(final Object key, final Callable<T> valLdr) {
+        Object val = cache.get(key);
+
+        if (val == null) {
+            IgniteLock lock = mgr.getSyncLock(cache.getName(), key);
+
+            lock.lock();
+
+            try {
+                val = cache.get(key);
+
+                if (val == null) {
+                    try {
+                        T retVal = valLdr.call();
+
+                        val = wrapNull(retVal);
+
+                        cache.put(key, val);
+                    }
+                    catch (Exception e) {
+                        throw new ValueRetrievalException(key, valLdr, e);
+                    }
+                }
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+
+        return (T)unwrapNull(val);
+    }
+
+    /** {@inheritDoc} */
     @Override public void put(Object key, Object val) {
         if (val == null)
             cache.withSkipStore().put(key, NULL);
@@ -86,9 +127,9 @@ class SpringCache implements Cache {
         Object old;
 
         if (val == null)
-            old = cache.withSkipStore().putIfAbsent(key, NULL);
+            old = cache.withSkipStore().getAndPutIfAbsent(key, NULL);
         else
-            old = cache.putIfAbsent(key, val);
+            old = cache.getAndPutIfAbsent(key, val);
 
         return old != null ? fromValue(old) : null;
     }
@@ -110,11 +151,18 @@ class SpringCache implements Cache {
     private static ValueWrapper fromValue(Object val) {
         assert val != null;
 
-        return new SimpleValueWrapper(NULL.equals(val) ? null : val);
+        return new SimpleValueWrapper(unwrapNull(val));
     }
 
-    /**
-     */
+    private static Object unwrapNull(Object val) {
+        return NULL.equals(val) ? null : val;
+    }
+
+    private <T> Object wrapNull(T val) {
+        return val == null ? NULL : val;
+    }
+
+    /** */
     private static class NullValue implements Serializable {
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {

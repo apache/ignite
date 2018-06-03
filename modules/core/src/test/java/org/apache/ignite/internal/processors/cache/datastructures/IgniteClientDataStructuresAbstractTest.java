@@ -24,6 +24,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
@@ -72,11 +73,6 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
         super.beforeTestsStarted();
 
         startGrids(NODE_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -162,8 +158,43 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
             assertEquals(3L, cntr.get());
         }
 
-        assertNull(creator.atomicLong("long1", 1L, false));
-        assertNull(other.atomicLong("long1", 1L, false));
+        assertAtomicLongClosedCorrect(creator.atomicLong("long1", 1L, false));
+        assertAtomicLongClosedCorrect(other.atomicLong("long1", 1L, false));
+    }
+
+    /**
+     * It is possible 3 variants:
+     * * input value is null, because it already delete.
+     * * input value is not null, but call 'get' method causes IllegalStateException because IgniteAtomicLong marked as delete.
+     * * input value is not null, but call 'get' method causes IgniteException
+     * because IgniteAtomicLong have not marked as delete yet but already removed from cache.
+     */
+    private void assertAtomicLongClosedCorrect(IgniteAtomicLong atomicLong) {
+        if (atomicLong == null)
+            assertNull(atomicLong);
+        else {
+            try {
+                atomicLong.get();
+
+                fail("Always should be exception because atomicLong was closed");
+            }
+            catch (IllegalStateException e) {
+                String expectedMessage = "Sequence was removed from cache";
+
+                assertTrue(
+                    String.format("Exception should start with '%s' but was '%s'", expectedMessage, e.getMessage()),
+                    e.getMessage().startsWith(expectedMessage)
+                );
+            }
+            catch (IgniteException e){
+                String expectedMessage = "Failed to find atomic long:";
+
+                assertTrue(
+                    String.format("Exception should start with '%s' but was '%s'", expectedMessage, e.getMessage()),
+                    e.getMessage().startsWith(expectedMessage)
+                );
+            }
+        }
     }
 
     /**
@@ -458,7 +489,8 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
         assertTrue(ignite.configuration().isClientMode());
 
-        assertEquals(clientDiscovery(), ignite.configuration().getDiscoverySpi().isClientMode());
+        if (tcpDiscovery())
+            assertEquals(clientDiscovery(), ignite.configuration().getDiscoverySpi().isClientMode());
 
         return ignite;
     }

@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.eviction.sorted;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -28,8 +30,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.LongAdder8;
-import org.jsr166.ThreadLocalRandom8;
 
 /**
  * {@link SortedEvictionPolicy} performance test.
@@ -51,7 +51,7 @@ public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest 
     private static final int P_GET = 30;
 
     /** Rnd. */
-    private static final ThreadLocalRandom8 RND = ThreadLocalRandom8.current();
+    private static final ThreadLocalRandom RND = ThreadLocalRandom.current();
 
     /** Ignite. */
     private static Ignite ignite;
@@ -59,11 +59,6 @@ public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         ignite = startGrid();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -80,7 +75,7 @@ public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest 
         plc.setMaxSize(MAX_SIZE);
 
         ccfg.setEvictionPolicy(plc);
-        ccfg.setEvictSynchronized(false);
+        ccfg.setOnheapCacheEnabled(true);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -93,13 +88,13 @@ public class SortedEvictionPolicyPerformanceTest extends GridCommonAbstractTest 
      * Tests throughput.
      */
     public void testThroughput() throws Exception {
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
         final AtomicBoolean finished = new AtomicBoolean();
 
         final int pPut = P_PUT;
         final int pGet = P_PUT + P_GET;
 
-        final IgniteCache<Integer, Integer> cache = ignite.cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
         multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {

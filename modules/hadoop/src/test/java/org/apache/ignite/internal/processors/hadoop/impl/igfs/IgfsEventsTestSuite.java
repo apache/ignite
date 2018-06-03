@@ -165,8 +165,6 @@ public class IgfsEventsTestSuite extends TestSuite {
 
         /** {@inheritDoc} */
         @Override protected void afterTestsStopped() throws Exception {
-            super.afterTestsStopped();
-
             G.stopAll(true);
         }
 
@@ -175,7 +173,7 @@ public class IgfsEventsTestSuite extends TestSuite {
             super.afterTest();
 
             // Clean up secondary file system.
-            igfsSec.format();
+            igfsSec.clear();
         }
 
         /**

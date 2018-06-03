@@ -125,26 +125,10 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
 
         final long endTime = System.currentTimeMillis() + TEST_TIME;
 
-        IgniteInternalFuture<Object> restartFut = GridTestUtils.runAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                Thread.currentThread().setName("restart-thread");
-
-                while (!finished.get() && System.currentTimeMillis() < endTime) {
-                    startGrid(NODE_CNT);
-
-                    U.sleep(500);
-
-                    stopGrid(NODE_CNT);
-                }
-
-                return null;
-            }
-        });
+        IgniteInternalFuture<Object> restartFut = createAndRunConcurrentAction(finished, endTime);
 
         try {
-            IgniteCache<TestKey, TestValue> cache0 = ignite(0).cache(null);
-
-            final IgniteCache<TestKey, TestValue> cache = test == Test.PUT_ALL_ASYNC ? cache0.withAsync() : cache0;
+            final IgniteCache<TestKey, TestValue> cache = ignite(0).cache(DEFAULT_CACHE_NAME);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -184,9 +168,7 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
                                     for (int k = 0; k < 100; k++)
                                         map.put(new TestKey(rnd.nextInt(200)), new TestValue(iter));
 
-                                    cache.putAll(map);
-
-                                    IgniteFuture<?> fut = cache.future();
+                                    IgniteFuture<?> fut = cache.putAllAsync(map);
 
                                     assertNotNull(fut);
 
@@ -237,6 +219,25 @@ public abstract class CachePutAllFailoverAbstractTest extends GridCacheAbstractS
         finally {
             finished.set(true);
         }
+    }
+
+    /** */
+    protected IgniteInternalFuture createAndRunConcurrentAction(final AtomicBoolean finished, final long endTime) {
+        return GridTestUtils.runAsync(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                Thread.currentThread().setName("restart-thread");
+
+                while (!finished.get() && System.currentTimeMillis() < endTime) {
+                    startGrid(NODE_CNT);
+
+                    U.sleep(500);
+
+                    stopGrid(NODE_CNT);
+                }
+
+                return null;
+            }
+        });
     }
 
     /**

@@ -23,6 +23,16 @@
 @import "./blocks/error";
 @import "./form-field";
 
+body {
+    overflow-y: scroll !important;
+}
+
+.flex-full-height {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+}
+
 hr {
     margin: 20px 0;
 }
@@ -37,25 +47,6 @@ hr {
     outline: none;
 }
 
-.navbar-default .navbar-brand, .navbar-default .navbar-brand:hover {
-    position: absolute;
-    left: 0;
-    text-align: center;
-}
-
-.navbar-brand {
-    padding: 5px 0;
-    margin: 10px 0;
-}
-
-.modal.center .modal-dialog {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translateX(-50%) translateY(-50%);
-    transform: translateX(-50%) translateY(-50%);
-}
-
 .border-left {
     box-shadow: 1px 0 0 0 $gray-lighter inset;
 }
@@ -64,18 +55,10 @@ hr {
     box-shadow: 1px 0 0 0 $gray-lighter;
 }
 
-.theme-line header {
-    background-color: $ignite-background-color;
-}
-
 .theme-line .docs-header h1 {
     color: $ignite-header-color;
     margin-top: 0;
     font-size: 22px;
-}
-
-.theme-line .footer {
-    text-align: center;
 }
 
 .table.table-vertical-middle tbody > tr > td {
@@ -87,56 +70,7 @@ hr {
     padding-right: 10px;
 }
 
-ul.navbar-nav, .sidebar-nav {
-    li.active > a {
-        color: $link-color;
-    }
 
-    li.active > a:not(.dropdown-toggle) {
-        cursor: default;
-        pointer-events: none;
-    }
-}
-
-.theme-line .sidebar-nav {
-    padding-bottom: 30px;
-
-    ul {
-        padding: 0;
-        list-style: none;
-        margin: 3px 0 0;
-
-        li {
-            line-height: $input-height;
-
-            a {
-                font-size: 18px;
-                color: $ignite-header-color;
-                position: relative;
-                white-space: nowrap;
-                overflow: hidden;
-                -o-text-overflow: ellipsis;
-                text-overflow: ellipsis;
-
-                span.fa-stack {
-                    margin-right: 5px;
-                    font-size: 12px;
-                    height: 26px;
-                }
-            }
-
-            a:hover { color: $link-hover-color; }
-
-            a.active {
-                color: $link-color;
-            }
-        }
-    }
-}
-
-.theme-line .sidebar-nav ul li a:hover {
-    text-decoration: none;
-}
 
 .theme-line .select {
     li a.active {
@@ -160,17 +94,12 @@ ul.navbar-nav, .sidebar-nav {
     color: $input-color-placeholder;
 }
 
-.theme-line .summary-pojo-list > ul.dropdown-menu {
-    width: 100%;
-    max-width: none;
-}
-
 .tooltip {
   word-wrap: break-word;
 }
 
 .theme-line ul.dropdown-menu {
-    min-width: 120px;
+    min-width: 0;
     max-width: 280px;
     max-height: 20em;
     overflow: auto;
@@ -256,9 +185,6 @@ ul.navbar-nav, .sidebar-nav {
     }
 }
 
-.theme-line .border-left .sidebar-nav {
-    padding-left: 15px;
-}
 
 .theme-line .suggest {
     padding: 5px;
@@ -266,49 +192,25 @@ ul.navbar-nav, .sidebar-nav {
     font-size: 12px;
 }
 
-.theme-line header {
-    border-bottom: 8px solid $ignite-border-bottom-color;
-
-    p {
-        color: $ignite-header-color;
-    }
-}
-
-.header .nav.navbar-nav.pull-right > li > a {
-    padding-right: 0;
-}
-
-.header .title {
-    margin: 20px 0 5px 0;
-    padding: 0 15px;
-
-    font-size: 1.4em;
-}
-
-.header .nav.navbar-nav .not-link {
-    padding: 15px;
-    display: inline-block;
-}
-
 .nav > li {
     > a {
-        color: $navbar-default-link-color
-    }
-    > a:hover {
-        color: $link-hover-color
-    }
-    > a.active {
-        color: $link-color
-    }
-}
+        color: $navbar-default-link-color;
 
-.theme-line header .navbar-nav a {
-    line-height: 25px;
-    font-size: 18px;
-}
+        &:hover,
+        &:focus {
+            color: $link-hover-color;
+        }
 
-.theme-line .section-right {
-    padding-left: 30px;
+        &.active {
+            color: $link-color;
+        }
+    }
+
+    &.disabled > a {
+        label:hover, label:focus, i:hover, i:focus {
+            cursor: default;
+        }
+    }
 }
 
 .body-overlap .main-content {
@@ -324,6 +226,7 @@ ul.navbar-nav, .sidebar-nav {
 
 body {
     font-weight: 400;
+    background-color: $ignite-new-background-color;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -331,128 +234,30 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 10px;
 }
 
-.container-footer {
-    margin-top: 20px;
-    margin-bottom: 20px;
-
-    p {
-        font-size: 12px;
-        margin-bottom: 0;
-    }
-}
-
 /* Modal */
-.modal {
-    display: block;
-    overflow: hidden;
-}
-
-.modal .close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    float: none;
-}
-
-.modal-header {
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-}
-
-// Close icon
-.modal-header .close {
-    margin-right: -2px;
-}
-
-// Modal icon
-.modal-header h4 > i.fa {
-    cursor: default;
-    float: left;
-    line-height: $modal-title-line-height;
-}
-
-.modal .modal-dialog {
-    width: 650px;
-}
-
-.modal .modal-content {
-    background-color: $gray-lighter;
-
-    .input-tip {
-        padding-top: 1px;
-    }
-}
-
-.modal .modal-content .modal-header {
-    background-color: $ignite-background-color;
-    text-align: center;
-    color: $ignite-header-color;
-    padding: 15px 25px 15px 15px;
-}
-
-.modal .modal-content .modal-header h4 {
-    font-size: 22px;
-}
-
-.modal .modal-content .modal-footer {
-    margin-top: 0;
-}
-
-.modal-footer {
-    label {
-        float: left;
-        margin: 0;
-    }
-
-    .btn:last-child {
-        margin-right: 0;
-    }
-
-    .checkbox {
-        margin: 0;
-    }
-}
-
 .login-header {
     margin-top: 0;
     margin-bottom: 20px;
     font-size: 2em;
 }
 
-.login-footer {
-    @extend .modal-footer;
-
-    padding-left: 0;
-    padding-right: 0;
-
-    .btn {
-        margin-right: 0;
-    }
+body {
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-.modal-body {
-    margin-left: 20px;
-    margin-right: 20px;
-}
+body > .wrapper,
+    // Nested ui-view, like on password reset state
+body > .wrapper > ui-view {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    flex: 1 0 auto;
 
-.modal-body-with-scroll {
-    max-height: 420px;
-    overflow-y: auto;
-    margin: 0;
-}
-
-.greedy {
-    min-height: 100%;
-    height: #{"calc(100vh - 270px)"};
-}
-
-.signin-greedy {
-    height: #{"calc(100vh - 300px)"};
-}
-
-@media (min-width: 768px) {
-    .navbar-nav > li > a {
-        padding: 0 15px;
+    .body-container {
+        flex: 1 0 auto;
+        padding-bottom: 30px;
     }
 }
 
@@ -478,6 +283,14 @@ h1, h2, h3, h4, h5, h6 {
     .checkbox label {
         line-height: 20px !important;
         vertical-align: middle;
+    }
+}
+
+.use-cache {
+    display: flex;
+
+    input[type="checkbox"] {
+        width: 20px;
     }
 }
 
@@ -652,14 +465,6 @@ button.form-control {
     .sql-editor {
         padding: 5px 0;
 
-        .ace_cursor {
-            opacity: 1;
-        }
-
-        .ace_hidden-cursors {
-            opacity: 1;
-        }
-
         .ace_gutter-cell, .ace_folding-enabled > .ace_gutter-cell {
             padding-right: 5px;
         }
@@ -789,6 +594,19 @@ button.form-control {
 
             padding: 5px 10px;
         }
+
+        grid-column-selector {
+            margin-right: 5px;
+
+            .btn-ignite {
+                padding: 5px 0;
+                box-shadow: none !important;
+
+                .fa {
+                    font-size: 14px;
+                }
+            }
+        }
     }
 }
 
@@ -854,10 +672,6 @@ button.form-control {
 
 .theme-line .panel-body {
     padding: 20px;
-}
-
-.theme-line .main-content a.customize {
-    margin-left: 5px;
 }
 
 .theme-line .panel-collapse {
@@ -1005,10 +819,6 @@ button.form-control {
 
 .admin-summary {
     padding-bottom: 10px;
-}
-
-.import-domain-model-wizard-page {
-    margin: 15px;
 }
 
 .scrollable-y {
@@ -1228,6 +1038,10 @@ button.form-control {
 
 .popover-content {
     padding: 5px;
+
+    button {
+        margin-left: 5px;
+    }
 }
 
 .popover:focus {
@@ -1304,46 +1118,11 @@ button.form-control {
     }
 }
 
-.theme-line .popover.summary-project-structure {
-    @extend .popover.settings;
-
-    z-index: 1030;
-    min-width: 305px;
-
-    .popover-title {
-        color: black;
-
-        line-height: 27px;
-
-        padding: 3px 5px 3px 10px;
-
-        white-space: nowrap;
-        overflow: hidden;
-        -o-text-overflow: ellipsis;
-        text-overflow: ellipsis;
-
-        .close {
-            float: right;
-            top: 0;
-            right: 0;
-            position: relative;
-            margin-left: 10px;
-            line-height: 27px;
-        }
-    }
-
-    > .popover-content {
-        overflow: auto;
-
-        white-space: nowrap;
-
-        min-height: 300px;
-        max-height: 300px;
-    }
-}
-
-.theme-line .popover.validation-error {
-    max-width: 400px;
+.popover.validation-error {
+    font-family: Roboto;
+    white-space: pre-wrap;
+    width: auto !important;
+    max-width: 400px !important;
     color: $brand-primary;
     background: white;
     border: 1px solid $brand-primary;
@@ -1436,7 +1215,7 @@ label {
     margin-right: 5px;
 }
 
-label.required:after {
+.required:after {
     color: $brand-primary;
     content: ' *';
     display: inline;
@@ -1478,19 +1257,6 @@ label.required:after {
     }
 }
 
-.summary-tabs {
-    margin-top: 0.65em;
-}
-
-.summary-tab {
-    img {
-        margin-right: 5px;
-        height: 16px;
-        width: 16px;
-        float: left;
-    }
-}
-
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -1519,11 +1285,6 @@ input.ng-dirty.ng-invalid, button.ng-dirty.ng-invalid {
 .theme-line .nav-tabs > li > a {
     padding: 5px 5px;
     color: $ignite-header-color;
-}
-
-.viewedUser {
-    text-align: center;
-    background-color: $brand-warning;
 }
 
 a {
@@ -1621,16 +1382,21 @@ th[st-sort] {
     padding: 10px 10px 10px 20px;
 }
 
+// Hack to solve an issue where scrollbars aren't visible in Safari.
+// Safari seems to clip part of the scrollbar element. By giving the
+// element a background, we're telling Safari that it *really* needs to
+// paint the whole area. See https://github.com/ajaxorg/ace/issues/2872
+.ace_scrollbar-inner {
+	background-color: #FFF;
+	opacity: 0.01;
+
+    .ace_dark & {
+        background-color: #000;
+    }
+}
+
 .ace_content {
     padding-left: 5px;
-}
-
-.ace_hidden-cursors {
-    opacity: 0;
-}
-
-.ace_cursor {
-    opacity: 0;
 }
 
 .ace_editor {
@@ -1709,6 +1475,7 @@ th[st-sort] {
 
 .preview-panel {
     min-height: 28px;
+    position: relative;
 
     margin-left: 20px;
 
@@ -1722,7 +1489,7 @@ th[st-sort] {
     top: -10px;
     right: 20px;
     position: absolute;
-    z-index: 900;
+    z-index: 2;
 
     a {
         color: $input-color-placeholder;
@@ -1741,7 +1508,7 @@ th[st-sort] {
 }
 
 .preview-content-empty {
-    color: $input-color-placeholder;
+    color: #757575;
     display: table;
     width: 100%;
     height: 26px;
@@ -1874,7 +1641,7 @@ button.select-toggle::after {
     border-right: 0.3em solid transparent;
     border-left: 0.3em solid transparent;
     position: absolute;
-    right: 5px;
+    right: 10px;
     top: 50%;
     vertical-align: middle;
 }
@@ -2095,18 +1862,6 @@ treecontrol.tree-classic {
     border-bottom-width: 0;
 }
 
-.summary-tabs {
-    .nav-tabs > li:first-child,
-    .nav-tabs > li:first-child.active {
-        & > a,
-        & > a:focus,
-        & > a:hover {
-            border-left: none;
-            border-top-left-radius: 0;
-        }
-    }
-}
-
 .ribbon-wrapper {
     width: 150px;
     height: 150px;
@@ -2128,10 +1883,6 @@ treecontrol.tree-classic {
     padding: 1px 0;
     color: $btn-primary-color;
     background: $btn-primary-border;
-
-    -moz-box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
 
     right: -42px;
     -moz-transform: rotate(45deg);
@@ -2160,9 +1911,19 @@ treecontrol.tree-classic {
     }
 }
 
-html,body,.splash-screen {
+.ribbon-wrapper.left {
+    overflow: visible;
+
+    .ribbon {
+        transform: rotate(-45deg);
+        left: -75px;
+        top: 10px;
+    }
+}
+
+html, body {
     width: 100%;
-    height: 100%;
+    min-height: 100vh;
 }
 
 .splash {
@@ -2265,14 +2026,6 @@ html,body,.splash-screen {
     }
 }
 
-.domains-import-dialog {
-    .modal-body {
-        height: 325px;
-        margin: 0;
-        padding: 0;
-    }
-}
-
 // Fix for incorrect tooltip placement after fast show|hide.
 .tooltip.ng-leave {
     transition: none !important; /* Disable transitions. */
@@ -2299,67 +2052,53 @@ html,body,.splash-screen {
     }
 }
 
-.admin-page {
-    .panel-heading {
-        height: 38px;
+.center-container {
+    position: absolute !important;
+}
 
-        border-bottom: 0;
-        padding-bottom: 0;
+.demo-mode {
+    padding-top: 30px;
+}
 
-        cursor: default;
+// Fix for injecting svg icon into BS btn
+.btn--with-icon {
+    display: flex;
+    align-items: center;
 
-        i {
-            margin-top: 2px;
-            margin-right: 10px;
-        }
-
-        label {
-            cursor: default;
-            line-height: 28px;
-        }
-
-        sub {
-            bottom: 0;
-        }
-    }
-
-    .ui-grid-header-cell input {
-      font-weight: normal;
-    }
-
-    .ui-grid-header-cell input {
-      font-weight: normal;
-    }
-
-    .ui-grid-filter-select {
-        width: calc(100% - 10px);
-    }
-
-    .ui-grid-cell-contents > i {
-        line-height: $line-height-base;
+    span {
+        margin-left: 5px;
     }
 }
 
-.datepicker.dropdown-menu {
-    width: 250px;
-    height: 270px;
+header.header-with-selector {
+    margin: 40px 0 30px;
 
-    button {
-        outline: none;
-        border: 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+
+    h1 {
+        height: 36px;
+        margin: 0;
+        margin-right: 8px;
+
+        font-family: Roboto, sans-serif;
+        font-size: 24px;
+        line-height: 36px;
     }
 
-    tbody {
-        height: 180px;
+    div {
+        display: flex;
     }
 
-    tbody button {
-        padding: 6px;
-    }
+    .btn-ignite + .btn-ignite-group {
+        position: relative;
+        margin-left: 20px;
 
-    &.datepicker-mode-1, &.datepicker-mode-2 {
-        tbody button {
-            height: 65px;
+        ul.dropdown-menu {
+            min-width: 100%;
+            font-family: Roboto;
         }
     }
 }

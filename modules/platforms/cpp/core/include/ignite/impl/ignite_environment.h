@@ -21,19 +21,20 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/jni/java.h>
 #include <ignite/jni/utils.h>
-#include <ignite/ignite_binding_context.h>
 #include <ignite/ignite_configuration.h>
 
-#include "ignite/impl/interop/interop_memory.h"
-#include "ignite/impl/binary/binary_type_manager.h"
-#include "ignite/impl/handle_registry.h"
-#include "ignite/impl/module_manager.h"
-#include "ignite/impl/ignite_binding_impl.h"
+#include <ignite/impl/interop/interop_memory.h>
+#include <ignite/impl/binary/binary_type_manager.h>
+#include <ignite/impl/handle_registry.h>
 
 namespace ignite
 {
     namespace impl
     {
+        /* Forward declarations. */
+        class IgniteBindingImpl;
+        class ModuleManager;
+
         /**
          * Defines environment in which Ignite operates.
          */
@@ -108,6 +109,21 @@ namespace ignite
              * @param mem Memory with data.
              */
             void OnContinuousQueryListenerApply(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
+             * Continuous query filter create callback.
+             *
+             * @param mem Memory with data.
+             * @return Filter handle.
+             */
+            int64_t OnContinuousQueryFilterCreate(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
+             * Continuous query filter apply callback.
+             *
+             * @param mem Memory with data.
+             */
+            int64_t OnContinuousQueryFilterApply(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
 
             /**
              * Cache Invoke callback.
@@ -191,14 +207,76 @@ namespace ignite
              *
              * @return IgniteBinding instance.
              */
-            IgniteBinding GetBinding() const;
+            common::concurrent::SharedPointer<IgniteBindingImpl> GetBinding() const;
 
             /**
-             * Get binding context.
+             * Get processor compute.
              *
-             * @return Binding context.
+             * @param proj Projection.
+             * @return Processor compute.
              */
-            IgniteBindingContext GetBindingContext() const;
+            jobject GetProcessorCompute(jobject proj);
+
+            /**
+             * Locally execute compute job.
+             *
+             * @param jobHandle Job handle.
+             */
+            void ComputeJobExecuteLocal(int64_t jobHandle);
+
+            /**
+             * Locally commit job execution result for the task.
+             *
+             * @param taskHandle Task handle.
+             * @param jobHandle Job handle.
+             * @return Reduce politics.
+             */
+            int32_t ComputeTaskLocalJobResult(int64_t taskHandle, int64_t jobHandle);
+
+            /**
+             * Reduce compute task.
+             *
+             * @param taskHandle Task handle.
+             */
+            void ComputeTaskReduce(int64_t taskHandle);
+
+            /**
+             * Complete compute task.
+             *
+             * @param taskHandle Task handle.
+             */
+            void ComputeTaskComplete(int64_t taskHandle);
+
+            /**
+             * Create compute job.
+             *
+             * @param mem Memory.
+             * @return Job handle.
+             */
+            int64_t ComputeJobCreate(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
+             * Execute compute job.
+             *
+             * @param mem Memory.
+             * @return Job handle.
+             */
+            void ComputeJobExecute(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
+
+            /**
+             * Destroy compute job.
+             *
+             * @param jobHandle Job handle to destroy.
+             */
+            void ComputeJobDestroy(int64_t jobHandle);
+
+            /**
+             * Consume result of remote job execution.
+             *
+             * @param mem Memory containing result.
+             * @return Reduce policy.
+             */
+            int32_t ComputeTaskJobResult(common::concurrent::SharedPointer<interop::InteropMemory>& mem);
 
         private:
             /** Node configuration. */

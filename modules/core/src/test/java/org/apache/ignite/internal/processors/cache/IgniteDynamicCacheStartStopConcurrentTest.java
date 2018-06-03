@@ -56,13 +56,6 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
         startGridsMultiThreaded(NODES);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */
@@ -80,7 +73,7 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
                 @Override public void apply(Integer idx) {
                     Ignite ignite = ignite(idx);
 
-                    ignite.getOrCreateCache(new CacheConfiguration<>());
+                    ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
                 }
             }, NODES, "cache-thread");
 
@@ -88,7 +81,7 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
 
             checkTopologyVersion(new AffinityTopologyVersion(NODES, minorVer));
 
-            ignite(0).compute().affinityRun((String)null, 1, new IgniteRunnable() {
+            ignite(0).compute().affinityRun(DEFAULT_CACHE_NAME, 1, new IgniteRunnable() {
                 @Override public void run() {
                     // No-op.
                 }
@@ -98,7 +91,7 @@ public class IgniteDynamicCacheStartStopConcurrentTest extends GridCommonAbstrac
                 @Override public void apply(Integer idx) {
                     Ignite ignite = ignite(idx);
 
-                    ignite.destroyCache(null);
+                    ignite.destroyCache(DEFAULT_CACHE_NAME);
                 }
             }, NODES, "cache-thread");
 

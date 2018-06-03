@@ -80,7 +80,7 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
             Map<Integer, Collection<UUID>> mapping = new HashMap<>();
 
             for (int i = 0; i < 4; i++) {
-                IgniteCache<Object, Object> cache = grid(i).cache(null);
+                IgniteCache<Object, Object> cache = grid(i).cache(DEFAULT_CACHE_NAME);
 
                 Affinity<Object> aff = affinity(cache);
 

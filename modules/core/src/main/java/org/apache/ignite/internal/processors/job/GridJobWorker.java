@@ -36,6 +36,8 @@ import org.apache.ignite.compute.ComputeJobContext;
 import org.apache.ignite.compute.ComputeJobMasterLeaveAware;
 import org.apache.ignite.compute.ComputeUserUndeclaredException;
 import org.apache.ignite.events.JobEvent;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.igfs.IgfsOutOfSpaceException;
 import org.apache.ignite.internal.GridInternalException;
 import org.apache.ignite.internal.GridJobContextImpl;
@@ -168,6 +170,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /** Request topology version. */
     private final AffinityTopologyVersion reqTopVer;
 
+    /** Request topology version. */
+    private final String execName;
+
     /**
      * @param ctx Kernal context.
      * @param dep Grid deployment.
@@ -182,6 +187,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param holdLsnr Hold listener.
      * @param partsReservation Reserved partitions (must be released at the job finish).
      * @param reqTopVer Affinity topology version of the job request.
+     * @param execName Custom executor name.
      */
     GridJobWorker(
         GridKernalContext ctx,
@@ -196,7 +202,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         GridJobEventListener evtLsnr,
         GridJobHoldListener holdLsnr,
         GridReservable partsReservation,
-        AffinityTopologyVersion reqTopVer) {
+        AffinityTopologyVersion reqTopVer,
+        String execName) {
         super(ctx.igniteInstanceName(), "grid-job-worker", ctx.log(GridJobWorker.class));
 
         assert ctx != null;
@@ -219,6 +226,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         this.holdLsnr = holdLsnr;
         this.partsReservation = partsReservation;
         this.reqTopVer = reqTopVer;
+        this.execName = execName;
 
         if (job != null)
             this.job = job;
@@ -597,8 +605,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                         X.hasCause(e, ClusterTopologyCheckedException.class))
                         // Should be throttled, because GridServiceProxy continuously retry getting service.
                         LT.error(log, e, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']');
-                    else
+                    else {
                         U.error(log, "Failed to execute job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
+
+                        if (X.hasCause(e, OutOfMemoryError.class))
+                            ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+                    }
 
                     ex = e;
                 }
@@ -672,7 +684,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         if (msg == null) {
             msg = "Failed to execute job due to unexpected runtime exception [jobId=" + ses.getJobId() +
-                ", ses=" + ses + ']';
+                ", ses=" + ses + ", err=" + e.getMessage() + ']';
 
             ex = new ComputeUserUndeclaredException(msg, e);
         }
@@ -724,6 +736,13 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             if (e instanceof Error)
                 throw e;
         }
+    }
+
+    /**
+     * @return Custom executor name.
+     */
+    public String executorName() {
+        return execName;
     }
 
     /**
@@ -916,7 +935,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                         }
                         catch (IgniteCheckedException e) {
                             // Log and invoke the master-leave callback.
-                            if (isDeadNode(taskNode.id())) {
+                            if ((e instanceof ClusterTopologyCheckedException) || isDeadNode(taskNode.id())) {
                                 onMasterNodeLeft();
 
                                 // Avoid stack trace for left nodes.
@@ -1029,25 +1048,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      */
     private boolean isDeadNode(UUID uid) {
         return ctx.discovery().node(uid) == null || !ctx.discovery().pingNodeNoError(uid);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-
-        if (obj == null)
-            return false;
-
-        assert obj instanceof GridJobWorker;
-
-        IgniteUuid jobId1 = ses.getJobId();
-        IgniteUuid jobId2 = ((GridJobWorker)obj).ses.getJobId();
-
-        assert jobId1 != null;
-        assert jobId2 != null;
-
-        return jobId1.equals(jobId2);
     }
 
     /** {@inheritDoc} */

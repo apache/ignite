@@ -15,24 +15,30 @@
     limitations under the License.
 
 mixin form-field-checkbox(label, model, name, disabled, required, tip)
-    div.checkbox.col-xs-12.col-sm-12.col-md-12
-        label(id=`{{ ${name} }}Label`)
-            .input-tip
+        label.form-field-checkbox.ignite-form-field
+            .ignite-form-field__control
+                input(
+                    id=`{{ ${name} }}Input`
+                    name=`{{ ${name} }}`
+                    type='checkbox'
+
+                    ng-model=model
+                    ng-required=required && `${required}`
+                    ng-disabled=disabled && `${disabled}`
+                    expose-ignite-form-field-control='$input'
+                )&attributes(attributes ? attributes.attributes ? attributes.attributes : attributes : {})
+                span #{label}
+                +tooltip(tip, tipOpts, 'tipLabel')
+            .ignite-form-field__errors(
+                ng-messages=`$input.$error`
+                ng-show=`($input.$dirty || $input.$touched || $input.$submitted) && $input.$invalid`
+            )
                 if block
                     block
-                else
-                    input(
-                        id=`{{ ${name} }}Input`
-                        name=`{{ ${name} }}`
-                        type='checkbox'
+                if required
+                    +form-field-feedback(name, 'required', `${errLbl} could not be empty!`)
 
-                        data-ng-model=model
-                        data-ng-required=required && `${required}`
-                        data-ng-disabled=disabled && `${disabled}`
-
-                        data-ng-focus='tableReset()'
-
-                        data-ignite-form-panel-field=''
-                    )
-            span #{label}
-            i.tipLabel.icon-help(bs-tooltip='' data-title=tip)
+mixin sane-form-field-checkbox({label, model, name, disabled, required, tip})
+    +form-field-checkbox(label, model, name, disabled = false, required = false, tip)&attributes(attributes)
+        if block
+            block

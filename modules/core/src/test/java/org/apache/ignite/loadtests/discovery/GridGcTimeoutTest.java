@@ -41,7 +41,7 @@ public class GridGcTimeoutTest {
     public static void main(String[] args) {
         Ignite g = G.start(U.resolveIgniteUrl(CFG_PATH));
 
-        IgniteDataStreamer<Long, String> ldr = g.dataStreamer(null);
+        IgniteDataStreamer<Long, String> ldr = g.dataStreamer("default");
 
         ldr.perNodeBufferSize(16 * 1024);
 

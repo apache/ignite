@@ -21,9 +21,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.CAX;
@@ -62,14 +60,6 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
         startGrid(2);
 
         assertEquals(2, grid(1).cluster().nodes().size());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-        stopGrid(2);
-
-        assertEquals(0, G.allGrids().size());
     }
 
     /** {@inheritDoc} */
@@ -162,11 +152,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
                         throw new IgniteCheckedException("Could not instantiate a job.", e);
                     }
 
-                    IgniteCompute comp = ignite1.compute().withAsync();
-
-                    comp.call(job);
-
-                    ComputeTaskFuture<Boolean> fut = comp.future();
+                    IgniteFuture<Boolean> fut = ignite1.compute().callAsync(job);
 
                     if (cnt % LOG_MOD == 0)
                         X.println("Submitted jobs: " + cnt);
@@ -222,6 +208,10 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
         /** */
         private static AtomicInteger cnt = new AtomicInteger();
 
+        /** */
+        @AffinityKeyMapped
+        private String affKey = "key";
+
         /** {@inheritDoc} */
         @Override public Boolean call() throws Exception {
             int c = cnt.incrementAndGet();
@@ -232,14 +222,6 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
             Thread.sleep(10);
 
             return true;
-        }
-
-        /**
-         * @return Affinity key.
-         */
-        @AffinityKeyMapped
-        public String affinityKey() {
-            return "key";
         }
     }
 }

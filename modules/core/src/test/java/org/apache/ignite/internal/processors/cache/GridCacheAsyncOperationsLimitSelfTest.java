@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.GridAtomicInteger;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -57,13 +56,7 @@ public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelf
 
             cnt.incrementAndGet();
 
-            IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
-
-            cacheAsync.put("key" + i, i);
-
-            IgniteFuture<?> fut = cacheAsync.future();
-
-            fut.listen(new CI1<IgniteFuture<?>>() {
+            jcache().putAsync("key" + i, i).listen(new CI1<IgniteFuture<?>>() {
                 @Override public void apply(IgniteFuture<?> t) {
                     cnt.decrementAndGet();
 

@@ -245,6 +245,18 @@ namespace ignite
                 }
 
                 /**
+                 * Remove all added arguments.
+                 */
+                void ClearArguments()
+                {
+                    std::vector<impl::cache::query::QueryArgumentBase*>::iterator iter;
+                    for (iter = args.begin(); iter != args.end(); ++iter)
+                        delete *iter;
+
+                    args.clear();
+                }
+
+                /**
                  * Write query info to the stream.
                  *
                  * @param writer Writer.
@@ -264,6 +276,8 @@ namespace ignite
                         (*it)->Write(writer);
 
                     writer.WriteBool(distributedJoins);
+                    writer.WriteInt32(0);  // Timeout, ms
+                    writer.WriteBool(false);  // ReplicatedOnly
                 }
 
             private:

@@ -40,16 +40,15 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.QueryUtils.isGeometryClass;
@@ -102,7 +101,7 @@ public class BinaryClassDescriptor {
     private final Method readResolveMtd;
 
     /** */
-    private final Map<String, Integer> stableFieldsMeta;
+    private final Map<String, BinaryFieldMetadata> stableFieldsMeta;
 
     /** Object schemas. Initialized only for serializable classes and contains only 1 entry. */
     private final BinarySchema stableSchema;
@@ -118,9 +117,6 @@ public class BinaryClassDescriptor {
 
     /** */
     private final boolean excluded;
-
-    /** */
-    private final boolean overridesHashCode;
 
     /** */
     private final Class<?>[] intfs;
@@ -176,8 +172,6 @@ public class BinaryClassDescriptor {
         this.mapper = mapper;
         this.registered = registered;
 
-        overridesHashCode = IgniteUtils.overridesEqualsAndHashCode(cls);
-
         schemaReg = ctx.schemaRegistry(typeId);
 
         excluded = MarshallerExclusions.isExcluded(cls);
@@ -194,7 +188,7 @@ public class BinaryClassDescriptor {
         }
 
         if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls) && !QueryUtils.isGeometryClass(cls)) {
-            U.warn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
+            U.warnDevOnly(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
                 "used instead and class instances will be deserialized on the server. Please ensure that all nodes " +
@@ -285,12 +279,12 @@ public class BinaryClassDescriptor {
                 if (BinaryUtils.FIELDS_SORTED_ORDER) {
                     fields0 = new TreeMap<>();
 
-                    stableFieldsMeta = metaDataEnabled ? new TreeMap<String, Integer>() : null;
+                    stableFieldsMeta = metaDataEnabled ? new TreeMap<String, BinaryFieldMetadata>() : null;
                 }
                 else {
                     fields0 = new LinkedHashMap<>();
 
-                    stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, Integer>() : null;
+                    stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, BinaryFieldMetadata>() : null;
                 }
 
                 Set<String> duplicates = duplicateFields(cls);
@@ -322,7 +316,7 @@ public class BinaryClassDescriptor {
                             fields0.put(name, fieldInfo);
 
                             if (metaDataEnabled)
-                                stableFieldsMeta.put(name, fieldInfo.mode().typeId());
+                                stableFieldsMeta.put(name, new BinaryFieldMetadata(fieldInfo));
                         }
                     }
                 }
@@ -350,9 +344,9 @@ public class BinaryClassDescriptor {
         Method writeReplaceMthd;
 
         if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT) {
-            readResolveMtd = U.findNonPublicMethod(cls, "readResolve");
+            readResolveMtd = U.findInheritableMethod(cls, "readResolve");
 
-            writeReplaceMthd = U.findNonPublicMethod(cls, "writeReplace");
+            writeReplaceMthd = U.findInheritableMethod(cls, "writeReplace");
         }
         else {
             readResolveMtd = null;
@@ -468,7 +462,7 @@ public class BinaryClassDescriptor {
     /**
      * @return Fields meta data.
      */
-    Map<String, Integer> fieldsMeta() {
+    Map<String, BinaryFieldMetadata> fieldsMeta() {
         return stableFieldsMeta;
     }
 
@@ -523,6 +517,18 @@ public class BinaryClassDescriptor {
     }
 
     /**
+     * Register current stable schema if applicable.
+     */
+    public void registerStableSchema() {
+        if (schemaReg != null && stableSchema != null) {
+            int schemaId = stableSchema.schemaId();
+
+            if (schemaReg.schema(schemaId) == null)
+                schemaReg.addSchema(stableSchema.schemaId(), stableSchema);
+        }
+    }
+
+    /**
      * @return binaryReadResolve() method
      */
     @SuppressWarnings("UnusedDeclaration")
@@ -536,282 +542,297 @@ public class BinaryClassDescriptor {
      * @throws BinaryObjectException In case of error.
      */
     void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
-        assert obj != null;
-        assert writer != null;
-        assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
+        try {
+            assert obj != null;
+            assert writer != null;
+            assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
 
-        writer.typeId(typeId);
+            writer.typeId(typeId);
 
-        switch (mode) {
-            case P_BYTE:
-            case BYTE:
-                writer.writeByteFieldPrimitive((byte) obj);
+            switch (mode) {
+                case P_BYTE:
+                case BYTE:
+                    writer.writeByteFieldPrimitive((byte)obj);
 
-                break;
+                    break;
 
-            case P_SHORT:
-            case SHORT:
-                writer.writeShortFieldPrimitive((short)obj);
+                case P_SHORT:
+                case SHORT:
+                    writer.writeShortFieldPrimitive((short)obj);
 
-                break;
+                    break;
 
-            case P_INT:
-            case INT:
-                writer.writeIntFieldPrimitive((int) obj);
+                case P_INT:
+                case INT:
+                    writer.writeIntFieldPrimitive((int)obj);
 
-                break;
+                    break;
 
-            case P_LONG:
-            case LONG:
-                writer.writeLongFieldPrimitive((long) obj);
+                case P_LONG:
+                case LONG:
+                    writer.writeLongFieldPrimitive((long)obj);
 
-                break;
+                    break;
 
-            case P_FLOAT:
-            case FLOAT:
-                writer.writeFloatFieldPrimitive((float) obj);
+                case P_FLOAT:
+                case FLOAT:
+                    writer.writeFloatFieldPrimitive((float)obj);
 
-                break;
+                    break;
 
-            case P_DOUBLE:
-            case DOUBLE:
-                writer.writeDoubleFieldPrimitive((double) obj);
+                case P_DOUBLE:
+                case DOUBLE:
+                    writer.writeDoubleFieldPrimitive((double)obj);
 
-                break;
+                    break;
 
-            case P_CHAR:
-            case CHAR:
-                writer.writeCharFieldPrimitive((char) obj);
+                case P_CHAR:
+                case CHAR:
+                    writer.writeCharFieldPrimitive((char)obj);
 
-                break;
+                    break;
 
-            case P_BOOLEAN:
-            case BOOLEAN:
-                writer.writeBooleanFieldPrimitive((boolean) obj);
+                case P_BOOLEAN:
+                case BOOLEAN:
+                    writer.writeBooleanFieldPrimitive((boolean)obj);
 
-                break;
+                    break;
 
-            case DECIMAL:
-                writer.doWriteDecimal((BigDecimal)obj);
+                case DECIMAL:
+                    writer.doWriteDecimal((BigDecimal)obj);
 
-                break;
+                    break;
 
-            case STRING:
-                writer.doWriteString((String)obj);
+                case STRING:
+                    writer.doWriteString((String)obj);
 
-                break;
+                    break;
 
-            case UUID:
-                writer.doWriteUuid((UUID)obj);
+                case UUID:
+                    writer.doWriteUuid((UUID)obj);
 
-                break;
+                    break;
 
-            case DATE:
-                writer.doWriteDate((Date)obj);
+                case DATE:
+                    writer.doWriteDate((Date)obj);
 
-                break;
+                    break;
 
-            case TIMESTAMP:
-                writer.doWriteTimestamp((Timestamp)obj);
+                case TIMESTAMP:
+                    writer.doWriteTimestamp((Timestamp)obj);
 
-                break;
+                    break;
 
-            case TIME:
-                writer.doWriteTime((Time)obj);
+                case TIME:
+                    writer.doWriteTime((Time)obj);
 
-                break;
+                    break;
 
-            case BYTE_ARR:
-                writer.doWriteByteArray((byte[])obj);
+                case BYTE_ARR:
+                    writer.doWriteByteArray((byte[])obj);
 
-                break;
+                    break;
 
-            case SHORT_ARR:
-                writer.doWriteShortArray((short[]) obj);
+                case SHORT_ARR:
+                    writer.doWriteShortArray((short[])obj);
 
-                break;
+                    break;
 
-            case INT_ARR:
-                writer.doWriteIntArray((int[]) obj);
+                case INT_ARR:
+                    writer.doWriteIntArray((int[])obj);
 
-                break;
+                    break;
 
-            case LONG_ARR:
-                writer.doWriteLongArray((long[]) obj);
+                case LONG_ARR:
+                    writer.doWriteLongArray((long[])obj);
 
-                break;
+                    break;
 
-            case FLOAT_ARR:
-                writer.doWriteFloatArray((float[]) obj);
+                case FLOAT_ARR:
+                    writer.doWriteFloatArray((float[])obj);
 
-                break;
+                    break;
 
-            case DOUBLE_ARR:
-                writer.doWriteDoubleArray((double[]) obj);
+                case DOUBLE_ARR:
+                    writer.doWriteDoubleArray((double[])obj);
 
-                break;
+                    break;
 
-            case CHAR_ARR:
-                writer.doWriteCharArray((char[]) obj);
+                case CHAR_ARR:
+                    writer.doWriteCharArray((char[])obj);
 
-                break;
+                    break;
 
-            case BOOLEAN_ARR:
-                writer.doWriteBooleanArray((boolean[]) obj);
+                case BOOLEAN_ARR:
+                    writer.doWriteBooleanArray((boolean[])obj);
 
-                break;
+                    break;
 
-            case DECIMAL_ARR:
-                writer.doWriteDecimalArray((BigDecimal[]) obj);
+                case DECIMAL_ARR:
+                    writer.doWriteDecimalArray((BigDecimal[])obj);
 
-                break;
+                    break;
 
-            case STRING_ARR:
-                writer.doWriteStringArray((String[]) obj);
+                case STRING_ARR:
+                    writer.doWriteStringArray((String[])obj);
 
-                break;
+                    break;
 
-            case UUID_ARR:
-                writer.doWriteUuidArray((UUID[]) obj);
+                case UUID_ARR:
+                    writer.doWriteUuidArray((UUID[])obj);
 
-                break;
+                    break;
 
-            case DATE_ARR:
-                writer.doWriteDateArray((Date[]) obj);
+                case DATE_ARR:
+                    writer.doWriteDateArray((Date[])obj);
 
-                break;
+                    break;
 
-            case TIMESTAMP_ARR:
-                writer.doWriteTimestampArray((Timestamp[]) obj);
+                case TIMESTAMP_ARR:
+                    writer.doWriteTimestampArray((Timestamp[])obj);
 
-                break;
+                    break;
 
-            case TIME_ARR:
-                writer.doWriteTimeArray((Time[]) obj);
+                case TIME_ARR:
+                    writer.doWriteTimeArray((Time[])obj);
 
-                break;
+                    break;
 
-            case OBJECT_ARR:
-                writer.doWriteObjectArray((Object[])obj);
+                case OBJECT_ARR:
+                    writer.doWriteObjectArray((Object[])obj);
 
-                break;
+                    break;
 
-            case COL:
-                writer.doWriteCollection((Collection<?>)obj);
+                case COL:
+                    writer.doWriteCollection((Collection<?>)obj);
 
-                break;
+                    break;
 
-            case MAP:
-                writer.doWriteMap((Map<?, ?>)obj);
+                case MAP:
+                    writer.doWriteMap((Map<?, ?>)obj);
 
-                break;
+                    break;
 
-            case ENUM:
-                writer.doWriteEnum((Enum<?>)obj);
+                case ENUM:
+                    writer.doWriteEnum((Enum<?>)obj);
 
-                break;
+                    break;
 
-            case BINARY_ENUM:
-                writer.doWriteBinaryEnum((BinaryEnumObjectImpl)obj);
+                case BINARY_ENUM:
+                    writer.doWriteBinaryEnum((BinaryEnumObjectImpl)obj);
 
-                break;
+                    break;
 
-            case ENUM_ARR:
-                writer.doWriteEnumArray((Object[])obj);
+                case ENUM_ARR:
+                    writer.doWriteEnumArray((Object[])obj);
 
-                break;
+                    break;
 
-            case CLASS:
-                writer.doWriteClass((Class)obj);
+                case CLASS:
+                    writer.doWriteClass((Class)obj);
 
-                break;
+                    break;
 
-            case PROXY:
-                writer.doWriteProxy((Proxy)obj, intfs);
+                case PROXY:
+                    writer.doWriteProxy((Proxy)obj, intfs);
 
-                break;
+                    break;
 
-            case BINARY_OBJ:
-                writer.doWriteBinaryObject((BinaryObjectImpl)obj);
+                case BINARY_OBJ:
+                    writer.doWriteBinaryObject((BinaryObjectImpl)obj);
 
-                break;
+                    break;
 
-            case BINARY:
-                if (preWrite(writer, obj)) {
-                    try {
-                        if (serializer != null)
-                            serializer.writeBinary(obj, writer);
-                        else
-                            ((Binarylizable)obj).writeBinary(writer);
+                case BINARY:
+                    if (preWrite(writer, obj)) {
+                        try {
+                            if (serializer != null)
+                                serializer.writeBinary(obj, writer);
+                            else
+                                ((Binarylizable)obj).writeBinary(writer);
 
-                        postWrite(writer, obj);
+                            postWrite(writer);
 
-                        // Check whether we need to update metadata.
-                        if (obj.getClass() != BinaryMetadata.class) {
-                            int schemaId = writer.schemaId();
+                            // Check whether we need to update metadata.
+                            // The reason for this check is described in https://issues.apache.org/jira/browse/IGNITE-7138.
+                            if (obj.getClass() != BinaryMetadata.class && obj.getClass() != BinaryTreeMap.class) {
+                                int schemaId = writer.schemaId();
 
-                            if (schemaReg.schema(schemaId) == null) {
-                                // This is new schema, let's update metadata.
-                                BinaryMetadataCollector collector =
-                                    new BinaryMetadataCollector(typeId, typeName, mapper);
+                                if (schemaReg.schema(schemaId) == null) {
+                                    // This is new schema, let's update metadata.
+                                    BinaryMetadataCollector collector =
+                                        new BinaryMetadataCollector(typeId, typeName, mapper);
 
-                                if (serializer != null)
-                                    serializer.writeBinary(obj, collector);
-                                else
-                                    ((Binarylizable)obj).writeBinary(collector);
+                                    if (serializer != null)
+                                        serializer.writeBinary(obj, collector);
+                                    else
+                                        ((Binarylizable)obj).writeBinary(collector);
 
-                                BinarySchema newSchema = collector.schema();
+                                    BinarySchema newSchema = collector.schema();
 
-                                BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
-                                    affKeyFieldName, Collections.singleton(newSchema), false);
+                                    BinaryMetadata meta = new BinaryMetadata(typeId, typeName, collector.meta(),
+                                        affKeyFieldName, Collections.singleton(newSchema), false, null);
 
-                                ctx.updateMetadata(typeId, meta);
+                                    ctx.updateMetadata(typeId, meta);
 
-                                schemaReg.addSchema(newSchema.schemaId(), newSchema);
+                                    schemaReg.addSchema(newSchema.schemaId(), newSchema);
+                                }
                             }
+
+                            postWriteHashCode(writer, obj);
                         }
-
-                        postWriteHashCode(writer, obj);
+                        finally {
+                            writer.popSchema();
+                        }
                     }
-                    finally {
-                        writer.popSchema();
+
+                    break;
+
+                case OBJECT:
+                    if (userType && !stableSchemaPublished) {
+                        // Update meta before write object with new schema
+                        BinaryMetadata meta = new BinaryMetadata(typeId, typeName, stableFieldsMeta,
+                            affKeyFieldName, Collections.singleton(stableSchema), false, null);
+
+                        ctx.updateMetadata(typeId, meta);
+
+                        schemaReg.addSchema(stableSchema.schemaId(), stableSchema);
+
+                        stableSchemaPublished = true;
                     }
-                }
 
-                break;
+                    if (preWrite(writer, obj)) {
+                        try {
+                            for (BinaryFieldAccessor info : fields)
+                                info.write(obj, writer);
 
-            case OBJECT:
-                if (userType && !stableSchemaPublished) {
-                    // Update meta before write object with new schema
-                    BinaryMetadata meta = new BinaryMetadata(typeId, typeName, stableFieldsMeta,
-                        affKeyFieldName, Collections.singleton(stableSchema), false);
+                            writer.schemaId(stableSchema.schemaId());
 
-                    ctx.updateMetadata(typeId, meta);
-
-                    schemaReg.addSchema(stableSchema.schemaId(), stableSchema);
-
-                    stableSchemaPublished = true;
-                }
-
-                if (preWrite(writer, obj)) {
-                    try {
-                        for (BinaryFieldAccessor info : fields)
-                            info.write(obj, writer);
-
-                        writer.schemaId(stableSchema.schemaId());
-
-                        postWrite(writer, obj);
-                        postWriteHashCode(writer, obj);
+                            postWrite(writer);
+                            postWriteHashCode(writer, obj);
+                        }
+                        finally {
+                            writer.popSchema();
+                        }
                     }
-                    finally {
-                        writer.popSchema();
-                    }
-                }
 
-                break;
+                    break;
 
-            default:
-                assert false : "Invalid mode: " + mode;
+                default:
+                    assert false : "Invalid mode: " + mode;
+            }
+        }
+        catch (Exception e) {
+            String msg;
+
+            if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))
+                msg = "Failed to serialize object [typeName=" + typeName + ']';
+            else
+                msg = "Failed to serialize object [typeId=" + typeId + ']';
+
+            U.error(ctx.log(), msg, e);
+
+            throw new BinaryObjectException(msg, e);
         }
     }
 
@@ -876,10 +897,16 @@ public class BinaryClassDescriptor {
             return res;
         }
         catch (Exception e) {
+            String msg;
+
             if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))
-                throw new BinaryObjectException("Failed to deserialize object [typeName=" + typeName + ']', e);
+                msg = "Failed to deserialize object [typeName=" + typeName + ']';
             else
-                throw new BinaryObjectException("Failed to deserialize object [typeId=" + typeId + ']', e);
+                msg = "Failed to deserialize object [typeId=" + typeId + ']';
+
+            U.error(ctx.log(), msg, e);
+
+            throw new BinaryObjectException(msg, e);
         }
     }
 
@@ -903,18 +930,9 @@ public class BinaryClassDescriptor {
      * Post-write phase.
      *
      * @param writer Writer.
-     * @param obj Object.
      */
-    private void postWrite(BinaryWriterExImpl writer, Object obj) {
-        if (obj instanceof CacheObjectImpl)
-            writer.postWrite(userType, registered, 0, false);
-        else if (obj instanceof BinaryObjectEx) {
-            boolean flagSet = ((BinaryObjectEx)obj).isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
-
-            writer.postWrite(userType, registered, obj.hashCode(), !flagSet);
-        }
-        else
-            writer.postWrite(userType, registered, obj.hashCode(), overridesHashCode);
+    private void postWrite(BinaryWriterExImpl writer) {
+        writer.postWrite(userType, registered);
     }
 
     /**

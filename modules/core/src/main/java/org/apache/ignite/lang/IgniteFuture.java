@@ -17,6 +17,7 @@
 
 package org.apache.ignite.lang;
 
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -95,26 +96,22 @@ public interface IgniteFuture<V> {
     public boolean isDone();
 
     /**
-     * Gets start time for this future.
+     * Registers listener closure to be asynchronously notified whenever future completes.
+     * Closure will be processed in thread that completes this future or (if future already
+     * completed) immediately in current thread.
      *
-     * @return Start time for this future.
+     * @param lsnr Listener closure to register. Cannot be {@code null}.
      */
-    public long startTime();
-
-    /**
-     * Gets duration in milliseconds between start of the future and current time if future
-     * is not finished, or between start and finish of this future.
-     *
-     * @return Time in milliseconds this future has taken to execute.
-     */
-    public long duration();
+    public void listen(IgniteInClosure<? super IgniteFuture<V>> lsnr);
 
     /**
      * Registers listener closure to be asynchronously notified whenever future completes.
+     * Closure will be processed in specified executor.
      *
-     * @param lsnr Listener closure to register. If not provided - this method is no-op.
+     * @param lsnr Listener closure to register. Cannot be {@code null}.
+     * @param exec Executor to run listener. Cannot be {@code null}.
      */
-    public void listen(IgniteInClosure<? super IgniteFuture<V>> lsnr);
+    public void listenAsync(IgniteInClosure<? super IgniteFuture<V>> lsnr, Executor exec);
 
     /**
      * Make a chained future to convert result of this future (when complete) into a new format.
@@ -124,4 +121,14 @@ public interface IgniteFuture<V> {
      * @return Chained future that finishes after this future completes and done callback is called.
      */
     public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<V>, T> doneCb);
+
+    /**
+     * Make a chained future to convert result of this future (when complete) into a new format.
+     * It is guaranteed that done callback will be called only ONCE.
+     *
+     * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
+     * @param exec Executor to run done callback. Cannot be {@code null}.
+     * @return Chained future that finishes after this future completes and done callback is called.
+     */
+    public <T> IgniteFuture<T> chainAsync(IgniteClosure<? super IgniteFuture<V>, T> doneCb, Executor exec);
 }

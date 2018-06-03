@@ -65,7 +65,7 @@ public class IgfsClientSetTimesCallable extends IgfsClientAbstractCallable<Void>
 
     /** {@inheritDoc} */
     @Override protected Void call0(IgfsContext ctx) throws Exception {
-        ctx.igfs().setTimes(path, accessTime, modificationTime);
+        ctx.igfs().setTimes(path, modificationTime, accessTime);
 
         return null;
     }

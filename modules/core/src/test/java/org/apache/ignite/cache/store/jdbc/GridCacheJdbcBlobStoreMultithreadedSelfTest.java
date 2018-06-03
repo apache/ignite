@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.LongAdder;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -41,7 +42,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -73,11 +73,11 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
         Ignite grid = startGrid(GRID_CNT - 2);
 
-        grid.createNearCache(null, new NearCacheConfiguration());
+        grid.createNearCache(DEFAULT_CACHE_NAME, new NearCacheConfiguration());
 
         grid = startGrid(GRID_CNT - 1);
 
-        grid.cache(null);
+        grid.cache(DEFAULT_CACHE_NAME);
     }
 
     /** {@inheritDoc} */
@@ -101,7 +101,6 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
             cc.setCacheMode(PARTITIONED);
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setSwapEnabled(false);
             cc.setAtomicityMode(TRANSACTIONAL);
             cc.setBackups(1);
 
@@ -193,7 +192,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
                 for (int i = 0; i < TX_CNT; i++) {
                     IgniteEx ignite = grid(rnd.nextInt(GRID_CNT));
 
-                    IgniteCache<Object, Object> cache = ignite.cache(null);
+                    IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                     try (Transaction tx = ignite.transactions().txStart()) {
                         cache.put(1, "value");
@@ -250,12 +249,12 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
         assertEquals(GRID_CNT, Ignition.allGrids().size());
 
         for (Ignite ignite : Ignition.allGrids()) {
-            GridCacheContext cctx = ((IgniteKernal)ignite).internalCache().context();
+            GridCacheContext cctx = ((IgniteKernal)ignite).internalCache(DEFAULT_CACHE_NAME).context();
 
             CacheStore store = cctx.store().configuredStore();
 
-            long opened = ((LongAdder8)U.field(store, "opened")).sum();
-            long closed = ((LongAdder8)U.field(store, "closed")).sum();
+            long opened = ((LongAdder)U.field(store, "opened")).sum();
+            long closed = ((LongAdder)U.field(store, "closed")).sum();
 
             assert opened > 0;
             assert closed > 0;

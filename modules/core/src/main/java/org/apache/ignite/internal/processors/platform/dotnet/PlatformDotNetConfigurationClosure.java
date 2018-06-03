@@ -18,10 +18,6 @@
 package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.binary.BinaryBasicIdMapper;
-import org.apache.ignite.binary.BinaryBasicNameMapper;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -57,6 +53,9 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Whether to use platform logger (when custom logger is defined on .NET side). */
+    private final boolean useLogger;
+
     /** Configuration. */
     private IgniteConfiguration cfg;
 
@@ -68,14 +67,16 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      *
      * @param envPtr Environment pointer.
      */
-    public PlatformDotNetConfigurationClosure(long envPtr) {
+    public PlatformDotNetConfigurationClosure(long envPtr, boolean useLogger) {
         super(envPtr);
+
+        this.useLogger = useLogger;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override protected void apply0(IgniteConfiguration igniteCfg) {
-        // 3. Validate and copy Interop configuration setting environment pointer along the way.
+        // Validate and copy Interop configuration setting environment pointer along the way.
         PlatformConfiguration interopCfg = igniteCfg.getPlatformConfiguration();
 
         if (interopCfg != null && !(interopCfg instanceof PlatformDotNetConfiguration))
@@ -89,67 +90,18 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         memMgr = new PlatformMemoryManagerImpl(gate, 1024);
 
-        PlatformLogger userLogger = null;
+        PlatformLogger logger = null;
 
-        if (igniteCfg.getGridLogger() instanceof PlatformLogger) {
-            userLogger = (PlatformLogger)igniteCfg.getGridLogger();
-            userLogger.setGateway(gate);
+        if (useLogger) {
+            logger = new PlatformLogger();
+            logger.setGateway(gate);
+            igniteCfg.setGridLogger(logger);
         }
 
         PlatformDotNetConfigurationEx dotNetCfg0 = new PlatformDotNetConfigurationEx(dotNetCfg, gate, memMgr,
-            userLogger);
+            logger);
 
         igniteCfg.setPlatformConfiguration(dotNetCfg0);
-
-        // Check marshaller.
-        Marshaller marsh = igniteCfg.getMarshaller();
-
-        if (marsh == null) {
-            igniteCfg.setMarshaller(new BinaryMarshaller());
-
-            dotNetCfg0.warnings(Collections.singleton("Marshaller is automatically set to " +
-                BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
-        }
-        else if (!(marsh instanceof BinaryMarshaller))
-            throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
-                " can be used when running Apache Ignite.NET): " + marsh.getClass().getName());
-
-        BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
-
-        if (bCfg == null) {
-            bCfg = new BinaryConfiguration();
-
-            bCfg.setNameMapper(new BinaryBasicNameMapper(true));
-            bCfg.setIdMapper(new BinaryBasicIdMapper(true));
-
-            igniteCfg.setBinaryConfiguration(bCfg);
-
-            dotNetCfg0.warnings(Collections.singleton("Binary configuration is automatically initiated, " +
-                "note that binary name mapper is set to " + bCfg.getNameMapper()
-                + " and binary ID mapper is set to " + bCfg.getIdMapper()
-                + " (other nodes must have the same binary name and ID mapper types)."));
-        }
-        else {
-            BinaryNameMapper nameMapper = bCfg.getNameMapper();
-
-            if (nameMapper == null) {
-                bCfg.setNameMapper(new BinaryBasicNameMapper(true));
-
-                dotNetCfg0.warnings(Collections.singleton("Binary name mapper is automatically set to " +
-                    bCfg.getNameMapper()
-                    + " (other nodes must have the same binary name mapper type)."));
-            }
-
-            BinaryIdMapper idMapper = bCfg.getIdMapper();
-
-            if (idMapper == null) {
-                bCfg.setIdMapper(new BinaryBasicIdMapper(true));
-
-                dotNetCfg0.warnings(Collections.singleton("Binary ID mapper is automatically set to " +
-                    bCfg.getIdMapper()
-                    + " (other nodes must have the same binary ID mapper type)."));
-            }
-        }
 
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();
@@ -157,8 +109,34 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         if (ggHome != null)
             U.setIgniteHome(ggHome);
 
-        // 4. Callback to .Net.
+        // Callback to .Net.
         prepare(igniteCfg, dotNetCfg0);
+
+        // Make sure binary config is right.
+        setBinaryConfiguration(igniteCfg, dotNetCfg0);
+    }
+
+    /**
+     * Sets binary config.
+     *
+     * @param igniteCfg Ignite config.
+     * @param dotNetCfg .NET config.
+     */
+    private void setBinaryConfiguration(IgniteConfiguration igniteCfg, PlatformDotNetConfigurationEx dotNetCfg) {
+        // Check marshaller.
+        Marshaller marsh = igniteCfg.getMarshaller();
+
+        if (marsh == null) {
+            igniteCfg.setMarshaller(new BinaryMarshaller());
+
+            dotNetCfg.warnings(Collections.singleton("Marshaller is automatically set to " +
+                BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
+        }
+        else if (!(marsh instanceof BinaryMarshaller))
+            throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
+                " can be used when running Apache Ignite.NET): " + marsh.getClass().getName());
+
+        BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
     }
 
     /**
@@ -190,7 +168,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                     writer.writeMap(bean.getProperties());
                 }
 
-                // Write .NET affinity funcs
+                // Write .NET affinity functions
                 List<PlatformDotNetAffinityFunction> affFuncs = affinityFunctions(igniteCfg);
 
                 writer.writeInt(affFuncs.size());

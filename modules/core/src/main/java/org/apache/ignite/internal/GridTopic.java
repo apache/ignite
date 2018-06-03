@@ -97,13 +97,37 @@ public enum GridTopic {
     TOPIC_TX,
 
     /** */
+    TOPIC_SNAPSHOT,
+
+    /** */
     TOPIC_IO_TEST,
 
     /** */
     TOPIC_MAPPING_MARSH,
 
     /** */
-    TOPIC_HADOOP_MSG;
+    TOPIC_HADOOP_MSG,
+
+    /** */
+    TOPIC_METADATA_REQ,
+
+    /** */
+    TOPIC_SCHEMA,
+
+    /** */
+    TOPIC_INTERNAL_DIAGNOSTIC,
+
+    /** */
+    TOPIC_WAL,
+
+    /** */
+    TOPIC_METRICS,
+
+    /** */
+    TOPIC_AUTH,
+
+    /** */
+    TOPIC_EXCHANGE;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

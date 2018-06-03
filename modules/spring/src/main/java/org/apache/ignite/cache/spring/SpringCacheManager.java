@@ -19,14 +19,17 @@ package org.apache.ignite.cache.spring;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -138,8 +141,14 @@ import org.springframework.context.ApplicationContextAware;
  * in caching the data.
  */
 public class SpringCacheManager implements CacheManager, InitializingBean, ApplicationContextAware {
+    /** Default locks count. */
+    private static final int DEFAULT_LOCKS_COUNT = 512;
+
+    /** IgniteLock name prefix. */
+    private static final String SPRING_LOCK_NAME_PREFIX = "springSync";
+
     /** Caches map. */
-    private final ConcurrentMap<String, SpringCache> caches = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, SpringCache> caches = new ConcurrentHashMap<>();
 
     /** Grid configuration file path. */
     private String cfgPath;
@@ -149,6 +158,9 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
 
     /** Ignite instance name. */
     private String igniteInstanceName;
+
+    /** Count of IgniteLocks are used for sync get */
+    private int locksCnt = DEFAULT_LOCKS_COUNT;
 
     /** Dynamic cache configuration template. */
     private CacheConfiguration<Object, Object> dynamicCacheCfg;
@@ -161,6 +173,9 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
 
     /** Spring context. */
     private ApplicationContext springCtx;
+
+    /** Locks for value loading to support sync option. */
+    private ConcurrentHashMap<Integer, IgniteLock> locks = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public void setApplicationContext(ApplicationContext ctx) {
@@ -244,6 +259,22 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
     }
 
     /**
+     * Gets locks count.
+     *
+     * @return locks count.
+     */
+    public int getLocksCount() {
+        return locksCnt;
+    }
+
+    /**
+     * @param locksCnt locks count.
+     */
+    public void setLocksCount(int locksCnt) {
+        this.locksCnt = locksCnt;
+    }
+
+    /**
      * Gets dynamic cache configuration template.
      *
      * @return Dynamic cache configuration template.
@@ -314,7 +345,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
             cacheCfg.setName(name);
 
             cache = new SpringCache(nearCacheCfg != null ? ignite.getOrCreateCache(cacheCfg, nearCacheCfg) :
-                ignite.getOrCreateCache(cacheCfg));
+                ignite.getOrCreateCache(cacheCfg), this);
 
             SpringCache old = caches.putIfAbsent(name, cache);
 
@@ -330,5 +361,20 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
         assert ignite != null;
 
         return new ArrayList<>(caches.keySet());
+    }
+
+    /**
+     * Provides {@link org.apache.ignite.IgniteLock} for specified cache name and key.
+     *
+     * @param name cache name
+     * @param key  key
+     * @return {@link org.apache.ignite.IgniteLock}
+     */
+    IgniteLock getSyncLock(String name, Object key) {
+        int hash = Objects.hash(name, key);
+
+        final int idx = hash % getLocksCount();
+
+        return locks.computeIfAbsent(idx, i -> ignite.reentrantLock(SPRING_LOCK_NAME_PREFIX + idx, true, false, true));
     }
 }

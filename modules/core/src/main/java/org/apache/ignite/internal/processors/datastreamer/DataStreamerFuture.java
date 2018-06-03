@@ -26,9 +26,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Data streamer future.
  */
 class DataStreamerFuture extends GridFutureAdapter<Object> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Data loader. */
     @GridToStringExclude
     private DataStreamerImpl dataLdr;

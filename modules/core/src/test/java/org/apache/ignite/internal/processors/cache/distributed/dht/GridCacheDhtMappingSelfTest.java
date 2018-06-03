@@ -65,20 +65,13 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /** @throws Exception If failed. */
     public void testMapping() throws Exception {
         int nodeCnt = 5;
 
         startGridsMultiThreaded(nodeCnt);
 
-        IgniteCache<Integer, Integer> cache = grid(nodeCnt - 1).cache(null);
+        IgniteCache<Integer, Integer> cache = grid(nodeCnt - 1).cache(DEFAULT_CACHE_NAME);
 
         int kv = 1;
 
@@ -90,7 +83,7 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
             Ignite g = grid(i);
 
             GridDhtCacheAdapter<Integer, Integer> dht = ((GridNearCacheAdapter<Integer, Integer>)
-                ((IgniteKernal)g).<Integer, Integer>internalCache()).dht();
+                ((IgniteKernal)g).<Integer, Integer>internalCache(DEFAULT_CACHE_NAME)).dht();
 
             if (localPeek(dht, kv) != null) {
                 info("Key found on node: " + g.cluster().localNode().id());

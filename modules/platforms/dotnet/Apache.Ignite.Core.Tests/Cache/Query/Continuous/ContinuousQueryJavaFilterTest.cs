@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Event;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Common;
@@ -33,6 +32,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     /// <summary>
     /// Tests query in a cluster with Java-only and .NET nodes.
     /// </summary>
+    [Category(TestUtils.CategoryIntensive)]
     public class ContinuousQueryJavaFilterTest
     {
         /** */
@@ -68,28 +68,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            // Main .NET nodes
-            var jvmOpts = TestUtils.TestJavaOptions();
-
-            _ignite = Ignition.Start(new IgniteConfiguration
+            // Main .NET node
+            _ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = jvmOpts,
                 SpringConfigUrl = SpringConfig,
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = new List<BinaryTypeConfiguration>
-                    {
-                        new BinaryTypeConfiguration(typeof(TestBinary)) 
-                    }
-                }
             });
 
             // Second .NET node
-            Ignition.Start(new IgniteConfiguration
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = jvmOpts,
                 SpringConfigUrl = SpringConfig2,
                 IgniteInstanceName = "dotNet2"
             });

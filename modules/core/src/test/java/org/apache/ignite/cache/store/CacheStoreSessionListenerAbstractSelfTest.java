@@ -87,11 +87,6 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
             conn.createStatement().executeUpdate("DROP TABLE IF EXISTS Table1");
@@ -115,7 +110,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
      * @throws Exception If failed.
      */
     public void testAtomicCache() throws Exception {
-        CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(null, CacheAtomicityMode.ATOMIC);
+        CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(DEFAULT_CACHE_NAME, CacheAtomicityMode.ATOMIC);
 
         IgniteCache<Integer, Integer> cache = ignite(0).createCache(cfg);
 
@@ -140,7 +135,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
      * @throws Exception If failed.
      */
     public void testTransactionalCache() throws Exception {
-        CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(null, CacheAtomicityMode.TRANSACTIONAL);
+        CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(DEFAULT_CACHE_NAME, CacheAtomicityMode.TRANSACTIONAL);
 
         IgniteCache<Integer, Integer> cache = ignite(0).createCache(cfg);
 
@@ -165,7 +160,7 @@ public abstract class CacheStoreSessionListenerAbstractSelfTest extends GridComm
      * @throws Exception If failed.
      */
     public void testExplicitTransaction() throws Exception {
-        CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(null, CacheAtomicityMode.TRANSACTIONAL);
+        CacheConfiguration<Integer, Integer> cfg = cacheConfiguration(DEFAULT_CACHE_NAME, CacheAtomicityMode.TRANSACTIONAL);
 
         IgniteCache<Integer, Integer> cache = ignite(0).createCache(cfg);
 

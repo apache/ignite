@@ -129,11 +129,12 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
      *
      * @param addrs Known nodes addresses.
      * @throws IgniteSpiException If any error occurs.
+     * @return {@code this} for chaining.
      */
     @IgniteSpiConfiguration(optional = true)
-    public synchronized void setAddresses(Collection<String> addrs) throws IgniteSpiException {
+    public synchronized TcpDiscoveryVmIpFinder setAddresses(Collection<String> addrs) throws IgniteSpiException {
         if (F.isEmpty(addrs))
-            return;
+            return this;
 
         Collection<InetSocketAddress> newAddrs = new LinkedHashSet<>();
 
@@ -141,6 +142,8 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
             newAddrs.addAll(address(ipStr));
 
         this.addrs = newAddrs;
+
+        return this;
     }
 
     /**
@@ -258,6 +261,13 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
         this.addrs = new LinkedHashSet<>(this.addrs);
 
         this.addrs.removeAll(addrs);
+    }
+
+    /** {@inheritDoc} */
+    @Override public TcpDiscoveryVmIpFinder setShared(boolean shared) {
+        super.setShared(shared);
+
+        return this;
     }
 
     /** {@inheritDoc} */

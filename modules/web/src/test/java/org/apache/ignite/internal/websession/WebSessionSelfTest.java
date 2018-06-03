@@ -200,6 +200,10 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @param reqMarker Request marker.
+     * @param sesId Session id.
+     */
     private String sendRequestAndCheckMarker(String reqMarker, String sesId) throws IOException, IgniteCheckedException {
         URLConnection conn = new URL("http://localhost:" + TEST_JETTY_PORT +
             "/ignitetest/test?marker=" + reqMarker).openConnection();
@@ -1163,6 +1167,8 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         @Override protected void doGet(HttpServletRequest req, HttpServletResponse res)
             throws ServletException, IOException {
             HttpSession ses = req.getSession(true);
+
+            assertTrue(req.isRequestedSessionIdValid());
 
             sesId.compareAndSet(null, ses.getId());
 

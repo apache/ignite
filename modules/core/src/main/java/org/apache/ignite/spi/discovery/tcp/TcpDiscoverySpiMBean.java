@@ -20,28 +20,24 @@ package org.apache.ignite.spi.discovery.tcp;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.mxbean.MXBeanDescription;
+import org.apache.ignite.mxbean.MXBeanParametersDescriptions;
+import org.apache.ignite.mxbean.MXBeanParametersNames;
 import org.apache.ignite.spi.IgniteSpiManagementMBean;
+import org.apache.ignite.spi.discovery.DiscoverySpiMBean;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Management bean for {@link TcpDiscoverySpi}.
  */
-public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
-    /**
-     * Gets delay between heartbeat messages sent by coordinator.
-     *
-     * @return Time period in milliseconds.
-     */
-    @MXBeanDescription("Heartbeat frequency.")
-    public long getHeartbeatFrequency();
-
+@MXBeanDescription("MBean provide access to TCP-based discovery SPI.")
+public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean, DiscoverySpiMBean {
     /**
      * Gets current SPI state.
      *
      * @return Current SPI state.
      */
     @MXBeanDescription("SPI state.")
-    public String getSpiState();
+    @Override public String getSpiState();
 
     /**
      * Gets {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder} (string representation).
@@ -84,22 +80,6 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
     public int getLocalPortRange();
 
     /**
-     * Gets max heartbeats count node can miss without initiating status check.
-     *
-     * @return Max missed heartbeats.
-     */
-    @MXBeanDescription("Max missed heartbeats.")
-    public int getMaxMissedHeartbeats();
-
-    /**
-     * Gets max heartbeats count node can miss without failing client node.
-     *
-     * @return Max missed client heartbeats.
-     */
-    @MXBeanDescription("Max missed client heartbeats.")
-    public int getMaxMissedClientHeartbeats();
-
-    /**
      * Gets thread priority. All threads within SPI will be started with it.
      *
      * @return Thread priority.
@@ -137,7 +117,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      * @return Nodes joined count.
      */
     @MXBeanDescription("Nodes joined count.")
-    public long getNodesJoined();
+    @Override public long getNodesJoined();
 
     /**
      * Gets left nodes count.
@@ -145,7 +125,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      * @return Left nodes count.
      */
     @MXBeanDescription("Nodes left count.")
-    public long getNodesLeft();
+    @Override public long getNodesLeft();
 
     /**
      * Gets failed nodes count.
@@ -153,7 +133,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      * @return Failed nodes count.
      */
     @MXBeanDescription("Nodes failed count.")
-    public long getNodesFailed();
+    @Override public long getNodesFailed();
 
     /**
      * Gets pending messages registered count.
@@ -216,7 +196,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Map containing message types and respective counts.
      */
-    @MXBeanDescription("Received messages by type.")
+    @MXBeanDescription("Processed messages by type.")
     public Map<String, Integer> getProcessedMessages();
 
     /**
@@ -233,7 +213,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      * @return Gets current coordinator.
      */
     @MXBeanDescription("Coordinator node ID.")
-    @Nullable public UUID getCoordinator();
+    @Override @Nullable public UUID getCoordinator();
 
     /**
      * Gets message acknowledgement timeout.
@@ -281,4 +261,24 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      */
     @MXBeanDescription("Client mode.")
     public boolean isClientMode() throws IllegalStateException;
+
+    /**
+     * Diagnosis method for determining ring message latency.
+     * On this method call special message will be sent across the ring
+     * and stats about the message will appear in the logs of each node.
+     *
+     * @param maxHops Maximum hops for the message (3 * TOTAL_NODE_CNT is recommended).
+     */
+    @MXBeanDescription("Check ring latency.")
+    @MXBeanParametersNames(
+        {
+            "maxHops"
+        }
+    )
+    @MXBeanParametersDescriptions(
+        {
+            "Maximum hops for the message (3 * TOTAL_NODE_CNT is recommended)."
+        }
+    )
+    public void checkRingLatency(int maxHops);
 }

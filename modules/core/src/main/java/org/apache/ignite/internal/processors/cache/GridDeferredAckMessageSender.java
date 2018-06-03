@@ -17,25 +17,26 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.apache.ignite.util.deque.FastSizeDeque;
 
 /**
  *
  */
-public abstract class GridDeferredAckMessageSender {
+public abstract class GridDeferredAckMessageSender<T> {
     /** Deferred message buffers. */
-    private ConcurrentMap<UUID, DeferredAckMessageBuffer> deferredAckMsgBuffers = new ConcurrentHashMap8<>();
+    private ConcurrentMap<UUID, DeferredAckMessageBuffer> deferredAckMsgBuffers = new ConcurrentHashMap<>();
 
     /** Timeout processor. */
     private GridTimeoutProcessor time;
@@ -67,7 +68,7 @@ public abstract class GridDeferredAckMessageSender {
      * @param nodeId Node ID.
      * @param vers Versions to send.
      */
-    public abstract void finish(UUID nodeId, ConcurrentLinkedDeque8<GridCacheVersion> vers);
+    public abstract void finish(UUID nodeId, Collection<T> vers);
 
     /**
      *
@@ -81,7 +82,7 @@ public abstract class GridDeferredAckMessageSender {
      * @param nodeId Node ID to send message to.
      * @param ver Version to ack.
      */
-    public void sendDeferredAckMessage(UUID nodeId, GridCacheVersion ver) {
+    public void sendDeferredAckMessage(UUID nodeId, T ver) {
         while (true) {
             DeferredAckMessageBuffer buf = deferredAckMsgBuffers.get(nodeId);
 
@@ -117,7 +118,7 @@ public abstract class GridDeferredAckMessageSender {
         private AtomicBoolean guard = new AtomicBoolean(false);
 
         /** Versions. */
-        private ConcurrentLinkedDeque8<GridCacheVersion> vers = new ConcurrentLinkedDeque8<>();
+        private FastSizeDeque<T> vers = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
         /** Node ID. */
         private final UUID nodeId;
@@ -173,8 +174,9 @@ public abstract class GridDeferredAckMessageSender {
          * @param ver Version to send.
          * @return {@code True} if request was handled, {@code false} if this buffer is filled and cannot be used.
          */
-        public boolean add(GridCacheVersion ver) {
-            readLock().lock();
+        public boolean add(T ver) {
+            if(!readLock().tryLock())
+                return false; // Here, writeLock is help by another thread and guard is already true.
 
             boolean snd = false;
 

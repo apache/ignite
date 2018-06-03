@@ -31,11 +31,13 @@ import java.lang.annotation.Target;
  *
  * TODO coding example.
  *
+ * @deprecated since 2.0. Please use specialized asynchronous methods.
  * @see IgniteAsyncSupport
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
+@Deprecated
 public @interface IgniteAsyncSupported {
-
+    // No-op.
 }

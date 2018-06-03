@@ -101,7 +101,7 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
 
         final String cacheName = nearCache ? ("NEAR-CACHE-" + cpyOnRead) : ("CACHE-" + cpyOnRead);
 
-        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setCopyOnRead(cpyOnRead);
 
@@ -114,15 +114,11 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
         IgniteCache<Object, Object> clientCache = nearCache ? client.createNearCache(cacheName,
             new NearCacheConfiguration<>()) : client.cache(cacheName);
 
-        IgniteCache<Object, Object> asyncCache = clientCache.withAsync();
-
         fail = true;
-
-        asyncCache.get("key");
 
         final CountDownLatch futLatch = new CountDownLatch(1);
 
-        asyncCache.future().listen(new IgniteInClosure<IgniteFuture<Object>>() {
+        clientCache.getAsync("key").listen(new IgniteInClosure<IgniteFuture<Object>>() {
             @Override public void apply(IgniteFuture<Object> fut) {
                 assertTrue(fut.isDone());
 

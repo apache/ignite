@@ -57,10 +57,9 @@
                     Partitioned cache example configuration.
                 -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="name" value="test-cache"/>
 
-                    <!-- Initial cache size. -->
-                    <property name="startSize" value="10000000"/>
+                    <property name="cacheMode" value="PARTITIONED"/>
 
                     <!--
                         Setting this to true FULL_SYNC will cause local node to wait for remote commits.

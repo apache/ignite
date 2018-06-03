@@ -209,7 +209,7 @@ public class GridTaskResultResponse implements Message {
     }
 
     /** {@inheritDoc} */
-    @Override public byte directType() {
+    @Override public short directType() {
         return 77;
     }
 

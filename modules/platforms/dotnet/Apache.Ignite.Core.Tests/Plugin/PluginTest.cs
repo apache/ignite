@@ -21,6 +21,8 @@ namespace Apache.Ignite.Core.Tests.Plugin
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Interop;
@@ -61,12 +63,11 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 Assert.IsTrue(prov.Started);
                 Assert.AreEqual(null, prov.Stopped);
                 Assert.AreEqual(TestIgnitePluginProvider.PluginName, prov.Name);
-                Assert.IsNotNullOrEmpty(prov.Copyright);
+                Assert.IsNotNull(prov.Copyright);
                 Assert.IsNotNull(prov.Context);
 
                 var ctx = prov.Context;
                 Assert.IsNotNull(ctx.Ignite);
-                Assert.AreEqual(cfg, ctx.IgniteConfiguration);
                 Assert.AreEqual("barbaz", ctx.PluginConfiguration.PluginProperty);
                 CheckResourceInjection(ctx);
 
@@ -142,13 +143,22 @@ namespace Apache.Ignite.Core.Tests.Plugin
             Assert.IsTrue(task.IsCompleted);
             Assert.AreEqual("FOO", asyncRes);
 
+            // Async operation with cancellation.
+            var cts = new CancellationTokenSource();
+            task = target.DoOutOpAsync(1, w => w.WriteString("foo"), r => r.ReadString(), cts.Token);
+            Assert.IsFalse(task.IsCompleted);
+            cts.Cancel();
+            Assert.IsTrue(task.IsCanceled);
+            var aex = Assert.Throws<AggregateException>(() => { asyncRes = task.Result; });
+            Assert.IsInstanceOf<TaskCanceledException>(aex.GetBaseException());
+
             // Async operation with exception in entry point.
             Assert.Throws<TestIgnitePluginException>(() => target.DoOutOpAsync<object>(2, null, null));
 
             // Async operation with exception in future.
             var errTask = target.DoOutOpAsync<object>(3, null, null);
             Assert.IsFalse(errTask.IsCompleted);
-            var aex = Assert.Throws<AggregateException>(() => errTask.Wait());
+            aex = Assert.Throws<AggregateException>(() => errTask.Wait());
             Assert.IsInstanceOf<IgniteException>(aex.InnerExceptions.Single());
 
             // Throws custom mapped exception.
@@ -176,13 +186,15 @@ namespace Apache.Ignite.Core.Tests.Plugin
 
             // Missing attribute.
             var ex = Assert.Throws<IgniteException>(() => check(new[] { new NoAttributeConfig(),  }));
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual(string.Format("{0} of type {1} has no {2}", typeof(IPluginConfiguration),
-                typeof(NoAttributeConfig), typeof(PluginProviderTypeAttribute)), ex.Message);
+                typeof(NoAttributeConfig), typeof(PluginProviderTypeAttribute)), ex.InnerException.Message);
 
             // Empty plugin name.
             ex = Assert.Throws<IgniteException>(() => check(new[] {new EmptyNameConfig()}));
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual(string.Format("{0}.Name should not be null or empty: {1}", typeof(IPluginProvider<>),
-                typeof(EmptyNamePluginProvider)), ex.Message);
+                typeof(EmptyNamePluginProvider)), ex.InnerException.Message);
 
             // Duplicate plugin name.
             ex = Assert.Throws<IgniteException>(() => check(new[]
@@ -190,17 +202,21 @@ namespace Apache.Ignite.Core.Tests.Plugin
                 new TestIgnitePluginConfiguration(),
                 new TestIgnitePluginConfiguration()
             }));
+            Assert.IsNotNull(ex.InnerException);
             Assert.AreEqual(string.Format("Duplicate plugin name 'TestPlugin1' is used by plugin providers " +
-                                          "'{0}' and '{0}'", typeof(TestIgnitePluginProvider)), ex.Message);
+                                          "'{0}' and '{0}'", typeof(TestIgnitePluginProvider)),
+                                          ex.InnerException.Message);
 
             // Provider throws an exception.
             PluginLog.Clear();
 
-            var ioex = Assert.Throws<IOException>(() => check(new IPluginConfiguration[]
+            ex = Assert.Throws<IgniteException>(() => check(new IPluginConfiguration[]
             {
                 new NormalConfig(), new ExceptionConfig()
             }));
-            Assert.AreEqual("Failure in plugin provider", ioex.Message);
+            Assert.IsNotNull(ex.InnerException);
+            Assert.IsInstanceOf<IOException>(ex.InnerException);
+            Assert.AreEqual("Failure in plugin provider", ex.InnerException.Message);
 
             // Verify that plugins are started and stopped in correct order:
             Assert.AreEqual(

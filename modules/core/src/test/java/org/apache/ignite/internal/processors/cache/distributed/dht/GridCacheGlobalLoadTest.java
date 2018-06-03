@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -32,7 +33,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.junit.Assert;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -73,33 +73,44 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {
-        loadCache(false);
+        loadCache(false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadCacheAsyncOld() throws Exception {
+        loadCache(true, true);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testLoadCacheAsync() throws Exception {
-        loadCache(true);
+        loadCache(true, false);
     }
 
     /**
      * @param async If {@code true} uses asynchronous method.
+     * @param oldAsyncApi Flag to use old async API.
      * @throws Exception If failed.
      */
-    private void loadCache(boolean async) throws Exception {
+    private void loadCache(boolean async, boolean oldAsyncApi) throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
         IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
 
         assertTrue(asyncCache.isAsync());
 
-        map = new ConcurrentHashMap8<>();
+        map = new ConcurrentHashMap<>();
 
         if (async) {
-            asyncCache.loadCache(null, 1, 2, 3);
+            if (oldAsyncApi) {
+                asyncCache.loadCache(null, 1, 2, 3);
 
-            asyncCache.future().get();
+                asyncCache.future().get();
+            } else
+                cache.loadCacheAsync(null, 1, 2, 3).get();
         }
         else
             cache.loadCache(null, 1, 2, 3);
@@ -118,7 +129,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
         assertEquals(cache.get(2), (Integer)2);
         assertEquals(cache.get(3), (Integer)3);
 
-        map = new ConcurrentHashMap8<>();
+        map = new ConcurrentHashMap<>();
 
         if (async) {
             asyncCache.loadCache(new IgniteBiPredicate<Integer, Integer>() {

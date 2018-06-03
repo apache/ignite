@@ -20,12 +20,13 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.UUID;
-import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -45,6 +46,9 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
+    /** Cache name. */
+    private final String cacheName = "cache";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -52,11 +56,13 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
         cfg.setMarshaller(new BinaryMarshaller());
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
-        cfg.setCacheConfiguration(new CacheConfiguration().setCopyOnRead(true));
+        cfg.setCacheConfiguration(
+            new CacheConfiguration(cacheName)
+                .setCopyOnRead(true)
+        );
 
-        BinaryConfiguration bcfg = new BinaryConfiguration();
-
-        bcfg.setNameMapper(new BinaryBasicNameMapper(false));
+        BinaryConfiguration bcfg = new BinaryConfiguration()
+                .setNameMapper(new BinaryBasicNameMapper(false));
 
         cfg.setBinaryConfiguration(bcfg);
 
@@ -84,7 +90,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
     public void testUnexpectedFieldType() throws Exception {
         IgniteEx grid = grid(0);
 
-        IgniteCache<String, Value> cache = grid.cache(null);
+        IgniteCache<String, Value> cache = grid.cache(cacheName);
 
         cache.put(TEST_KEY, new Value());
 
@@ -106,10 +112,7 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
             a[i] = -1;
 
             try {
-                Iterator<Cache.Entry<String, Value>> it = cache.iterator();
-
-                while (it.hasNext())
-                    it.next();
+                b.deserialize();
             }
             catch (Exception ex) {
                 Throwable root = ex;
@@ -147,6 +150,44 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals("Fields count must match \"Unexpected field type\" exception count", fields.length, unexpectedCnt);
+    }
+
+    /**
+     * Test verbose logging of object marshalling.
+     *
+     * @throws Exception If failed.
+     */
+    public void testFailedMarshallingLogging() throws Exception {
+        BinaryMarshaller marshaller = createStandaloneBinaryMarshaller();
+
+        try {
+            marshaller.marshal(new Value1());
+        }
+        catch (BinaryObjectException ex) {
+            assertTrue(ex.getMessage().contains(
+                "object [typeName=org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest$Value1"));
+
+            assertTrue(ex.getCause().getMessage().contains("field [name=objVal"));
+        }
+    }
+
+    /** */
+    private static class Value1{
+        /** */
+        Value2 objVal = new Value2();
+
+        /** */
+        static class Value2 implements Binarylizable {
+            /** */
+            @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+                throw new RuntimeException("bad object");
+            }
+
+            /** */
+            @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+                throw new RuntimeException("bad object");
+            }
+        }
     }
 
     /** */

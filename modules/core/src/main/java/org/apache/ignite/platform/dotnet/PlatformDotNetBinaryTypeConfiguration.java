@@ -75,9 +75,12 @@ public class PlatformDotNetBinaryTypeConfiguration {
 
     /**
      * @param typeName New type name.
+     * @return {@code this} for chaining.
      */
-    public void setTypeName(String typeName) {
+    public PlatformDotNetBinaryTypeConfiguration setTypeName(String typeName) {
         this.typeName = typeName;
+
+        return this;
     }
 
     /**
@@ -89,9 +92,12 @@ public class PlatformDotNetBinaryTypeConfiguration {
 
     /**
      * @param nameMapper New name mapper.
+     * @return {@code this} for chaining.
      */
-    public void setNameMapper(String nameMapper) {
+    public PlatformDotNetBinaryTypeConfiguration setNameMapper(String nameMapper) {
         this.nameMapper = nameMapper;
+
+        return this;
     }
 
     /**
@@ -103,9 +109,12 @@ public class PlatformDotNetBinaryTypeConfiguration {
 
     /**
      * @param idMapper New id mapper.
+     * @return {@code this} for chaining.
      */
-    public void setIdMapper(String idMapper) {
+    public PlatformDotNetBinaryTypeConfiguration setIdMapper(String idMapper) {
         this.idMapper = idMapper;
+
+        return this;
     }
 
     /**
@@ -117,9 +126,12 @@ public class PlatformDotNetBinaryTypeConfiguration {
 
     /**
      * @param serializer New serializer.
+     * @return {@code this} for chaining.
      */
-    public void setSerializer(String serializer) {
+    public PlatformDotNetBinaryTypeConfiguration setSerializer(String serializer) {
         this.serializer = serializer;
+
+        return this;
     }
 
     /**
@@ -131,9 +143,12 @@ public class PlatformDotNetBinaryTypeConfiguration {
 
     /**
      * @param affinityKeyFieldName Affinity key field name.
+     * @return {@code this} for chaining.
      */
-    public void setAffinityKeyFieldName(String affinityKeyFieldName) {
+    public PlatformDotNetBinaryTypeConfiguration setAffinityKeyFieldName(String affinityKeyFieldName) {
         this.affinityKeyFieldName = affinityKeyFieldName;
+
+        return this;
     }
 
     /**
@@ -163,9 +178,12 @@ public class PlatformDotNetBinaryTypeConfiguration {
      * {@link PlatformDotNetBinaryConfiguration#isDefaultKeepDeserialized()} will be used.
      *
      * @param keepDeserialized Keep deserialized flag.
+     * @return {@code this} for chaining.
      */
-    public void setKeepDeserialized(@Nullable Boolean keepDeserialized) {
+    public PlatformDotNetBinaryTypeConfiguration setKeepDeserialized(@Nullable Boolean keepDeserialized) {
         this.keepDeserialized = keepDeserialized;
+
+        return this;
     }
 
     /**
@@ -181,9 +199,12 @@ public class PlatformDotNetBinaryTypeConfiguration {
      * Sets whether this is enum type.
      *
      * @param isEnum {@code True} if enum.
+     * @return {@code this} for chaining.
      */
-    public void setEnum(boolean isEnum) {
+    public PlatformDotNetBinaryTypeConfiguration setEnum(boolean isEnum) {
         this.isEnum = isEnum;
+
+        return this;
     }
 
 

@@ -176,12 +176,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
 
         // Clean up file system.
         if (igfs != null)
-            igfs.format();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
+            igfs.clear();
     }
 
     /**

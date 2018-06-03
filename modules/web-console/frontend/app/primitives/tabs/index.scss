@@ -23,19 +23,25 @@ ul.tabs {
     $offset-vertical: 11px;
     $offset-horizontal: 25px;
     $font-size: 14px;
+    $border-width: 5px;
 
     list-style: none;
 
     padding-left: 0;
+    margin-bottom: 0;
+
     border-bottom: 1px solid $nav-tabs-border-color;
 
     li {
         position: relative;
         top: 1px;
+        height: $height + $border-width;
 
         display: inline-block;
 
-        border-bottom: 5px solid transparent;
+        border-bottom: 0px solid transparent;
+        transition-property: border-bottom;
+        transition-duration: 0.2s;
 
         a {
             display: inline-block;
@@ -46,16 +52,21 @@ ul.tabs {
 
             color: $text-color;
             font-size: $font-size;
+            font-family: Roboto;
             text-align: center;
             line-height: $height - 2*$offset-vertical;
 
-            &:hover {
+            &:hover, &:focus {
               text-decoration: none;
             }
 
             .badge {
               margin-left: $offset-vertical;
             }
+        }
+
+        &.active, &:hover {
+            border-bottom-width: $border-width;
         }
 
         &.active {
@@ -68,6 +79,18 @@ ul.tabs {
 
         & + li {
             margin-left: 45px;
+        }
+    }
+}
+
+ul.tabs.tabs--blue {
+    li {
+        &.active {
+            border-color: #0067b9;
+        }
+
+        &:not(.active):hover {
+            border-color: #94bbdd;
         }
     }
 }

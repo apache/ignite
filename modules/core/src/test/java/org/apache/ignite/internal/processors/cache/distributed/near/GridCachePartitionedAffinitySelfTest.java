@@ -94,17 +94,12 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         startGrids(GRIDS);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param ignite Grid.
      * @return Affinity.
      */
     static Affinity<Object> affinity(Ignite ignite) {
-        return ignite.affinity(null);
+        return ignite.affinity(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -159,13 +154,13 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     /** @param g Grid. */
     private static void partitionMap(Ignite g) {
         X.println(">>> Full partition map for grid: " + g.name());
-        X.println(">>> " + dht(g.cache(null)).topology().partitionMap(false).toFullString());
+        X.println(">>> " + dht(g.cache(DEFAULT_CACHE_NAME)).topology().partitionMap(false).toFullString());
     }
 
     /** @throws Exception If failed. */
     @SuppressWarnings("BusyWait")
     private void waitTopologyUpdate() throws Exception {
-        GridTestUtils.waitTopologyUpdate(null, BACKUPS, log());
+        GridTestUtils.waitTopologyUpdate(DEFAULT_CACHE_NAME, BACKUPS, log());
     }
 
     /** @throws Exception If failed. */
@@ -174,7 +169,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         Ignite mg = grid(0);
 
-        IgniteCache<Integer, String> mc = mg.cache(null);
+        IgniteCache<Integer, String> mc = mg.cache(DEFAULT_CACHE_NAME);
 
         int keyCnt = 10;
 

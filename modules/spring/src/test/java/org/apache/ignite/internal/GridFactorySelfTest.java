@@ -59,6 +59,7 @@ import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
@@ -316,6 +317,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         cfg.setLifecycleBeans(bean1, bean2);
         cfg.setIgniteInstanceName(igniteInstanceName);
+
+        cfg.setEventStorageSpi(new MemoryEventStorageSpi());
 
         cfg.setConnectorConfiguration(null);
 
@@ -995,7 +998,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
             startGrid("1", c);
 
-            assert ((TcpDiscoverySpi)c.getDiscoverySpi()).started();
+            if (tcpDiscovery())
+                assert ((TcpDiscoverySpi)c.getDiscoverySpi()).started();
 
             try {
                 startGrid("2", c);

@@ -17,59 +17,132 @@
 
 package org.apache.ignite.internal.visor.query;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
 import java.util.List;
-import org.apache.ignite.internal.LessNamingBean;
+import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Result for cache query tasks.
  */
-public class VisorQueryResult implements Serializable, LessNamingBean {
+public class VisorQueryResult extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Node where query executed. */
+    private UUID resNodeId;
+
+    /** Query ID to store in node local. */
+    private String qryId;
+
+    /** Query columns descriptors. */
+    private List<VisorQueryField> cols;
+
     /** Rows fetched from query. */
-    private final List<Object[]> rows;
+    private List<Object[]> rows;
 
     /** Whether query has more rows to fetch. */
-    private final boolean hasMore;
+    private boolean hasMore;
 
     /** Query duration */
-    private final long duration;
+    private long duration;
 
     /**
-     * Create task result with given parameters
-     *
+     * Default constructor.
+     */
+    public VisorQueryResult() {
+        // No-op.
+    }
+
+    /**
+     * @param resNodeId Node where query executed.
+     * @param qryId Query ID for future extraction in nextPage() access.
+     * @param cols Columns descriptors.
      * @param rows Rows fetched from query.
      * @param hasMore Whether query has more rows to fetch.
      * @param duration Query duration.
      */
-    public VisorQueryResult(List<Object[]> rows, boolean hasMore, long duration) {
+    public VisorQueryResult(
+        UUID resNodeId,
+        String qryId,
+        List<VisorQueryField> cols,
+        List<Object[]> rows,
+        boolean hasMore,
+        long duration
+    ) {
+        this.resNodeId = resNodeId;
+        this.qryId = qryId;
+        this.cols = cols;
         this.rows = rows;
         this.hasMore = hasMore;
         this.duration = duration;
     }
 
     /**
+     * @return Response node id.
+     */
+    public UUID getResponseNodeId() {
+        return resNodeId;
+    }
+
+    /**
+     * @return Query id.
+     */
+    public String getQueryId() {
+        return qryId;
+    }
+
+    /**
+     * @return Columns.
+     */
+    public Collection<VisorQueryField> getColumns() {
+        return cols;
+    }
+
+    /**
      * @return Rows fetched from query.
      */
-    public List<Object[]> rows() {
+    public List<Object[]> getRows() {
         return rows;
     }
 
     /**
      * @return Whether query has more rows to fetch.
      */
-    public boolean hasMore() {
+    public boolean isHasMore() {
         return hasMore;
     }
 
     /**
      * @return Duration of next page fetching.
      */
-    public long duration() {
+    public long getDuration() {
         return duration;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeUuid(out, resNodeId);
+        U.writeString(out, qryId);
+        U.writeCollection(out, cols);
+        U.writeCollection(out, rows);
+        out.writeBoolean(hasMore);
+        out.writeLong(duration);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        resNodeId = U.readUuid(in);
+        qryId = U.readString(in);
+        cols = U.readList(in);
+        rows = U.readList(in);
+        hasMore = in.readBoolean();
+        duration = in.readLong();
     }
 
     /** {@inheritDoc} */

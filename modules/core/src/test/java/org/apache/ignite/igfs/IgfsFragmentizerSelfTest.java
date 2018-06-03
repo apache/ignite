@@ -237,7 +237,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
             U.sleep(200);
         }
 
-        igfs.format();
+        igfs.clear();
 
         GridTestUtils.retryAssert(log, 50, 100, new CA() {
             @Override public void apply() {

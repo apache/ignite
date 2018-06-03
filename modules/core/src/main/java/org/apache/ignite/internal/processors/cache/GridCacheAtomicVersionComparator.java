@@ -28,32 +28,24 @@ public class GridCacheAtomicVersionComparator {
      *
      * @param one First version.
      * @param other Second version.
-     * @param ignoreTime {@code True} if global time should be ignored.
      * @return Comparison value.
      */
-    public int compare(GridCacheVersion one, GridCacheVersion other, boolean ignoreTime) {
+    public int compare(GridCacheVersion one, GridCacheVersion other) {
         int topVer = one.topologyVersion();
         int otherTopVer = other.topologyVersion();
 
         if (topVer == otherTopVer) {
-            long globalTime = one.globalTime();
-            long otherGlobalTime = other.globalTime();
+            long locOrder = one.order();
+            long otherLocOrder = other.order();
 
-            if (globalTime == otherGlobalTime || ignoreTime) {
-                long locOrder = one.order();
-                long otherLocOrder = other.order();
+            if (locOrder == otherLocOrder) {
+                int nodeOrder = one.nodeOrder();
+                int otherNodeOrder = other.nodeOrder();
 
-                if (locOrder == otherLocOrder) {
-                    int nodeOrder = one.nodeOrder();
-                    int otherNodeOrder = other.nodeOrder();
-
-                    return nodeOrder == otherNodeOrder ? 0 : nodeOrder < otherNodeOrder ? -1 : 1;
-                }
-                else
-                    return locOrder > otherLocOrder ? 1 : -1;
+                return nodeOrder == otherNodeOrder ? 0 : nodeOrder < otherNodeOrder ? -1 : 1;
             }
             else
-                return globalTime > otherGlobalTime ? 1 : -1;
+                return locOrder > otherLocOrder ? 1 : -1;
         }
         else
             return topVer > otherTopVer ? 1 : -1;

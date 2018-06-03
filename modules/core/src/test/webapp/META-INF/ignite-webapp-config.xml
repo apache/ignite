@@ -48,21 +48,10 @@
         <property name="peerClassLoadingEnabled" value="true"/>
 
         <!--
-            Configure optimized marshaller.
+            Configure binary marshaller.
         -->
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <!--
-                    For better performance set this property to true in case
-                    all marshalled classes implement java.io.Serializable.
-                    Default value is true.
-
-                    Note, that it is recommended to implement java.io.Externalizable
-                    instead of java.io.Serializable for smaller network footprint
-                    and even better performance.
-                -->
-                <property name="requireSerializable" value="false"/>
-            </bean>
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
         </property>
 
         <!-- Set to local host address just for examples. -->
@@ -103,9 +92,6 @@
                     <!-- Enable primary sync write mode. -->
                     <property name="writeSynchronizationMode" value="PRIMARY_SYNC"/>
 
-                    <!-- Initial cache size. -->
-                    <property name="startSize" value="1500000"/>
-
                     <!--
                         This shows how to configure number of backups. The below configuration
                         sets the number of backups to 1 (which is default).
@@ -131,9 +117,6 @@
                     <property name="nearConfiguration">
                         <bean class="org.apache.ignite.configuration.NearCacheConfiguration"/>
                     </property>
-
-                    <!-- Initial cache size. -->
-                    <property name="startSize" value="1500000"/>
 
                     <!--
                         Setting this value will cause local node to wait for remote commits.
@@ -170,9 +153,6 @@
 
                     <!-- Set synchronous rebalancing (default is asynchronous). -->
                     <property name="rebalanceMode" value="SYNC"/>
-
-                    <!-- Initial cache size. -->
-                    <property name="startSize" value="150000"/>
                 </bean>
 
                 <!--
@@ -184,9 +164,6 @@
 
                     <!-- LOCAL cache mode. -->
                     <property name="cacheMode" value="LOCAL"/>
-
-                    <!-- Initial cache size. -->
-                    <property name="startSize" value="150000"/>
                 </bean>
             </list>
         </property>
@@ -208,7 +185,6 @@
                         <property name="bucketName" value="YOUR_BUCKET_NAME_IP_FINDER"/>
                     </bean>
                 </property>
-                <property name="heartbeatFrequency" value="2000"/>
             </bean>
         </property>
         -->

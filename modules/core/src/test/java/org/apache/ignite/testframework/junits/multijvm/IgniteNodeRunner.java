@@ -56,7 +56,7 @@ public class IgniteNodeRunner {
         File.separator + "igniteConfiguration.tmp_";
 
     /** */
-    private static volatile Ignite ignite;
+    protected static volatile Ignite ignite;
 
     /**
      * Starts {@link Ignite} instance accorging to given arguments.
@@ -96,7 +96,7 @@ public class IgniteNodeRunner {
      * @throws IOException If failed.
      * @see #readCfgFromFileAndDeleteFile(String)
      */
-    public static String storeToFile(IgniteConfiguration cfg, boolean resetDiscovery) throws IOException {
+    public static String storeToFile(IgniteConfiguration cfg, boolean resetDiscovery) throws IOException, IgniteCheckedException {
         String fileName = IGNITE_CONFIGURATION_FILE + cfg.getNodeId();
 
         storeToFile(cfg, fileName, true, resetDiscovery);
@@ -116,7 +116,7 @@ public class IgniteNodeRunner {
      */
     public static void storeToFile(IgniteConfiguration cfg, String fileName,
         boolean resetMarshaller,
-        boolean resetDiscovery) throws IOException {
+        boolean resetDiscovery) throws IOException, IgniteCheckedException {
         try(OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
             IgniteConfiguration cfg0 = new IgniteConfiguration(cfg);
 
@@ -126,6 +126,7 @@ public class IgniteNodeRunner {
             if (resetDiscovery)
                 cfg0.setDiscoverySpi(null);
 
+            cfg0.setWorkDirectory(U.defaultWorkDirectory());
             cfg0.setMBeanServer(null);
             cfg0.setGridLogger(null);
 
@@ -160,6 +161,8 @@ public class IgniteNodeRunner {
                 disco.setIpFinder(GridCacheAbstractFullApiSelfTest.LOCAL_IP_FINDER);
                 cfg.setDiscoverySpi(disco);
             }
+
+            X.println("Configured discovery: " + cfg.getDiscoverySpi().getClass().getName());
 
             return cfg;
         }

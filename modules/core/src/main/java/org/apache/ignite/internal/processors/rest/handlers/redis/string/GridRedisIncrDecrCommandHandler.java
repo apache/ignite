@@ -85,6 +85,7 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
         getReq.clientId(msg.clientId());
         getReq.key(msg.key());
         getReq.command(CACHE_GET);
+        getReq.cacheName(msg.cacheName());
 
         GridRestResponse getResp = hnd.handle(getReq);
 
@@ -92,7 +93,7 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
             restReq.initial(0L);
         else {
             if (getResp.getResponse() instanceof String) {
-                Long init;
+                long init;
 
                 try {
                     init = Long.parseLong((String)getResp.getResponse());
@@ -118,6 +119,7 @@ public class GridRedisIncrDecrCommandHandler extends GridRedisRestCommandHandler
             rmReq.clientId(msg.clientId());
             rmReq.key(msg.key());
             rmReq.command(CACHE_REMOVE);
+            rmReq.cacheName(msg.cacheName());
 
             Object rmResp = hnd.handle(rmReq).getResponse();
 

@@ -23,10 +23,10 @@ import java.io.ObjectOutput;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -40,7 +40,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.LongAdder8;
 
 /**
  *
@@ -62,17 +61,14 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        CacheConfiguration<?,?> ccfg = new CacheConfiguration<>();
+        CacheConfiguration<?,?> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setName("offheap-cache");
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        ccfg.setSwapEnabled(false);
         ccfg.setIndexedTypes(
             Long.class, Person.class
         );
-
-        ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
 
         c.setCacheConfiguration(ccfg);
 
@@ -116,7 +112,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
 
         final AtomicBoolean end = new AtomicBoolean();
 
-        final LongAdder8 puts = new LongAdder8();
+        final LongAdder puts = new LongAdder();
 
         IgniteInternalFuture<?> fut0 = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -134,7 +130,7 @@ public class GridCacheQuerySimpleBenchmark extends GridCommonAbstractTest {
             }
         }, 10);
 
-        final LongAdder8 qrys = new LongAdder8();
+        final LongAdder qrys = new LongAdder();
 
         IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {

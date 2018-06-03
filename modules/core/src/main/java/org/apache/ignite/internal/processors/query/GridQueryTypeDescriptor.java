@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.query;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Value descriptor which allows to extract fields from value object of given type.
@@ -30,6 +33,13 @@ public interface GridQueryTypeDescriptor {
      * @return Type name which uniquely identifies this type.
      */
     public String name();
+
+    /**
+     * Gets schema name for type (database schema means here).
+     *
+     * @return Schema name.
+     */
+    public String schemaName();
 
     /**
      * Gets table name for type.
@@ -81,6 +91,13 @@ public interface GridQueryTypeDescriptor {
     public Map<String, GridQueryIndexDescriptor> indexes();
 
     /**
+     * Get text index for this type (if any).
+     *
+     * @return Text index or {@code null}.
+     */
+    public GridQueryIndexDescriptor textIndex();
+
+    /**
      * Gets value class.
      *
      * @return Value class.
@@ -121,4 +138,54 @@ public interface GridQueryTypeDescriptor {
      * @return Affinity key.
      */
     public String affinityKey();
+
+    /**
+     * @return BinaryObject's type ID if indexed value is BinaryObject, otherwise value class' hash code.
+     */
+    public int typeId();
+
+    /**
+     * Gets key field name.
+     * @return Key field name.
+     */
+    public String keyFieldName();
+
+    /**
+     * Gets value field name.
+     * @return value field name.
+     */
+    public String valueFieldName();
+
+    /**
+     * Gets key field alias.
+     *
+     * @return Key field alias.
+     */
+    @Nullable public String keyFieldAlias();
+
+    /**
+     * Gets value field alias.
+     *
+     * @return value field alias.
+     */
+    @Nullable public String valueFieldAlias();
+
+    /**
+     * Performs validation of given key and value against configured constraints.
+     * Throws runtime exception if validation fails.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @throws IgniteCheckedException, If failure happens.
+     */
+    public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException;
+
+    /**
+     * Sets defaults value for given key and value.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void setDefaults(Object key, Object val) throws IgniteCheckedException;
 }

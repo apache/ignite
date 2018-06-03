@@ -44,6 +44,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testsuites.IgniteIgnore;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
 
@@ -102,7 +103,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         if (igniteInstanceName.contains("testCacheRedeployVersionChangeContinuousMode")) {
-            CacheConfiguration cacheCfg = new CacheConfiguration();
+            CacheConfiguration cacheCfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
             cacheCfg.setCacheMode(CacheMode.REPLICATED);
 
@@ -255,12 +256,12 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             ignite2.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
-                    if (evt.type() == EVT_NODE_LEFT)
+                    if (evt.type() == EVT_NODE_LEFT || evt.type() == EVT_NODE_FAILED)
                         discoLatch.countDown();
 
                     return true;
                 }
-            }, EVT_NODE_LEFT);
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             Integer res1 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
@@ -299,13 +300,13 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             Class rcrsCls = ldr.loadClass(TEST_RCRS_NAME);
 
-            IgniteCache<Long, Object> cache1 = ignite1.cache(null);
+            IgniteCache<Long, Object> cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache1);
 
             cache1.put(1L, rcrsCls.newInstance());
 
-            final IgniteCache<Long, Object> cache2 = ignite2.cache(null);
+            final IgniteCache<Long, Object> cache2 = ignite2.cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache2);
 
@@ -325,7 +326,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
 
             ignite1 = startGrid("testCacheRedeployVersionChangeContinuousMode1");
 
-            cache1 = ignite1.cache(null);
+            cache1 = ignite1.cache(DEFAULT_CACHE_NAME);
 
             assertNotNull(cache1);
 

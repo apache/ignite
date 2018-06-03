@@ -51,7 +51,7 @@ class ScalarCacheQueriesSpec extends FunSpec with ShouldMatchers with BeforeAndA
     override def beforeAll() {
         n = start("modules/scalar/src/test/resources/spring-cache.xml").cluster().localNode
 
-        c = cache$[Int, ObjectValue].get
+        c = cache$[Int, ObjectValue]("default").get
 
         (1 to ENTRY_CNT).foreach(i => c.put(i, ObjectValue(i, "str " + WORDS(i))))
 

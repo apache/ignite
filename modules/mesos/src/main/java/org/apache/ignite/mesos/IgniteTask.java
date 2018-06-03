@@ -76,8 +76,7 @@ public class IgniteTask {
         return disk;
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return "IgniteTask " +
             "host: [" + host + ']' +
             ", cpuCores: [" + cpuCores + "]" +

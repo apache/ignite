@@ -32,12 +32,19 @@ using namespace boost::unit_test;
 /*
  * Test setup fixture.
  */
-struct ClusterTestSuiteFixture {
+struct ClusterTestSuiteFixture
+{
+    Ignite node;
+
     /*
      * Constructor.
      */
     ClusterTestSuiteFixture() :
+#ifdef IGNITE_TESTS_32
+        node(ignite_test::StartNode("cache-test-32.xml", "ClusterTest"))
+#else
         node(ignite_test::StartNode("cache-test.xml", "ClusterTest"))
+#endif
     {
         // No-op.
     }
@@ -49,8 +56,35 @@ struct ClusterTestSuiteFixture {
     {
         Ignition::StopAll(true);
     }
+};
 
+/*
+ * Test setup fixture.
+ */
+struct ClusterTestSuiteFixtureIsolated
+{
     Ignite node;
+
+    /*
+     * Constructor.
+     */
+    ClusterTestSuiteFixtureIsolated() :
+#ifdef IGNITE_TESTS_32
+        node(ignite_test::StartNode("isolated-32.xml", "ClusterTestIsolated"))
+#else
+        node(ignite_test::StartNode("isolated.xml", "ClusterTestIsolated"))
+#endif
+    {
+        // No-op.
+    }
+
+    /*
+     * Destructor.
+     */
+    ~ClusterTestSuiteFixtureIsolated()
+    {
+        Ignition::StopAll(true);
+    }
 };
 
 BOOST_FIXTURE_TEST_SUITE(ClusterTestSuite, ClusterTestSuiteFixture)
@@ -75,7 +109,24 @@ BOOST_AUTO_TEST_CASE(IgniteImplForServers)
 
     IgniteError err;
 
-    BOOST_REQUIRE(clusterGroup.Get()->ForServers(err).IsValid());
+    BOOST_REQUIRE(clusterGroup.Get()->ForServers().IsValid());
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_FIXTURE_TEST_SUITE(ClusterTestSuiteIsolated, ClusterTestSuiteFixtureIsolated)
+
+BOOST_AUTO_TEST_CASE(IgniteSetActive)
+{
+    BOOST_REQUIRE(node.IsActive());
+
+    node.SetActive(false);
+
+    BOOST_REQUIRE(!node.IsActive());
+
+    node.SetActive(true);
+
+    BOOST_REQUIRE(node.IsActive());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -61,7 +61,7 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
+    @Override public void onKernalStart(boolean active) throws IgniteCheckedException {
         plugin.onIgniteStart();
     }
 
@@ -115,6 +115,11 @@ public class GridPluginComponent implements GridComponent {
         catch (PluginValidationException e) {
             return new IgniteNodeValidationResult(e.nodeId(), e.getMessage(), e.remoteMessage());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, JoiningNodeDiscoveryData discoData) {
+        return null;
     }
 
     /** {@inheritDoc} */

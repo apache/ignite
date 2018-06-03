@@ -49,7 +49,6 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(IP_FINDER);
-        disco.setHeartbeatFrequency(10_000);
 
         // Set parameters for fast ping failure.
         disco.setSocketTimeout(100);
@@ -57,6 +56,7 @@ public class GridFailFastNodeFailureDetectionSelfTest extends GridCommonAbstract
         disco.setReconnectCount(2);
 
         cfg.setDiscoverySpi(disco);
+        cfg.setMetricsUpdateFrequency(10_000);
 
         return cfg;
     }

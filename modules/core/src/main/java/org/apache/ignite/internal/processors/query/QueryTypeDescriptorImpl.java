@@ -17,31 +17,42 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.internal.util.typedef.internal.S;
-
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Descriptor of type.
  */
 public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
+    /** Cache name. */
+    private final String cacheName;
+
     /** */
     private String name;
+
+    /** Schema name. */
+    private String schemaName;
 
     /** */
     private String tblName;
 
     /** Value field names and types with preserved order. */
     @GridToStringInclude
-    private final Map<String, Class<?>> fields = new LinkedHashMap<>();
+    private final LinkedHashMap<String, Class<?>> fields = new LinkedHashMap<>();
 
     /** */
     @GridToStringExclude
@@ -50,9 +61,15 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     /** Map with upper cased property names to help find properties based on SQL INSERT and MERGE queries. */
     private final Map<String, GridQueryProperty> uppercaseProps = new HashMap<>();
 
+    /** Mutex for operations on indexes. */
+    private final Object idxMux = new Object();
+
     /** */
     @GridToStringInclude
-    private final Map<String, QueryIndexDescriptorImpl> indexes = new HashMap<>();
+    private final Map<String, QueryIndexDescriptorImpl> idxs = new HashMap<>();
+
+    /** Aliases. */
+    private Map<String, String> aliases;
 
     /** */
     private QueryIndexDescriptorImpl fullTextIdx;
@@ -73,28 +90,50 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     private boolean valTextIdx;
 
     /** */
+    private int typeId;
+
+    /** */
     private String affKey;
 
-    /** SPI can decide not to register this type. */
-    private boolean registered;
+    /** */
+    private String keyFieldName;
+
+    /** */
+    private String valFieldName;
+
+    /** Obsolete. */
+    private volatile boolean obsolete;
+
+    /** */
+    private List<GridQueryProperty> validateProps;
+
+    /** */
+    private List<GridQueryProperty> propsWithDefaultValue;
 
     /**
-     * @return {@code True} if type registration in SPI was finished and type was not rejected.
+     * Constructor.
+     *
+     * @param cacheName Cache name.
      */
-    public boolean registered() {
-        return registered;
+    public QueryTypeDescriptorImpl(String cacheName) {
+        this.cacheName = cacheName;
     }
 
     /**
-     * @param registered Sets registered flag.
+     * @return Cache name.
      */
-    public void registered(boolean registered) {
-        this.registered = registered;
+    public String cacheName() {
+        return cacheName;
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
         return name;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String schemaName() {
+        return schemaName;
     }
 
     /**
@@ -110,8 +149,8 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
      * Gets table name for type.
      * @return Table name.
      */
-    public String tableName() {
-        return tblName;
+    @Override public String tableName() {
+        return tblName != null ? tblName : name;
     }
 
     /**
@@ -124,7 +163,7 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Class<?>> fields() {
+    @Override public LinkedHashMap<String, Class<?>> fields() {
         return fields;
     }
 
@@ -174,56 +213,92 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
 
     /** {@inheritDoc} */
     @Override public Map<String, GridQueryIndexDescriptor> indexes() {
-        return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(indexes);
+        synchronized (idxMux) {
+            return Collections.<String, GridQueryIndexDescriptor>unmodifiableMap(idxs);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int typeId() {
+        return typeId;
     }
 
     /**
-     * Adds index.
-     *
-     * @param idxName Index name.
-     * @param type Index type.
-     * @return Index descriptor.
-     * @throws IgniteCheckedException In case of error.
+     * @param typeId Type ID.
      */
-    public QueryIndexDescriptorImpl addIndex(String idxName, QueryIndexType type) throws IgniteCheckedException {
-        QueryIndexDescriptorImpl idx = new QueryIndexDescriptorImpl(type);
-
-        if (indexes.put(idxName, idx) != null)
-            throw new IgniteCheckedException("Index with name '" + idxName + "' already exists.");
-
-        return idx;
+    public void typeId(int typeId) {
+        this.typeId = typeId;
     }
 
     /**
-     * Adds field to index.
+     * Get index by name.
      *
-     * @param idxName Index name.
-     * @param field Field name.
-     * @param orderNum Fields order number in index.
-     * @param descending Sorting order.
+     * @param name Name.
+     * @return Index.
+     */
+    @Nullable public QueryIndexDescriptorImpl index(String name) {
+        synchronized (idxMux) {
+            return idxs.get(name);
+        }
+    }
+
+    /**
+     * @return Raw index descriptors.
+     */
+    public Collection<QueryIndexDescriptorImpl> indexes0() {
+        synchronized (idxMux) {
+            return new ArrayList<>(idxs.values());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridQueryIndexDescriptor textIndex() {
+        return fullTextIdx;
+    }
+
+    /**
+     * Add index.
+     *
+     * @param idx Index.
      * @throws IgniteCheckedException If failed.
      */
-    public void addFieldToIndex(String idxName, String field, int orderNum,
-        boolean descending) throws IgniteCheckedException {
-        QueryIndexDescriptorImpl desc = indexes.get(idxName);
+    public void addIndex(QueryIndexDescriptorImpl idx) throws IgniteCheckedException {
+        synchronized (idxMux) {
+            if (idxs.put(idx.name(), idx) != null)
+                throw new IgniteCheckedException("Index with name '" + idx.name() + "' already exists.");
+        }
+    }
 
-        if (desc == null)
-            desc = addIndex(idxName, QueryIndexType.SORTED);
+    /**
+     * Drop index.
+     *
+     * @param idxName Index name.
+     */
+    public void dropIndex(String idxName) {
+        synchronized (idxMux) {
+            idxs.remove(idxName);
+        }
+    }
 
-        desc.addField(field, orderNum, descending);
+    /**
+     * Chedk if particular field exists.
+     *
+     * @param field Field.
+     * @return {@code True} if exists.
+     */
+    public boolean hasField(String field) {
+        return props.containsKey(field) || QueryUtils.VAL_FIELD_NAME.equalsIgnoreCase(field);
     }
 
     /**
      * Adds field to text index.
      *
      * @param field Field name.
+     * @throws IgniteCheckedException If failed.
      */
-    public void addFieldToTextIndex(String field) {
-        if (fullTextIdx == null) {
-            fullTextIdx = new QueryIndexDescriptorImpl(QueryIndexType.FULLTEXT);
-
-            indexes.put(null, fullTextIdx);
-        }
+    public void addFieldToTextIndex(String field) throws IgniteCheckedException {
+        if (fullTextIdx == null)
+            fullTextIdx = new QueryIndexDescriptorImpl(this, null, QueryIndexType.FULLTEXT, 0);
 
         fullTextIdx.addField(field, 0, false);
     }
@@ -301,7 +376,47 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         if (uppercaseProps.put(name.toUpperCase(), prop) != null && failOnDuplicate)
             throw new IgniteCheckedException("Property with upper cased name '" + name + "' already exists.");
 
+        if (prop.notNull()) {
+            if (validateProps == null)
+                validateProps = new ArrayList<>();
+
+            validateProps.add(prop);
+        }
+
+        if (prop.defaultValue() != null) {
+            if (propsWithDefaultValue == null)
+                propsWithDefaultValue = new ArrayList<>();
+
+            propsWithDefaultValue.add(prop);
+        }
+
         fields.put(name, prop.type());
+    }
+
+    /**
+     * Removes a property with specified name.
+     *
+     * @param name Name of a property to remove.
+     */
+    public void removeProperty(String name) throws IgniteCheckedException {
+        GridQueryProperty prop = props.remove(name);
+
+        if (prop == null)
+            throw new IgniteCheckedException("Property with name '" + name + "' does not exist.");
+
+        if (validateProps != null)
+            validateProps.remove(prop);
+
+        uppercaseProps.remove(name.toUpperCase());
+
+        fields.remove(name);
+    }
+
+    /**
+     * @param schemaName Schema name.
+     */
+    public void schemaName(String schemaName) {
+        this.schemaName = schemaName;
     }
 
     /** {@inheritDoc} */
@@ -330,8 +445,119 @@ public class QueryTypeDescriptorImpl implements GridQueryTypeDescriptor {
         this.affKey = affKey;
     }
 
+    /**
+     * @return Aliases.
+     */
+    public Map<String, String> aliases() {
+        return aliases != null ? aliases : Collections.<String, String>emptyMap();
+    }
+
+    /**
+     * @param aliases Aliases.
+     */
+    public void aliases(Map<String, String> aliases) {
+        this.aliases = aliases;
+    }
+
+    /**
+     * @return {@code True} if obsolete.
+     */
+    public boolean obsolete() {
+        return obsolete;
+    }
+
+    /**
+     * Mark index as obsolete.
+     */
+    public void markObsolete() {
+        obsolete = true;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(QueryTypeDescriptorImpl.class, this);
+    }
+
+    /**
+     * Sets key field name.
+     * @param keyFieldName Key field name.
+     */
+    void keyFieldName(String keyFieldName) {
+        this.keyFieldName = keyFieldName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String keyFieldName() {
+        return keyFieldName;
+    }
+
+    /**
+     * Sets value field name.
+     * @param valFieldName value field name.
+     */
+    void valueFieldName(String valFieldName) {
+        this.valFieldName = valFieldName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String valueFieldName() {
+        return valFieldName;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String keyFieldAlias() {
+        return keyFieldName != null ? aliases.get(keyFieldName) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public String valueFieldAlias() {
+        return valFieldName != null ? aliases.get(valFieldName) : null;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @Override public void validateKeyAndValue(Object key, Object val) throws IgniteCheckedException {
+        if (F.isEmpty(validateProps))
+            return;
+
+        for (int i = 0; i < validateProps.size(); ++i) {
+            GridQueryProperty prop = validateProps.get(i);
+
+            Object propVal;
+
+            int errCode;
+
+            if (F.eq(prop.name(), keyFieldName)) {
+                propVal = key;
+
+                errCode = IgniteQueryErrorCode.NULL_KEY;
+            }
+            else if (F.eq(prop.name(), valFieldName)) {
+                propVal = val;
+
+                errCode = IgniteQueryErrorCode.NULL_VALUE;
+            }
+            else {
+                propVal = prop.value(key, val);
+
+                errCode = IgniteQueryErrorCode.NULL_VALUE;
+            }
+
+            if (propVal == null)
+                throw new IgniteSQLException("Null value is not allowed for column '" + prop.name() + "'", errCode);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @Override public void setDefaults(Object key, Object val) throws IgniteCheckedException {
+        if (F.isEmpty(propsWithDefaultValue))
+            return;
+
+        for (int i = 0; i < propsWithDefaultValue.size(); ++i) {
+            GridQueryProperty prop = propsWithDefaultValue.get(i);
+
+            prop.setValue(key, val, prop.defaultValue());
+        }
     }
 }

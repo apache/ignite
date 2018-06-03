@@ -1051,10 +1051,6 @@ public class IgniteProjectionStartStopRestartSelfTest extends GridCommonAbstract
         boolean restart,
         int timeout,
         int maxConn) {
-        cluster = cluster.withAsync();
-
-        assertNull(cluster.startNodes(hosts, dflts, restart, timeout, maxConn));
-
-        return cluster.<Collection<ClusterStartNodeResult>>future().get(WAIT_TIMEOUT);
+        return cluster.startNodesAsync(hosts, dflts, restart, timeout, maxConn).get(WAIT_TIMEOUT);
     }
 }

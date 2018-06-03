@@ -17,24 +17,36 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.UUID;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.mxbean.ClusterLocalNodeMetricsMXBean;
+import org.apache.ignite.mxbean.ClusterMetricsMXBean;
 
 /**
  * Local node metrics MBean.
  */
-public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetricsMXBean {
+public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterMetricsMXBean {
     /** Grid node. */
     private final ClusterNode node;
 
-    /**
-     * @param node Node to manage.
-     */
-    public ClusterLocalNodeMetricsMXBeanImpl(ClusterNode node) {
-        assert node != null;
+    /** Grid discovery manager. */
+    private final GridDiscoveryManager discoMgr;
 
-        this.node = node;
+    /**
+     * @param discoMgr Grid discovery manager.
+     */
+    public ClusterLocalNodeMetricsMXBeanImpl(GridDiscoveryManager discoMgr) {
+        assert discoMgr != null;
+
+        this.discoMgr = discoMgr;
+
+        this.node = discoMgr.localNode();
     }
 
     /** {@inheritDoc} */
@@ -263,6 +275,11 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetric
     }
 
     /** {@inheritDoc} */
+    @Override public long getTotalJobsExecutionTime() {
+        return node.metrics().getTotalJobsExecutionTime();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getTotalIdleTime() {
         return node.metrics().getTotalIdleTime();
     }
@@ -315,6 +332,65 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetric
     /** {@inheritDoc} */
     @Override public int getTotalNodes() {
         return node.metrics().getTotalNodes();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalBaselineNodes() {
+        if (!node.isClient() && !node.isDaemon()) {
+            List<? extends BaselineNode> baselineNodes = discoMgr.baselineNodes(discoMgr.topologyVersionEx());
+
+            if (baselineNodes != null)
+                for (BaselineNode baselineNode : baselineNodes)
+                    if (baselineNode.consistentId().equals(node.consistentId()))
+                        return 1;
+        }
+
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getActiveBaselineNodes() {
+        return getTotalBaselineNodes();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalServerNodes() {
+        return !node.isClient() ? 1 : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalClientNodes() {
+        return node.isClient() ? 1 : 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTopologyVersion() {
+        return discoMgr.topologyVersion();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> attributeNames() {
+        return new TreeSet<>(node.attributes().keySet());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> attributeValues(String attrName) {
+        Object val = node.attribute(attrName);
+
+        return val == null ? Collections.<String>emptySet() : Collections.singleton(val.toString());
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<UUID> nodeIdsForAttribute(String attrName, String attrVal, boolean includeSrvs,
+        boolean includeClients) {
+        if ((includeClients && node.isClient()) || (includeSrvs && !node.isClient())) {
+            Object nodeVal = node.attribute(attrName);
+
+            if (nodeVal != null && nodeVal.toString().equals(attrVal))
+                return Collections.singleton(node.id());
+        }
+
+        return Collections.emptySet();
     }
 
     /** {@inheritDoc} */

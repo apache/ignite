@@ -42,13 +42,20 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
     private static final IndexType TYPE = IndexType.createScan(false);
 
     /** */
-    protected final D delegate;
+    private final D delegate;
 
     /**
      * @param delegate Delegate.
      */
     public GridH2ScanIndex(D delegate) {
         this.delegate = delegate;
+    }
+
+    /**
+     * @return Delegate.
+     */
+    protected D delegate() {
+        return delegate;
     }
 
     /** {@inheritDoc} */
@@ -58,7 +65,7 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public void add(Session ses, Row row) {
-        delegate.add(ses, row);
+        delegate().add(ses, row);
     }
 
     /** {@inheritDoc} */
@@ -73,7 +80,7 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public boolean canScan() {
-        return delegate.canScan();
+        return delegate().canScan();
     }
 
     /** {@inheritDoc} */
@@ -88,7 +95,7 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public int compareRows(SearchRow rowData, SearchRow compare) {
-        return delegate.compareRows(rowData, compare);
+        return delegate().compareRows(rowData, compare);
     }
 
     /** {@inheritDoc} */
@@ -98,7 +105,7 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public Cursor find(Session ses, SearchRow first, SearchRow last) {
-        return delegate.find(ses, null, null);
+        return delegate().find(ses, null, null);
     }
 
     /** {@inheritDoc} */
@@ -118,12 +125,12 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public Column[] getColumns() {
-        return delegate.getColumns();
+        return delegate().getColumns();
     }
 
     /** {@inheritDoc} */
     @Override public IndexColumn[] getIndexColumns() {
-        return delegate.getIndexColumns();
+        return delegate().getIndexColumns();
     }
 
     /** {@inheritDoc} */
@@ -133,27 +140,27 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public Row getRow(Session ses, long key) {
-        return delegate.getRow(ses, key);
+        return delegate().getRow(ses, key);
     }
 
     /** {@inheritDoc} */
     @Override public long getRowCount(Session ses) {
-        return delegate.getRowCount(ses);
+        return delegate().getRowCount(ses);
     }
 
     /** {@inheritDoc} */
     @Override public long getRowCountApproximation() {
-        return delegate.getRowCountApproximation();
+        return delegate().getRowCountApproximation();
     }
 
     /** {@inheritDoc} */
     @Override public Table getTable() {
-        return delegate.getTable();
+        return delegate().getTable();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isRowIdIndex() {
-        return delegate.isRowIdIndex();
+        return delegate().isRowIdIndex();
     }
 
     /** {@inheritDoc} */
@@ -177,8 +184,8 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
     }
 
     /** {@inheritDoc} */
-    @Override public IndexLookupBatch createLookupBatch(TableFilter filter) {
-        return delegate.createLookupBatch(filter);
+    @Override public IndexLookupBatch createLookupBatch(TableFilter[] filters, int filter) {
+        return delegate().createLookupBatch(filters, filter);
     }
 
     /** {@inheritDoc} */
@@ -188,12 +195,12 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public Schema getSchema() {
-        return delegate.getSchema();
+        return delegate().getSchema();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isHidden() {
-        return delegate.isHidden();
+        return delegate().isHidden();
     }
 
     /** {@inheritDoc} */
@@ -203,12 +210,12 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public ArrayList<DbObject> getChildren() {
-        return delegate.getChildren();
+        return delegate().getChildren();
     }
 
     /** {@inheritDoc} */
     @Override public String getComment() {
-        return delegate.getComment();
+        return delegate().getComment();
     }
 
     /** {@inheritDoc} */
@@ -218,37 +225,37 @@ public abstract class GridH2ScanIndex<D extends BaseIndex> extends BaseIndex {
 
     /** {@inheritDoc} */
     @Override public String getCreateSQLForCopy(Table tbl, String quotedName) {
-        return delegate.getCreateSQLForCopy(tbl, quotedName);
+        return delegate().getCreateSQLForCopy(tbl, quotedName);
     }
 
     /** {@inheritDoc} */
     @Override public Database getDatabase() {
-        return delegate.getDatabase();
+        return delegate().getDatabase();
     }
 
     /** {@inheritDoc} */
     @Override public String getDropSQL() {
-        return delegate.getDropSQL();
+        return delegate().getDropSQL();
     }
 
     /** {@inheritDoc} */
     @Override public int getId() {
-        return delegate.getId();
+        return delegate().getId();
     }
 
     /** {@inheritDoc} */
     @Override public String getSQL() {
-        return delegate.getSQL();
+        return delegate().getSQL();
     }
 
     /** {@inheritDoc} */
     @Override public int getType() {
-        return delegate.getType();
+        return delegate().getType();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isTemporary() {
-        return delegate.isTemporary();
+        return delegate().isTemporary();
     }
 
     /** {@inheritDoc} */

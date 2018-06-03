@@ -36,6 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
@@ -109,7 +110,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    protected CacheConfiguration cacheConfiguration(String cacheName) {
+    protected CacheConfiguration cacheConfiguration(@NotNull String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);
@@ -142,11 +143,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(NODES_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -195,7 +191,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(
                     grid(j).cachex(grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
-                Collection<IgniteInternalTx> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx> txs = ctx.tm().activeTransactions();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -288,7 +284,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(
                     grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
-                Collection<IgniteInternalTx> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx> txs = ctx.tm().activeTransactions();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -373,7 +369,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(
                     grid(j).cachex(grid(j).igfsx("igfs").configuration().getDataCacheConfiguration().getName()),
                     "ctx");
-                Collection<IgniteInternalTx> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx> txs = ctx.tm().activeTransactions();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }

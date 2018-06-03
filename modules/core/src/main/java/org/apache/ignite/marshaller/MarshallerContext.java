@@ -18,21 +18,42 @@
 package org.apache.ignite.marshaller;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 
 /**
  * Marshaller context.
  */
 public interface MarshallerContext {
     /**
-     * Registers class with provided type ID.
+     * Method to register typeId->class name mapping in marshaller context <b>cluster-wide</b>.
      *
+     * This method <b>guarantees</b> that mapping is delivered to all nodes in cluster
+     * and blocks caller thread until then.
+     *
+     * @param platformId Id of a platform (java, .NET, etc.) to register mapping for.
      * @param typeId Type ID.
-     * @param platformId id of a platform to register class.
-     * @param clsName class name.
-     * @return Whether class was registered.
+     * @param clsName Class name.
+     * @return {@code True} if mapping was registered successfully.
      * @throws IgniteCheckedException In case of error.
      */
     public boolean registerClassName(byte platformId, int typeId, String clsName) throws IgniteCheckedException;
+
+    /**
+     * Method to register typeId->class name mapping in marshaller context <b>on local node only</b>.
+     *
+     * <b>No guarantees</b> that the mapping is presented on other nodes are provided.
+     *
+     * This method is safe to use if there is another source of mappings like metadata persisted on disk
+     * and this source is known to be solid and free of conflicts beforehand.
+     *
+     * @param platformId Id of a platform (java, .NET, etc.) to register mapping for.
+     * @param typeId Type id.
+     * @param clsName Class name.
+     * @return {@code True} if class mapping was registered successfully.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public boolean registerClassNameLocally(byte platformId, int typeId, String clsName) throws IgniteCheckedException;
 
     /**
      * Gets class for provided type ID.
@@ -64,4 +85,16 @@ public interface MarshallerContext {
      * @return {@code true} if the type is a system one, {@code false} otherwise.
      */
     public boolean isSystemType(String typeName);
+
+    /**
+     * Returns class name filter.
+     *
+     * @return Class name filter.
+     */
+    public IgnitePredicate<String> classNameFilter();
+
+    /**
+     * Returns JDK marshaller instance.
+     */
+    public JdkMarshaller jdkMarshaller();
 }

@@ -41,6 +41,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_ENUM;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BOOLEAN;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BOOLEAN_ARR;
@@ -1426,6 +1427,15 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /**
      * @param fieldId Field ID.
+     * @return Binary Enum
+     * @throws BinaryObjectException If failed.
+     */
+    @Nullable BinaryEnumObjectImpl readBinaryEnum(int fieldId) throws BinaryObjectException {
+        return findFieldById(fieldId) ? BinaryUtils.doReadBinaryEnum(in, ctx) : null;
+    }
+
+    /**
+     * @param fieldId Field ID.
      * @param cls Class.
      * @return Value.
      * @throws BinaryObjectException In case of error.
@@ -1911,7 +1921,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case BINARY_OBJ:
-                obj = BinaryUtils.doReadBinaryObject(in, ctx);
+                obj = BinaryUtils.doReadBinaryObject(in, ctx, false);
 
                 ((BinaryObjectImpl)obj).context(ctx);
 
@@ -1927,6 +1937,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             case ENUM_ARR:
                 obj = BinaryUtils.doReadEnumArray(in, ctx, ldr, BinaryUtils.doReadClass(in, ctx, ldr));
+
+                break;
+
+            case BINARY_ENUM:
+                obj = BinaryUtils.doReadBinaryEnum(in, ctx);
+
+                if (!GridBinaryMarshaller.KEEP_BINARIES.get())
+                    obj = ((BinaryObject)obj).deserialize();
 
                 break;
 
@@ -1984,7 +2002,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
         if (schema == null) {
             if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
-                BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId);
+                BinaryTypeImpl type = (BinaryTypeImpl) ctx.metadata(typeId, schemaId);
 
                 if (type == null || type.metadata() == null)
                     throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +

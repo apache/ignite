@@ -513,7 +513,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    CacheConfiguration ccfg = new CacheConfiguration();
+                    CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
                     Ignite ignite = ignite(START_NODES - 1);
 
@@ -544,7 +544,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
                         log.info("Started node: " + ignite.name());
 
-                        IgniteCache<Object, Object> cache = ignite.getOrCreateCache((String)null);
+                        IgniteCache<Object, Object> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
                         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
@@ -601,7 +601,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
             startGrids(START_NODES);
 
-            ignite(0).createCache(new CacheConfiguration<>());
+            ignite(0).createCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
             final AtomicInteger startIdx = new AtomicInteger(START_NODES);
 
@@ -622,7 +622,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
                     log.info("Started node: " + ignite.name());
 
-                    IgniteCache<Object, Object> cache = ignite.getOrCreateCache((String)null);
+                    IgniteCache<Object, Object> cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
                     for (int i = 0; i < 10; i++) {
                         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
@@ -664,7 +664,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
         Ignite ignite = startGrid(0);
 
-        ignite.getOrCreateCache(new CacheConfiguration<>());
+        ignite.getOrCreateCache(new CacheConfiguration<>(DEFAULT_CACHE_NAME));
 
         final long stopTime = System.currentTimeMillis() + 60_000;
 
@@ -674,7 +674,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                     while (System.currentTimeMillis() < stopTime) {
                         Ignite ignite = startGrid(idx + 1);
 
-                        IgniteCache<Object, Object> cache = ignite.cache(null);
+                        IgniteCache<Object, Object> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
                         int qryCnt = ThreadLocalRandom.current().nextInt(10) + 1;
 

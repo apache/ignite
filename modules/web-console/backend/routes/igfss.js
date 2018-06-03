@@ -17,16 +17,30 @@
 
 'use strict';
 
+const express = require('express');
+
 // Fire me up!
 
 module.exports = {
     implements: 'routes/igfss',
-    inject: ['require(lodash)', 'require(express)', 'mongo', 'services/igfss']
+    inject: ['mongo', 'services/igfss']
 };
 
-module.exports.factory = function(_, express, mongo, igfssService) {
+module.exports.factory = function(mongo, igfssService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
+
+        router.get('/:_id', (req, res) => {
+            igfssService.get(req.currentUserId(), req.demo(), req.params._id)
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
+
+        router.delete('/', (req, res) => {
+            igfssService.remove(req.body.ids)
+                .then(res.api.ok)
+                .catch(res.api.error);
+        });
 
         /**
          * Save IGFS.

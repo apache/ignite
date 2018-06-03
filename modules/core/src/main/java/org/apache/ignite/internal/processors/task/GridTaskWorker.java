@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -85,7 +86,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
@@ -101,6 +101,7 @@ import static org.apache.ignite.internal.GridTopic.TOPIC_JOB;
 import static org.apache.ignite.internal.GridTopic.TOPIC_JOB_CANCEL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 
 /**
@@ -176,7 +177,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     private ComputeTask<T, R> task;
 
     /** */
-    private final Queue<GridJobExecuteResponse> delayedRess = new ConcurrentLinkedDeque8<>();
+    private final Queue<GridJobExecuteResponse> delayedRess = new ConcurrentLinkedDeque<>();
 
     /** */
     private boolean continuous;
@@ -573,7 +574,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         if (F.isEmpty(jobs))
             return;
 
-        Collection<GridJobResultImpl> jobResList = new ArrayList<>(jobs.size());
+        List<GridJobResultImpl> jobResList = new ArrayList<>(jobs.size());
 
         Collection<ComputeJobSibling> sibs = new ArrayList<>(jobs.size());
 
@@ -630,6 +631,26 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         // Set mapped flag.
         ses.onMapped();
+
+        // Move local jobs to the end of the list, because
+        // they will be invoked in current thread that will hold other
+        // jobs.
+        int jobResSize = jobResList.size();
+
+        if (jobResSize > 1) {
+            UUID locId = ctx.discovery().localNode().id();
+
+            for (int i = 0; i < jobResSize; i++) {
+                UUID jobNodeId = jobResList.get(i).getNode().id();
+
+                if (jobNodeId.equals(locId) && i < jobResSize - 1) {
+                    Collections.swap(jobResList, i, jobResSize - 1);
+
+                    jobResSize--;
+                    i--;
+                }
+            }
+        }
 
         // Send out all remote mappedJobs.
         for (GridJobResultImpl res : jobResList) {
@@ -862,8 +883,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         assert affCacheIds != null;
                         retry = true;
 
-                        mapTopVer = U.max(res.getRetryTopologyVersion(), ctx.discovery().topologyVersionEx());
-                        affFut = ctx.cache().context().exchange().affinityReadyFuture(mapTopVer);
+                        mapTopVer = U.max(res.getRetryTopologyVersion(), ctx.cache().context().exchange().readyAffinityVersion());
+                        affFut = ctx.cache().context().exchange().lastTopologyFuture();
 
                         if (affFut != null && !affFut.isDone()) {
                             waitForAffTop = true;
@@ -899,9 +920,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                             case FAILOVER: {
                                 if (affCacheIds != null) {
-                                    mapTopVer = ctx.discovery().topologyVersionEx();
+                                    mapTopVer = ctx.cache().context().exchange().readyAffinityVersion();
 
-                                    affFut = ctx.cache().context().exchange().affinityReadyFuture(mapTopVer);
+                                    affFut = ctx.cache().context().exchange().lastTopologyFuture();
                                 }
 
                                 if (affFut != null && !affFut.isDone()) {
@@ -1122,7 +1143,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             }
 
             if (log.isDebugEnabled())
-                log.debug("Reduced job responses [reduceRes=" + reduceRes + ", ses=" + ses + ']');
+                log.debug(S.toString("Reduced job responses",
+                    "reduceRes", reduceRes, true,
+                    "ses", ses, false));
 
             recordTaskEvent(EVT_TASK_REDUCED, "Task reduced.");
         }
@@ -1281,6 +1304,10 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                             new GridJobCancelRequest(ses.getId(), res.getJobContext().getJobId(), /*courtesy*/true),
                             PUBLIC_POOL);
                 }
+                catch (ClusterTopologyCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to send cancel request, node failed: " + nodeId);
+                }
                 catch (IgniteCheckedException e) {
                     try {
                         if (!isDeadNode(nodeId))
@@ -1354,6 +1381,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         ses.getStartTime(),
                         timeout,
                         ses.getTopology(),
+                        loc ? ses.getTopologyPredicate() : null,
+                        loc ? null : U.marshal(marsh, ses.getTopologyPredicate()),
                         loc ? null : U.marshal(marsh, ses.getJobSiblings()),
                         loc ? ses.getJobSiblings() : null,
                         loc ? null : U.marshal(marsh, sesAttrs),
@@ -1371,13 +1400,27 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         subjId,
                         affCacheIds,
                         affPartId,
-                        mapTopVer);
+                        mapTopVer,
+                        ses.executorName());
 
                     if (loc)
                         ctx.job().processJobExecuteRequest(ctx.discovery().localNode(), req);
                     else {
+                        byte plc;
+
+                        if (internal)
+                            plc = MANAGEMENT_POOL;
+                        else {
+                            Byte ctxPlc = getThreadContext(TC_IO_POLICY);
+
+                            if (ctxPlc != null)
+                                plc = ctxPlc;
+                            else
+                                plc = PUBLIC_POOL;
+                        }
+
                         // Send job execution request.
-                        ctx.io().sendToGridTopic(node, TOPIC_JOB, req, internal ? MANAGEMENT_POOL : PUBLIC_POOL);
+                        ctx.io().sendToGridTopic(node, TOPIC_JOB, req, plc);
 
                         if (log.isDebugEnabled())
                             log.debug("Sent job request [req=" + req + ", node=" + node + ']');
@@ -1394,7 +1437,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             IgniteException fakeErr = null;
 
             try {
-                boolean deadNode = isDeadNode(res.getNode().id());
+                boolean deadNode = e instanceof ClusterTopologyCheckedException || isDeadNode(res.getNode().id());
 
                 // Avoid stack trace if node has left grid.
                 if (deadNode) {

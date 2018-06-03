@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.local;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractMetricsSelfTest;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
@@ -37,7 +36,6 @@ public class GridCacheAtomicLocalMetricsSelfTest extends GridCacheAbstractMetric
 
         cfg.setCacheMode(LOCAL);
         cfg.setAtomicityMode(ATOMIC);
-        cfg.setAtomicWriteOrderMode(PRIMARY);
 
         return cfg;
     }

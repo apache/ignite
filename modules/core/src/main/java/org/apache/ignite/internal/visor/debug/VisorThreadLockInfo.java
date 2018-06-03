@@ -17,54 +17,73 @@
 
 package org.apache.ignite.internal.visor.debug;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.lang.management.LockInfo;
-import org.apache.ignite.internal.LessNamingBean;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Data transfer object for {@link LockInfo}.
  */
-public class VisorThreadLockInfo implements Serializable, LessNamingBean {
+public class VisorThreadLockInfo extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
      * Fully qualified name of the class of the lock object.
      */
-    protected final String clsName;
+    protected String clsName;
 
     /**
      * Identity hash code of the lock object.
      */
-    protected final Integer identityHashCode;
+    protected Integer identityHashCode;
 
-    /** Create thread lock info with given parameters. */
-    public VisorThreadLockInfo(String clsName, Integer identityHashCode) {
-        assert clsName != null;
-
-        this.clsName = clsName;
-        this.identityHashCode = identityHashCode;
+    /**
+     * Default constructor.
+     */
+    public VisorThreadLockInfo() {
+        // No-op.
     }
 
-    /** Create data transfer object for given lock info. */
-    public static VisorThreadLockInfo from(LockInfo li) {
+    /**
+     * Create data transfer object for given lock info.
+     *
+     * @param li Lock info.
+     */
+    public VisorThreadLockInfo(LockInfo li) {
         assert li != null;
 
-        return new VisorThreadLockInfo(li.getClassName(), li.getIdentityHashCode());
+        clsName = li.getClassName();
+        identityHashCode = li.getIdentityHashCode();
     }
 
     /**
      * @return Fully qualified name of the class of the lock object.
      */
-    public String className() {
+    public String getClassName() {
         return clsName;
     }
 
     /**
      * @return Identity hash code of the lock object.
      */
-    public Integer identityHashCode() {
+    public Integer getIdentityHashCode() {
         return identityHashCode;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeString(out, clsName);
+        out.writeObject(identityHashCode);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        clsName = U.readString(in);
+        identityHashCode = (Integer)in.readObject();
     }
 
     /** {@inheritDoc} */

@@ -29,8 +29,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  * <p>
  * Node metrics for any node can be accessed via {@link ClusterNode#metrics()}
  * method. Keep in mind that there will be a certain network delay (usually
- * equal to heartbeat delay) for the accuracy of node metrics. However, when accessing
- * metrics on local node {@link IgniteCluster#localNode() Grid.localNode().getMetrics()}
+ * equal to metrics update delay) for the accuracy of node metrics. However, when accessing
+ * metrics on local node {@link IgniteCluster#localNode() IgniteCluster.localNode().getMetrics()}
  * the metrics are always accurate and up to date.
  * <p>
  * Local node metrics are registered as {@code MBean} and can be accessed from
@@ -223,6 +223,16 @@ public interface ClusterMetrics {
      * @return Total number of jobs handled by the node since node startup.
      */
     public int getTotalExecutedJobs();
+
+    /**
+     * Gets total time all finished jobs takes to execute on the node since node startup.
+     * <p>
+     * <b>Note:</b> Unlike most of other aggregation metrics this metric is not calculated over history
+     * but over the entire node life.
+     *
+     * @return Total jobs execution time.
+     */
+    public long getTotalJobsExecutionTime();
 
     /**
      * Gets maximum time a job ever spent waiting in a queue to be executed.

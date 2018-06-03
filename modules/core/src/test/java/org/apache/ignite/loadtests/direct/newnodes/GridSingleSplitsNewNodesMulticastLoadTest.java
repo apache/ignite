@@ -33,13 +33,6 @@ public class GridSingleSplitsNewNodesMulticastLoadTest extends GridSingleSplitsN
 
         assert discoSpi instanceof TcpDiscoverySpi : "Wrong default SPI implementation.";
 
-        ((TcpDiscoverySpi)discoSpi).setHeartbeatFrequency(getHeartbeatFrequency());
-
         return discoSpi;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int getHeartbeatFrequency() {
-        return 3000;
     }
 }

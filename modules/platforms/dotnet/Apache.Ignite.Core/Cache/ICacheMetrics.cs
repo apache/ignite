@@ -153,14 +153,6 @@ namespace Apache.Ignite.Core.Cache
         string CacheName { get; }
 
         /// <summary>
-        /// Gets number of entries that was swapped to disk.
-        /// </summary>
-        /// <returns>
-        /// Number of entries that was swapped to disk.
-        /// </returns>
-        long OverflowSize { get; }
-
-        /// <summary>
         /// The total number of get requests to the off-heap memory.
         /// </summary>
         /// <returns>
@@ -257,84 +249,12 @@ namespace Apache.Ignite.Core.Cache
         long OffHeapAllocatedSize { get; }
 
         /// <summary>
-        /// Gets off-heap memory maximum size.
+        /// Gets number of non-null values in the cache.
         /// </summary>
         /// <returns>
-        /// Off-heap memory maximum size.
+        /// Number of non-null values in the cache.
         /// </returns>
-        long OffHeapMaxSize { get; }
-
-        /// <summary>
-        /// The total number of get requests to the swap.
-        /// </summary>
-        /// <returns>
-        /// The number of gets from the swap.
-        /// </returns>
-        long SwapGets { get; }
-
-        /// <summary>
-        /// The total number of put requests to the swap.
-        /// </summary>
-        /// <returns>
-        /// The number of puts to the swap.
-        /// </returns>
-        long SwapPuts { get; }
-
-        /// <summary>
-        /// The total number of removals from the swap.
-        /// </summary>
-        /// <returns>
-        /// The number of removals from the swap.
-        /// </returns>
-        long SwapRemovals { get; }
-
-        /// <summary>
-        /// The number of get requests that were satisfied by the swap.
-        /// </summary>
-        /// <returns>
-        /// The swap hits number.
-        /// </returns>
-        long SwapHits { get; }
-
-        /// <summary>
-        /// A number of get requests to that were not satisfied by the swap.
-        /// </summary>
-        /// <returns>
-        /// The swap misses number.
-        /// </returns>
-        long SwapMisses { get; }
-
-        /// <summary>
-        /// Gets number of entries stored in swap.
-        /// </summary>
-        /// <returns>
-        /// Number of entries stored in swap.
-        /// </returns>
-        long SwapEntriesCount { get; }
-
-        /// <summary>
-        /// Gets size of swap, in bytes.
-        /// </summary>
-        /// <returns>
-        /// Size of swap, in bytes.
-        /// </returns>
-        long SwapSize { get; }
-
-        /// <summary>
-        /// Gets the percentage of hits on swap.
-        /// </summary>
-        /// <returns>
-        /// The percentage of hits on swap.
-        /// </returns>
-        float SwapHitPercentage { get; }
-
-        /// <summary>
-        /// Gets the percentage of misses on swap.
-        /// </summary>
-        /// <returns>
-        /// The percentage of misses on swap.
-        /// </returns>
-        float SwapMissPercentage { get; }
+        int Size { get; }
 
         /// <summary>
         /// Gets number of non-null values in the cache.
@@ -342,7 +262,7 @@ namespace Apache.Ignite.Core.Cache
         /// <returns>
         /// Number of non-null values in the cache.
         /// </returns>
-        int Size { get; }
+        long CacheSize { get; }
 
         /// <summary>
         /// Gets number of keys in the cache, possibly with null values.
@@ -642,5 +562,97 @@ namespace Apache.Ignite.Core.Cache
         /// True when a cache is in "write-through" mode.
         /// </returns>
         bool IsWriteThrough { get; }
+
+        /// <summary>
+        /// Checks whether cache topology is valid for read operations.
+        /// </summary>
+        /// <returns>
+        /// True when cache topology is valid for reading.
+        /// </returns>
+        bool IsValidForReading { get; }
+
+        /// <summary>
+        /// Checks whether cache topology is valid for write operations.
+        /// </summary>
+        /// <returns>
+        /// True when cache topology is valid for writing.
+        /// </returns>
+        bool IsValidForWriting { get; }
+
+        /// <summary>
+        /// Gets total number of partitions on current node.
+        /// </summary>
+        /// <returns>
+        /// Total number of partitions on current node.
+        /// </returns>
+        int TotalPartitionsCount { get; }
+
+        /// <summary>
+        /// Gets number of currently rebalancing partitions on current node.
+        /// </summary>
+        /// <returns>
+        /// Number of currently rebalancing partitions on current node.
+        /// </returns>
+        int RebalancingPartitionsCount { get; }
+
+        /// <summary>
+        /// Gets estimated number of keys to be rebalanced on current node.
+        /// </summary>
+        /// <returns>
+        /// Estimated number of keys to be rebalanced on current node.
+        /// </returns>
+        long KeysToRebalanceLeft { get; }
+
+        /// <summary>
+        /// Gets estimated rebalancing speed in keys.
+        /// </summary>
+        /// <returns>
+        /// Estimated rebalancing speed in keys.
+        /// </returns>
+        long RebalancingKeysRate { get; }
+
+        /// <summary>
+        /// Gets estimated rebalancing speed in bytes.
+        /// </summary>
+        /// <returns>
+        /// Estimated rebalancing speed in bytes.
+        /// </returns>
+        long RebalancingBytesRate { get; }
+
+        /// <summary>
+        /// Gets the number of cache entries in heap memory, including entries held by active transactions,
+        /// entries in onheap cache and near entries.
+        /// </summary>
+        /// <returns>
+        /// Number of entries in heap memory.
+        /// </returns>
+        long HeapEntriesCount { get; }
+
+        /// <summary>
+        /// Gets estimated rebalancing finish time.
+        /// entries in onheap cache and near entries.
+        /// </summary>
+        /// <returns>
+        /// Estimated rebalancing finish time.
+        /// </returns>
+        long EstimatedRebalancingFinishTime { get; }
+
+        /// <summary>
+        /// Gets rebalancing start time.
+        /// entries in onheap cache and near entries.
+        /// </summary>
+        /// <returns>
+        /// Rebalancing start time.
+        /// </returns>
+        long RebalancingStartTime { get; }
+
+        /// <summary>
+        /// Gets number of partitions.
+        /// need to be cleared before actual rebalance start.
+        /// </summary>
+        /// <returns>
+        /// Number of clearing partitions for rebalance.
+        /// </returns>
+        long RebalanceClearingPartitionsLeft { get; }
     }
 }

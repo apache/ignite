@@ -45,6 +45,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import static org.apache.ignite.IgniteState.STOPPED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -87,10 +88,9 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
         disco.setIpFinder(ipFinder);
 
+        c.setFailureDetectionTimeout(Integer.MAX_VALUE);
         c.setDiscoverySpi(disco);
 
         c.setDeploymentMode(DeploymentMode.SHARED);
@@ -110,8 +110,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         IGNITEs.clear();
     }
 
@@ -135,7 +133,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @return Cache.
      */
     @Override protected <K, V> IgniteCache<K, V> jcache(int i) {
-        return IGNITEs.get(i).cache(null);
+        return IGNITEs.get(i).cache(DEFAULT_CACHE_NAME);
     }
 
     /**
@@ -177,7 +175,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
         Transaction tx = g.transactions().txStart(concurrency, isolation);
 
         try {
-            g.cache(null).put(KEY, VALUE);
+            g.cache(DEFAULT_CACHE_NAME).put(KEY, VALUE);
 
             int checkIdx = (idx + 1) % G.allGrids().size();
 
@@ -189,7 +187,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
                     return true;
                 }
-            }, EVT_NODE_LEFT);
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             stopGrid(idx);
 
@@ -244,7 +242,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         info("Grid will be stopped: " + idx);
 
-        info("Nodes for key [id=" + grid(idx).affinity(null).mapKeyToPrimaryAndBackups(KEY) +
+        info("Nodes for key [id=" + grid(idx).affinity(DEFAULT_CACHE_NAME).mapKeyToPrimaryAndBackups(KEY) +
             ", key=" + KEY + ']');
 
         IgniteCache<Integer, String> cache = jcache(idx);
@@ -269,7 +267,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
                 return true;
             }
-        }, EVT_NODE_LEFT);
+        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         stopGrid(idx);
 

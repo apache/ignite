@@ -49,6 +49,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.lang.IgniteProductVersion.fromString;
@@ -123,36 +124,6 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetTopologyHash() throws Exception {
-        int hashCnt = 5000;
-
-        Random rand = new Random();
-
-        Collection<Long> hashes = new HashSet<>(hashCnt, 1.0f);
-
-        for (int i = 0; i < hashCnt; i++) {
-            // Max topology of 10 nodes.
-            int size = rand.nextInt(10) + 1;
-
-            Collection<ClusterNode> nodes = new ArrayList<>(size);
-
-            for (int j = 0; j < size; j++)
-                nodes.add(new GridDiscoveryTestNode());
-
-            @SuppressWarnings("deprecation")
-            long hash = ((IgniteKernal) ignite).context().discovery().topologyHash(nodes);
-
-            boolean isHashed = hashes.add(hash);
-
-            assert isHashed : "Duplicate hash [hash=" + hash + ", topSize=" + size + ", iteration=" + i + ']';
-        }
-
-        info("No duplicates found among '" + hashCnt + "' hashes.");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     @SuppressWarnings({"SuspiciousMethodCalls"})
     public void testGetLocalNode() throws Exception {
         ClusterNode node = ignite.cluster().localNode();
@@ -188,10 +159,10 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger cnt = new AtomicInteger();
 
-        /** Joined nodes counter. */
+        // Joined nodes counter.
         final CountDownLatch joinedCnt = new CountDownLatch(NODES_CNT);
 
-        /** Left nodes counter. */
+        // Left nodes counter.
         final CountDownLatch leftCnt = new CountDownLatch(NODES_CNT);
 
         IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
@@ -201,7 +172,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
                     joinedCnt.countDown();
                 }
-                else if (EVT_NODE_LEFT == evt.type()) {
+                else if (EVT_NODE_LEFT == evt.type() || EVT_NODE_FAILED == evt.type()) {
                     int i = cnt.decrementAndGet();
 
                     assert i >= 0;
@@ -215,7 +186,10 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
             }
         };
 
-        ignite.events().localListen(lsnr, EVT_NODE_LEFT, EVT_NODE_JOINED);
+        int[] evts = tcpDiscovery() ? new int[]{EVT_NODE_LEFT, EVT_NODE_JOINED} :
+            new int[]{EVT_NODE_LEFT, EVT_NODE_FAILED, EVT_NODE_JOINED};
+
+        ignite.events().localListen(lsnr, evts);
 
         try {
             for (int i = 0; i < NODES_CNT; i++)
@@ -272,6 +246,8 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < NODES_CNT; i++)
                 stopGrid(i);
 
+            waitForTopology(1);
+
             final long topVer = discoMgr.topologyVersion();
 
             assert topVer == topVer0 + NODES_CNT * 2 : "Unexpected topology version: " + topVer;
@@ -297,7 +273,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
                 // 6          +     +
                 // 7          +       - only local node
 
-                Collection<ClusterNode> cacheNodes = discoMgr.cacheNodes(null, new AffinityTopologyVersion(ver));
+                Collection<ClusterNode> cacheNodes = discoMgr.cacheNodes(DEFAULT_CACHE_NAME, new AffinityTopologyVersion(ver));
 
                 Collection<UUID> act = new ArrayList<>(F.viewReadOnly(cacheNodes, new C1<ClusterNode, UUID>() {
                     @Override public UUID apply(ClusterNode n) {

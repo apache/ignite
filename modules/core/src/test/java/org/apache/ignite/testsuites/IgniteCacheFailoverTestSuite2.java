@@ -26,11 +26,12 @@ import org.apache.ignite.internal.processors.cache.distributed.CachePutAllFailov
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridCacheColocatedFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCacheCrossCacheTxFailoverTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicFailoverSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicPrimaryWriteOrderFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicReplicatedFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedFailoverSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePartitionedTxSalvageSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheReplicatedFailoverSelfTest;
+import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineDownCachePutAllFailoverTest;
+import org.apache.ignite.internal.processors.cache.persistence.baseline.IgniteChangingBaselineUpCachePutAllFailoverTest;
 
 /**
  *
@@ -47,7 +48,6 @@ public class IgniteCacheFailoverTestSuite2 {
         suite.addTestSuite(CacheGetFromJobTest.class);
 
         suite.addTestSuite(GridCacheAtomicFailoverSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicPrimaryWriteOrderFailoverSelfTest.class);
         suite.addTestSuite(GridCacheAtomicReplicatedFailoverSelfTest.class);
 
         suite.addTestSuite(GridCachePartitionedFailoverSelfTest.class);
@@ -61,6 +61,8 @@ public class IgniteCacheFailoverTestSuite2 {
 
         suite.addTestSuite(CachePutAllFailoverAtomicTest.class);
         suite.addTestSuite(CachePutAllFailoverTxTest.class);
+        suite.addTestSuite(IgniteChangingBaselineDownCachePutAllFailoverTest.class);
+        suite.addTestSuite(IgniteChangingBaselineUpCachePutAllFailoverTest.class);
 
         return suite;
     }

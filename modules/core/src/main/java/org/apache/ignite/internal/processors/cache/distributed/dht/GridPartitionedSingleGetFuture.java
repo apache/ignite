@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteDiagnosticAware;
+import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -37,23 +37,24 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils.BackupPostProcessingClosure;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -63,14 +64,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  *
  */
-public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> implements GridCacheFuture<Object>,
-    CacheGetFuture {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** */
-    public static final IgniteProductVersion SINGLE_GET_MSG_SINCE = IgniteProductVersion.fromString("1.5.0");
-
+public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Object> implements GridCacheFuture<Object>,
+    CacheGetFuture, IgniteDiagnosticAware {
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -123,8 +118,14 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     private final boolean keepCacheObjects;
 
     /** */
+    private boolean recovery;
+
+    /** */
     @GridToStringInclude
     private ClusterNode node;
+
+    /** Post processing closure. */
+    private volatile BackupPostProcessingClosure postProcessingClos;
 
     /**
      * @param cctx Context.
@@ -137,7 +138,6 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
-     * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
      */
@@ -152,9 +152,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
-        boolean canRemap,
         boolean needVer,
-        boolean keepCacheObjects
+        boolean keepCacheObjects,
+        boolean recovery
     ) {
         assert key != null;
 
@@ -165,6 +165,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
 
             canRemap = false;
         }
+        else
+            canRemap = true;
 
         this.cctx = cctx;
         this.key = key;
@@ -175,9 +177,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         this.deserializeBinary = deserializeBinary;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
-        this.canRemap = canRemap;
         this.needVer = needVer;
         this.keepCacheObjects = keepCacheObjects;
+        this.recovery = recovery;
         this.topVer = topVer;
 
         futId = IgniteUuid.randomUuid();
@@ -193,6 +195,16 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         AffinityTopologyVersion topVer = this.topVer.topologyVersion() > 0 ? this.topVer :
             canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
 
+        GridDhtTopologyFuture topFut = cctx.shared().exchange().lastFinishedFuture();
+
+        Throwable err = topFut != null ? topFut.validateCache(cctx, recovery, true, key, null) : null;
+
+        if (err != null) {
+            onDone(err);
+
+            return;
+        }
+
         map(topVer);
     }
 
@@ -200,7 +212,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param topVer Topology version.
      */
     @SuppressWarnings("unchecked")
-    private void map(AffinityTopologyVersion topVer) {
+    private void map(final AffinityTopologyVersion topVer) {
         ClusterNode node = mapKeyToNode(topVer);
 
         if (node == null) {
@@ -213,22 +225,22 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             return;
 
         if (node.isLocal()) {
-            Map<KeyCacheObject, Boolean> map = Collections.singletonMap(key, false);
-
-            final GridDhtFuture<Collection<GridCacheEntryInfo>> fut = cctx.dht().getDhtAsync(node.id(),
+            final GridDhtFuture<GridCacheEntryInfo> fut = cctx.dht().getDhtSingleAsync(node.id(),
                 -1,
-                map,
+                key,
+                false,
                 readThrough,
                 topVer,
                 subjId,
                 taskName == null ? 0 : taskName.hashCode(),
                 expiryPlc,
-                skipVals);
+                skipVals,
+                recovery);
 
             final Collection<Integer> invalidParts = fut.invalidPartitions();
 
             if (!F.isEmpty(invalidParts)) {
-                AffinityTopologyVersion updTopVer = cctx.discovery().topologyVersionEx();
+                AffinityTopologyVersion updTopVer = cctx.shared().exchange().readyAffinityVersion();
 
                 assert updTopVer.compareTo(topVer) > 0 : "Got invalid partitions for local node but topology " +
                     "version did not change [topVer=" + topVer + ", updTopVer=" + updTopVer +
@@ -238,14 +250,12 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 map(updTopVer);
             }
             else {
-                fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
-                    @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut) {
+                fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
+                    @Override public void apply(IgniteInternalFuture<GridCacheEntryInfo> fut) {
                         try {
-                            Collection<GridCacheEntryInfo> infos = fut.get();
+                            GridCacheEntryInfo info = fut.get();
 
-                            assert F.isEmpty(infos) || infos.size() == 1 : infos;
-
-                            setResult(F.first(infos));
+                            setResult(info);
                         }
                         catch (Exception e) {
                             U.error(log, "Failed to get values from dht cache [fut=" + fut + "]", e);
@@ -270,41 +280,32 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 cctx.mvcc().addFuture(this, futId);
             }
 
-            GridCacheMessage req;
+            boolean needVer = this.needVer;
 
-            if (node.version().compareTo(SINGLE_GET_MSG_SINCE) >= 0) {
-                req = new GridNearSingleGetRequest(cctx.cacheId(),
-                    futId.localId(),
-                    key,
-                    readThrough,
-                    topVer,
-                    subjId,
-                    taskName == null ? 0 : taskName.hashCode(),
-                    expiryPlc != null ? expiryPlc.forCreate() : -1L,
-                    expiryPlc != null ? expiryPlc.forAccess() : -1L,
-                    skipVals,
-                    /**add reader*/false,
-                    needVer,
-                    cctx.deploymentEnabled());
-            }
-            else {
-                Map<KeyCacheObject, Boolean> map = Collections.singletonMap(key, false);
+            final BackupPostProcessingClosure postClos = CU.createBackupPostProcessingClosure(topVer, log,
+                cctx, key, expiryPlc, readThrough, skipVals);
 
-                req = new GridNearGetRequest(
-                    cctx.cacheId(),
-                    futId,
-                    futId,
-                    cctx.versions().next(),
-                    map,
-                    readThrough,
-                    topVer,
-                    subjId,
-                    taskName == null ? 0 : taskName.hashCode(),
-                    expiryPlc != null ? expiryPlc.forCreate() : -1L,
-                    expiryPlc != null ? expiryPlc.forAccess() : -1L,
-                    skipVals,
-                    cctx.deploymentEnabled());
+            if (postClos != null) {
+                // Need version to correctly store value.
+                needVer = true;
+
+                postProcessingClos = postClos;
             }
+
+            GridCacheMessage req = new GridNearSingleGetRequest(cctx.cacheId(),
+                futId.localId(),
+                key,
+                readThrough,
+                topVer,
+                subjId,
+                taskName == null ? 0 : taskName.hashCode(),
+                expiryPlc != null ? expiryPlc.forCreate() : -1L,
+                expiryPlc != null ? expiryPlc.forAccess() : -1L,
+                skipVals,
+                /*add reader*/false,
+                needVer,
+                cctx.deploymentEnabled(),
+                recovery);
 
             try {
                 cctx.io().send(node, req, cctx.ioPolicy());
@@ -334,12 +335,19 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         }
 
         boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.allowFastLocalRead(part, affNodes, topVer);
+            cctx.reserveForFastLocalGet(part, topVer);
 
-        if (fastLocGet && localGet(topVer, part))
-            return null;
+        if (fastLocGet) {
+            try {
+                if (localGet(topVer, part))
+                    return null;
+            }
+            finally {
+                cctx.releaseForFastLocalGet(part, topVer);
+            }
+        }
 
-        ClusterNode affNode = affinityNode(affNodes);
+        ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
 
         if (affNode == null) {
             onDone(serverNotFoundError(topVer));
@@ -360,81 +368,108 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
 
         GridDhtCacheAdapter colocated = cctx.dht();
 
+        boolean readNoEntry = cctx.readNoEntry(expiryPlc, false);
+        boolean evt = !skipVals;
+
         while (true) {
-            GridCacheEntryEx entry;
-
             try {
-                entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :
-                    colocated.peekEx(key);
+                CacheObject v = null;
+                GridCacheVersion ver = null;
 
-                // If our DHT cache do has value, then we peek it.
-                if (entry != null) {
-                    boolean isNew = entry.isNewLocked();
+                boolean skipEntry = readNoEntry;
 
-                    CacheObject v = null;
-                    GridCacheVersion ver = null;
+                if (readNoEntry) {
+                    CacheDataRow row = cctx.offheap().read(cctx, key);
 
-                    if (needVer) {
-                        EntryGetResult res = entry.innerGetVersioned(
-                            null,
-                            null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
-                            /**update-metrics*/false,
-                            /*event*/!skipVals,
-                            subjId,
-                            null,
-                            taskName,
-                            expiryPlc,
-                            true,
-                            null);
+                    if (row != null) {
+                        long expireTime = row.expireTime();
 
-                        if (res != null) {
-                            v = res.value();
-                            ver = res.version();
+                        if (expireTime == 0 || expireTime > U.currentTimeMillis()) {
+                            v = row.value();
+
+                            if (needVer)
+                                ver = row.version();
+
+                            if (evt) {
+                                cctx.events().readEvent(key,
+                                    null,
+                                    row.value(),
+                                    subjId,
+                                    taskName,
+                                    !deserializeBinary);
+                            }
                         }
-                    }
-                    else {
-                        v = entry.innerGet(
-                            null,
-                            null,
-                            /*swap*/true,
-                            /*read-through*/false,
-                            /**update-metrics*/false,
-                            /*event*/!skipVals,
-                            /*temporary*/false,
-                            subjId,
-                            null,
-                            taskName,
-                            expiryPlc,
-                            true);
-                    }
-
-                    colocated.context().evicts().touch(entry, topVer);
-
-                    // Entry was not in memory or in swap, so we remove it from cache.
-                    if (v == null) {
-                        if (isNew && entry.markObsoleteIfEmpty(ver))
-                            colocated.removeEntry(entry);
-                    }
-                    else {
-                        if (!skipVals && cctx.config().isStatisticsEnabled())
-                            cctx.cache().metrics0().onRead(true);
-
-                        if (!skipVals)
-                            setResult(v, ver);
                         else
-                            setSkipValueResult(true, ver);
-
-                        return true;
+                            skipEntry = false;
                     }
                 }
 
-                boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().topologyVersion());
+                if (!skipEntry) {
+                    GridCacheEntryEx entry = colocated.entryEx(key);
+
+                    // If our DHT cache do has value, then we peek it.
+                    if (entry != null) {
+                        boolean isNew = entry.isNewLocked();
+
+                        if (needVer) {
+                            EntryGetResult res = entry.innerGetVersioned(
+                                null,
+                                null,
+                                /*update-metrics*/false,
+                                /*event*/evt,
+                                subjId,
+                                null,
+                                taskName,
+                                expiryPlc,
+                                true,
+                                null);
+
+                            if (res != null) {
+                                v = res.value();
+                                ver = res.version();
+                            }
+                        }
+                        else {
+                            v = entry.innerGet(
+                                null,
+                                null,
+                                /*read-through*/false,
+                                /*update-metrics*/false,
+                                /*event*/evt,
+                                subjId,
+                                null,
+                                taskName,
+                                expiryPlc,
+                                true);
+                        }
+
+                        colocated.context().evicts().touch(entry, topVer);
+
+                        // Entry was not in memory or in swap, so we remove it from cache.
+                        if (v == null) {
+                            if (isNew && entry.markObsoleteIfEmpty(ver))
+                                colocated.removeEntry(entry);
+                        }
+                    }
+                }
+
+                if (v != null) {
+                    if (!skipVals && cctx.statisticsEnabled())
+                        cctx.cache().metrics0().onRead(true);
+
+                    if (!skipVals)
+                        setResult(v, ver);
+                    else
+                        setSkipValueResult(true, ver);
+
+                    return true;
+                }
+
+                boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().lastTopologyChangeVersion());
 
                 // Entry not found, complete future with null result if topology did not change and there is no store.
                 if (!cctx.readThroughConfigured() && (topStable || partitionOwned(part))) {
-                    if (!skipVals && cctx.config().isStatisticsEnabled())
+                    if (!skipVals && cctx.statisticsEnabled())
                         colocated.metrics0().onRead(false);
 
                     if (skipVals)
@@ -479,18 +514,24 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 if (skipVals)
                     setSkipValueResult(true, verVal.version());
                 else
-                    setResult(verVal.value() , verVal.version());
+                    setResult(verVal.value(), verVal.version());
             }
             else {
                 if (skipVals)
                     setSkipValueResult(false, null);
                 else
-                    setResult(null , null);
+                    setResult(null, null);
             }
         }
         else {
             if (skipVals)
                 setSkipValueResult(res.containsValue(), null);
+            else if (readThrough && res0 instanceof CacheVersionedValue) {
+                // Could be versioned value for store in backup.
+                CacheVersionedValue verVal = (CacheVersionedValue)res0;
+
+                setResult(verVal.value(), verVal.version());
+            }
             else
                 setResult((CacheObject)res0, null);
         }
@@ -625,10 +666,15 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param ver Version.
      */
     private void setResult(@Nullable CacheObject val, @Nullable GridCacheVersion ver) {
+        cctx.shared().database().checkpointReadLock();
+
         try {
             assert !skipVals;
 
             if (val != null) {
+                if (postProcessingClos != null)
+                    postProcessingClos.apply(val, ver);
+
                 if (!keepCacheObjects) {
                     Object res = cctx.unwrapBinaryIfNeeded(val, !deserializeBinary);
 
@@ -642,6 +688,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         }
         catch (Exception e) {
             onDone(e);
+        }
+        finally {
+            cctx.shared().database().checkpointReadUnlock();
         }
     }
 
@@ -662,25 +711,6 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']');
     }
 
-    /**
-     * Affinity node to send get request to.
-     *
-     * @param affNodes All affinity nodes.
-     * @return Affinity node to get key from.
-     */
-    @Nullable private ClusterNode affinityNode(List<ClusterNode> affNodes) {
-        if (!canRemap) {
-            for (ClusterNode node : affNodes) {
-                if (cctx.discovery().alive(node))
-                    return node;
-            }
-
-            return null;
-        }
-        else
-            return affNodes.get(0);
-    }
-
     /** {@inheritDoc} */
     @Override public IgniteUuid futureId() {
         return futId;
@@ -692,16 +722,14 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             return false;
 
         if (canRemap) {
-            final AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(
+            AffinityTopologyVersion updTopVer = new AffinityTopologyVersion(
                 Math.max(topVer.topologyVersion() + 1, cctx.discovery().topologyVersion()));
 
             cctx.affinity().affinityReadyFuture(updTopVer).listen(
                 new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                         try {
-                            fut.get();
-
-                            remap(updTopVer);
+                            remap(fut.get());
                         }
                         catch (IgniteCheckedException e) {
                             onDone(e);
@@ -749,6 +777,26 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void addDiagnosticRequest(IgniteDiagnosticPrepareContext ctx) {
+        if (!isDone()) {
+            UUID nodeId;
+            AffinityTopologyVersion topVer;
+
+            synchronized (this) {
+                nodeId = node != null ? node.id() : null;
+                topVer = this.topVer;
+            }
+
+            if (nodeId != null)
+                ctx.basicInfo(nodeId, "GridPartitionedSingleGetFuture waiting for " +
+                    "response [node=" + nodeId +
+                    ", key=" + key +
+                    ", futId=" + futId +
+                    ", topVer=" + topVer + ']');
+        }
     }
 
     /** {@inheritDoc} */

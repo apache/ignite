@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -159,6 +160,22 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
     public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws IgniteException;
 
     /**
+     * Asynchronously adds a message listener for a given topic to all nodes in the cluster group (possibly including
+     * this node if it belongs to the cluster group as well). This means that any node within this cluster
+     * group can send a message for a given topic and all nodes within the cluster group will receive
+     * listener notifications.
+     *
+     * @param topic Topic to subscribe to, {@code null} means default topic.
+     * @param p Predicate that is called on each node for each received message. If predicate returns {@code false},
+     *      then it will be unsubscribed from any further notifications.
+     * @return a Future representing pending completion of the operation. The completed future contains
+     *      {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
+     * @throws IgniteException If failed to add listener.
+     */
+    public IgniteFuture<UUID> remoteListenAsync(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p)
+        throws IgniteException;
+
+    /**
      * Unregisters all listeners identified with provided operation ID on all nodes in the cluster group.
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
@@ -169,6 +186,16 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
     @IgniteAsyncSupported
     public void stopRemoteListen(UUID opId) throws IgniteException;
 
+    /**
+     * Asynchronously unregisters all listeners identified with provided operation ID on all nodes in the cluster group.
+     *
+     * @param opId Listen ID that was returned from {@link #remoteListen(Object, IgniteBiPredicate)} method.
+     * @return a Future representing pending completion of the operation.
+     * @throws IgniteException If failed to unregister listeners.
+     */
+    public IgniteFuture<Void> stopRemoteListenAsync(UUID opId) throws IgniteException;
+
     /** {@inheritDoc} */
+    @Deprecated
     @Override IgniteMessaging withAsync();
 }

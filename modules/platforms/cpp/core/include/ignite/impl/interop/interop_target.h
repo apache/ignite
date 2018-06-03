@@ -36,16 +36,19 @@ namespace ignite
                 /**
                  * Operation result.
                  */
-                enum OperationResult
+                struct OperationResult
                 {
-                    /** Null. */
-                    ResultNull = 0,
+                    enum Type
+                    {
+                        /** Null. */
+                        AI_NULL = 0,
 
-                    /** Success. */
-                    ResultSuccess = 1,
+                        /** Success. */
+                        AI_SUCCESS = 1,
 
-                    /** Error. */
-                    ResultError = -1
+                        /** Error. */
+                        AI_ERROR = -1
+                    };
                 };
 
                 /**
@@ -57,9 +60,19 @@ namespace ignite
                 InteropTarget(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
 
                 /**
+                * Constructor used to create new instance.
+                *
+                * @param env Environment.
+                * @param javaRef Reference to java object.
+                * @param javaRef Whether javaRef release in destructor should be skipped.
+                */
+                InteropTarget(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef, 
+                    bool skipJavaRefRelease);
+
+                /**
                  * Destructor.
                  */
-                ~InteropTarget();
+                virtual ~InteropTarget();
 
                 /**
                  * Internal out operation.
@@ -129,7 +142,17 @@ namespace ignite
                  * @param err Error.
                  * @return Operation result.
                  */
-                OperationResult InStreamOutLong(int32_t opType, InteropMemory& outInMem, IgniteError& err);
+                OperationResult::Type InStreamOutLong(int32_t opType, InteropMemory& outInMem, IgniteError& err);
+
+                /**
+                 * In stream out object operation.
+                 *
+                 * @param opType Type of operation.
+                 * @param outInMem Input and output memory.
+                 * @param err Error.
+                 * @return Java object references.
+                 */
+                jobject InStreamOutObject(int32_t opType, InteropMemory& outInMem, IgniteError& err);
 
                 /**
                 * Internal out-in operation.
@@ -177,6 +200,9 @@ namespace ignite
 
                 /** Handle to Java object. */
                 jobject javaRef;
+
+                /** javaRef release flag. */
+                bool skipJavaRefRelease;
 
                 IGNITE_NO_COPY_ASSIGNMENT(InteropTarget)
 

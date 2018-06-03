@@ -17,17 +17,21 @@
 
 package org.apache.ignite.internal.visor.service;
 
-import java.io.Serializable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.apache.ignite.internal.visor.util.VisorTaskUtils;
 import org.apache.ignite.services.ServiceDescriptor;
 
 /**
  * Data transfer object for {@link ServiceDescriptor} object.
  */
-public class VisorServiceDescriptor implements Serializable {
+public class VisorServiceDescriptor extends VisorDataTransferObject {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -65,10 +69,18 @@ public class VisorServiceDescriptor implements Serializable {
     /**
      * Create task result with given parameters
      *
+     * @param srvc Service descriptor to transfer.
      */
     public VisorServiceDescriptor(ServiceDescriptor srvc) {
         name = srvc.name();
-        srvcCls = VisorTaskUtils.compactClass(srvc.serviceClass());
+
+        try {
+            srvcCls = VisorTaskUtils.compactClass(srvc.serviceClass());
+        }
+        catch (Throwable e) {
+            srvcCls = e.getClass().getName() + ": " + e.getMessage();
+        }
+
         totalCnt = srvc.totalCount();
         maxPerNodeCnt = srvc.maxPerNodeCount();
         cacheName = srvc.cacheName();
@@ -123,6 +135,28 @@ public class VisorServiceDescriptor implements Serializable {
      */
     public Map<UUID, Integer> getTopologySnapshot() {
         return topSnapshot;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
+        U.writeString(out, name);
+        U.writeString(out, srvcCls);
+        out.writeInt(totalCnt);
+        out.writeInt(maxPerNodeCnt);
+        U.writeString(out, cacheName);
+        U.writeUuid(out, originNodeId);
+        U.writeMap(out, topSnapshot);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+        name = U.readString(in);
+        srvcCls = U.readString(in);
+        totalCnt = in.readInt();
+        maxPerNodeCnt = in.readInt();
+        cacheName = U.readString(in);
+        originNodeId = U.readUuid(in);
+        topSnapshot = U.readMap(in);
     }
 
     /** {@inheritDoc} */

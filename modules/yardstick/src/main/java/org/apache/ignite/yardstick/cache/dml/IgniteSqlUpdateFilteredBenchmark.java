@@ -20,6 +20,7 @@ package org.apache.ignite.yardstick.cache.dml;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.yardstick.cache.IgniteCacheAbstractBenchmark;
@@ -39,7 +40,7 @@ public class IgniteSqlUpdateFilteredBenchmark extends IgniteCacheAbstractBenchma
     private AtomicInteger updCnt = new AtomicInteger();
 
     /** */
-    private AtomicInteger updItemsCnt = new AtomicInteger();
+    private AtomicLong updItemsCnt = new AtomicLong();
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
@@ -55,7 +56,7 @@ public class IgniteSqlUpdateFilteredBenchmark extends IgniteCacheAbstractBenchma
 
             double maxSalary = salary + 1000;
 
-            int res = (Integer) cache().query(new SqlFieldsQuery("update Person set salary = (salary - ?1 + ?2) / 2 " +
+            Long res = (Long)cache().query(new SqlFieldsQuery("update Person set salary = (salary - ?1 + ?2) / 2 " +
                 "where salary >= ?1 and salary <= ?2").setArgs(salary, maxSalary)).getAll().get(0).get(0);
 
             updItemsCnt.getAndAdd(res);

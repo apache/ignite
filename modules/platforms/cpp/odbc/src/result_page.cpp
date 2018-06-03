@@ -40,7 +40,7 @@ namespace ignite
             last = reader.ReadBool();
             size = reader.ReadInt32();
 
-            ignite::impl::interop::InteropInputStream& stream = *reader.GetStream();
+            impl::interop::InteropInputStream& stream = *reader.GetStream();
 
             int32_t dataToRead = stream.Remaining();
 

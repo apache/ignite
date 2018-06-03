@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Linq
 {
+    using System;
     using System.ComponentModel;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
@@ -27,7 +28,7 @@ namespace Apache.Ignite.Linq
     public class QueryOptions
     {
         /// <summary> Default page size. </summary>
-        public const int DefaultPageSize = SqlFieldsQuery.DfltPageSize;
+        public const int DefaultPageSize = SqlFieldsQuery.DefaultPageSize;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryOptions"/> class.
@@ -87,5 +88,40 @@ namespace Apache.Ignite.Linq
         ///   <c>true</c> if join order should be enforced; otherwise, <c>false</c>.
         /// </value>
         public bool EnforceJoinOrder { get; set; }
+
+        /// <summary>
+        /// Gets or sets the query timeout. Query will be automatically cancelled if the execution timeout is exceeded.
+        /// Default is <see cref="TimeSpan.Zero"/>, which means no timeout.
+        /// </summary>
+        public TimeSpan Timeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this query contains only replicated tables.
+        /// This is a hint for potentially more effective execution.
+        /// </summary>
+        public bool ReplicatedOnly { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this query operates on colocated data.
+        /// <para />
+        /// Whenever Ignite executes a distributed query, it sends sub-queries to individual cluster members.
+        /// If you know in advance that the elements of your query selection are colocated together on the same
+        /// node and you group by colocated key (primary or affinity key), then Ignite can make significant
+        /// performance and network optimizations by grouping data on remote nodes.
+        /// </summary>
+        public bool Colocated { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this query is lazy.
+        /// <para />
+        /// By default Ignite attempts to fetch the whole query result set to memory and send it to the client.
+        /// For small and medium result sets this provides optimal performance and minimize duration of internal
+        /// database locks, thus increasing concurrency.
+        /// <para />
+        /// If result set is too big to fit in available memory this could lead to excessive GC pauses and even
+        /// OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
+        /// consumption at the cost of moderate performance hit.
+        /// </summary>
+        public bool Lazy { get; set; }
     }
 }

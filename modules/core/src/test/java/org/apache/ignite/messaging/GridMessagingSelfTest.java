@@ -24,7 +24,6 @@ import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,20 +36,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.DiscoverySpiTestListener;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessage;
+import org.apache.ignite.internal.processors.continuous.StartRoutineDiscoveryMessageV2;
 import org.apache.ignite.internal.processors.continuous.StopRoutineDiscoveryMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.resources.IgniteInstanceResource;;
-import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -204,11 +203,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        TestTcpDiscoverySpi discoSpi = new TestTcpDiscoverySpi();
-
-        discoSpi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(discoSpi);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         return cfg;
     }
@@ -1031,10 +1026,14 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
     /**
      * @throws Exception If failed.
      */
-    public void testAsync() throws Exception {
+    public void testAsyncOld() throws Exception {
         final AtomicInteger msgCnt = new AtomicInteger();
 
-        TestTcpDiscoverySpi discoSpi = (TestTcpDiscoverySpi)ignite2.configuration().getDiscoverySpi();
+        IgniteDiscoverySpi discoSpi = (IgniteDiscoverySpi)ignite2.configuration().getDiscoverySpi();
+
+        DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
+
+        discoSpi.setInternalListener(lsnr);
 
         assertFalse(ignite2.message().isAsync());
 
@@ -1052,7 +1051,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
             }
         }, IllegalStateException.class, null);
 
-        discoSpi.blockCustomEvent();
+        lsnr.blockCustomEvent(StartRoutineDiscoveryMessage.class, StartRoutineDiscoveryMessageV2.class);
 
         final String topic = "topic";
 
@@ -1077,7 +1076,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         Assert.assertFalse(starFut.isDone());
 
-        discoSpi.stopBlock();
+        lsnr.stopBlockCustomEvents();
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -1093,7 +1092,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         Assert.assertTrue(starFut.isDone());
 
-        discoSpi.blockCustomEvent();
+        lsnr.blockCustomEvent(StopRoutineDiscoveryMessage.class);
 
         message(ignite1.cluster().forRemotes()).send(topic, "msg1");
 
@@ -1123,7 +1122,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         Assert.assertFalse(stopFut.isDone());
 
-        discoSpi.stopBlock();
+        lsnr.stopBlockCustomEvents();
 
         stopFut.get();
 
@@ -1137,77 +1136,77 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
-    static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
-        /** */
-        private boolean blockCustomEvt;
+    public void testAsync() throws Exception {
+        final AtomicInteger msgCnt = new AtomicInteger();
 
-        /** */
-        private final Object mux = new Object();
+        IgniteDiscoverySpi discoSpi = (IgniteDiscoverySpi)ignite2.configuration().getDiscoverySpi();
 
-        /** */
-        private List<DiscoverySpiCustomMessage> blockedMsgs = new ArrayList<>();
+        DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
 
-        /** {@inheritDoc} */
-        @Override public void sendCustomEvent(DiscoverySpiCustomMessage msg) throws IgniteException {
-            synchronized (mux) {
-                if (blockCustomEvt) {
-                    DiscoveryCustomMessage msg0 = GridTestUtils.getFieldValue(msg, "delegate");
-                    if (msg0 instanceof StopRoutineDiscoveryMessage || msg0 instanceof StartRoutineDiscoveryMessage) {
-                        log.info("Block custom message: " + msg0);
-                        blockedMsgs.add(msg);
+        discoSpi.setInternalListener(lsnr);
 
-                        mux.notifyAll();
-                    }
-                    return;
-                }
+        lsnr.blockCustomEvent(StartRoutineDiscoveryMessage.class, StartRoutineDiscoveryMessageV2.class);
+
+        final String topic = "topic";
+
+        IgniteFuture<UUID> starFut = ignite2.message().remoteListenAsync(topic, new P2<UUID, Object>() {
+            @Override public boolean apply(UUID nodeId, Object msg) {
+                System.out.println(Thread.currentThread().getName() +
+                    " Listener received new message [msg=" + msg + ", senderNodeId=" + nodeId + ']');
+
+                msgCnt.incrementAndGet();
+
+                return true;
             }
+        });
 
-            super.sendCustomEvent(msg);
-        }
+        Assert.assertNotNull(starFut);
 
-        /**
-         *
-         */
-        public void blockCustomEvent() {
-            synchronized (mux) {
-                assert blockedMsgs.isEmpty() : blockedMsgs;
+        U.sleep(500);
 
-                blockCustomEvt = true;
+        Assert.assertFalse(starFut.isDone());
+
+        lsnr.stopBlockCustomEvents();
+
+        UUID id = starFut.get();
+
+        Assert.assertNotNull(id);
+
+        Assert.assertTrue(starFut.isDone());
+
+        lsnr.blockCustomEvent(StopRoutineDiscoveryMessage.class);
+
+        message(ignite1.cluster().forRemotes()).send(topic, "msg1");
+
+        GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return msgCnt.get() > 0;
             }
-        }
+        }, 5000);
 
-        /**
-         * @throws InterruptedException If interrupted.
-         */
-        public void waitCustomEvent() throws InterruptedException {
-            synchronized (mux) {
-                while (blockedMsgs.isEmpty())
-                    mux.wait();
-            }
-        }
+        assertEquals(1, msgCnt.get());
 
-        /**
-         *
-         */
-        public void stopBlock() {
-            List<DiscoverySpiCustomMessage> msgs;
+        IgniteFuture<?> stopFut = ignite2.message().stopRemoteListenAsync(id);
 
-            synchronized (this) {
-                msgs = new ArrayList<>(blockedMsgs);
+        Assert.assertNotNull(stopFut);
 
-                blockCustomEvt = false;
+        U.sleep(500);
 
-                blockedMsgs.clear();
-            }
+        Assert.assertFalse(stopFut.isDone());
 
-            for (DiscoverySpiCustomMessage msg : msgs) {
-                log.info("Resend blocked message: " + msg);
+        lsnr.stopBlockCustomEvents();
 
-                super.sendCustomEvent(msg);
-            }
-        }
+        stopFut.get();
+
+        Assert.assertTrue(stopFut.isDone());
+
+        message(ignite1.cluster().forRemotes()).send(topic, "msg2");
+
+        U.sleep(1000);
+
+        assertEquals(1, msgCnt.get());
     }
 
     /**
@@ -1231,6 +1230,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
     /**
      * @param expOldestIgnite Expected oldest ignite.
+     * @throws InterruptedException If failed.
      */
     private void remoteListenForOldest(Ignite expOldestIgnite) throws InterruptedException {
         ClusterGroup grp = ignite1.cluster().forOldest();

@@ -18,7 +18,6 @@
 namespace Apache.Ignite.ExamplesDll.Datagrid
 {
     using System;
-    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
@@ -28,22 +27,22 @@ namespace Apache.Ignite.ExamplesDll.Datagrid
     /// <summary>
     /// Example cache store implementation.
     /// </summary>
-    public class EmployeeStore : CacheStoreAdapter
+    public class EmployeeStore : CacheStoreAdapter<int, Employee>
     {
         /// <summary>
         /// Dictionary representing the store.
         /// </summary>
-        private readonly ConcurrentDictionary<object, object> _db = new ConcurrentDictionary<object, object>(
-            new List<KeyValuePair<object, object>>
+        private readonly ConcurrentDictionary<int, Employee> _db = new ConcurrentDictionary<int, Employee>(
+            new List<KeyValuePair<int, Employee>>
             {
-                new KeyValuePair<object, object>(1, new Employee(
+                new KeyValuePair<int, Employee>(1, new Employee(
                     "Allison Mathis",
                     25300,
                     new Address("2702 Freedom Lane, San Francisco, CA", 94109),
                     new List<string> {"Development"}
                     )),
 
-                new KeyValuePair<object, object>(2, new Employee(
+                new KeyValuePair<int, Employee>(2, new Employee(
                     "Breana Robbin",
                     6500,
                     new Address("3960 Sundown Lane, Austin, TX", 78130),
@@ -57,7 +56,7 @@ namespace Apache.Ignite.ExamplesDll.Datagrid
         /// </summary>
         /// <param name="act">Action that loads a cache entry.</param>
         /// <param name="args">Optional arguments.</param>
-        public override void LoadCache(Action<object, object> act, params object[] args)
+        public override void LoadCache(Action<int, Employee> act, params object[] args)
         {
             // Iterate over whole underlying store and call act on each entry to load it into the cache.
             foreach (var entry in _db)
@@ -72,9 +71,9 @@ namespace Apache.Ignite.ExamplesDll.Datagrid
         /// <returns>
         /// A map of key, values to be stored in the cache.
         /// </returns>
-        public override IDictionary LoadAll(ICollection keys)
+        public override IEnumerable<KeyValuePair<int, Employee>> LoadAll(IEnumerable<int> keys)
         {
-            var result = new Dictionary<object, object>();
+            var result = new Dictionary<int, Employee>();
 
             foreach (var key in keys)
                 result[key] = Load(key);
@@ -88,9 +87,9 @@ namespace Apache.Ignite.ExamplesDll.Datagrid
         /// </summary>
         /// <param name="key">Key to load.</param>
         /// <returns>Loaded value</returns>
-        public override object Load(object key)
+        public override Employee Load(int key)
         {
-            object val;
+            Employee val;
 
             _db.TryGetValue(key, out val);
 
@@ -102,7 +101,7 @@ namespace Apache.Ignite.ExamplesDll.Datagrid
         /// </summary>
         /// <param name="key">Key to write.</param>
         /// <param name="val">Value to write.</param>
-        public override void Write(object key, object val)
+        public override void Write(int key, Employee val)
         {
             _db[key] = val;
         }
@@ -111,9 +110,9 @@ namespace Apache.Ignite.ExamplesDll.Datagrid
         /// Delete cache entry form store.
         /// </summary>
         /// <param name="key">Key to delete.</param>
-        public override void Delete(object key)
+        public override void Delete(int key)
         {
-            object val;
+            Employee val;
 
             _db.TryRemove(key, out val);
         }

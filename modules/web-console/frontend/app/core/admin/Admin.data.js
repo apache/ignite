@@ -47,15 +47,19 @@ export default class IgniteAdminData {
     }
 
     toggleAdmin(user) {
-        return this.$http.post('/api/v1/admin/save', {
+        const adminFlag = !user.admin;
+
+        return this.$http.post('/api/v1/admin/toggle', {
             userId: user._id,
-            adminFlag: !user.admin
+            adminFlag
         })
         .then(() => {
-            this.Messages.showInfo(`Admin right was successfully toggled for user: "${user.userName}"`);
+            user.admin = adminFlag;
+
+            this.Messages.showInfo(`Admin rights was successfully ${adminFlag ? 'granted' : 'revoked'} for user: "${user.userName}"`);
         })
         .catch((res) => {
-            this.Messages.showError('Failed to toggle admin right for user: ', res);
+            this.Messages.showError(`Failed to ${adminFlag ? 'grant' : 'revok'} admin rights for user: "${user.userName}"`, res);
         });
     }
 
@@ -63,6 +67,8 @@ export default class IgniteAdminData {
         const { Countries } = this;
 
         user.userName = user.firstName + ' ' + user.lastName;
+        user.company = user.company ? user.company.toLowerCase() : '';
+        user.lastActivity = user.lastActivity || user.lastLogin;
         user.countryCode = Countries.getByName(user.country).code;
 
         return user;

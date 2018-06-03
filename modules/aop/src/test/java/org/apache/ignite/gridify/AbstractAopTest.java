@@ -54,9 +54,9 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
 
         cfg.setDeploymentSpi(new LocalDeploymentSpi());
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
+        cfg.setMetricsUpdateFrequency(500);
         cfg.setDeploymentMode(depMode);
 
         return cfg;

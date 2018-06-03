@@ -28,8 +28,7 @@ export default ['ignitePoweredByApache', ['IgniteBranding', (branding) => {
         restrict: 'E',
         template,
         controller,
-        controllerAs: 'poweredBy',
-        replace: true
+        controllerAs: 'poweredBy'
     };
 }]];
 

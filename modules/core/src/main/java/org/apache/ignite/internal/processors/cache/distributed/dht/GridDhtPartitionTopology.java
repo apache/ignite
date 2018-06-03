@@ -17,17 +17,23 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionFullCountersMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jetbrains.annotations.Nullable;
@@ -37,6 +43,11 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridToStringExclude
 public interface GridDhtPartitionTopology {
+    /**
+     * @return  Total cache partitions.
+     */
+    public int partitions();
+
     /**
      * Locks the topology, usually during mapping on locks or transactions.
      */
@@ -50,25 +61,28 @@ public interface GridDhtPartitionTopology {
     /**
      * Updates topology version.
      *
-     * @param exchId Exchange ID.
      * @param exchFut Exchange future.
+     * @param discoCache Discovery data cache.
      * @param updateSeq Update sequence.
      * @param stopping Stopping flag.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     public void updateTopologyVersion(
-        GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsExchangeFuture exchFut,
+        GridDhtTopologyFuture exchFut,
+        DiscoCache discoCache,
         long updateSeq,
         boolean stopping
     ) throws IgniteInterruptedCheckedException;
 
     /**
-     * Topology version.
-     *
-     * @return Topology version.
+     * @return Result topology version of last finished exchange.
      */
-    public AffinityTopologyVersion topologyVersion();
+    public AffinityTopologyVersion readyTopologyVersion();
+
+    /**
+     * @return Start topology version of last exchange.
+     */
+    public AffinityTopologyVersion lastTopologyChangeVersion();
 
     /**
      * Gets a future that will be completed when partition exchange map for this
@@ -84,20 +98,38 @@ public interface GridDhtPartitionTopology {
     public boolean stopping();
 
     /**
+     * @return Cache group ID.
+     */
+    public int groupId();
+
+    /**
      * Pre-initializes this topology.
      *
      * @param exchFut Exchange future.
      * @param affReady Affinity ready flag.
+     * @param updateMoving
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, boolean affReady)
+    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut,
+        boolean affReady,
+        boolean updateMoving)
         throws IgniteCheckedException;
 
     /**
+     * @param affVer Affinity version.
      * @param exchFut Exchange future.
+     * @return {@code True} if partitions must be refreshed.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
-    public void initPartitions(GridDhtPartitionsExchangeFuture exchFut) throws IgniteInterruptedCheckedException;
+    public boolean initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer, GridDhtPartitionsExchangeFuture exchFut)
+        throws IgniteInterruptedCheckedException;
+
+    /**
+     * Initializes local data structures after partitions are restored from persistence.
+     *
+     * @param topVer Topology version.
+     */
+    public void afterStateRestored(AffinityTopologyVersion topVer);
 
     /**
      * Post-initializes this topology.
@@ -120,18 +152,38 @@ public interface GridDhtPartitionTopology {
         throws GridDhtInvalidPartitionException;
 
     /**
-     * @param parts Partitions to release (should be reserved before).
+     * Unconditionally creates partition during restore of persisted partition state.
+     *
+     * @param p Partition ID.
+     * @return Partition.
+     * @throws IgniteCheckedException If failed.
      */
-    public void releasePartitions(int... parts);
+    public GridDhtLocalPartition forceCreatePartition(int p) throws IgniteCheckedException;
 
     /**
-     * @param key Cache key.
+     * @param topVer Topology version at the time of creation.
+     * @param p Partition ID.
      * @param create If {@code true}, then partition will be created if it's not there.
      * @return Local partition.
      * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
      *      does not belong to this node.
      */
-    @Nullable public GridDhtLocalPartition localPartition(Object key, boolean create)
+    @Nullable public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create,
+        boolean showRenting)
+        throws GridDhtInvalidPartitionException;
+
+    /**
+     * @param parts Partitions to release (should be reserved before).
+     */
+    public void releasePartitions(int... parts);
+
+    /**
+     * @param part Partition number.
+     * @return Local partition.
+     * @throws GridDhtInvalidPartitionException If partition is evicted or absent and
+     *      does not belong to this node.
+     */
+    @Nullable public GridDhtLocalPartition localPartition(int part)
         throws GridDhtInvalidPartitionException;
 
     /**
@@ -141,14 +193,14 @@ public interface GridDhtPartitionTopology {
 
     /**
      *
-     * @return All current local partitions.
+     * @return All current active local partitions.
      */
     public Iterable<GridDhtLocalPartition> currentLocalPartitions();
 
     /**
      * @return Local IDs.
      */
-    public GridDhtPartitionMap2 localPartitionMap();
+    public GridDhtPartitionMap localPartitionMap();
 
     /**
      * @param nodeId Node ID.
@@ -173,7 +225,9 @@ public interface GridDhtPartitionTopology {
      * @param p Partition ID.
      * @param affAssignment Assignments.
      * @param affNodes Node assigned for given partition by affinity.
-     * @return Collection of all nodes responsible for this partition with primary node being first.
+     * @return Collection of all nodes responsible for this partition with primary node being first. The first N
+     *      elements of this collection (with N being 1 + backups) are actual DHT affinity nodes, other nodes
+     *      are current additional owners of the partition after topology change.
      */
     @Nullable public List<ClusterNode> nodes(int p, AffinityAssignment affAssignment, List<ClusterNode> affNodes);
 
@@ -182,6 +236,12 @@ public interface GridDhtPartitionTopology {
      * @return Collection of all nodes who {@code own} this partition.
      */
     public List<ClusterNode> owners(int p);
+
+    /**
+     * @return List indexed by partition number, each list element is collection of all nodes who
+     *      owns corresponding partition.
+     */
+    public List<List<ClusterNode>> allOwners();
 
     /**
      * @param p Partition ID.
@@ -213,37 +273,82 @@ public interface GridDhtPartitionTopology {
     public void onRemoved(GridDhtCacheEntry e);
 
     /**
-     * @param exchId Exchange ID.
+     * @param exchangeResVer Result topology version for exchange. Value should be greater than previously passed. Null value
+     *      means full map received is not related to exchange
      * @param partMap Update partition map.
      * @param cntrMap Partition update counters.
-     * @return {@code True} if topology state changed.
+     * @param partsToReload Set of partitions that need to be reloaded.
+     * @param msgTopVer Topology version from incoming message. This value is not null only for case message is not
+     *      related to exchange. Value should be not less than previous 'Topology version from exchange'.
+     * @return {@code True} if local state was changed.
      */
-    public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
+    public boolean update(
+        @Nullable AffinityTopologyVersion exchangeResVer,
         GridDhtPartitionFullMap partMap,
-        @Nullable Map<Integer, Long> cntrMap);
+        @Nullable CachePartitionFullCountersMap cntrMap,
+        Set<Integer> partsToReload,
+        @Nullable AffinityTopologyVersion msgTopVer);
 
     /**
      * @param exchId Exchange ID.
      * @param parts Partitions.
-     * @param cntrMap Partition update counters.
-     * @param checkEvictions Check evictions flag.
-     * @return {@code True} if topology state changed.
+     * @param force {@code True} to skip stale update check.
+     * @return {@code True} if local state was changed.
      */
-    @Nullable public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionMap2 parts,
-        @Nullable Map<Integer, Long> cntrMap,
-        boolean checkEvictions);
+    public boolean update(@Nullable GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionMap parts,
+        boolean force);
 
     /**
+     * Collects update counters collected during exchange. Called on coordinator.
      *
+     * @param cntrMap Counters map.
      */
-    public void checkEvictions();
+    public void collectUpdateCounters(CachePartitionPartialCountersMap cntrMap);
 
     /**
-     * @param skipZeros If {@code true} then filters out zero counters.
+     * Applies update counters collected during exchange on coordinator. Called on coordinator.
+     */
+    public void applyUpdateCounters();
+
+    /**
+     * Checks if there is at least one owner for each partition in the cache topology.
+     * If not, marks such a partition as LOST.
+     * <p>
+     * This method should be called on topology coordinator after all partition messages are received.
+     *
+     * @param resTopVer Exchange result version.
+     * @param discoEvt Discovery event for which we detect lost partitions.
+     * @return {@code True} if partitions state got updated.
+     */
+    public boolean detectLostPartitions(AffinityTopologyVersion resTopVer, DiscoveryEvent discoEvt);
+
+    /**
+     * Resets the state of all LOST partitions to OWNING.
+     *
+     * @param resTopVer Exchange result version.
+     */
+    public void resetLostPartitions(AffinityTopologyVersion resTopVer);
+
+    /**
+     * @return Collection of lost partitions, if any.
+     */
+    public Collection<Integer> lostPartitions();
+
+    /**
      * @return Partition update counters.
      */
-    public Map<Integer, Long> updateCounters(boolean skipZeros);
+    public CachePartitionFullCountersMap fullUpdateCounters();
+
+    /**
+     * @return Partition update counters.
+     */
+    public CachePartitionPartialCountersMap localUpdateCounters(boolean skipZeros);
+
+    /**
+     * @return Partition cache sizes.
+     */
+    public Map<Integer, Long> partitionSizes();
 
     /**
      * @param part Partition to own.
@@ -252,10 +357,23 @@ public interface GridDhtPartitionTopology {
     public boolean own(GridDhtLocalPartition part);
 
     /**
+     * Owns all moving partitions for the given topology version.
+     *
+     * @param topVer Topology version.
+     */
+    public void ownMoving(AffinityTopologyVersion topVer);
+
+    /**
      * @param part Evicted partition.
      * @param updateSeq Update sequence increment flag.
      */
     public void onEvicted(GridDhtLocalPartition part, boolean updateSeq);
+
+    /**
+     * @param nodeId Node to get partitions for.
+     * @return Partitions for node.
+     */
+    @Nullable public GridDhtPartitionMap partitions(UUID nodeId);
 
     /**
      * Prints memory stats.
@@ -269,4 +387,23 @@ public interface GridDhtPartitionTopology {
      * @return {@code True} if rebalance process finished.
      */
     public boolean rebalanceFinished(AffinityTopologyVersion topVer);
+
+    /**
+     * Calculates nodes and partitions which have non-actual state and must be rebalanced.
+     * State of all current owners that aren't contained in the given {@code ownersByUpdCounters} will be reset to MOVING.
+     *
+     * @param ownersByUpdCounters Map (partition, set of node IDs that have most actual state about partition
+     *                            (update counter is maximal) and should hold OWNING state for such partition).
+     * @param haveHistory Set of partitions which have WAL history to rebalance.
+     * @return Map (nodeId, set of partitions that should be rebalanced <b>fully</b> by this node).
+     */
+    public Map<UUID, Set<Integer>> resetOwners(Map<Integer, Set<UUID>> ownersByUpdCounters, Set<Integer> haveHistory);
+
+    /**
+     * Callback on exchange done.
+     *
+     * @param assignment New affinity assignment.
+     * @param updateRebalanceVer {@code True} if need check rebalance state.
+     */
+    public void onExchangeDone(GridDhtPartitionsExchangeFuture fut, AffinityAssignment assignment, boolean updateRebalanceVer);
 }

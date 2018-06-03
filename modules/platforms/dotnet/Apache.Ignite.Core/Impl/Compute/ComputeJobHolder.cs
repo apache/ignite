@@ -24,8 +24,8 @@ namespace Apache.Ignite.Core.Impl.Compute
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Compute.Closure;
+    using Apache.Ignite.Core.Impl.Deployment;
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Resource;
 
@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         private readonly IComputeJob _job;
         
         /** Owning grid. */
-        private readonly Ignite _ignite;
+        private readonly IIgniteInternal _ignite;
 
         /** Result (set for local jobs only). */
         private volatile ComputeJobResultImpl _jobRes;
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// </summary>
         /// <param name="grid">Grid.</param>
         /// <param name="job">Job.</param>
-        public ComputeJobHolder(Ignite grid, IComputeJob job)
+        public ComputeJobHolder(IIgniteInternal grid, IComputeJob job)
         {
             Debug.Assert(grid != null);
             Debug.Assert(job != null);
@@ -83,9 +83,10 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             _jobRes = new ComputeJobResultImpl(
                 success ? res : null, 
-                success ? null : res as Exception, 
+                success ? null : new IgniteException("Compute job has failed on local node, " +
+                                                     "examine InnerException for details.", (Exception) res), 
                 _job, 
-                _ignite.GetLocalNode().Id, 
+                _ignite.GetIgnite().GetCluster().GetLocalNode().Id, 
                 cancel
             );
         }
@@ -101,12 +102,13 @@ namespace Apache.Ignite.Core.Impl.Compute
             object res;
             bool success;
 
-            Execute0(cancel, out res, out success);
+            using (PeerAssemblyResolver.GetInstance(_ignite, Guid.Empty))
+            {
+                Execute0(cancel, out res, out success);
+            }
 
             // 2. Try writing result to the stream.
-            ClusterGroupImpl prj = _ignite.ClusterGroup;
-
-            BinaryWriter writer = prj.Marshaller.StartMarshal(stream);
+            var writer = _ignite.Marshaller.StartMarshal(stream);
 
             try
             {
@@ -116,7 +118,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             finally
             {
                 // 4. Process metadata.
-                prj.FinishMarshal(writer);
+                _ignite.Marshaller.FinishMarshal(writer);
             }
         }
 
@@ -137,9 +139,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             Justification = "User job can throw any exception")]
         internal bool Serialize(IBinaryStream stream)
         {
-            ClusterGroupImpl prj = _ignite.ClusterGroup;
-
-            BinaryWriter writer = prj.Marshaller.StartMarshal(stream);
+            BinaryWriter writer = _ignite.Marshaller.StartMarshal(stream);
 
             try
             {
@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Impl.Compute
             finally
             {
                 // 4. Process metadata.
-                prj.FinishMarshal(writer);
+                _ignite.Marshaller.FinishMarshal(writer);
             }
         }
 
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         {
             BinaryWriter writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WithDetach(w => w.WriteObject(_job));
+            writer0.WriteObjectDetached(_job);
         }
 
         /// <summary>
