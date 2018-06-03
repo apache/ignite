@@ -15,7 +15,7 @@
 
 import socket
 
-from ignite_requests import HandshakeRequest, read_response
+from queries import HandshakeRequest, read_response
 
 
 def test_handshake():
@@ -24,7 +24,7 @@ def test_handshake():
     hs_request = HandshakeRequest()
     conn.send(hs_request)
     hs_response = read_response(conn)
-    assert hs_response.hs_code != 0
+    assert hs_response.op_code != 0
 
     # intentionally pass wrong protocol version
     conn.close()
@@ -34,4 +34,4 @@ def test_handshake():
     hs_request.version_major = 10
     conn.send(hs_request)
     hs_response = read_response(conn)
-    assert hs_response.hs_code == 0
+    assert hs_response.op_code == 0

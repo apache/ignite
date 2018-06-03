@@ -24,7 +24,7 @@ class HandshakeRequest(ctypes.LittleEndianStructure):
     _pack_ = 1
     _fields_ = [
         ('length', ctypes.c_int),
-        ('hs_code', ctypes.c_byte),
+        ('op_code', ctypes.c_byte),
         ('version_major', ctypes.c_short),
         ('version_minor', ctypes.c_short),
         ('version_patch', ctypes.c_short),
@@ -34,7 +34,7 @@ class HandshakeRequest(ctypes.LittleEndianStructure):
     def __init__(self):
         super().__init__()
         self.length = 8
-        self.hs_code = OP_HANDSHAKE
+        self.op_code = OP_HANDSHAKE
         self.version_major = PROTOCOL_VERSION_MAJOR
         self.version_minor = PROTOCOL_VERSION_MINOR
         self.version_patch = PROTOCOL_VERSION_PATCH
@@ -45,12 +45,12 @@ def read_response(conn: socket.socket):
     buffer = conn.recv(4)
     length = int.from_bytes(buffer, byteorder='little')
     buffer += conn.recv(length)
-    hs_code = int.from_bytes(buffer[4:5], byteorder='little')
+    op_code = int.from_bytes(buffer[4:5], byteorder='little')
     fields = [
         ('length', ctypes.c_int),
-        ('hs_code', ctypes.c_byte),
+        ('op_code', ctypes.c_byte),
     ]
-    if hs_code == 0:
+    if op_code == 0:
         fields += [
             ('version_major', ctypes.c_short),
             ('version_minor', ctypes.c_short),
