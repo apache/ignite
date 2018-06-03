@@ -17,14 +17,18 @@
 
 package org.apache.ignite.internal;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
@@ -32,6 +36,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.apache.ignite.transactions.Transaction;
+import org.junit.Assert;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
@@ -202,18 +207,19 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
                             String executorSvcKey = mtdName.startsWith("get") ? mtdName.substring(3) : mtdName;
                             map.put(executorSvcKey, (ExecutorService)method.invoke(ctx));
                         }
-                        catch (Exception e) {
-                            // No-op.
+                        catch (IllegalAccessException | InvocationTargetException e) {
+                            throw new IgniteException(e);
                         }
                     },
                     HashMap::putAll
                 );
 
-        if (ctx.customExecutors() != null)
-            executors.putAll(Objects.requireNonNull(ctx.customExecutors()));
-
+        final List<String> runningExecutors = new ArrayList<>();
         executors.forEach((name, executor) -> {
-            assert executor == null || executor.isTerminated() : name + " ExecutorService not terminated.";
+            if (!(executor == null || executor.isTerminated()))
+                runningExecutors.add(name + " ExecutorService not terminated. ");
         });
+        if (!runningExecutors.isEmpty())
+            Assert.fail(runningExecutors.stream().collect(Collectors.joining("\n")));
     }
 }
