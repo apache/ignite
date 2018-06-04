@@ -2393,8 +2393,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     .messageQueueSizeListener(queueSizeMonitor)
                     .readWriteSelectorsAssign(usePairedConnections);
 
-                if (ignite instanceof IgniteEx)
-                    builder.workerListener(((IgniteEx)ignite).context().workersRegistry());
+                if (ignite instanceof IgniteEx) {
+                    IgniteEx igniteEx = (IgniteEx)ignite;
+
+                    builder.workerListener(igniteEx.context().workersRegistry());
+                }
 
                 GridNioServer<Message> srvr = builder.build();
 
