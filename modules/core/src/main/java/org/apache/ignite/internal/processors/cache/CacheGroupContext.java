@@ -515,9 +515,10 @@ public class CacheGroupContext {
 
     /**
      * @return {@code True} if fast eviction is allowed.
+     * @deprecated This mode is now unsafe and should be completely removed in 2.6.
      */
-    public boolean allowFastEviction() {
-        return persistenceEnabled() && !queriesEnabled();
+    @Deprecated public boolean allowFastEviction() {
+        return false;
     }
 
     /**
