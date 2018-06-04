@@ -17,7 +17,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class BaselineChangeWithFilterTest extends GridCommonAbstractTest {
+public class QueryJoinWithDifferentNodeFiltersTest extends GridCommonAbstractTest {
     /** */
     private static final String CACHE_NAME = "cache";
 
