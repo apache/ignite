@@ -65,12 +65,12 @@ public class CacheRentingStateRepairTest extends GridCommonAbstractTest {
 
         long sz = 100 * 1024 * 1024;
 
-            DataStorageConfiguration memCfg = new DataStorageConfiguration().setPageSize(1024)
-                .setDefaultDataRegionConfiguration(
-                    new DataRegionConfiguration().setPersistenceEnabled(true).setInitialSize(sz).setMaxSize(sz))
-                .setWalMode(WALMode.LOG_ONLY).setCheckpointFrequency(24L * 60 * 60 * 1000);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration().setPageSize(1024)
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setPersistenceEnabled(true).setInitialSize(sz).setMaxSize(sz))
+            .setWalMode(WALMode.LOG_ONLY).setCheckpointFrequency(24L * 60 * 60 * 1000);
 
-            cfg.setDataStorageConfiguration(memCfg);
+        cfg.setDataStorageConfiguration(memCfg);
 
         return cfg;
     }
