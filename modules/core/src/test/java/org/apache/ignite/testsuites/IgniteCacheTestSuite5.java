@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscovery
 import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
+import org.apache.ignite.internal.processors.cache.distributed.CacheRentingStateRepairTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheGroupsPartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCachePartitionLossPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteCacheTxIteratorSelfTest;
@@ -103,6 +104,8 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(ConcurrentCacheStartTest.class);
 
         suite.addTestSuite(Cache64kPartitionsTest.class);
+
+        suite.addTestSuite(CacheRentingStateRepairTest.class);
 
         return suite;
     }
