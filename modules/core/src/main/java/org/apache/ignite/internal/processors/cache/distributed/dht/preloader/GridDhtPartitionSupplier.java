@@ -178,8 +178,6 @@ class GridDhtPartitionSupplier {
                         + ", demandTopVer=" + demTop
                         + ", from=" + nodeId
                         + ", topicId=" + topicId + "]");
-
-            return;
         }
 
         T3<UUID, Integer, AffinityTopologyVersion> contextId = new T3<>(nodeId, topicId, demTop);

@@ -85,6 +85,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** */
     private boolean stopped;
 
+    /** */
+    private AffinityTopologyVersion prevAssignTopVer;
+
     /**
      * @param grp Cache group.
      */
@@ -187,7 +190,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
+        AffinityAssignment prevAff = prevAssignTopVer == null ? aff : grp.affinity().cachedAffinity(prevAssignTopVer);
+
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
+
+        boolean isAssignmNotChanged = true;
 
         for (int p = 0; p < partCnt; p++) {
             if (ctx.exchange().hasPendingExchange()) {
@@ -203,6 +210,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             // If partition belongs to local node.
             if (aff.get(p).contains(ctx.localNode())) {
                 GridDhtLocalPartition part = top.localPartition(p);
+
+                isAssignmNotChanged = isAssignmNotChanged && prevAff.get(p).contains(ctx.localNode());
 
                 assert part != null;
                 assert part.id() == p;
@@ -288,6 +297,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
         }
 
+        assignments.needRebalance(prevAssignTopVer == null || !isAssignmNotChanged);
+
+        prevAssignTopVer = topVer;
+
         return assignments;
     }
 
@@ -372,11 +385,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     @Override public Runnable addAssignments(
         GridDhtPreloaderAssignments assignments,
         boolean forceRebalance,
+        boolean skip,
         long rebalanceId,
         Runnable next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut
     ) {
-        return demander.addAssignments(assignments, forceRebalance, rebalanceId, next, forcedRebFut);
+        return demander.addAssignments(assignments, forceRebalance, skip, rebalanceId, next, forcedRebFut);
     }
 
     /**
