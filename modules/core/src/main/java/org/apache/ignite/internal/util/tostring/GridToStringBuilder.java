@@ -1050,8 +1050,7 @@ public class GridToStringBuilder {
         Object[] addNames,
         Object[] addVals,
         @Nullable boolean[] addSens,
-        int addLen
-    ) {
+        int addLen) {
         assert cls != null;
         assert buf != null;
         assert obj != null;
