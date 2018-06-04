@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -47,6 +48,9 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
 
     /** */
     private static final int SRV_CNT = 3;
+
+    /** */
+    private static final int CLIENTS_CNT = 3;
 
     /** */
     private static final int CACHES = 10;
@@ -89,19 +93,49 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrids(SRV_CNT);
+    @Override protected long getTestTimeout() {
+        return TEST_TIME + 60_000;
     }
 
     /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return TEST_TIME + 60_000;
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
+    /**
+     * If setting IGNITE_EXCHANGE_HISTORY_SIZE is set to small value
+     * it is possible that bunch of clients simultaneous start (amount > IGNITE_EXCHANGE_HISTORY_SIZE)
+     * may result in ExchangeFuture for some client being flushed from exchange history.
+     *
+     * In that case client attempts to reconnect until success.
+     *
+     * After that it should get correct information about topology version and affinity distribution.
+     *
+     * @throws Exception If failed
+     */
+    public void testClientReconnectOnExchangeHistoryExchaustion() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, "1");
+
+        try {
+            startGrids(SRV_CNT);
+
+            client = true;
+
+            startGridsMultiThreaded(SRV_CNT, CLIENTS_CNT);
+
+            waitForTopology(SRV_CNT + CLIENTS_CNT);
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE);
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClientReconnect() throws Exception {
+        startGrids(SRV_CNT);
+
         client = true;
 
         final AtomicBoolean stop = new AtomicBoolean(false);

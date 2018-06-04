@@ -1560,7 +1560,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 if (msg.client() && !exchFut.isDone()) {
                     if (exchFut.initialVersion().compareTo(readyAffinityVersion()) <= 0) {
-                        U.warn(log, "Client node tries to reconnect but its exchange " +
+                        U.warn(log, "Client node tries to connect but its exchange " +
                             "info is cleaned up from exchange history." +
                             " Consider increasing 'IGNITE_EXCHANGE_HISTORY_SIZE' property " +
                             "or start clients in  smaller batches."
