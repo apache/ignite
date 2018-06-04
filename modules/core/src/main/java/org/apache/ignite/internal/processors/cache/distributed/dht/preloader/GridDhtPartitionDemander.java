@@ -341,7 +341,7 @@ public class GridDhtPartitionDemander {
             // 1) Related discovery event did not cause affinity assignment change.
             // We should wait for current rebalanceFut completion and than assign results to latestRebFut.
             if (grp.affinity().cachedAffinity(topVer).clientEventChange() &&
-                !assignments.isEmpty() && !oldFut.isInitial()) {
+                !assignments.rebalanceNeeded() && !oldFut.isInitial()) {
                 if (log.isDebugEnabled())
                     log.debug("Affinity assignments does not changed. Will skip rebalance [topVer=" +
                         topVer + ", rebalanceId=" + rebalanceId + ", grp=" + grp.cacheOrGroupName() + "]");
