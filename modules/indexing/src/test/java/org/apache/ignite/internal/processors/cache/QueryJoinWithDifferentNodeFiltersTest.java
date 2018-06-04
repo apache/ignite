@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.Ignite;
@@ -92,24 +109,41 @@ public class QueryJoinWithDifferentNodeFiltersTest extends GridCommonAbstractTes
         info(cache2.query(new SqlFieldsQuery("select * from \"cache\".Organization r, \"cache2\".Person p where p.orgId=r.orgId")).getAll().toString());
     }
 
+    /**
+     *
+     */
     private static class Organization {
-        @QuerySqlField(index = true)
-        private int orgId;
-        private String orgName;
+        /** */
+        @SuppressWarnings("unused") @QuerySqlField(index = true) private int orgId;
 
+        /** */
+        @SuppressWarnings("unused") private String orgName;
+
+        /**
+         *
+         */
         public Organization(int orgId, String orgName) {
             this.orgId = orgId;
             this.orgName = orgName;
         }
     }
 
+    /**
+     *
+     */
     private static class Person {
-        @QuerySqlField(index = true)
-        private int personId;
-        @QuerySqlField(index = true)
-        private int orgId;
-        private String name;
+        /** */
+        @SuppressWarnings("unused") @QuerySqlField(index = true) private int personId;
 
+        /** */
+        @SuppressWarnings("unused") @QuerySqlField(index = true) private int orgId;
+
+        /** */
+        @SuppressWarnings("unused") private String name;
+
+        /**
+         *
+         */
         public Person(int personId, int orgId, String name) {
             this.personId = personId;
             this.orgId = orgId;
@@ -117,6 +151,9 @@ public class QueryJoinWithDifferentNodeFiltersTest extends GridCommonAbstractTes
         }
     }
 
+    /**
+     *
+     */
     private static class TestFilter implements IgnitePredicate<ClusterNode> {
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode clusterNode) {
