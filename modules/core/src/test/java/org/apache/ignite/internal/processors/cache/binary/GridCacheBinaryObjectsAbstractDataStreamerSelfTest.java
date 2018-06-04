@@ -85,11 +85,6 @@ public abstract class GridCacheBinaryObjectsAbstractDataStreamerSelfTest extends
         startGridsMultiThreaded(gridCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @return Cache mode.
      */

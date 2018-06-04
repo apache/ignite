@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Random;
+import java.util.HashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import org.apache.ignite.DataRegionMetrics;
@@ -32,14 +33,20 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 
@@ -52,6 +59,9 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
     /** */
     private static final long INIT_REGION_SIZE = 10 << 20;
+
+    /** */
+    private static final long MAX_REGION_SIZE = INIT_REGION_SIZE * 10;
 
     /** */
     private static final int ITERATIONS = 3;
@@ -72,11 +82,13 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
-            .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration()
-                    .setInitialSize(INIT_REGION_SIZE)
-                    .setPersistenceEnabled(true)
-                    .setMetricsEnabled(true));
+                .setDefaultDataRegionConfiguration(
+                        new DataRegionConfiguration()
+                                .setInitialSize(INIT_REGION_SIZE)
+                                .setMaxSize(MAX_REGION_SIZE)
+                                .setPersistenceEnabled(true)
+                                .setMetricsEnabled(true))
+                .setCheckpointFrequency(1000);
 
         cfg.setDataStorageConfiguration(memCfg);
 
@@ -192,6 +204,79 @@ public class IgnitePdsDataRegionMetricsTest extends GridCommonAbstractTest {
 
         checkMetricsConsistency(node0, grpIds);
         checkMetricsConsistency(node2, grpIds);
+    }
+
+    /**
+     * Test for check checkpoint size metric.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCheckpointBufferSize() throws Exception {
+        IgniteEx ig = startGrid(0);
+
+        ig.cluster().active(true);
+
+        DataRegionMetricsImpl regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
+                .context().group().dataRegion().memoryMetrics();
+
+        Assert.assertTrue(regionMetrics.getCheckpointBufferSize() != 0);
+        Assert.assertTrue(regionMetrics.getCheckpointBufferSize() <= MAX_REGION_SIZE);
+    }
+
+    /**
+     * Test for check used checkpoint size metric.
+     *
+     * @throws Exception If failed.
+     */
+    public void testUsedCheckpointBuffer() throws Exception {
+        IgniteEx ig = startGrid(0);
+
+        ig.cluster().active(true);
+
+        final DataRegionMetricsImpl regionMetrics = ig.cachex(DEFAULT_CACHE_NAME)
+                .context().group().dataRegion().memoryMetrics();
+
+        Assert.assertEquals(0, regionMetrics.getUsedCheckpointBufferPages());
+        Assert.assertEquals(0, regionMetrics.getUsedCheckpointBufferSize());
+
+        load(ig);
+
+        GridCacheDatabaseSharedManager psMgr = (GridCacheDatabaseSharedManager) ig.context().cache().context().database();
+
+        GridFutureAdapter<T2<Long, Long>> metricsResult = new GridFutureAdapter<>();
+
+        IgniteInternalFuture chpBeginFut = psMgr.wakeupForCheckpoint(null);
+
+        chpBeginFut.listen((f) -> {
+            load(ig);
+
+            metricsResult.onDone(new T2<>(
+                regionMetrics.getUsedCheckpointBufferPages(),
+                regionMetrics.getUsedCheckpointBufferSize()
+            ));
+        });
+
+        metricsResult.get();
+
+        Assert.assertTrue(metricsResult.get().get1() > 0);
+        Assert.assertTrue(metricsResult.get().get2() > 0);
+    }
+
+    /**
+     * @param ig Ignite.
+     */
+    private void load(Ignite ig){
+        IgniteCache<Integer, byte[]> cache = ig.cache(DEFAULT_CACHE_NAME);
+
+        Random rnd = new Random();
+
+        for (int i = 0; i < 1000; i++) {
+            byte[] payload = new byte[128];
+
+            rnd.nextBytes(payload);
+
+            cache.put(i, payload);
+        }
     }
 
     /** */

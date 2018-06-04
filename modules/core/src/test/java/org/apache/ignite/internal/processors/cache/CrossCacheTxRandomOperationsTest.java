@@ -99,13 +99,6 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
         startGrid(GRID_CNT - 1);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @return Test near cache flag.
      */

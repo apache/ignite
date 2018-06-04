@@ -138,7 +138,7 @@ public class SwapPathConstructionSelfTest extends GridCommonAbstractTest {
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("default");
-        memPlcCfg.setMaxSize(20 * 1024 * 1024);
+        memPlcCfg.setMaxSize(20L * 1024 * 1024);
 
         if (isRelativePath)
             memPlcCfg.setSwapPath(RELATIVE_SWAP_PATH);

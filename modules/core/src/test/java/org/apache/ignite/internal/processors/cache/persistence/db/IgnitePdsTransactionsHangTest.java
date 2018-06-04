@@ -58,10 +58,10 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Page cache size. */
-    private static final int PAGE_CACHE_SIZE = 512;
+    private static final long PAGE_CACHE_SIZE = 512L * 1024 * 1024;
 
     /** Page size. */
-    private static final Integer PAGE_SIZE = 16;
+    private static final int PAGE_SIZE = 16 * 1024;
 
     /** Cache name. */
     private static final String CACHE_NAME = "IgnitePdsTransactionsHangTest";
@@ -124,8 +124,8 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltDataRegion");
-        memPlcCfg.setInitialSize(PAGE_CACHE_SIZE * 1024 * 1024);
-        memPlcCfg.setMaxSize(PAGE_CACHE_SIZE * 1024 * 1024);
+        memPlcCfg.setInitialSize(PAGE_CACHE_SIZE);
+        memPlcCfg.setMaxSize(PAGE_CACHE_SIZE);
         memPlcCfg.setPersistenceEnabled(true);
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
@@ -133,7 +133,7 @@ public class IgnitePdsTransactionsHangTest extends GridCommonAbstractTest {
         memCfg.setDefaultDataRegionConfiguration(memPlcCfg);
         memCfg.setWalHistorySize(1);
         memCfg.setCheckpointFrequency(CHECKPOINT_FREQUENCY);
-        memCfg.setPageSize(PAGE_SIZE * 1024);
+        memCfg.setPageSize(PAGE_SIZE);
 
         cfg.setDataStorageConfiguration(memCfg);
 

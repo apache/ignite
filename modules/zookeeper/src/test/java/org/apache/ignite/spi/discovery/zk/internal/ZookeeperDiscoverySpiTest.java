@@ -383,8 +383,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         stopZkCluster();
 
         System.clearProperty(ZookeeperDiscoveryImpl.IGNITE_ZOOKEEPER_DISCOVERY_SPI_ACK_TIMEOUT);
-
-        super.afterTestsStopped();
     }
 
     /**

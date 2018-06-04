@@ -17,13 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
-import com.google.common.base.Strings;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import javax.cache.expiry.AccessedExpiryPolicy;
+import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -33,6 +36,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -44,13 +48,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     /** */
-    public static final String CACHE = "expirableCache";
+    public static final String CACHE_NAME = "expirableCache";
 
     /** */
     private static final int EXPIRATION_TIMEOUT = 10;
 
     /** */
-    public static final int ENTRIES = 7000;
+    public static final int ENTRIES = 100_000;
 
     /** */
     private static final TcpDiscoveryVmIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -82,22 +86,24 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(disco);
 
         final CacheConfiguration ccfg = new CacheConfiguration();
-        ccfg.setName(CACHE);
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 128));
+        ccfg.setName(CACHE_NAME);
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg.setExpiryPolicyFactory(AccessedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, EXPIRATION_TIMEOUT)));
         ccfg.setEagerTtl(true);
         ccfg.setGroupName("group1");
-
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
-                        .setMaxSize(256L * 1024 * 1024)
+                        .setMaxSize(192L * 1024 * 1024)
                         .setPersistenceEnabled(true)
-                ).setWalMode(WALMode.DEFAULT));
+                ).setWalMode(WALMode.LOG_ONLY));
 
         cfg.setCacheConfiguration(ccfg);
+
         return cfg;
     }
 
@@ -122,7 +128,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         IgniteEx srv = startGrid(0);
         srv.cluster().active(true);
 
-        fillCache(srv.cache(CACHE));
+        fillCache(srv.cache(CACHE_NAME));
 
         if (restartGrid) {
             stopGrid(0);
@@ -130,7 +136,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             srv.cluster().active(true);
         }
 
-        final IgniteCache<Integer, String> cache = srv.cache(CACHE);
+        final IgniteCache<Integer, byte[]> cache = srv.cache(CACHE_NAME);
 
         pringStatistics((IgniteCacheProxy)cache, "After restart from LFS");
 
@@ -146,12 +152,14 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         IgniteEx srv = startGrid(0);
         srv.cluster().active(true);
 
-        fillCache(srv.cache(CACHE));
+        fillCache(srv.cache(CACHE_NAME));
 
-        //causes rebalancing start
         srv = startGrid(1);
 
-        final IgniteCache<Integer, String> cache = srv.cache(CACHE);
+        //causes rebalancing start
+        srv.cluster().setBaselineTopology(srv.cluster().topologyVersion());
+
+        final IgniteCache<Integer, byte[]> cache = srv.cache(CACHE_NAME);
 
         pringStatistics((IgniteCacheProxy)cache, "After rebalancing start");
 
@@ -160,11 +168,51 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    /**
+     * @throws Exception if failed.
+     */
+    public void testStartStopAfterRebalanceWithTtlExpirable() throws Exception {
+        try {
+            IgniteEx srv = startGrid(0);
+            startGrid(1);
+            srv.cluster().active(true);
+
+            ExpiryPolicy plc = CreatedExpiryPolicy.factoryOf(Duration.ONE_DAY).create();
+
+            IgniteCache<Integer, byte[]> cache0 = srv.cache(CACHE_NAME);
+
+            fillCache(cache0.withExpiryPolicy(plc));
+
+            srv = startGrid(2);
+
+            IgniteCache<Integer, byte[]> cache = srv.cache(CACHE_NAME);
+
+            //causes rebalancing start
+            srv.cluster().setBaselineTopology(srv.cluster().topologyVersion());
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return Boolean.TRUE.equals(cache.rebalance().get()) && cache.localSizeLong(CachePeekMode.ALL) > 0;
+                }
+            }, 20_000);
+
+            //check if pds is consistent
+            stopGrid(0);
+            startGrid(0);
+
+            stopGrid(1);
+            startGrid(1);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
     /** */
-    protected void fillCache(IgniteCache<Integer, String> cache) {
-        cache.putAll(new TreeMap<Integer, String>() {{
+    protected void fillCache(IgniteCache<Integer, byte[]> cache) {
+        cache.putAll(new TreeMap<Integer, byte[]>() {{
             for (int i = 0; i < ENTRIES; i++)
-                put(i, Strings.repeat("Some value " + i, 125));
+                put(i, new byte[1024]);
         }});
 
         //Touch entries.
@@ -175,7 +223,8 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
     }
 
     /** */
-    protected void waitAndCheckExpired(final IgniteCache<Integer, String> cache) throws IgniteInterruptedCheckedException {
+    protected void waitAndCheckExpired(
+        final IgniteCache<Integer, byte[]> cache) throws IgniteInterruptedCheckedException {
         GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
                 return cache.size() == 0;
