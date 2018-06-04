@@ -17,38 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CachePartialUpdateException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.TestDelayingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheNearTxRollbackTest;
-import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -67,14 +42,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
  */
 @SuppressWarnings("ErrorNotRethrown")
 public class ReproducerAtomicCacheInconsistentState2Test extends GridCommonAbstractTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testWriteFullAsync() throws Exception {
-        int gridCnt = 2;
-
-        startGrids(gridCnt);
-
+    /** */
+    public void testWriteFullAsync() {
         Integer key = 100;
 
         IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
@@ -83,53 +52,23 @@ public class ReproducerAtomicCacheInconsistentState2Test extends GridCommonAbstr
 
         Affinity<Integer> aff = affinity(cache);
 
-        for (int i = 0; i < gridCnt; i++) {
-            if (aff.isPrimary(grid(i).localNode(), key)) {
-                TestCommunicationSpi spi = (TestCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
-                spi.fail = true;
-            }
-        }
+        singleCommunicationFail(key, aff);
 
         cache.put(key, 5);
 
         doSleep(2_000);
 
-        Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(key);
+        cache = cacheFromBackupNode(key, aff);
 
-        final List<GridCacheAdapter> internalCaches = new ArrayList<>();
+        assertNotNull(cache);
 
-        for (int i = 0; i < gridCnt; i++) {
-            ClusterNode locNode = grid(i).localNode();
-            if (affNodes.contains(locNode))
-                internalCaches.add(((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME));
-        }
-
-        List<GridCacheEntryEx> entries = new ArrayList<>();
-
-        for (GridCacheAdapter adapter : internalCaches) {
-            GridCacheEntryEx entry = null;
-            try {
-                entry = adapter.entryEx(key);
-                entry.unswap();
-            }
-            catch (GridDhtInvalidPartitionException ignored) {
-                //no-op
-            }
-
-            entries.add(entry);
-        }
-
-        assertEquals(
-            CU.<Integer>value(entries.get(0).rawGet(), entries.get(0).context(), false),
-            CU.<Integer>value(entries.get(1).rawGet(), entries.get(1).context(), false)
-        );
+        assertEquals(5, (int)cache.get(key));
     }
 
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
-    /** Backups. */
-    private static final int BACKUPS = 1;
+    /** Grid count. */
+    private int gridCnt = 2;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -157,16 +96,49 @@ public class ReproducerAtomicCacheInconsistentState2Test extends GridCommonAbstr
         CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setCacheMode(PARTITIONED);
-        ccfg.setBackups(BACKUPS);
+        ccfg.setBackups(1);
         ccfg.setWriteSynchronizationMode(FULL_ASYNC);
         ccfg.setRebalanceMode(SYNC);
 
+        ccfg.setReadFromBackup(true);
+
         return ccfg;
+    }
+
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        startGrids(gridCnt);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+    }
+
+    /**
+     * @param key Key.
+     * @param aff Aff.
+     */
+    private IgniteCache<Integer, Integer> cacheFromBackupNode(Integer key, Affinity<Integer> aff) {
+        for (int i = 0; i < gridCnt; i++) {
+            if (aff.isBackup(grid(i).localNode(), key))
+                return grid(i).cache(DEFAULT_CACHE_NAME);
+        }
+        return null;
+    }
+
+    /**
+     * @param key Key.
+     * @param aff Aff.
+     */
+    private void singleCommunicationFail(Integer key, Affinity<Integer> aff) {
+        for (int i = 0; i < gridCnt; i++) {
+            if (aff.isPrimary(grid(i).localNode(), key)) {
+                TestCommunicationSpi spi = (TestCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+                spi.fail = true;
+            }
+        }
     }
 
     /**
