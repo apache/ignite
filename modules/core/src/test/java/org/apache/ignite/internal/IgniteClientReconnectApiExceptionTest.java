@@ -44,6 +44,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,6 +52,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -99,7 +101,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    public void dataStructureOperationsTest() throws Exception {
+    private void dataStructureOperationsTest() throws Exception {
         clientMode = true;
 
         final Ignite client = startGrid(serverCount());
@@ -219,7 +221,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    public void cacheOperationsTest() throws Exception {
+    private void cacheOperationsTest() throws Exception {
         clientMode = true;
 
         final Ignite client = startGrid(serverCount());
@@ -537,7 +539,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    public void igniteOperationsTest() throws Exception {
+    private void igniteOperationsTest() throws Exception {
         clientMode = true;
 
         final Ignite client = startGrid(serverCount());
@@ -775,11 +777,11 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
         throws Exception {
         assertNotNull(client.cache(DEFAULT_CACHE_NAME));
 
-        final TestTcpDiscoverySpi clientSpi = spi(client);
+        final IgniteDiscoverySpi clientSpi = spi0(client);
 
         Ignite srv = clientRouter(client);
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        DiscoverySpi srvSpi = spi0(srv);
 
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
 
@@ -787,7 +789,10 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
         log.info("Block reconnect.");
 
-        clientSpi.writeLatch = new CountDownLatch(1);
+        DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
+
+        clientSpi.setInternalListener(lsnr);
+        lsnr.startBlockJoin();
 
         final List<IgniteInternalFuture> futs = new ArrayList<>();
 
@@ -832,7 +837,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
             log.info("Allow reconnect.");
 
-            clientSpi.writeLatch.countDown();
+            lsnr.stopBlockJoin();
 
             waitReconnectEvent(reconnectLatch);
 
@@ -857,7 +862,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
             }
         }
         finally {
-            clientSpi.writeLatch.countDown();
+            lsnr.stopBlockJoin();
 
             for (IgniteInternalFuture fut : futs)
                 fut.cancel();

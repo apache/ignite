@@ -42,6 +42,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -489,6 +490,12 @@ public class IgniteConfiguration {
     /** User authentication enabled. */
     private boolean authEnabled;
 
+    /** Failure handler. */
+    private FailureHandler failureHnd;
+
+    /** Communication failure resolver */
+    private CommunicationFailureResolver commFailureRslvr;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -515,6 +522,8 @@ public class IgniteConfiguration {
         failSpi = cfg.getFailoverSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
+
+        commFailureRslvr = cfg.getCommunicationFailureResolver();
 
         /*
          * Order alphabetically for maintenance purposes.
@@ -547,6 +556,7 @@ public class IgniteConfiguration {
         hadoopCfg = cfg.getHadoopConfiguration();
         igfsCfg = cfg.getFileSystemConfiguration();
         igfsPoolSize = cfg.getIgfsThreadPoolSize();
+        failureHnd = cfg.getFailureHandler();
         igniteHome = cfg.getIgniteHome();
         igniteInstanceName = cfg.getIgniteInstanceName();
         igniteWorkDir = cfg.getWorkDirectory();
@@ -599,6 +609,23 @@ public class IgniteConfiguration {
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
         authEnabled = cfg.isAuthenticationEnabled();
+    }
+
+    /**
+     * @return Communication failure resovler.
+     */
+    public CommunicationFailureResolver getCommunicationFailureResolver() {
+        return commFailureRslvr;
+    }
+
+    /**
+     * @param commFailureRslvr Communication failure resovler.
+     * @return {@code this} instance.
+     */
+    public IgniteConfiguration setCommunicationFailureResolver(CommunicationFailureResolver commFailureRslvr) {
+        this.commFailureRslvr = commFailureRslvr;
+
+        return this;
     }
 
     /**
@@ -2918,6 +2945,27 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setClientConnectorConfiguration(@Nullable ClientConnectorConfiguration cliConnCfg) {
         this.cliConnCfg = cliConnCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets failure handler.
+     *
+     * @return Failure handler.
+     */
+    public FailureHandler getFailureHandler() {
+        return failureHnd;
+    }
+
+    /**
+     * Sets failure handler.
+     *
+     * @param failureHnd Failure handler.
+     * @return {@code This} for chaining.
+     */
+    public IgniteConfiguration setFailureHandler(FailureHandler failureHnd) {
+        this.failureHnd = failureHnd;
 
         return this;
     }

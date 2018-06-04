@@ -32,10 +32,10 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -173,7 +173,8 @@ class GridDhtPartitionSupplier {
 
         if (curTop.compareTo(demTop) > 0) {
             if (log.isDebugEnabled())
-                log.debug("Demand request outdated [currentTopVer=" + curTop
+                log.debug("Demand request outdated [grp=" + grp.cacheOrGroupName()
+                        + ", currentTopVer=" + curTop
                         + ", demandTopVer=" + demTop
                         + ", from=" + nodeId
                         + ", topicId=" + topicId + "]");
@@ -189,10 +190,19 @@ class GridDhtPartitionSupplier {
 
                 if (sctx != null && sctx.rebalanceId == -d.rebalanceId()) {
                     clearContext(scMap.remove(contextId), log);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Supply context cleaned [grp=" + grp.cacheOrGroupName()
+                            + ", from=" + nodeId
+                            + ", demandMsg=" + d
+                            + ", supplyContext=" + sctx + "]");
                 }
                 else {
                     if (log.isDebugEnabled())
-                        log.debug("Stale context cleanup message " + d + ", supplyContext=" + sctx);
+                        log.debug("Stale supply context cleanup message [grp=" + grp.cacheOrGroupName()
+                            + ", from=" + nodeId
+                            + ", demandMsg=" + d
+                            + ", supplyContext=" + sctx + "]");
                 }
 
                 return;
@@ -200,13 +210,16 @@ class GridDhtPartitionSupplier {
         }
 
         if (log.isDebugEnabled())
-            log.debug("Demand request accepted [current=" + curTop + ", demanded=" + demTop +
-                ", from=" + nodeId + ", topicId=" + topicId + "]");
+            log.debug("Demand request accepted [grp=" + grp.cacheOrGroupName()
+                + ", from=" + nodeId
+                + ", currentVer=" + curTop
+                + ", demandedVer=" + demTop
+                + ", topicId=" + topicId + "]");
 
         ClusterNode node = grp.shared().discovery().node(nodeId);
 
         if (node == null)
-            return; // Context will be cleaned at topology change.
+            return;
 
         try {
             SupplyContext sctx;
@@ -217,13 +230,27 @@ class GridDhtPartitionSupplier {
                 if (sctx != null && d.rebalanceId() < sctx.rebalanceId) {
                     // Stale message, return context back and return.
                     scMap.put(contextId, sctx);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Stale demand message [grp=" + grp.cacheOrGroupName()
+                            + ", actualContext=" + sctx
+                            + ", from=" + nodeId
+                            + ", demandMsg=" + d + "]");
+
                     return;
                 }
             }
 
             // Demand request should not contain empty partitions if no supply context is associated with it.
-            if (sctx == null && (d.partitions() == null || d.partitions().isEmpty()))
+            if (sctx == null && (d.partitions() == null || d.partitions().isEmpty())) {
+                if (log.isDebugEnabled())
+                    log.debug("Empty demand message [grp=" + grp.cacheOrGroupName()
+                        + ", from=" + nodeId
+                        + ", topicId=" + topicId
+                        + ", demandMsg=" + d + "]");
+
                 return;
+            }
 
             assert !(sctx != null && !d.partitions().isEmpty());
 
@@ -271,7 +298,8 @@ class GridDhtPartitionSupplier {
 
                     GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
 
-                    assert loc != null && loc.state() == GridDhtPartitionState.OWNING;
+                    assert loc != null && loc.state() == GridDhtPartitionState.OWNING
+                        : "Partition should be in OWNING state: " + loc;
 
                     s.addEstimatedKeysCount(grp.offheap().totalPartitionEntriesCount(part));
                 }
@@ -323,7 +351,8 @@ class GridDhtPartitionSupplier {
 
                 GridDhtLocalPartition loc = top.localPartition(part, d.topologyVersion(), false);
 
-                assert (loc != null && loc.state() == OWNING && loc.reservations() > 0) || iter.isPartitionMissing(part) : loc;
+                assert (loc != null && loc.state() == OWNING && loc.reservations() > 0) || iter.isPartitionMissing(part)
+                    : "Partition should be in OWNING state and has at least 1 reservation " + loc;
 
                 if (iter.isPartitionMissing(part) && remainingParts.contains(part)) {
                     s.missed(part);
@@ -349,7 +378,7 @@ class GridDhtPartitionSupplier {
                 info.cacheId(row.cacheId());
 
                 if (preloadPred == null || preloadPred.apply(info))
-                    s.addEntry0(part, info, grp.shared(), grp.cacheObjectContext());
+                    s.addEntry0(part, iter.historical(part), info, grp.shared(), grp.cacheObjectContext());
                 else {
                     if (log.isDebugEnabled())
                         log.debug("Rebalance predicate evaluated to false (will not send " +
@@ -361,9 +390,6 @@ class GridDhtPartitionSupplier {
 
                     remainingParts.remove(part);
                 }
-
-                // Need to manually prepare cache message.
-                // TODO GG-11141.
             }
 
             Iterator<Integer> remainingIter = remainingParts.iterator();
@@ -374,7 +400,8 @@ class GridDhtPartitionSupplier {
                 if (iter.isPartitionDone(p)) {
                     GridDhtLocalPartition loc = top.localPartition(p, d.topologyVersion(), false);
 
-                    assert loc != null;
+                    assert loc != null
+                        : "Supply partition is gone: grp=" + grp.cacheOrGroupName() + ", p=" + p;
 
                     s.last(p, loc.updateCounter());
 
@@ -387,7 +414,8 @@ class GridDhtPartitionSupplier {
                 }
             }
 
-            assert remainingParts.isEmpty();
+            assert remainingParts.isEmpty()
+                : "Partitions after rebalance should be either done or missing: " + remainingParts;
 
             if (sctx != null)
                 clearContext(sctx, log);

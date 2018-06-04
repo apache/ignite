@@ -16,10 +16,13 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
+import org.apache.ignite.internal.processors.cache.CacheGroupMetricsMXBeanImpl.GroupAllocationTrucker;
 import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -35,13 +38,31 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     /** */
     private final LongAdder totalAllocatedPages = new LongAdder();
 
+    /** */
+    private final ConcurrentHashMap<Integer, GroupAllocationTrucker> groupAllocationTruckers = new ConcurrentHashMap<>();
+
     /**
      * Counter for number of pages occupied by large entries (one entry is larger than one page).
      */
     private final LongAdder largeEntriesPages = new LongAdder();
 
     /** Counter for number of dirty pages. */
-    private LongAdder dirtyPages = new LongAdder();
+    private final LongAdder dirtyPages = new LongAdder();
+
+    /** */
+    private final LongAdder readPages = new LongAdder();
+
+    /** */
+    private final LongAdder writtenPages = new LongAdder();
+
+    /** */
+    private final LongAdder replacedPages = new LongAdder();
+
+    /** */
+    private final AtomicLong offHeapSize = new AtomicLong();
+
+    /** */
+    private final AtomicLong checkpointBufferSize = new AtomicLong();
 
     /** */
     private volatile boolean metricsEnabled;
@@ -111,7 +132,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     @Override public long getTotalAllocatedSize() {
         assert pageMem != null;
 
-        return getTotalAllocatedPages() * pageMem.pageSize();
+        return getTotalAllocatedPages() * (persistenceEnabled ? pageMem.pageSize() : pageMem.systemPageSize());
     }
 
     /** {@inheritDoc} */
@@ -193,12 +214,12 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** {@inheritDoc} */
     @Override public long getPhysicalMemorySize() {
-        return getPhysicalMemoryPages() * pageMem.pageSize();
+        return getPhysicalMemoryPages() * pageMem.systemPageSize();
     }
 
     /** {@inheritDoc} */
-    @Override public long getCheckpointBufferPages() {
-        if (!metricsEnabled)
+    @Override public long getUsedCheckpointBufferPages() {
+        if (!metricsEnabled || !persistenceEnabled)
             return 0;
 
         assert pageMem != null;
@@ -207,18 +228,80 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     }
 
     /** {@inheritDoc} */
-    @Override public long getCheckpointBufferSize() {
-        return getCheckpointBufferPages() * pageMem.pageSize();
+    @Override public long getUsedCheckpointBufferSize() {
+        return getUsedCheckpointBufferPages() * pageMem.systemPageSize();
     }
 
     /** {@inheritDoc} */
-    public int getPageSize() {
+    @Override public long getCheckpointBufferSize() {
+        if (!metricsEnabled || !persistenceEnabled)
+            return 0;
+
+        return checkpointBufferSize.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getPageSize() {
         if (!metricsEnabled)
             return 0;
 
         assert pageMem != null;
 
         return pageMem.pageSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesRead() {
+        if (!metricsEnabled)
+            return 0;
+
+        return readPages.longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesWritten() {
+        if (!metricsEnabled)
+            return 0;
+
+        return writtenPages.longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPagesReplaced() {
+        if (!metricsEnabled)
+            return 0;
+
+        return replacedPages.longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffHeapSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        return offHeapSize.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getOffheapUsedSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        return pageMem.loadedPages() * pageMem.systemPageSize();
+    }
+
+    /**
+     * @param size Region size.
+     */
+    public void updateOffHeapSize(long size) {
+        this.offHeapSize.addAndGet(size);
+    }
+
+    /**
+     * @param size Checkpoint buffer size.
+     */
+    public void updateCheckpointBufferSize(long size) {
+        this.checkpointBufferSize.addAndGet(size);
     }
 
     /**
@@ -229,7 +312,25 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
             pageReplaceRate.onHit();
 
             pageReplaceAge.onHits(pageAge);
+
+            replacedPages.increment();
         }
+    }
+
+    /**
+     * Updates page read.
+     */
+    public void onPageRead(){
+        if (metricsEnabled)
+            readPages.increment();
+    }
+
+    /**
+     * Updates page written.
+     */
+    public void onPageWritten(){
+        if (metricsEnabled)
+            writtenPages.increment();
     }
 
     /**
@@ -271,6 +372,16 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
             if (delta > 0)
                 updateAllocationRateMetrics(delta);
         }
+    }
+
+    /**
+     * Get or allocate group allocation trucker.
+     *
+     * @param grpId Group id.
+     * @return Group allocation trucker.
+     */
+    public GroupAllocationTrucker getOrAllocateGroupPageAllocationTracker(int grpId) {
+        return groupAllocationTruckers.getOrDefault(grpId, new GroupAllocationTrucker(this));
     }
 
     /**

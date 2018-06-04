@@ -77,13 +77,6 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(getServerNodeCount());
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
     /**
      * @throws Exception If failed.
      */

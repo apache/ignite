@@ -235,7 +235,7 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
             if (awaited.remove(node.id())) {
                 GridDhtPartitionsFullMessage fullMsg0 = msg.finishMessage();
 
-                if (fullMsg0 != null) {
+                if (fullMsg0 != null && fullMsg0.resultTopologyVersion() != null) {
                     assert fullMsg == null || fullMsg.resultTopologyVersion().equals(fullMsg0.resultTopologyVersion());
 
                     fullMsg  = fullMsg0;
@@ -338,6 +338,9 @@ public class InitNewCoordinatorFuture extends GridCompoundFuture {
 
         synchronized (this) {
             done = awaited.remove(nodeId) && awaited.isEmpty();
+
+            if (done)
+                onAllReceived();
         }
 
         if (done)

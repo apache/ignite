@@ -24,7 +24,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.compute.ComputeExecutionRejectedException;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -36,15 +35,16 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * Responsible for performing fitness evaluation on an individual chromosome
  */
 public class FitnessJob extends ComputeJobAdapter {
-
     /**
      * Chromosome primary Key
      */
     private Long key;
 
+    /** Ignite instance */
     @IgniteInstanceResource
     private Ignite ignite = null;
 
+    /** Ignite logger */
     @LoggerResource
     private IgniteLogger log = null;
 
@@ -77,7 +77,7 @@ public class FitnessJob extends ComputeJobAdapter {
 
         long[] geneKeys = chromosome.getGenes();
 
-        List<Gene> genes = new ArrayList();
+        List<Gene> genes = new ArrayList<Gene>();
 
         for (int i = 0; i < geneKeys.length; i++) {
             long aKey = geneKeys[i];

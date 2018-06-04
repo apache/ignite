@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -28,7 +28,20 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         private static readonly string[] MissingProperties =
         {
             // IGNITE-7305
-            "WalBuffPollSpinsRate"
+            "WalBuffPollSpinsRate",
+            "WalTotalSize",
+            "WalLastRollOverTime",
+            "CheckpointTotalTime",
+            "DirtyPages",
+            "PagesRead",
+            "PagesWritten",
+            "PagesReplaced",
+            "OffHeapSize",
+            "OffheapUsedSize",
+            "TotalAllocatedSize",
+            "UsedCheckpointBufferPages",
+            "UsedCheckpointBufferSize",
+            "CheckpointBufferSize"
         };
 
         /// <summary>

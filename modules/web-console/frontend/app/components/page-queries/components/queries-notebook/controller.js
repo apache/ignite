@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
+import id8 from 'app/utils/id8';
 import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/operator/merge';
 import 'rxjs/add/operator/switchMap';
@@ -39,6 +40,8 @@ const TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
 const ROW_IDX = {value: -2, type: 'java.lang.Integer', label: 'ROW_IDX'};
 
 const NON_COLLOCATED_JOINS_SINCE = '1.7.0';
+
+const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], '2.5.2'];
 
 const ENFORCE_JOIN_SINCE = [['1.7.9', '1.8.0'], ['1.8.4', '1.9.0'], '1.9.1'];
 
@@ -147,8 +150,8 @@ class Paragraph {
 
             let cause = err;
 
-            while (_.nonNil(cause)) {
-                if (_.nonEmpty(cause.className) &&
+            while (nonNil(cause)) {
+                if (nonEmpty(cause.className) &&
                     _.includes(['SQLException', 'JdbcSQLException', 'QueryCancelledException'], JavaTypes.shortClassName(cause.className))) {
                     this.error.message = cause.message || cause.className;
 
@@ -158,10 +161,10 @@ class Paragraph {
                 cause = cause.cause;
             }
 
-            if (_.isEmpty(this.error.message) && _.nonEmpty(err.className)) {
+            if (_.isEmpty(this.error.message) && nonEmpty(err.className)) {
                 this.error.message = 'Internal cluster error';
 
-                if (_.nonEmpty(err.className))
+                if (nonEmpty(err.className))
                     this.error.message += ': ' + err.className;
             }
         };
@@ -171,7 +174,7 @@ class Paragraph {
         if (_.isNil(this.queryArgs))
             return null;
 
-        if (_.nonEmpty(this.error.message))
+        if (nonEmpty(this.error.message))
             return 'error';
 
         if (_.isEmpty(this.rows))
@@ -197,7 +200,7 @@ class Paragraph {
     }
 
     queryExecuted() {
-        return _.nonEmpty(this.meta) || _.nonEmpty(this.error.message);
+        return nonEmpty(this.meta) || nonEmpty(this.error.message);
     }
 
     scanExplain() {
@@ -209,11 +212,11 @@ class Paragraph {
     }
 
     chartColumnsConfigured() {
-        return _.nonEmpty(this.chartKeyCols) && _.nonEmpty(this.chartValCols);
+        return nonEmpty(this.chartKeyCols) && nonEmpty(this.chartValCols);
     }
 
     chartTimeLineEnabled() {
-        return _.nonEmpty(this.chartKeyCols) && _.eq(this.chartKeyCols[0], TIME_LINE);
+        return nonEmpty(this.chartKeyCols) && _.eq(this.chartKeyCols[0], TIME_LINE);
     }
 
     executionInProgress(showLocal = false) {
@@ -922,7 +925,7 @@ export class NotebookCtrl {
                     });
 
                     // Await for demo caches.
-                    if (!$ctrl.demoStarted && $root.IgniteDemoMode && _.nonEmpty(cacheNames)) {
+                    if (!$ctrl.demoStarted && $root.IgniteDemoMode && nonEmpty(cacheNames)) {
                         $ctrl.demoStarted = true;
 
                         Loading.finish('sqlLoading');
@@ -935,7 +938,7 @@ export class NotebookCtrl {
 
         const _startWatch = () => {
             const awaitClusters$ = fromPromise(
-                agentMgr.startClusterWatch('Back to Configuration', 'base.configuration.tabs.advanced.clusters'));
+                agentMgr.startClusterWatch('Leave Queries', 'default-state'));
 
             const finishLoading$ = defer(() => {
                 if (!$root.IgniteDemoMode)
@@ -1405,7 +1408,7 @@ export class NotebookCtrl {
                 .then(() => _closeOldQuery(paragraph))
                 .then(() => args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins,
-                    args.enforceJoinOrder, false, !!args.localNid, args.pageSize, args.lazy))
+                    args.enforceJoinOrder, false, !!args.localNid, args.pageSize, args.lazy, args.collocated))
                 .then((res) => _processQueryResult(paragraph, false, res))
                 .catch((err) => paragraph.setError(err));
         };
@@ -1434,6 +1437,15 @@ export class NotebookCtrl {
 
             if (cache)
                 return !!_.find(cache.nodes, (node) => Version.since(node.version, NON_COLLOCATED_JOINS_SINCE));
+
+            return false;
+        };
+
+        $scope.collocatedJoinsAvailable = (paragraph) => {
+            const cache = _.find($scope.caches, {name: paragraph.cacheName});
+
+            if (cache)
+                return !!_.find(cache.nodes, (node) => Version.since(node.version, ...COLLOCATED_QUERY_SINCE));
 
             return false;
         };
@@ -1473,11 +1485,13 @@ export class NotebookCtrl {
             const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
             const enforceJoinOrder = !!paragraph.enforceJoinOrder;
             const lazy = !!paragraph.lazy;
+            const collocated = !!paragraph.collocated;
 
             $scope.queryAvailable(paragraph) && _chooseNode(paragraph.cacheName, local)
                 .then((nid) => {
-                    Notebook.save($scope.notebook)
-                        .catch(Messages.showError);
+                    // If we are executing only selected part of query then Notebook shouldn't be saved.
+                    if (!paragraph.partialQuery)
+                        Notebook.save($scope.notebook).catch(Messages.showError);
 
                     paragraph.localQueryMode = local;
                     paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
@@ -1486,23 +1500,26 @@ export class NotebookCtrl {
 
                     return _closeOldQuery(paragraph)
                         .then(() => {
+                            const query = paragraph.partialQuery || paragraph.query;
+
                             const args = paragraph.queryArgs = {
                                 type: 'QUERY',
                                 cacheName: $scope.cacheNameForSql(paragraph),
-                                query: paragraph.query,
+                                query,
                                 pageSize: paragraph.pageSize,
                                 maxPages: paragraph.maxPages,
                                 nonCollocatedJoins,
                                 enforceJoinOrder,
                                 localNid: local ? nid : null,
-                                lazy
+                                lazy,
+                                collocated
                             };
-
-                            const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : paragraph.query;
 
                             ActivitiesData.post({ action: '/queries/execute' });
 
-                            return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize, lazy);
+                            const qry = args.maxPages ? addLimit(args.query, args.pageSize * args.maxPages) : query;
+
+                            return agentMgr.querySql(nid, args.cacheName, qry, nonCollocatedJoins, enforceJoinOrder, false, local, args.pageSize, lazy, collocated);
                         })
                         .then((res) => {
                             _processQueryResult(paragraph, true, res);
@@ -1555,7 +1572,7 @@ export class NotebookCtrl {
 
                     ActivitiesData.post({ action: '/queries/explain' });
 
-                    return agentMgr.querySql(nid, args.cacheName, args.query, false, !!paragraph.enforceJoinOrder, false, false, args.pageSize, false);
+                    return agentMgr.querySql(nid, args.cacheName, args.query, args.nonCollocatedJoins, !!paragraph.enforceJoinOrder, false, false, args.pageSize, false, args.collocated);
                 })
                 .then((res) => _processQueryResult(paragraph, true, res))
                 .catch((err) => {
@@ -1749,7 +1766,7 @@ export class NotebookCtrl {
             return Promise.resolve(args.localNid || _chooseNode(args.cacheName, false))
                 .then((nid) => args.type === 'SCAN'
                     ? agentMgr.queryScanGetAll(nid, args.cacheName, args.query, !!args.regEx, !!args.caseSensitive, !!args.near, !!args.localNid)
-                    : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid, !!args.lazy))
+                    : agentMgr.querySqlGetAll(nid, args.cacheName, args.query, !!args.nonCollocatedJoins, !!args.enforceJoinOrder, false, !!args.localNid, !!args.lazy, !!args.collocated))
                 .then((res) => _export(exportFileName(paragraph, true), paragraph.gridOptions.columnDefs, res.columns, res.rows))
                 .catch(Messages.showError)
                 .then(() => {
@@ -1902,7 +1919,7 @@ export class NotebookCtrl {
 
                 // Attach duration and selected node info
                 scope.meta = `Duration: ${$filter('duration')(paragraph.duration)}.`;
-                scope.meta += paragraph.localQueryMode ? ` Node ID8: ${_.id8(paragraph.resNodeId)}` : '';
+                scope.meta += paragraph.localQueryMode ? ` Node ID8: ${id8(paragraph.resNodeId)}` : '';
 
                 // Show a basic modal from a controller
                 $modal({scope, templateUrl: messageTemplateUrl, show: true});
@@ -1919,7 +1936,7 @@ export class NotebookCtrl {
                 const tab = '&nbsp;&nbsp;&nbsp;&nbsp;';
 
                 const addToTrace = (item) => {
-                    if (_.nonNil(item)) {
+                    if (nonNil(item)) {
                         const clsName = _.isEmpty(item.className) ? '' : '[' + JavaTypes.shortClassName(item.className) + '] ';
 
                         scope.content.push((scope.content.length > 0 ? tab : '') + clsName + (item.message || ''));

@@ -20,6 +20,10 @@
 .ui-grid-header--subcategories {
     border-color: $table-border-color;
 
+    .ui-grid-header-canvas {
+        background-color: #f5f5f5;
+    }
+
     .ui-grid-row:nth-child(even) .ui-grid-cell.cell-total {
         background-color: rgba(102,175,233,.6);
     }
@@ -33,6 +37,9 @@
     }
 
     .ui-grid-header-cell {
+        // Workaround: Fixed cell header offset in IE11.
+        vertical-align: top;
+
         .ui-grid-cell-contents > span:not(.ui-grid-header-cell-label) {
             right: 3px;
         }
@@ -44,7 +51,7 @@
 
     .ui-grid-header-cell [role="columnheader"] {
         display: flex;
-        
+
         flex-wrap: wrap;
         align-items: center;
         justify-content: center;
@@ -77,15 +84,29 @@
         .ui-grid-column-resizer.right {
             top: -100px;
         }
+
         .ng-hide + .ui-grid-header-cell-row .ui-grid-column-resizer.right {
             bottom: 0;
+        }
+
+        &.ui-grid-header-cell:not(:first-child) {
+            left: 0;
+            box-shadow: -1px 0px 0 0 #d4d4d4;
         }
 
         &.ui-grid-header-cell .ui-grid-header-cell .ui-grid-column-resizer.right {
             border-right-width: 0;
         }
+
         &.ui-grid-header-cell .ui-grid-header-cell:last-child .ui-grid-column-resizer.right {
-            border-right-width: 1px;
+            // Hide all right borders, and fix cell offset.
+            right: -1px;
+            border: none;
+        }
+
+        &.ui-grid-header-cell [ng-show] .ui-grid-cell-contents {
+            text-indent: -20px;
+            margin-right: -20px;
         }
 
         & > div > .ui-grid-cell-contents {
@@ -95,5 +116,18 @@
 
     input {
         line-height: 21px;
+    }
+}
+
+.ui-grid[ui-grid-selection][ui-grid-grouping],
+.ui-grid[ui-grid-selection][ui-grid-tree-view] {
+    .ui-grid-pinned-container-left {
+        .ui-grid-header--subcategories {
+            .ui-grid-header-span {
+                &.ui-grid-header-cell {
+                    box-shadow: none;
+                }
+            }
+        }
     }
 }

@@ -77,11 +77,6 @@ public class GridProjectionForCachesOnDaemonNodeSelfTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     protected void beforeTest() throws Exception {
         ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
     }

@@ -47,11 +47,6 @@ abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         assert grid(0).cluster().nodes().size() == gridCount();
     }

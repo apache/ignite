@@ -45,6 +45,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import static org.apache.ignite.IgniteState.STOPPED;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_SALVAGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -109,8 +110,6 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         IGNITEs.clear();
     }
 
@@ -188,7 +187,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
                     return true;
                 }
-            }, EVT_NODE_LEFT);
+            }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             stopGrid(idx);
 
@@ -268,7 +267,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
                 return true;
             }
-        }, EVT_NODE_LEFT);
+        }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         stopGrid(idx);
 
