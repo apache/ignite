@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.imputing;
+package org.apache.ignite.ml.preprocessing.encoding;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.preprocessing.imputer.ImputerPreprocessor;
-import org.apache.ignite.ml.preprocessing.imputer.ImputerTrainer;
-import org.apache.ignite.ml.preprocessing.imputer.ImputingStrategy;
+import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderPreprocessor;
+import org.apache.ignite.ml.preprocessing.encoding.stringencoder.StringEncoderTrainer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -32,10 +31,10 @@ import org.junit.runners.Parameterized;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Tests for {@link ImputerTrainer}.
+ * Tests for {@link StringEncoderTrainer}.
  */
 @RunWith(Parameterized.class)
-public class ImputerTrainerTest {
+public class StringEncoderTrainerTest {
     /** Parameters. */
     @Parameterized.Parameters(name = "Data divided on {0} partitions")
     public static Iterable<Integer[]> data() {
@@ -57,22 +56,23 @@ public class ImputerTrainerTest {
     /** Tests {@code fit()} method. */
     @Test
     public void testFit() {
-        Map<Integer, double[]> data = new HashMap<>();
-        data.put(1, new double[] {1, 2, Double.NaN,});
-        data.put(2, new double[] {1, Double.NaN, 22});
-        data.put(3, new double[] {Double.NaN, 10, 100});
-        data.put(4, new double[] {0, 2, 100});
+        Map<Integer, String[]> data = new HashMap<>();
+        data.put(1, new String[] {"Monday", "September"});
+        data.put(2, new String[] {"Monday", "August"});
+        data.put(3, new String[] {"Monday", "August"});
+        data.put(4, new String[] {"Friday", "June"});
+        data.put(5, new String[] {"Friday", "June"});
+        data.put(6, new String[] {"Sunday", "August"});
 
-        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+        DatasetBuilder<Integer, String[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
-        ImputerTrainer<Integer, double[]> imputerTrainer = new ImputerTrainer<Integer, double[]>()
-            .withImputingStrategy(ImputingStrategy.MOST_FREQUENT);
+        StringEncoderTrainer<Integer, String[]> strEncoderTrainer = new StringEncoderTrainer<>();
 
-        ImputerPreprocessor<Integer, double[]> preprocessor = imputerTrainer.fit(
+        StringEncoderPreprocessor<Integer, String[]> preprocessor = strEncoderTrainer.fit(
             datasetBuilder,
             (k, v) -> v
         );
 
-        assertArrayEquals(new double[] {1, 0, 100}, preprocessor.apply(5, new double[] {Double.NaN, 0, Double.NaN}), 1e-8);
+        assertArrayEquals(new double[] {0.0, 2.0}, preprocessor.apply(7, new String[] {"Monday", "September"}), 1e-8);
     }
 }
