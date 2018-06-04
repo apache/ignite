@@ -104,6 +104,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -1345,6 +1346,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         /** Formatted index. */
         private int formatted;
 
+        /** Worker that encapsulates thread body */
+        private GridWorker worker;
+
         /**
          *
          */
@@ -1352,6 +1356,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             super("wal-file-archiver%" + cctx.igniteInstanceName());
 
             this.lastAbsArchivedIdx = lastAbsArchivedIdx;
+
+            worker = makeWorker(getName(), this::workerBody);
         }
 
         /**
@@ -1421,8 +1427,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 reserved.put(absIdx, cur - 1);
         }
 
-        /** {@inheritDoc} */
-        @Override public void run() {
+        /** */
+        private void workerBody() {
             try {
                 allocateRemainingFiles();
             }
@@ -1471,7 +1477,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                         while (locked.containsKey(toArchive) && !stopped)
                             wait();
 
-                        // Then increase counter to allow rollover on clean working file
                         changeLastArchivedIndexAndWakeupCompressor(toArchive);
 
                         notifyAll();
@@ -1498,6 +1503,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            worker.run();
         }
 
         /**
