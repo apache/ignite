@@ -394,6 +394,109 @@
         </profile>
 
         <profile>
+            <id>jcache-tck-1.1</id>
+
+            <properties>
+                <domain-lib-dir>${project.build.directory}/domainlib</domain-lib-dir>
+                <domain-jar>domain.jar</domain-jar>
+            </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>javax.cache</groupId>
+                    <artifactId>cache-tests</artifactId>
+                    <version>${javax.cache.tck.version.1.1}</version>
+                </dependency>
+
+                <dependency>
+                    <groupId>javax.cache</groupId>
+                    <artifactId>cache-tests</artifactId>
+                    <classifier>tests</classifier>
+                    <version>${javax.cache.tck.version.1.1}</version>
+                    <scope>test</scope>
+                </dependency>
+
+                <dependency>
+                    <groupId>org.hamcrest</groupId>
+                    <artifactId>hamcrest-library</artifactId>
+                    <version>${hamcrest.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>2.8</version>
+                        <executions>
+                            <!--Required because JUnit will not detect tests simply included in a dep-->
+                            <execution>
+                                <id>copy-cache-tests</id>
+                                <goals>
+                                    <goal>unpack-dependencies</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.testOutputDirectory}</outputDirectory>
+                                    <includeArtifactIds>cache-tests</includeArtifactIds>
+                                    <includeScope>test</includeScope>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-domain</id>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>javax.cache</groupId>
+                                            <artifactId>app-domain</artifactId>
+                                            <version>${javax.cache.version}</version>
+                                            <outputDirectory>${domain-lib-dir}</outputDirectory>
+                                            <destFileName>${domain-jar}</destFileName>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <configuration>
+                            <skip>true</skip>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <domainJar>${domain-lib-dir}/${domain-jar}</domainJar>
+                                <javax.management.builder.initial>org.apache.ignite.internal.tck.TCKMBeanServerBuilder</javax.management.builder.initial>
+                                <org.jsr107.tck.management.agentId>IgniteMBeanServer</org.jsr107.tck.management.agentId>
+                                <javax.cache.CacheManager>org.apache.ignite.cache.CacheManager</javax.cache.CacheManager>
+                                <javax.cache.Cache>org.apache.ignite.IgniteCache</javax.cache.Cache>
+                                <javax.cache.Cache.Entry>org.apache.ignite.internal.processors.cache.CacheEntryImpl</javax.cache.Cache.Entry>
+                                <javax.cache.annotation.CacheInvocationContext>javax.cache.annotation.impl.cdi.CdiCacheKeyInvocationContextImpl</javax.cache.annotation.CacheInvocationContext>
+                                <IGNITE_QUIET>false</IGNITE_QUIET>
+                            </systemPropertyVariables>
+                            <excludes>
+                                <exclude>**/org/apache/ignite/**/*Test.java</exclude>
+                                <exclude>**/annotation/*Test.java</exclude>
+                                <exclude>**/ClientServerTest.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
             <id>jcache-tck</id>
 
             <properties>
