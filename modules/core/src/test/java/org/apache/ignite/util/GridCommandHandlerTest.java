@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.TreeMap;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.commandline.CommandHandler;
 import org.apache.ignite.internal.commandline.cache.CacheCommand;
+import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -402,7 +404,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
             for (VisorTxInfo info : res.getInfos()) {
                 if (info.getSize() == 100) {
-                    toKill[0] = info;
+                    toKill[0] = info; // Store for further use.
 
                     break;
                 }
@@ -411,7 +413,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             assertEquals(3, map.size());
         }, "--tx");
 
-        assertNotNull(toKill);
+        assertNotNull(toKill[0]);
 
         // Test filter by label.
         validate(h, map -> {
@@ -460,21 +462,18 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         }, "--tx", "order", "DURATION");
 
         // Trigger topology change and test connection.
-        IgniteInternalFuture<?> startFut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    startGrid(2);
-                }
-                catch (Exception e) {
-                    fail();
-                }
+        IgniteInternalFuture<?> startFut = multithreadedAsync(() -> {
+            try {
+                startGrid(2);
+            }
+            catch (Exception e) {
+                fail();
             }
         }, 1, "start-node-thread");
 
-        doSleep(5000);
+        doSleep(5000); // Give enough time to reach exchange future.
 
-        assertEquals(EXIT_CODE_OK, execute(h, "--host", "127.0.0.1", "--port", "11211", "--tx"));
-        assertEquals(EXIT_CODE_OK, execute(h, "--host", "127.0.0.1", "--port", "11212", "--tx"));
+        assertEquals(EXIT_CODE_OK, execute(h, "--tx"));
 
         // Test kill by xid.
         validate(h, map -> {
@@ -486,7 +485,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
                 assertEquals(toKill[0].getXid(), info.getXid());
             }, "--tx", "kill",
-            "xid", toKill[0].getXid().toString(),
+            "xid", toKill[0].getXid().toString(), // Use saved on first run value.
             "nodes", grid(0).localNode().consistentId().toString());
 
         unlockLatch.countDown();
@@ -494,6 +493,10 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         startFut.get();
 
         fut.get();
+
+        awaitPartitionMapExchange();
+
+        checkFutures();
     }
 
     /**
@@ -879,5 +882,21 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
                 }
             }
         }, 4, "tx-thread");
+    }
+
+    /**
+     * Checks if all tx futures are finished.
+     */
+    private void checkFutures() {
+        for (Ignite ignite : G.allGrids()) {
+            IgniteEx ig = (IgniteEx)ignite;
+
+            final Collection<GridCacheFuture<?>> futs = ig.context().cache().context().mvcc().activeFutures();
+
+            for (GridCacheFuture<?> fut : futs)
+                log.info("Waiting for future: " + fut);
+
+            assertTrue("Expecting no active futures: node=" + ig.localNode().id(), futs.isEmpty());
+        }
     }
 }
