@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -177,7 +178,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         if (queueQryId != null)
             cctx.continuousQueries().cancelInternalQuery(queueQryId);
 
-        multimapQryIds.forEach(cctx.continuousQueries()::cancelInternalQuery);
+        for (UUID id : multimapQryIds)
+            cctx.continuousQueries().cancelInternalQuery(id);
 
         for (GridCacheQueueProxy q : queuesMap.values())
             q.delegate().onKernalStop();
@@ -741,32 +743,35 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             if (multimapQryGuard.compareAndSet(false, true)) {
                 UUID qryId = cctx.continuousQueries().executeInternalQuery(
-                    evts -> {
-                        if (!busyLock.enterBusy())
-                            return;
+                    new CacheEntryUpdatedListener<Object, Object>() {
+                        @Override public void onUpdated(
+                            Iterable<CacheEntryEvent<?, ?>> evts) throws CacheEntryListenerException {
+                            if (!busyLock.enterBusy())
+                                return;
 
-                        try {
-                            for (CacheEntryEvent<?, ?> e : evts) {
-                                GridCacheMultimapHeaderKey key1 = (GridCacheMultimapHeaderKey)e.getKey();
-                                GridCacheMultimapHeader hdr1 = (GridCacheMultimapHeader)e.getValue();
+                            try {
+                                for (CacheEntryEvent<?, ?> e : evts) {
+                                    GridCacheMultimapHeaderKey key1 = (GridCacheMultimapHeaderKey)e.getKey();
+                                    GridCacheMultimapHeader hdr1 = (GridCacheMultimapHeader)e.getValue();
 
-                                for (final GridCacheMultimapProxy multimap : multimapsMap.values()) {
-                                    if (multimap.name().equals(key1.multimapName()) && hdr1 == null) {
-                                        GridCacheMultimapHeader oldHdr = (GridCacheMultimapHeader)e.getOldValue();
+                                    for (final GridCacheMultimapProxy multimap : multimapsMap.values()) {
+                                        if (multimap.name().equals(key1.multimapName()) && hdr1 == null) {
+                                            GridCacheMultimapHeader oldHdr = (GridCacheMultimapHeader)e.getOldValue();
 
-                                        assert oldHdr != null;
+                                            assert oldHdr != null;
 
-                                        if (oldHdr.id().equals(multimap.delegate().id())) {
-                                            multimap.delegate().onRemoved(false);
+                                            if (oldHdr.id().equals(multimap.delegate().id())) {
+                                                multimap.delegate().onRemoved(false);
 
-                                            multimapsMap.remove(multimap.delegate().id());
+                                                multimapsMap.remove(multimap.delegate().id());
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                        finally {
-                            busyLock.leaveBusy();
+                            finally {
+                                busyLock.leaveBusy();
+                            }
                         }
                     },
                     new MultimapHeaderPredicate(),
