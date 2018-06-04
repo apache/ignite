@@ -34,7 +34,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.h2.H2Cursor;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
-import org.apache.ignite.internal.processors.query.h2.H2TableDescriptor;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -109,8 +108,6 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         int typeId = cctx.binaryMarshaller() ? typeDesc.typeId() : typeDesc.valueClass().hashCode();
 
-        boolean isPk = F.eq(name, H2TableDescriptor.PK_IDX_NAME);
-
         name = (tbl.rowDescriptor() == null ? "" : typeId + "_") + name;
 
         name = BPlusTree.treeName(name, "H2Tree");
@@ -130,7 +127,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
                     segments[i] = new H2Tree(
                         name,
-                        isPk,
+                        pk,
                         cctx.offheap().reuseListForIndex(name),
                         cctx.groupId(),
                         cctx.dataRegion().pageMemory(),
