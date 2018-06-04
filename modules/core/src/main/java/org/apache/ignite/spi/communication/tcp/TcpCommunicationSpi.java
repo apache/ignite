@@ -111,6 +111,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
@@ -805,7 +806,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             /** {@inheritDoc} */
             @Override public void onFailure(FailureType failureType, Throwable failure) {
-                ((IgniteEx)ignite).context().failure().process(new FailureContext(failureType, failure));
+                if (ignite instanceof IgniteEx)
+                    ((IgniteEx)ignite).context().failure().process(new FailureContext(failureType, failure));
             }
 
             /**
@@ -2367,31 +2369,34 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         new GridConnectionBytesVerifyFilter(log)
                     };
 
-                GridNioServer<Message> srvr =
-                    GridNioServer.<Message>builder()
-                        .address(locHost)
-                        .port(port)
-                        .listener(srvLsnr)
-                        .logger(log)
-                        .selectorCount(selectorsCnt)
-                        .igniteInstanceName(igniteInstanceName)
-                        .serverName("tcp-comm")
-                        .tcpNoDelay(tcpNoDelay)
-                        .directBuffer(directBuf)
-                        .byteOrder(ByteOrder.nativeOrder())
-                        .socketSendBufferSize(sockSndBuf)
-                        .socketReceiveBufferSize(sockRcvBuf)
-                        .sendQueueLimit(msgQueueLimit)
-                        .directMode(true)
-                        .metricsListener(metricsLsnr)
-                        .writeTimeout(sockWriteTimeout)
-                        .selectorSpins(selectorSpins)
-                        .filters(filters)
-                        .writerFactory(writerFactory)
-                        .skipRecoveryPredicate(skipRecoveryPred)
-                        .messageQueueSizeListener(queueSizeMonitor)
-                        .readWriteSelectorsAssign(usePairedConnections)
-                        .build();
+                GridNioServer.Builder<Message> builder = GridNioServer.<Message>builder()
+                    .address(locHost)
+                    .port(port)
+                    .listener(srvLsnr)
+                    .logger(log)
+                    .selectorCount(selectorsCnt)
+                    .igniteInstanceName(igniteInstanceName)
+                    .serverName("tcp-comm")
+                    .tcpNoDelay(tcpNoDelay)
+                    .directBuffer(directBuf)
+                    .byteOrder(ByteOrder.nativeOrder())
+                    .socketSendBufferSize(sockSndBuf)
+                    .socketReceiveBufferSize(sockRcvBuf)
+                    .sendQueueLimit(msgQueueLimit)
+                    .directMode(true)
+                    .metricsListener(metricsLsnr)
+                    .writeTimeout(sockWriteTimeout)
+                    .selectorSpins(selectorSpins)
+                    .filters(filters)
+                    .writerFactory(writerFactory)
+                    .skipRecoveryPredicate(skipRecoveryPred)
+                    .messageQueueSizeListener(queueSizeMonitor)
+                    .readWriteSelectorsAssign(usePairedConnections);
+
+                if (ignite instanceof IgniteEx)
+                    builder.workerListener(((IgniteEx)ignite).context().workersRegistry());
+
+                GridNioServer<Message> srvr = builder.build();
 
                 boundTcpPort = port;
 
@@ -4204,15 +4209,28 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         /** */
         private final BlockingQueue<DisconnectedSessionInfo> q = new LinkedBlockingQueue<>();
 
+        /** Worker that encapsulates thread body */
+        private GridWorker worker;
+
         /**
          * @param igniteInstanceName Ignite instance name.
          */
         private CommunicationWorker(String igniteInstanceName) {
             super(igniteInstanceName, "tcp-comm-worker", log);
+
+            WorkersRegistry workerRegistry = ignite instanceof IgniteEx
+                ? ((IgniteEx)ignite).context().workersRegistry()
+                : null;
+
+            worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
+                @Override protected void body() throws InterruptedException {
+                    workerBody();
+                }
+            };
         }
 
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException {
+        /** */
+        private void workerBody() throws InterruptedException {
             if (log.isDebugEnabled())
                 log.debug("Tcp communication worker has been started.");
 
@@ -4235,14 +4253,21 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 throw t;
             }
             finally {
-                if (err == null && !stopping)
-                    err = new IllegalStateException("Thread  " + getName() + " is terminated unexpectedly.");
+                if (ignite instanceof IgniteEx) {
+                    if (err == null && !stopping)
+                        err = new IllegalStateException("Thread  " + getName() + " is terminated unexpectedly.");
 
-                if (err instanceof OutOfMemoryError)
-                    ((IgniteEx)ignite).context().failure().process(new FailureContext(CRITICAL_ERROR, err));
-                else if (err != null)
-                    ((IgniteEx)ignite).context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                    if (err instanceof OutOfMemoryError)
+                        ((IgniteEx)ignite).context().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                    else if (err != null)
+                        ((IgniteEx)ignite).context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                }
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() {
+            worker.run();
         }
 
         /**

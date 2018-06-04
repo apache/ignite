@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
@@ -171,6 +173,22 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
      */
     protected String kernalStopInfo() {
         return "Cache manager received onKernalStop() callback.";
+    }
+
+    /**
+     * Creates {@link GridWorker} object from {@link Runnable} given.
+     *
+     * @param workerName name of the newly created worker.
+     * @param r {@link Runnable} to be used as worker body.
+     */
+    protected GridWorker makeWorker(String workerName, Runnable r) {
+        WorkersRegistry workerRegistry = cctx.kernalContext().workersRegistry();
+
+        return new GridWorker(cctx.igniteInstanceName(), workerName, log, workerRegistry) {
+            @Override protected void body() {
+                r.run();
+            }
+        };
     }
 
     /** {@inheritDoc} */

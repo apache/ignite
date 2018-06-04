@@ -109,6 +109,7 @@ import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -1527,6 +1528,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Formatted index. */
         private int formatted;
 
+        /** Worker that encapsulates thread body */
+        private GridWorker worker;
+
         /**
          * Maps absolute segment index to locks counter. Lock on segment protects from archiving segment and may come
          * from {@link RecordsIterator} during WAL replay. Map itself is guarded by <code>this</code>.
@@ -1540,6 +1544,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             super("wal-file-archiver%" + cctx.igniteInstanceName());
 
             this.lastAbsArchivedIdx = lastAbsArchivedIdx;
+
+            this.worker = makeWorker(getName(), this::workerBody);
         }
 
         /**
@@ -1576,8 +1582,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return locked.containsKey(absIdx);
         }
 
-        /** {@inheritDoc} */
-        @Override public void run() {
+        /** */
+        private void workerBody() {
             try {
                 allocateRemainingFiles();
             }
@@ -1653,6 +1659,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            worker.run();
         }
 
         /**
@@ -3215,15 +3226,20 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Parked threads. */
         final Map<Thread, Long> waiters = new ConcurrentHashMap<>();
 
+        /** Worker that encapsulates thread body */
+        private GridWorker worker;
+
         /**
          * Default constructor.
          */
         WALWriter() {
             super("wal-write-worker%" + cctx.igniteInstanceName());
+
+            worker = makeWorker(getName(), this::workerBody);
         }
 
-        /** {@inheritDoc} */
-        @Override public void run() {
+        /** */
+        private void workerBody() {
             Throwable err = null;
 
             try {
@@ -3312,6 +3328,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            worker.run();
         }
 
         /**
