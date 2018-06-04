@@ -15,40 +15,8 @@
  * limitations under the License.
  */
 
-page-signin {
-    display: flex;
-    flex-direction: column;
-    flex: 1 0 auto;
-
-    section {
-        margin-left: auto;
-        margin-right: auto;
-        width: 530px;
-
-        h3 {
-            font-size: 38px;
-            font-weight: 300;
-            margin: 30px 0 30px;
-        }
-
-        .form-field {
-            margin: 10px 0;
-        }
-
-        .form-footer {
-            padding: 15px 0;
-            text-align: right;
-            display: flex;
-            align-items: center;
-
-            .btn-ignite {
-                margin-left: auto;
-            }
-        }
-    }
-
-    .page-signin__no-account-message {
-        text-align: center;
-        margin: 20px 0;
-    } 
-}
+/**
+ * <!-- Package description. -->
+ * Contains string encoding preprocessor.
+ */
+package org.apache.ignite.ml.preprocessing.encoding.stringencoder;

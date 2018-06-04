@@ -15,40 +15,21 @@
  * limitations under the License.
  */
 
-page-signin {
-    display: flex;
-    flex-direction: column;
-    flex: 1 0 auto;
+package org.apache.ignite.ml.math.exceptions.preprocessing;
 
-    section {
-        margin-left: auto;
-        margin-right: auto;
-        width: 530px;
+import org.apache.ignite.IgniteException;
 
-        h3 {
-            font-size: 38px;
-            font-weight: 300;
-            margin: 30px 0 30px;
-        }
+/**
+ * Indicates an unknown String value for StringEncoder.
+ */
+public class UnknownStringValue extends IgniteException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-        .form-field {
-            margin: 10px 0;
-        }
-
-        .form-footer {
-            padding: 15px 0;
-            text-align: right;
-            display: flex;
-            align-items: center;
-
-            .btn-ignite {
-                margin-left: auto;
-            }
-        }
+    /**
+     * @param unknownString String value that caused this exception.
+     */
+    public UnknownStringValue(String unknownString) {
+        super("This String value is unknown for StringEncoder: " + unknownString);
     }
-
-    .page-signin__no-account-message {
-        text-align: center;
-        margin: 20px 0;
-    } 
 }
