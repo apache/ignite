@@ -47,6 +47,9 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueR
  * Information about table in database.
  */
 public class H2TableDescriptor implements GridH2SystemIndexFactory {
+    /** */
+    public final static String PK_IDX_NAME = "_key_PK";
+
     /** Indexing. */
     private final IgniteH2Indexing idx;
 
@@ -200,7 +203,7 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
 
         // Add primary key index.
         Index pkIdx = idx.createSortedIndex(
-            "_key_PK",
+            PK_IDX_NAME,
             tbl,
             true,
             Collections.singletonList(keyCol),

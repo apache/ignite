@@ -45,6 +45,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  */
 public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
+    /** Primary index flag - affects comparisons logic. */
+    private final boolean isPk;
+
     /** */
     private final H2RowFactory rowStore;
 
@@ -74,6 +77,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * Constructor.
      *
      * @param name Tree name.
+     * @param isPk Primary index flag - affects comparisons logic.
      * @param reuseList Reuse list.
      * @param grpId Cache group ID.
      * @param pageMem Page memory.
@@ -86,6 +90,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      */
     protected H2Tree(
         String name,
+        boolean isPk,
         ReuseList reuseList,
         int grpId,
         PageMemory pageMem,
@@ -100,6 +105,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         @Nullable H2RowCache rowCache
     ) throws IgniteCheckedException {
         super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList);
+
+        this.isPk = isPk;
 
         if (!initNew) {
             // Page is ready - read inline size from it.
@@ -205,7 +212,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx,
-        SearchRow row, boolean update) throws IgniteCheckedException {
+        SearchRow row) throws IgniteCheckedException {
         if (inlineSize() == 0)
             return compareRows(getRow(io, pageAddr, idx), row);
         else {
@@ -280,7 +287,12 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                 }
             }
 
-            return linksCmpRes;
+            // If it's PK idx, by this point we have already compared the keys and found them equal.
+            // Let's return 0 as rows should be deemed equal not to confuse update/remove/insert operations.
+            if (isPk)
+                return 0;
+            else
+                return linksCmpRes;
         }
     }
 

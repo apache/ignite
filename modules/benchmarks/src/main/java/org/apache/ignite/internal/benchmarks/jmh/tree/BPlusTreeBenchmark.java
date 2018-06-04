@@ -184,7 +184,7 @@ public class BPlusTreeBenchmark extends JmhAbstractBenchmark {
         }
 
         /** {@inheritDoc} */
-        @Override protected int compare(BPlusIO<Long> io, long pageAddr, int idx, Long n2, boolean update)
+        @Override protected int compare(BPlusIO<Long> io, long pageAddr, int idx, Long n2)
             throws IgniteCheckedException {
             Long n1 = io.getLookupRow(this, pageAddr, idx);
 

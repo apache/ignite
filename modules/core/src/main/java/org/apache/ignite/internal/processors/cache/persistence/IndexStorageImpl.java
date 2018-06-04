@@ -194,7 +194,7 @@ public class IndexStorageImpl implements IndexStorage {
 
         /** {@inheritDoc} */
         @Override protected int compare(final BPlusIO<IndexItem> io, final long pageAddr, final int idx,
-            final IndexItem row, boolean update) {
+                                        final IndexItem row) {
             final int off = ((IndexIO)io).getOffset(pageAddr, idx);
 
             int shift = 0;
