@@ -341,7 +341,8 @@ public class GridNioServer<T> {
             // This method will throw exception if address already in use.
             Selector acceptSelector = createSelector(locAddr);
 
-            acceptThread = new IgniteThread(new GridNioAcceptWorker(igniteInstanceName, "nio-acceptor", log, acceptSelector, workerLsnr));
+            acceptThread = new IgniteThread(new GridNioAcceptWorker(igniteInstanceName, "nio-acceptor", log,
+                acceptSelector, workerLsnr));
         }
         else {
             locAddr = null;
@@ -3622,8 +3623,8 @@ public class GridNioServer<T> {
         /** */
         private boolean readWriteSelectorsAssign;
 
-        /** */
-        private GridWorkerListener workerListener;
+        /** Worker lifecycle listener to be used by server's worker threads. */
+        private GridWorkerListener workerLsnr;
 
         /**
          * Finishes building the instance.
@@ -3654,7 +3655,7 @@ public class GridNioServer<T> {
                 skipRecoveryPred,
                 msgQueueLsnr,
                 readWriteSelectorsAssign,
-                workerListener,
+                workerLsnr,
                 filters != null ? Arrays.copyOf(filters, filters.length) : EMPTY_FILTERS
             );
 
@@ -3915,7 +3916,7 @@ public class GridNioServer<T> {
          * @return This for chaining.
          */
         public Builder<T> workerListener(GridWorkerListener workerLsnr) {
-            this.workerListener = workerLsnr;
+            this.workerLsnr = workerLsnr;
 
             return this;
         }
