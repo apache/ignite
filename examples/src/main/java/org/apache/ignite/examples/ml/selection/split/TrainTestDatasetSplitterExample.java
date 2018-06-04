@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.regression.linear;
+package org.apache.ignite.examples.ml.selection.split;
 
 import java.util.Arrays;
 import java.util.UUID;
@@ -27,17 +27,20 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.examples.ml.regression.linear.LinearRegressionLSQRTrainerExample;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
+import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
+import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * Run linear regression model over cached dataset.
+ * Run linear regression model over dataset splitted on train and test subsets.
  *
- * @see LinearRegressionLSQRTrainer
+ * @see TrainTestDatasetSplitter
  */
-public class LinearRegressionLSQRTrainerExample {
+public class TrainTestDatasetSplitterExample {
     /** */
     private static final double[][] data = {
         {8, 78, 284, 9.100000381, 109},
@@ -110,10 +113,14 @@ public class LinearRegressionLSQRTrainerExample {
                 System.out.println(">>> Create new linear regression trainer object.");
                 LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
+                TrainTestSplit<Integer, double[]> split = new TrainTestDatasetSplitter<Integer, double[]>()
+                    .split(0.75);
+
                 System.out.println(">>> Perform the training to get the model.");
                 LinearRegressionModel mdl = trainer.fit(
                     ignite,
                     dataCache,
+                    split.getTrainFilter(),
                     (k, v) -> Arrays.copyOfRange(v, 1, v.length),
                     (k, v) -> v[0]
                 );
@@ -124,7 +131,10 @@ public class LinearRegressionLSQRTrainerExample {
                 System.out.println(">>> | Prediction\t| Ground Truth\t|");
                 System.out.println(">>> ---------------------------------");
 
-                try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
+                ScanQuery<Integer, double[]> qry = new ScanQuery<>();
+                qry.setFilter(split.getTestFilter());
+
+                try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(qry)) {
                     for (Cache.Entry<Integer, double[]> observation : observations) {
                         double[] val = observation.getValue();
                         double[] inputs = Arrays.copyOfRange(val, 1, val.length);

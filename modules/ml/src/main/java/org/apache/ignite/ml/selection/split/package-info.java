@@ -15,26 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection;
-
-import org.apache.ignite.lang.IgniteBiPredicate;
-
-public class TrainTestSplit<K, V> {
-
-    private final IgniteBiPredicate<K, V> trainFilter;
-
-    private final IgniteBiPredicate<K, V> testFilter;
-
-    public TrainTestSplit(IgniteBiPredicate<K, V> trainFilter, IgniteBiPredicate<K, V> testFilter) {
-        this.trainFilter = trainFilter;
-        this.testFilter = testFilter;
-    }
-
-    public IgniteBiPredicate<K, V> getTrainFilter() {
-        return trainFilter;
-    }
-
-    public IgniteBiPredicate<K, V> getTestFilter() {
-        return testFilter;
-    }
-}
+/**
+ * <!-- Package description. -->
+ * Root package for dataset splitters and cross validation.
+ */
+package org.apache.ignite.ml.selection.split;
