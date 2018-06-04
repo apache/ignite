@@ -98,7 +98,7 @@ public class LinearRegressionLSQRTrainerExample {
     /** Run example. */
     public static void main(String[] args) throws InterruptedException {
         System.out.println();
-        System.out.println(">>> Linear regression model over sparse distributed matrix API usage example started.");
+        System.out.println(">>> Linear regression model over cache based dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -154,7 +154,7 @@ public class LinearRegressionLSQRTrainerExample {
     private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
         CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
         cacheConfiguration.setName("TEST_" + UUID.randomUUID());
-        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 3));
+        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
 
         IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
 

@@ -35,13 +35,15 @@ public class SHA256UniformMapper<K, V> implements UniformMapper<K,V> {
     private static final String HASHING_ALGORITHM = "SHA-256";
 
     /** Message digest. */
-    private static ThreadLocal<MessageDigest> digest = new ThreadLocal<>();
+    private static final ThreadLocal<MessageDigest> digest = new ThreadLocal<>();
 
     /** {@inheritDoc} */
     @Override public double map(K key, V val) {
         int h = key.hashCode();
-        String str = String.valueOf(h);
+        String str = String.valueOf(key.hashCode());
+
         byte[] hash = getDigest().digest(str.getBytes(StandardCharsets.UTF_8));
+
         return  1.0 * (hash[h % hash.length] & 0xFF) / 256;
     }
 

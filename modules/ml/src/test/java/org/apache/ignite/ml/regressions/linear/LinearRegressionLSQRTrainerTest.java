@@ -17,16 +17,13 @@
 
 package org.apache.ignite.ml.regressions.linear;
 
-import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
-import org.apache.ignite.ml.selection.split.TrainTestSplit;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -112,11 +109,8 @@ public class LinearRegressionLSQRTrainerTest {
 
         LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
-        TrainTestSplit<Integer, double[]> split = new TrainTestDatasetSplitter<Integer, double[]>().split(0.9, 0);
-
         LinearRegressionModel mdl = trainer.fit(
             data,
-            split.getTrainFilter(),
             parts,
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[coef.length]
