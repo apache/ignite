@@ -35,3 +35,5 @@ def test_handshake():
     conn.send(hs_request)
     hs_response = read_response(conn)
     assert hs_response.op_code == 0
+
+    conn.close()

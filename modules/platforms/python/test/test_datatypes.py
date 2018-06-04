@@ -43,7 +43,7 @@ class MockSocket:
 )
 def test_byte(conn, expected_value):
     byte_var = simple_data_object(conn)
-    assert byte_var.type_code == TC_BYTE
+    assert byte_var.type_code == int.from_bytes(TC_BYTE, byteorder='little')
     assert byte_var.value == expected_value
 
 
@@ -56,7 +56,7 @@ def test_byte(conn, expected_value):
 )
 def test_float(conn, expected_value):
     float_var = simple_data_object(conn)
-    assert float_var.type_code == TC_FLOAT
+    assert float_var.type_code == int.from_bytes(TC_FLOAT, byteorder='little')
     assert float_var.value == expected_value
 
 
@@ -70,6 +70,6 @@ def test_float(conn, expected_value):
 )
 def test_string(conn,  expected_length, expected_data):
     string_var = string_object(conn)
-    assert string_var.type_code == TC_STRING
+    assert string_var.type_code == int.from_bytes(TC_STRING, byteorder='little')
     assert string_var.length == expected_length
     assert string_var.data.decode('utf-8') == expected_data

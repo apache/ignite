@@ -14,17 +14,20 @@
 # limitations under the License.
 
 import ctypes
+import socket
 
-from .type_codes import *
+from queries import HandshakeRequest, read_response
+from queries.key_value import cache_put, cache_get
 
 
-simple_type_config = {
-    TC_BYTE: ('Byte', ctypes.c_byte),
-    TC_SHORT: ('Short', ctypes.c_short),
-    TC_INT: ('Int', ctypes.c_int),
-    TC_LONG: ('Long', ctypes.c_long),
-    TC_FLOAT: ('Float', ctypes.c_float),
-    TC_DOUBLE: ('Double', ctypes.c_double),
-}
+def test_put_get():
+    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    conn.connect(('localhost', 10900))
+    hs_request = HandshakeRequest()
+    conn.send(hs_request)
+    hs_response = read_response(conn)
+    assert hs_response.op_code != 0
 
-simple_types = list(simple_type_config.keys())
+    cache_put(conn, 1, 3, 5)
+
+    conn.close()
