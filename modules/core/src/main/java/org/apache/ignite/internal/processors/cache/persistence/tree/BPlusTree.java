@@ -417,7 +417,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                 return RETRY;
 
             int cnt = io.getCount(pageAddr);
-            int idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, p.row, 0 /*true,*/);
+            int idx = findInsertionPoint(lvl, io, pageAddr, 0, cnt, p.row, 0);
 
             if (idx >= 0) // We do not support concurrent put of the same key.
                 throw new IllegalStateException("Duplicate row in index.");
@@ -469,7 +469,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             assert cnt <= Short.MAX_VALUE: cnt;
 
-            int idx = findInsertionPoint(lvl, io, leafAddr, 0, cnt, r.row, 0 /*true,*/);
+            int idx = findInsertionPoint(lvl, io, leafAddr, 0, cnt, r.row, 0);
 
             if (idx < 0)
                 return RETRY; // We've found exact match on search but now it's gone.
@@ -3778,7 +3778,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             assert tail.type == Tail.EXACT: tail.type;
 
             if (tail.idx == Short.MIN_VALUE) {
-                int idx = findInsertionPoint(tail.lvl, tail.io, tail.buf, 0, tail.getCount(), row, 0 /*true,*/);
+                int idx = findInsertionPoint(tail.lvl, tail.io, tail.buf, 0, tail.getCount(), row, 0);
 
                 assert checkIndex(idx): idx;
 
@@ -4454,8 +4454,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Comparison result as in {@link Comparator#compare(Object, Object)}.
      * @throws IgniteCheckedException If failed.
      */
-    protected abstract int compare(BPlusIO<L> io, long pageAddr, int idx, L row)
-        throws IgniteCheckedException;
+    protected abstract int compare(BPlusIO<L> io, long pageAddr, int idx, L row) throws IgniteCheckedException;
 
     /**
      * @param lvl Level.
@@ -4466,8 +4465,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Comparison result as in {@link Comparator#compare(Object, Object)}.
      * @throws IgniteCheckedException If failed.
      */
-    protected int compare(int lvl, BPlusIO<L> io, long pageAddr, int idx, L row)
-        throws IgniteCheckedException {
+    protected int compare(int lvl, BPlusIO<L> io, long pageAddr, int idx, L row) throws IgniteCheckedException {
         return compare(io, pageAddr, idx, row);
     }
 
