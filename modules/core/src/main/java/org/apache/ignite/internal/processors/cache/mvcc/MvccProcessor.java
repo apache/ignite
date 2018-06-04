@@ -100,6 +100,7 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_INITIAL_CNTR;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_READ_OP_CNTR;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_START_CNTR;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_START_OP_CNTR;
@@ -135,7 +136,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     private final AtomicLong mvccCntr = new AtomicLong(MVCC_START_CNTR);
 
     /** */
-    private final GridAtomicLong committedCntr = new GridAtomicLong(MVCC_COUNTER_NA);
+    private final GridAtomicLong committedCntr = new GridAtomicLong(MVCC_INITIAL_CNTR);
 
     /** */
     private final Map<Long, Long> activeTxs = new ConcurrentHashMap<>();

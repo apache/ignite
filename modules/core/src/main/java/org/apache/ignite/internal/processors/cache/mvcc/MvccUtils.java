@@ -60,6 +60,8 @@ public class MvccUtils {
     /** */
     public static final long MVCC_COUNTER_NA = 0L;
     /** */
+    public static final long MVCC_INITIAL_CNTR = 1L;
+    /** */
     public static final long MVCC_START_CNTR = 3L;
     /** */
     public static final int MVCC_OP_COUNTER_NA = 0;
@@ -69,7 +71,7 @@ public class MvccUtils {
     public static final int MVCC_READ_OP_CNTR = Integer.MAX_VALUE;
     /** */
     public static final MvccVersion INITIAL_VERSION =
-        mvccVersion(MVCC_CRD_START_CNTR, 1L, MVCC_START_OP_CNTR);
+        mvccVersion(MVCC_CRD_START_CNTR, MVCC_INITIAL_CNTR, MVCC_START_OP_CNTR);
 
     /** */
     private static final MvccClosure<Boolean> isNewVisible = new IsNewVisible();
