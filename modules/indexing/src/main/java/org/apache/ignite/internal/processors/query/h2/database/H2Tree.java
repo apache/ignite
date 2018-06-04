@@ -262,10 +262,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                     break;
             }
 
-            SearchRow rowData = null;
-
             if (lastIdxUsed < cols.length) {
-                rowData = getRow(io, pageAddr, idx);
+                SearchRow rowData = getRow(io, pageAddr, idx);
 
                 for (int i = lastIdxUsed, len = cols.length; i < len; i++) {
                     IndexColumn col = cols[i];
