@@ -123,11 +123,15 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             Ignite g = startGrid(i);
 
             assert "true".equals(g.cluster().localNode().attribute(PREFER_IPV4));
+
+            checkIsClientFlag((IgniteEx) g);
         }
 
         System.setProperty(PREFER_IPV4, "false");
 
-        startGrid(2);
+        IgniteEx g = startGrid(2);
+
+        checkIsClientFlag(g);
     }
 
     /**
@@ -154,12 +158,18 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         try {
             System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, first);
 
-            startGrid(0);
+            {
+                IgniteEx g = startGrid(0);
+
+                checkIsClientFlag(g);
+            }
 
             System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, second);
 
             try {
-                startGrid(1);
+                IgniteEx g = startGrid(1);
+
+                checkIsClientFlag(g);
 
                 if (fail)
                     fail("Node should not join");
@@ -206,7 +216,11 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             else
                 System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
-            startGrid(0);
+            {
+                IgniteEx g = startGrid(0);
+
+                checkIsClientFlag(g);
+            }
 
             if (second != null)
                 System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, second);
@@ -214,7 +228,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
             try {
-                startGrid(1);
+                IgniteEx g = startGrid(1);
+
+                checkIsClientFlag(g);
 
                 if (fail)
                     fail("Node should not join");
@@ -317,6 +333,8 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
 
             IgniteEx ignite = startGrid(0);
 
+            checkIsClientFlag(ignite);
+
             // Ignore if disabled security plugin used.
             if (IGNITE_SECURITY_COMPATIBILITY_MODE.equals(prop) && !ignite.context().security().enabled())
                 return;
@@ -327,7 +345,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
                 System.clearProperty(prop);
 
             try {
-                startGrid(1);
+                IgniteEx g = startGrid(1);
+
+                checkIsClientFlag(g);
 
                 if (fail)
                     fail("Node must not join");
@@ -351,7 +371,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testDifferentDeploymentModes() throws Exception {
-        startGrid(0);
+        IgniteEx g = startGrid(0);
+
+        checkIsClientFlag(g);
 
         mode = CONTINUOUS;
 
@@ -370,7 +392,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testDifferentPeerClassLoadingEnabledFlag() throws Exception {
-        startGrid(0);
+        IgniteEx g = startGrid(0);
+
+        checkIsClientFlag(g);
 
         p2pEnabled = true;
 
@@ -398,7 +422,20 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             Ignite g = startGrid(i);
 
             assert val.equals(g.cluster().localNode().attribute(PREFER_IPV4));
+
+            checkIsClientFlag((IgniteEx) g);
         }
+    }
+
+    /**
+     *
+     * @param g
+     */
+    protected void checkIsClientFlag(IgniteEx g) {
+        boolean isClientDiscovery = g.context().discovery().localNode().isClient();
+        boolean isClientConfig = g.configuration().isClientMode() == null ? false : g.configuration().isClientMode();
+
+        assertEquals(isClientConfig, isClientDiscovery);
     }
 
     /**

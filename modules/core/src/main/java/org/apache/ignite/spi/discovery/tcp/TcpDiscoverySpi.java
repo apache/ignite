@@ -516,7 +516,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      * of {@link IgniteConfiguration#isClientMode()}
      *
      * @return forceServerMode flag.
+     * @deprecated Will be removed at 3.0.
      */
+    @Deprecated
     public boolean isForceServerMode() {
         return forceSrvMode;
     }
@@ -529,8 +531,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements IgniteDiscovery
      *
      * @param forceSrvMode forceServerMode flag.
      * @return {@code this} for chaining.
+     * @deprecated Will be removed at 3.0.
      */
     @IgniteSpiConfiguration(optional = true)
+    @Deprecated
     public TcpDiscoverySpi setForceServerMode(boolean forceSrvMode) {
         this.forceSrvMode = forceSrvMode;
 
