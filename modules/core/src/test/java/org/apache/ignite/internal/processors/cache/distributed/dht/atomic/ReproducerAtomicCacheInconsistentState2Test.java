@@ -67,6 +67,64 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
  */
 @SuppressWarnings("ErrorNotRethrown")
 public class ReproducerAtomicCacheInconsistentState2Test extends GridCommonAbstractTest {
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWriteFullAsync() throws Exception {
+        int gridCnt = 2;
+
+        startGrids(gridCnt);
+
+        Integer key = 100;
+
+        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
+
+        cache.put(key, 0);
+
+        Affinity<Integer> aff = affinity(cache);
+
+        for (int i = 0; i < gridCnt; i++) {
+            if (aff.isPrimary(grid(i).localNode(), key)) {
+                TestCommunicationSpi spi = (TestCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
+                spi.fail = true;
+            }
+        }
+
+        cache.put(key, 5);
+
+        doSleep(2_000);
+
+        Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(key);
+
+        final List<GridCacheAdapter> internalCaches = new ArrayList<>();
+
+        for (int i = 0; i < gridCnt; i++) {
+            ClusterNode locNode = grid(i).localNode();
+            if (affNodes.contains(locNode))
+                internalCaches.add(((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME));
+        }
+
+        List<GridCacheEntryEx> entries = new ArrayList<>();
+
+        for (GridCacheAdapter adapter : internalCaches) {
+            GridCacheEntryEx entry = null;
+            try {
+                entry = adapter.entryEx(key);
+                entry.unswap();
+            }
+            catch (GridDhtInvalidPartitionException ignored) {
+                //no-op
+            }
+
+            entries.add(entry);
+        }
+
+        assertEquals(
+            CU.<Integer>value(entries.get(0).rawGet(), entries.get(0).context(), false),
+            CU.<Integer>value(entries.get(1).rawGet(), entries.get(1).context(), false)
+        );
+    }
+
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -112,106 +170,6 @@ public class ReproducerAtomicCacheInconsistentState2Test extends GridCommonAbstr
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testWriteFullAsync() throws Exception {
-        int gridCnt = 3;
-
-        startGrids(gridCnt);
-
-        awaitPartitionMapExchange();
-
-        final int range = 20_000;
-
-        populateCache(grid(0), range);
-
-        IgniteCache<Integer, Integer> cache = grid(0).cache(DEFAULT_CACHE_NAME);
-
-        Affinity<Integer> aff = affinity(cache);
-
-        Integer key = 218;
-
-        for (int i = 0; i < gridCnt; i++) {
-            ClusterNode locNode = grid(i).localNode();
-            if (aff.isPrimary(locNode, key)) {
-                TestCommunicationSpi spi = (TestCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
-                spi.fail = true;
-            }
-        }
-        cache.put(key, 3111);
-
-        doSleep(2_000);
-
-        boolean wasErr;
-        int cnt = 0;
-
-        do {
-            wasErr = false;
-            Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(key);
-
-            final List<GridCacheAdapter> internalCaches = new ArrayList<>();
-
-            for (int i = 0; i < gridCnt; i++) {
-                ClusterNode locNode = grid(i).localNode();
-                if (affNodes.contains(locNode))
-                    internalCaches.add(((IgniteKernal)grid(i)).internalCache(DEFAULT_CACHE_NAME));
-            }
-
-            List<DebugData> entries = new ArrayList<>();
-            try {
-                assertEquals(BACKUPS + 1, internalCaches.size());
-
-                entries.clear();
-
-                for (GridCacheAdapter adapter : internalCaches) {
-                    GridCacheEntryEx entry = null;
-                    try {
-                        entry = adapter.entryEx(key);
-                        entry.unswap();
-                    }
-                    catch (GridDhtInvalidPartitionException ignored) {
-                        //no-op
-                    }
-
-                    assertNotNull("Failed to find entry on node for key [locNode=" + adapter.context().localNodeId() +
-                        ", key=" + key + ']', entry);
-
-                    ClusterNode locNode = adapter.context().localNode();
-
-                    entries.add(
-                        new DebugData(
-                            locNode,
-                            aff.isPrimary(locNode, key),
-                            entry
-                        )
-                    );
-                }
-
-                GridCacheEntryEx first = entries.get(0).entry();
-
-                assertNotNull(first.version());
-
-                for (int i = 1; i < entries.size(); i++)
-                    assertEntry(first, entries.get(i).entry());
-            }
-            catch (AssertionError e) {
-                if (cnt < 5) {
-                    cnt++;
-                    wasErr = true;
-                    System.out.println("Fail [attempt=" + cnt + ", err=" + e.getMessage() + ']');
-                    U.sleep(5 * 1000);
-                }
-                else {
-                    //printDebugData(entries);
-                    throw e;
-                }
-            }
-        }
-        while (wasErr);
-
-    }
-
-    /**
      *
      */
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
@@ -234,75 +192,4 @@ public class ReproducerAtomicCacheInconsistentState2Test extends GridCommonAbstr
         }
     }
 
-    /**
-     * @param exp Expected.
-     * @param act Action.
-     */
-    private void assertEntry(GridCacheEntryEx exp, GridCacheEntryEx act) throws GridCacheEntryRemovedException {
-        assertEquals("Failed to check value for key [key=" + exp.key() +
-                ",\nnode1=" + exp.context().localNodeId() + ", ver1=" + exp.version() +
-                ",\nnode2=" + act.context().localNodeId() + ", ver2=" + act.version() + ']',
-            CU.<Integer>value(exp.rawGet(), exp.context(), false),
-            CU.<Integer>value(act.rawGet(), act.context(), false));
-
-        assertEquals("Failed to check version for key [key=" + exp.key() + ",\nnode1=" +
-                exp.context().localNodeId() + ",\nnode2=" + act.context().localNodeId() + ']',
-            exp.version(), act.version());
-    }
-
-    /**
-     * @param ignite Ignite.
-     * @param range Range.
-     */
-    private Set<Integer> populateCache(IgniteEx ignite, int range) {
-        Set<Integer> set = new LinkedHashSet<>();
-        try (IgniteDataStreamer<Integer, Integer> streamer = ignite.dataStreamer(DEFAULT_CACHE_NAME)) {
-            streamer.allowOverwrite(true);
-            for (int i = 0; i < range; i++) {
-                streamer.addData(i, 0);
-
-                set.add(i);
-
-                if (i > 0 && i % 10_000 == 0)
-                    System.err.println("Put: " + i);
-            }
-        }
-        return set;
-    }
-
-    class DebugData {
-
-        private ClusterNode node;
-        private boolean primary;
-        private GridCacheEntryEx entry;
-
-        /**
-         * @param node Node.
-         * @param primary Primary.
-         * @param entry Entry.
-         */
-        public DebugData(ClusterNode node, boolean primary, GridCacheEntryEx entry) {
-            this.node = node;
-            this.primary = primary;
-            this.entry = entry;
-        }
-
-        GridCacheEntryEx entry() {
-            return entry;
-        }
-
-        @Override public String toString() {
-            try {
-                return "DebugData{" +
-                    "node=" + node.id() +
-                    ",\tprimary=" + primary +
-                    ",\tver=" + entry.version() +
-                    ",\tvalue=" + CU.value(entry.rawGet(), entry.context(), false) +
-                    '}';
-            }
-            catch (Exception e) {
-                return e.getMessage();
-            }
-        }
-    }
 }
