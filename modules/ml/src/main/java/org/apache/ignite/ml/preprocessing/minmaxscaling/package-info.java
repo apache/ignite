@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains Normalizer preprocessor.
+ * Contains Min Max Scaler preprocessor.
  */
-package org.apache.ignite.ml.preprocessing.normalization;
+package org.apache.ignite.ml.preprocessing.minmaxscaling;

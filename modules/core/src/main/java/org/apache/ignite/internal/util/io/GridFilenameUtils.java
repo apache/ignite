@@ -338,7 +338,7 @@ public class GridFilenameUtils {
     }
 
     /**
-     * Internal method to perform the normalization.
+     * Internal method to perform the minmaxscaling.
      *
      * @param filename  the filename
      * @param separator The separator character to use

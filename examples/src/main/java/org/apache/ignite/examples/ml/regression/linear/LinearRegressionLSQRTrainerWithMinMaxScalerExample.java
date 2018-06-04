@@ -26,8 +26,8 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocessor;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
+import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerPreprocessor;
+import org.apache.ignite.ml.preprocessing.minmaxscaling.MinMaxScalerTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.thread.IgniteThread;
@@ -40,10 +40,10 @@ import java.util.UUID;
  * Run linear regression model over cached dataset.
  *
  * @see LinearRegressionLSQRTrainer
- * @see NormalizationTrainer
- * @see NormalizationPreprocessor
+ * @see MinMaxScalerTrainer
+ * @see MinMaxScalerPreprocessor
  */
-public class LinearRegressionLSQRTrainerWithNormalizationExample {
+public class LinearRegressionLSQRTrainerWithMinMaxScalerExample {
     /** */
     private static final double[][] data = {
         {8, 78, 284, 9.100000381, 109},
@@ -110,13 +110,13 @@ public class LinearRegressionLSQRTrainerWithNormalizationExample {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                LinearRegressionLSQRTrainerWithNormalizationExample.class.getSimpleName(), () -> {
+                LinearRegressionLSQRTrainerWithMinMaxScalerExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                System.out.println(">>> Create new normalization trainer object.");
-                NormalizationTrainer<Integer, double[]> normalizationTrainer = new NormalizationTrainer<>();
+                System.out.println(">>> Create new minmaxscaling trainer object.");
+                MinMaxScalerTrainer<Integer, double[]> normalizationTrainer = new MinMaxScalerTrainer<>();
 
-                System.out.println(">>> Perform the training to get the normalization preprocessor.");
+                System.out.println(">>> Perform the training to get the minmaxscaling preprocessor.");
                 IgniteBiFunction<Integer, double[], double[]> preprocessor = normalizationTrainer.fit(
                     ignite,
                     dataCache,
