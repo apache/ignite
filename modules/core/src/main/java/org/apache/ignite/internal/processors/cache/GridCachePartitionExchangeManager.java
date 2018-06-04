@@ -1352,8 +1352,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         @Nullable CacheAffinityChangeMessage affChangeMsg) {
         GridDhtPartitionsExchangeFuture fut;
 
+        IgniteInternalFuture<Boolean> stateFut = cctx.kernalContext().state().activeStateFuture(true);
+
         GridDhtPartitionsExchangeFuture old = exchFuts.addx(
-            fut = new GridDhtPartitionsExchangeFuture(cctx, busyLock, exchId, exchActions, affChangeMsg));
+            fut = new GridDhtPartitionsExchangeFuture(cctx, busyLock, exchId, exchActions, affChangeMsg, stateFut));
 
         if (old != null) {
             fut = old;

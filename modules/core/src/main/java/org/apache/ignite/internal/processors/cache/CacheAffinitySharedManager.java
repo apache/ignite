@@ -70,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -429,6 +428,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         Map<Integer, Boolean> startedInfos = U.newHashMap(startDescs.size());
 
+        IgniteInternalFuture<Boolean> stateFut = cctx.kernalContext().state().activeStateFuture(true);
+
         for (DynamicCacheDescriptor desc : startDescs) {
             try {
                 startedCaches.add(desc.cacheName());
@@ -457,7 +458,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         assert grpHolder != null && grpHolder.affinity().idealAssignment() != null;
 
                         if (grpHolder.client()) {
-                            ClientCacheDhtTopologyFuture topFut = new ClientCacheDhtTopologyFuture(topVer);
+                            ClientCacheDhtTopologyFuture topFut = new ClientCacheDhtTopologyFuture(topVer, stateFut);
 
                             grp.topology().updateTopologyVersion(topFut, discoCache, -1, false);
 
@@ -519,13 +520,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     assert partMap != null : res;
 
-                    topFut = new ClientCacheDhtTopologyFuture(topVer);
+                    topFut = new ClientCacheDhtTopologyFuture(topVer, stateFut);
                 }
                 else {
                     partMap = new GridDhtPartitionFullMap(cctx.localNodeId(), cctx.localNode().order(), 1);
 
                     topFut = new ClientCacheDhtTopologyFuture(topVer,
-                        new ClusterTopologyServerNotFoundException("All server nodes left grid."));
+                        new ClusterTopologyServerNotFoundException("All server nodes left grid."), stateFut);
                 }
 
                 grp.topology().updateTopologyVersion(topFut, discoCache, -1, false);

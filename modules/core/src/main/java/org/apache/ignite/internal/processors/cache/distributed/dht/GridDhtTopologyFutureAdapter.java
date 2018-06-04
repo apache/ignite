@@ -24,11 +24,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.TopologyValidator;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.PartitionLossPolicy.READ_ONLY_ALL;
@@ -43,6 +45,18 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
     implements GridDhtTopologyFuture {
     /** Cache groups validation results. */
     protected volatile Map<Integer, CacheValidation> grpValidRes;
+
+    /**  Future to get cluster active state. */
+    private final IgniteInternalFuture<Boolean> activeGlobalStateFut;
+
+    /**
+     * @param stateFut Future to get cluster active state.
+     */
+    protected GridDhtTopologyFutureAdapter(IgniteInternalFuture<Boolean> stateFut) {
+        assert stateFut != null;
+
+        activeGlobalStateFut = stateFut;
+    }
 
     /**
      * @param grp Cache group.
@@ -80,9 +94,10 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
         if (err != null)
             return err;
 
-        if (!cctx.shared().kernalContext().state().publicApiActiveState(true))
+        if (!activeGlobalState()) {
             return new CacheInvalidStateException(
                 "Failed to perform cache operation (cluster is not activated): " + cctx.name());
+        }
 
         CacheGroupContext grp = cctx.group();
 
@@ -131,6 +146,20 @@ public abstract class GridDhtTopologyFutureAdapter extends GridFutureAdapter<Aff
         }
 
         return null;
+    }
+
+    /**
+     * @return {@code True} if global state was active at the future creation. {@code False} otherwise.
+     */
+    protected boolean activeGlobalState() {
+        try {
+            return activeGlobalStateFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(logger(), e);
+
+            return false;
+        }
     }
 
     /**
