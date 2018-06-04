@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerInvocationHandler;
 import javax.management.MalformedObjectNameException;
@@ -37,9 +38,14 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -258,7 +264,48 @@ public class CacheGroupMetricsMBeanTest extends GridCommonAbstractTest implement
         // Check moving partitions while rebalancing.
         assertFalse(arrayToAllocationMap(new int[10][]).equals(mxBean0Grp1.getMovingPartitionsAllocationMap()));
 
-        assertTrue(mxBean0Grp1.getLocalNodeMovingPartitionsCount() > 0);
+        int movingCnt = mxBean0Grp1.getLocalNodeMovingPartitionsCount();
+
+        assertTrue(movingCnt > 0);
         assertTrue(mxBean0Grp1.getClusterMovingPartitionsCount() > 0);
+
+        final CountDownLatch evictLatch = new CountDownLatch(1);
+
+        // Block all evicting threads to count total renting partitions.
+        grid(0).events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                try {
+                    evictLatch.await();
+                }
+                catch (InterruptedException e) {
+                    log.error("Interrupted", e);
+                }
+
+                return true;
+            }
+        }, EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
+
+        grid(0).rebalanceEnabled(true);
+        grid(1).rebalanceEnabled(true);
+
+        startGrid(2);
+
+        try {
+            assertTrue("Renting partitions count when node returns not equals to moved partitions when node left",
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        log.info("Renting partitions count: " + mxBean0Grp1.getLocalNodeRentingPartitionsCount());
+                        log.info("Renting entries count: " + mxBean0Grp1.getLocalNodeRentingEntriesCount());
+
+                        return mxBean0Grp1.getLocalNodeRentingPartitionsCount() == movingCnt;
+                    }
+                }, 10_000L)
+            );
+
+            assertTrue("Renting entries count is 0", mxBean0Grp1.getLocalNodeRentingEntriesCount() > 0);
+        }
+        finally {
+            evictLatch.countDown();
+        }
     }
 }
