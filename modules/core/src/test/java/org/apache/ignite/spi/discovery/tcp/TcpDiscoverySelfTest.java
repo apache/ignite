@@ -1701,7 +1701,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     @NotNull private TestFailedNodesSpi createFailedNodeSpi(int failOrder) {
         TestFailedNodesSpi spi = new TestFailedNodesSpi(failOrder);
 
-        spi.setTopologyChangeTries(0);
+        spi.setConnectionRecoveryTimeout(0);
 
         return spi;
     }
@@ -2094,7 +2094,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             for (int i = 1; i < 5; i++) {
                 TestRestoreConnectedSpi spi = new TestRestoreConnectedSpi(3);
 
-                spi.setTopologyChangeTries(0);
+                spi.setConnectionRecoveryTimeout(0);
 
                 nodeSpi.set(spi);
 
