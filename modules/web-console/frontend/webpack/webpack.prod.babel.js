@@ -17,7 +17,7 @@
 
 import merge from 'webpack-merge';
 
-import ExtractTextPlugin from 'extract-text-webpack-plugin';
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 import UglifyJSPlugin from 'uglifyjs-webpack-plugin';
 
 import commonCfg from './webpack.common';
@@ -29,20 +29,17 @@ export default merge(commonCfg, {
         rules: [
             {
                 test: /\.css$/,
-                use: ExtractTextPlugin.extract({
-                    fallback: 'style',
-                    use: ['css']
-                })
+                use: [MiniCssExtractPlugin.loader, 'css-loader']
             },
             {
                 test: /\.scss$/,
-                use: ExtractTextPlugin.extract({
-                    fallback: 'style-loader',
-                    use: ['css', 'sass']
-                })
+                use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader']
             }
         ]
     },
+    plugins: [
+        new MiniCssExtractPlugin({filename: 'assets/css/[name].[hash].css'})
+    ],
     optimization: {
         minimizer: [
             new UglifyJSPlugin({
