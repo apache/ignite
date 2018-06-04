@@ -86,7 +86,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     private boolean stopped;
 
     /** */
-    private volatile AffinityTopologyVersion prevAssignTopVer;
+    private AffinityTopologyVersion prevAssignTopVer;
 
     /**
      * @param grp Cache group.
@@ -190,11 +190,11 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
-        AffinityAssignment prevAff = grp.affinity().cachedAffinity(prevAssignTopVer == null ? topVer : prevAssignTopVer);
+        AffinityAssignment prevAff = prevAssignTopVer == null ? aff : grp.affinity().cachedAffinity(prevAssignTopVer);
 
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
-        boolean isAffChanged = false;
+        boolean isAssignmNotChanged = true;
 
         for (int p = 0; p < partCnt; p++) {
             if (ctx.exchange().hasPendingExchange()) {
@@ -211,7 +211,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (aff.get(p).contains(ctx.localNode())) {
                 GridDhtLocalPartition part = top.localPartition(p);
 
-                isAffChanged &= !prevAff.get(p).contains(ctx.localNode());
+                isAssignmNotChanged = isAssignmNotChanged && prevAff.get(p).contains(ctx.localNode());
 
                 assert part != null;
                 assert part.id() == p;
@@ -297,9 +297,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
         }
 
-        prevAssignTopVer = topVer;
+        assignments.needRebalance(prevAssignTopVer == null || !isAssignmNotChanged);
 
-        assignments.changed(isAffChanged);
+        prevAssignTopVer = topVer;
 
         return assignments;
     }
@@ -385,11 +385,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     @Override public Runnable addAssignments(
         GridDhtPreloaderAssignments assignments,
         boolean forceRebalance,
+        boolean skip,
         long rebalanceId,
         Runnable next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut
     ) {
-        return demander.addAssignments(assignments, forceRebalance, rebalanceId, next, forcedRebFut);
+        return demander.addAssignments(assignments, forceRebalance, skip, rebalanceId, next, forcedRebFut);
     }
 
     /**

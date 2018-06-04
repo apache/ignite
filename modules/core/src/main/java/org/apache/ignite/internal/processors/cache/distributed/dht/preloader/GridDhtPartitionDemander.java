@@ -281,6 +281,7 @@ public class GridDhtPartitionDemander {
      */
     Runnable addAssignments(
         final GridDhtPreloaderAssignments assignments,
+        boolean skip,
         boolean force,
         long rebalanceId,
         final Runnable next,
@@ -296,28 +297,10 @@ public class GridDhtPartitionDemander {
         if ((delay == 0 || force) && assignments != null) {
             final RebalanceFuture oldFut = rebalanceFut;
 
+            final RebalanceFuture latestFut = rebalanceFut;
+
             final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId);
 
-            if (!oldFut.isInitial() && !assignments.changed()) {
-                fut.sendRebalanceStartedEvent();
-
-                oldFut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
-                    @Override public void applyx(IgniteInternalFuture<Boolean> fut0) {
-                        try {
-                            fut.sendRebalanceFinishedEvent();
-
-                            fut.onDone(fut0.get());
-                        }
-                        catch (IgniteCheckedException e) {
-                            fut.cancel();
-                        }
-                    }
-                });
-
-                latestRebFut = fut;
-
-                return null;
-            }
 
             if (!grp.localWalEnabled())
                 fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
@@ -327,15 +310,8 @@ public class GridDhtPartitionDemander {
                     }
                 });
 
-            if (!oldFut.isInitial())
-                oldFut.cancel();
-            else
-                fut.listen(f -> oldFut.onDone(f.result()));
-
             if (forcedRebFut != null)
                 forcedRebFut.add(fut);
-
-            rebalanceFut = fut;
 
             latestRebFut = fut;
 
@@ -353,6 +329,34 @@ public class GridDhtPartitionDemander {
 
             fut.sendRebalanceStartedEvent();
 
+            if (skip && !latestFut.isInitial() && !oldFut.isInitial()) {
+                if (log.isDebugEnabled())
+                    log.debug("Affinity assignments does not changed. Will skip rebalance [topVer=" +
+                        assignments.topologyVersion() + ", rebalanceId=" + rebalanceId + ", grp=" + grp.cacheOrGroupName() + "]");
+
+                oldFut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
+                    @Override public void applyx(IgniteInternalFuture<Boolean> fut0) {
+                        try {
+                            fut.sendRebalanceFinishedEvent();
+
+                            fut.onDone(fut0.get());
+                        }
+                        catch (IgniteCheckedException e) {
+                            fut.cancel();
+                        }
+                    }
+                });
+
+                return null;
+            }
+
+            if (!oldFut.isInitial())
+                oldFut.cancel();
+            else
+                fut.listen(f -> oldFut.onDone(f.result()));
+
+            rebalanceFut = fut;
+
             if (assignments.cancelled()) { // Pending exchange.
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing skipped due to cancelled assignments.");
@@ -360,6 +364,8 @@ public class GridDhtPartitionDemander {
                 fut.onDone(false);
 
                 fut.sendRebalanceFinishedEvent();
+
+                return null;
             }
 
             if (assignments.isEmpty()) { // Nothing to rebalance.
@@ -371,6 +377,8 @@ public class GridDhtPartitionDemander {
                 ((GridFutureAdapter)grp.preloader().syncFuture()).onDone();
 
                 fut.sendRebalanceFinishedEvent();
+
+                return null;
             }
 
             return () -> {
@@ -999,6 +1007,27 @@ public class GridDhtPartitionDemander {
             this.rebalanceId = rebalanceId;
 
             ctx = grp.shared();
+        }
+
+        /**
+         *
+         * @param grp
+         * @param log
+         * @param exchId
+         * @param topVer
+         * @param rebalanceId
+         */
+        public RebalanceFuture(CacheGroupContext grp,
+            IgniteLogger log,
+            GridDhtPartitionExchangeId exchId,
+            AffinityTopologyVersion topVer,
+            long rebalanceId) {
+            this.ctx = grp.shared();
+            this.grp = grp;
+            this.log = log;
+            this.exchId = exchId;
+            this.topVer = topVer;
+            this.rebalanceId = rebalanceId;
         }
 
         /**

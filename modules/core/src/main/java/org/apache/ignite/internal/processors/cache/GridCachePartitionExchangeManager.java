@@ -2418,6 +2418,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     boolean forcePreload = false;
 
+                    boolean assignmChanged = false;
+
                     GridDhtPartitionExchangeId exchId;
 
                     GridDhtPartitionsExchangeFuture exchFut = null;
@@ -2547,6 +2549,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 if ((delay == 0 || forcePreload) && !disableRebalance)
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
+                                assignmChanged = assignmChanged || assigns.needRebalance();
+
                                 assignsMap.put(grp.groupId(), assigns);
                             }
                         }
@@ -2601,6 +2605,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 // Finishes cache sync future (on empty assignments).
                                 Runnable cur = grp.preloader().addAssignments(assigns,
                                     forcePreload,
+                                    !assignmChanged,
                                     cnt,
                                     r,
                                     forcedRebFut);
