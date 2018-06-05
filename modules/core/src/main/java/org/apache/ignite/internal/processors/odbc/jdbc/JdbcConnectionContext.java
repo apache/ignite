@@ -142,13 +142,15 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
                 String user = reader.readString();
                 String passwd = reader.readString();
 
-                if (F.isEmpty(user) && ctx.authentication().enabled())
-                    throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+                if (ctx.authentication().enabled()) {
+                    if (F.isEmpty(user))
+                        throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
 
-                actx = ctx.authentication().authenticate(user, passwd);
+                    actx = ctx.authentication().authenticate(user, passwd);
 
-                if (actx == null)
-                    throw new IgniteCheckedException("Unknown authentication error");
+                    if (actx == null)
+                        throw new IgniteCheckedException("Unknown authentication error");
+                }
             }
             else {
                 if (ctx.authentication().enabled())
