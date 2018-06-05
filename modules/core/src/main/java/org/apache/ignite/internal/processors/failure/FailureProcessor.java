@@ -33,12 +33,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * General failure processing API
  */
 public class FailureProcessor extends GridProcessorAdapter {
-    /** */
-    private static final String IGNITE_DUMP_THREADS_ON_FAILURE_PROP = "IGNITE_DUMP_THREADS_ON_FAILURE";
+    /** Name of the system property that enables threads dumping on failure. */
+    private static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
 
-    /** */
-    private static final boolean IGNITE_DUMP_THREADS_ON_FAILURE =
-        IgniteSystemProperties.getBoolean(IGNITE_DUMP_THREADS_ON_FAILURE_PROP, true);
+    /** Value of the system property that enables threads dumping on failure. */
+    private static final boolean IGNITE_DUMP_THREADS_ON_FAILURE_VAL =
+        IgniteSystemProperties.getBoolean(IGNITE_DUMP_THREADS_ON_FAILURE, true);
 
     /** Ignite. */
     private final Ignite ignite;
@@ -122,7 +122,7 @@ public class FailureProcessor extends GridProcessorAdapter {
         if (reserveBuf != null && X.hasCause(failureCtx.error(), OutOfMemoryError.class))
             reserveBuf = null;
 
-        if (IGNITE_DUMP_THREADS_ON_FAILURE)
+        if (IGNITE_DUMP_THREADS_ON_FAILURE_VAL)
             U.dumpThreads(log);
 
         boolean invalidated = hnd.onFailure(ignite, failureCtx);
