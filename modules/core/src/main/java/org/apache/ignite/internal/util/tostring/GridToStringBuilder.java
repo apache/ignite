@@ -905,10 +905,9 @@ public class GridToStringBuilder {
      *
      * @param buf buffer to print to.
      * @param val value to print, can be {@code null}.
-     * @param svdObjs Map with saved objects to handle recursion.
      */
-    private static void toString(SBLimitedLength buf, Object val, IdentityHashMap<Object, Integer> svdObjs) {
-        toString(buf, null, val, svdObjs);
+    private static void toString(SBLimitedLength buf, Object val) {
+        toString(buf, null, val);
     }
 
     /**
@@ -917,10 +916,9 @@ public class GridToStringBuilder {
      * @param buf buffer to print to.
      * @param cls value class.
      * @param val value to print.
-     * @param svdObjs Map with saved objects to handle recursion.
      */
     @SuppressWarnings({"unchecked"})
-    private static void toString(SBLimitedLength buf, Class<?> cls, Object val, IdentityHashMap<Object, Integer> svdObjs) {
+    private static void toString(SBLimitedLength buf, Class<?> cls, Object val) {
         if (val == null) {
             buf.a("null");
 
@@ -939,6 +937,8 @@ public class GridToStringBuilder {
             return;
         }
 
+        IdentityHashMap<Object, Integer> svdObjs = savedObjects.get();
+
         if (handleRecursion(buf, val, svdObjs))
             return;
 
@@ -946,13 +946,13 @@ public class GridToStringBuilder {
 
         try {
             if (cls.isArray())
-                addArray(buf, cls, val, svdObjs);
+                addArray(buf, cls, val);
             else if (isCol)
-                addCollection(buf, (Collection) val, svdObjs);
+                addCollection(buf, (Collection) val);
             else if (isMap)
-                addMap(buf, (Map<?, ?>) val, svdObjs);
+                addMap(buf, (Map<?, ?>) val);
             else
-                toStringImpl0((Class) cls, buf, val, EMPTY_ARRAY, EMPTY_ARRAY, null, 0, svdObjs);
+                toStringImpl0((Class) cls, buf, val, EMPTY_ARRAY, EMPTY_ARRAY, null, 0);
         }
         finally {
             svdObjs.remove(val);
@@ -975,10 +975,8 @@ public class GridToStringBuilder {
      * @param buf String builder buffer.
      * @param arrType Type of the array.
      * @param obj Array object.
-     * @param svdObjs Map with saved objects to handle recursion.
      */
-    private static void addArray(SBLimitedLength buf, Class arrType, Object obj,
-        IdentityHashMap<Object, Integer> svdObjs) {
+    private static void addArray(SBLimitedLength buf, Class arrType, Object obj) {
         if (arrType.getComponentType().isPrimitive()) {
             buf.a(arrayToString(arrType, obj));
 
@@ -990,7 +988,7 @@ public class GridToStringBuilder {
         buf.a(arrType.getSimpleName()).a(" [");
 
         for (int i = 0; i < arr.length; i++) {
-            toString(buf, arr[i], svdObjs);
+            toString(buf, arr[i]);
 
             if (i == COLLECTION_LIMIT - 1 || i == arr.length - 1)
                 break;
@@ -1008,15 +1006,14 @@ public class GridToStringBuilder {
      *
      * @param buf String builder buffer.
      * @param col Collection object.
-     * @param svdObjs Map with saved objects to handle recursion.
      */
-    private static void addCollection(SBLimitedLength buf, Collection col, IdentityHashMap<Object, Integer> svdObjs) {
+    private static void addCollection(SBLimitedLength buf, Collection col) {
         buf.a(col.getClass().getSimpleName()).a(" [");
 
         int cnt = 0;
 
         for (Object obj : col) {
-            toString(buf, obj, svdObjs);
+            toString(buf, obj);
 
             if (++cnt == COLLECTION_LIMIT || cnt == col.size())
                 break;
@@ -1034,19 +1031,18 @@ public class GridToStringBuilder {
      *
      * @param buf String builder buffer.
      * @param map Map object.
-     * @param svdObjs Map with saved objects to handle recursion.
      */
-    private static <K, V> void addMap(SBLimitedLength buf, Map<K, V> map, IdentityHashMap<Object, Integer> svdObjs) {
+    private static <K, V> void addMap(SBLimitedLength buf, Map<K, V> map) {
         buf.a(map.getClass().getSimpleName()).a(" {");
 
         int cnt = 0;
 
         for (Map.Entry<K, V> e : map.entrySet()) {
-            toString(buf, e.getKey(), svdObjs);
+            toString(buf, e.getKey());
 
             buf.a('=');
 
-            toString(buf, e.getValue(), svdObjs);
+            toString(buf, e.getValue());
 
             if (++cnt == COLLECTION_LIMIT || cnt == map.size())
                 break;
@@ -1108,7 +1104,7 @@ public class GridToStringBuilder {
         svdObjs.put(obj, buf.length());
 
         try {
-            return toStringImpl0(cls, buf, obj, addNames, addVals, addSens, addLen, svdObjs);
+            return toStringImpl0(cls, buf, obj, addNames, addVals, addSens, addLen);
         }
         finally {
             svdObjs.remove(obj);
@@ -1125,7 +1121,6 @@ public class GridToStringBuilder {
      * @param addVals Additional values to be included.
      * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
      * @param addLen How many additional values will be included.
-     * @param svdObjs Map with saved objects to handle recursion.
      * @return String presentation of the given object.
      * @param <T> Type of object.
      */
@@ -1137,8 +1132,7 @@ public class GridToStringBuilder {
         Object[] addNames,
         Object[] addVals,
         @Nullable boolean[] addSens,
-        int addLen,
-        IdentityHashMap<Object, Integer> svdObjs
+        int addLen
     ) {
         try {
             GridToStringClassDescriptor cd = getClassDescriptor(cls);
@@ -1165,10 +1159,10 @@ public class GridToStringBuilder {
 
                 Class<?> fieldType = field.getType();
 
-                toString(buf, fieldType, field.get(obj), svdObjs);
+                toString(buf, fieldType, field.get(obj));
             }
 
-            appendVals(buf, first, addNames, addVals, addSens, addLen, svdObjs);
+            appendVals(buf, first, addNames, addVals, addSens, addLen);
 
             buf.a(']');
 
@@ -1833,7 +1827,7 @@ public class GridToStringBuilder {
 
         buf.a("[");
 
-        appendVals(buf, true, propNames, propVals, propSens, propCnt, savedObjects.get());
+        appendVals(buf, true, propNames, propVals, propSens, propCnt);
 
         buf.a(']');
 
@@ -1849,15 +1843,13 @@ public class GridToStringBuilder {
      * @param addVals Additional values to be included.
      * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
      * @param addLen How many additional values will be included.
-     * @param svdObjs Map with saved objects to handle recursion.
      */
     private static void appendVals(SBLimitedLength buf,
         boolean first,
         Object[] addNames,
         Object[] addVals,
         boolean[] addSens,
-        int addLen,
-        IdentityHashMap<Object, Integer> svdObjs)
+        int addLen)
     {
         if (addLen > 0) {
             for (int i = 0; i < addLen; i++) {
@@ -1880,7 +1872,7 @@ public class GridToStringBuilder {
 
                 buf.a(addNames[i]).a('=');
 
-                toString(buf, addVal, svdObjs);
+                toString(buf, addVal);
             }
         }
     }
