@@ -15,21 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.db.wal;
-
-import org.apache.ignite.configuration.WALMode;
-
 /**
- *
+ * <!-- Package description. -->
+ * Contains multi-class logistic regression.
  */
-public class IgniteWalFlushDefaultSelfTest extends IgniteWalFlushMultiNodeFailoverAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected WALMode walMode() {
-        return WALMode.FSYNC;
-    }
-}
+package org.apache.ignite.ml.regressions.logistic.multiclass;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.ml.regression.logistic;
+package org.apache.ignite.examples.ml.regression.logistic.binary;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
