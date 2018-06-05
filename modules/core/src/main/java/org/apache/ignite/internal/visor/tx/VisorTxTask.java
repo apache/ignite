@@ -173,7 +173,7 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                 if (arg.getMinSize() != null && locTx.size() < arg.getMinSize())
                     continue;
 
-                if (lbMatch != null && (locTx.label() == null || !lbMatch.matcher(locTx.label()).matches()))
+                if (lbMatch != null && !lbMatch.matcher(locTx.label() == null ? "null" : locTx.label()).matches())
                     continue;
 
                 Collection<UUID> mappings = new ArrayList<>();
