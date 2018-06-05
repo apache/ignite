@@ -32,7 +32,6 @@ import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
@@ -70,7 +69,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_5_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
@@ -454,8 +452,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFields(null, qry, cliCtx, true,
-                protocolVer.compareTo(VER_2_3_0) < 0);
+            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFields(null, qry, cliCtx, true, false);
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
@@ -835,12 +832,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                             columnMeta = new JdbcColumnMetaV3(table.schemaName(), table.tableName(),
                                 field.getKey(), field.getValue(), !prop.notNull(), prop.defaultValue());
                         }
-                        else if (protocolVer.compareTo(VER_2_3_0) >= 0) {
-                            GridQueryProperty prop = table.property(colName);
-
-                            columnMeta = new JdbcColumnMetaV2(table.schemaName(), table.tableName(),
-                                field.getKey(), field.getValue(), !prop.notNull());
-                        }
                         else
                             columnMeta = new JdbcColumnMeta(table.schemaName(), table.tableName(),
                                 field.getKey(), field.getValue());
@@ -857,8 +848,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 res = new JdbcMetaColumnsResultV4(meta);
             else if (protocolVer.compareTo(VER_2_4_0) >= 0)
                 res = new JdbcMetaColumnsResultV3(meta);
-            else if (protocolVer.compareTo(VER_2_3_0) >= 0)
-                res = new JdbcMetaColumnsResultV2(meta);
             else
                 res = new JdbcMetaColumnsResult(meta);
 
