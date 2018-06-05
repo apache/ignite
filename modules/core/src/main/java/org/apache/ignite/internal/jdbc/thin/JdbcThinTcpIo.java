@@ -305,8 +305,6 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isSkipReducerOnUpdate());
 
         if (!F.isEmpty(connProps.getUsername())) {
-            assert ver.compareTo(VER_2_5_0) >= 0 : "Authentication is supported since 2.5";
-
             writer.writeString(connProps.getUsername());
             writer.writeString(connProps.getPassword());
         }
