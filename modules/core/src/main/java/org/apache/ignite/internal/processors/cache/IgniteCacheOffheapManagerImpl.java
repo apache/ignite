@@ -85,7 +85,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  */
 @SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
-    /** */
+    /** Throttling timeout during which avoid excessive unwind tries
+     * if PendingTree has nothing to be cleaned yet. */
     public static final int UNWIND_THROTTLING_TIMEOUT = 100;
 
     /** */
@@ -109,8 +110,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** */
     protected volatile boolean hasPendingEntries;
 
-    /** Timestamp when next clean try will be allowed. */
-    private volatile long nextCleanTime;
+    /** Timestamp when next clean try will be allowed. Used for throttling on per-group basis. */
+    protected volatile long nextCleanTime;
 
     /** */
     private final GridAtomicLong globalRmvId = new GridAtomicLong(U.currentTimeMillis() * 1000_000);
@@ -1049,7 +1050,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         return amount != -1 && cleared >= amount;
     }
 
-
     /**
      * @param cctx Cache context.
      * @param c Closure.
@@ -1058,8 +1058,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @throws IgniteCheckedException If failed.
      */
     private int expireInternal(
-            GridCacheContext cctx,
-            IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
+        GridCacheContext cctx,
+        IgniteInClosure2X<GridCacheEntryEx, GridCacheVersion> c,
         int amount
     ) throws IgniteCheckedException {
         long now = U.currentTimeMillis();
