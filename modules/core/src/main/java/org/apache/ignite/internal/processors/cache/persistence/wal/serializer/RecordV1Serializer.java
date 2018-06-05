@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
+import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
 
 /**
  * Record V1 serializer.
@@ -111,7 +112,12 @@ public class RecordV1Serializer implements RecordSerializer {
 
         /** {@inheritDoc} */
         @Override public int sizeWithHeaders(WALRecord record) throws IgniteCheckedException {
-            return dataSerializer.size(record) + REC_TYPE_SIZE + FILE_WAL_POINTER_SIZE + CRC_SIZE;
+            int recordSize = dataSerializer.size(record);
+
+            int recordSizeWithType = recordSize + REC_TYPE_SIZE;
+
+            return record.type() != SWITCH_SEGMENT_RECORD ?
+                recordSizeWithType + FILE_WAL_POINTER_SIZE + CRC_SIZE : recordSizeWithType;
         }
 
         /** {@inheritDoc} */
@@ -160,6 +166,9 @@ public class RecordV1Serializer implements RecordSerializer {
             // Write record type.
             putRecordType(buf, rec);
 
+            if (rec.type() == SWITCH_SEGMENT_RECORD)
+                return;
+
             // Write record file position.
             putPositionOfRecord(buf, rec);
 
@@ -176,8 +185,13 @@ public class RecordV1Serializer implements RecordSerializer {
      * @param skipPositionCheck Skip position check mode.
      * @param recordFilter Record type filter. {@link FilteredRecord} is deserialized instead of original record
      */
-    public RecordV1Serializer(RecordDataV1Serializer dataSerializer, boolean writePointer,
-        boolean marshalledMode, boolean skipPositionCheck, IgniteBiPredicate<RecordType, WALPointer> recordFilter) {
+    public RecordV1Serializer(
+        RecordDataV1Serializer dataSerializer,
+        boolean writePointer,
+        boolean marshalledMode,
+        boolean skipPositionCheck,
+        IgniteBiPredicate<RecordType, WALPointer> recordFilter
+    ) {
         this.dataSerializer = dataSerializer;
         this.writePointer = writePointer;
         this.recordFilter = recordFilter;
@@ -376,9 +390,14 @@ public class RecordV1Serializer implements RecordSerializer {
     static void writeWithCrc(WALRecord rec, ByteBuffer buf, RecordIO writer) throws IgniteCheckedException {
         assert rec.size() >= 0 && buf.remaining() >= rec.size() : rec.size();
 
+        boolean switchSegmentRec = rec.type() == RecordType.SWITCH_SEGMENT_RECORD;
+
         int startPos = buf.position();
 
         writer.writeWithHeaders(rec, buf);
+
+        if (switchSegmentRec)
+            return;
 
         if (!skipCrc) {
             int curPos = buf.position();
