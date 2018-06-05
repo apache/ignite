@@ -55,14 +55,14 @@ import org.apache.ignite.lang.IgniteProductVersion;
  * JDBC IO layer implementation based on blocking IPC streams.
  */
 public class JdbcThinTcpIo {
-    /** Version 2.4.0. */
-    private static final ClientListenerProtocolVersion VER_2_4_0 = ClientListenerProtocolVersion.create(2, 4, 0);
-
     /** Version 2.5.0. */
     private static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
 
+    /** Version 2.6.0. */
+    private static final ClientListenerProtocolVersion VER_2_6_0 = ClientListenerProtocolVersion.create(2, 6, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_6_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -111,9 +111,6 @@ public class JdbcThinTcpIo {
 
     /** Mutex. */
     private final Object mux = new Object();
-
-    /** Current protocol version used to connection to Ignite. */
-    private ClientListenerProtocolVersion srvProtocolVer;
 
     /**
      * Constructor.
@@ -281,7 +278,7 @@ public class JdbcThinTcpIo {
     }
 
     /**
-     * Used for versions: 2.1.5 and 2.3.0. The protocol version is changed but handshake format isn't changed.
+     * Perform a handshake.
      *
      * @param ver JDBC client version.
      * @throws IOException On IO error.
@@ -336,29 +333,21 @@ public class JdbcThinTcpIo {
             }
             else
                 igniteVer = new IgniteProductVersion((byte)2, (byte)0, (byte)0, "Unknown", 0L, null);
-
-            srvProtocolVer = ver;
         }
         else {
             short maj = reader.readShort();
             short min = reader.readShort();
             short maintenance = reader.readShort();
 
-            String err = reader.readString();
-
             ClientListenerProtocolVersion srvProtoVer0 = ClientListenerProtocolVersion.create(maj, min, maintenance);
 
-            if (srvProtoVer0.compareTo(VER_2_5_0) < 0 && !F.isEmpty(connProps.getUsername())) {
-                throw new SQLException("Authentication doesn't support by remote server[driverProtocolVer="
-                    + CURRENT_VER + ", remoteNodeProtocolVer=" + srvProtoVer0 + ", err=" + err
-                    + ", url=" + connProps.getUrl() + ']', SqlStateCode.CONNECTION_REJECTED);
-            }
+            String err = reader.readString();
 
-            if (VER_2_4_0.equals(srvProtocolVer))
-                handshake(srvProtocolVer);
+            if (VER_2_5_0.equals(srvProtoVer0))
+                handshake(srvProtoVer0);
             else {
                 throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
-                    ", remoteNodeProtocolVer=" + srvProtocolVer + ", err=" + err + ']',
+                    ", remoteNodeProtocolVer=" + srvProtoVer0 + ", err=" + err + ']',
                     SqlStateCode.CONNECTION_REJECTED);
             }
         }
@@ -381,11 +370,6 @@ public class JdbcThinTcpIo {
         }
 
         try {
-            if (!isUnorderedStreamSupported()) {
-                throw new SQLException("Streaming without response doesn't supported by server [driverProtocolVer="
-                    + CURRENT_VER + ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
-            }
-
             int cap = guessCapacity(req);
 
             BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap),
@@ -564,14 +548,5 @@ public class JdbcThinTcpIo {
      */
     IgniteProductVersion igniteVersion() {
         return igniteVer;
-    }
-
-    /**
-     * @return {@code true} If the unordered streaming supported.
-     */
-    boolean isUnorderedStreamSupported() {
-        assert srvProtocolVer != null;
-
-        return srvProtocolVer.compareTo(VER_2_5_0) >= 0;
     }
 }

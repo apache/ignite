@@ -69,8 +69,8 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_5_0;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_6_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC_ORDERED;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BULK_LOAD_BATCH;
@@ -819,22 +819,19 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                         JdbcColumnMeta columnMeta;
 
-                        if (protocolVer.compareTo(VER_2_5_0) >= 0) {
+                        if (protocolVer.compareTo(VER_2_6_0) >= 0) {
                             GridQueryProperty prop = table.property(colName);
 
                             columnMeta = new JdbcColumnMetaV4(table.schemaName(), table.tableName(),
                                 field.getKey(), field.getValue(), !prop.notNull(), prop.defaultValue(),
                                 prop.precision(), prop.scale());
                         }
-                        else if (protocolVer.compareTo(VER_2_4_0) >= 0) {
+                        else {
                             GridQueryProperty prop = table.property(colName);
 
                             columnMeta = new JdbcColumnMetaV3(table.schemaName(), table.tableName(),
                                 field.getKey(), field.getValue(), !prop.notNull(), prop.defaultValue());
                         }
-                        else
-                            columnMeta = new JdbcColumnMeta(table.schemaName(), table.tableName(),
-                                field.getKey(), field.getValue());
 
                         if (!meta.contains(columnMeta))
                             meta.add(columnMeta);
@@ -844,7 +841,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             JdbcMetaColumnsResult res;
 
-            if (protocolVer.compareTo(VER_2_5_0) >= 0)
+            if (protocolVer.compareTo(VER_2_6_0) >= 0)
                 res = new JdbcMetaColumnsResultV4(meta);
             else
                 res = new JdbcMetaColumnsResultV3(meta);
