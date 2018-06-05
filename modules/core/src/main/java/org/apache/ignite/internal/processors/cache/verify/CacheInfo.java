@@ -230,10 +230,16 @@ public class CacheInfo extends VisorDataTransferObject {
         this.mode = mode;
     }
 
+    /**
+     *
+     */
     public CacheAtomicityMode getAtomicityMode() {
         return atomicityMode;
     }
 
+    /**
+     * @param atomicityMode
+     */
     public void setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
     }
@@ -295,6 +301,11 @@ public class CacheInfo extends VisorDataTransferObject {
     }
 
     /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, seqName);
         out.writeLong(seqVal);
@@ -306,10 +317,10 @@ public class CacheInfo extends VisorDataTransferObject {
         out.writeInt(mapped);
         out.writeObject(topVer);
         U.writeEnum(out, mode);
-        U.writeEnum(out, atomicityMode);
         out.writeInt(backupsCnt);
         U.writeString(out, affinityClsName);
         out.writeInt(cachesCnt);
+        U.writeEnum(out, atomicityMode);
     }
 
     /** {@inheritDoc} */
@@ -324,10 +335,10 @@ public class CacheInfo extends VisorDataTransferObject {
         mapped = in.readInt();
         topVer = (AffinityTopologyVersion)in.readObject();
         mode = CacheMode.fromOrdinal(in.readByte());
-        atomicityMode = CacheAtomicityMode.fromOrdinal(in.readByte());
         backupsCnt = in.readInt();
         affinityClsName = U.readString(in);
         cachesCnt = in.readInt();
+        atomicityMode = protoVer >= V2 ? CacheAtomicityMode.fromOrdinal(in.readByte()) : null;
     }
 
     /** {@inheritDoc} */
