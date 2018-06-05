@@ -55,7 +55,11 @@ def init(self):
         byteorder=PROTOCOL_BYTE_ORDER,
     )
     if hasattr(self, 'length'):
-        self.length = ctypes.sizeof(self) - ctypes.sizeof(ctypes.c_int)
+        self.length = (
+            ctypes.sizeof(self)
+            - ctypes.sizeof(ctypes.c_int)
+            - ctypes.sizeof(ctypes.c_byte)
+        )
 
 
 def simple_type_get_attribute(self):

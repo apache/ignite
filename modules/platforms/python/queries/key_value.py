@@ -18,9 +18,40 @@ import socket
 from typing import Any, Dict
 
 from constants import *
-from datatypes import data_class, string_object
+from datatypes import data_class, string_class, string_object
 from .common import QueryHeader, ResponseHeader
 from .op_codes import *
+
+
+def cache_create(conn: socket.socket, name: str) -> Dict:
+    query_class = type(
+        'QueryClass',
+        (QueryHeader,),
+        {
+            '_pack_': 1,
+            '_fields_': [
+                ('cache_name', string_class(name)),
+            ],
+        },
+    )
+    query = query_class()
+    query.op_code = OP_CACHE_CREATE_WITH_NAME
+    query.cache_name = name
+    conn.send(query)
+    buffer = conn.recv(ctypes.sizeof(ResponseHeader))
+    response_header = ResponseHeader.from_buffer_copy(buffer)
+
+    if response_header.status_code == 0:
+        # TODO: get result data
+        return {0: 'Success'}
+
+    error_msg = string_object(conn)
+    return {
+        response_header.status_code: str(
+            error_msg.data,
+            encoding=PROTOCOL_STRING_ENCODING,
+        ),
+    }
 
 
 def cache_put(

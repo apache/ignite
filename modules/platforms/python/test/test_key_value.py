@@ -13,11 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ctypes
 import socket
 
 from queries import HandshakeRequest, read_response
-from queries.key_value import cache_put, cache_get
+from queries.key_value import cache_create, cache_get, cache_put
 
 
 def test_put_get():
@@ -27,6 +26,8 @@ def test_put_get():
     conn.send(hs_request)
     hs_response = read_response(conn)
     assert hs_response.op_code != 0
+
+    print(cache_create(conn, 'shit'))
 
     cache_put(conn, 1, 'dada', 5)
 
