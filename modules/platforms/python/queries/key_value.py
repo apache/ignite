@@ -42,16 +42,25 @@ class QueryHeader(ctypes.LittleEndianStructure):
         super().__init__(*args, **kwargs)
         self.query_id = randint(MIN_LONG, MAX_LONG)
         self.length = ctypes.sizeof(self) - ctypes.sizeof(ctypes.c_int)
-        # sadly, complex structure attributes can't have their own
-        # __init__ methods, so we have to put type handling here.
-        # It breaks the encapsulation principle, as well as my heart
+        # sadly, data objects' __init__ methods are out of MRO,
+        # so we have to implicitly run their init methods here
         for attr_name in dir(self):
-            attr = getattr(self, attr_name)
-            if hasattr(attr, '_type_code'):
-                attr.type_code = int.from_bytes(
-                    getattr(attr, '_type_code'),
-                    byteorder=PROTOCOL_BYTE_ORDER,
-                )
+            attr = self.__getattribute__(attr_name, original_method=True)
+            if hasattr(attr, 'init'):
+                attr.init()
+
+    def __setattr__(self, key, value):
+        attr = self.__getattribute__(key, original_method=True)
+        if hasattr(attr, 'set_attribute'):
+            attr.set_attribute(value)
+        else:
+            super().__setattr__(key, value)
+
+    def __getattribute__(self, item, original_method=False):
+        value = super().__getattribute__(item)
+        if hasattr(value, 'get_attribute') and not original_method:
+            return value.get_attribute()
+        return value
 
 
 class ResponseHeader(ctypes.LittleEndianStructure):
@@ -99,10 +108,8 @@ def cache_put(
     query.hash_code = hash_code
     query.flag = 1 if binary else 0
 
-    # TODO this should be just “query.key = key; query.value = value”
-    # TODO uniformly for all data types
-    query.key.value = key
-    query.value.value = value
+    query.key = key
+    query.value = value
 
     conn.send(query)
     buffer = conn.recv(ctypes.sizeof(ResponseHeader))

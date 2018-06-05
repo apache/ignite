@@ -28,6 +28,6 @@ def test_put_get():
     hs_response = read_response(conn)
     assert hs_response.op_code != 0
 
-    cache_put(conn, 1, 3, 5)
+    cache_put(conn, 1, 'dada', 5)
 
     conn.close()

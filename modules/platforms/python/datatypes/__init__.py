@@ -49,6 +49,23 @@ def data_class(
         raise NotImplementedError('This data type is not supported.')
 
 
+def init(self):
+    self.type_code = int.from_bytes(
+        getattr(self, '_type_code'),
+        byteorder=PROTOCOL_BYTE_ORDER,
+    )
+    if hasattr(self, 'length'):
+        self.length = ctypes.sizeof(self) - ctypes.sizeof(ctypes.c_int)
+
+
+def simple_type_get_attribute(self):
+    return self.value
+
+
+def simple_type_set_attribute(self, value):
+    self.value = value
+
+
 def simple_data_class(python_var, tc_hint=None, **kwargs):
     python_type = type(python_var)
     if python_type is int:
@@ -71,13 +88,34 @@ def simple_data_class(python_var, tc_hint=None, **kwargs):
                 ('value', ctypes_type),
             ],
             '_type_code': type_code,
+            'init': init,
+            'get_attribute': simple_type_get_attribute,
+            'set_attribute': simple_type_set_attribute,
         },
     )
 
 
+def string_get_attribute(self):
+    try:
+        return self.data.decode('utf-8')
+    except UnicodeDecodeError:
+        return self.data
+
+
+def string_set_attribute(self, value):
+    # warning: no length check is done on this stage
+    if type(value) is bytes:
+        self.data = value
+    else:
+        self.data = bytes(value, encoding='utf-8')
+
+
 def string_class(python_var, length=None, **kwargs):
     # python_var is of type str or bytes
-    length = length or len(bytes(python_var))
+    if type(python_var) is bytes:
+        length = len(python_var)
+    elif python_var is not None:
+        length = len(bytes(python_var, encoding='utf-8'))
     return type(
         'String',
         (ctypes.LittleEndianStructure,),
@@ -89,6 +127,9 @@ def string_class(python_var, length=None, **kwargs):
                 ('data', ctypes.c_char * length),
             ],
             '_type_code': TC_STRING,
+            'init': init,
+            'get_attribute': string_get_attribute,
+            'set_attribute': string_set_attribute,
         },
     )
 
