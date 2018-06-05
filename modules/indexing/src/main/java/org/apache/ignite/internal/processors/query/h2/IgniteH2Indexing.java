@@ -376,6 +376,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     };
 
+    /** H2 JDBC connection for INFORMATION_SCHEMA. Holds H2 open until node is stopped. */
+    private Connection sysConn;
+
     /**
      * @return Kernal context.
      */
@@ -394,6 +397,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @return H2 JDBC connection to INFORMATION_SCHEMA.
+     */
+    private Connection systemConnection() {
+        assert Thread.holdsLock(schemaMux);
+
+        if (sysConn == null) {
+            try {
+                sysConn = DriverManager.getConnection(dbUrl);
+
+                sysConn.setSchema("INFORMATION_SCHEMA");
+            }
+            catch (SQLException e) {
+                throw new IgniteSQLException("Failed to initialize system DB connection: " + dbUrl, e);
+            }
+        }
+
+        return sysConn;
     }
 
     /**
@@ -564,10 +587,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed to create db schema.
      */
     private void createSchema(String schema) throws IgniteCheckedException {
-        executeStatement("INFORMATION_SCHEMA", "CREATE SCHEMA IF NOT EXISTS " + H2Utils.withQuotes(schema));
-
-        // This method is typically called from internal Ignite threads on bootstrap, no need to cache this connection.
-        conns.remove(Thread.currentThread());
+        executeSystemStatement("CREATE SCHEMA IF NOT EXISTS " + H2Utils.withQuotes(schema));
 
         if (log.isDebugEnabled())
             log.debug("Created H2 schema for index database: " + schema);
@@ -580,7 +600,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed to create db schema.
      */
     private void dropSchema(String schema) throws IgniteCheckedException {
-        executeStatement("INFORMATION_SCHEMA", "DROP SCHEMA IF EXISTS " + H2Utils.withQuotes(schema));
+        executeSystemStatement("DROP SCHEMA IF EXISTS " + H2Utils.withQuotes(schema));
 
         if (log.isDebugEnabled())
             log.debug("Dropped H2 schema for index database: " + schema);
@@ -598,6 +618,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Connection c = connectionForThread(schema);
 
             stmt = c.createStatement();
+
+            stmt.executeUpdate(sql);
+        }
+        catch (SQLException e) {
+            onSqlException();
+
+            throw new IgniteSQLException("Failed to execute statement: " + sql, e);
+        }
+        finally {
+            U.close(stmt, log);
+        }
+    }
+
+    /**
+     * Execute statement on H2 INFORMATION_SCHEMA.
+     * @param sql SQL statement.
+     */
+    public void executeSystemStatement(String sql) {
+        assert Thread.holdsLock(schemaMux);
+
+        Statement stmt = null;
+
+        try {
+            stmt = systemConnection().createStatement();
 
             stmt.executeUpdate(sql);
         }
@@ -2789,6 +2833,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");
+
+        // Close system H2 connection to INFORMATION_SCHEMA
+        synchronized (schemaMux) {
+            if (sysConn != null) {
+                U.close(sysConn, log);
+
+                sysConn = null;
+            }
+        }
     }
 
     /**
