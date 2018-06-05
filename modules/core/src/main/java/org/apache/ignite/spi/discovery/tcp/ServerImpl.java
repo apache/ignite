@@ -94,6 +94,8 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -2577,12 +2579,25 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** */
         private long lastRingMsgTime;
 
+        /** Worker that encapsulates thread body */
+        private GridWorker worker;
+
         /**
          */
         RingMessageWorker() {
             super("tcp-disco-msg-worker", 10);
 
             initConnectionCheckFrequency();
+
+            WorkersRegistry workerRegistry = spi.ignite() instanceof IgniteEx
+                ? ((IgniteEx)spi.ignite()).context().workersRegistry()
+                : null;
+
+            worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
+                @Override protected void body() throws InterruptedException {
+                    workerBody();
+                }
+            };
         }
 
         /**
@@ -2613,8 +2628,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 log.debug("Message has been added to queue: " + msg);
         }
 
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException {
+        /** */
+        private void workerBody() throws InterruptedException {
             Throwable err = null;
 
             try {
@@ -2657,18 +2672,24 @@ class ServerImpl extends TcpDiscoveryImpl {
                 throw e;
             }
             finally {
-                if (err == null && !spi.isNodeStopping0())
-                    err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly.");
+                if (spi.ignite() instanceof IgniteEx) {
+                    if (err == null && !spi.isNodeStopping0())
+                        err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly.");
 
-                FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
+                    FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
 
-                if (err instanceof OutOfMemoryError)
-                    failure.process(new FailureContext(CRITICAL_ERROR, err));
-                else if (err != null)
-                    failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                    if (err instanceof OutOfMemoryError)
+                        failure.process(new FailureContext(CRITICAL_ERROR, err));
+                    else if (err != null)
+                        failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                }
             }
         }
 
+        /** {@inheritDoc} */
+        @Override protected void body() {
+            worker.run();
+        }
         /**
          * Initializes connection check frequency. Used only when failure detection timeout is enabled.
          */
@@ -5582,6 +5603,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Port to listen. */
         private int port;
 
+        /** Worker that encapsulates thread body */
+        private GridWorker worker;
+
         /**
          * Constructor.
          *
@@ -5614,6 +5638,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ']');
                     }
 
+                    WorkersRegistry workerRegistry = spi.ignite() instanceof IgniteEx
+                        ? ((IgniteEx)spi.ignite()).context().workersRegistry()
+                        : null;
+
+                    worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
+                        @Override protected void body() {
+                            workerBody();
+                        }
+                    };
+
                     return;
                 }
                 catch (IOException e) {
@@ -5632,8 +5666,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 ", addr=" + spi.locHost + ']');
         }
 
-        /** {@inheritDoc} */
-        @Override protected void body() {
+        /** */
+        private void workerBody() {
             Throwable err = null;
 
             try {
@@ -5682,18 +5716,25 @@ class ServerImpl extends TcpDiscoveryImpl {
                 throw t;
             }
             finally {
-                if (err == null && !spi.isNodeStopping0())
-                    err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly.");
+                if (spi.ignite() instanceof IgniteEx) {
+                    if (err == null && !spi.isNodeStopping0())
+                        err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly.");
 
-                FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
+                    FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
 
-                if (err instanceof OutOfMemoryError)
-                    failure.process(new FailureContext(CRITICAL_ERROR, err));
-                else if (err != null)
-                    failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                    if (err instanceof OutOfMemoryError)
+                        failure.process(new FailureContext(CRITICAL_ERROR, err));
+                    else if (err != null)
+                        failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                }
 
                 U.closeQuiet(srvrSock);
             }
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() {
+            worker.run();
         }
 
         /** {@inheritDoc} */
