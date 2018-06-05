@@ -15,6 +15,7 @@
 
 import pytest
 
+from constants import *
 from datatypes import simple_data_object, string_object
 from datatypes.type_codes import *
 
@@ -72,4 +73,4 @@ def test_string(conn,  expected_length, expected_data):
     string_var = string_object(conn)
     assert string_var.type_code == int.from_bytes(TC_STRING, byteorder='little')
     assert string_var.length == expected_length
-    assert string_var.data.decode('utf-8') == expected_data
+    assert string_var.data.decode(PROTOCOL_STRING_ENCODING) == expected_data

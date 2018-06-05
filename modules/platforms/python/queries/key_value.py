@@ -14,77 +14,20 @@
 # limitations under the License.
 
 import ctypes
-from random import randint
 import socket
-from typing import Any
+from typing import Any, Dict
 
 from constants import *
-from datatypes import data_class
+from datatypes import data_class, string_object
+from .common import QueryHeader, ResponseHeader
 from .op_codes import *
-
-
-class QueryHeader(ctypes.LittleEndianStructure):
-    """
-    Standard query header used throughout the Ignite Binary API.
-
-    op_code field sets the query operation.
-    Server returns query_id in response as it was given in query. It may help
-    matching requests with responses in asynchronous apps.
-    """
-    _pack_ = 1
-    _fields_ = [
-        ('length', ctypes.c_int),
-        ('op_code', ctypes.c_short),
-        ('query_id', ctypes.c_long),
-    ]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.query_id = randint(MIN_LONG, MAX_LONG)
-        self.length = ctypes.sizeof(self) - ctypes.sizeof(ctypes.c_int)
-        # sadly, data objects' __init__ methods are out of MRO,
-        # so we have to implicitly run their init methods here
-        for attr_name in dir(self):
-            attr = self.__getattribute__(attr_name, original_method=True)
-            if hasattr(attr, 'init'):
-                attr.init()
-
-    def __setattr__(self, key, value):
-        attr = self.__getattribute__(key, original_method=True)
-        if hasattr(attr, 'set_attribute'):
-            attr.set_attribute(value)
-        else:
-            super().__setattr__(key, value)
-
-    def __getattribute__(self, item, original_method=False):
-        value = super().__getattribute__(item)
-        if hasattr(value, 'get_attribute') and not original_method:
-            return value.get_attribute()
-        return value
-
-
-class ResponseHeader(ctypes.LittleEndianStructure):
-    """
-    Standard response header.
-
-    status_code == 0 means that operation was successful, and it also means
-    that this header may conclude the server response or be followed with
-    result data objects. Otherwise, the response continues with the extra
-    string object holding the error message.
-    """
-    _pack_ = 1
-    _fields_ = [
-        ('length', ctypes.c_int),
-        ('query_id', ctypes.c_long),
-        ('status_code', ctypes.c_int),
-    ]
 
 
 def cache_put(
     conn: socket.socket,
     hash_code: int, key: Any, value: Any, binary: bool=False,
     key_hint: int=None, value_hint=None,
-) -> None:
+) -> Dict:
     """
     This code will be moved to another place, maybe to another class.
     """
@@ -107,15 +50,22 @@ def cache_put(
     query.op_code = OP_CACHE_PUT
     query.hash_code = hash_code
     query.flag = 1 if binary else 0
-
     query.key = key
     query.value = value
-
     conn.send(query)
     buffer = conn.recv(ctypes.sizeof(ResponseHeader))
     response_header = ResponseHeader.from_buffer_copy(buffer)
-    print(response_header)
-    print(conn.recv(1000))
+
+    if response_header.status_code == 0:
+        return {0: 'Success'}
+
+    error_msg = string_object(conn)
+    return {
+        response_header.status_code: str(
+            error_msg.data,
+            encoding=PROTOCOL_STRING_ENCODING,
+        ),
+    }
 
 
 def cache_get(
@@ -146,4 +96,15 @@ def cache_get(
     query.key = key
     conn.send(query)
     buffer = conn.recv(ctypes.sizeof(ResponseHeader))
-    print(buffer)
+    response_header = ResponseHeader.from_buffer_copy(buffer)
+    if response_header.status_code == 0:
+        # TODO: get result data
+        return {0: 'Success'}
+
+    error_msg = string_object(conn)
+    return {
+        response_header.status_code: str(
+            error_msg.data,
+            encoding=PROTOCOL_STRING_ENCODING,
+        ),
+    }

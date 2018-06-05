@@ -97,7 +97,7 @@ def simple_data_class(python_var, tc_hint=None, **kwargs):
 
 def string_get_attribute(self):
     try:
-        return self.data.decode('utf-8')
+        return self.data.decode(PROTOCOL_STRING_ENCODING)
     except UnicodeDecodeError:
         return self.data
 
@@ -115,7 +115,7 @@ def string_class(python_var, length=None, **kwargs):
     if type(python_var) is bytes:
         length = len(python_var)
     elif python_var is not None:
-        length = len(bytes(python_var, encoding='utf-8'))
+        length = len(bytes(python_var, encoding=PROTOCOL_STRING_ENCODING))
     return type(
         'String',
         (ctypes.LittleEndianStructure,),
