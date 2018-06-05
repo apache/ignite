@@ -2984,9 +2984,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 if (log.isDebugEnabled())
                                     log.debug("Handshake response: " + res);
 
-                                if (res.changeTopology() && sndState != null) {
+                                if (res.previousNodeAlive() && sndState != null) {
                                     // Remote node checked connection to it's previous and got success.
-                                    boolean previousNode = sndState.previousNode();
+                                    boolean previousNode = sndState.markLastFailedNodeAlive();
 
                                     if (previousNode)
                                         failedNodes.remove(failedNodes.size() - 1);
@@ -3001,20 +3001,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     sock = null;
 
                                     if (sndState.isFailed()) {
-                                        U.warn(log, "Unable to join next nodes in a ring, " +
-                                            "it seems local node experiencing connectivity issues. Segmenting local node. " +
-                                            "This made to avoid case when one node fails a big part of cluster, to disable" +
-                                            " that behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to non-positive number. " +
-                                            "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
-                                            + spi.getEffectiveConnectionRecoveryTimeout() + ']');
-
-                                        notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+                                        segmentLocalNodeOnSendFail();
 
                                         return; // Nothing to do here.
                                     }
 
                                     if (previousNode)
-                                        U.warn(log, "New next node has connection to it's previous, trying previous again. [next=" + next + ']');
+                                        U.warn(log, "New next node has connection to it's previous, trying previous " +
+                                            "again. [next=" + next + ']');
 
                                     continue ringLoop;
                                 }
@@ -3311,7 +3305,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     if (sndState == null && spi.getEffectiveConnectionRecoveryTimeout() > 0)
                         sndState = new CrossRingMessageSendState();
 
-                    boolean failedNextNode = sndState == null || sndState.failedNextNode();
+                    boolean failedNextNode = sndState == null || sndState.markNextNodeFailed();
 
                     if (failedNextNode && !failedNodes.contains(next)) {
                         failedNodes.add(next);
@@ -3329,7 +3323,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                     }
                     else if (!failedNextNode && sndState != null && sndState.isBackward()) {
-                        boolean prev = sndState.previousNode();
+                        boolean prev = sndState.markLastFailedNodeAlive();
 
                         U.warn(log, "Failed to send message to next node, try previous [msg=" + msg +
                             ", next=" + next + ']');
@@ -3344,14 +3338,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
 
                     if (sndState != null && sndState.isFailed()) {
-                        U.warn(log, "Unable to join next nodes in a ring, " +
-                            "it seems local node experiencing connectivity issues. Segmenting local node. " +
-                            "This made to avoid case when one node fails a big part of cluster, to disable" +
-                            " that behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to non-positive number. " +
-                            "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
-                            + spi.getEffectiveConnectionRecoveryTimeout() + ']');
-
-                        notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
+                        segmentLocalNodeOnSendFail();
 
                         return; // Nothing to do here.
                     }
@@ -3423,6 +3410,20 @@ class ServerImpl extends TcpDiscoveryImpl {
                         "To speed up failure detection please see 'Failure Detection' section under javadoc" +
                         " for 'TcpDiscoverySpi'");
             }
+        }
+
+        /**
+         * Segment local node on failed message send.
+         */
+        private void segmentLocalNodeOnSendFail() {
+            U.warn(log, "Unable to join next nodes in a ring, " +
+                "it seems local node experiencing connectivity issues. Segmenting local node. " +
+                "This made to avoid case when one node fails a big part of cluster, to disable" +
+                " that behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to non-positive number. " +
+                "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
+                + spi.getEffectiveConnectionRecoveryTimeout() + ']');
+
+            notifyDiscovery(EVT_NODE_SEGMENTED, ring.topologyVersion(), locNode);
         }
 
         /**
@@ -5949,12 +5950,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryNode previous = ring.previousNode(failed);
 
                         if (previous != null && !previous.id().equals(nodeId)) {
-                            boolean ok = pingNode(previous); // Check exchange time?
+                            boolean ok = pingNode(previous);
 
                             if (log.isDebugEnabled())
                                 log.debug("Previous node node ping result: [res=" + ok + ", previous=" + previous + ']');
 
-                            res.changeTopology(ok); // Now it means all fine for me, re-check your connections.
+                            // True means all fine for local node, and joining node has to re-try join to previous that
+                            // it treated as failed.
+                            res.previousNodeAlive(ok);
                         }
                     }
 
@@ -7006,11 +7009,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Add next node to failed.
+         * Marks next node as failed.
          *
-         * @return {@code True} if failed node added.
+         * @return {@code True} node marked as failed.
          */
-        boolean failedNextNode() {
+        boolean markNextNodeFailed() {
             if (state == RingMessageSendState.STARTING_POINT || state == RingMessageSendState.FORWARD_PASS) {
                 state = RingMessageSendState.FORWARD_PASS;
 
@@ -7023,9 +7026,11 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * @return {@code False} if no previous nodes left or incorrect state.
+         * Marks last failed node as alive.
+         *
+         * @return {@code False} if all failed nodes marked as alive or incorrect state.
          */
-        boolean previousNode() {
+        boolean markLastFailedNodeAlive() {
             if (state == RingMessageSendState.FORWARD_PASS || state == RingMessageSendState.BACKWARD_PASS) {
                 state = RingMessageSendState.BACKWARD_PASS;
 

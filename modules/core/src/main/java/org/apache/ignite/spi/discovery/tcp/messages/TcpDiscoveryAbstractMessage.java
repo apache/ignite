@@ -235,28 +235,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     }
 
     /**
-     * Gets topology change flag.<br>
-     * {@code True} in request means node intent to fail nodes in a ring, in
-     * response - topology change denied.
-     *
-     * @return Change topology flag.
-     */
-    public boolean changeTopology() {
-        return getFlag(CHANGE_TOPOLOGY_FLAG_POS);
-    }
-
-    /**
-     * Gets topology change flag.<br>
-     * {@code True} in request means node intent to fail nodes in a ring, in
-     * response - topology change denied.
-     *
-     * @param changeTop Change topology flag.
-     */
-    public void changeTopology(boolean changeTop) {
-        setFlag(CHANGE_TOPOLOGY_FLAG_POS, changeTop);
-    }
-
-    /**
      * @return Pending message index.
      */
     public short pendingIndex() {
@@ -349,6 +327,6 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(TcpDiscoveryAbstractMessage.class, this, "isClient", getFlag(CLIENT_FLAG_POS), "isChangeTopology", getFlag(CHANGE_TOPOLOGY_FLAG_POS));
+        return S.toString(TcpDiscoveryAbstractMessage.class, this, "isClient", getFlag(CLIENT_FLAG_POS));
     }
 }
