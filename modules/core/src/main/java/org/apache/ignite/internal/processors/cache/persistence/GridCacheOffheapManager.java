@@ -776,9 +776,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     ) throws IgniteCheckedException {
         assert !cctx.isNear() : cctx.name();
 
-        if (!hasPendingEntries)
+        if (!hasPendingEntries || nextCleanTime > U.currentTimeMillis())
             return false;
 
+        // Prevent manager being stopped in the middle of pds operation.
         if (!busyLock.enterBusy())
             return false;
 
@@ -791,6 +792,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 if (amount != -1 && cleared >= amount)
                     return true;
             }
+
+            // Throttle if there is nothing to clean anymore.
+            if (cleared == 0)
+                nextCleanTime = U.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
         }
         finally {
             busyLock.leaveBusy();
@@ -1159,8 +1164,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** */
         private volatile CacheDataStore delegate;
 
-        /** Timestamp when next clean try will be allowed. */
-        private volatile long nextCleanTime;
+        /** Timestamp when next clean try will be allowed for current partition.
+         * Used for fine-grained throttling on per-partition basis. */
+        private volatile long nextStoreCleanTime;
 
         /** */
         private final boolean exists;
@@ -1739,7 +1745,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             long now = U.currentTimeMillis();
 
-            if (delegate0 == null || nextCleanTime > now)
+            if (delegate0 == null || nextStoreCleanTime > now)
                 return 0;
 
             assert pendingTree != null : "Partition data store was not initialized.";
@@ -1748,7 +1754,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             // Throttle if there is nothing to clean anymore.
             if (cleared == 0)
-                nextCleanTime = now + UNWIND_THROTTLING_TIMEOUT;
+                nextStoreCleanTime = now + UNWIND_THROTTLING_TIMEOUT;
 
             return cleared;
         }
