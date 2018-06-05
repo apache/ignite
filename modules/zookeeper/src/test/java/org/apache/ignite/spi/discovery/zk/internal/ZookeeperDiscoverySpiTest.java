@@ -127,6 +127,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
@@ -1108,7 +1109,9 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             srvs.get(0).stop();
             srvs.get(1).stop();
 
-            assertTrue(l.await(getTestTimeout(), TimeUnit.MILLISECONDS));
+            QuorumPeer qp = srvs.get(2).getQuorumPeer();
+            //timeout on socket inside Zookeeper + other logic
+            assertTrue(l.await(qp.getTickTime() * qp.getInitLimit() + 5000, TimeUnit.MILLISECONDS));
         }
         finally {
             zkCluster.close();
