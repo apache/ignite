@@ -2023,9 +2023,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         String memPlcName = cfg.getDataRegionName();
 
-        DataRegion memPlc = sharedCtx.database().dataRegion(memPlcName);
+        DataRegion dataRegion = sharedCtx.database().dataRegion(memPlcName);
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
+
+        boolean persistenceEnabled = sharedCtx.localNode().isClient() ? desc.persistenceEnabled() :
+            dataRegion != null && dataRegion.config().isPersistenceEnabled();
 
         CacheGroupContext grp = new CacheGroupContext(sharedCtx,
             desc.groupId(),
@@ -2033,12 +2036,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheType,
             cfg,
             affNode,
-            memPlc,
+            dataRegion,
             cacheObjCtx,
             freeList,
             reuseList,
             exchTopVer,
-            desc.persistenceEnabled(),
+            persistenceEnabled,
             desc.walEnabled()
         );
 
