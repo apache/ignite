@@ -13,13 +13,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PROTOCOL_VERSION_MAJOR = 1
-PROTOCOL_VERSION_MINOR = 1
-PROTOCOL_VERSION_PATCH = 0
+import ctypes
+import socket
 
-MAX_LONG = 9223372036854775807
-MIN_LONG = -9223372036854775808
+from .type_codes import *
+from .simple import init
 
-PROTOCOL_BYTE_ORDER = 'little'
-PROTOCOL_STRING_ENCODING = 'utf-8'
-PROTOCOL_CHAR_ENCODING = 'utf-16le'
+
+def null_class(*args, **kwargs):
+    return type(
+        'Null',
+        (ctypes.LittleEndianStructure,),
+        {
+            '_pack_': 1,
+            '_fields_': [
+                ('type_code', ctypes.c_byte),
+            ],
+            '_type_code': TC_NULL,
+            'init': init,
+            'get_attribute': lambda self: None,
+            'set_attribute': lambda self: None,
+        },
+    )
+
+
+def null_object(connection: socket.socket, initial=None):
+    buffer = initial or connection.recv(1)
+    return null_class().from_buffer_copy(buffer)

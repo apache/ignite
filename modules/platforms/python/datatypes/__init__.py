@@ -13,13 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ctypes
 import socket
 from typing import Any, ByteString, Union
 
-from constants import *
 from datatypes.class_configs import simple_type_config, simple_types
 from datatypes.type_codes import *
+from .null import null_class, null_object
+from .simple import init, simple_data_class, simple_data_object
+from .string import string_class, string_object
 
 
 NoneType = type(None)
@@ -41,126 +42,24 @@ def data_class(
     :return: data class.
     """
     python_type = type(python_var)
-    if python_type in (int, float) or (python_type is NoneType and tc_hint in simple_types):
+    if python_type is NoneType:
+        return null_class()
+    if python_type in (int, float) or (
+        python_type is NoneType and tc_hint in simple_types
+    ):
         return simple_data_class(python_var, tc_hint, **kwargs)
-    elif python_type in (str, bytes) or (python_type is NoneType and tc_hint == TC_STRING):
+    elif python_type in (str, bytes) or (
+        python_type is NoneType and tc_hint == TC_STRING
+    ):
         return string_class(python_var, tc_hint, **kwargs)
     else:
         raise NotImplementedError('This data type is not supported.')
 
 
-def init(self):
-    self.type_code = int.from_bytes(
-        getattr(self, '_type_code'),
-        byteorder=PROTOCOL_BYTE_ORDER,
-    )
-    if hasattr(self, 'length'):
-        self.length = (
-            ctypes.sizeof(self)
-            - ctypes.sizeof(ctypes.c_int)
-            - ctypes.sizeof(ctypes.c_byte)
-        )
-
-
-def simple_type_get_attribute(self):
-    return self.value
-
-
-def simple_type_set_attribute(self, value):
-    self.value = value
-
-
-def simple_data_class(python_var, tc_hint=None, **kwargs):
-    python_type = type(python_var)
-    if python_type is int:
-        type_code = tc_hint or TC_LONG
-    elif python_type is float:
-        type_code = tc_hint or TC_DOUBLE
-    else:
-        type_code = tc_hint
-    assert type_code is not None, (
-        f'Can not map python type {python_type} to simple data class.'
-    )
-    class_name, ctypes_type = simple_type_config[type_code]
-    return type(
-        class_name,
-        (ctypes.LittleEndianStructure,),
-        {
-            '_pack_': 1,
-            '_fields_': [
-                ('type_code', ctypes.c_byte),
-                ('value', ctypes_type),
-            ],
-            '_type_code': type_code,
-            'init': init,
-            'get_attribute': simple_type_get_attribute,
-            'set_attribute': simple_type_set_attribute,
-        },
-    )
-
-
-def string_get_attribute(self):
-    try:
-        return self.data.decode(PROTOCOL_STRING_ENCODING)
-    except UnicodeDecodeError:
-        return self.data
-
-
-def string_set_attribute(self, value):
-    # warning: no length check is done on this stage
-    if type(value) is bytes:
-        self.data = value
-    else:
-        self.data = bytes(value, encoding='utf-8')
-
-
-def string_class(python_var, length=None, **kwargs):
-    # python_var is of type str or bytes
-    if type(python_var) is bytes:
-        length = len(python_var)
-    elif python_var is not None:
-        length = len(bytes(python_var, encoding=PROTOCOL_STRING_ENCODING))
-    return type(
-        'String',
-        (ctypes.LittleEndianStructure,),
-        {
-            '_pack_': 1,
-            '_fields_': [
-                ('type_code', ctypes.c_byte),
-                ('length', ctypes.c_int),
-                ('data', ctypes.c_char * length),
-            ],
-            '_type_code': TC_STRING,
-            'init': init,
-            'get_attribute': string_get_attribute,
-            'set_attribute': string_set_attribute,
-        },
-    )
-
-
-def simple_data_object(connection: socket.socket, initial=None):
-    buffer = initial or connection.recv(1)
-    type_code = buffer
-    data_class = simple_data_class(None, tc_hint=type_code)
-    buffer += connection.recv(ctypes.sizeof(simple_type_config[type_code][1]))
-    data_object = data_class.from_buffer_copy(buffer)
-    return data_object
-
-
-def string_object(connection: socket.socket, initial=None):
-    buffer = initial or connection.recv(1)
-    type_code = buffer
-    assert type_code == TC_STRING, 'Can not create string: wrong type code.'
-    length_buffer = connection.recv(4)
-    length = int.from_bytes(length_buffer, byteorder='little')
-    data_class = string_class(None, length)
-    buffer += length_buffer + connection.recv(length)
-    data_object = data_class.from_buffer_copy(buffer)
-    return data_object
-
-
 def data_object(connection: socket.socket):
     initial = connection.recv(1)
+    if initial == TC_NULL:
+        return null_object(connection, initial=initial)
     if initial in simple_types:
         return simple_data_object(connection, initial=initial)
     elif initial == TC_STRING:

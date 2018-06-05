@@ -25,6 +25,8 @@ simple_type_config = {
     TC_LONG: ('Long', ctypes.c_long),
     TC_FLOAT: ('Float', ctypes.c_float),
     TC_DOUBLE: ('Double', ctypes.c_double),
+    TC_CHAR: ('Char', ctypes.c_short),
+    TC_BOOL: ('Bool', ctypes.c_byte),
 }
 
 simple_types = list(simple_type_config.keys())
