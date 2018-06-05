@@ -219,17 +219,7 @@ public class CacheManager implements javax.cache.CacheManager {
         kernalGateway.readLock();
 
         try {
-            IgniteCache<K, V> cache = getCache0(cacheName);
-
-            if (cache != null) {
-                if(cache.getConfiguration(Configuration.class).getKeyType() != Object.class)
-                    throw new IllegalArgumentException();
-
-                if(cache.getConfiguration(Configuration.class).getValueType() != Object.class)
-                    throw new IllegalArgumentException();
-            }
-
-            return cache;
+            return getCache0(cacheName);
         }
         finally {
             kernalGateway.readUnlock();
