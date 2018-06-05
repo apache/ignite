@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.selection.split;
 
 import java.io.Serializable;
+import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
  * Dataset split that encapsulates train and test subsets.
@@ -30,10 +31,10 @@ public class TrainTestSplit<K, V> implements Serializable {
     private static final long serialVersionUID = 2165934349492062372L;
 
     /** Filter that selects train subset of the dataset. */
-    private final DatasetSplitFilter<K, V> trainFilter;
+    private final IgniteBiPredicate<K, V> trainFilter;
 
     /** Filter that select test subset of the dataset. */
-    private final DatasetSplitFilter<K, V> testFilter;
+    private final IgniteBiPredicate<K, V> testFilter;
 
     /**
      * Constructs a new instance of train test split.
@@ -41,18 +42,18 @@ public class TrainTestSplit<K, V> implements Serializable {
      * @param trainFilter Filter that passes train subset of the dataset.
      * @param testFilter Filter that passes test subset of the dataset.
      */
-    public TrainTestSplit(DatasetSplitFilter<K, V> trainFilter, DatasetSplitFilter<K, V> testFilter) {
+    public TrainTestSplit(IgniteBiPredicate<K, V> trainFilter, IgniteBiPredicate<K, V> testFilter) {
         this.trainFilter = trainFilter;
         this.testFilter = testFilter;
     }
 
     /** */
-    public DatasetSplitFilter<K, V> getTrainFilter() {
+    public IgniteBiPredicate<K, V> getTrainFilter() {
         return trainFilter;
     }
 
     /** */
-    public DatasetSplitFilter<K, V> getTestFilter() {
+    public IgniteBiPredicate<K, V> getTestFilter() {
         return testFilter;
     }
 }

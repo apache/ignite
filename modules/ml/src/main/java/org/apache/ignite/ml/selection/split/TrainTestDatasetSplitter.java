@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.selection.split;
 
 import java.io.Serializable;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.selection.split.mapper.SHA256UniformMapper;
 import org.apache.ignite.ml.selection.split.mapper.UniformMapper;
 
@@ -69,8 +70,53 @@ public class TrainTestDatasetSplitter<K, V> implements Serializable {
      */
     public TrainTestSplit<K, V> split(double trainSize, double testSize) {
         return new TrainTestSplit<>(
-            new DatasetSplitFilter<>(mapper, 0, trainSize),
-            new DatasetSplitFilter<>(mapper, trainSize, trainSize + testSize)
+            new DatasetSplitFilter(mapper, 0, trainSize),
+            new DatasetSplitFilter(mapper, trainSize, trainSize + testSize)
         );
+    }
+
+    /**
+     * Dataset filter based on the uniform mapping and specified interval. It allows to specify a mapper that maps key-value
+     * pair to a point on the segment (0, 1) and an interval inside that segment (for example (0, 0.2)). After that this
+     * filter will pass all entries whose mappings lie in the specified interval.
+     */
+    class DatasetSplitFilter implements IgniteBiPredicate<K,V> {
+        /** */
+        private static final long serialVersionUID = 2247757751655582254L;
+
+        /** Mapper used to map a key-value pair to a point on the segment (0, 1). */
+        private final UniformMapper<K, V> mapper;
+
+        /** Left point of an interval. */
+        private final double from;
+
+        /** Right point of an interval. */
+        private final double to;
+
+        /**
+         * Constructs a new instance of dataset split filter.
+         *
+         * @param mapper Mapper used to map a key-value pair to a point on the segment (0, 1).
+         * @param from Left point of an interval.
+         * @param to Right point of an interval.
+         */
+        DatasetSplitFilter(UniformMapper<K, V> mapper, double from, double to) {
+            assert from >= 0 && from <= 1 : "Point 'from' should be in interval (0, 1)";
+            assert to >= 0 && to <= 1: "Point 'to' should be in interval (0, 1)";
+            assert from <= to : "Point 'from' should be less of equal to point 'to'";
+
+            this.mapper = mapper;
+            this.from = from;
+            this.to = to;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(K key, V val) {
+            double pnt = mapper.map(key, val);
+
+            assert pnt >= 0 && pnt <= 1 : "Point should be in interval (0, 1)";
+
+            return pnt >= from && pnt < to;
+        }
     }
 }

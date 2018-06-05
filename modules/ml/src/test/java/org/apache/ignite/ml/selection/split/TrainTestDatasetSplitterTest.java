@@ -17,11 +17,10 @@
 
 package org.apache.ignite.ml.selection.split;
 
-import org.apache.ignite.ml.selection.split.TrainTestDatasetSplitter;
-import org.apache.ignite.ml.selection.split.TrainTestSplit;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests for {@link TrainTestDatasetSplitter}.
@@ -34,22 +33,14 @@ public class TrainTestDatasetSplitterTest {
 
         TrainTestSplit<Double, Double> split = splitter.split(0.4, 0.4);
 
-        assertEquals(0, split.getTrainFilter().getFrom(), 1e-12);
-        assertEquals(0.4, split.getTrainFilter().getTo(), 1e-12);
-        assertEquals(0.4, split.getTestFilter().getFrom(), 1e-12);
-        assertEquals(0.8, split.getTestFilter().getTo(), 1e-12);
-    }
+        assertTrue(split.getTrainFilter().apply(0.0, 0.0));
+        assertTrue(split.getTrainFilter().apply(0.2, 0.0));
+        assertFalse(split.getTrainFilter().apply(0.4, 0.0));
+        assertFalse(split.getTrainFilter().apply(0.6, 0.0));
 
-    /** */
-    @Test
-    public void testSplitWithSpecifiedTrainSize() {
-        TrainTestDatasetSplitter<Double, Double> splitter = new TrainTestDatasetSplitter<>((k, v) -> k);
-
-        TrainTestSplit<Double, Double> split = splitter.split(0.4);
-
-        assertEquals(0, split.getTrainFilter().getFrom(), 1e-12);
-        assertEquals(0.4, split.getTrainFilter().getTo(), 1e-12);
-        assertEquals(0.4, split.getTestFilter().getFrom(), 1e-12);
-        assertEquals(1.0, split.getTestFilter().getTo(), 1e-12);
+        assertFalse(split.getTestFilter().apply(0.0, 0.0));
+        assertFalse(split.getTestFilter().apply(0.2, 0.0));
+        assertTrue(split.getTestFilter().apply(0.4, 0.0));
+        assertTrue(split.getTestFilter().apply(0.6, 0.0));
     }
 }
