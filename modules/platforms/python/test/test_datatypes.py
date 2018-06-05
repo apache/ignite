@@ -85,6 +85,22 @@ def test_float(conn, expected_value):
 @pytest.mark.parametrize(
     'conn, expected_value',
     [
+        (MockSocket(b'\x08\x01'), True),
+        (MockSocket(b'\x08\x00'), False),
+    ]
+)
+def test_bool(conn, expected_value):
+    bool_var = simple_data_object(conn)
+    assert bool_var.type_code == int.from_bytes(
+        TC_BOOL,
+        byteorder=PROTOCOL_BYTE_ORDER
+    )
+    assert bool_var.get_attribute() == expected_value
+
+
+@pytest.mark.parametrize(
+    'conn, expected_value',
+    [
         (MockSocket(b'\x07\x4b\x04'), 'ы'),
         (MockSocket(b'\x07\xab\x30'), 'カ'),
     ]
