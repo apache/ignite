@@ -1529,7 +1529,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         private int formatted;
 
         /** Worker that encapsulates thread body */
-        private GridWorker worker;
+        private final GridWorker worker;
 
         /**
          * Maps absolute segment index to locks counter. Lock on segment protects from archiving segment and may come
@@ -1545,7 +1545,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             this.lastAbsArchivedIdx = lastAbsArchivedIdx;
 
-            this.worker = makeWorker(getName(), this::workerBody);
+            this.worker = new GridWorker(cctx.igniteInstanceName(), getName(), log,
+                cctx.kernalContext().workersRegistry()) {
+                @Override protected void body() {
+                    workerBody();
+                }
+            };
         }
 
         /**
@@ -3227,7 +3232,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         final Map<Thread, Long> waiters = new ConcurrentHashMap<>();
 
         /** Worker that encapsulates thread body */
-        private GridWorker worker;
+        private final GridWorker worker;
 
         /**
          * Default constructor.
@@ -3235,7 +3240,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         WALWriter() {
             super("wal-write-worker%" + cctx.igniteInstanceName());
 
-            worker = makeWorker(getName(), this::workerBody);
+            this.worker = new GridWorker(cctx.igniteInstanceName(), getName(), log,
+                cctx.kernalContext().workersRegistry()) {
+                @Override protected void body() {
+                    workerBody();
+                }
+            };
         }
 
         /** */

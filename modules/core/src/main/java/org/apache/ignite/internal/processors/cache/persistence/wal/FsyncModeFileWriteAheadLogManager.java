@@ -1347,7 +1347,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         private int formatted;
 
         /** Worker that encapsulates thread body */
-        private GridWorker worker;
+        private final GridWorker worker;
 
         /**
          *
@@ -1357,7 +1357,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             this.lastAbsArchivedIdx = lastAbsArchivedIdx;
 
-            worker = makeWorker(getName(), this::workerBody);
+            worker = new GridWorker(cctx.igniteInstanceName(), getName(), log, cctx.kernalContext().workersRegistry()) {
+                @Override protected void body() {
+                    workerBody();
+                }
+            };
         }
 
         /**
