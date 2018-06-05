@@ -445,29 +445,36 @@ export default class IgniteAgentManager {
 
     /**
      * @param {String} event
-     * @param {Object} params
+     * @param {Object} cmdParams
      * @returns {Promise}
      * @private
      */
-    _executeOnCurrentCluster(event, params) {
+    _executeOnCurrentCluster(event, cmdParams) {
         return this.connectionSbj.first().toPromise()
             .then(({cluster}) => {
                 if (cluster.secured) {
-                    if (this.clustersSecrets.has(cluster.id)) {
-                        const sessionId = this.clustersSecrets.get(cluster.id);
+                    const secrets = this.clustersSecrets.get(cluster.id);
 
-                        return {cluster, params: {sessionId, ...params}};
-                    }
+                    if (secrets.hasCredentials())
+                        return {cluster, secrets};
 
-                    return this.ClusterLoginSrv.askCredentials()
-                        .then(({login, password, sessionTtl}) =>
-                            ({cluster, params: {login, password, sessionTtl, ...params}}));
+                    return this.ClusterLoginSrv.askCredentials(secrets)
+                        .then((secrets) => {
+                            this.clustersSecrets.put(cluster.id, secrets);
+
+                            return {cluster, secrets};
+                        });
                 }
 
-                return {cluster, params};
+                return {cluster};
             })
-            .then(({cluster, params}) =>
-                this._sendToAgent(event, {clusterId: cluster.id, ...params})
+            .then(({cluster, secrets = null}) => {
+                const params = {clusterId: cluster.id, ...cmdParams};
+
+                if (secrets)
+                    Object.assign(params, secrets.asParams());
+
+                return this._sendToAgent(event, params)
                     .then((data) => {
                         if (data.zipped)
                             return this.pool.postMessage(data.data);
@@ -479,7 +486,7 @@ export default class IgniteAgentManager {
                             const status = data.status;
 
                             if (status === STATUS_AUTH_FAILED) {
-                                this.clustersSecrets.reset(cluster.id);
+                                secrets.resetCredentials();
 
                                 throw new Error('Failed to authenticate in cluster with provided credentials');
                             }
@@ -489,8 +496,8 @@ export default class IgniteAgentManager {
                         }
 
                         return data;
-                    })
-            );
+                    });
+            });
     }
 
     /**

@@ -15,13 +15,48 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
+import {nonEmpty} from 'app/utils/lodashMixins';
+
 export class ClusterSecrets {
     /** @type {String} */
-    login;
+    user;
 
     /** @type {String} */
     password;
 
     /** @type {Number} */
     sessionTtl;
+
+    /** @type {String} */
+    sessionId;
+
+    constructor() {
+        this.user = 'ignite';
+    }
+
+    hasCredentials() {
+        return nonEmpty(this.user) && nonEmpty(this.password);
+    }
+
+    resetCredentials() {
+        this.resetSessionId();
+
+        this.password = null;
+    }
+
+    resetSessionId() {
+        this.sessionId = null;
+    }
+
+    /**
+     * @return {{sessionId: String}|{user: String, password: String, sessionTtl: Number}}
+     */
+    asParams() {
+        if (this.sessionId)
+            return {sessionId: this.sessionId};
+
+        return _.pick(this, ['user', 'password', 'sessionTtl']);
+    }
 }

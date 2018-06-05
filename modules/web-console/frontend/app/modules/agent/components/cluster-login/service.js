@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-import {ClusterSecrets} from '../../types/ClusterSecrets';
+import _ from 'lodash';
 
+import {ClusterSecrets} from '../../types/ClusterSecrets';
 import {CancellationError} from 'app/errors/CancellationError';
 
 export default class ClusterLoginService {
@@ -28,21 +29,25 @@ export default class ClusterLoginService {
     }
 
     /**
+     * @param {ClusterSecrets} baseSecrets
      * @return {ng.IDifferend<ClusterSecrets>}
      */
-    askCredentials() {
+    askCredentials(baseSecrets) {
         const deferred = this.$q.defer();
 
         const modal = this.$modal({
             template: `
                 <cluster-login
-                    on-login='$ctrl.onLogin'
-                    on-hide='$ctrl.onHide'
+                    secrets='$ctrl.secrets'
+                    on-login='$ctrl.onLogin()'
+                    on-hide='$ctrl.onHide()'
                 ></cluster-login>
             `,
             controller: [function() {
-                this.onLogin = ({user, password, sesTtl}) => {
-                    deferred.resolve({user, password, sesTtl});
+                this.secrets = _.clone(baseSecrets);
+
+                this.onLogin = () => {
+                    deferred.resolve(this.secrets);
                 };
 
                 this.onHide = () => {

@@ -18,14 +18,19 @@
 import _ from 'lodash';
 
 import template from './template.pug';
+import {ClusterSecrets} from '../../types/ClusterSecrets';
 
 export const component = {
     name: 'clusterLogin',
     bindings: {
-        onLogin: '=',
-        onHide: '='
+        secrets: '=',
+        onLogin: '&',
+        onHide: '&'
     },
     controller: class {
+        /** @type {ClusterSecrets} */
+        secrets;
+
         sesTtls = [
             {label: '5 min', value: 300000},
             {label: '10 min', value: 600000},
@@ -35,17 +40,16 @@ export const component = {
             {label: '30 min', value: 1800000}
         ];
 
-        constructor() {
-            this.data = {
-                sesTtl: _.last(this.sesTtls).value
-            };
+        $onInit() {
+            if (_.isNil(this.secrets.sessionTtl))
+                this.secrets.sessionTtl = _.last(this.sesTtls).value;
         }
 
         login() {
             if (this.form.$invalid)
                 return;
 
-            this.onLogin(this.data);
+            this.onLogin();
         }
     },
     template

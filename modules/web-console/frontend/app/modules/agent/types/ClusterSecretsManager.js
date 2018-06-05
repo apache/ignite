@@ -23,23 +23,39 @@ export class ClusterSecretsManager {
 
     /**
      * @param {String} clusterId
+     * @private
      */
-    has(clusterId) {
+    _has(clusterId) {
         return this.memoryCache.has(clusterId);
+    }
+
+    /**
+     * @param {String} clusterId
+     * @private
+     */
+    _get(clusterId) {
+        return this.memoryCache.get(clusterId);
     }
 
     /**
      * @param {String} clusterId
      */
     get(clusterId) {
-        return this.memoryCache.get(clusterId);
+        if (this._has(clusterId))
+            return this._get(clusterId);
+
+        const secrets = new ClusterSecrets();
+
+        this.put(clusterId, secrets);
+
+        return secrets;
     }
 
     /**
      * @param {String} clusterId
      * @param {ClusterSecrets} secrets
      */
-    save(clusterId, secrets) {
+    put(clusterId, secrets) {
         this.memoryCache.set(clusterId, secrets);
     }
 
@@ -47,6 +63,8 @@ export class ClusterSecretsManager {
      * @param {String} clusterId
      */
     reset(clusterId) {
-        this.memoryCache.delete(clusterId);
+        const secrets = this._get(clusterId);
+
+        secrets.resetCredentials();
     }
 }

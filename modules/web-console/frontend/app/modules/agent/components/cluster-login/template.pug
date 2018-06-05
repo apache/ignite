@@ -32,7 +32,7 @@ include /app/helpers/jade/mixins
                     .col-50
                         +form-field__text({
                             label: 'User:',
-                            model: '$ctrl.data.user',
+                            model: '$ctrl.secrets.user',
                             name: '"user"',
                             placeholder: 'Input user',
                             required: true
@@ -45,7 +45,7 @@ include /app/helpers/jade/mixins
                     .col-50
                         +form-field__password({
                             label: 'Password:',
-                            model: '$ctrl.data.password',
+                            model: '$ctrl.secrets.password',
                             name: '"password"',
                             placeholder: 'Input password',
                             required: true
@@ -56,7 +56,7 @@ include /app/helpers/jade/mixins
                     .col-50
                         +form-field__dropdown({
                             label: 'Session Expire Time:',
-                            model: '$ctrl.data.sesTtl',
+                            model: '$ctrl.secrets.sessionTtl',
                             name: '"sesTtl"',
                             required: true,
                             placeholder: 'Choose your session expire time',
