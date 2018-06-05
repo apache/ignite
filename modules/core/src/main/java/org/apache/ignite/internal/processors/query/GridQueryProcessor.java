@@ -204,7 +204,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     private boolean skipFieldLookup;
 
     /** Cache name - value typeId pairs for which type mismatch message was logged. */
-    private volatile Set<IgniteBiTuple<String, Integer>> cacheNamesTypeIdsMismatchLogged = Collections.emptySet();
+    private volatile Set<Long> missedCacheTypes = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /**
      * @param ctx Kernal context.
@@ -1695,19 +1695,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             cacheNames.remove(cacheName);
 
-            Set<IgniteBiTuple<String, Integer>> cacheNamesTypeIdsMismatchLoggedCopy = new HashSet<>();
+            Iterator<Long> missedCacheTypeIter = missedCacheTypes.iterator();
 
-            boolean cacheNameTypeIdDeleted = false;
+            while (missedCacheTypeIter.hasNext()) {
+                long key = missedCacheTypeIter.next();
 
-            for (IgniteBiTuple<String, Integer> cacheNameTypeId : cacheNamesTypeIdsMismatchLogged) {
-                if (!cacheName.equals(cacheNameTypeId.get1()))
-                    cacheNamesTypeIdsMismatchLoggedCopy.add(cacheNameTypeId);
-                else
-                    cacheNameTypeIdDeleted = true;
+                if (missedCacheTypeKeyMatches(key, cacheName))
+                    missedCacheTypeIter.remove();
             }
-
-            if (cacheNameTypeIdDeleted)
-                cacheNamesTypeIdsMismatchLogged = cacheNamesTypeIdsMismatchLoggedCopy;
         }
     }
 
@@ -1881,23 +1876,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             if (desc == null) {
-                IgniteBiTuple<String, Integer> cacheNameTypeId = new IgniteBiTuple<>(cacheName,
-                    ctx.cacheObjects().typeId(val));
+                int typeId = ctx.cacheObjects().typeId(val);
 
-                if (!cacheNamesTypeIdsMismatchLogged.contains(cacheNameTypeId)) {
-                    synchronized (stateMux) {
-                        Set<IgniteBiTuple<String, Integer>> copy = new HashSet<>(cacheNamesTypeIdsMismatchLogged);
+                long missedCacheTypeKey = missedCacheTypeKey(cacheName, typeId);
 
-                        if (copy.add(cacheNameTypeId)) {
-                            LT.warn(log, "Rejected row(s) for indexing [cacheName=" + cacheName + ", " +
-                                describeTypeMismatch(cacheName, val) + "]");
+                if (!missedCacheTypes.contains(missedCacheTypeKey)) {
+                    if (missedCacheTypes.add(missedCacheTypeKey)) {
+                        LT.warn(log, "Rejected row(s) for indexing [cacheName=" + cacheName + ", " +
+                            describeTypeMismatch(cacheName, val) + "]");
 
-                            LT.warn(log, "  ^-- Make sure that declared Indexed Type names match actual Type names exactly.");
-                            LT.warn(log, "  ^-- If Java package names present in Type names, they should be used consistently.");
-                            LT.warn(log, "  ^-- Otherwise, entries will be stored in cache, but not appear as SQL Table rows.");
-
-                            this.cacheNamesTypeIdsMismatchLogged = copy;
-                        }
+                        LT.warn(log, "  ^-- Make sure that declared Indexed Type names match actual Type names exactly.");
+                        LT.warn(log, "  ^-- If Java package names present in Type names, they should be used consistently.");
+                        LT.warn(log, "  ^-- Otherwise, entries will be stored in cache, but not appear as SQL Table rows.");
                     }
                 }
 
@@ -2498,7 +2488,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param d Type descriptor to update.
      * @param cols Columns to remove.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     private void processDynamicDropColumn(QueryTypeDescriptorImpl d, List<String> cols)
         throws IgniteCheckedException {
@@ -2877,6 +2867,30 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public static AffinityTopologyVersion getRequestAffinityTopologyVersion() {
         return requestTopVer.get();
+    }
+
+    /**
+     * Create missed cache type key.
+     *
+     * @param cacheName Cache name.
+     * @param typeId Type ID.
+     * @return Key.
+     */
+    private static long missedCacheTypeKey(String cacheName, int typeId) {
+        return ((long)CU.cacheId(cacheName) << 32) | typeId;
+    }
+
+    /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return {@code True} if matches.
+     */
+    private static boolean missedCacheTypeKeyMatches(long key, String cacheName) {
+        int cacheId = CU.cacheId(cacheName);
+
+        long cacheIdShifted = ((long)cacheId << 32);
+
+        return (key & cacheIdShifted) == cacheIdShifted;
     }
 
     /**
