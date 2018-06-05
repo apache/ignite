@@ -114,6 +114,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -603,10 +604,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             FileWALPointer filePtr = (FileWALPointer)lastPtr;
 
-            walWriter = new WALWriter();
+            walWriter = new WALWriter(log);
 
             if (!mmap)
-                walWriter.start();
+                new IgniteThread(walWriter).start();
 
             currHnd = restoreWriteHandle(filePtr);
 
@@ -3211,7 +3212,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * WAL writer worker.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private class WALWriter extends Thread {
+    private class WALWriter extends GridWorker {
         /** Unconditional flush. */
         private static final long UNCONDITIONAL_FLUSH = -1L;
 
@@ -3231,25 +3232,17 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Parked threads. */
         final Map<Thread, Long> waiters = new ConcurrentHashMap<>();
 
-        /** Worker that encapsulates thread body */
-        private final GridWorker worker;
-
         /**
          * Default constructor.
+         *
+         * @param log Logger.
          */
-        WALWriter() {
-            super("wal-write-worker%" + cctx.igniteInstanceName());
-
-            this.worker = new GridWorker(cctx.igniteInstanceName(), getName(), log,
-                cctx.kernalContext().workersRegistry()) {
-                @Override protected void body() {
-                    workerBody();
-                }
-            };
+        WALWriter(IgniteLogger log) {
+            super(cctx.igniteInstanceName(), "wal-write-worker%" + cctx.igniteInstanceName(), log, cctx.kernalContext().workersRegistry());
         }
 
-        /** */
-        private void workerBody() {
+        /** {@inheritDoc} */
+        @Override protected void body() {
             Throwable err = null;
 
             try {
@@ -3331,7 +3324,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
             finally {
                 if (err == null && !shutdown)
-                    err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
+                    err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
@@ -3340,18 +3333,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
         }
 
-        /** {@inheritDoc} */
-        @Override public void run() {
-            worker.run();
-        }
-
         /**
          * Shutdowns thread.
          */
         public void shutdown() throws IgniteInterruptedCheckedException {
             shutdown = true;
 
-            LockSupport.unpark(this);
+            LockSupport.unpark(runner());
 
             U.join(this);
         }
@@ -3417,7 +3405,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             waiters.put(t, expPos);
 
-            LockSupport.unpark(walWriter);
+            LockSupport.unpark(walWriter.runner());
 
             while (true) {
                 Long val = waiters.get(t);
