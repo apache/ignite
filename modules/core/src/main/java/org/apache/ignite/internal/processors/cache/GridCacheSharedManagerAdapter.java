@@ -21,8 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
