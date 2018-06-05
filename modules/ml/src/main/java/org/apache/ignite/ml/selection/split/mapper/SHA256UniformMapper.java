@@ -20,6 +20,10 @@ package org.apache.ignite.ml.selection.split.mapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
 /**
  * Implementation of uniform mappers based on SHA-256 hashing algorithm.
@@ -37,6 +41,23 @@ public class SHA256UniformMapper<K, V> implements UniformMapper<K,V> {
     /** Message digest. */
     private static final ThreadLocal<MessageDigest> digest = new ThreadLocal<>();
 
+    /** Strategy that defines how bytes will be swapped after SHA-256. */
+    private final List<Integer> shuffleStgy = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
+
+    /**
+     * Constructs a new instance of SHA-256 uniform mapper.
+     */
+    public SHA256UniformMapper() {}
+
+    /**
+     * Constructs a new instance of SHA-256 uniform mapper.
+     *
+     * @param random Random used to define shuffle strategy.
+     */
+    public SHA256UniformMapper(Random random) {
+        Collections.shuffle(shuffleStgy, random);
+    }
+
     /** {@inheritDoc} */
     @Override public double map(K key, V val) {
         int h = key.hashCode();
@@ -44,7 +65,14 @@ public class SHA256UniformMapper<K, V> implements UniformMapper<K,V> {
 
         byte[] hash = getDigest().digest(str.getBytes(StandardCharsets.UTF_8));
 
-        return  1.0 * (hash[h % hash.length] & 0xFF) / 256;
+        byte hashByte = hash[h % hash.length];
+
+        byte resByte = 0;
+
+        for (int i = 0; i < 8; i++)
+            resByte = (byte)(resByte << 1 | ((hashByte >> shuffleStgy.get(i)) & 0x1));
+
+        return  1.0 * (resByte & 0xFF) / 256;
     }
 
     /**
