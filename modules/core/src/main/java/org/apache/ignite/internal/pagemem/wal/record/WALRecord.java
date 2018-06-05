@@ -174,8 +174,8 @@ public abstract class WALRecord {
         /** Exchange record. */
         EXCHANGE,
 
-        /** Baseline topology record. */
-        BASELINE_TOP_RECORD,
+        /** Reserved for future record. */
+        RESERVED,
 
         /** Rotated id part record. */
         ROTATED_ID_PART_RECORD;
