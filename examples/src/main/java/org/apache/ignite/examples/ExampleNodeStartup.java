@@ -17,8 +17,12 @@
 
 package org.apache.ignite.examples;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
  * Starts up an empty node with example compute configuration.
@@ -31,6 +35,29 @@ public class ExampleNodeStartup {
      * @throws IgniteException If failed.
      */
     public static void main(String[] args) throws IgniteException {
-        Ignition.start("examples/config/example-ignite.xml");
+        Ignite ig = Ignition.start("examples/config/example-ignite.xml");
+
+        ig.cluster().setBaselineTopology(ig.cluster().nodes());
+
+        if (ig.cache("cache1") == null) {
+            ig.createCache(new CacheConfiguration<>().setName("cache1").setCacheMode(CacheMode.REPLICATED).setStatisticsEnabled(true));
+            ig.createCache(new CacheConfiguration<>().setName("cache2").setCacheMode(CacheMode.REPLICATED).setStatisticsEnabled(true));
+            ig.createCache(new CacheConfiguration<>().setName("cache3").setCacheMode(CacheMode.REPLICATED).setStatisticsEnabled(true));
+
+            try (IgniteDataStreamer<Integer, Integer> streamer = ig.dataStreamer("cache1")) {
+                for (int k = 0; k < 1_000_000; k++)
+                    streamer.addData(k, k);
+            }
+
+            try (IgniteDataStreamer<Integer, Integer> streamer = ig.dataStreamer("cache2")) {
+                for (int k = 0; k < 1_000_000; k++)
+                    streamer.addData(k, k);
+            }
+
+            try (IgniteDataStreamer<Integer, Integer> streamer = ig.dataStreamer("cache3")) {
+                for (int k = 0; k < 1_000_000; k++)
+                    streamer.addData(k, k);
+            }
+        }
     }
 }

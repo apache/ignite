@@ -2346,6 +2346,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             }
         }
 
+        for (GridDhtLocalPartition locPart : top.currentLocalPartitions()) {
+            if (locPart.state() == GridDhtPartitionState.OWNING)
+                partSizes.put(locPart.id(), locPart.fullSize());
+        }
+
         top.globalPartSizes(partSizes);
     }
 
