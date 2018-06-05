@@ -2221,9 +2221,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         nioSrvr.start();
 
-        commWorker = new CommunicationWorker(igniteInstanceName);
+        commWorker = new CommunicationWorker(igniteInstanceName, log);
 
-        commWorker.start();
+        new IgniteSpiThread(igniteInstanceName, commWorker.name(), log) {
+            @Override protected void body() {
+                commWorker.run();
+            }
+        }.start();
 
         // Ack start.
         if (log.isDebugEnabled())
@@ -2500,8 +2504,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (nioSrvr != null)
             nioSrvr.stop();
 
-        U.interrupt(commWorker);
-        U.join(commWorker, log);
+        U.interrupt(commWorker.runner());
+        U.join(commWorker.runner(), log);
 
         U.cancel(shmemAcceptWorker);
         U.join(shmemAcceptWorker, log);
@@ -3864,7 +3868,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (nioSrvr != null)
             nioSrvr.stop();
 
-        U.interrupt(commWorker);
+        U.interrupt(commWorker.runner());
 
         U.join(commWorker, log);
 
@@ -4224,7 +4228,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /**
      *
      */
-    private class CommunicationWorker extends IgniteSpiThread {
+    private class CommunicationWorker extends GridWorker {
         /** */
         private final BlockingQueue<DisconnectedSessionInfo> q = new LinkedBlockingQueue<>();
 
@@ -4233,30 +4237,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
         /**
          * @param igniteInstanceName Ignite instance name.
+         * @param log Logger.
          */
-        private CommunicationWorker(String igniteInstanceName) {
-            super(igniteInstanceName, "tcp-comm-worker", log);
-
-            WorkersRegistry workerRegistry = ignite instanceof IgniteEx
-                ? ((IgniteEx)ignite).context().workersRegistry()
-                : null;
-
-            worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
-                @Override protected void body() throws InterruptedException {
-                    workerBody();
-                }
-            };
+        private CommunicationWorker(String igniteInstanceName, IgniteLogger log) {
+            super(igniteInstanceName, "tcp-comm-worker", log,
+                ignite instanceof IgniteEx ? ((IgniteEx)ignite).context().workersRegistry() : null);
         }
 
-        /** */
-        private void workerBody() throws InterruptedException {
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException {
             if (log.isDebugEnabled())
                 log.debug("Tcp communication worker has been started.");
 
             Throwable err = null;
 
             try {
-                while (!isInterrupted()) {
+                while (!runner().isInterrupted()) {
                     DisconnectedSessionInfo disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
 
                     if (disconnectData != null)
@@ -4282,11 +4278,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         ((IgniteEx)ignite).context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
                 }
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void body() {
-            worker.run();
         }
 
         /**
