@@ -38,6 +38,9 @@ public class HadoopKerberosFileSystemFactoryDelegate extends HadoopBasicFileSyst
     /** Time of last re-login attempt, in system milliseconds. */
     private volatile long lastReloginTime;
 
+    /** Login user. */
+    private UserGroupInformation user;
+
     /**
      * Constructor.
      *
@@ -56,8 +59,7 @@ public class HadoopKerberosFileSystemFactoryDelegate extends HadoopBasicFileSyst
 
     /** {@inheritDoc} */
     @Override protected FileSystem create(String usrName) throws IOException, InterruptedException {
-        UserGroupInformation proxyUgi = UserGroupInformation.createProxyUser(usrName,
-            UserGroupInformation.getLoginUser());
+        UserGroupInformation proxyUgi = UserGroupInformation.createProxyUser(usrName, user);
 
         return proxyUgi.doAs(new PrivilegedExceptionAction<FileSystem>() {
             @Override public FileSystem run() throws Exception {
@@ -84,7 +86,9 @@ public class HadoopKerberosFileSystemFactoryDelegate extends HadoopBasicFileSyst
 
         try {
             UserGroupInformation.setConfiguration(cfg);
-            UserGroupInformation.loginUserFromKeytab(proxy0.getKeyTabPrincipal(), proxy0.getKeyTab());
+
+            user = UserGroupInformation.loginUserFromKeytabAndReturnUGI(proxy0.getKeyTabPrincipal(),
+                proxy0.getKeyTab());
         }
         catch (IOException ioe) {
             throw new IgniteException("Failed login from keytab [keyTab=" + proxy0.getKeyTab() +
@@ -109,7 +113,7 @@ public class HadoopKerberosFileSystemFactoryDelegate extends HadoopBasicFileSyst
         long now = System.currentTimeMillis();
 
         if (now >= lastReloginTime + reloginInterval) {
-            UserGroupInformation.getLoginUser().checkTGTAndReloginFromKeytab();
+            user.checkTGTAndReloginFromKeytab();
 
             lastReloginTime = now;
         }
