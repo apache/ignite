@@ -424,7 +424,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             long lastAbsArchivedIdx = tup == null ? -1 : tup.get2();
 
             if (isArchiverEnabled())
-                archiver = new FileArchiver(lastAbsArchivedIdx);
+                archiver = new FileArchiver(lastAbsArchivedIdx, log);
             else
                 archiver = null;
 
@@ -567,7 +567,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             if (isArchiverEnabled()) {
                 assert archiver != null;
 
-                archiver.start();
+                new IgniteThread(archiver).start();
             }
 
             if (compressor != null)
@@ -1510,7 +1510,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * FileArchiver#lastAbsArchivedIdx})</li> <li>some WAL index was removed from {@link FileArchiver#locked} map</li>
      * </ul>
      */
-    private class FileArchiver extends Thread {
+    private class FileArchiver extends GridWorker {
         /** Exception which occurred during initial creation of files or during archiving WAL segment */
         private IgniteCheckedException cleanErr;
 
@@ -1529,9 +1529,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /** Formatted index. */
         private int formatted;
 
-        /** Worker that encapsulates thread body */
-        private final GridWorker worker;
-
         /**
          * Maps absolute segment index to locks counter. Lock on segment protects from archiving segment and may come
          * from {@link RecordsIterator} during WAL replay. Map itself is guarded by <code>this</code>.
@@ -1541,17 +1538,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          *
          */
-        private FileArchiver(long lastAbsArchivedIdx) {
-            super("wal-file-archiver%" + cctx.igniteInstanceName());
+        private FileArchiver(long lastAbsArchivedIdx, IgniteLogger log) {
+            super(cctx.igniteInstanceName(), "wal-file-archiver%" + cctx.igniteInstanceName(), log,
+                cctx.kernalContext().workersRegistry());
 
             this.lastAbsArchivedIdx = lastAbsArchivedIdx;
-
-            this.worker = new GridWorker(cctx.igniteInstanceName(), getName(), log,
-                cctx.kernalContext().workersRegistry()) {
-                @Override protected void body() {
-                    workerBody();
-                }
-            };
         }
 
         /**
@@ -1588,8 +1579,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             return locked.containsKey(absIdx);
         }
 
-        /** */
-        private void workerBody() {
+        /** {@inheritDoc} */
+        @Override protected void body() {
             try {
                 allocateRemainingFiles();
             }
@@ -1658,18 +1649,13 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
             finally {
                 if (err == null && !stopped)
-                    err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
+                    err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            worker.run();
         }
 
         /**
@@ -3238,7 +3224,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param log Logger.
          */
         WALWriter(IgniteLogger log) {
-            super(cctx.igniteInstanceName(), "wal-write-worker%" + cctx.igniteInstanceName(), log, cctx.kernalContext().workersRegistry());
+            super(cctx.igniteInstanceName(), "wal-write-worker%" + cctx.igniteInstanceName(), log,
+                cctx.kernalContext().workersRegistry());
         }
 
         /** {@inheritDoc} */
@@ -3388,7 +3375,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @param expPos Expected position.
          */
-        @SuppressWarnings("ForLoopReplaceableByForEach")
         void flushBuffer(long expPos) throws StorageException, IgniteCheckedException {
             if (mmap)
                 return;
