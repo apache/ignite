@@ -56,10 +56,10 @@ public class TcpDiscoveryHandshakeResponse extends TcpDiscoveryAbstractMessage {
      * Sets topology change flag.<br>
      * {@code True} means node has connectivity to it's previous node in a ring.
      *
-     * @param changeTop previous node alive flag.
+     * @param prevNodeAlive previous node alive flag.
      */
-    public void previousNodeAlive(boolean changeTop) {
-        setFlag(CHANGE_TOPOLOGY_FLAG_POS, changeTop);
+    public void previousNodeAlive(boolean prevNodeAlive) {
+        setFlag(CHANGE_TOPOLOGY_FLAG_POS, prevNodeAlive);
     }
 
     /**

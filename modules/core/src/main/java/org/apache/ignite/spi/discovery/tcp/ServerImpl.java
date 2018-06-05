@@ -3416,10 +3416,10 @@ class ServerImpl extends TcpDiscoveryImpl {
          * Segment local node on failed message send.
          */
         private void segmentLocalNodeOnSendFail() {
-            U.warn(log, "Unable to join next nodes in a ring, " +
-                "it seems local node experiencing connectivity issues. Segmenting local node. " +
-                "This made to avoid case when one node fails a big part of cluster, to disable" +
-                " that behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to non-positive number. " +
+            U.warn(log, "Unable to connect to next nodes in a ring, " +
+                "it seems local node is experiencing connectivity issues. Segmenting local node " +
+                "to avoid case when one node fails a big part of cluster. To disable" +
+                " that behavior set TcpDiscoverySpi.setConnectionRecoveryTimeout() to -1. " +
                 "[connRecoveryTimeout=" + spi.connRecoveryTimeout + ", effectiveConnRecoveryTimeout="
                 + spi.getEffectiveConnectionRecoveryTimeout() + ']');
 
