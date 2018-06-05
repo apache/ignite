@@ -18,7 +18,7 @@ import socket
 from typing import Any, Dict
 
 from constants import *
-from datatypes import data_class, string_class, string_object
+from datatypes import data_class, data_object, string_class, string_object
 from .common import QueryHeader, ResponseHeader
 from .op_codes import *
 
@@ -42,7 +42,6 @@ def cache_create(conn: socket.socket, name: str) -> Dict:
     response_header = ResponseHeader.from_buffer_copy(buffer)
 
     if response_header.status_code == 0:
-        # TODO: get result data
         return {0: 'Success'}
 
     error_msg = string_object(conn)
@@ -129,8 +128,11 @@ def cache_get(
     buffer = conn.recv(ctypes.sizeof(ResponseHeader))
     response_header = ResponseHeader.from_buffer_copy(buffer)
     if response_header.status_code == 0:
-        # TODO: get result data
-        return {0: 'Success'}
+        result_object = data_object(conn)
+        return {
+            0: 'Success',
+            'result': result_object.get_attribute(),
+        }
 
     error_msg = string_object(conn)
     return {

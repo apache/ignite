@@ -19,6 +19,16 @@ from random import randint
 from constants import *
 
 
+def java_hash(string: str):
+    result = 0
+    for char in string:
+        result = int(
+            (((31 * result + ord(char)) ^ 0x80000000) & 0xFFFFFFFF)
+            - 0x80000000
+        )
+    return result
+
+
 class QueryHeader(ctypes.LittleEndianStructure):
     """
     Standard query header used throughout the Ignite Binary API.

@@ -138,8 +138,8 @@ def string_class(python_var, length=None, **kwargs):
     )
 
 
-def simple_data_object(connection: socket.socket):
-    buffer = connection.recv(1)
+def simple_data_object(connection: socket.socket, initial=None):
+    buffer = initial or connection.recv(1)
     type_code = buffer
     data_class = simple_data_class(None, tc_hint=type_code)
     buffer += connection.recv(ctypes.sizeof(simple_type_config[type_code][1]))
@@ -147,8 +147,8 @@ def simple_data_object(connection: socket.socket):
     return data_object
 
 
-def string_object(connection: socket.socket):
-    buffer = connection.recv(1)
+def string_object(connection: socket.socket, initial=None):
+    buffer = initial or connection.recv(1)
     type_code = buffer
     assert type_code == TC_STRING, 'Can not create string: wrong type code.'
     length_buffer = connection.recv(4)
@@ -157,3 +157,12 @@ def string_object(connection: socket.socket):
     buffer += length_buffer + connection.recv(length)
     data_object = data_class.from_buffer_copy(buffer)
     return data_object
+
+
+def data_object(connection: socket.socket):
+    initial = connection.recv(1)
+    if initial in simple_types:
+        return simple_data_object(connection, initial=initial)
+    elif initial == TC_STRING:
+        return string_object(connection, initial=initial)
+    raise NotImplementedError('This data type is not supported.')
