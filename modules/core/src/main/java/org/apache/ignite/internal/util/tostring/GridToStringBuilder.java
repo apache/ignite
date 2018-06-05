@@ -23,7 +23,6 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,7 +34,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.UUID;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -935,7 +933,7 @@ public class GridToStringBuilder {
         boolean isCol = val instanceof Collection;
         boolean isMap = val instanceof Map;
 
-        if (cls.isPrimitive() || !cls.getName().startsWith("org.apache.ignite") && !cls.isArray() && !isCol && !isMap) {
+        if (cls.isPrimitive() || isJdkClass(cls) && !cls.isArray() && !isCol && !isMap) {
             buf.a(val);
 
             return;
@@ -962,10 +960,54 @@ public class GridToStringBuilder {
     }
 
     /**
+     * @param cls Class to check.
+     * @return {@code True} if given class is from JDK, which means possibility to call {@code Object.toString()}.
+     */
+    private static boolean isJdkClass(Class cls) {
+        return cls.getName().startsWith("com.oracle.") || cls.getName().startsWith("com.sun.") ||
+            cls.getName().startsWith("java.") || cls.getName().startsWith("javax.") ||
+            cls.getName().startsWith("jdk.") || cls.getName().startsWith("sun.");
+    }
+
+    /**
+     * Writes object to buffer.
+     *
+     * @param buf String builder buffer.
+     * @param arrType Type of the array.
+     * @param obj Array object.
+     * @param svdObjs Map with saved objects to handle recursion.
+     */
+    private static void addArray(SBLimitedLength buf, Class arrType, Object obj,
+        IdentityHashMap<Object, Integer> svdObjs) {
+        if (arrType.getComponentType().isPrimitive()) {
+            buf.a(arrayToString(arrType, obj));
+
+            return;
+        }
+
+        Object[] arr = (Object[]) obj;
+
+        buf.a(arrType.getSimpleName()).a(" [");
+
+        for (int i = 0; i < arr.length; i++) {
+            toString(buf, arr[i], svdObjs);
+
+            if (i == COLLECTION_LIMIT - 1 || i == arr.length - 1)
+                break;
+
+            buf.a(", ");
+        }
+
+        handleOverflow(buf, arr.length);
+
+        buf.a(']');
+    }
+
+    /**
      * Writes collection to buffer.
      *
      * @param buf String builder buffer.
-     * @param col Array object.
+     * @param col Collection object.
      * @param svdObjs Map with saved objects to handle recursion.
      */
     private static void addCollection(SBLimitedLength buf, Collection col, IdentityHashMap<Object, Integer> svdObjs) {
@@ -991,7 +1033,7 @@ public class GridToStringBuilder {
      * Writes map to buffer.
      *
      * @param buf String builder buffer.
-     * @param map Array object.
+     * @param map Map object.
      * @param svdObjs Map with saved objects to handle recursion.
      */
     private static <K, V> void addMap(SBLimitedLength buf, Map<K, V> map, IdentityHashMap<Object, Integer> svdObjs) {
@@ -1257,41 +1299,6 @@ public class GridToStringBuilder {
         }
 
         return res;
-    }
-
-    /**
-     * Writes object to buffer.
-     *
-     * @param buf String builder buffer.
-     * @param arrType Type of the array.
-     * @param obj Array object.
-     * @param svdObjs Map with saved objects to handle recursion.
-     */
-    private static void addArray(SBLimitedLength buf, Class arrType, Object obj,
-        IdentityHashMap<Object, Integer> svdObjs) {
-        if (arrType.getComponentType().isPrimitive()) {
-            buf.a(arrayToString(arrType, obj));
-
-            return;
-        }
-
-        Object[] arr = (Object[]) obj;
-
-        buf.a(arrType.getSimpleName()).a(" [");
-
-        for (int i = 0; i < arr.length; i++) {
-            toString(buf, arr[i], svdObjs);
-
-            if (i == COLLECTION_LIMIT - 1)
-                break;
-
-            if (i != arr.length - 1)
-                buf.a(", ");
-        }
-
-        handleOverflow(buf, arr.length);
-
-        buf.a(']');
     }
 
     /**
@@ -2036,13 +2043,10 @@ public class GridToStringBuilder {
      * {@code False} if it wasn't saved previously and it should be saved.
      */
     private static boolean handleRecursion(SBLimitedLength buf, Object obj, IdentityHashMap<Object, Integer> svdObjs) {
-        if (!svdObjs.containsKey(obj))
-            return false;
-
         Integer pos = svdObjs.get(obj);
 
         if (pos == null)
-            throw new IllegalStateException("Wrong object was saved. [obj=" + obj + ']');
+            return false;
 
         String name = obj.getClass().getSimpleName();
         String hash = '@' + Integer.toHexString(System.identityHashCode(obj));
