@@ -1,20 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.IgniteCache;
@@ -28,21 +11,18 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
  * Reproducer for atomic cache inconsistency state.
+ * WriteSynchronizationMode: PRIMARY_SYNC
  */
 @SuppressWarnings("ErrorNotRethrown")
 public class ReproducerAtomicCacheInconsistentState2Test extends GridCommonAbstractTest {
-    /** */
     public void testWriteFullAsync() {
         Integer key = 100;
 
@@ -50,90 +30,54 @@ public class ReproducerAtomicCacheInconsistentState2Test extends GridCommonAbstr
 
         cache.put(key, 0);
 
-        Affinity<Integer> aff = affinity(cache);
-
-        singleCommunicationFail(key, aff);
+        singleCommunicationFail(key);
 
         cache.put(key, 5);
 
         doSleep(2_000);
 
-        cache = cacheFromBackupNode(key, aff);
+        cache = cacheFromBackupNode(key);
 
         assertNotNull(cache);
 
-        assertEquals(5, (int)cache.get(key));
+        assertEquals(5, (int)cacheFromBackupNode(key).get(key));
     }
 
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-    /** Grid count. */
-    private int gridCnt = 2;
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
-
-        cfg.setNetworkSendRetryCount(1);
-
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER).setForceServerMode(true));
-
-        CacheConfiguration ccfg = cacheConfiguration();
-
-        cfg.setCacheConfiguration(ccfg);
-
-        TestCommunicationSpi spi = new TestCommunicationSpi();
-
-        spi.setSharedMemoryPort(-1);
-
-        cfg.setCommunicationSpi(spi);
-
-        return cfg;
+        return super.getConfiguration(igniteInstanceName)
+            .setNetworkSendRetryCount(1)
+            .setCacheConfiguration(cacheConfiguration())
+            .setCommunicationSpi(
+                new TestCommunicationSpi()
+                    .setSharedMemoryPort(-1)
+            );
     }
 
-    /** {@inheritDoc} */
     protected CacheConfiguration cacheConfiguration() {
-        CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
-
-        ccfg.setCacheMode(PARTITIONED);
-        ccfg.setBackups(1);
-        ccfg.setWriteSynchronizationMode(FULL_ASYNC);
-        ccfg.setRebalanceMode(SYNC);
-
-        ccfg.setReadFromBackup(true);
-
-        return ccfg;
+        return new CacheConfiguration(DEFAULT_CACHE_NAME)
+            .setCacheMode(PARTITIONED)
+            .setBackups(1)
+            .setWriteSynchronizationMode(PRIMARY_SYNC)
+            .setRebalanceMode(SYNC)
+            .setReadFromBackup(true);
     }
 
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        startGrids(gridCnt);
+        startGrids(2);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        stopAllGrids();
-    }
-
-    /**
-     * @param key Key.
-     * @param aff Aff.
-     */
-    private IgniteCache<Integer, Integer> cacheFromBackupNode(Integer key, Affinity<Integer> aff) {
-        for (int i = 0; i < gridCnt; i++) {
+    private IgniteCache<Integer, Integer> cacheFromBackupNode(Integer key) {
+        Affinity<Integer> aff = affinity(grid(0).cache(DEFAULT_CACHE_NAME));
+        for (int i = 0; i < 2; i++) {
             if (aff.isBackup(grid(i).localNode(), key))
                 return grid(i).cache(DEFAULT_CACHE_NAME);
         }
         return null;
     }
 
-    /**
-     * @param key Key.
-     * @param aff Aff.
-     */
-    private void singleCommunicationFail(Integer key, Affinity<Integer> aff) {
-        for (int i = 0; i < gridCnt; i++) {
+    private void singleCommunicationFail(Integer key) {
+        Affinity<Integer> aff = affinity(grid(0).cache(DEFAULT_CACHE_NAME));
+        for (int i = 0; i < 2; i++) {
             if (aff.isPrimary(grid(i).localNode(), key)) {
                 TestCommunicationSpi spi = (TestCommunicationSpi)ignite(i).configuration().getCommunicationSpi();
                 spi.fail = true;
@@ -141,14 +85,9 @@ public class ReproducerAtomicCacheInconsistentState2Test extends GridCommonAbstr
         }
     }
 
-    /**
-     *
-     */
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
-        /** */
         private volatile boolean fail = false;
 
-        /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
             throws IgniteSpiException {
             if (msg instanceof GridIoMessage) {
@@ -163,5 +102,4 @@ public class ReproducerAtomicCacheInconsistentState2Test extends GridCommonAbstr
             super.sendMessage(node, msg, ackClosure);
         }
     }
-
 }
