@@ -846,10 +846,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             if (protocolVer.compareTo(VER_2_5_0) >= 0)
                 res = new JdbcMetaColumnsResultV4(meta);
-            else if (protocolVer.compareTo(VER_2_4_0) >= 0)
-                res = new JdbcMetaColumnsResultV3(meta);
             else
-                res = new JdbcMetaColumnsResult(meta);
+                res = new JdbcMetaColumnsResultV3(meta);
 
             return new JdbcResponse(res);
         }

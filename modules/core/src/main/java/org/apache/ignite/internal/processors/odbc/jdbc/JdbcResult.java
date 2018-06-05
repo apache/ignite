@@ -41,9 +41,6 @@ public class JdbcResult implements JdbcRawBinarylizable {
     /** Tables metadata result. */
     static final byte META_TABLES = 7;
 
-    /** Columns metadata result. */
-    static final byte META_COLUMNS = 8;
-
     /** Indexes metadata result. */
     static final byte META_INDEXES = 9;
 
@@ -58,9 +55,6 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
     /** Multiple statements query results. */
     static final byte QRY_EXEC_MULT = 13;
-
-    /** Columns metadata result V2. */
-    static final byte META_COLUMNS_V2 = 14;
 
     /** Columns metadata result V3. */
     static final byte META_COLUMNS_V3 = 15;
@@ -132,11 +126,6 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
                 break;
 
-            case META_COLUMNS:
-                res = new JdbcMetaColumnsResult();
-
-                break;
-
             case META_INDEXES:
                 res = new JdbcMetaIndexesResult();
 
@@ -159,11 +148,6 @@ public class JdbcResult implements JdbcRawBinarylizable {
 
             case QRY_EXEC_MULT:
                 res = new JdbcQueryExecuteMultipleStatementsResult();
-
-                break;
-
-            case META_COLUMNS_V2:
-                res = new JdbcMetaColumnsResultV2();
 
                 break;
 

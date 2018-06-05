@@ -55,15 +55,6 @@ import org.apache.ignite.lang.IgniteProductVersion;
  * JDBC IO layer implementation based on blocking IPC streams.
  */
 public class JdbcThinTcpIo {
-    /** Version 2.1.0. */
-    private static final ClientListenerProtocolVersion VER_2_1_0 = ClientListenerProtocolVersion.create(2, 1, 0);
-
-    /** Version 2.1.5: added "lazy" flag. */
-    private static final ClientListenerProtocolVersion VER_2_1_5 = ClientListenerProtocolVersion.create(2, 1, 5);
-
-    /** Version 2.3.1. */
-    private static final ClientListenerProtocolVersion VER_2_3_0 = ClientListenerProtocolVersion.create(2, 3, 0);
-
     /** Version 2.4.0. */
     private static final ClientListenerProtocolVersion VER_2_4_0 = ClientListenerProtocolVersion.create(2, 4, 0);
 
@@ -201,7 +192,7 @@ public class JdbcThinTcpIo {
                     break;
             }
 
-            if (!connected && inaccessibleAddrs != null && exceptions != null) {
+            if (!connected && inaccessibleAddrs != null) {
                 if (exceptions.size() == 1) {
                     Exception ex = exceptions.get(0);
 
@@ -363,66 +354,13 @@ public class JdbcThinTcpIo {
                     + ", url=" + connProps.getUrl() + ']', SqlStateCode.CONNECTION_REJECTED);
             }
 
-            if (VER_2_4_0.equals(srvProtocolVer) || VER_2_3_0.equals(srvProtocolVer) ||
-                VER_2_1_5.equals(srvProtocolVer))
+            if (VER_2_4_0.equals(srvProtocolVer))
                 handshake(srvProtocolVer);
-            else if (VER_2_1_0.equals(srvProtocolVer))
-                handshake_2_1_0();
             else {
                 throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
                     ", remoteNodeProtocolVer=" + srvProtocolVer + ", err=" + err + ']',
                     SqlStateCode.CONNECTION_REJECTED);
             }
-        }
-    }
-
-    /**
-     * Compatibility handshake for server version 2.1.0
-     *
-     * @throws IOException On IO error.
-     * @throws SQLException On connection reject.
-     */
-    private void handshake_2_1_0() throws IOException, SQLException {
-        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
-            null, null);
-
-        writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
-
-        writer.writeShort(VER_2_1_0.major());
-        writer.writeShort(VER_2_1_0.minor());
-        writer.writeShort(VER_2_1_0.maintenance());
-
-        writer.writeByte(ClientListenerNioListener.JDBC_CLIENT);
-
-        writer.writeBoolean(connProps.isDistributedJoins());
-        writer.writeBoolean(connProps.isEnforceJoinOrder());
-        writer.writeBoolean(connProps.isCollocated());
-        writer.writeBoolean(connProps.isReplicatedOnly());
-        writer.writeBoolean(connProps.isAutoCloseServerCursor());
-
-        send(writer.array());
-
-        BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
-            null, null, false);
-
-        boolean accepted = reader.readBoolean();
-
-        if (accepted) {
-            igniteVer = new IgniteProductVersion((byte)2, (byte)1, (byte)0, "Unknown", 0L, null);
-
-            srvProtocolVer = VER_2_1_0;
-        }
-        else {
-            short maj = reader.readShort();
-            short min = reader.readShort();
-            short maintenance = reader.readShort();
-
-            String err = reader.readString();
-
-            ClientListenerProtocolVersion ver = ClientListenerProtocolVersion.create(maj, min, maintenance);
-
-            throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
-                ", remoteNodeProtocolVer=" + ver + ", err=" + err + ']', SqlStateCode.CONNECTION_REJECTED);
         }
     }
 

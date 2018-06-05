@@ -35,22 +35,6 @@ public class JdbcMetaColumnsResult extends JdbcResult {
     private List<JdbcColumnMeta> meta;
 
     /**
-     * Default constructor is used for deserialization.
-     */
-    JdbcMetaColumnsResult() {
-        super(META_COLUMNS);
-    }
-
-    /**
-     * @param meta Columns metadata.
-     */
-    JdbcMetaColumnsResult(Collection<JdbcColumnMeta> meta) {
-        super(META_COLUMNS);
-
-        this.meta = new ArrayList<>(meta);
-    }
-
-    /**
      * Used by children classes.
      * @param type Type ID.
      */
