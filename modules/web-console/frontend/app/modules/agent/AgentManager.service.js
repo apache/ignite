@@ -40,13 +40,16 @@ const COLLOCATED_QUERY_SINCE = [['2.3.5', '2.4.0'], ['2.4.6', '2.5.0'], '2.5.2']
 
 // Error codes from o.a.i.internal.processors.restGridRestResponse.java
 
-/** Authentication failure. */
-const STATUS_AUTH_FAILED = 2;
-
-/** Security check failed. */
-const STATUS_SECURITY_CHECK_FAILED = 3;
-
-
+const SuccessStatus = {
+    /** Command succeeded. */
+    STATUS_SUCCESS: 0,
+    /** Command failed. */
+    STATUS_FAILED: 1,
+    /** Authentication failure. */
+    AUTH_FAILED: 2,
+    /** Security check failed. */
+    SECURITY_CHECK_FAILED: 3
+};
 
 class ConnectionState {
     constructor(cluster) {
@@ -379,11 +382,11 @@ export default class IgniteAgentManager {
     /**
      *
      * @param {String} event
-     * @param {Object} [params]
+     * @param {Object} [payload]
      * @returns {ng.IPromise}
      * @private
      */
-    _sendToAgent(event, params = {}) {
+    _sendToAgent(event, payload = {}) {
         if (!this.socket)
             return this.$q.reject('Failed to connect to server');
 
@@ -397,7 +400,7 @@ export default class IgniteAgentManager {
 
         this.socket.on('disconnect', onDisconnect);
 
-        this.socket.emit(event, params, (err, res) => {
+        this.socket.emit(event, payload, (err, res) => {
             this.socket.removeListener('disconnect', onDisconnect);
 
             if (err)
@@ -445,57 +448,66 @@ export default class IgniteAgentManager {
 
     /**
      * @param {String} event
-     * @param {Object} cmdParams
+     * @param {Object} params
      * @returns {Promise}
      * @private
      */
-    _executeOnCurrentCluster(event, cmdParams) {
+    _executeOnCurrentCluster(event, params) {
         return this.connectionSbj.first().toPromise()
             .then(({cluster}) => {
                 if (cluster.secured) {
-                    const secrets = this.clustersSecrets.get(cluster.id);
-
-                    if (secrets.hasCredentials())
-                        return {cluster, secrets};
-
-                    return this.ClusterLoginSrv.askCredentials(secrets)
+                    return Promise.resolve(this.clustersSecrets.get(cluster.id))
                         .then((secrets) => {
-                            this.clustersSecrets.put(cluster.id, secrets);
+                            if (secrets.hasCredentials())
+                                return secrets;
 
-                            return {cluster, secrets};
-                        });
+                            return this.ClusterLoginSrv.askCredentials(secrets)
+                                .then((secrets) => {
+                                    this.clustersSecrets.put(cluster.id, secrets);
+
+                                    return secrets;
+                                });
+                        })
+                        .then((secrets) => ({cluster, credentials: secrets.getCredentials()}));
                 }
 
-                return {cluster};
+                return {cluster, credentials: {}};
             })
-            .then(({cluster, secrets = null}) => {
-                const params = {clusterId: cluster.id, ...cmdParams};
+            .then(({cluster, credentials}) => {
+                return this._sendToAgent(event, {clusterId: cluster.id, params, credentials})
+                    .then((res) => {
+                        const {status = SuccessStatus.STATUS_SUCCESS} = res;
 
-                if (secrets)
-                    Object.assign(params, secrets.asParams());
+                        switch (status) {
+                            case SuccessStatus.STATUS_SUCCESS:
+                                if (cluster.secured)
+                                    this.clustersSecrets.get(cluster.id).sessionToken = res.sessionToken;
 
-                return this._sendToAgent(event, params)
-                    .then((data) => {
-                        if (data.zipped)
-                            return this.pool.postMessage(data.data);
+                                if (res.zipped)
+                                    return this.pool.postMessage(res.data);
 
-                        return data;
-                    })
-                    .then((data) => {
-                        if (_.has(data, 'status')) {
-                            const status = data.status;
+                                return res;
 
-                            if (status === STATUS_AUTH_FAILED) {
-                                secrets.resetCredentials();
+                            case SuccessStatus.STATUS_FAILED:
+                                if (res.error.startsWith('Failed to handle request - unknown session token (maybe expired session)')) {
+                                    this.clustersSecrets.get(cluster.id).resetSessionToken();
+
+                                    return this._executeOnCurrentCluster(event, params);
+                                }
+
+                                throw new Error(res.error);
+
+                            case SuccessStatus.AUTH_FAILED:
+                                this.clustersSecrets.get(cluster.id).resetCredentials();
 
                                 throw new Error('Failed to authenticate in cluster with provided credentials');
-                            }
 
-                            if (status === STATUS_SECURITY_CHECK_FAILED)
+                            case SuccessStatus.SECURITY_CHECK_FAILED:
                                 throw new Error('Access denied. You are not authorized to access this functionality. Contact your cluster administrator.');
-                        }
 
-                        return data;
+                            default:
+                                throw new Error('Illegal status in node response');
+                        }
                     });
             });
     }

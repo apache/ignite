@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
-
 import {nonEmpty} from 'app/utils/lodashMixins';
 
 export class ClusterSecrets {
@@ -30,7 +28,7 @@ export class ClusterSecrets {
     sessionTtl;
 
     /** @type {String} */
-    sessionId;
+    sessionToken;
 
     constructor() {
         this.user = 'ignite';
@@ -41,22 +39,26 @@ export class ClusterSecrets {
     }
 
     resetCredentials() {
-        this.resetSessionId();
+        this.resetSessionToken();
 
         this.password = null;
     }
 
-    resetSessionId() {
-        this.sessionId = null;
+    resetSessionToken() {
+        this.sessionToken = null;
     }
 
     /**
-     * @return {{sessionId: String}|{user: String, password: String, sessionTtl: Number}}
+     * @return {{sessionToken: String}|{'user': String, 'password': String, sessionTtl: Number}}
      */
-    asParams() {
-        if (this.sessionId)
-            return {sessionId: this.sessionId};
+    getCredentials() {
+        const { sessionToken } = this;
 
-        return _.pick(this, ['user', 'password', 'sessionTtl']);
+        if (sessionToken)
+            return { sessionToken };
+
+        const { user, password, sessionTtl } = this;
+
+        return { user, password, sessionTtl };
     }
 }

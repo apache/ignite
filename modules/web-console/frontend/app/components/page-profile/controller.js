@@ -30,7 +30,7 @@ export default class PageProfileController {
         this.ui = {};
 
         this.User.read()
-            .then((user) => this.ui.user = _.cloneDeep(user));
+            .then((user) => this.ui.login = _.cloneDeep(user));
 
         this.ui.countries = this.Countries.getAll();
     }

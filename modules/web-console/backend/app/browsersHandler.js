@@ -185,22 +185,14 @@ module.exports = {
             /**
              * @param {Promise.<AgentSocket>} agent
              * @param {Boolean} demo
+             * @param {{sessionId: String}|{'login': String, 'password': String, sessionTtl: Number}} credentials
              * @param {Object.<String, String>} params
              * @return {Promise.<T>}
              */
-            executeOnNode(agent, demo, params) {
+            executeOnNode(agent, demo, credentials, params) {
                 return agent
-                    .then((agentSock) => agentSock.emitEvent('node:rest', {uri: 'ignite', demo, params}))
-                    .then((res) => {
-                        if (res.status === 0) {
-                            if (res.zipped)
-                                return res;
-
-                            return JSON.parse(res.data);
-                        }
-
-                        return res;
-                    });
+                    .then((agentSock) => agentSock.emitEvent('node:rest',
+                        {uri: 'ignite', demo, params: {...credentials, ...params}}));
             }
 
             registerVisorTask(taskId, taskCls, ...argCls) {
@@ -212,14 +204,18 @@ module.exports = {
 
             nodeListeners(sock) {
                 // Return command result from grid to browser.
-                sock.on('node:rest', ({clusterId, params}, cb) => {
+                sock.on('node:rest', ({clusterId, params, credentials}, cb) => {
                     const demo = sock.request._query.IgniteDemoMode === 'true';
                     const token = sock.request.user.token;
 
                     const agent = this._agentHnd.agent(token, demo, clusterId);
 
-                    this.executeOnNode(agent, demo, params)
-                        .then((data) => cb(null, data))
+                    this.executeOnNode(agent, demo, credentials, params)
+                        .then((data) => {
+                            console.log(data);
+
+                            cb(null, data);
+                        })
                         .catch((err) => cb(this.errorTransformer(err)));
                 });
 
@@ -241,29 +237,29 @@ module.exports = {
                 this.registerVisorTask('toggleClusterState', internalVisor('misc.VisorChangeGridActiveStateTask'), internalVisor('misc.VisorChangeGridActiveStateTaskArg'));
 
                 // Return command result from grid to browser.
-                sock.on('node:visor', ({clusterId, taskId, nids, user, password, args = []} = {}, cb) => {
+                sock.on('node:visor', ({clusterId, params = {}, credentials} = {}, cb) => {
                     const demo = sock.request._query.IgniteDemoMode === 'true';
                     const token = sock.request.user.token;
+
+                    const {taskId, nids, args = []} = params;
 
                     const desc = this._visorTasks.get(taskId);
 
                     if (_.isNil(desc))
                         return cb(this.errorTransformer(new errors.IllegalArgumentException(`Failed to find Visor task for id: ${taskId}`)));
 
-                    const params = {
+                    const exeParams = {
                         cmd: 'exe',
                         name: 'org.apache.ignite.internal.visor.compute.VisorGatewayTask',
-                        user,
-                        password,
                         p1: nids,
                         p2: desc.taskCls
                     };
 
-                    _.forEach(_.concat(desc.argCls, args), (param, idx) => { params[`p${idx + 3}`] = param; });
+                    _.forEach(_.concat(desc.argCls, args), (param, idx) => { exeParams[`p${idx + 3}`] = param; });
 
                     const agent = this._agentHnd.agent(token, demo, clusterId);
 
-                    this.executeOnNode(agent, demo, params)
+                    this.executeOnNode(agent, demo, credentials, exeParams)
                         .then((data) => {
                             if (data.finished && !data.zipped)
                                 return cb(null, data.result);
