@@ -1779,11 +1779,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (metrics &&
                 updateRes.outcome().updateReadMetrics() &&
                 cctx.statisticsEnabled() &&
-                needVal) {
-                // PutIfAbsent methods must not update hit/miss statistics.
-                if (op != GridCacheOperation.UPDATE || F.isEmpty(filter) || !cctx.putIfAbsentFilter(filter))
+                needVal)
                     cctx.cache().metrics0().onRead(oldVal != null);
-            }
 
             switch (updateRes.outcome()) {
                 case VERSION_CHECK_FAILED: {
