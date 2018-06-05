@@ -341,7 +341,7 @@ public class JdbcThinTcpIo {
 
             String err = reader.readString();
 
-            if (VER_2_5_0.equals(srvProtoVer0))
+            if (!srvProtoVer0.equals(ver) && VER_2_5_0.equals(srvProtoVer0))
                 handshake(srvProtoVer0);
             else {
                 throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
