@@ -45,6 +45,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.logging.Handler;
 import javax.management.JMException;
 import javax.management.MBeanServer;
@@ -1819,16 +1820,8 @@ public class IgnitionEx {
 
             GridWorkerListener workerRegistryWrapper = new GridWorkerListener() {
                 @Override public void onStarted(GridWorker w) {
-                    Thread t = new Thread(() -> {
-                        U.awaitQuiet(startLatch);
-
-                        if (grid != null && grid.context() != null && grid.context().workersRegistry() != null)
-                            grid.context().workersRegistry().onStarted(w);
-                    });
-
-                    t.setDaemon(true);
-
-                    t.start();
+                    if (grid != null && grid.context() != null && grid.context().workersRegistry() != null)
+                        grid.context().workersRegistry().onStarted(w);
                 }
 
                 @Override public void onStopped(GridWorker w) {
@@ -1842,9 +1835,11 @@ public class IgnitionEx {
                 cfg.getIgniteInstanceName(),
                 "sys",
                 log,
-                t -> {
-                    if (grid != null)
-                        grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                new Consumer<Throwable>() {
+                    @Override public void accept(Throwable t) {
+                        if (grid != null)
+                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                    }
                 },
                 workerRegistryWrapper);
 
@@ -1888,9 +1883,11 @@ public class IgnitionEx {
                 cfg.getIgniteInstanceName(),
                 "data-streamer",
                 log,
-                t -> {
-                    if (grid != null)
-                        grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                new Consumer<Throwable>() {
+                    @Override public void accept(Throwable t) {
+                        if (grid != null)
+                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                    }
                 },
                 true,
                 workerRegistryWrapper);
@@ -2055,6 +2052,9 @@ public class IgnitionEx {
                         }
                     }
                 );
+
+                stripedExecSvc.start();
+                dataStreamerExecSvc.start();
 
                 state = STARTED;
 

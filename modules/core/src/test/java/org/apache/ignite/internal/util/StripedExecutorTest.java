@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.util;
 
+import java.util.function.Consumer;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -29,7 +30,11 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override public void beforeTest() {
-        stripedExecSvc = new StripedExecutor(3, "foo name", "pool name", new JavaLogger(), t -> {}, null);
+        stripedExecSvc = new StripedExecutor(3, "foo name", "pool name", new JavaLogger(), new Consumer<Throwable>() {
+            @Override public void accept(Throwable throwable) {}
+        }, null);
+
+        stripedExecSvc.start();
     }
 
     /** {@inheritDoc} */
