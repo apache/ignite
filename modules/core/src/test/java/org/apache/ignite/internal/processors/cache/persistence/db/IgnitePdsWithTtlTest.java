@@ -140,7 +140,9 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         IgniteEx srv = startGrid(0);
         srv.active(true);
 
-        fillCache(srv.cache(CACHE_NAME));
+        IgniteCache<Integer, byte[]> cache0 = srv.cache(CACHE_NAME);
+
+        fillCache(cache0);
 
         if (restartGrid) {
             stopGrid(0);
@@ -164,7 +166,9 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
         IgniteEx srv = startGrid(0);
         srv.active(true);
 
-        fillCache(srv.cache(CACHE_NAME));
+        IgniteCache<Integer, byte[]> cache0 = srv.cache(CACHE_NAME);
+
+        fillCache(cache0);
 
         //causes rebalancing start
         srv = startGrid(1);
@@ -196,7 +200,7 @@ public class IgnitePdsWithTtlTest extends GridCommonAbstractTest {
             //causes rebalancing start
             srv = startGrid(2);
 
-            IgniteCache<Integer, byte[]> cache = srv.cache(CACHE_NAME);
+            final IgniteCache<Integer, byte[]> cache = srv.cache(CACHE_NAME);
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
