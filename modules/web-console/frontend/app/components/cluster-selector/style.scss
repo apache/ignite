@@ -25,9 +25,12 @@ cluster-selector {
     align-items: center;
     justify-content: space-between;
 
-	& > .btn-ignite {
+	.btn-ignite.btn-ignite--primary,
+    .btn-ignite.btn-ignite--success {
         border-radius: 9px;
         min-height: 0;
+
+        color: white;
         font-size: 12px;
         font-weight: bold;
         line-height: 17px;

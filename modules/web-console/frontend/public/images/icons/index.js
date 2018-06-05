@@ -39,3 +39,5 @@ export home from './home.svg';
 export refresh from './refresh.svg';
 export {default as eyeOpened} from './eyeOpened.svg';
 export {default as eyeClosed} from './eyeClosed.svg';
+export {default as lock} from './lock.svg';
+export {default as lockOpen} from './lockOpen.svg';
