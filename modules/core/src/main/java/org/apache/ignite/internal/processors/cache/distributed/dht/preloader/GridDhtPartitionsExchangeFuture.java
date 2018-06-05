@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.LocalJoinCachesContext;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.WalStateAbstractMessage;
@@ -776,6 +777,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private void initCachesOnLocalJoin() throws IgniteCheckedException {
+        if (isLocalNodeNotInBaseline()) {
+            cctx.cache().cleanupCachesDirectories();
+
+            cctx.database().cleanupCheckpointDirectory();
+
+            if (cctx.wal() != null)
+                cctx.wal().cleanupWalDirectories();
+        }
+
         cctx.activate();
 
         LocalJoinCachesContext locJoinCtx = exchActions == null ? null : exchActions.localJoinContext();
@@ -814,12 +824,21 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         List<CacheConfiguration> notStartedCacheConfigs = new ArrayList<>();
 
         for (CacheConfiguration cCfg : cctx.gridConfig().getCacheConfiguration()) {
-            if (!cacheNames.contains(cCfg.getName()))
+            if (!cacheNames.contains(cCfg.getName()) && !GridCacheUtils.isCacheTemplateName(cCfg.getName()))
                 notStartedCacheConfigs.add(cCfg);
         }
 
         if (!notStartedCacheConfigs.isEmpty())
             cacheProcessor.dynamicStartCaches(notStartedCacheConfigs, false, false, false);
+    }
+
+    /**
+     * @return {@code true} if local node is not in baseline and {@code false} otherwise.
+     */
+    private boolean isLocalNodeNotInBaseline() {
+        BaselineTopology topology = cctx.discovery().discoCache().state().baselineTopology();
+
+        return topology!= null && !topology.consistentIds().contains(cctx.localNode().consistentId());
     }
 
     /**
@@ -1753,6 +1772,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (log.isDebugEnabled())
                 log.debug("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange= " + this +
                     ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
+            else if(log.isInfoEnabled())
+                log.info("Completed partition exchange [localNode=" + cctx.localNodeId() + ", exchange=" + shortInfo() +
+                     ", topVer=" + topologyVersion() + ", durationFromInit=" + (U.currentTimeMillis() - initTs) + ']');
 
             initFut.onDone(err == null);
 
@@ -2073,6 +2095,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (mergedWith0 != null) {
             mergedWith0.processMergedMessage(node, msg);
 
+            if (log.isDebugEnabled())
+                log.debug("Merged message processed, message handling finished: " + msg);
+
             return;
         }
 
@@ -2098,6 +2123,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @param msg Client's message.
      */
     public void waitAndReplyToNode(final UUID nodeId, final GridDhtPartitionsSingleMessage msg) {
+        if (log.isDebugEnabled())
+            log.debug("Single message will be handled on completion of exchange future: " + this);
+
         listen(new CI1<IgniteInternalFuture<AffinityTopologyVersion>>() {
             @Override public void apply(IgniteInternalFuture<AffinityTopologyVersion> fut) {
                 if (cctx.kernalContext().isStopping())
@@ -2114,8 +2142,17 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                     ClusterNode node = cctx.node(nodeId);
 
-                    if (node == null)
+                    if (node == null) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("No node found for nodeId: " +
+                                nodeId +
+                                ", handling of single message will be stopped: " +
+                                msg
+                            );
+                        }
+
                         return;
+                    }
 
                     finishState0 = new FinishState(cctx.localNodeId(),
                         initialVersion(),
@@ -2182,6 +2219,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                                 ", allReceived=" + allReceived + ']');
                         }
                     }
+                    else if (log.isDebugEnabled())
+                        log.debug("Coordinator received single message it didn't expect to receive: " + msg);
 
                     break;
                 }
@@ -2860,6 +2899,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
             try {
                 cctx.io().send(node, fullMsg, SYSTEM_POOL);
+
+                if (log.isDebugEnabled()) {
+                    log.debug("Full message was sent to node: " +
+                        node +
+                        ", fullMsg: " + fullMsg
+                    );
+                }
             }
             catch (ClusterTopologyCheckedException e) {
                 if (log.isDebugEnabled())
