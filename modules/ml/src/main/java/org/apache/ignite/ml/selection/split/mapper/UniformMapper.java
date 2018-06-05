@@ -28,6 +28,7 @@ import java.io.Serializable;
 @FunctionalInterface
 public interface UniformMapper<K, V> extends Serializable {
     /**
+     * Maps key-value pair to a point on the segment (0, 1).
      *
      * @param key Key.
      * @param val Value.
