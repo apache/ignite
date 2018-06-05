@@ -54,8 +54,9 @@ namespace ignite
                 ioTimeout(DEFALT_IO_TIMEOUT),
                 connectionTimeout(DEFALT_CONNECT_TIMEOUT),
                 socket(),
+                config(cfg),
                 currentVersion(VERSION_CURRENT),
-                config(cfg)
+                reqIdCounter(0)
             {
                 // No-op.
             }
@@ -145,9 +146,6 @@ namespace ignite
 
             bool DataRouter::Receive(interop::InteropMemory& msg, int32_t timeout)
             {
-                // Minimal size of the response message: 8 byte reqId + 4 byte status.
-                enum { MIN_RES_SIZE = 4 + 8 };
-
                 assert(msg.Capacity() > 4);
 
                 if (socket.get() == 0)
@@ -168,16 +166,20 @@ namespace ignite
 
                 int32_t msgLen = inStream.ReadInt32();
 
-                if (msgLen < MIN_RES_SIZE)
+                if (msgLen < 0)
                 {
                     Close();
 
-                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                        "Protocol error: Message length is less than minimally allowed");
+                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Protocol error: Message length is negative");
                 }
+
+                if (msgLen == 0)
+                    return true;
 
                 if (msg.Capacity() < msgLen + 4)
                     msg.Reallocate(msgLen + 4);
+
+                msg.Length(4 + msgLen);
 
                 res = ReceiveAll(msg.Data() + 4, msgLen, timeout);
 
@@ -230,6 +232,8 @@ namespace ignite
                 }
                 catch (const IgniteError&)
                 {
+                    // TODO: implement logging
+                    //std::cout << err.GetText() << std::endl;
                     return false;
                 }
 
@@ -245,13 +249,14 @@ namespace ignite
             {
                 // Allocating 4KB to lessen number of reallocations.
                 enum { BUFFER_SIZE = 1024 * 4 };
-                
+
                 common::concurrent::CsLockGuard lock(ioMutex);
 
                 interop::InteropUnpooledMemory mem(BUFFER_SIZE);
                 interop::InteropOutputStream outStream(&mem);
                 binary::BinaryWriterImpl writer(&outStream, 0);
-                
+
+                int32_t lenPos = outStream.Reserve(4);
                 writer.WriteInt8(RequestType::HANDSHAKE);
 
                 writer.WriteInt16(propVer.GetMajor());
@@ -262,6 +267,8 @@ namespace ignite
 
                 writer.WriteString(config.GetUser());
                 writer.WriteString(config.GetPassword());
+
+                outStream.WriteInt32(lenPos, outStream.Position() - 4);
 
                 bool success = Send(mem.Data(), outStream.Position(), connectionTimeout);
 
@@ -278,9 +285,9 @@ namespace ignite
                 inStream.Position(4);
 
                 binary::BinaryReaderImpl reader(&inStream);
-                
+
                 bool accepted = reader.ReadBool();
-                
+
                 if (!accepted)
                 {
                     int16_t major = reader.ReadInt16();

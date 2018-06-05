@@ -42,7 +42,7 @@ namespace ignite
                 // No-op.
             }
 
-            void CreateCacheWithNameRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+            void CreateCacheWithNameRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
             {
                 writer.WriteString(name);
             }

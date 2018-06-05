@@ -190,7 +190,7 @@ namespace ignite
 
                     inStream.Position(4);
 
-                    int32_t rspId = inStream.ReadInt8();
+                    int64_t rspId = inStream.ReadInt64();
 
                     if (id != rspId)
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,

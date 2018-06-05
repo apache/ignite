@@ -44,7 +44,7 @@ namespace ignite
                 router.Get()->Connect();
             }
 
-            cache::CacheClientImpl* IgniteClientImpl::GetCache(const char* name)
+            common::concurrent::SharedPointer<cache::CacheClientImpl> IgniteClientImpl::GetCache(const char* name)
             {
                 CheckCacheName(name);
 
@@ -53,7 +53,7 @@ namespace ignite
                 return new cache::CacheClientImpl(router, name, cacheId);
             }
 
-            cache::CacheClientImpl* IgniteClientImpl::GetOrCreateCache(const char* name)
+            common::concurrent::SharedPointer<cache::CacheClientImpl> IgniteClientImpl::GetOrCreateCache(const char* name)
             {
                 CheckCacheName(name);
                 
@@ -70,7 +70,7 @@ namespace ignite
                 return new cache::CacheClientImpl(router, name, cacheId);
             }
 
-            cache::CacheClientImpl* IgniteClientImpl::CreateCache(const char* name)
+            common::concurrent::SharedPointer<cache::CacheClientImpl> IgniteClientImpl::CreateCache(const char* name)
             {
                 CheckCacheName(name);
 
@@ -83,7 +83,7 @@ namespace ignite
 
                 if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                     throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
-                
+
                 return new cache::CacheClientImpl(router, name, cacheId);
             }
 

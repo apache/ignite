@@ -22,20 +22,6 @@
 
 namespace ignite
 {
-    namespace impl
-    {
-        namespace thin
-        {
-            namespace cache
-            {
-                /**
-                 * Forward-declaration.
-                 */
-                class CacheClientImpl;
-            }
-        }
-    }
-
     namespace thin
     {
         namespace cache
@@ -48,6 +34,17 @@ namespace ignite
             {
             public:
                 /**
+                 * Constructor.
+                 *
+                 * @param impl Implementation.
+                 */
+                CacheClient(common::concurrent::SharedPointer<void> impl) :
+                    impl(impl)
+                {
+                    // No-op.
+                }
+
+                /**
                  * Destructor.
                  */
                 ~CacheClient()
@@ -56,18 +53,9 @@ namespace ignite
                 }
 
             private:
-                /**
-                 * Constructor.
-                 *
-                 * @param impl Implementation.
-                 */
-                CacheClient(common::concurrent::SharedPointer<impl::thin::cache::CacheClientImpl>& impl)
-                {
-                    // No-op.
-                }
 
                 /** Implementation. */
-                common::concurrent::SharedPointer<impl::thin::cache::CacheClientImpl> impl;
+                common::concurrent::SharedPointer<void> impl;
             };
         }
     }

@@ -64,7 +64,7 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="onheapCacheEnabled" value="true"/>
                 </bean>
-				
+
                 <bean parent="cache-template">
                     <property name="name" value="partitioned2"/>
                     <property name="cacheMode" value="PARTITIONED"/>

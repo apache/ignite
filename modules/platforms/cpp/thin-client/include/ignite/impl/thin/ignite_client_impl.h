@@ -22,6 +22,7 @@
 #include <ignite/thin/ignite_client_configuration.h>
 
 #include <ignite/impl/thin/data_router.h>
+#include <ignite/impl/thin/cache/cache_client_impl.h>
 
 namespace ignite
 {
@@ -63,23 +64,23 @@ namespace ignite
                  * @param name Cache name.
                  * @return Cache.
                  */
-                cache::CacheClientImpl* GetCache(const char* name);
-    
+                common::concurrent::SharedPointer<cache::CacheClientImpl> GetCache(const char* name);
+
                 /**
                  * Get or create cache.
                  *
                  * @param name Cache name.
                  * @return Cache.
                  */
-                cache::CacheClientImpl* GetOrCreateCache(const char* name);
-    
+                common::concurrent::SharedPointer<cache::CacheClientImpl> GetOrCreateCache(const char* name);
+
                 /**
                  * Create cache.
                  *
                  * @param name Cache name.
                  * @return Cache.
                  */
-                cache::CacheClientImpl* CreateCache(const char* name);
+                common::concurrent::SharedPointer<cache::CacheClientImpl> CreateCache(const char* name);
 
             private:
                 /**

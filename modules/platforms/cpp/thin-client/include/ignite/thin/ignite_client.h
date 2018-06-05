@@ -50,6 +50,7 @@ namespace ignite
          */
         class IGNITE_IMPORT_EXPORT IgniteClient
         {
+            typedef common::concurrent::SharedPointer<void> SP_Void;
         public:
             /**
              * Destructor.
@@ -109,7 +110,7 @@ namespace ignite
              * @param name Cache name.
              * @return Cache.
              */
-            impl::thin::cache::CacheClientImpl* InternalGetCache(const char* name);
+            SP_Void InternalGetCache(const char* name);
     
             /**
              * Get or create cache.
@@ -118,7 +119,7 @@ namespace ignite
              * @param name Cache name.
              * @return Cache.
              */
-            impl::thin::cache::CacheClientImpl* InternalGetOrCreateCache(const char* name);
+            SP_Void InternalGetOrCreateCache(const char* name);
     
             /**
              * Create cache.
@@ -127,17 +128,17 @@ namespace ignite
              * @param name Cache name.
              * @return Cache.
              */
-            impl::thin::cache::CacheClientImpl* InternalCreateCache(const char* name);
+            SP_Void InternalCreateCache(const char* name);
 
             /**
              * Constructor.
              *
              * @param impl Implementation.
              */
-            IgniteClient(common::concurrent::SharedPointer<impl::thin::IgniteClientImpl>& impl);
+            IgniteClient(SP_Void& impl);
 
             /** Implementation. */
-            common::concurrent::SharedPointer<impl::thin::IgniteClientImpl> impl;
+            SP_Void impl;
         };
     }
 }
