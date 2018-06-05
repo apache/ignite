@@ -61,36 +61,47 @@ public class IgniteCacheFailoverTestSuite extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Cache Failover Test Suite");
 
-        suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
-        suite.addTestSuite(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class);
-        suite.addTestSuite(GridCacheRebalancingPartitionDistributionTest.class);
+//        suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
+//        suite.addTestSuite(GridCacheAtomicClientInvalidPartitionHandlingSelfTest.class);
+//        suite.addTestSuite(GridCacheRebalancingPartitionDistributionTest.class);
+//
+//        GridTestUtils.addTestIfNeeded(suite, GridCacheIncrementTransformTest.class, ignoredTests);
+//
+//        // Failure consistency tests.
+//        suite.addTestSuite(GridCacheAtomicRemoveFailureTest.class);
+//        suite.addTestSuite(GridCacheAtomicClientRemoveFailureTest.class);
+//
+//        suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);
+//        suite.addTestSuite(GridCacheDhtRemoveFailureTest.class);
+//        suite.addTestSuite(GridCacheDhtClientRemoveFailureTest.class);
+//        suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
+//
 
-        GridTestUtils.addTestIfNeeded(suite, GridCacheIncrementTransformTest.class, ignoredTests);
+        for (int i = 0; i < 30; i++) {
+            GridCacheAtomicNearRemoveFailureTest test = new GridCacheAtomicNearRemoveFailureTest();
 
-        // Failure consistency tests.
-        suite.addTestSuite(GridCacheAtomicRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheAtomicClientRemoveFailureTest.class);
+            test.setName("testPutAndRemove");
 
-        suite.addTestSuite(GridCacheDhtAtomicRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheDhtRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheDhtClientRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheNearRemoveFailureTest.class);
-        suite.addTestSuite(GridCacheAtomicNearRemoveFailureTest.class);
-        suite.addTestSuite(IgniteChangingBaselineUpCacheRemoveFailoverTest.class);
-        suite.addTestSuite(IgniteChangingBaselineDownCacheRemoveFailoverTest.class);
+            suite.addTest(test);
+        }
 
-        suite.addTestSuite(IgniteCacheAtomicNodeJoinTest.class);
-        suite.addTestSuite(IgniteCacheTxNodeJoinTest.class);
 
-        suite.addTestSuite(IgniteCacheTxNearDisabledPutGetRestartTest.class);
-
-        suite.addTestSuite(IgniteCacheSizeFailoverTest.class);
-
-        suite.addTestSuite(IgniteAtomicLongChangingTopologySelfTest.class);
-
-        suite.addTestSuite(GridCacheTxNodeFailureSelfTest.class);
-
-        suite.addTestSuite(AtomicPutAllChangingTopologyTest.class);
+//
+//        suite.addTestSuite(IgniteChangingBaselineUpCacheRemoveFailoverTest.class);
+//        suite.addTestSuite(IgniteChangingBaselineDownCacheRemoveFailoverTest.class);
+//
+//        suite.addTestSuite(IgniteCacheAtomicNodeJoinTest.class);
+//        suite.addTestSuite(IgniteCacheTxNodeJoinTest.class);
+//
+//        suite.addTestSuite(IgniteCacheTxNearDisabledPutGetRestartTest.class);
+//
+//        suite.addTestSuite(IgniteCacheSizeFailoverTest.class);
+//
+//        suite.addTestSuite(IgniteAtomicLongChangingTopologySelfTest.class);
+//
+//        suite.addTestSuite(GridCacheTxNodeFailureSelfTest.class);
+//
+//        suite.addTestSuite(AtomicPutAllChangingTopologyTest.class);
 
         return suite;
     }
