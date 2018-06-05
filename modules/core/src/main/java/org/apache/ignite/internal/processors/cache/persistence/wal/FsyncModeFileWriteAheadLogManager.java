@@ -109,6 +109,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -377,7 +378,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
             lastTruncatedArchiveIdx = tup == null ? -1 : tup.get1() - 1;
 
-            archiver = new FileArchiver(tup == null ? -1 : tup.get2());
+            archiver = new FileArchiver(tup == null ? -1 : tup.get2(), log);
 
             if (dsCfg.isWalCompactionEnabled()) {
                 compressor = new FileCompressor();
@@ -456,7 +457,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         if (!cctx.kernalContext().clientNode()) {
             assert archiver != null;
 
-            archiver.start();
+            new IgniteThread(archiver).start();
 
             if (compressor != null)
                 compressor.start();
@@ -1318,7 +1319,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * <li>some WAL index was removed from {@link FileArchiver#locked} map</li>
      * </ul>
      */
-    private class FileArchiver extends Thread {
+    private class FileArchiver extends GridWorker {
         /** Exception which occurred during initial creation of files or during archiving WAL segment */
         private IgniteCheckedException cleanException;
 
@@ -1346,22 +1347,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         /** Formatted index. */
         private int formatted;
 
-        /** Worker that encapsulates thread body */
-        private final GridWorker worker;
-
         /**
          *
          */
-        private FileArchiver(long lastAbsArchivedIdx) {
-            super("wal-file-archiver%" + cctx.igniteInstanceName());
+        private FileArchiver(long lastAbsArchivedIdx, IgniteLogger log) {
+            super(cctx.igniteInstanceName(), "wal-file-archiver%" + cctx.igniteInstanceName(), log,
+                cctx.kernalContext().workersRegistry());
 
             this.lastAbsArchivedIdx = lastAbsArchivedIdx;
-
-            worker = new GridWorker(cctx.igniteInstanceName(), getName(), log, cctx.kernalContext().workersRegistry()) {
-                @Override protected void body() {
-                    workerBody();
-                }
-            };
         }
 
         /**
@@ -1431,8 +1424,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 reserved.put(absIdx, cur - 1);
         }
 
-        /** */
-        private void workerBody() {
+        /** {@inheritDoc} */
+        @Override protected void body() {
             try {
                 allocateRemainingFiles();
             }
@@ -1500,18 +1493,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             }
             finally {
                 if (err == null && !stopped)
-                    err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly");
+                    err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void run() {
-            worker.run();
         }
 
         /**
