@@ -323,8 +323,6 @@ public class GridDhtPartitionDemander {
                     }
 
                     metrics.startRebalance(0);
-
-                    rebalanceFut.listen(f -> metrics.clearRebalanceCounters());
                 }
             }
 
