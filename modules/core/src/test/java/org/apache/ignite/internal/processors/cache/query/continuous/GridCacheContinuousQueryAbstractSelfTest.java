@@ -27,12 +27,14 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
+import javax.cache.configuration.FactoryBuilder;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
@@ -47,6 +49,7 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.store.CacheStore;
@@ -58,13 +61,16 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridCacheInternalKeyImpl;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -1136,6 +1142,94 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals(1, (int)map.get(1));
             assertEquals(2, (int)map.get(2));
         }
+    }
+
+    /**
+     *
+     */
+    public void testContinuousQueryRemoteFilterFactoryWithoutLocalLstnr() {
+        Set<QueryCursor<Cache.Entry<Integer, Integer>>> qryCursors = new HashSet<>();
+
+        G.allGrids().forEach(ignite -> {
+            ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+
+            qry.setRemoteFilterFactory(
+                FactoryBuilder.factoryOf((CacheEntryEventSerializableFilter<Integer, Integer>)evt -> false));
+
+            qryCursors.add(ignite.cache(DEFAULT_CACHE_NAME).query(qry));
+        });
+
+        grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(1, 1);
+
+        qryCursors.forEach(QueryCursor::close);
+    }
+
+    /**
+     *
+     */
+    public void testContinuousQueryRemoteFilterWithoutLocalLstnr() {
+        Set<QueryCursor<Cache.Entry<Integer, Integer>>> qryCursors = new HashSet<>();
+
+        G.allGrids().forEach(ignite -> {
+            ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+
+            qry.setRemoteFilter((CacheEntryEventSerializableFilter<Integer, Integer>)evt -> false);
+
+            qryCursors.add(ignite.cache(DEFAULT_CACHE_NAME).query(qry));
+        });
+
+        grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(1, 1);
+
+        qryCursors.forEach(QueryCursor::close);
+    }
+
+    /**
+     * @throws IgniteInterruptedCheckedException If failed.
+     */
+    public void testContinuousQueryRemoteTransformerWithoutLocalLstnr() throws IgniteInterruptedCheckedException {
+        Set<QueryCursor<Cache.Entry<Integer, Integer>>> qryCursors = new HashSet<>();
+
+        G.allGrids().forEach(ignite -> {
+            ContinuousQueryWithTransformer<Integer, Integer, Integer> qry = new ContinuousQueryWithTransformer<>();
+
+            qry.setRemoteFilterFactory(
+                FactoryBuilder.factoryOf((CacheEntryEventSerializableFilter<Integer, Integer>)evt -> false));
+
+            qry.setRemoteTransformerFactory(FactoryBuilder.factoryOf(
+                (IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Integer>, Integer>)evt -> {
+                    throw new RuntimeException("entry must be filtered out.");
+                }));
+
+            qryCursors.add(ignite.cache(DEFAULT_CACHE_NAME).query(qry));
+        });
+
+        grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(1, 1);
+
+        qryCursors.forEach(QueryCursor::close);
+    }
+
+    /**
+     * @throws IgniteInterruptedCheckedException If failed.
+     */
+    public void testContinuousQueryInitialQueryWithoutLocalLstnr() throws IgniteInterruptedCheckedException {
+        Set<QueryCursor<Cache.Entry<Integer, Integer>>> qryCursors = new HashSet<>();
+
+        grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(0, 0);
+
+        G.allGrids().forEach(ignite -> {
+            ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
+
+            qry.setInitialQuery(new ScanQuery<>());
+
+            qry.setRemoteFilterFactory(
+                FactoryBuilder.factoryOf((CacheEntryEventSerializableFilter<Integer, Integer>)evt -> false));
+
+            qryCursors.add(ignite.cache(DEFAULT_CACHE_NAME).query(qry));
+        });
+
+        grid(0).<Integer, Integer>cache(DEFAULT_CACHE_NAME).put(1, 1);
+
+        qryCursors.forEach(QueryCursor::close);
     }
 
     /**
