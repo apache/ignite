@@ -2262,12 +2262,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     // If all affinity nodes are owners, then evict partition from local node.
                     if (nodeIds.containsAll(F.nodeIds(affNodes))) {
-                        IgniteInternalFuture<?> rentFuture = part.rent(false);
-                        rentingFutures.add(rentFuture);
+                        GridDhtPartitionState state0 = part.state();
+
+                        IgniteInternalFuture<?> rentFut = part.rent(false);
+
+                        rentingFutures.add(rentFut);
 
                         updateSeq = updateLocal(part.id(), part.state(), updateSeq, aff.topologyVersion());
 
-                        changed = true;
+                        changed = state0 != part.state();
 
                         if (log.isDebugEnabled()) {
                             log.debug("Evicted local partition (all affinity nodes are owners) [grp=" + grp.cacheOrGroupName() +
@@ -2288,12 +2291,15 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 ClusterNode n = nodes.get(i);
 
                                 if (locId.equals(n.id())) {
-                                    IgniteInternalFuture<?> rentFuture = part.rent(false);
-                                    rentingFutures.add(rentFuture);
+                                    GridDhtPartitionState state0 = part.state();
+
+                                    IgniteInternalFuture<?> rentFut = part.rent(false);
+
+                                    rentingFutures.add(rentFut);
 
                                     updateSeq = updateLocal(part.id(), part.state(), updateSeq, aff.topologyVersion());
 
-                                    changed = true;
+                                    changed = state0 != part.state();
 
                                     if (log.isDebugEnabled()) {
                                         log.debug("Evicted local partition (this node is oldest non-affinity node) [" +
