@@ -806,12 +806,9 @@ public class IgniteCacheAtomicProtocolTest extends GridCommonAbstractTest {
 
         startServers(2);
 
-        // Because IgniteConfiguration#isLateAffinityAssignment() always true since 2.1
-        int waitMinorVer = 1;
-
-        // See GridCacheRebalancingSyncSelfTest#testSimpleRebalancing() for details.
-        waitForRebalancing(0, 2, waitMinorVer);
-        waitForRebalancing(1, 2, waitMinorVer);
+        // Waiting for minor topology changing because of late affinity assignment.
+        waitForRebalancing(0, 2, 1);
+        waitForRebalancing(1, 2, 1);
 
         awaitPartitionMapExchange();
 
