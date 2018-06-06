@@ -1382,7 +1382,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
             int left = bytesCntToFormat;
 
-            if (mode == WALMode.FSYNC) {
+            if (mode == WALMode.FSYNC || mmap) {
                 while (left > 0) {
                     int toWrite = Math.min(FILL_BUF.length, left);
 
