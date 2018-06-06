@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -73,6 +74,9 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /** Row cache. */
     private final H2RowCache rowCache;
 
+    /** */
+    private volatile boolean linksBasedComparison = true;
+
     /**
      * Constructor.
      *
@@ -86,6 +90,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @param metaPageId Meta page ID.
      * @param initNew Initialize new index.
      * @param rowCache Row cache.
+     * @param log Logger.
      * @throws IgniteCheckedException If failed.
      */
     protected H2Tree(
@@ -102,8 +107,8 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         IndexColumn[] cols,
         List<InlineIndexHelper> inlineIdxs,
         int inlineSize,
-        @Nullable H2RowCache rowCache
-    ) throws IgniteCheckedException {
+        @Nullable H2RowCache rowCache,
+        IgniteLogger log) throws IgniteCheckedException {
         super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList);
 
         this.isPk = isPk;
@@ -131,6 +136,37 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         setIos(H2ExtrasInnerIO.getVersions(inlineSize), H2ExtrasLeafIO.getVersions(inlineSize));
 
         initTree(initNew, inlineSize);
+
+        if (!linksBasedComparison)
+            U.warn(log, "Grid has been restored from persistent storage created by older version, falling back " +
+                "to indexes containing redundant key data.\nIn order to gain performance increase," +
+                "please rebuild your index from scratch - to do so, please remove index.bin files from cache group " +
+                "directories that reside in your PDS directory.");
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void initTree(boolean initNew, int inlineSize) throws IgniteCheckedException {
+        if (initNew)
+            super.initTree(true, inlineSize);
+        else {
+            final long metaPage = acquirePage(metaPageId);
+
+            try {
+                long pageAddr = readLock(metaPageId, metaPage);
+
+                assert pageAddr != 0 : "Failed to read lock meta page [metaPageId=" + U.hexLong(metaPageId) + ']';
+
+                try {
+                    linksBasedComparison = BPlusMetaIO.VERSIONS.forPage(pageAddr).useLinksComparison();
+                }
+                finally {
+                    readUnlock(metaPageId, metaPage, pageAddr);
+                }
+            }
+            finally {
+                releasePage(metaPageId, metaPage);
+            }
+        }
     }
 
     /**
@@ -217,7 +253,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         // for rows that don't have links like H2's SimpleRow.
         int linksCmpRes = 0;
 
-        if (row instanceof CacheSearchRow) {
+        if (linksBasedComparison && row instanceof CacheSearchRow) {
             long link1 = ((H2RowLinkIO)io).getLink(pageAddr, idx);
 
             long link2 = ((CacheSearchRow)row).link();
@@ -292,6 +328,9 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                         return InlineIndexHelper.fixSort(c, col.sortType);
                 }
             }
+
+            if (!linksBasedComparison)
+                return 0;
 
             // If it's PK idx, by this point we have already compared the keys and found them equal.
             // Let's return 0 as rows should be deemed equal not to confuse update/remove/insert operations.

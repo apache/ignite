@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -81,6 +82,7 @@ public class H2TreeIndex extends GridH2IndexBase {
      * @param pk Primary key.
      * @param colsList Index columns.
      * @param inlineSize Inline size.
+     * @param log Logger.
      * @throws IgniteCheckedException If failed.
      */
     public H2TreeIndex(
@@ -91,8 +93,8 @@ public class H2TreeIndex extends GridH2IndexBase {
         boolean pk,
         List<IndexColumn> colsList,
         int inlineSize,
-        int segmentsCnt
-    ) throws IgniteCheckedException {
+        int segmentsCnt,
+        IgniteLogger log) throws IgniteCheckedException {
         assert segmentsCnt > 0 : segmentsCnt;
 
         this.cctx = cctx;
@@ -139,7 +141,8 @@ public class H2TreeIndex extends GridH2IndexBase {
                         cols,
                         inlineIdxs,
                         computeInlineSize(inlineIdxs, inlineSize),
-                        rowCache) {
+                        rowCache,
+                        log) {
                         @Override public int compareValues(Value v1, Value v2) {
                             return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                         }

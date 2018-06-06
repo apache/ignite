@@ -810,7 +810,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @param inlineSize Inline size.
      * @throws IgniteCheckedException If failed.
      */
-    protected final void initTree(boolean initNew, int inlineSize) throws IgniteCheckedException {
+    protected void initTree(boolean initNew, int inlineSize) throws IgniteCheckedException {
         if (initNew) {
             // Allocate the first leaf page, it will be our root.
             long rootId = allocatePage(null);

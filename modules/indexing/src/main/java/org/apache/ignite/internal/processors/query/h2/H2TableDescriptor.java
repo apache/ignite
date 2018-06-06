@@ -190,8 +190,6 @@ public class H2TableDescriptor implements GridH2SystemIndexFactory {
         if (affCol != null && H2Utils.equals(affCol, keyCol))
             affCol = null;
 
-        GridH2RowDescriptor desc = tbl.rowDescriptor();
-
         Index hashIdx = createHashIndex(
             tbl,
             "_key_PK_hash",
