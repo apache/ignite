@@ -83,7 +83,7 @@ public class CrossValidationScoreCalculatorExample {
 
                 System.out.println(">>> Accuracy: " + Arrays.toString(scores));
 
-                System.out.println(">>> Decision tree classification trainer example completed.");
+                System.out.println(">>> Cross validation score calculator example completed.");
             });
 
             igniteThread.start();
