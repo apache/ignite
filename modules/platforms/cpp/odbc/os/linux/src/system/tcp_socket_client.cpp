@@ -157,7 +157,7 @@ namespace ignite
                             continue;
                         }
 
-                        res = WaitOnSocket(timeout, false);
+                        res = WaitOnSocket(timeout == 0 ? -1 : timeout, false);
 
                         if (res < 0 || res == WaitResult::TIMEOUT)
                         {
@@ -190,7 +190,7 @@ namespace ignite
             {
                 if (!blocking)
                 {
-                    int res = WaitOnSocket(timeout, false);
+                    int res = WaitOnSocket(timeout == 0 ? -1 : timeout, false);
 
                     if (res < 0 || res == WaitResult::TIMEOUT)
                         return res;
@@ -203,7 +203,7 @@ namespace ignite
             {
                 if (!blocking)
                 {
-                    int res = WaitOnSocket(timeout, true);
+                    int res = WaitOnSocket(timeout == 0 ? -1 : timeout, true);
 
                     if (res < 0 || res == WaitResult::TIMEOUT)
                         return res;
