@@ -15,43 +15,31 @@
  * limitations under the License.
  */
 
-.list-editable-cols__header {
-    $index-column-width: 46px;
-    $remove-column-width: 36px;
+/**
+ * @typedef {{icon: string, text: string, click: ng.ICompiledExpression}} ActionMenuItem
+ */
 
-    margin-left: 10px;
-    margin-right: $remove-column-width;
-    transition: 0.2s opacity;
+/**
+ * @typedef {Array<ActionMenuItem>} ActionsMenu
+ */
 
-    &__multiple-cols {
-        margin-left: $index-column-width;
+/**
+ * Groups multiple buttons into a single button with all but first buttons in a dropdown
+ */
+export default class SplitButton {
+    /** @type {ActionsMenu} */
+    actions = [];
+
+    static $inject = ['$element'];
+
+    /**
+     * @param {JQLite} $element Component root element
+     */
+    constructor($element, $transclude) {
+        this.$element = $element;
     }
 
-    .ignite-form-field__label {
-        padding-left: 0;
-        padding-right: 0;
-        float: none;
-    }
-
-    [ignite-icon='info'] {
-        @import 'public/stylesheets/variables';
-
-        margin-left: 5px;
-        color: $ignite-brand-success;
-    }
-
-    &+list-editable {
-        .ignite-form-field__label {
-            display: none;
-        }
-        
-        .le-row-item-view:nth-last-child(2) {
-            display: none;
-        }
-    }
-
-    &[disabled] {
-        opacity: 0.5;
-        cursor: default;
+    $onInit() {
+        this.$element[0].classList.add('btn-ignite-group');
     }
 }
