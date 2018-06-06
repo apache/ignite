@@ -23,7 +23,6 @@ import presetEs2015 from 'babel-preset-es2015';
 import presetStage1 from 'babel-preset-stage-1';
 
 import CopyWebpackPlugin from 'copy-webpack-plugin';
-import ExtractTextPlugin from 'extract-text-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import ProgressBarPlugin from 'progress-bar-webpack-plugin';
 
@@ -185,7 +184,6 @@ export default {
         new HtmlWebpackPlugin({
             template: './views/index.pug'
         }),
-        new ExtractTextPlugin({filename: 'assets/css/[name].[hash].css', allChunks: true}),
         new CopyWebpackPlugin([
             { context: 'public', from: '**/*.png' },
             { context: 'public', from: '**/*.svg' },
