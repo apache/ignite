@@ -65,6 +65,6 @@ export class ClusterSecretsManager {
     reset(clusterId) {
         const secrets = this._get(clusterId);
 
-        secrets.resetCredentials();
+        secrets && secrets.resetCredentials();
     }
 }

@@ -211,11 +211,7 @@ module.exports = {
                     const agent = this._agentHnd.agent(token, demo, clusterId);
 
                     this.executeOnNode(agent, demo, credentials, params)
-                        .then((data) => {
-                            console.log(data);
-
-                            cb(null, data);
-                        })
+                        .then((data) => cb(null, data))
                         .catch((err) => cb(this.errorTransformer(err)));
                 });
 

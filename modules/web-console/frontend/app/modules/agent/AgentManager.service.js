@@ -115,7 +115,7 @@ class ConnectionState {
     }
 }
 
-export default class IgniteAgentManager {
+export default class AgentManager {
     static $inject = ['$rootScope', '$q', '$transitions', 'igniteSocketFactory', 'AgentModal', 'UserNotifications', 'IgniteVersion', ClusterLoginService.name];
 
     /** @type {ng.IScope} */
@@ -130,7 +130,7 @@ export default class IgniteAgentManager {
     /** @type {String} */
     clusterVersion = '2.4.0';
 
-    connectionSbj = new BehaviorSubject(new ConnectionState(IgniteAgentManager.restoreActiveCluster()));
+    connectionSbj = new BehaviorSubject(new ConnectionState(AgentManager.restoreActiveCluster()));
 
     /** @type {ClusterSecretsManager} */
     clustersSecrets = new ClusterSecretsManager();

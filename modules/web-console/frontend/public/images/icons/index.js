@@ -41,3 +41,4 @@ export eyeOpened from './eyeOpened.svg';
 export eyeClosed from './eyeClosed.svg';
 export lockOpened from './lockOpened.svg';
 export lockClosed from './lockClosed.svg';
+export exit from './exit.svg';

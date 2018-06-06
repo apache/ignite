@@ -17,14 +17,17 @@
 
 import angular from 'angular';
 
-import AgentModal from './AgentModal.service';
-import AgentManager from './AgentManager.service';
+import ConnectedClustersDialog from './service';
 
-import clusterLogin from './components/cluster-login';
+import connectedClustersList from './components/list';
+import connectedClustersCellIcon from './components/cell-icon';
+import connectedClustersCellStatus from './components/cell-status';
+import connectedClustersCellLogout from './components/cell-logout';
 
-angular
-    .module('ignite-console.agent', [
-        clusterLogin.name
-    ])
-    .service(AgentModal.name, AgentModal)
-    .service(AgentManager.name, AgentManager);
+export default angular
+    .module('ignite-console.connected-clusters-dialog', [])
+    .service('ConnectedClustersDialog', ConnectedClustersDialog)
+    .component('connectedClustersList', connectedClustersList)
+    .component('connectedClustersCellIcon', connectedClustersCellIcon)
+    .component('connectedClustersCellStatus', connectedClustersCellStatus)
+    .component('connectedClustersCellLogout', connectedClustersCellLogout);

@@ -14,5 +14,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-svg(ignite-icon='connectedClusters')
-| Connected clusters: {{ $ctrl.connectedClusters }}
+div(ng-click='$ctrl.show()')
+    svg(ignite-icon='connectedClusters')
+    | Connected clusters: {{ $ctrl.connectedClusters }}
