@@ -47,7 +47,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     private final CacheGroupContext ctx;
 
     /** */
-    private final GroupAllocationTrucker groupPageAllocationTracker;
+    private final GroupAllocationTracker groupPageAllocationTracker;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -63,7 +63,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /**
      *
      */
-    public static class GroupAllocationTrucker implements AllocatedPageTracker {
+    public static class GroupAllocationTracker implements AllocatedPageTracker {
         /** */
         private final LongAdder totalAllocatedPages = new LongAdder();
 
@@ -71,9 +71,9 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         private final AllocatedPageTracker delegate;
 
         /**
-         * @param delegate Delegate allocation trucker.
+         * @param delegate Delegate allocation tracker.
          */
-        public GroupAllocationTrucker(AllocatedPageTracker delegate) {
+        public GroupAllocationTracker(AllocatedPageTracker delegate) {
             this.delegate = delegate;
         }
 
@@ -88,7 +88,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /**
      *
      */
-    private static class NoopAllocationTrucker implements AllocatedPageTracker{
+    private static class NoopAllocationTracker implements AllocatedPageTracker{
         /** {@inheritDoc} */
         @Override public void updateTotalAllocatedPages(long delta) {
             // No-op.
@@ -112,7 +112,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
             this.groupPageAllocationTracker = dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.groupId());
         }
         else
-            this.groupPageAllocationTracker = new GroupAllocationTrucker(new NoopAllocationTrucker());
+            this.groupPageAllocationTracker = new GroupAllocationTracker(new NoopAllocationTracker());
     }
 
     /** {@inheritDoc} */
