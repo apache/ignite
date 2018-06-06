@@ -226,15 +226,16 @@ public class CrossValidationScoreCalculator<M extends Model<double[], L>, L, K, 
         for (int i = 0; i < cv; i++) {
             double from = foldSize * i;
             double to = foldSize * (i + 1);
-            IgniteBiPredicate<K, V> trainSetPred = (k, v) -> {
+
+            IgniteBiPredicate<K, V> trainSetFilter = (k, v) -> {
                 double pnt = mapper.map(k, v);
                 return pnt < from || pnt > to;
             };
 
-            DatasetBuilder<K, V> datasetBuilder = datasetBuilderSupplier.apply(trainSetPred);
+            DatasetBuilder<K, V> datasetBuilder = datasetBuilderSupplier.apply(trainSetFilter);
             M mdl = trainer.fit(datasetBuilder, featureExtractor, lbExtractor);
 
-            try (TruthWithPredictionCursor<L> cursor = testDataIterSupplier.apply(trainSetPred, mdl)) {
+            try (TruthWithPredictionCursor<L> cursor = testDataIterSupplier.apply(trainSetFilter, mdl)) {
                 scores[i] = scoreCalculator.score(cursor.iterator());
             }
             catch (Exception e) {
@@ -243,6 +244,5 @@ public class CrossValidationScoreCalculator<M extends Model<double[], L>, L, K, 
         }
 
         return scores;
-
     }
 }
