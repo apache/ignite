@@ -519,9 +519,6 @@ public class DmlStatementsProcessor {
 
                 if (cctx.isReplicated() || distributedPlan == null || ((plan.mode() == UpdateMode.INSERT
                     || plan.mode() == UpdateMode.MERGE) && !plan.isLocalSubquery())) {
-                    MvccQueryTracker mvccQueryTracker = new MvccQueryTracker(cctx,
-                        cctx.shared().coordinators().currentCoordinator(),
-                        mvccSnapshot);
 
                     boolean sequential = true;
 
@@ -545,6 +542,10 @@ public class DmlStatementsProcessor {
                             .setLocal(fieldsQry.isLocal())
                             .setPageSize(fieldsQry.getPageSize())
                             .setTimeout((int)timeout, TimeUnit.MILLISECONDS);
+
+                        MvccQueryTracker mvccQueryTracker = new MvccQueryTracker(cctx,
+                            cctx.shared().coordinators().currentCoordinator(),
+                            mvccSnapshot, false);
 
                         QueryCursorImpl<List<?>> cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName,
                             newFieldsQry, null, true, true, mvccQueryTracker, cancel).get(0);
@@ -1160,12 +1161,12 @@ public class DmlStatementsProcessor {
                 .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
             cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schema, newFieldsQry, null, true, true,
-                new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), mvccSnapshot), cancel).get(0);
+                new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), mvccSnapshot, false), cancel).get(0);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),
                 F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), false, qry.getTimeout(), cancel,
-                new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), mvccSnapshot));
+                new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), mvccSnapshot, false));
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {

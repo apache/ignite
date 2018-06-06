@@ -561,7 +561,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         MvccQueryTracker mvccTracker = null;
 
         if (cctx.mvccEnabled() && mvccSnapshot == null)
-            mvccSnapshot = (mvccTracker = MvccUtils.mvccTracker(cctx)).snapshot();
+            mvccSnapshot = (mvccTracker = MvccUtils.mvccTracker(cctx, false)).snapshot();
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 

@@ -43,11 +43,9 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -70,7 +68,7 @@ import org.jetbrains.annotations.Nullable;
  * Colocated get future.
  */
 public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAdapter<K, V>
-    implements MvccCoordinatorChangeAware, IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> {
+    implements IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -196,14 +194,6 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
             initialMap(topVer);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public MvccSnapshot onMvccCoordinatorChange(MvccCoordinator newCrd) {
-        if (mvccTracker != null)
-            return mvccTracker.onMvccCoordinatorChange(newCrd);
-
-        return null;
     }
 
     /**

@@ -640,4 +640,9 @@ public interface IgniteInternalTx {
      * @param mvccInfo Mvcc information.
      */
     public void mvccInfo(MvccTxInfo mvccInfo);
+
+    /**
+     * @return Mvcc information.
+     */
+    public MvccTxInfo mvccInfo();
 }

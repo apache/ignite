@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -37,13 +38,19 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.noCoord
  *
  */
 @SuppressWarnings("unchecked")
-public class MvccQueryTracker implements MvccCoordinatorChangeAware {
+public class MvccQueryTracker {
+    /** */
+    public static final long MVCC_TRACKER_ID_NA = -1;
+
     /** */
     private static final IgniteBiInClosure<AffinityTopologyVersion,IgniteCheckedException> NO_OP_LSNR = new CI2<AffinityTopologyVersion, IgniteCheckedException>() {
         @Override public void apply(AffinityTopologyVersion version, IgniteCheckedException e) {
             // No-op
         }
     };
+
+    /** */
+    private static final AtomicLong idCntr = new AtomicLong();
 
     /** */
     private MvccCoordinator mvccCrd;
@@ -62,6 +69,9 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
     @GridToStringExclude
     private final IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException> lsnr;
 
+    /** */
+    private final long id;
+
     /**
      * @param cctx Cache context.
      * @param canRemap {@code True} if can wait for topology changes.
@@ -76,14 +86,17 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
         this.cctx = cctx;
         this.canRemap = canRemap;
         this.lsnr = lsnr;
+        this.id = idCntr.getAndIncrement();
     }
 
     /**
      * @param cctx Cache context.
      * @param mvccCrd Mvcc coordinator.
      * @param mvccSnapshot Mvcc snapshot.
+     * @param track Whether this tracker should be tracked by mvcc processor. If {@code True} new mvcc processor will
+     * be notified about this query tracker is in progress if query hasn't finished when old coordinator crushed.
      */
-    public MvccQueryTracker(GridCacheContext cctx, MvccCoordinator mvccCrd, MvccSnapshot mvccSnapshot) {
+    public MvccQueryTracker(GridCacheContext cctx, MvccCoordinator mvccCrd, MvccSnapshot mvccSnapshot, boolean track) {
         assert cctx.mvccEnabled() : cctx.name();
 
         this.cctx = cctx;
@@ -92,6 +105,14 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
 
         canRemap = false;
         lsnr = NO_OP_LSNR;
+
+        if (track) {
+            id = idCntr.getAndIncrement();
+
+            cctx.shared().coordinators().addQueryTracker(this);
+        }
+        else
+            id = MVCC_TRACKER_ID_NA;
     }
 
     /**
@@ -103,48 +124,47 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
         return mvccSnapshot;
     }
 
-    /** {@inheritDoc} */
-    @Override @Nullable public synchronized MvccSnapshot onMvccCoordinatorChange(MvccCoordinator newCrd) {
+    /**
+     * @param newCrd New coordinator.
+     * @return Version used by this query.
+     */
+    public synchronized long onMvccCoordinatorChange(MvccCoordinator newCrd) {
         if (mvccSnapshot != null) {
             assert mvccCrd != null : this;
 
             if (!mvccCrd.equals(newCrd)) {
                 mvccCrd = newCrd; // Need notify new coordinator.
 
-                return mvccSnapshot;
+                return id;
             }
             else
-                return null;
+                return MVCC_TRACKER_ID_NA;
         }
         else if (mvccCrd != null)
             mvccCrd = null; // Mark for remap.
 
-        return null;
+        return MVCC_TRACKER_ID_NA;
     }
 
     /**
      *
      */
     public void onQueryDone() {
-        if (lsnr == NO_OP_LSNR)
-            return;
-
-        MvccCoordinator mvccCrd0 = null;
         MvccSnapshot mvccSnapshot0 = null;
 
         synchronized (this) {
             if (mvccSnapshot != null) {
                 assert mvccCrd != null;
 
-                mvccCrd0 = mvccCrd;
                 mvccSnapshot0 = mvccSnapshot;
 
-                mvccSnapshot = null; // Mark as finished.
+                if (lsnr != NO_OP_LSNR)
+                    mvccSnapshot = null; // Mark as finished.
             }
         }
 
         if (mvccSnapshot0 != null)
-            cctx.shared().coordinators().ackQueryDone(mvccCrd0, mvccSnapshot0);
+            cctx.shared().coordinators().ackQueryDone(lsnr == NO_OP_LSNR, mvccSnapshot0, id);
     }
 
     /**
@@ -172,15 +192,15 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
 
         if (mvccSnapshot0 != null || mvccInfo != null) {
             if (mvccInfo == null) {
-                cctx.shared().coordinators().ackQueryDone(mvccCrd0, mvccSnapshot0);
+                cctx.shared().coordinators().ackQueryDone(lsnr == NO_OP_LSNR, mvccSnapshot0, id);
 
                 return null;
             }
             else {
                 if (commit)
-                    return ctx.coordinators().ackTxCommit(mvccInfo.coordinatorNodeId(), mvccInfo.snapshot(), mvccSnapshot0);
+                    return ctx.coordinators().ackTxCommit(mvccInfo.snapshot(), mvccSnapshot0, id);
                 else
-                    ctx.coordinators().ackTxRollback(mvccInfo.coordinatorNodeId(), mvccInfo.snapshot(), mvccSnapshot0);
+                    ctx.coordinators().ackTxRollback(mvccInfo.snapshot(), mvccSnapshot0, id);
             }
         }
 
@@ -194,7 +214,7 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
         MvccCoordinator mvccCrd0 = cctx.affinity().mvccCoordinator(topVer);
 
         if (mvccCrd0 == null) {
-            lsnr.apply(null, noCoordinatorError(topVer));
+            onError(noCoordinatorError(topVer));
 
             return;
         }
@@ -209,7 +229,7 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
             assert cctx.topology().topologyVersionFuture().initialVersion().compareTo(topVer) > 0;
 
             if (!canRemap) {
-                lsnr.apply(null, new ClusterTopologyCheckedException("Failed to request mvcc version, coordinator changed."));
+                onError(new ClusterTopologyCheckedException("Failed to request mvcc version, coordinator changed."));
 
                 return;
             }
@@ -237,14 +257,15 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
                             ", ver=" + mvccSnapshot +
                             ", rcvdVer=" + rcvdSnapshot + "]";
 
-                        if (mvccCrd != null) {
+                        if (mvccCrd != null)
                             mvccSnapshot = rcvdSnapshot;
-                        }
                         else
                             needRemap = true;
                     }
 
                     if (!needRemap) {
+                        cctx.shared().coordinators().addQueryTracker(MvccQueryTracker.this);
+
                         lsnr.apply(topVer, null);
 
                         return;
@@ -257,7 +278,7 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
                         log.debug("Mvcc coordinator failed, need remap: " + e);
                 }
                 catch (IgniteCheckedException e) {
-                    lsnr.apply(null, e);
+                    onError(e);
 
                     return;
                 }
@@ -266,7 +287,7 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
                 if (canRemap)
                     waitNextTopology(topVer);
                 else {
-                    lsnr.apply(null, new ClusterTopologyCheckedException("Failed to " +
+                    onError(new ClusterTopologyCheckedException("Failed to " +
                         "request mvcc version, coordinator failed."));
                 }
             }
@@ -291,11 +312,29 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
                         requestVersion(fut.get());
                     }
                     catch (IgniteCheckedException e) {
-                        lsnr.apply(null, e);
+                        onError(e);
                     }
                 }
             });
         }
+    }
+
+    /**
+     * @param e Exception.
+     */
+    private void onError(IgniteCheckedException e) {
+        assert e != null;
+
+        cctx.kernalContext().coordinators().removeQueryTracker(id);
+
+        lsnr.apply(null, e);
+    }
+
+    /**
+     * @return Id.
+     */
+    public long id() {
+        return id;
     }
 
     /** {@inheritDoc} */

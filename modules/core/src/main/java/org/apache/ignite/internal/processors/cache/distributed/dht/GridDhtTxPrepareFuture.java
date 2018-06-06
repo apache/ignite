@@ -1258,8 +1258,14 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                 assert crd != null : tx.topologyVersion();
 
-                if (crd.nodeId().equals(cctx.localNodeId()))
-                    onResponse(cctx.localNodeId(), cctx.coordinators().requestTxSnapshotOnCoordinator(tx));
+                if (crd.nodeId().equals(cctx.localNodeId())) {
+                    try {
+                        onResponse(cctx.localNodeId(), cctx.coordinators().requestTxSnapshotOnCoordinator(tx).get());
+                    }
+                    catch (IgniteCheckedException e) {
+                        onDone(e);
+                    }
+                }
                 else {
                     IgniteInternalFuture<MvccSnapshot> crdCntrFut = cctx.coordinators().requestTxSnapshot(crd,
                         this,

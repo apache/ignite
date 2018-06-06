@@ -1236,5 +1236,4 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             return S.toString(CheckRemoteTxMiniFuture.class, this);
         }
     }
-
 }

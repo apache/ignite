@@ -46,7 +46,7 @@ import org.apache.ignite.transactions.Transaction;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL_SUM;
-import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.KEY_VALUE;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.PUT;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -63,7 +63,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      */
     public void testAccountsTxSql_SingleNode_SinglePartition() throws Exception {
         accountsTxReadAll(1, 0, 0, 1,
-            new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, KEY_VALUE);
+            new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, PUT);
     }
 
     /**
@@ -71,7 +71,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      */
     public void testAccountsTxSql_WithRemoves_SingleNode_SinglePartition() throws Exception {
         accountsTxReadAll(1, 0, 0, 1,
-            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, KEY_VALUE);
+            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, PUT);
     }
 
     /**
@@ -79,7 +79,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      */
     public void testAccountsTxSql_SingleNode() throws Exception {
         accountsTxReadAll(1, 0, 0, 64,
-            new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, KEY_VALUE);
+            new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, PUT);
     }
 
     /**
@@ -96,7 +96,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      */
     public void testAccountsTxSumSql_SingleNode() throws Exception {
         accountsTxReadAll(1, 0, 0, 64,
-            new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL_SUM, KEY_VALUE);
+            new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL_SUM, PUT);
     }
 
     /**
@@ -104,7 +104,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      */
     public void testAccountsTxSql_WithRemoves_SingleNode() throws Exception {
         accountsTxReadAll(1, 0, 0, 64,
-            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, KEY_VALUE);
+            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, PUT);
     }
 
     /**
@@ -121,7 +121,7 @@ public abstract class CacheMvccSqlQueriesAbstractTest extends CacheMvccAbstractT
      */
     public void testAccountsTxSql_ClientServer_Backups2() throws Exception {
         accountsTxReadAll(4, 2, 2, 64,
-            new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, KEY_VALUE);
+            new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, PUT);
     }
 
     /**

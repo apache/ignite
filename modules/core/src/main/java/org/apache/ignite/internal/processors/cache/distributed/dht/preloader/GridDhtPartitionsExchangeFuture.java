@@ -43,8 +43,8 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -72,7 +72,6 @@ import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.ExchangeContext;
 import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -80,18 +79,15 @@ import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.LocalJoinCachesContext;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.WalStateAbstractMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsStateValidator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -100,6 +96,7 @@ import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -129,6 +126,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverJoinEvent;
 import static org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents.serverLeftEvent;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap.PARTIAL_COUNTERS_MAP_SINCE;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
 
 /**
  * Future for exchanging partition maps.
@@ -935,43 +933,19 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (exchCtx.newMvccCoordinator()) {
             assert mvccCrd != null;
 
-            Map<MvccVersion, Integer> activeQrys = new HashMap<>();
+            GridLongList activeQryTrackers = new GridLongList();
 
-            for (GridCacheFuture<?> fut : cctx.mvcc().activeFutures())
-                processMvccCoordinatorChange(mvccCrd, fut, activeQrys);
+            for (MvccQueryTracker tracker : cctx.coordinators().activeTrackers().values()) {
+                long trackerId = tracker.onMvccCoordinatorChange(mvccCrd);
 
-            for (IgniteInternalTx tx : cctx.tm().activeTransactions())
-                processMvccCoordinatorChange(mvccCrd, tx, activeQrys);
+                if (trackerId != MVCC_TRACKER_ID_NA)
+                    activeQryTrackers.add(trackerId);
+            }
 
-            exchCtx.addActiveQueries(cctx.localNodeId(), activeQrys);
+            exchCtx.addActiveQueries(cctx.localNodeId(), activeQryTrackers);
 
             if (exchCrd == null || !mvccCrd.nodeId().equals(exchCrd.id()))
-                cctx.coordinators().sendActiveQueries(mvccCrd.nodeId(), activeQrys);
-        }
-    }
-
-    /**
-     * @param mvccCrd New coordinator.
-     * @param nodeObj Node object.
-     * @param activeQrys Active queries map to update.
-     */
-    private void processMvccCoordinatorChange(MvccCoordinator mvccCrd,
-        Object nodeObj,
-        Map<MvccVersion, Integer> activeQrys)
-    {
-        if (nodeObj instanceof MvccCoordinatorChangeAware) {
-            MvccSnapshot ver = ((MvccCoordinatorChangeAware)nodeObj).onMvccCoordinatorChange(mvccCrd);
-
-            if (ver != null ) {
-                MvccVersion cntr = new MvccVersionImpl(ver.coordinatorVersion(), ver.counter(), ver.operationCounter());
-
-                Integer cnt = activeQrys.get(cntr);
-
-                if (cnt == null)
-                    activeQrys.put(cntr, 1);
-                else
-                    activeQrys.put(cntr, cnt + 1);
-            }
+                cctx.coordinators().sendActiveQueries(mvccCrd.nodeId(), activeQryTrackers);
         }
     }
 
@@ -1582,7 +1556,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         if (exchCtx.newMvccCoordinator() && cctx.coordinators().currentCoordinatorId().equals(node.id())) {
-            Map<UUID, Map<MvccVersion, Integer>> activeQueries = exchCtx.activeQueries();
+            Map<UUID, GridLongList> activeQueries = exchCtx.activeQueries();
 
             msg.activeQueries(activeQueries != null ? activeQueries.get(cctx.localNodeId()) : null);
         }
@@ -1766,8 +1740,16 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         if (err == null) {
-            if (exchCtx.newMvccCoordinator() && cctx.localNodeId().equals(cctx.coordinators().currentCoordinatorId()))
-                cctx.coordinators().initCoordinator(res, exchCtx.events().discoveryCache(), exchCtx.activeQueries());
+            if (exchCtx.newMvccCoordinator()) {
+                // We need to abort txs with snapshot from the old coordinator.
+                for (IgniteInternalTx tx : cctx.tm().activeTransactions()) {
+                    if (tx.mvccInfo() != null)
+                        tx.setRollbackOnly(); // TODO IGNITE-8906.
+                }
+
+                if (cctx.localNodeId().equals(cctx.coordinators().currentCoordinatorId()))
+                    cctx.coordinators().initCoordinator(res, exchCtx.events().discoveryCache(), exchCtx.activeQueries());
+            }
 
             if (centralizedAff || forceAffReassignment) {
                 assert !exchCtx.mergeExchanges();

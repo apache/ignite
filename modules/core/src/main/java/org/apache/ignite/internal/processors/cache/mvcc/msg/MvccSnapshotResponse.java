@@ -21,9 +21,9 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -57,6 +57,10 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
     /** */
     private long cleanupVer;
 
+    /** */
+    @GridDirectTransient
+    private long tracking;
+
     /**
      * Required by {@link GridIoMessageFactory}.
      */
@@ -70,13 +74,15 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
      * @param cntr Counter.
      * @param opCntr Operation counter.
      * @param cleanupVer Cleanup version.
+     * @param tracking Tracking number.
      */
-    public void init(long futId, long crdVer, long cntr, int opCntr, long cleanupVer) {
+    public void init(long futId, long crdVer, long cntr, int opCntr, long cleanupVer, long tracking) {
         this.futId = futId;
         this.crdVer = crdVer;
         this.cntr = cntr;
         this.opCntr = opCntr;
         this.cleanupVer = cleanupVer;
+        this.tracking = tracking;
 
         if (txsCnt > 0 && txs.length > txsCnt) // truncate if necessary
             txs = Arrays.copyOf(txs, txsCnt);
@@ -112,6 +118,13 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
         }
 
         return false;
+    }
+
+    /**
+     * @return Tracking counter.
+     */
+    public long tracking() {
+        return tracking;
     }
 
     /** {@inheritDoc} */

@@ -313,9 +313,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                     resCrd = rowCrd;
                     resCntr = rowCntr;
                 }
-                else {
+                else
                     throw unexpectedStateException(cctx, txState, rowCrd, rowCntr, rowOpCntr, mvccSnapshot);
-                }
             }
         }
 
@@ -342,7 +341,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 if (historyRows == null)
                     historyRows = new ArrayList<>();
 
-                historyRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr, rowLink));
+                historyRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr & ~MVCC_HINTS_MASK, rowLink));
             }
 
             if (cleanupVer > MVCC_OP_COUNTER_NA // Do not clean if cleanup version is not assigned.

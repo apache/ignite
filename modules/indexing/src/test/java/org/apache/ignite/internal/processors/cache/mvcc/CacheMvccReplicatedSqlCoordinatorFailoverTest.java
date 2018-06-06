@@ -17,15 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.cache.CacheMode;
 
 /**
- *
+ * SQL Mvcc coordinator failover test for replicated caches.
  */
-public interface MvccCoordinatorChangeAware {
-    /**
-     * @param newCrd New coordinator.
-     * @return Version used by this query.
-     */
-    @Nullable public MvccSnapshot onMvccCoordinatorChange(MvccCoordinator newCrd);
+public class CacheMvccReplicatedSqlCoordinatorFailoverTest extends CacheMvccAbstractSqlCoordinatorFailoverTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
+    }
 }

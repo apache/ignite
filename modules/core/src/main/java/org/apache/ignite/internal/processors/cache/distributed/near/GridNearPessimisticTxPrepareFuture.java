@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseList
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -452,7 +451,14 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             assert !tx.onePhaseCommit();
 
             if (mvccCrd.nodeId().equals(cctx.localNodeId())) {
-                MvccSnapshot mvccSnapshot = cctx.coordinators().requestTxSnapshotOnCoordinator(tx);
+                MvccSnapshot mvccSnapshot = null;
+
+                try {
+                    mvccSnapshot = cctx.coordinators().requestTxSnapshotOnCoordinator(tx).get();
+                }
+                catch (IgniteCheckedException e) {
+                    onError(e);
+                }
 
                 onResponse(cctx.localNodeId(), mvccSnapshot);
             }

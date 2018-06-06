@@ -323,8 +323,14 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
 
             if (remaining == 0) {
                 // TODO IGNTIE-3478: add method to do not create one more future in requestTxSnapshot.
-                if (cctx.localNodeId().equals(crd.nodeId()))
-                    onResponse(crd.nodeId(), cctx.coordinators().requestTxSnapshotOnCoordinator(tx));
+                if (cctx.localNodeId().equals(crd.nodeId())) {
+                    try {
+                        onResponse(crd.nodeId(), cctx.coordinators().requestTxSnapshotOnCoordinator(tx).get());
+                    }
+                    catch (IgniteCheckedException e) {
+                        onError(e);
+                    }
+                }
                 else
                     cctx.coordinators().requestTxSnapshot(crd, this, tx.nearXidVersion());
             }

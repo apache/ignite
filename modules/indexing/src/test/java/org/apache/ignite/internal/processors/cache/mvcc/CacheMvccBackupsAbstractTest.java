@@ -429,7 +429,7 @@ public abstract class CacheMvccBackupsAbstractTest extends CacheMvccAbstractTest
         disableScheduledVacuum = true;
 
         accountsTxReadAll(srvs, clients, srvs - 1, DFLT_PARTITION_COUNT,
-            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML, 5_000);
+            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML, 5_000, null);
 
         for (int i = 0; i < srvs - 1; i++) {
             Ignite node1 = grid(i);

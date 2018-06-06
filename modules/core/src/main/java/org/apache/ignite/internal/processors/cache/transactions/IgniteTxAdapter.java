@@ -68,8 +68,8 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVer
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridSetWrapper;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -387,7 +387,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * @return Mvcc info.
      */
-    @Nullable public MvccTxInfo mvccInfo() {
+    @Override @Nullable public MvccTxInfo mvccInfo() {
         return mvccInfo;
     }
 
@@ -2008,6 +2008,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         /** {@inheritDoc} */
         @Override public void mvccInfo(MvccTxInfo mvccInfo) {
             // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public MvccTxInfo mvccInfo() {
+            return null;
         }
 
         /** {@inheritDoc} */

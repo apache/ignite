@@ -61,8 +61,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLoca
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -128,8 +126,7 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  * Replicated user transaction.
  */
 @SuppressWarnings("unchecked")
-public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeoutObject,
-    AutoCloseable, MvccCoordinatorChangeAware {
+public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeoutObject, AutoCloseable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -270,14 +267,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      */
     MvccQueryTracker mvccQueryTracker() {
         return mvccTracker;
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public MvccSnapshot onMvccCoordinatorChange(MvccCoordinator newCrd) {
-        if (mvccTracker != null)
-            return mvccTracker.onMvccCoordinatorChange(newCrd);
-
-        return null;
     }
 
     /** {@inheritDoc} */

@@ -24,6 +24,8 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.CIX1;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker.MVCC_TRACKER_ID_NA;
+
 /** */
 public class AckCoordinatorOnRollback extends CIX1<IgniteInternalFuture<IgniteInternalTx>> {
     /** */
@@ -48,6 +50,6 @@ public class AckCoordinatorOnRollback extends CIX1<IgniteInternalFuture<IgniteIn
         if (qryTracker != null)
             qryTracker.onTxDone(mvccInfo, tx.context(), false);
         else
-            tx.context().coordinators().ackTxRollback(mvccInfo.coordinatorNodeId(), mvccInfo.snapshot(), null);
+            tx.context().coordinators().ackTxRollback(mvccInfo.snapshot(), null, MVCC_TRACKER_ID_NA);
     }
 }

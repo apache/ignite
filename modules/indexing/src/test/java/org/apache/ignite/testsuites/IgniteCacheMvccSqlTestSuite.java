@@ -22,11 +22,13 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccIteratorWithCon
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccLocalEntriesWithConcurrentJdbcTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedBackupsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedSelectForUpdateQueryTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedSqlCoordinatorFailoverTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedSqlQueriesTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedSqlTxQueriesTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccPartitionedSqlTxQueriesWithReducerTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedBackupsTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSelectForUpdateQueryTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSqlCoordinatorFailoverTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSqlQueriesTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSqlTxQueriesTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccReplicatedSqlTxQueriesWithReducerTest;
@@ -57,6 +59,8 @@ public class IgniteCacheMvccSqlTestSuite extends TestSuite {
         suite.addTestSuite(CacheMvccReplicatedSelectForUpdateQueryTest.class);
         suite.addTestSuite(CacheMvccPartitionedBackupsTest.class);
         suite.addTestSuite(CacheMvccReplicatedBackupsTest.class);
+        suite.addTestSuite(CacheMvccPartitionedSqlCoordinatorFailoverTest.class);
+        suite.addTestSuite(CacheMvccReplicatedSqlCoordinatorFailoverTest.class);
 
         return suite;
     }

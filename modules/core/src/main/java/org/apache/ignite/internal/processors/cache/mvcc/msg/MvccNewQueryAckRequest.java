@@ -31,10 +31,7 @@ public class MvccNewQueryAckRequest implements MvccMessage {
     private static final long serialVersionUID = 0L;
 
     /** */
-    private long crdVer;
-
-    /** */
-    private long cntr;
+    private long qryTrackerId;
 
     /**
      * Required by {@link GridIoMessageFactory}.
@@ -44,12 +41,10 @@ public class MvccNewQueryAckRequest implements MvccMessage {
     }
 
     /**
-     * @param crdVer Coordinator version.
-     * @param cntr Query counter.
+     * @param qryTrackerId Query tracker Id.
      */
-    public MvccNewQueryAckRequest(long crdVer, long cntr) {
-        this.crdVer = crdVer;
-        this.cntr = cntr;
+    public MvccNewQueryAckRequest(long qryTrackerId) {
+        this.qryTrackerId = qryTrackerId;
     }
 
     /** {@inheritDoc} */
@@ -63,17 +58,10 @@ public class MvccNewQueryAckRequest implements MvccMessage {
     }
 
     /**
-     * @return Coordinator version.
+     * @return Query tracker id.
      */
-    public long coordinatorVersion() {
-        return crdVer;
-    }
-
-    /**
-     * @return Counter.
-     */
-    public long counter() {
-        return cntr;
+    public long queryTrackerId() {
+        return qryTrackerId;
     }
 
     /** {@inheritDoc} */
@@ -89,13 +77,7 @@ public class MvccNewQueryAckRequest implements MvccMessage {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("cntr", cntr))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong("crdVer", crdVer))
+                if (!writer.writeLong("qryTrackerId", qryTrackerId))
                     return false;
 
                 writer.incrementState();
@@ -114,15 +96,7 @@ public class MvccNewQueryAckRequest implements MvccMessage {
 
         switch (reader.state()) {
             case 0:
-                cntr = reader.readLong("cntr");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                crdVer = reader.readLong("crdVer");
+                qryTrackerId = reader.readLong("qryTrackerId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -141,7 +115,7 @@ public class MvccNewQueryAckRequest implements MvccMessage {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */

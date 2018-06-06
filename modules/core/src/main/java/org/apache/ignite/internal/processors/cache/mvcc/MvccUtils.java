@@ -208,10 +208,11 @@ public class MvccUtils {
 
         long snapshotCrd = snapshot.coordinatorVersion();
 
-        assert mvccCrd <= snapshotCrd : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntr) + ", snapshot=" + snapshot;
-
         long snapshotCntr = snapshot.counter();
         int snapshotOpCntr = snapshot.operationCounter();
+
+        if (mvccCrd > snapshotCrd)
+            return false; // Rows in the future are never visible.
 
         if (mvccCrd < snapshotCrd)
             // Don't check the row with TxLog if the row is expected to be committed.
@@ -702,16 +703,6 @@ public class MvccUtils {
     /**
      * Initialises MVCC filter and returns MVCC query tracker if needed.
      * @param cctx Cache context.
-     * @return MVCC query tracker.
-     * @throws IgniteCheckedException If failed.
-     */
-    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx) throws IgniteCheckedException {
-        return mvccTracker(cctx, false);
-    }
-
-    /**
-     * Initialises MVCC filter and returns MVCC query tracker if needed.
-     * @param cctx Cache context.
      * @param startTx Start transaction flag.
      * @return MVCC query tracker.
      * @throws IgniteCheckedException If failed.
@@ -726,7 +717,7 @@ public class MvccUtils {
 
         if (tx != null)
             return new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(),
-                requestMvccVersion(cctx, tx));
+                requestMvccVersion(cctx, tx), true);
 
         final GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
@@ -762,7 +753,7 @@ public class MvccUtils {
             assert crd != null : tx.topologyVersion();
 
             if (crd.nodeId().equals(cctx.localNodeId()))
-                tx.mvccInfo(mvccInfo = new MvccTxInfo(cctx.localNodeId(), mvccProc.requestTxSnapshotOnCoordinator(tx)));
+                tx.mvccInfo(mvccInfo = new MvccTxInfo(cctx.localNodeId(), mvccProc.requestTxSnapshotOnCoordinator(tx).get()));
             else
                 return mvccProc.requestTxSnapshot(crd, new MvccTxSnapshotResponseListener(tx), tx.nearXidVersion()).get(); // TODO IGNITE-7388
         }
