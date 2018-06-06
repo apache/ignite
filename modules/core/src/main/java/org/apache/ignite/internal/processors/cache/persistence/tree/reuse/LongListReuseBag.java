@@ -15,44 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.normalization;
+package org.apache.ignite.internal.processors.cache.persistence.tree.reuse;
+
+import java.io.Externalizable;
+import org.apache.ignite.internal.util.GridLongList;
 
 /**
- * Partition data used in normalization preprocessor.
- *
- * @see NormalizationTrainer
- * @see NormalizationPreprocessor
+ * {@link GridLongList}-based reuse bag.
  */
-public class NormalizationPartitionData implements AutoCloseable {
-    /** Minimal values. */
-    private final double[] min;
-
-    /** Maximum values. */
-    private final double[] max;
+public final class LongListReuseBag extends GridLongList implements ReuseBag {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Constructs a new instance of normalization partition data.
-     *
-     * @param min Minimal values.
-     * @param max Maximum values.
+     * Default constructor for {@link Externalizable}.
      */
-    public NormalizationPartitionData(double[] min, double[] max) {
-        this.min = min;
-        this.max = max;
+    public LongListReuseBag() {
+        // No-op.
     }
 
-    /** */
-    public double[] getMin() {
-        return min;
+    /** {@inheritDoc} */
+    @Override public void addFreePage(long pageId) {
+        add(pageId);
     }
 
-    /** */
-    public double[] getMax() {
-        return max;
-    }
-
-    /** */
-    @Override public void close() {
-        // Do nothing, GC will clean up.
+    /** {@inheritDoc} */
+    @Override public long pollFreePage() {
+        return isEmpty() ? 0 : remove();
     }
 }

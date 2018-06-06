@@ -15,33 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
-
-import javax.cache.CacheException;
-
 /**
- * Exception thrown when atomic operation timeout occurs.
+ * <!-- Package description. -->
+ * Root package for mappers used in dataset splitters.
  */
-public class CacheAtomicUpdateTimeoutException extends CacheException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * Creates new timeout exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public CacheAtomicUpdateTimeoutException(String msg) {
-        super(msg);
-    }
-
-    /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
-     */
-    public CacheAtomicUpdateTimeoutException(String msg, Throwable cause) {
-        super(msg, cause);
-    }
-}
+package org.apache.ignite.ml.selection.split.mapper;

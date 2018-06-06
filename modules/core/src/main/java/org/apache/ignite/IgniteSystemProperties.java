@@ -903,6 +903,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SKIP_PARTITION_SIZE_VALIDATION = "IGNITE_SKIP_PARTITION_SIZE_VALIDATION";
 
     /**
+     * Enables threads dumping on critical node failure.
+     *
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {

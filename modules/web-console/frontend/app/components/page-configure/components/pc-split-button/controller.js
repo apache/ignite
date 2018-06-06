@@ -15,33 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.IgniteCheckedException;
+/**
+ * @typedef {{icon: string, text: string, click: ng.ICompiledExpression}} ActionMenuItem
+ */
 
 /**
- * Exception thrown when atomic operation timeout occurs.
+ * @typedef {Array<ActionMenuItem>} ActionsMenu
  */
-public class CacheAtomicUpdateTimeoutCheckedException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
+
+/**
+ * Groups multiple buttons into a single button with all but first buttons in a dropdown
+ */
+export default class SplitButton {
+    /** @type {ActionsMenu} */
+    actions = [];
+
+    static $inject = ['$element'];
 
     /**
-     * Creates new timeout exception with given error message.
-     *
-     * @param msg Error message.
+     * @param {JQLite} $element Component root element
      */
-    public CacheAtomicUpdateTimeoutCheckedException(String msg) {
-        super(msg);
+    constructor($element, $transclude) {
+        this.$element = $element;
     }
 
-    /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
-     */
-    public CacheAtomicUpdateTimeoutCheckedException(String msg, Throwable cause) {
-        super(msg, cause);
+    $onInit() {
+        this.$element[0].classList.add('btn-ignite-group');
     }
 }

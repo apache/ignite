@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
@@ -72,6 +73,7 @@ public class PdsWithTtlCompatibilityTest extends IgnitePersistenceCompatibilityA
                     new DataRegionConfiguration()
                         .setMaxSize(32L * 1024 * 1024)
                         .setPersistenceEnabled(true)
+                        .setCheckpointPageBufferSize(16L * 1024 * 1024)
                 ).setWalMode(WALMode.LOG_ONLY));
 
         return cfg;
@@ -162,7 +164,9 @@ public class PdsWithTtlCompatibilityTest extends IgnitePersistenceCompatibilityA
 
             cfg.setPeerClassLoadingEnabled(false);
 
-            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration().setWalMode(WALMode.LOG_ONLY));
+            cfg.setMemoryConfiguration(new MemoryConfiguration().setDefaultMemoryPolicySize(256L * 1024 * 1024));
+            cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration().setWalMode(WALMode.LOG_ONLY)
+                .setCheckpointingPageBufferSize(16L * 1024 * 1024));
         }
     }
 

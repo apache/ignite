@@ -1641,7 +1641,7 @@ button.select-toggle::after {
     border-right: 0.3em solid transparent;
     border-left: 0.3em solid transparent;
     position: absolute;
-    right: 5px;
+    right: 10px;
     top: 50%;
     vertical-align: middle;
 }
@@ -1883,10 +1883,6 @@ treecontrol.tree-classic {
     padding: 1px 0;
     color: $btn-primary-color;
     background: $btn-primary-border;
-
-    -moz-box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
 
     right: -42px;
     -moz-transform: rotate(45deg);
