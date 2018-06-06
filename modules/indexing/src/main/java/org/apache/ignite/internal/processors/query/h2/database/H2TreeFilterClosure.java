@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
+import org.apache.ignite.internal.transactions.IgniteTxMvccVersionCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 
@@ -93,7 +94,12 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
 
         assert mvccVersionIsValid(rowCrdVer, rowCntr, rowOpCntr);
 
-        return isVisible(cctx, mvccSnapshot, rowCrdVer, rowCntr, rowOpCntr, io.getLink(pageAddr, idx));
+        try {
+            return isVisible(cctx, mvccSnapshot, rowCrdVer, rowCntr, rowOpCntr, io.getLink(pageAddr, idx));
+        }
+        catch (IgniteTxMvccVersionCheckedException ignored) {
+            return false; // The row is going to be removed.
+        }
     }
 
     /** {@inheritDoc} */

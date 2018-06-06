@@ -470,6 +470,16 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
         @Override public int mvccOperationCounter() {
             return 0;
         }
+
+        /** {@inheritDoc} */
+        @Override public byte mvccTxState() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte newMvccTxState() {
+            return 0;
+        }
     }
 
     /**

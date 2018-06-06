@@ -149,6 +149,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         cfg.setMvccEnabled(true);
 
+        cfg.setMvccVacuumTimeInterval(100);
+
         if (disableScheduledVacuum)
             cfg.setMvccVacuumTimeInterval(Integer.MAX_VALUE);
 

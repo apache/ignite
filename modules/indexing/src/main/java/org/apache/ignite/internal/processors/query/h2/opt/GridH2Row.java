@@ -102,6 +102,11 @@ public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheD
     }
 
     /** {@inheritDoc} */
+    public byte mvccTxState() {
+        return row.mvccTxState();
+    }
+
+    /** {@inheritDoc} */
     @Override public long newMvccCoordinatorVersion() {
         return row.newMvccCoordinatorVersion();
     }
@@ -115,6 +120,12 @@ public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheD
     @Override public int newMvccOperationCounter() {
         return row.newMvccOperationCounter();
     }
+
+    /** {@inheritDoc} */
+    @Override public byte newMvccTxState() {
+        return row.newMvccTxState();
+    }
+
 
     /** {@inheritDoc} */
     @Override public boolean indexSearchRow() {

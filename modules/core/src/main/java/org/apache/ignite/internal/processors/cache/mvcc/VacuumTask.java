@@ -27,26 +27,26 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class VacuumTask extends GridFutureAdapter<VacuumMetrics> {
     /** */
-    private final MvccVersion cleanupVer;
+    private final MvccSnapshot snapshot;
 
     /** */
     @GridToStringExclude
     private final GridDhtLocalPartition part;
 
     /**
-     * @param cleanupVer Cleanup version.
+     * @param snapshot Snapshot.
      * @param part Partition to cleanup.
      */
-    VacuumTask(MvccVersion cleanupVer, GridDhtLocalPartition part) {
-        this.cleanupVer = cleanupVer;
+    VacuumTask(MvccSnapshot snapshot, GridDhtLocalPartition part) {
+        this.snapshot = snapshot;
         this.part = part;
     }
 
     /**
-     * @return Cleanup version.
+     * @return Snapshot.
      */
-    public MvccVersion cleanupVer() {
-        return cleanupVer;
+    public MvccSnapshot snapshot() {
+        return snapshot;
     }
 
     /**

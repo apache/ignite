@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Ign
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
@@ -586,8 +587,18 @@ public interface IgniteCacheOffheapManager {
          * @param cctx Cache context.
          * @param cleanupRows Rows to cleanup.
          * @throws IgniteCheckedException If failed.
+         * @return Cleaned rows count.
          */
-        public void cleanup(GridCacheContext cctx, @Nullable List<MvccLinkAwareSearchRow> cleanupRows)
+        public int cleanup(GridCacheContext cctx, @Nullable List<MvccLinkAwareSearchRow> cleanupRows)
+            throws IgniteCheckedException;
+
+        /**
+         *
+         * @param cctx Cache context.
+         * @param row Row.
+         * @throws IgniteCheckedException
+         */
+        public void updateTxState(GridCacheContext cctx, CacheSearchRow row)
             throws IgniteCheckedException;
 
         /**

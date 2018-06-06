@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.cache.CacheMode;
 
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /** */
 public class CacheMvccPartitionedSqlTxQueriesTest extends CacheMvccSqlTxQueriesAbstractTest {
     /** {@inheritDoc} */
     protected CacheMode cacheMode() {
-        return REPLICATED;
+        return PARTITIONED;
     }
 }

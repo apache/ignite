@@ -37,6 +37,11 @@ public interface MvccVersionAware {
     public int mvccOperationCounter();
 
     /**
+     * @return Tx state hint for 'created' mvcc version.
+     */
+    public byte mvccTxState();
+
+    /**
      * Copies mvcc version from another object.
      * @param other Info source.
      */

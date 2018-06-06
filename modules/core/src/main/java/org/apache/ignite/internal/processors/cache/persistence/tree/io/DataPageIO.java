@@ -71,7 +71,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
                 // xid_min.
                 PageUtils.putLong(addr, 0, row.mvccCoordinatorVersion());
                 PageUtils.putLong(addr, 8, row.mvccCounter());
-                PageUtils.putInt(addr, 16, row.mvccOperationCounter());
+                PageUtils.putInt(addr, 16, row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF));
 
                 assert row.newMvccCoordinatorVersion() == 0
                     || MvccUtils.mvccVersionIsValid(row.newMvccCoordinatorVersion(), row.newMvccCounter(), row.newMvccOperationCounter());
@@ -79,7 +79,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
                 // xid_max.
                 PageUtils.putLong(addr, 20, row.newMvccCoordinatorVersion());
                 PageUtils.putLong(addr, 28, row.newMvccCounter());
-                PageUtils.putInt(addr, 36, row.newMvccOperationCounter());
+                PageUtils.putInt(addr, 36, row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF));
 
                 addr += mvccInfoSize;
             }
@@ -211,10 +211,10 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
             writeMvccInfoFragment(buf,
                 row.mvccCoordinatorVersion(),
                 row.mvccCounter(),
-                row.mvccOperationCounter(),
+                row.mvccOperationCounter() | (row.mvccTxState() << MVCC_HINTS_BIT_OFF),
                 row.newMvccCoordinatorVersion(),
                 row.newMvccCounter(),
-                row.newMvccOperationCounter(),
+                row.newMvccOperationCounter() | (row.newMvccTxState() << MVCC_HINTS_BIT_OFF),
                 len);
         else if (type != VERSION) {
             // Write key or value.
@@ -294,6 +294,38 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     }
 
     /**
+     * @param pageAddr Page address.
+     * @param itemId Item ID.
+     * @param pageSize Page size.
+     * @param txState Tx state hint.
+     */
+    public void updateTxState(long pageAddr, int itemId, int pageSize, byte txState) {
+        int dataOff = getDataOffset(pageAddr, itemId, pageSize);
+
+        long addr = pageAddr + dataOff + (isFragmented(pageAddr, dataOff) ? 10 : 2);
+
+        int opCntr = mvccOperationCounter(addr, 0);
+
+        mvccOperationCounter(addr, 0, ((int)txState << MVCC_HINTS_BIT_OFF) | (opCntr & ~MVCC_HINTS_MASK));
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param itemId Item ID.
+     * @param pageSize Page size.
+     * @param txState Tx state hint.
+     */
+    public void updateNewTxState(long pageAddr, int itemId, int pageSize, byte txState) {
+        int dataOff = getDataOffset(pageAddr, itemId, pageSize);
+
+        long addr = pageAddr + dataOff + (isFragmented(pageAddr, dataOff) ? 10 : 2);
+
+        int opCntr = newMvccOperationCounter(addr, 0);
+
+        newMvccOperationCounter(addr, 0, ((int)txState << MVCC_HINTS_BIT_OFF) | (opCntr & ~MVCC_HINTS_MASK));
+    }
+
+    /**
      * Marks row removed.
      *
      * @param addr Address.
@@ -349,6 +381,19 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     }
 
     /**
+     * Sets MVCC operation counter value.
+     *
+     * @param pageAddr Page address.
+     * @param dataOff Data offset.
+     * @param opCntr MVCC counter value.
+     */
+    public void mvccOperationCounter(long pageAddr, int dataOff, int opCntr) {
+        long addr = pageAddr + dataOff;
+
+        PageUtils.putInt(addr, 16, opCntr);
+    }
+
+    /**
      * Returns new MVCC coordinator number.
      *
      * @param pageAddr Page address.
@@ -394,6 +439,22 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
         addr += 20;
 
         return PageUtils.getInt(addr, 16);
+    }
+
+    /**
+     * Sets MVCC new operation counter value.
+     *
+     * @param pageAddr Page address.
+     * @param dataOff Data offset.
+     * @param opCntr MVCC operation counter value.
+     */
+    public void newMvccOperationCounter(long pageAddr, int dataOff, int opCntr) {
+        long addr = pageAddr + dataOff;
+
+        // Skip xid_min.
+        addr += 20;
+
+        PageUtils.putInt(addr, 16, opCntr);
     }
 
     /**

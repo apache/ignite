@@ -24,16 +24,18 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.INITIAL_VERSION;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_CRD_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_BIT_OFF;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_MASK;
 
 /**
  *
@@ -51,6 +53,10 @@ public class MvccDataRow extends DataRow {
     @GridToStringInclude
     protected int mvccOpCntr;
 
+    /** Mvcc tx state. */
+    @GridToStringInclude
+    protected byte mvccTxState;
+
     /** New mvcc coordinator version. */
     @GridToStringInclude
     protected long newMvccCrd;
@@ -62,6 +68,10 @@ public class MvccDataRow extends DataRow {
     /** New mvcc operation counter. */
     @GridToStringInclude
     protected int newMvccOpCntr;
+
+    /** New mvcc tx state. */
+    @GridToStringInclude
+    protected byte newMvccTxState;
 
     /**
      * @param link Link.
@@ -137,14 +147,22 @@ public class MvccDataRow extends DataRow {
         // xid_min.
         mvccCrd = PageUtils.getLong(addr, off);
         mvccCntr = PageUtils.getLong(addr, off + 8);
-        mvccOpCntr = PageUtils.getInt(addr, off + 16);
+
+        int withHint = PageUtils.getInt(addr, off + 16);
+
+        mvccOpCntr = withHint & ~MVCC_HINTS_MASK;
+        mvccTxState = (byte)(withHint >>> MVCC_HINTS_BIT_OFF);
 
         assert MvccUtils.mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr);
 
         // xid_max.
         newMvccCrd = PageUtils.getLong(addr, off + 20);
         newMvccCntr = PageUtils.getLong(addr, off + 28);
-        newMvccOpCntr = PageUtils.getInt(addr, off + 36);
+
+        withHint = PageUtils.getInt(addr, off + 36);
+
+        newMvccOpCntr = withHint & ~MVCC_HINTS_MASK;
+        newMvccTxState = (byte)(withHint >>> MVCC_HINTS_BIT_OFF);
 
         assert newMvccCrd == MVCC_CRD_COUNTER_NA || MvccUtils.mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
 
@@ -167,6 +185,11 @@ public class MvccDataRow extends DataRow {
     }
 
     /** {@inheritDoc} */
+    public byte mvccTxState() {
+        return mvccTxState;
+    }
+
+    /** {@inheritDoc} */
     @Override public long newMvccCoordinatorVersion() {
         return newMvccCrd;
     }
@@ -182,10 +205,18 @@ public class MvccDataRow extends DataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public byte newMvccTxState() {
+        return newMvccTxState;
+    }
+
+    /** {@inheritDoc} */
     @Override public void newMvccVersion(long crd, long cntr, int opCntr) {
         newMvccCrd = crd;
         newMvccCntr = cntr;
         newMvccOpCntr = opCntr;
+
+        // reset tx state
+        newMvccTxState = TxState.NA;
     }
 
     /** {@inheritDoc} */
@@ -193,6 +224,9 @@ public class MvccDataRow extends DataRow {
         mvccCrd = crd;
         mvccCntr = cntr;
         mvccOpCntr = opCntr;
+
+        // reset tx state
+        mvccTxState = TxState.NA;
     }
 
     /** {@inheritDoc} */

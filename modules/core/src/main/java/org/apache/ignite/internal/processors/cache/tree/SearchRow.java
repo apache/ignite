@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -92,6 +93,11 @@ public class SearchRow implements CacheSearchRow {
     /** {@inheritDoc} */
     @Override public int mvccOperationCounter() {
         return MVCC_OP_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte mvccTxState() {
+        return TxState.NA;
     }
 
     /** {@inheritDoc} */

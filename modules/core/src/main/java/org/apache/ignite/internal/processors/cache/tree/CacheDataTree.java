@@ -170,7 +170,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         long cntr = io.getMvccCounter(pageAddr, idx);
         int opCntr = io.getMvccOperationCounter(pageAddr, idx);
 
-        assert MvccUtils.mvccVersionIsValid(crd, cntr,opCntr);
+        assert MvccUtils.mvccVersionIsValid(crd, cntr, opCntr);
 
         return -MvccUtils.compare(crd, cntr, opCntr, row); // descending order
     }

@@ -79,6 +79,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1295,6 +1296,9 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     public IgniteInternalFuture<VacuumMetrics> runVacuum() {
         assert !ctx.clientNode();
 
+        if (crdVer == 0 && ctx.localNodeId().equals(currentCoordinator().nodeId()))
+            return new GridFinishedFuture<>();
+
         if (Thread.currentThread().isInterrupted())
             return new GridFinishedFuture<>(new VacuumMetrics());
 
@@ -1335,18 +1339,15 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
     private void continueRunVacuum(GridCompoundIdentityFuture<VacuumMetrics> res, MvccSnapshot snapshot) {
         ackTxCommit(currentCoordinator().nodeId(), snapshot, null)
             .listen(new IgniteInClosure<IgniteInternalFuture>() {
-            @Override public void apply(IgniteInternalFuture future) {
-                if (future.error() != null)
-                    res.onDone(future.error());
+            @Override public void apply(IgniteInternalFuture fut) {
+                if (fut.error() != null)
+                    res.onDone(fut.error());
                 else if (snapshot.cleanupVersion() <= MVCC_COUNTER_NA)
                     res.onDone(new VacuumMetrics(), null);
-                else {
+                else
                     try {
-                        MvccVersion cleanupVer = new MvccVersionImpl(snapshot.coordinatorVersion(),
-                            snapshot.cleanupVersion(), MVCC_READ_OP_CNTR);
-
                         if (log.isDebugEnabled())
-                            log.debug("Started vacuum with cleanup version=" + cleanupVer + '.');
+                            log.debug("Started vacuum with cleanup version=" + snapshot.cleanupVersion() + '.');
 
                         for (CacheGroupContext grp : ctx.cache().cacheGroups()) {
                             if (Thread.currentThread().isInterrupted())
@@ -1360,8 +1361,8 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
                             if (parts.isEmpty())
                                 continue;
 
-                            for (int i = 0; i < parts.size(); i++) {
-                                VacuumTask task = new VacuumTask(cleanupVer, parts.get(i));
+                            for (GridDhtLocalPartition part : parts) {
+                                VacuumTask task = new VacuumTask(snapshot, part);
 
                                 cleanupQueue.offer(task);
 
@@ -1370,11 +1371,31 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
                         }
 
                         res.markInitialized();
+
+                        res.listen(new CI1<IgniteInternalFuture>() {
+                            @Override public void apply(IgniteInternalFuture fut) {
+                                try {
+                                    fut.get();
+
+                                    assert currentCoordinator().coordinatorVersion() == snapshot.coordinatorVersion();
+
+                                    if (U.assertionsEnabled()) {
+                                        for (long key : waitTxFuts.keySet()) {
+                                            assert key > snapshot.cleanupVersion();
+                                        }
+                                    }
+
+                                    txLog.removeUntil(snapshot.coordinatorVersion(), snapshot.cleanupVersion());
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.error(log, "Cannot truncate Tx log.", e);
+                                }
+                            }
+                        });
                     }
                     catch (Throwable e) {
                         completeWithException(res, e);
                     }
-                }
             }
         });
     }

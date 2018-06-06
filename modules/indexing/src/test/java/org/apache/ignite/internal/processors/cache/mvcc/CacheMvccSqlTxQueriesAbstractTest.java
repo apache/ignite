@@ -31,8 +31,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.cache.CacheException;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -43,14 +43,21 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 
@@ -1582,6 +1589,94 @@ public abstract class CacheMvccSqlTxQueriesAbstractTest extends CacheMvccAbstrac
         assertEquals(100, map.get(1).intValue());
         assertEquals(200, map.get(2).intValue());
         assertEquals(300, map.get(3).intValue());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testHints() throws Exception {
+        persistence = true;
+
+        ccfg = cacheConfiguration(cacheMode(), FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        Ignite node = startGrid(getConfiguration("grid").setMvccVacuumTimeInterval(100));
+
+        node.cluster().active(true);
+
+        Ignite client = startGrid(getConfiguration("client").setClientMode(true));
+
+        IgniteCache<Object, Object> cache = client.cache(DEFAULT_CACHE_NAME);
+
+        List<List<?>> res;
+
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            tx.timeout(TX_TIMEOUT);
+
+            res = cache.query(new SqlFieldsQuery("INSERT INTO Integer (_key, _val) " +
+                "VALUES (1, 1), (2, 2), (3, 3), (4, 4)")).getAll();
+
+            assertEquals(4L, res.get(0).get(0));
+
+            tx.commit();
+        }
+
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            tx.timeout(TX_TIMEOUT);
+
+            res = cache.query(new SqlFieldsQuery("UPDATE Integer SET _val = CASE _key " +
+                "WHEN 1 THEN 10 WHEN 2 THEN 20 ELSE 30 END")).getAll();
+
+            assertEquals(4L, res.get(0).get(0));
+
+            tx.rollback();
+        }
+
+        try (Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            tx.timeout(TX_TIMEOUT);
+
+            res = cache.query(new SqlFieldsQuery("UPDATE Integer SET _val = CASE _val " +
+                "WHEN 1 THEN 10 WHEN 2 THEN 20 ELSE 30 END")).getAll();
+
+            assertEquals(4L, res.get(0).get(0));
+
+            res = cache.query(new SqlFieldsQuery("UPDATE Integer SET _val = CASE _val " +
+                "WHEN 10 THEN 100 WHEN 20 THEN 200 ELSE 300 END")).getAll();
+
+            assertEquals(4L, res.get(0).get(0));
+
+            res = cache.query(new SqlFieldsQuery("DELETE FROM Integer WHERE _key = 4")).getAll();
+
+            assertEquals(1L, res.get(0).get(0));
+
+            tx.commit();
+        }
+
+        ((IgniteEx)node).context().coordinators().runVacuum().get(TX_TIMEOUT);
+
+        checkAllVersionsHints(node.cache(DEFAULT_CACHE_NAME));
+    }
+
+    /** */
+    private void checkAllVersionsHints(IgniteCache cache) throws IgniteCheckedException {
+        IgniteCacheProxy cache0 = (IgniteCacheProxy)cache;
+        GridCacheContext cctx = cache0.context();
+
+        assert cctx.mvccEnabled();
+
+        for (Object e : cache) {
+            IgniteBiTuple entry = (IgniteBiTuple)e;
+
+            KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
+
+            GridCursor<CacheDataRow> cur = cctx.offheap().mvccAllVersionsCursor(cctx, key, CacheDataRowAdapter.RowData.LINK_WITH_HEADER);
+
+            while (cur.next()) {
+                CacheDataRow row = cur.get();
+
+                assertTrue(row.mvccTxState() != 0);
+            }
+        }
     }
 
     /**

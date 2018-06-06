@@ -178,7 +178,13 @@ public abstract class WALRecord {
         BASELINE_TOP_RECORD,
 
         /** */
-        MVCC_DATA_PAGE_MARK_UPDATED_RECORD;
+        MVCC_DATA_PAGE_MARK_UPDATED_RECORD,
+
+        /** */
+        MVCC_DATA_PAGE_TX_STATE_HINT_UPDATED_RECORD,
+
+        /** */
+        MVCC_DATA_PAGE_NEW_TX_STATE_HINT_UPDATED_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();

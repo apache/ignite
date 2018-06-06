@@ -31,6 +31,10 @@ import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_INVISIBLE;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_VISIBLE;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.MVCC_VISIBLE_REMOVED;
+
 /**
  * Search row which returns the first row visible for the given snapshot. Usage:
  * - set this row as the upper bound
@@ -80,10 +84,17 @@ public class MvccSnapshotSearchRow extends MvccSearchRow implements MvccTreeClos
 
         assert MvccUtils.mvccVersionIsValid(rowCrdVer, rowCntr, rowOpCntr);
 
-        if (MvccUtils.isVisible(cctx, snapshot, rowCrdVer, rowCntr, rowOpCntr)) {
-            if (MvccUtils.isNewVisible(cctx, rowIo.getLink(pageAddr, idx), snapshot))
+        if (MvccUtils.isVisible(cctx, snapshot, rowCrdVer, rowCntr, rowOpCntr, false)) {
+            int state = MvccUtils.getVisibleState(cctx, rowIo.getLink(pageAddr, idx), snapshot);
+
+            if (state == MVCC_INVISIBLE)
+                return true;
+
+            if (state == MVCC_VISIBLE_REMOVED)
                 res = null;
             else {
+                assert state == MVCC_VISIBLE;
+
                 res = tree.getRow(io, pageAddr, idx, CacheDataRowAdapter.RowData.NO_KEY);
 
                 res.key(key());

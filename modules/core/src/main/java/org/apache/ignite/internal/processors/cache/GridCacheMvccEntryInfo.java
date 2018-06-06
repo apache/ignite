@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -65,6 +66,11 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
     }
 
     /** {@inheritDoc} */
+    @Override public byte newMvccTxState() {
+        return TxState.NA;
+    }
+
+    /** {@inheritDoc} */
     @Override public long mvccCoordinatorVersion() {
         return mvccCrdVer;
     }
@@ -77,6 +83,11 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVe
     /** {@inheritDoc} */
     @Override public int mvccOperationCounter() {
         return mvccOpCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte mvccTxState() {
+        return TxState.NA;
     }
 
     /** {@inheritDoc} */

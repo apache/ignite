@@ -1155,6 +1155,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         @Override public int newMvccOperationCounter() {
             return 0;  // TODO IGNITE-7384
         }
+
+        /** {@inheritDoc} */
+        @Override public byte mvccTxState() {
+            return 0;  // TODO IGNITE-7384
+        }
+
+        /** {@inheritDoc} */
+        @Override public byte newMvccTxState() {
+            return 0; // TODO IGNITE-7384
+        }
     }
 
     /**
@@ -1716,11 +1726,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public void cleanup(GridCacheContext cctx,
+        @Override public int cleanup(GridCacheContext cctx,
             @Nullable List<MvccLinkAwareSearchRow> cleanupRows) throws IgniteCheckedException {
             CacheDataStore delegate = init0(false);
 
-            delegate.cleanup(cctx, cleanupRows);
+            return delegate.cleanup(cctx, cleanupRows);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateTxState(GridCacheContext cctx, CacheSearchRow row) throws IgniteCheckedException {
+            CacheDataStore delegate = init0(false);
+
+            delegate.updateTxState(cctx, row);
         }
 
         /** {@inheritDoc} */

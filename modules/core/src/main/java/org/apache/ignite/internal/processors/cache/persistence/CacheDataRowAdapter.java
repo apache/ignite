@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IncompleteCacheObject;
 import org.apache.ignite.internal.processors.cache.IncompleteObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.CacheVersionIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
@@ -636,6 +637,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
+    @Override public byte mvccTxState() {
+        return TxState.NA;
+    }
+
+    /** {@inheritDoc} */
     @Override public long newMvccCoordinatorVersion() {
         return MVCC_CRD_COUNTER_NA;
     }
@@ -648,6 +654,11 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /** {@inheritDoc} */
     @Override public int newMvccOperationCounter() {
         return MVCC_OP_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte newMvccTxState() {
+        return TxState.NA;
     }
 
     /**

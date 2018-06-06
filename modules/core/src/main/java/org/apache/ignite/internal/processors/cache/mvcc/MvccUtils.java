@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.transactions.IgniteTxMvccVersionCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -46,6 +47,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_BIT_OFF;
+import static org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO.MVCC_HINTS_MASK;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -68,16 +71,28 @@ public class MvccUtils {
     /** */
     public static final int MVCC_START_OP_CNTR = 1;
     /** */
-    public static final int MVCC_READ_OP_CNTR = Integer.MAX_VALUE;
+    public static final int MVCC_READ_OP_CNTR = ~MVCC_HINTS_MASK;
+
+    /** */
+    public static final int MVCC_INVISIBLE = 0;
+    /** */
+    public static final int MVCC_VISIBLE_REMOVED = 1;
+    /** */
+    public static final int MVCC_VISIBLE = 2;
+
     /** */
     public static final MvccVersion INITIAL_VERSION =
         mvccVersion(MVCC_CRD_START_CNTR, MVCC_INITIAL_CNTR, MVCC_START_OP_CNTR);
 
     /** */
-    private static final MvccClosure<Boolean> isNewVisible = new IsNewVisible();
+    public static final MvccVersion MVCC_VERSION_NA =
+        mvccVersion(MVCC_CRD_COUNTER_NA, MVCC_COUNTER_NA, MVCC_OP_COUNTER_NA);
 
     /** */
-    private static final MvccClosure<Boolean> isUpdated = new IsUpdated();
+    private static final MvccClosure<Integer> getVisibleState = new GetVisibleState();
+
+    /** */
+    private static final MvccClosure<Boolean> isVisible = new IsVisible();
 
     /** */
     private static final MvccClosure<MvccVersion> getNewVer = new GetNewVersion();
@@ -92,12 +107,17 @@ public class MvccUtils {
      * @param cctx Cache context.
      * @param mvccCrd Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
+     * @param snapshot Snapshot.
      * @return {@code True} if transaction is active.
      * @see TxState
      * @throws IgniteCheckedException If failed.
      */
-    public static boolean isActive(GridCacheContext cctx, long mvccCrd, long mvccCntr) throws IgniteCheckedException {
-        byte state = state(cctx, mvccCrd, mvccCntr);
+    public static boolean isActive(GridCacheContext cctx, long mvccCrd, long mvccCntr, MvccSnapshot snapshot)
+        throws IgniteCheckedException {
+        if (isVisible(cctx, snapshot, mvccCrd, mvccCntr, MVCC_OP_COUNTER_NA, false))
+            return false;
+
+        byte state = state(cctx, mvccCrd, mvccCntr, 0);
 
         return state != TxState.COMMITTED && state != TxState.ABORTED;
     }
@@ -110,8 +130,8 @@ public class MvccUtils {
      * @see TxState
      * @throws IgniteCheckedException If failed.
      */
-    public static byte state(GridCacheContext cctx, long mvccCrd, long mvccCntr) throws IgniteCheckedException {
-        return state(cctx.kernalContext(), mvccCrd, mvccCntr);
+    public static byte state(GridCacheContext cctx, long mvccCrd, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+        return state(cctx.kernalContext(), mvccCrd, mvccCntr, mvccOpCntr);
     }
 
     /**
@@ -122,8 +142,8 @@ public class MvccUtils {
      * @see TxState
      * @throws IgniteCheckedException If failed.
      */
-    public static byte state(CacheGroupContext grp, long mvccCrd, long mvccCntr) throws IgniteCheckedException {
-        return state(grp.shared().kernalContext(), mvccCrd, mvccCntr);
+    public static byte state(CacheGroupContext grp, long mvccCrd, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+        return state(grp.shared().kernalContext(), mvccCrd, mvccCntr, mvccOpCntr);
     }
 
     /**
@@ -134,7 +154,10 @@ public class MvccUtils {
      * @see TxState
      * @throws IgniteCheckedException If failed.
      */
-    private static byte state(GridKernalContext ctx, long mvccCrd, long mvccCntr) throws IgniteCheckedException {
+    private static byte state(GridKernalContext ctx, long mvccCrd, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+        if ((mvccOpCntr & MVCC_HINTS_MASK) != 0)
+            return (byte)(mvccOpCntr >>> MVCC_HINTS_BIT_OFF);
+
         return ctx.coordinators().state(mvccCrd, mvccCntr);
     }
 
@@ -168,15 +191,15 @@ public class MvccUtils {
      */
     public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
         int opCntr, boolean useTxLog) throws IgniteCheckedException {
-        if (compare(INITIAL_VERSION, mvccCrd, mvccCntr, opCntr) == 0)
-            return true; // Initial version is always visible
-
         if (mvccCrd == MVCC_CRD_COUNTER_NA) {
             assert mvccCntr == MVCC_COUNTER_NA && opCntr == MVCC_OP_COUNTER_NA
                 : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntr) + ", snapshot=" + snapshot;
 
             return false; // Unassigned version is always invisible
         }
+
+        if (compare(INITIAL_VERSION, mvccCrd, mvccCntr, opCntr) == 0)
+            return true; // Initial version is always visible
 
         long snapshotCrd = snapshot.coordinatorVersion();
 
@@ -187,7 +210,7 @@ public class MvccUtils {
 
         if (mvccCrd < snapshotCrd)
             // Don't check the row with TxLog if the row is expected to be committed.
-            return !useTxLog || isCommitted(cctx, mvccCrd, mvccCntr);
+            return !useTxLog || isCommitted(cctx, mvccCrd, mvccCntr, opCntr);
 
         if (mvccCntr > snapshotCntr) // we don't see future updates
             return false;
@@ -204,10 +227,12 @@ public class MvccUtils {
         if (!useTxLog)
             return true; // The checking row is expected to be committed.
 
-        byte state = cctx.shared().coordinators().state(mvccCrd, mvccCntr);
+        byte state = state(cctx, mvccCrd, mvccCntr, opCntr);
 
-        assert state == TxState.COMMITTED || state == TxState.ABORTED : "Unexpected state: " + state +
-            ", rowMvcc=" + mvccCntr + ", txMvcc=" + snapshot.counter() + ":" + snapshot.operationCounter();
+        if (state != TxState.COMMITTED && state != TxState.ABORTED)
+            throw new IgniteTxMvccVersionCheckedException("Unexpected state: " + state +
+                ", rowMvcc=" + mvccCntr + ":" + opCntr + ", txMvcc=" + snapshot.counter() + ":" +
+                snapshot.operationCounter() + ", node=" + cctx.localNodeId());
 
         return state == TxState.COMMITTED;
     }
@@ -226,7 +251,8 @@ public class MvccUtils {
      */
     public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, long crd, long cntr,
         int opCntr, long link) throws IgniteCheckedException {
-        return isVisible(cctx, snapshot, crd, cntr, opCntr) && !isUpdated(cctx, link, snapshot);
+        return isVisible(cctx, snapshot, crd, cntr, opCntr, false)
+            && isVisible(cctx, link, snapshot);
     }
 
     /**
@@ -235,7 +261,7 @@ public class MvccUtils {
      * @param row Row.
      * @return {@code True} if row has a new version.
      */
-    public static boolean hasNewMvccVersionFast(MvccUpdateVersionAware row) {
+    public static boolean hasNewVersion(MvccUpdateVersionAware row) {
         assert row.newMvccCoordinatorVersion() == MVCC_CRD_COUNTER_NA
             || mvccVersionIsValid(row.newMvccCoordinatorVersion(), row.newMvccCounter(), row.newMvccOperationCounter());
 
@@ -251,9 +277,9 @@ public class MvccUtils {
      * @return {@code True} if row is visible for the given snapshot.
      * @throws IgniteCheckedException If failed.
      */
-    public static boolean isNewVisible(GridCacheContext cctx, long link, MvccSnapshot snapshot)
+    public static int getVisibleState(GridCacheContext cctx, long link, MvccSnapshot snapshot)
         throws IgniteCheckedException {
-        return invoke(cctx, link, isNewVisible, snapshot);
+        return invoke(cctx, link, getVisibleState, snapshot);
     }
 
     /**
@@ -291,6 +317,18 @@ public class MvccUtils {
      */
     public static int compare(MvccVersion mvccVerLeft, long mvccCrdRight, long mvccCntrRight) {
         return compare(mvccVerLeft.coordinatorVersion(), mvccVerLeft.counter(), mvccCrdRight, mvccCntrRight);
+    }
+
+    /**
+     * Compares to pairs of MVCC versions. See {@link Comparable}.
+     *
+     * @param row First MVCC version.
+     * @param mvccCrdRight Second coordinator version.
+     * @param mvccCntrRight Second counter.
+     * @return Comparison result, see {@link Comparable}.
+     */
+    public static int compare(MvccVersionAware row, long mvccCrdRight, long mvccCntrRight) {
+        return compare(row.mvccCoordinatorVersion(), row.mvccCounter(), mvccCrdRight, mvccCntrRight);
     }
 
     /**
@@ -351,7 +389,7 @@ public class MvccUtils {
 
         if ((cmp = Long.compare(mvccCrdLeft, mvccCrdRight)) != 0
             || (cmp = Long.compare(mvccCntrLeft, mvccCntrRight)) != 0
-            || (cmp = Integer.compare(mvccOpCntrLeft, mvccOpCntrRight)) != 0)
+            || (cmp = Integer.compare(mvccOpCntrLeft & ~MVCC_HINTS_MASK, mvccOpCntrRight & ~MVCC_HINTS_MASK)) != 0)
             return cmp;
 
         return 0;
@@ -429,10 +467,10 @@ public class MvccUtils {
      * @return {@code True} if row is updated for given snapshot.
      * @throws IgniteCheckedException If failed.
      */
-    private static boolean isUpdated(GridCacheContext cctx, long link,
+    private static boolean isVisible(GridCacheContext cctx, long link,
         MvccSnapshot snapshot)
         throws IgniteCheckedException {
-        return invoke(cctx, link, isUpdated, snapshot);
+        return invoke(cctx, link, isVisible, snapshot);
     }
 
     /**
@@ -497,8 +535,8 @@ public class MvccUtils {
      * @return {@code True} in case the corresponding transaction is in {@code TxState.COMMITTED} state.
      * @throws IgniteCheckedException If failed.
      */
-    private static boolean isCommitted(GridCacheContext cctx, long mvccCrd, long mvccCntr) throws IgniteCheckedException {
-        return state(cctx, mvccCrd, mvccCntr) == TxState.COMMITTED;
+    private static boolean isCommitted(GridCacheContext cctx, long mvccCrd, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
+        return state(cctx, mvccCrd, mvccCntr, mvccOpCntr) == TxState.COMMITTED;
     }
 
     /**
@@ -739,29 +777,47 @@ public class MvccUtils {
     /**
      * Closure for checking row visibility for snapshot.
      */
-    private static class IsNewVisible implements MvccClosure<Boolean> {
+    private static class GetVisibleState implements MvccClosure<Integer> {
         /** {@inheritDoc} */
-        @Override public Boolean apply(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
+        @Override public Integer apply(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
             int mvccOpCntr, long newMvccCrd, long newMvccCntr, int newMvccOpCntr) throws IgniteCheckedException {
-            return isVisible(cctx, snapshot, newMvccCrd, newMvccCntr, newMvccOpCntr);
+
+            if (!isVisible(cctx, snapshot, mvccCrd, mvccCntr, mvccOpCntr))
+                return MVCC_INVISIBLE;
+
+            if (newMvccCrd == MVCC_CRD_COUNTER_NA)
+                return MVCC_VISIBLE;
+
+            assert mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
+
+            if (mvccCrd == newMvccCrd && mvccCntr == newMvccCntr) // Double-changed in scope of one transaction.
+                return MVCC_VISIBLE_REMOVED;
+
+            return isVisible(cctx, snapshot, newMvccCrd, newMvccCntr, newMvccOpCntr) ? MVCC_VISIBLE_REMOVED :
+                MVCC_VISIBLE;
         }
     }
 
     /**
-     * Closure for checking whether the row is updated for given snapshot.
+     * Closure for checking whether the row is visible for given snapshot.
      */
-    private static class IsUpdated implements MvccClosure<Boolean> {
+    private static class IsVisible implements MvccClosure<Boolean> {
         /** {@inheritDoc} */
         @Override public Boolean apply(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
             int mvccOpCntr, long newMvccCrd, long newMvccCntr, int newMvccOpCntr) throws IgniteCheckedException {
 
-            if (newMvccCrd == MVCC_CRD_COUNTER_NA)
+            if (!isVisible(cctx, snapshot, mvccCrd, mvccCntr, mvccOpCntr))
                 return false;
+
+            if (newMvccCrd == MVCC_CRD_COUNTER_NA)
+                return true;
 
             assert mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
 
-            return (mvccCrd == newMvccCrd && mvccCntr == newMvccCntr) // Double-changed in scope of one transaction.
-                || isVisible(cctx, snapshot, newMvccCrd, newMvccCntr, newMvccOpCntr);
+            if (mvccCrd == newMvccCrd && mvccCntr == newMvccCntr) // Double-changed in scope of one transaction.
+                return false;
+
+            return !isVisible(cctx, snapshot, newMvccCrd, newMvccCntr, newMvccOpCntr);
         }
     }
 

@@ -138,6 +138,12 @@ public abstract class PageIO {
     /** */
     public static final int COMMON_HEADER_END = RESERVED_3_OFF + 8; // 40=type(2)+ver(2)+crc(4)+pageId(8)+reserved(3*8)
 
+    /** */
+    public static final int MVCC_HINTS_MASK = 0xC0000000;
+
+    /** */
+    public static final int MVCC_HINTS_BIT_OFF = 30;
+
     /* All the page types. */
 
     /** */

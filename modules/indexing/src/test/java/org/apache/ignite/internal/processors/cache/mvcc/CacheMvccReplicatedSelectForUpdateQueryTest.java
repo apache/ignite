@@ -19,12 +19,12 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.cache.CacheMode;
 
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /** */
 public class CacheMvccReplicatedSelectForUpdateQueryTest extends CacheMvccSelectForUpdateQueryAbstractTest {
     /** {@inheritDoc} */
     public CacheMode cacheMode() {
-        return PARTITIONED;
+        return REPLICATED;
     }
 }
