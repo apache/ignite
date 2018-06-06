@@ -213,25 +213,33 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx,
         SearchRow row) throws IgniteCheckedException {
-        if (inlineSize() == 0)
-            return compareRows(getRow(io, pageAddr, idx), row);
+        // Default links comparison result is zero to fall back to old behavior
+        // for rows that don't have links like H2's SimpleRow.
+        int linksCmpRes = 0;
+
+        if (row instanceof CacheSearchRow) {
+            long link1 = ((H2RowLinkIO)io).getLink(pageAddr, idx);
+
+            long link2 = ((CacheSearchRow)row).link();
+
+            linksCmpRes = Long.compare(link1, link2);
+
+            // Same rows, we may look no further.
+            if (linksCmpRes == 0)
+                return linksCmpRes;
+        }
+
+        if (inlineSize() == 0) {
+            int rowsCmpRes = compareRows(getRow(io, pageAddr, idx), row);
+
+            // Let's avoid links comparison result if it's PK idx as rows should be deemed equal
+            // not to confuse update/remove/insert operations.
+            if (rowsCmpRes != 0 || isPk)
+                return rowsCmpRes;
+            else
+                return linksCmpRes;
+        }
         else {
-            // Default links comparison result is zero to fall back to old behavior
-            // for rows that don't have links like H2's SimpleRow.
-            int linksCmpRes = 0;
-
-            if (row instanceof CacheSearchRow) {
-                long link1 = ((H2RowLinkIO)io).getLink(pageAddr, idx);
-
-                long link2 = ((CacheSearchRow)row).link();
-
-                linksCmpRes = Long.compare(link1, link2);
-
-                // Same rows, we may look no further.
-                if (linksCmpRes == 0)
-                    return linksCmpRes;
-            }
-
             int off = io.offset(idx);
 
             int fieldOff = 0;
