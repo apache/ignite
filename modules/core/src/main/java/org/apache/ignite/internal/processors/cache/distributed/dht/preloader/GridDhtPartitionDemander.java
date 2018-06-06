@@ -760,15 +760,9 @@ public class GridDhtPartitionDemander {
                                         break;
                                     }
 
-                                    if (grp.sharedGroup()) {
-                                        for (GridCacheContext cctx : grp.caches()) {
-                                            if (cctx.statisticsEnabled())
-                                                cctx.cache().metrics0().onRebalanceKeyReceived();
-                                        }
-                                    }
-                                    else {
-                                        if (grp.singleCacheContext().statisticsEnabled())
-                                            grp.singleCacheContext().cache().metrics0().onRebalanceKeyReceived();
+                                    for (GridCacheContext cctx : grp.caches()) {
+                                        if (cctx.statisticsEnabled())
+                                            cctx.cache().metrics0().onRebalanceKeyReceived();
                                     }
                                 }
 
