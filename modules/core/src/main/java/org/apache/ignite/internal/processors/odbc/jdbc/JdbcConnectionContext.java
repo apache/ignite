@@ -137,29 +137,29 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
 
         AuthorizationContext actx = null;
 
+        String user = null;
+        String passwd = null;
+
         try {
             if (reader.available() > 0) {
-                String user = reader.readString();
-                String passwd = reader.readString();
-
-                if (ctx.authentication().enabled()) {
-                    if (F.isEmpty(user))
-                        throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
-
-                    actx = ctx.authentication().authenticate(user, passwd);
-
-                    if (actx == null)
-                        throw new IgniteCheckedException("Unknown authentication error");
-                }
-            }
-            else {
-                if (ctx.authentication().enabled())
-                    throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+                user = reader.readString();
+                passwd = reader.readString();
             }
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
         }
+
+        if (ctx.authentication().enabled()) {
+            if (F.isEmpty(user))
+                throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+
+            actx = ctx.authentication().authenticate(user, passwd);
+
+            if (actx == null)
+                throw new IgniteCheckedException("Unknown authentication error");
+        }
+
         parser = new JdbcMessageParser(ctx);
 
         JdbcResponseSender sender = new JdbcResponseSender() {
