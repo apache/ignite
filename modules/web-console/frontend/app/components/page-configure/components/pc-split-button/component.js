@@ -15,33 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+import template from './template.pug';
+import controller from './controller';
 
-import javax.cache.CacheException;
-
-/**
- * Exception thrown when atomic operation timeout occurs.
- */
-public class CacheAtomicUpdateTimeoutException extends CacheException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * Creates new timeout exception with given error message.
-     *
-     * @param msg Error message.
-     */
-    public CacheAtomicUpdateTimeoutException(String msg) {
-        super(msg);
+export default {
+    controller,
+    template,
+    bindings: {
+        actions: '<'
     }
-
-    /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
-     */
-    public CacheAtomicUpdateTimeoutException(String msg, Throwable cause) {
-        super(msg, cause);
-    }
-}
+};

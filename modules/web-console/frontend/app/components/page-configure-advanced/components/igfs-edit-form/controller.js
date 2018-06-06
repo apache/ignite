@@ -19,6 +19,9 @@ import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 
 export default class IgfsEditFormController {
+    /** @type {ng.ICompiledExpression} */
+    onSave;
+
     static $inject = ['IgniteConfirm', 'IgniteVersion', '$scope', 'IGFSs', 'IgniteFormUtils'];
     constructor( IgniteConfirm, IgniteVersion, $scope, IGFSs, IgniteFormUtils) {
         Object.assign(this, { IgniteConfirm, IgniteVersion, $scope, IGFSs, IgniteFormUtils});
@@ -28,6 +31,11 @@ export default class IgfsEditFormController {
 
         this.$scope.ui = this.IgniteFormUtils.formUI();
         this.$scope.ui.loadedPanels = ['general', 'secondaryFileSystem', 'misc'];
+
+        this.formActions = [
+            {text: 'Save', icon: 'checkmark', click: () => this.save()},
+            {text: 'Save and Download', icon: 'download', click: () => this.save(true)}
+        ];
     }
 
     $onChanges(changes) {
@@ -44,10 +52,10 @@ export default class IgfsEditFormController {
     getValuesToCompare() {
         return [this.igfs, this.$scope.backupItem].map(this.IGFSs.normalize);
     }
-    save() {
+    save(download) {
         if (this.$scope.ui.inputForm.$invalid)
             return this.IgniteFormUtils.triggerValidation(this.$scope.ui.inputForm, this.$scope);
-        this.onSave({$event: cloneDeep(this.$scope.backupItem)});
+        this.onSave({$event: {igfs: cloneDeep(this.$scope.backupItem), download}});
     }
     reset = (forReal) => forReal ? this.$scope.backupItem = cloneDeep(this.igfs) : void 0;
     confirmAndReset() {

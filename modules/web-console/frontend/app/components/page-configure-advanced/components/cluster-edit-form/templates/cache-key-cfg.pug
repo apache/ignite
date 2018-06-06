@@ -30,7 +30,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     +ignite-form-field__label('Cache key configuration:', '"cacheKeyConfiguration"')
                     .ignite-form-field__control
                         -let items = model
-                        list-editable(ng-model=items name='cacheKeyConfiguration')
+                        list-editable.pc-list-editable-with-form-grid(ng-model=items name='cacheKeyConfiguration')
                             list-editable-item-edit.pc-form-grid-row
                                 - form = '$parent.form'
                                 .pc-form-grid-col-60

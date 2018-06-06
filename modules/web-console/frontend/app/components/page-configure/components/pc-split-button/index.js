@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-/**
- * <!-- Package description. -->
- * Contains Imputer preprocessor.
- */
-package org.apache.ignite.ml.preprocessing.imputer;
+import angular from 'angular';
+import component from './component';
+
+export default angular
+    .module('ignite-console.page-configure.pc-split-button', [])
+    .component('pcSplitButton', component);
