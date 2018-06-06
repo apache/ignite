@@ -14,7 +14,6 @@
 # limitations under the License.
 
 import socket
-from typing import Any, ByteString, Union
 
 from datatypes.class_configs import *
 from datatypes.type_codes import *
@@ -27,11 +26,7 @@ from .string import string_class, string_object
 NoneType = type(None)
 
 
-def data_class(
-    python_var: Union[Any, None],
-    tc_hint: ByteString=None,
-    **kwargs,
-) -> object:
+def data_class(python_var, tc_hint, **kwargs):
     """
     Dispatcher function for data class creation functions.
 

@@ -15,7 +15,6 @@
 
 import ctypes
 import socket
-from typing import Any, Dict
 
 from constants import *
 from datatypes import data_class, data_object, string_class, string_object
@@ -23,7 +22,7 @@ from .common import QueryHeader, ResponseHeader
 from .op_codes import *
 
 
-def cache_create(conn: socket.socket, name: str) -> Dict:
+def cache_create(conn, name):
     query_class = type(
         'QueryClass',
         (QueryHeader,),
@@ -54,10 +53,9 @@ def cache_create(conn: socket.socket, name: str) -> Dict:
 
 
 def cache_put(
-    conn: socket.socket,
-    hash_code: int, key: Any, value: Any, binary: bool=False,
-    key_hint: int=None, value_hint=None,
-) -> Dict:
+    conn, hash_code, key, value,
+    binary=False, key_hint=None, value_hint=None
+):
     """
     This code will be moved to another place, maybe to another class.
     """
@@ -98,11 +96,7 @@ def cache_put(
     }
 
 
-def cache_get(
-    conn: socket.socket,
-    hash_code: int, key: Any, binary: bool=False,
-    key_hint: int=None,
-) -> Any:
+def cache_get(conn, hash_code, key, binary=False, key_hint=None):
     """
     This code will be moved to another place, maybe to another class.
     """
