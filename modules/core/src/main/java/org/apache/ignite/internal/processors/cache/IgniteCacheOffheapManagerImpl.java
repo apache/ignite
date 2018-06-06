@@ -1036,7 +1036,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     ) throws IgniteCheckedException {
         assert !cctx.isNear() : cctx.name();
 
-        if (!hasPendingEntries /*|| nextCleanTime > U.currentTimeMillis()*/)
+        if (!hasPendingEntries || nextCleanTime > U.currentTimeMillis())
             return false;
 
         assert pendingEntries != null;
@@ -1044,8 +1044,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         int cleared = expireInternal(cctx, c, amount);
 
         // Throttle if there is nothing to clean anymore.
-      /*  if (cleared < amount)
-            nextCleanTime = U.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;*/
+        if (cleared < amount)
+            nextCleanTime = U.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
 
         return amount != -1 && cleared >= amount;
     }
