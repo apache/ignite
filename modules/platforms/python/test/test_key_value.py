@@ -16,7 +16,7 @@
 import socket
 
 from queries import HandshakeRequest, read_response
-from queries.common import java_hash
+from queries.common import hashcode
 from queries.key_value import cache_create, cache_get, cache_put
 
 
@@ -28,12 +28,12 @@ def test_put_get():
     hs_response = read_response(conn)
     assert hs_response.op_code != 0
 
-    cache_create(conn, 'shit')
+    cache_create(conn, 'my_bucket')
 
-    result = cache_put(conn, java_hash('shit'), 'dada', 5)
+    result = cache_put(conn, hashcode('my_bucket'), 'my_key', 5)
     assert 0 in result.keys()
 
-    result = cache_get(conn, java_hash('shit'), 'dada')
+    result = cache_get(conn, hashcode('my_bucket'), 'my_key')
     assert 0 in result.keys()
     assert result['result'] == 5
 

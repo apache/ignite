@@ -19,7 +19,14 @@ from random import randint
 from constants import *
 
 
-def java_hash(string: str):
+def hashcode(string: str) -> int:
+    """
+    Calculate hash code used for referencing cache bucket name
+    in Ignite binary API.
+
+    :param string: bucket name (or other string identifier),
+    :return: hash code.
+    """
     result = 0
     for char in string:
         result = int(
