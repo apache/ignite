@@ -35,6 +35,7 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheIoManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
@@ -43,6 +44,8 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFile
 import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessorImpl;
 import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -91,6 +94,61 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
      *
      * @throws Exception If some thing failed.
      */
+    public void testCheckSerializer() throws Exception {
+        for (int serVer : checkSerializerVers) {
+            checkInvariantSwitchSegmentSize(serVer);
+        }
+    }
+
+    /**
+     * @param serVer WAL serializer version.
+     * @throws Exception If some thing failed.
+     */
+    private void checkInvariantSwitchSegmentSize(int serVer) throws Exception {
+        GridKernalContext kctx = new StandaloneGridKernalContext(
+            log, null, null) {
+            @Override public IgniteCacheObjectProcessor cacheObjects() {
+                return new IgniteCacheObjectProcessorImpl(this);
+            }
+        };
+
+        RecordSerializer serializer = new RecordSerializerFactoryImpl(
+            new GridCacheSharedContext<>(
+                kctx,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                new IgniteCacheDatabaseSharedManager() {
+                    @Override public int pageSize() {
+                        return DataStorageConfiguration.DFLT_PAGE_SIZE;
+                    }
+                },
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+
+                null)
+        ).createSerializer(serVer);
+
+        SwitchSegmentRecord switchSegmentRecord = new SwitchSegmentRecord();
+
+        int recordSize = serializer.size(switchSegmentRecord);
+
+        Assert.assertEquals(1, recordSize);
+    }
+
+    /**
+     * Test for check invariant, size of SWITCH_SEGMENT_RECORD should be 1 byte.
+     *
+     * @throws Exception If some thing failed.
+     */
     public void test() throws Exception {
         for (int serVer : checkSerializerVers) {
             for (Class walMgrClass : checkWalManagers) {
@@ -107,7 +165,6 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
      * @param walMgrClass WAL manager class.
      * @param serVer WAL serializer version.
      * @throws Exception If some thing failed.

@@ -98,6 +98,7 @@ public class RecordV2Serializer implements RecordSerializer {
 
             int recordSizeWithType = recordSize + REC_TYPE_SIZE;
 
+            // Why this condition here, see SWITCH_SEGMENT_RECORD doc.
             return record.type() != SWITCH_SEGMENT_RECORD ?
                 recordSizeWithType + FILE_WAL_POINTER_SIZE + CRC_SIZE : recordSizeWithType;
         }
@@ -168,6 +169,7 @@ public class RecordV2Serializer implements RecordSerializer {
             // Write record type.
             RecordV1Serializer.putRecordType(buf, record);
 
+            // SWITCH_SEGMENT_RECORD should have only type, no need to write pointer.
             if (record.type() == SWITCH_SEGMENT_RECORD)
                 return;
 
