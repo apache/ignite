@@ -25,4 +25,18 @@ public class IgniteWalFlushBackgroundWithMmapBufferSelfTest extends IgniteWalFlu
     @Override protected boolean mmap() {
         return true;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testFailWhileStart() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
+
+        super.testFailWhileStart();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testFailAfterStart() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
+
+        super.testFailAfterStart();
+    }
 }
