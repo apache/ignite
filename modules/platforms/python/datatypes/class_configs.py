@@ -55,7 +55,7 @@ standard_type_config = {
     TC_BOOL: ('Bool', ctypes.c_byte),
     TC_TIME: ('Time', ctypes.c_long),
     TC_DATE: ('Date', ctypes.c_long),
-    TC_UUID: ('UUID', ctypes.c_byte*16),
+    TC_UUID: ('Uuid', ctypes.c_byte*16),
     TC_TIMESTAMP: ('Timestamp', Timestamp),
     TC_ENUM: ('Enum', Enum),
 }

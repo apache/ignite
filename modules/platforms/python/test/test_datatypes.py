@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import uuid
+
 import pytest
 
 from constants import *
@@ -96,6 +98,27 @@ def test_bool(conn, expected_value):
         byteorder=PROTOCOL_BYTE_ORDER
     )
     assert bool_var.get_attribute() == expected_value
+
+
+@pytest.mark.parametrize(
+    'conn, expected_value',
+    [
+        (
+            MockSocket(b'\x0a\x1ePf\xda\x88\xa5MZ\x86\xdc#\xdf\xd0\xa9\x13\x03'),
+            uuid.UUID('1e5066da-88a5-4d5a-86dc-23dfd0a91303'),
+        ),
+    ]
+)
+def test_uuid(conn, expected_value):
+    uuid_var = data_object(conn)
+    assert uuid_var.type_code == int.from_bytes(
+        TC_UUID,
+        byteorder=PROTOCOL_BYTE_ORDER
+    )
+    assert uuid_var.get_attribute().bytes == expected_value.bytes
+
+    uuid_var.set_attribute(expected_value)
+    assert uuid_var.get_attribute().bytes == expected_value.bytes
 
 
 @pytest.mark.parametrize(

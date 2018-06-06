@@ -39,18 +39,23 @@ def get_attribute(self):
         ).decode(
             PROTOCOL_CHAR_ENCODING
         )
+    if self._type_code == TC_UUID:
+        return UUID(bytes=bytes(self.value))
     return self.value
 
 
 def set_attribute(self, value):
     if self._type_code == TC_BOOL:
-        value = 1 if value else 0
+        self.value = 1 if value else 0
     elif self._type_code == TC_CHAR:
-        value = int.from_bytes(
+        self.value = int.from_bytes(
             value.encode(PROTOCOL_CHAR_ENCODING),
             byteorder=PROTOCOL_BYTE_ORDER
         )
-    self.value = value
+    elif self._type_code == TC_UUID:
+        self.value = (ctypes.c_byte*16)(*bytearray(value.bytes))
+    else:
+        self.value = value
 
 
 def from_python(python_type):
