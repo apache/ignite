@@ -83,8 +83,16 @@ public class IgniteWalIteratorSwitchSegmentTest extends GridCommonAbstractTest {
         FsyncModeFileWriteAheadLogManager.class
     };
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        U.delete(Paths.get(U.defaultWorkDirectory()));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
 
         U.delete(Paths.get(U.defaultWorkDirectory()));
     }
