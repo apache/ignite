@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.imputer;
+package org.apache.ignite.ml.preprocessing.imputing;
 
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 

@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.normalization;
+package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
 /**
- * Partition data used in normalization preprocessor.
+ * Partition data used in minmaxscaling preprocessor.
  *
- * @see NormalizationTrainer
- * @see NormalizationPreprocessor
+ * @see MinMaxScalerTrainer
+ * @see MinMaxScalerPreprocessor
  */
-public class NormalizationPartitionData implements AutoCloseable {
+public class MinMaxScalerPartitionData implements AutoCloseable {
     /** Minimal values. */
     private final double[] min;
 
@@ -31,12 +31,12 @@ public class NormalizationPartitionData implements AutoCloseable {
     private final double[] max;
 
     /**
-     * Constructs a new instance of normalization partition data.
+     * Constructs a new instance of minmaxscaling partition data.
      *
      * @param min Minimal values.
      * @param max Maximum values.
      */
-    public NormalizationPartitionData(double[] min, double[] max) {
+    public MinMaxScalerPartitionData(double[] min, double[] max) {
         this.min = min;
         this.max = max;
     }

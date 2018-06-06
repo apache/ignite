@@ -15,37 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.imputing;
+package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Tests for {@link ImputerPreprocessor}.
+ * Tests for {@link MinMaxScalerPreprocessor}.
  */
-public class ImputerPreprocessorTest {
+public class MinMaxScalerPreprocessorTest {
     /** Tests {@code apply()} method. */
     @Test
     public void testApply() {
         double[][] data = new double[][]{
-            {Double.NaN, 20, 3},
-            {2, Double.NaN, 8},
-            {Double.NaN, Double.NaN, Double.NaN},
+            {2., 4., 1.},
+            {1., 8., 22.},
+            {4., 10., 100.},
+            {0., 22., 300.}
         };
 
-        ImputerPreprocessor<Integer, double[]> preprocessor = new ImputerPreprocessor<>(
-            new double[]{1.1, 10.1, 100.1},
+        MinMaxScalerPreprocessor<Integer, double[]> preprocessor = new MinMaxScalerPreprocessor<>(
+            new double[] {0, 4, 1},
+            new double[] {4, 22, 300},
             (k, v) -> v
         );
 
-        double[][] postProcessedData = new double[][]{
-            {1.1, 20, 3},
-            {2, 10.1, 8},
-            {1.1, 10.1, 100.1},
+        double[][] standardData = new double[][]{
+            {2. / 4, (4. - 4.) / 18.,  0.},
+            {1. / 4, (8. - 4.) / 18.,  (22. - 1.) / 299.},
+            {1.,     (10. - 4.) / 18., (100. - 1.) / 299.},
+            {0.,     (22. - 4.) / 18., (300. - 1.) / 299.}
         };
 
        for (int i = 0; i < data.length; i++)
-           assertArrayEquals(postProcessedData[i], preprocessor.apply(i, data[i]), 1e-8);
+           assertArrayEquals(standardData[i], preprocessor.apply(i, data[i]), 1e-8);
     }
 }

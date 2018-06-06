@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.imputing;
+package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.Assert.assertArrayEquals;
 
 /**
- * Tests for {@link ImputerTrainer}.
+ * Tests for {@link MinMaxScalerTrainer}.
  */
 @RunWith(Parameterized.class)
-public class ImputerTrainerTest {
+public class MinMaxScalerTrainerTest {
     /** Parameters. */
     @Parameterized.Parameters(name = "Data divided on {0} partitions")
     public static Iterable<Integer[]> data() {
@@ -55,21 +56,21 @@ public class ImputerTrainerTest {
     @Test
     public void testFit() {
         Map<Integer, double[]> data = new HashMap<>();
-        data.put(1, new double[] {1, 2, Double.NaN,});
-        data.put(2, new double[] {1, Double.NaN, 22});
-        data.put(3, new double[] {Double.NaN, 10, 100});
-        data.put(4, new double[] {0, 2, 100});
+        data.put(1, new double[] {2, 4, 1});
+        data.put(2, new double[] {1, 8, 22});
+        data.put(3, new double[] {4, 10, 100});
+        data.put(4, new double[] {0, 22, 300});
 
         DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
 
-        ImputerTrainer<Integer, double[]> imputerTrainer = new ImputerTrainer<Integer, double[]>()
-            .withImputingStrategy(ImputingStrategy.MOST_FREQUENT);
+        MinMaxScalerTrainer<Integer, double[]> standardizationTrainer = new MinMaxScalerTrainer<>();
 
-        ImputerPreprocessor<Integer, double[]> preprocessor = imputerTrainer.fit(
+        MinMaxScalerPreprocessor<Integer, double[]> preprocessor = standardizationTrainer.fit(
             datasetBuilder,
             (k, v) -> v
         );
 
-        assertArrayEquals(new double[] {1, 0, 100}, preprocessor.apply(5, new double[] {Double.NaN, 0, Double.NaN}), 1e-8);
+        assertArrayEquals(new double[] {0, 4, 1}, preprocessor.getMin(), 1e-8);
+        assertArrayEquals(new double[] {4, 22, 300}, preprocessor.getMax(), 1e-8);
     }
 }
