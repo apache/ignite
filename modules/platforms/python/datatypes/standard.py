@@ -14,48 +14,61 @@
 # limitations under the License.
 
 """
-All data types than do not require special conversion between ctypes type
-and python type. Most of Ignite primitives − all integers and floats −
-fall into this category.
+Non-serial data types which values require conversion between ctypes type
+and python type.
 """
 
+from datetime import date, datetime, time
 import ctypes
 import socket
+from uuid import UUID, uuid4
 
 from constants import *
-from datatypes.class_configs import simple_type_config
+from datatypes.class_configs import *
 from datatypes.type_codes import *
+from .simple import init
 
 
-def init(self):
-    self.type_code = int.from_bytes(
-        getattr(self, '_type_code'),
-        byteorder=PROTOCOL_BYTE_ORDER,
-    )
-    if hasattr(self, 'length'):
-        self.length = (
-            ctypes.sizeof(self)
-            - ctypes.sizeof(ctypes.c_int)
-            - ctypes.sizeof(ctypes.c_byte)
+def get_attribute(self):
+    if self._type_code == TC_BOOL:
+        return bool(self.value)
+    if self._type_code == TC_CHAR:
+        return self.value.to_bytes(
+            2,
+            byteorder=PROTOCOL_BYTE_ORDER
+        ).decode(
+            PROTOCOL_CHAR_ENCODING
         )
+    return self.value
 
 
 def set_attribute(self, value):
+    if self._type_code == TC_BOOL:
+        value = 1 if value else 0
+    elif self._type_code == TC_CHAR:
+        value = int.from_bytes(
+            value.encode(PROTOCOL_CHAR_ENCODING),
+            byteorder=PROTOCOL_BYTE_ORDER
+        )
     self.value = value
 
 
-def simple_data_class(python_var, tc_hint=None, **kwargs):
+def from_python(python_type):
+    try:
+        return standard_from_python[python_type]
+    except KeyError:
+        pass
+
+
+def standard_data_class(python_var, tc_hint=None, **kwargs):
     python_type = type(python_var)
-    if python_type is int:
-        type_code = tc_hint or TC_LONG
-    elif python_type is float:
-        type_code = tc_hint or TC_DOUBLE
-    else:
-        type_code = tc_hint
+    type_code = tc_hint or from_python(python_type)
     assert type_code is not None, (
-        'Can not map python type {} to simple data class.'.format(python_type)
+        'Can not map python type {} to standard data class.'.format(
+            python_type
+        )
     )
-    class_name, ctypes_type = simple_type_config[type_code]
+    class_name, ctypes_type = standard_type_config[type_code]
     return type(
         class_name,
         (ctypes.LittleEndianStructure,),
@@ -67,16 +80,18 @@ def simple_data_class(python_var, tc_hint=None, **kwargs):
             ],
             '_type_code': type_code,
             'init': init,
-            'get_attribute': lambda self: self.value,
+            'get_attribute': get_attribute,
             'set_attribute': set_attribute,
         },
     )
 
 
-def simple_data_object(connection: socket.socket, initial=None):
+def standard_data_object(connection: socket.socket, initial=None):
     buffer = initial or connection.recv(1)
     type_code = buffer
-    data_class = simple_data_class(None, tc_hint=type_code)
-    buffer += connection.recv(ctypes.sizeof(simple_type_config[type_code][1]))
+    data_class = standard_data_class(None, tc_hint=type_code)
+    buffer += connection.recv(
+        ctypes.sizeof(standard_type_config[type_code][1])
+    )
     data_object = data_class.from_buffer_copy(buffer)
     return data_object

@@ -16,10 +16,11 @@
 import socket
 from typing import Any, ByteString, Union
 
-from datatypes.class_configs import simple_type_config, simple_types
+from datatypes.class_configs import *
 from datatypes.type_codes import *
 from .null import null_class, null_object
-from .simple import init, simple_data_class, simple_data_object
+from .simple import simple_data_class, simple_data_object
+from .standard import standard_data_class, standard_data_object
 from .string import string_class, string_object
 
 
@@ -42,26 +43,43 @@ def data_class(
     :return: data class.
     """
     python_type = type(python_var)
+
     if python_type is NoneType:
         return null_class()
-    if python_type in (int, float) or (
+
+    if python_type in simple_python_types or (
         python_type is NoneType and tc_hint in simple_types
     ):
         return simple_data_class(python_var, tc_hint, **kwargs)
-    elif python_type in (str, bytes) or (
+
+    if python_type in standard_python_types or (
+        python_type is NoneType and tc_hint in standard_types
+    ):
+        return standard_data_class(python_var, tc_hint, **kwargs)
+
+    if python_type in (str, bytes) or (
         python_type is NoneType and tc_hint == TC_STRING
     ):
         return string_class(python_var, tc_hint, **kwargs)
+
     else:
         raise NotImplementedError('This data type is not supported.')
 
 
 def data_object(connection: socket.socket):
+    """
+    Dispatcher function for parsing binary stream into data objects.
+
+    :param connection: socket.socket-compatible data stream,
+    :return: data object.
+    """
     initial = connection.recv(1)
     if initial == TC_NULL:
         return null_object(connection, initial=initial)
     if initial in simple_types:
         return simple_data_object(connection, initial=initial)
-    elif initial == TC_STRING:
+    if initial in standard_types:
+        return standard_data_object(connection, initial=initial)
+    if initial == TC_STRING:
         return string_object(connection, initial=initial)
     raise NotImplementedError('This data type is not supported.')

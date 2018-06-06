@@ -16,7 +16,7 @@
 import pytest
 
 from constants import *
-from datatypes import null_object, simple_data_object, string_object
+from datatypes import data_object
 from datatypes.type_codes import *
 
 
@@ -27,7 +27,7 @@ class MockSocket:
         self.pos = 0
 
     def send(self, data: bytes):
-        print(f'Received: {data}')
+        print('Received: {}'.format(data))
 
     def recv(self, buffersize: int):
         received = self.buffer[self.pos:self.pos+buffersize]
@@ -42,7 +42,7 @@ class MockSocket:
     ]
 )
 def test_null(conn, expected_value):
-    null_var = null_object(conn)
+    null_var = data_object(conn)
     assert null_var.type_code == int.from_bytes(
         TC_NULL,
         byteorder=PROTOCOL_BYTE_ORDER
@@ -58,7 +58,7 @@ def test_null(conn, expected_value):
     ]
 )
 def test_byte(conn, expected_value):
-    byte_var = simple_data_object(conn)
+    byte_var = data_object(conn)
     assert byte_var.type_code == int.from_bytes(
         TC_BYTE,
         byteorder=PROTOCOL_BYTE_ORDER
@@ -74,7 +74,7 @@ def test_byte(conn, expected_value):
     ]
 )
 def test_float(conn, expected_value):
-    float_var = simple_data_object(conn)
+    float_var = data_object(conn)
     assert float_var.type_code == int.from_bytes(
         TC_FLOAT,
         byteorder=PROTOCOL_BYTE_ORDER
@@ -90,7 +90,7 @@ def test_float(conn, expected_value):
     ]
 )
 def test_bool(conn, expected_value):
-    bool_var = simple_data_object(conn)
+    bool_var = data_object(conn)
     assert bool_var.type_code == int.from_bytes(
         TC_BOOL,
         byteorder=PROTOCOL_BYTE_ORDER
@@ -106,7 +106,7 @@ def test_bool(conn, expected_value):
     ]
 )
 def test_char(conn, expected_value):
-    char_var = simple_data_object(conn)
+    char_var = data_object(conn)
     assert char_var.type_code == int.from_bytes(
         TC_CHAR,
         byteorder=PROTOCOL_BYTE_ORDER
@@ -123,7 +123,7 @@ def test_char(conn, expected_value):
     ]
 )
 def test_string(conn,  expected_length, expected_data):
-    string_var = string_object(conn)
+    string_var = data_object(conn)
     assert string_var.type_code == int.from_bytes(
         TC_STRING,
         byteorder=PROTOCOL_BYTE_ORDER

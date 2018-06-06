@@ -14,33 +14,6 @@
 # limitations under the License.
 
 """
-Null type.
+Ignite decimal data type, named ‘Fractional’ to avoid collision
+with standard Python decimal.Decimal class.
 """
-
-import ctypes
-import socket
-
-from .type_codes import *
-from .simple import init
-
-
-def null_class(*args, **kwargs):
-    return type(
-        'Null',
-        (ctypes.LittleEndianStructure,),
-        {
-            '_pack_': 1,
-            '_fields_': [
-                ('type_code', ctypes.c_byte),
-            ],
-            '_type_code': TC_NULL,
-            'init': init,
-            'get_attribute': lambda self: None,
-            'set_attribute': lambda self: None,
-        },
-    )
-
-
-def null_object(connection: socket.socket, initial=None):
-    buffer = initial or connection.recv(1)
-    return null_class().from_buffer_copy(buffer)
