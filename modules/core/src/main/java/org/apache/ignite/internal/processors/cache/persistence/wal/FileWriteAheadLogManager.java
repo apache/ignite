@@ -165,6 +165,24 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** */
     private static final byte[] FILL_BUF = new byte[1024 * 1024];
 
+    static {
+        for (int i = 0; i < 32; i++)
+            FILL_BUF[i] = 0;
+
+        for (int i = 32; i < FILL_BUF.length; i++) {
+            if (i % 8 == 0 || i % 8 == 3)
+                FILL_BUF[i] = 0xD;
+            else if (i % 8 == 1 || i % 8 == 5 || i % 8 == 6)
+                FILL_BUF[i] = 0xE;
+            else if (i % 8 == 2)
+                FILL_BUF[i] = 0xA;
+            else if (i % 8 == 4)
+                FILL_BUF[i] = 0xB;
+            else if (i % 8 == 7)
+                FILL_BUF[i] = 0xF;
+        }
+    }
+
     /** Pattern for segment file names */
     private static final Pattern WAL_NAME_PATTERN = Pattern.compile("\\d{16}\\.wal");
 
