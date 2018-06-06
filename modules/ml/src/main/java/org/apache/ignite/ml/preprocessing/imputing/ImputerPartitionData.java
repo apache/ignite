@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.imputer;
+package org.apache.ignite.ml.preprocessing.imputing;
 
 import java.util.Map;
 
 /**
- * Partition data used in imputer preprocessor.
+ * Partition data used in imputing preprocessor.
  *
  * @see ImputerTrainer
  * @see ImputerPreprocessor

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.imputer;
+package org.apache.ignite.ml.preprocessing.imputing;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -29,8 +29,8 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.preprocessing.PreprocessingTrainer;
 
 /**
- * Trainer of the imputer preprocessor.
- * The imputer fills the missed values according the imputing strategy (default: mean value for each feature).
+ * Trainer of the imputing preprocessor.
+ * The imputing fills the missed values according the imputing strategy (default: mean value for each feature).
  * It supports double values in features only.
  *
  * @param <K> Type of a key in {@code upstream} data.
@@ -272,7 +272,7 @@ public class ImputerTrainer<K, V> implements PreprocessingTrainer<K, V, double[]
      * Sets the imputing strategy.
      *
      * @param imputingStgy The given value.
-     * @return The updated imputer trainer.
+     * @return The updated imputing trainer.
      */
     public ImputerTrainer<K, V> withImputingStrategy(ImputingStrategy imputingStgy){
         this.imputingStgy = imputingStgy;
