@@ -33,6 +33,12 @@ namespace ignite
     {
         namespace thin
         {
+            /* Forward declaration. */
+            class Readable;
+
+            /* Forward declaration. */
+            class Writable;
+
             struct ClientType
             {
                 enum Type
@@ -177,7 +183,7 @@ namespace ignite
                 void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
 
             private:
-                /** Configuration. */
+                /** Name. */
                 std::string name;
             };
 
@@ -210,8 +216,94 @@ namespace ignite
                 void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
 
             private:
-                /** Configuration. */
+                /** Name. */
                 std::string name;
+            };
+
+            /**
+             * Cache put request.
+             */
+            class CachePutRequest : public Request<RequestType::CACHE_PUT>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheId Cache ID.
+                 * @param binary Binary cache flag.
+                 * @param key Key.
+                 * @param value Value.
+                 */
+                CachePutRequest(int32_t cacheId, bool binary, const Writable& key, const Writable& value);
+
+                /**
+                 * Destructor.
+                 */
+                ~CachePutRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Cache ID. */
+                int32_t cacheId;
+
+                /** Binary flag. */
+                bool binary;
+
+                /** Key. */
+                const Writable& key;
+
+                /** Value. */
+                const Writable& value;
+            };
+
+            /**
+             * Cache put request.
+             */
+            class CacheGetRequest : public Request<RequestType::CACHE_GET>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheId Cache ID.
+                 * @param binary Binary cache flag.
+                 * @param key Key.
+                 */
+                CacheGetRequest(int32_t cacheId, bool binary, const Writable& key);
+
+                /**
+                 * Destructor.
+                 */
+                ~CacheGetRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Cache ID. */
+                int32_t cacheId;
+
+                /** Binary flag. */
+                bool binary;
+
+                /** Key. */
+                const Writable& key;
             };
 
             /**
@@ -270,6 +362,34 @@ namespace ignite
 
                 /** Error message. */
                 std::string error;
+            };
+
+            /**
+             * Cache get response.
+             */
+            class CacheGetResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param value Value.
+                 */
+                CacheGetResponse(Readable& value);
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~CacheGetResponse();
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Value. */
+                Readable& value;
             };
         }
     }

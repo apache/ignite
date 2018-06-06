@@ -116,11 +116,11 @@ namespace ignite
                  * @throw IgniteError on error.
                  */
                 template<typename ReqT, typename RspT>
-                bool SyncMessage(const ReqT& req, RspT& rsp)
+                void SyncMessage(const ReqT& req, RspT& rsp)
                 {
                     EnsureConnected();
 
-                    return InternalSyncMessage(req, rsp, ioTimeout);
+                    InternalSyncMessage(req, rsp, ioTimeout);
                 }
 
             private:
@@ -146,11 +146,10 @@ namespace ignite
                  * @param req Request message.
                  * @param rsp Response message.
                  * @param timeout Timeout.
-                 * @return @c true on success, @c false on timeout.
                  * @throw IgniteError on error.
                  */
                 template<typename ReqT, typename RspT>
-                bool InternalSyncMessage(const ReqT& req, RspT& rsp, int32_t timeout)
+                void InternalSyncMessage(const ReqT& req, RspT& rsp, int32_t timeout)
                 {
                     // Allocating 64KB to lessen number of reallocations.
                     enum { BUFFER_SIZE = 1024 * 64 };
@@ -199,8 +198,6 @@ namespace ignite
                     binary::BinaryReaderImpl reader(&inStream);
 
                     rsp.Read(reader, currentVersion);
-
-                    return true;
                 }
 
                 /**

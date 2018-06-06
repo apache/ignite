@@ -16,6 +16,9 @@
  */
 
 #include <ignite/impl/thin/response_status.h>
+#include <ignite/impl/thin/writable.h>
+#include <ignite/impl/thin/readable.h>
+
 #include <ignite/impl/thin/message.h>
 
 namespace ignite
@@ -66,6 +69,56 @@ namespace ignite
                     ReadOnSuccess(reader, ver);
                 else
                     reader.ReadString(error);
+            }
+
+            CachePutRequest::CachePutRequest(int32_t cacheId, bool binary, const Writable& key, const Writable& value) :
+                cacheId(cacheId),
+                binary(binary),
+                key(key),
+                value(value)
+            {
+                // No-op.
+            }
+
+            void CachePutRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            {
+                writer.WriteInt32(cacheId);
+                writer.WriteBool(binary);
+
+                key.Write(writer);
+                value.Write(writer);
+            }
+
+            CacheGetRequest::CacheGetRequest(int32_t cacheId, bool binary, const Writable& key) :
+                cacheId(cacheId),
+                binary(binary),
+                key(key)
+            {
+                // No-op.
+            }
+
+            void CacheGetRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            {
+                writer.WriteInt32(cacheId);
+                writer.WriteBool(binary);
+
+                key.Write(writer);
+            }
+
+            CacheGetResponse::CacheGetResponse(Readable& value) :
+                value(value)
+            {
+                // No-op.
+            }
+
+            CacheGetResponse::~CacheGetResponse()
+            {
+                // No-op.
+            }
+
+            void CacheGetResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                value.Read(reader);
             }
         }
     }

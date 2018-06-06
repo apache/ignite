@@ -15,13 +15,10 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_THIN_CACHE_CACHE_CLIENT_IMPL
-#define _IGNITE_IMPL_THIN_CACHE_CACHE_CLIENT_IMPL
+#ifndef _IGNITE_IMPL_THIN_CACHE_CACHE_CLIENT_PROXY
+#define _IGNITE_IMPL_THIN_CACHE_CACHE_CLIENT_PROXY
 
-#include <stdint.h>
-#include <string>
-
-#include <ignite/impl/thin/data_router.h>
+#include <ignite/common/concurrent.h>
 
 namespace ignite
 {
@@ -30,33 +27,24 @@ namespace ignite
         namespace thin
         {
             /* Forward declaration. */
-            class Readable;
+            class Writable;
 
             /* Forward declaration. */
-            class Writable;
+            class Readable;
 
             namespace cache
             {
                 /**
-                 * Ignite client class implementation.
-                 *
-                 * This is an entry point for Thin C++ Ignite client. Its main
-                 * purpose is to establish connection to the remote server node.
+                 * Ignite client class proxy.
                  */
-                class CacheClientImpl
+                class IGNITE_IMPORT_EXPORT CacheClientProxy
                 {
                 public:
                     /**
                      * Constructor.
-                     *
-                     * @param router Data router instance.
-                     * @param name Cache name.
-                     * @param id Cache ID.
                      */
-                    CacheClientImpl(const SP_DataRouter& router, const std::string& name, int32_t id) :
-                        router(router),
-                        name(name),
-                        id(id)
+                    CacheClientProxy(const common::concurrent::SharedPointer<void>& impl) :
+                        impl(impl)
                     {
                         // No-op.
                     }
@@ -64,7 +52,7 @@ namespace ignite
                     /**
                      * Destructor.
                      */
-                    ~CacheClientImpl()
+                    ~CacheClientProxy()
                     {
                         // No-op.
                     }
@@ -86,20 +74,11 @@ namespace ignite
                     void Get(const Writable& key, Readable& value);
 
                 private:
-                    /** Data router. */
-                    SP_DataRouter router;
-
-                    /** Cache name. */
-                    std::string name;
-
-                    /** Cache ID. */
-                    int32_t id;
-
-                    /** Binary flag. */
-                    bool binary;
+                    /** Implementation. */
+                    common::concurrent::SharedPointer<void> impl;
                 };
             }
         }
     }
 }
-#endif // _IGNITE_IMPL_THIN_CACHE_CACHE_CLIENT_IMPL
+#endif // _IGNITE_IMPL_THIN_CACHE_CACHE_CLIENT_PROXY

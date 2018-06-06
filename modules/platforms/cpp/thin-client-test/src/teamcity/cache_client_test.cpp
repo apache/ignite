@@ -117,4 +117,21 @@ BOOST_AUTO_TEST_CASE(CacheClientCreateCacheNonexisting)
     client.CreateCache<std::string, int32_t>("unknown");
 }
 
+BOOST_AUTO_TEST_CASE(CacheClientPutGet)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110");
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    cache::CacheClient<int32_t, std::string> cache = client.GetCache<int32_t, std::string>("local");
+
+    cache.Put(42, "Lorem ipsum");
+
+    std::string val = cache.Get(42);
+
+    BOOST_CHECK(val, std::string("Lorem ipsum"));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

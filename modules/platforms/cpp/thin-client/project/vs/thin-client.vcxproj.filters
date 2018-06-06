@@ -49,6 +49,15 @@
     <ClCompile Include="..\..\src\impl\utility.cpp">
       <Filter>Code\impl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\cache\cache_client.cpp">
+      <Filter>Code\cache</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\cache\cache_client_proxy.cpp">
+      <Filter>Code\impl\cache</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\cache\cache_client_impl.cpp">
+      <Filter>Code\impl\cache</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h">
@@ -100,6 +109,15 @@
       <Filter>Code\cache</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\thin\cache\cache_client_impl.h">
+      <Filter>Code\impl\cache</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\writable.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\readable.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\thin\cache\cache_client_proxy.h">
       <Filter>Code\impl\cache</Filter>
     </ClInclude>
   </ItemGroup>

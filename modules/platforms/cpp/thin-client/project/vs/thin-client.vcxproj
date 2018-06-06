@@ -155,6 +155,9 @@
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\net\tcp_socket_client.cpp" />
     <ClCompile Include="..\..\src\ignite_client.cpp" />
+    <ClCompile Include="..\..\src\impl\cache\cache_client.cpp" />
+    <ClCompile Include="..\..\src\impl\cache\cache_client_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\cache\cache_client_proxy.cpp" />
     <ClCompile Include="..\..\src\impl\data_router.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_client_impl.cpp" />
     <ClCompile Include="..\..\src\impl\message.cpp" />
@@ -165,18 +168,21 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\thin\cache\cache_client_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\cache\cache_client_proxy.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\data_router.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\ignite_client_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\message.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\net\end_point.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\net\tcp_socket_client.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\protocol_version.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\readable.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\response_status.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\socket_client.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\ssl\secure_socket_client.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\ssl\ssl_bindings.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\ssl\ssl_gateway.h" />
     <ClInclude Include="..\..\include\ignite\impl\thin\utility.h" />
+    <ClInclude Include="..\..\include\ignite\impl\thin\writable.h" />
     <ClInclude Include="..\..\include\ignite\thin\cache\cache_client.h" />
     <ClInclude Include="..\..\include\ignite\thin\ignite_client.h" />
     <ClInclude Include="..\..\include\ignite\thin\ignite_client_configuration.h" />

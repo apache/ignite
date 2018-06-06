@@ -20,6 +20,11 @@
 
 #include <ignite/common/concurrent.h>
 
+#include <ignite/impl/thin/writable.h>
+#include <ignite/impl/thin/readable.h>
+
+#include <ignite/impl/thin/cache/cache_client_proxy.h>
+
 namespace ignite
 {
     namespace thin
@@ -33,13 +38,19 @@ namespace ignite
             class CacheClient
             {
             public:
+                /** Key type. */
+                typedef K KeyType;
+
+                /** Value type. */
+                typedef V ValueType;
+
                 /**
                  * Constructor.
                  *
                  * @param impl Implementation.
                  */
                 CacheClient(common::concurrent::SharedPointer<void> impl) :
-                    impl(impl)
+                    proxy(impl)
                 {
                     // No-op.
                 }
@@ -52,10 +63,52 @@ namespace ignite
                     // No-op.
                 }
 
-            private:
+                /**
+                 * Put value to cache.
+                 *
+                 * @param key Key.
+                 * @param value Value.
+                 */
+                void Put(const KeyType& key, const ValueType& value)
+                {
+                    impl::thin::WritableImpl<KeyType> wrKey(key);
+                    impl::thin::WritableImpl<ValueType> wrValue(value);
 
+                    proxy.Put(wrKey, wrValue);
+                }
+
+                /**
+                 * Get value from cache.
+                 *
+                 * @param key Key.
+                 * @param value Value.
+                 */
+                void Get(const KeyType& key, ValueType& value)
+                {
+                    impl::thin::WritableImpl<KeyType> wrKey(key);
+                    impl::thin::ReadableImpl<ValueType> rdValue(value);
+                    
+                    proxy.Get(wrKey, rdValue);
+                }
+
+                /**
+                 * Get value from cache.
+                 *
+                 * @param key Key.
+                 * @return Value.
+                 */
+                ValueType Get(const KeyType& key)
+                {
+                    ValueType value;
+
+                    Get(key, value);
+
+                    return value;
+                }
+
+            private:
                 /** Implementation. */
-                common::concurrent::SharedPointer<void> impl;
+                impl::thin::cache::CacheClientProxy proxy;
             };
         }
     }
