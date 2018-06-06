@@ -15,33 +15,44 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.IgniteCheckedException;
+package org.apache.ignite.ml.preprocessing.minmaxscaling;
 
 /**
- * Exception thrown when atomic operation timeout occurs.
+ * Partition data used in minmaxscaling preprocessor.
+ *
+ * @see MinMaxScalerTrainer
+ * @see MinMaxScalerPreprocessor
  */
-public class CacheAtomicUpdateTimeoutCheckedException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class MinMaxScalerPartitionData implements AutoCloseable {
+    /** Minimal values. */
+    private final double[] min;
+
+    /** Maximum values. */
+    private final double[] max;
 
     /**
-     * Creates new timeout exception with given error message.
+     * Constructs a new instance of minmaxscaling partition data.
      *
-     * @param msg Error message.
+     * @param min Minimal values.
+     * @param max Maximum values.
      */
-    public CacheAtomicUpdateTimeoutCheckedException(String msg) {
-        super(msg);
+    public MinMaxScalerPartitionData(double[] min, double[] max) {
+        this.min = min;
+        this.max = max;
     }
 
-    /**
-     * Creates new timeout exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
-     */
-    public CacheAtomicUpdateTimeoutCheckedException(String msg, Throwable cause) {
-        super(msg, cause);
+    /** */
+    public double[] getMin() {
+        return min;
+    }
+
+    /** */
+    public double[] getMax() {
+        return max;
+    }
+
+    /** */
+    @Override public void close() {
+        // Do nothing, GC will clean up.
     }
 }

@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains Imputer preprocessor.
+ * Root package for dataset splitters and cross validation.
  */
-package org.apache.ignite.ml.preprocessing.imputer;
+package org.apache.ignite.ml.selection.split;
