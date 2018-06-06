@@ -794,7 +794,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             }
 
             // Throttle if there is nothing to clean anymore.
-            if (cleared == 0)
+            if (cleared < amount)
                 nextCleanTime = U.currentTimeMillis() + UNWIND_THROTTLING_TIMEOUT;
         }
         finally {
@@ -1753,7 +1753,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             int cleared = purgeExpiredInternal(cctx, c, amount);
 
             // Throttle if there is nothing to clean anymore.
-            if (cleared == 0)
+            if (cleared < amount)
                 nextStoreCleanTime = now + UNWIND_THROTTLING_TIMEOUT;
 
             return cleared;
