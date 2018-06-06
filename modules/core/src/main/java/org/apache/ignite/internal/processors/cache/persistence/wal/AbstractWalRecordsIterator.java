@@ -187,18 +187,20 @@ public abstract class AbstractWalRecordsIterator
     /**
      * Switches records iterator to the next WAL segment
      * as result of this method, new reference to segment should be returned.
-     * Null for current handle means stop of iteration
-     * @throws IgniteCheckedException if reading failed
+     * Null for current handle means stop of iteration.
+     *
      * @param curWalSegment current open WAL segment or null if there is no open segment yet
      * @return new WAL segment to read or null for stop iteration
+     * @throws IgniteCheckedException if reading failed
      */
     protected abstract AbstractReadFileHandle advanceSegment(
         @Nullable final AbstractReadFileHandle curWalSegment) throws IgniteCheckedException;
 
     /**
-     * Switches to new record
-     * @param hnd currently opened read handle
-     * @return next advanced record
+     * Switches to new record.
+     *
+     * @param hnd currently opened read handle.
+     * @return next advanced record.
      */
     private IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
         @Nullable final AbstractReadFileHandle hnd
@@ -239,7 +241,8 @@ public abstract class AbstractWalRecordsIterator
     }
 
     /**
-     * Handler for record deserialization exception
+     * Handler for record deserialization exception.
+     *
      * @param e problem from records reading
      * @param ptr file pointer was accessed
      */
