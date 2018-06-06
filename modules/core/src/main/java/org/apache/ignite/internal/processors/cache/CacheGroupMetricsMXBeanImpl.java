@@ -229,14 +229,47 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         return cnt;
     }
 
+    /**
+     * Count of partitions with a given state on the local node.
+     *
+     * @param state State.
+     */
+    private int localNodePartitionsCountByState(GridDhtPartitionState state) {
+        int cnt = 0;
+
+        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
+            if (part.state() == state)
+                cnt++;
+        }
+
+        return cnt;
+    }
+
     /** {@inheritDoc} */
     @Override public int getLocalNodeOwningPartitionsCount() {
-        return nodePartitionsCountByState(ctx.shared().localNodeId(), GridDhtPartitionState.OWNING);
+        return localNodePartitionsCountByState(GridDhtPartitionState.OWNING);
     }
 
     /** {@inheritDoc} */
     @Override public int getLocalNodeMovingPartitionsCount() {
-        return nodePartitionsCountByState(ctx.shared().localNodeId(), GridDhtPartitionState.MOVING);
+        return localNodePartitionsCountByState(GridDhtPartitionState.MOVING);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getLocalNodeRentingPartitionsCount() {
+        return localNodePartitionsCountByState(GridDhtPartitionState.RENTING);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLocalNodeRentingEntriesCount() {
+        long entriesCnt = 0;
+
+        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
+            if (part.state() == GridDhtPartitionState.RENTING)
+                entriesCnt += part.dataStore().fullSize();
+        }
+
+        return entriesCnt;
     }
 
     /** {@inheritDoc} */
