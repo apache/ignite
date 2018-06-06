@@ -21,6 +21,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/poll.h>
 
 #include <cstring>
 
@@ -318,35 +319,23 @@ namespace ignite
 
             int TcpSocketClient::WaitOnSocket(int32_t timeout, bool rd)
             {
-                int ready = 0;
                 int lastError = 0;
+                int ret;
+                do
+                {
+                    struct pollfd fds[1];
 
-                fd_set fds;
+                    fds[0].fd = socketHandle;
+                    fds[0].events = rd ? POLLIN : POLLOUT;
 
-                do {
-                    struct timeval tv = { 0 };
-                    tv.tv_sec = timeout;
+                    ret = poll(fds, 1, timeout * 1000);
 
-                    FD_ZERO(&fds);
-                    FD_SET(socketHandle, &fds);
-
-                    fd_set* readFds = 0;
-                    fd_set* writeFds = 0;
-
-                    if (rd)
-                        readFds = &fds;
-                    else
-                        writeFds = &fds;
-
-                    ready = select(static_cast<int>((socketHandle) + 1),
-                        readFds, writeFds, NULL, (timeout == 0 ? NULL : &tv));
-
-                    if (ready == SOCKET_ERROR)
+                    if (ret == SOCKET_ERROR)
                         lastError = GetLastSocketError();
 
-                } while (ready == SOCKET_ERROR && IsSocketOperationInterrupted(lastError));
+                } while (ret == SOCKET_ERROR && IsSocketOperationInterrupted(lastError));
 
-                if (ready == SOCKET_ERROR)
+                if (ret == SOCKET_ERROR)
                     return -lastError;
 
                 socklen_t size = sizeof(lastError);
@@ -355,7 +344,7 @@ namespace ignite
                 if (res != SOCKET_ERROR && lastError != 0)
                     return -lastError;
 
-                if (ready == 0)
+                if (ret == 0)
                     return WaitResult::TIMEOUT;
 
                 return WaitResult::SUCCESS;
