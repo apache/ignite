@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datetime import datetime, timezone
 import uuid
 
 import pytest
@@ -119,6 +120,27 @@ def test_uuid(conn, expected_value):
 
     uuid_var.set_attribute(expected_value)
     assert uuid_var.get_attribute().bytes == expected_value.bytes
+
+
+@pytest.mark.parametrize(
+    'conn, expected_value',
+    [
+        (
+            MockSocket(b'\x0b\x40\xa8\x47\xe1\xcf\x00\x00\x00'),
+            datetime(year=1998, month=4, day=18, hour=5, minute=30),
+        ),
+    ]
+)
+def test_date(conn, expected_value):
+    date_var = data_object(conn)
+    assert date_var.type_code == int.from_bytes(
+        TC_DATE,
+        byteorder=PROTOCOL_BYTE_ORDER
+    )
+    assert date_var.get_attribute() == expected_value
+
+    date_var.set_attribute(expected_value)
+    assert date_var.get_attribute() == expected_value
 
 
 @pytest.mark.parametrize(
