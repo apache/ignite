@@ -1111,7 +1111,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
             QuorumPeer qp = srvs.get(2).getQuorumPeer();
 
-            // Zookeeper's socket timeout [tickTime + initLimit] + 5 additional seconds for other logic
+            // Zookeeper's socket timeout [tickTime * initLimit] + 5 additional seconds for other logic
             assertTrue(l.await(qp.getTickTime() * qp.getInitLimit() + 5000, TimeUnit.MILLISECONDS));
         }
         finally {
