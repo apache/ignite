@@ -561,11 +561,9 @@ public class StripedExecutor implements ExecutorService {
                     }
                 }
                 catch (InterruptedException ignored) {
-                    stopping = true;
-
                     Thread.currentThread().interrupt();
 
-                    return;
+                    break;
                 }
                 catch (Throwable e) {
                     if (e instanceof OutOfMemoryError)
