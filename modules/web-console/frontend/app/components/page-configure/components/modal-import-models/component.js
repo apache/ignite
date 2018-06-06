@@ -1050,7 +1050,7 @@ export class ModalImportModels {
                 selectedPreset.jdbcDriverJar = foundPreset.jdbcDriverJar;
                 selectedPreset.jdbcDriverClass = foundPreset.jdbcDriverClass;
                 selectedPreset.jdbcUrl = foundPreset.jdbcUrl;
-                selectedPreset.login = foundPreset.user;
+                selectedPreset.user = foundPreset.user;
             }
         }, true);
     }

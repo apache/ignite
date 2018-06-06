@@ -27,7 +27,7 @@ angular
     /**
      * @param {Object} options Socket io options.
      */
-    this.save = (options) => {
+    this.set = (options) => {
         _options = options;
     };
 

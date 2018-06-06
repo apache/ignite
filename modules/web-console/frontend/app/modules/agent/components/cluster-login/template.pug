@@ -52,16 +52,17 @@ include /app/helpers/jade/mixins
                         })(
                             autocomplete='node-password'
                         )
-                .row
-                    .col-50
-                        +form-field__dropdown({
-                            label: 'Session Expire Time:',
-                            model: '$ctrl.secrets.sessionTtl',
-                            name: '"sesTtl"',
-                            required: true,
-                            placeholder: 'Choose your session expire time',
-                            options: '$ctrl.sesTtls'
-                        })
+                //-
+                    .row
+                        .col-50
+                            +form-field__dropdown({
+                                label: 'Session Expire Time:',
+                                model: '$ctrl.secrets.sessionTtl',
+                                name: '"sesTtl"',
+                                required: true,
+                                placeholder: 'Choose your session expire time',
+                                options: '$ctrl.sesTtls'
+                            })
 
             .modal-footer
                 button#btn-cancel.btn-ignite.btn-ignite--link-success(type='button' ng-click='$ctrl.onHide()') Cancel
