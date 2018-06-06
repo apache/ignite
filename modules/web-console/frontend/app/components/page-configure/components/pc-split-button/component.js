@@ -15,43 +15,13 @@
  * limitations under the License.
  */
 
-.list-editable-cols__header {
-    $index-column-width: 46px;
-    $remove-column-width: 36px;
+import template from './template.pug';
+import controller from './controller';
 
-    margin-left: 10px;
-    margin-right: $remove-column-width;
-    transition: 0.2s opacity;
-
-    &__multiple-cols {
-        margin-left: $index-column-width;
+export default {
+    controller,
+    template,
+    bindings: {
+        actions: '<'
     }
-
-    .ignite-form-field__label {
-        padding-left: 0;
-        padding-right: 0;
-        float: none;
-    }
-
-    [ignite-icon='info'] {
-        @import 'public/stylesheets/variables';
-
-        margin-left: 5px;
-        color: $ignite-brand-success;
-    }
-
-    &+list-editable {
-        .ignite-form-field__label {
-            display: none;
-        }
-        
-        .le-row-item-view:nth-last-child(2) {
-            display: none;
-        }
-    }
-
-    &[disabled] {
-        opacity: 0.5;
-        cursor: default;
-    }
-}
+};
