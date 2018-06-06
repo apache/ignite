@@ -2131,6 +2131,9 @@ public class GridNioServer<T> {
                             else
                                 processSelectedKeysOptimized(selectedKeys.flip());
                         }
+
+                        if (Thread.interrupted())
+                            throw new InterruptedException();
                     }
                     finally {
                         select = false;
