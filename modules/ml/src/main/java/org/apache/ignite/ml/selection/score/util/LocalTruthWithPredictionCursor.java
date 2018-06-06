@@ -19,24 +19,45 @@ package org.apache.ignite.ml.selection.score.util;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.selection.score.TruthWithPrediction;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Truth with prediction cursor based on a locally stored data.
+ *
+ * @param <L> Type of a label (truth or prediction).
+ * @param <K> Type of a key in {@code upstream} data.
+ * @param <V> Type of a value in {@code upstream} data.
+ */
 public class LocalTruthWithPredictionCursor<L, K, V> implements TruthWithPredictionCursor<L> {
-
+    /** Map with {@code upstream} data. */
     private final Map<K, V> upstreamMap;
 
+    /** Filter for {@code upstream} data. */
     private final IgniteBiPredicate<K, V> filter;
 
+    /** Feature extractor. */
     private final IgniteBiFunction<K, V, double[]> featureExtractor;
 
+    /** Label extractor. */
     private final IgniteBiFunction<K, V, L> lbExtractor;
 
+    /** Model for inference. */
     private final Model<double[], L> mdl;
 
+    /**
+     * Constructs a new instance of local truth with prediction cursor.
+     *
+     * @param upstreamMap Map with {@code upstream} data.
+     * @param filter Filter for {@code upstream} data.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param mdl Model for inference.
+     */
     public LocalTruthWithPredictionCursor(Map<K, V> upstreamMap, IgniteBiPredicate<K, V> filter,
         IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
         Model<double[], L> mdl) {
@@ -54,6 +75,63 @@ public class LocalTruthWithPredictionCursor<L, K, V> implements TruthWithPredict
 
     /** {@inheritDoc} */
     @NotNull @Override public Iterator<TruthWithPrediction<L>> iterator() {
-        return null;
+        return new TruthWithPredictionIterator(upstreamMap.entrySet().iterator());
+    }
+
+    /**
+     * Util iterator that filters map entries and makes predictions using the model.
+     */
+    private class TruthWithPredictionIterator implements Iterator<TruthWithPrediction<L>> {
+        /** Base iterator. */
+        private final Iterator<Map.Entry<K, V>> iter;
+
+        /** Next found entry. */
+        private Map.Entry<K, V> nextEntry;
+
+        /**
+         * Constructs a new instance of truth with prediction iterator.
+         *
+         * @param iter Base iterator.
+         */
+        public TruthWithPredictionIterator(Iterator<Map.Entry<K, V>> iter) {
+            this.iter = iter;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            findNext();
+
+            return nextEntry != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public TruthWithPrediction<L> next() {
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            K key = nextEntry.getKey();
+            V val = nextEntry.getValue();
+
+            double[] features = featureExtractor.apply(key, val);
+            L lb = lbExtractor.apply(key, val);
+
+            nextEntry = null;
+
+            return new TruthWithPrediction<>(lb, mdl.apply(features));
+        }
+
+        /**
+         * Finds next entry using the specified filter.
+         */
+        private void findNext() {
+            while (nextEntry == null && iter.hasNext()) {
+                Map.Entry<K, V> entry = iter.next();
+
+                if (filter.apply(entry.getKey(), entry.getValue())) {
+                    this.nextEntry = entry;
+                    break;
+                }
+            }
+        }
     }
 }

@@ -15,15 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score.util;
-
-import org.apache.ignite.ml.selection.score.TruthWithPrediction;
-
 /**
- * Closeable iterable that supplies pairs of truth and predictions (abstraction that hides a difference between querying
- * data from Ignite cache and from local Map).
- *
- * @param <L> Type of a label (truth or prediction).
+ * <!-- Package description. -->
+ * Util classes used for score calculation.
  */
-public interface TruthWithPredictionCursor<L> extends Iterable<TruthWithPrediction<L>>, AutoCloseable {
-}
+package org.apache.ignite.ml.selection.score.util;

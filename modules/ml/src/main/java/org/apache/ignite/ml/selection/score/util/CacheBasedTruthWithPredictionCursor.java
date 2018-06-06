@@ -28,16 +28,35 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.selection.score.TruthWithPrediction;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Truth with prediction cursor based on a data stored in Ignite cache.
+ *
+ * @param <L> Type of a label (truth or prediction).
+ * @param <K> Type of a key in {@code upstream} data.
+ * @param <V> Type of a value in {@code upstream} data.
+ */
 public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPredictionCursor<L> {
-
+    /** Query cursor. */
     private final QueryCursor<Cache.Entry<K, V>> cursor;
 
+    /** Feature extractor. */
     private final IgniteBiFunction<K, V, double[]> featureExtractor;
 
+    /** Label extractor. */
     private final IgniteBiFunction<K, V, L> lbExtractor;
 
+    /** Model for inference. */
     private final Model<double[], L> mdl;
 
+    /**
+     * Constructs a new instance of cache based truth with prediction cursor.
+     *
+     * @param upstreamCache Ignite cache with {@code upstream} data.
+     * @param filter Filter for {@code upstream} data.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param mdl Model for inference.
+     */
     public CacheBasedTruthWithPredictionCursor(IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter,
         IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, L> lbExtractor,
         Model<double[], L> mdl) {
@@ -57,6 +76,13 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
         return new TruthWithPredictionIterator(cursor.iterator());
     }
 
+    /**
+     * Queries the specified cache using the specified filter.
+     *
+     * @param upstreamCache Ignite cache with {@code upstream} data.
+     * @param filter Filter for {@code upstream} data.
+     * @return Query cursor.
+     */
     private QueryCursor<Cache.Entry<K, V>> query(IgniteCache<K, V> upstreamCache, IgniteBiPredicate<K, V> filter) {
         ScanQuery<K, V> qry = new ScanQuery<>();
         qry.setFilter(filter);
@@ -64,18 +90,28 @@ public class CacheBasedTruthWithPredictionCursor<L, K, V> implements TruthWithPr
         return upstreamCache.query(qry);
     }
 
+    /**
+     * Util iterator that makes predictions using the model.
+     */
     private class TruthWithPredictionIterator implements Iterator<TruthWithPrediction<L>> {
-
+        /** Base iterator. */
         private final Iterator<Cache.Entry<K, V>> iter;
 
+        /**
+         * Constructs a new instance of truth with prediction iterator.
+         *
+         * @param iter Base iterator.
+         */
         public TruthWithPredictionIterator(Iterator<Cache.Entry<K, V>> iter) {
             this.iter = iter;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean hasNext() {
             return iter.hasNext();
         }
 
+        /** {@inheritDoc} */
         @Override public TruthWithPrediction<L> next() {
             Cache.Entry<K, V> entry = iter.next();
 

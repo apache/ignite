@@ -15,33 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.selection.score;
-
-import java.util.Iterator;
-
 /**
- * Accuracy score calculator.
- *
- * @param <L> Type of a label (truth or prediction).
+ * <!-- Package description. -->
+ * ML cross validation examples.
  */
-public class AccuracyCalculator<L> implements ScoreCalculator<L> {
-    /** {@inheritDoc} */
-    @Override public double score(Iterator<TruthWithPrediction<L>> iter) {
-        int totalCnt = 0;
-        int correctCnt = 0;
-
-        while (iter.hasNext()) {
-            TruthWithPrediction<L> e = iter.next();
-
-            L prediction = e.getPrediction();
-            L truth = e.getTruth();
-
-            if (prediction.equals(truth))
-                correctCnt++;
-
-            totalCnt++;
-        }
-
-        return 1.0 * correctCnt / totalCnt;
-    }
-}
+package org.apache.ignite.examples.ml.selection.cv;
