@@ -96,7 +96,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
-import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -308,7 +307,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public int boundPort() throws IgniteSpiException {
         if (tcpSrvr == null)
-            tcpSrvr = new TcpServer();
+            tcpSrvr = new TcpServer(log);
 
         return tcpSrvr.port;
     }
@@ -345,14 +344,14 @@ class ServerImpl extends TcpDiscoveryImpl {
         new MessageWorkerThread(msgWorker, log).start();
 
         if (tcpSrvr == null)
-            tcpSrvr = new TcpServer();
+            tcpSrvr = new TcpServer(log);
 
         spi.initLocalNode(tcpSrvr.port, true);
 
         locNode = spi.locNode;
 
         // Start TCP server thread after local node is initialized.
-        tcpSrvr.start();
+        new TcpServerThread(tcpSrvr, log).start();
 
         ring.localNode(locNode);
 
@@ -450,8 +449,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
-        U.interrupt(tcpSrvr);
-        U.join(tcpSrvr, log);
+        U.interrupt(tcpSrvr.runner());
+        U.join(tcpSrvr.runner(), log);
 
         tcpSrvr = null;
 
@@ -1661,8 +1660,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Override void simulateNodeFailure() {
         U.warn(log, "Simulating node failure: " + getLocalNodeId());
 
-        U.interrupt(tcpSrvr);
-        U.join(tcpSrvr, log);
+        U.interrupt(tcpSrvr.runner());
+        U.join(tcpSrvr.runner(), log);
 
         U.interrupt(ipFinderCleaner);
         U.join(ipFinderCleaner, log);
@@ -1716,7 +1715,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             threads.add((IgniteSpiThread)t);
         }
 
-        threads.add(tcpSrvr);
+        Thread tcpServerThread = tcpSrvr.runner();
+
+        assert tcpServerThread instanceof IgniteSpiThread;
+
+        threads.add((IgniteSpiThread)tcpServerThread);
+
         threads.add(ipFinderCleaner);
 
         Thread msgWorkerThread = msgWorker.runner();
@@ -5601,13 +5605,43 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
+    /** Thread that executes {@link TcpServer}'s code. */
+    private class TcpServerThread extends IgniteSpiThread {
+        /** */
+        private final TcpServer worker;
+
+        /**
+         * @param worker Worker to be executed by this thread.
+         * @param log Logger.
+         */
+        private TcpServerThread(TcpServer worker, IgniteLogger log) {
+            super(worker.igniteInstanceName(), worker.name(), log);
+
+            setPriority(spi.threadPri);
+
+            this.worker = worker;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException {
+            worker.run();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void interrupt() {
+            super.interrupt();
+
+            worker.onInterruption();
+        }
+    }
+
     /**
-     * Thread that accepts incoming TCP connections.
+     * Worker that accepts incoming TCP connections.
      * <p>
      * Tcp server will call provided closure when accepts incoming connection.
      * From that moment server is no more responsible for the socket.
      */
-    private class TcpServer extends IgniteSpiThread {
+    private class TcpServer extends GridWorker {
         /** Socket TCP server listens to. */
         private ServerSocket srvrSock;
 
@@ -5618,14 +5652,12 @@ class ServerImpl extends TcpDiscoveryImpl {
         private GridWorker worker;
 
         /**
-         * Constructor.
-         *
+         * @param log Logger.
          * @throws IgniteSpiException In case of error.
          */
-        TcpServer() throws IgniteSpiException {
-            super(spi.ignite().name(), "tcp-disco-srvr", log);
-
-            setPriority(spi.threadPri);
+        TcpServer(IgniteLogger log) throws IgniteSpiException {
+            super(spi.ignite().name(), "tcp-disco-srvr", log,
+                spi.ignite() instanceof IgniteEx ? ((IgniteEx)spi.ignite()).context().workersRegistry() : null);
 
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
 
@@ -5649,16 +5681,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                             ']');
                     }
 
-                    WorkersRegistry workerRegistry = spi.ignite() instanceof IgniteEx
-                        ? ((IgniteEx)spi.ignite()).context().workersRegistry()
-                        : null;
-
-                    worker = new GridWorker(igniteInstanceName, getName(), log, workerRegistry) {
-                        @Override protected void body() {
-                            workerBody();
-                        }
-                    };
-
                     return;
                 }
                 catch (IOException e) {
@@ -5677,12 +5699,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 ", addr=" + spi.locHost + ']');
         }
 
-        /** */
-        private void workerBody() {
+        /** {@inheritDoc} */
+        @Override protected void body() {
             Throwable err = null;
 
             try {
-                while (!isInterrupted()) {
+                while (!runner().isInterrupted()) {
                     Socket sock = srvrSock.accept();
 
                     long tstamp = U.currentTimeMillis();
@@ -5712,7 +5734,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 onException("Failed to accept TCP connection.", e);
 
-                if (!isInterrupted()) {
+                if (!runner().isInterrupted()) {
                     err = e;
 
                     if (U.isMacInvalidArgumentError(e))
@@ -5729,7 +5751,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             finally {
                 if (spi.ignite() instanceof IgniteEx) {
                     if (err == null && !spi.isNodeStopping0())
-                        err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly.");
+                        err = new IllegalStateException("Worker " + name() + " is terminated unexpectedly.");
 
                     FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
 
@@ -5743,15 +5765,8 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
-        /** {@inheritDoc} */
-        @Override protected void body() {
-            worker.run();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void interrupt() {
-            super.interrupt();
-
+        /** */
+        public void onInterruption() {
             U.close(srvrSock, log);
         }
     }
