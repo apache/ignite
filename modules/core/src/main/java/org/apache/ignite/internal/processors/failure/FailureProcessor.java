@@ -29,13 +29,12 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DUMP_THREADS_ON_FAILURE;
+
 /**
  * General failure processing API
  */
 public class FailureProcessor extends GridProcessorAdapter {
-    /** Name of the system property that enables threads dumping on failure. */
-    private static final String IGNITE_DUMP_THREADS_ON_FAILURE = "IGNITE_DUMP_THREADS_ON_FAILURE";
-
     /** Value of the system property that enables threads dumping on failure. */
     private static final boolean IGNITE_DUMP_THREADS_ON_FAILURE_VAL =
         IgniteSystemProperties.getBoolean(IGNITE_DUMP_THREADS_ON_FAILURE, true);
