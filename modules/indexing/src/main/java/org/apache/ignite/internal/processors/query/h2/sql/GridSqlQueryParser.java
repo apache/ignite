@@ -1113,7 +1113,8 @@ public class GridSqlQueryParser {
         final boolean wrapKey0;
 
         if (!F.isEmpty(res.keyTypeName())) {
-            Class<?> c = U.isJdk(res.keyTypeName()) ? U.classForName(res.keyTypeName(), null, true) : null;
+            Class<?> c = U.isJdkOrUnboxedPrimitive(res.keyTypeName()) ?
+                U.classForName(res.keyTypeName(), null, true) : null;
 
             if (c != null && QueryUtils.isSqlType(c)) {
                 if (keyColsNum != 1)
@@ -1149,7 +1150,8 @@ public class GridSqlQueryParser {
             wrapVal0 = false;
         }
         else if (!F.isEmpty(res.valueTypeName())) {
-            Class<?> c = U.isJdk(res.valueTypeName()) ? U.classForName(res.valueTypeName(), null, true) : null;
+            Class<?> c = U.isJdkOrUnboxedPrimitive(res.valueTypeName()) ?
+                U.classForName(res.valueTypeName(), null, true) : null;
 
             if (c != null && QueryUtils.isSqlType(c)) {
                 if (valColsNum != 1)
@@ -1166,7 +1168,7 @@ public class GridSqlQueryParser {
 
         res.wrapValue(wrapVal0);
 
-        if (!F.isEmpty(res.valueTypeName()) && !U.isJdk(res.valueTypeName()) &&
+        if (!F.isEmpty(res.valueTypeName()) && !U.isJdkOrUnboxedPrimitive(res.valueTypeName()) &&
             F.eq(res.keyTypeName(), res.valueTypeName())) {
             throw new IgniteSQLException("Key and value type names " +
                 "should be different for CREATE TABLE: " + res.valueTypeName(), IgniteQueryErrorCode.PARSING);

@@ -1201,7 +1201,7 @@ public class QueryUtils {
 
         String keyType = entity.getKeyType();
 
-        if (!F.isEmpty(keyType) && U.isJdk(keyType)) {
+        if (!F.isEmpty(keyType) && U.isJdkOrUnboxedPrimitive(keyType)) {
             if (!F.isEmpty(entity.getKeyFields()))
                 throw new IgniteException("Key type may not point at JDK type when multiple key columns are defined.");
 
@@ -1219,7 +1219,7 @@ public class QueryUtils {
 
         String valType = entity.getValueType();
 
-        if (!F.isEmpty(valType) && U.isJdk(valType)) {
+        if (!F.isEmpty(valType) && U.isJdkOrUnboxedPrimitive(valType)) {
             if (!flatVal) {
                 throw new IgniteException("Value type may not point at JDK type " +
                     "when multiple value columns are defined.");
