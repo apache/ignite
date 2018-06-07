@@ -15,28 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.db.wal;
-
 /**
- *
+ * <!-- Package description. -->
+ * Util classes used for score calculation.
  */
-public class IgniteWalFlushBackgroundWithMmapBufferSelfTest extends IgniteWalFlushBackgroundSelfTest {
-    /** {@inheritDoc} */
-    @Override protected boolean mmap() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testFailWhileStart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
-
-        super.testFailWhileStart();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testFailAfterStart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
-
-        super.testFailAfterStart();
-    }
-}
+package org.apache.ignite.ml.selection.score.util;

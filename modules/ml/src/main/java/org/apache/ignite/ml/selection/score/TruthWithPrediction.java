@@ -15,28 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.db.wal;
+package org.apache.ignite.ml.selection.score;
 
 /**
+ * Pair of truth value and predicated by model.
  *
+ * @param <L> Type of a label (truth or prediction).
  */
-public class IgniteWalFlushBackgroundWithMmapBufferSelfTest extends IgniteWalFlushBackgroundSelfTest {
-    /** {@inheritDoc} */
-    @Override protected boolean mmap() {
-        return true;
+public class TruthWithPrediction<L> {
+    /** Truth value. */
+    private final L truth;
+
+    /** Predicted value. */
+    private final L prediction;
+
+    /**
+     * Constructs a new instance of truth with prediction.
+     *
+     * @param truth Truth value.
+     * @param prediction Predicted value.
+     */
+    public TruthWithPrediction(L truth, L prediction) {
+        this.truth = truth;
+        this.prediction = prediction;
     }
 
-    /** {@inheritDoc} */
-    @Override public void testFailWhileStart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
-
-        super.testFailWhileStart();
+    /** */
+    public L getTruth() {
+        return truth;
     }
 
-    /** {@inheritDoc} */
-    @Override public void testFailAfterStart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
-
-        super.testFailAfterStart();
+    /** */
+    public L getPrediction() {
+        return prediction;
     }
 }

@@ -15,28 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.db.wal;
+package org.apache.ignite.ml.selection.score;
+
+import java.util.Iterator;
 
 /**
+ * Base interface for score calculators.
  *
+ * @param <L> Type of a label (truth or prediction).
  */
-public class IgniteWalFlushBackgroundWithMmapBufferSelfTest extends IgniteWalFlushBackgroundSelfTest {
-    /** {@inheritDoc} */
-    @Override protected boolean mmap() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testFailWhileStart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
-
-        super.testFailWhileStart();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testFailAfterStart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
-
-        super.testFailAfterStart();
-    }
+public interface ScoreCalculator<L> {
+    /**
+     * Calculates score.
+     *
+     * @param iter Iterator that supplies pairs of truth values and predicated.
+     * @return Score.
+     */
+    public double score(Iterator<TruthWithPrediction<L>> iter);
 }

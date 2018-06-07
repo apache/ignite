@@ -14,28 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 /**
- *
+ * Native IO version of test
  */
-public class IgniteWalFlushBackgroundWithMmapBufferSelfTest extends IgniteWalFlushBackgroundSelfTest {
-    /** {@inheritDoc} */
-    @Override protected boolean mmap() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testFailWhileStart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
-
-        super.testFailWhileStart();
-    }
-
+public class IgniteNativeIoWalFlushFsyncSelfTest extends IgniteWalFlushFsyncSelfTest {
     /** {@inheritDoc} */
     @Override public void testFailAfterStart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
+        fail("https://issues.apache.org/jira/browse/IGNITE-8742");
 
         super.testFailAfterStart();
     }

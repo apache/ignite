@@ -15,28 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.db.wal;
+package org.apache.ignite.ml.selection.score;
+
+import java.util.Arrays;
+import org.apache.ignite.ml.selection.score.util.TruthWithPredictionCursor;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 /**
- *
+ * Tests for {@link AccuracyScoreCalculator}.
  */
-public class IgniteWalFlushBackgroundWithMmapBufferSelfTest extends IgniteWalFlushBackgroundSelfTest {
-    /** {@inheritDoc} */
-    @Override protected boolean mmap() {
-        return true;
-    }
+public class AccuracyScoreCalculatorTest {
+    /** */
+    @Test
+    public void testScore() {
+        ScoreCalculator<Integer> scoreCalculator = new AccuracyScoreCalculator<>();
 
-    /** {@inheritDoc} */
-    @Override public void testFailWhileStart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
+        TruthWithPredictionCursor<Integer> cursor = new TestTruthWithPredictionCursor<>(
+            Arrays.asList(1, 1, 1, 1),
+            Arrays.asList(1, 1, 0, 1)
+        );
 
-        super.testFailWhileStart();
-    }
+        double score = scoreCalculator.score(cursor.iterator());
 
-    /** {@inheritDoc} */
-    @Override public void testFailAfterStart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
-
-        super.testFailAfterStart();
+        assertEquals(0.75, score, 1e-12);
     }
 }

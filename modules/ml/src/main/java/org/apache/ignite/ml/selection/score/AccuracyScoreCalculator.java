@@ -15,28 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.db.wal;
+package org.apache.ignite.ml.selection.score;
+
+import java.util.Iterator;
 
 /**
+ * Accuracy score calculator.
  *
+ * @param <L> Type of a label (truth or prediction).
  */
-public class IgniteWalFlushBackgroundWithMmapBufferSelfTest extends IgniteWalFlushBackgroundSelfTest {
+public class AccuracyScoreCalculator<L> implements ScoreCalculator<L> {
     /** {@inheritDoc} */
-    @Override protected boolean mmap() {
-        return true;
-    }
+    @Override public double score(Iterator<TruthWithPrediction<L>> iter) {
+        long totalCnt = 0;
+        long correctCnt = 0;
 
-    /** {@inheritDoc} */
-    @Override public void testFailWhileStart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
+        while (iter.hasNext()) {
+            TruthWithPrediction<L> e = iter.next();
 
-        super.testFailWhileStart();
-    }
+            L prediction = e.getPrediction();
+            L truth = e.getTruth();
 
-    /** {@inheritDoc} */
-    @Override public void testFailAfterStart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
+            if (prediction.equals(truth))
+                correctCnt++;
 
-        super.testFailAfterStart();
+            totalCnt++;
+        }
+
+        return 1.0 * correctCnt / totalCnt;
     }
 }

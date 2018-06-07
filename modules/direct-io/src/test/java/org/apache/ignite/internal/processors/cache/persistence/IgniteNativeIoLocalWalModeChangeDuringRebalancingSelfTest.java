@@ -14,29 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.ignite.internal.processors.cache.persistence.db.wal;
+package org.apache.ignite.internal.processors.cache.persistence;
 
 /**
- *
+ * Version of test to be executed in Direct IO suite.
+ * Contains reduced number of records, because Direct IO does not support tmpfs.
  */
-public class IgniteWalFlushBackgroundWithMmapBufferSelfTest extends IgniteWalFlushBackgroundSelfTest {
+public class IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest extends LocalWalModeChangeDuringRebalancingSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean mmap() {
-        return true;
+    @Override protected int getKeysCount() {
+        return 1_000;
     }
 
     /** {@inheritDoc} */
-    @Override public void testFailWhileStart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
-
-        super.testFailWhileStart();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testFailAfterStart() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8727");
-
-        super.testFailAfterStart();
+    @Override public void testWithExchangesMerge() throws Exception {
+        super.testWithExchangesMerge();
     }
 }
