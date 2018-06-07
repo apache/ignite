@@ -939,6 +939,15 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return join;
     }
 
+    /**
+     * Do right join.
+     *
+     * @param left Left cache.
+     * @param right Right cache.
+     * @param filter Filter.
+     * @param transformer Transformer.
+     * @return Result.
+     */
     protected static <R> List<R> doRightJoin(
         IgniteCache<?, ?> left,
         IgniteCache<?, ?> right,
@@ -948,6 +957,15 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return doCommonJoin(left, right, filter, transformer, false, true);
     }
 
+    /**
+     * Do left join.
+     *
+     * @param left Left cache.
+     * @param right Right cache.
+     * @param filter Filter.
+     * @param transformer Transformer.
+     * @return Result.
+     */
     protected static <R> List<R> doLeftJoin(
         IgniteCache<?, ?> left,
         IgniteCache<?, ?> right,
@@ -957,6 +975,15 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         return doCommonJoin(left, right, filter, transformer, true, false);
     }
 
+    /**
+     * Do inner join.
+     *
+     * @param left Left cache.
+     * @param right Right cache.
+     * @param filter Filter.
+     * @param transformer Transformer.
+     * @return Result.
+     */
     protected static <R> List<R> doInnerJoin(
         IgniteCache<?, ?> left,
         IgniteCache<?, ?> right,
@@ -964,15 +991,6 @@ public class BaseSqlTest extends GridCommonAbstractTest {
         IgniteBiClosure<Map<String, Object>, Map<String, Object>, R> transformer) {
 
         return doCommonJoin(left, right, filter, transformer, false, false);
-    }
-
-    protected static <R> List<R> doOuterJoin(
-        IgniteCache<?, ?> left,
-        IgniteCache<?, ?> right,
-        IgniteBiPredicate<Map<String, Object>, Map<String, Object>> filter,
-        IgniteBiClosure<Map<String, Object>, Map<String, Object>, R> transformer) {
-
-        return doCommonJoin(left, right, filter, transformer, true, true);
     }
 
     /**
