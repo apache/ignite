@@ -14,7 +14,7 @@
 # limitations under the License.
 
 import ctypes
-from datetime import date, datetime, time
+from datetime import date, datetime, timedelta
 from uuid import UUID
 
 from .type_codes import *
@@ -65,9 +65,10 @@ standard_from_python = {
     str: TC_CHAR,
     date: TC_DATE,
     datetime: TC_DATE,
-    time: TC_TIME,
+    timedelta: TC_TIME,
     UUID: TC_UUID,
     tuple: TC_ENUM,
+    list: TC_ENUM,
 }
 
 standard_types = list(standard_type_config.keys())

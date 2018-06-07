@@ -50,7 +50,7 @@ def test_null(conn, expected_value):
         TC_NULL,
         byteorder=PROTOCOL_BYTE_ORDER
     )
-    assert null_var.get_attribute() is None
+    assert null_var.get_attribute() is expected_value
 
 
 @pytest.mark.parametrize(

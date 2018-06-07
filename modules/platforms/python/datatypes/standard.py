@@ -24,46 +24,69 @@ import socket
 from uuid import UUID
 
 from constants import *
-from datatypes.class_configs import *
+from datatypes.class_configs import standard_from_python, standard_type_config
 from datatypes.type_codes import *
 from .simple import init
 
 
-def get_attribute(self):
-    if self._type_code == TC_BOOL:
-        return bool(self.value)
-    if self._type_code == TC_CHAR:
-        return self.value.to_bytes(
-            2,
-            byteorder=PROTOCOL_BYTE_ORDER
-        ).decode(
-            PROTOCOL_CHAR_ENCODING
-        )
-    if self._type_code == TC_UUID:
-        return UUID(bytes=bytes(self.value))
-    if self._type_code == TC_DATE:
-        return datetime.fromtimestamp(self.value/1000)
-    if self._type_code == TC_TIME:
-        return timedelta(milliseconds=self.value)
-    return self.value
+standard_get_attribute = {
+    TC_BOOL: lambda self: bool(self.value),
+    TC_CHAR: lambda self: self.value.to_bytes(
+        2,
+        byteorder=PROTOCOL_BYTE_ORDER
+    ).decode(PROTOCOL_CHAR_ENCODING),
+    TC_UUID: lambda self: UUID(bytes=bytes(self.value)),
+    TC_DATE: lambda self: datetime.fromtimestamp(self.value/1000),
+    TC_TIME: lambda self: timedelta(milliseconds=self.value),
+    TC_TIMESTAMP: lambda self: (
+            datetime.fromtimestamp(self.value.epoch/1000),
+            self.value.fraction,
+        ),
+    TC_ENUM: lambda self: (self.value.type_id, self.value.ordinal),
+}
 
 
-def set_attribute(self, value):
-    if self._type_code == TC_BOOL:
-        self.value = 1 if value else 0
-    elif self._type_code == TC_CHAR:
-        self.value = int.from_bytes(
-            value.encode(PROTOCOL_CHAR_ENCODING),
-            byteorder=PROTOCOL_BYTE_ORDER
-        )
-    elif self._type_code == TC_UUID:
-        self.value = (ctypes.c_byte*16)(*bytearray(value.bytes))
-    elif self._type_code == TC_DATE:
-        self.value = int(value.timestamp()*1000)
-    elif self._type_code == TC_TIME:
-        self.value = int(value.total_seconds()*1000)
-    else:
-        self.value = value
+def bool_set_attribute(self, value):
+    self.value = 1 if value else 0
+
+
+def char_set_attribute(self, value):
+    self.value = int.from_bytes(
+        value.encode(PROTOCOL_CHAR_ENCODING),
+        byteorder=PROTOCOL_BYTE_ORDER
+    )
+
+
+def uuid_set_attribute(self, value):
+    self.value = (ctypes.c_byte*16)(*bytearray(value.bytes))
+
+
+def date_set_attribute(self, value):
+    self.value = int(value.timestamp() * 1000)
+
+
+def time_set_attribute(self, value):
+    self.value = int(value.total_seconds()*1000)
+
+
+def timestamp_set_attribute(self, value):
+    self.value.epoch = int(value[0].timestamp()*1000)
+    self.value.fraction = value[1]
+
+
+def enum_set_attribute(self, value):
+    self.value.type_id, self.value.ordinal = value
+
+
+standard_set_attribute = {
+    TC_BOOL: bool_set_attribute,
+    TC_CHAR: char_set_attribute,
+    TC_UUID: uuid_set_attribute,
+    TC_DATE: date_set_attribute,
+    TC_TIME: time_set_attribute,
+    TC_TIMESTAMP: timestamp_set_attribute,
+    TC_ENUM: enum_set_attribute,
+}
 
 
 def from_python(python_type):
@@ -93,8 +116,8 @@ def standard_data_class(python_var, tc_hint=None, **kwargs):
             ],
             '_type_code': type_code,
             'init': init,
-            'get_attribute': get_attribute,
-            'set_attribute': set_attribute,
+            'get_attribute': standard_get_attribute[type_code],
+            'set_attribute': standard_set_attribute[type_code],
         },
     )
 
