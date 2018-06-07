@@ -18,10 +18,10 @@ Non-serial data types which values require conversion between ctypes type
 and python type.
 """
 
-from datetime import date, datetime, time, timezone
+from datetime import datetime, timedelta
 import ctypes
 import socket
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from constants import *
 from datatypes.class_configs import *
@@ -43,6 +43,8 @@ def get_attribute(self):
         return UUID(bytes=bytes(self.value))
     if self._type_code == TC_DATE:
         return datetime.fromtimestamp(self.value/1000)
+    if self._type_code == TC_TIME:
+        return timedelta(milliseconds=self.value)
     return self.value
 
 
@@ -58,6 +60,8 @@ def set_attribute(self, value):
         self.value = (ctypes.c_byte*16)(*bytearray(value.bytes))
     elif self._type_code == TC_DATE:
         self.value = int(value.timestamp()*1000)
+    elif self._type_code == TC_TIME:
+        self.value = int(value.total_seconds()*1000)
     else:
         self.value = value
 
