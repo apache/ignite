@@ -385,11 +385,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     @Override public Runnable addAssignments(
         GridDhtPreloaderAssignments assignments,
         boolean forceRebalance,
+        boolean skipAssigns,
         long rebalanceId,
         Runnable next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut
     ) {
-        return demander.addAssignments(assignments, forceRebalance, rebalanceId, next, forcedRebFut);
+        return demander.addAssignments(assignments, forceRebalance, skipAssigns, rebalanceId, next, forcedRebFut);
     }
 
     /**

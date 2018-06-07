@@ -79,7 +79,7 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
      *
      * @return {@code True } if assignments are changed from previously generated and need to be rebalanced.
      */
-    boolean rebalanceNeeded() {
+    public boolean rebalanceNeeded() {
         return rebalanceNeeded;
     }
 

@@ -255,12 +255,7 @@ public class GridDhtPartitionDemander {
      * @return {@code True} if topology version changes has valuable cause to process.
      */
     private boolean topologyChanged(RebalanceFuture fut) {
-        final AffinityTopologyVersion lastVer = grp.affinity().lastVersion();
-
-        final boolean sameAssignments = grp.affinity().cachedAffinity(lastVer).clientEventChange();
-
-        return !(lastVer.equals(fut.topologyVersion()) || sameAssignments) || // Topology already changed.
-                fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
+        return fut != rebalanceFut; // Same topology, but dummy exchange forced because of missing partitions.
     }
 
     /**
@@ -288,6 +283,7 @@ public class GridDhtPartitionDemander {
     Runnable addAssignments(
         final GridDhtPreloaderAssignments assignments,
         boolean force,
+        boolean skipAssigns,
         long rebalanceId,
         final Runnable next,
         @Nullable final GridCompoundFuture<Boolean, Boolean> forcedRebFut
@@ -340,11 +336,15 @@ public class GridDhtPartitionDemander {
 
             // 1) Related discovery event did not cause affinity assignment change.
             // We should wait for current rebalanceFut completion and than assign results to latestRebFut.
-            if (grp.affinity().cachedAffinity(topVer).clientEventChange() &&
-                !assignments.rebalanceNeeded() && !oldFut.isInitial()) {
-                if (log.isDebugEnabled())
-                    log.debug("Affinity assignments does not changed. Will skip rebalance [topVer=" +
-                        topVer + ", rebalanceId=" + rebalanceId + ", grp=" + grp.cacheOrGroupName() + "]");
+            if (grp.affinity().cachedAffinity(topVer).clientEventChange() // Caused by no affinity change event
+                && !oldFut.isInitial() // Rebalance should have at least one non empty result
+                && !force // Do not need provide results if rebalance was forced
+                && skipAssigns // Calculated assignments not changed from previous calculation
+                ) {
+                if (log.isInfoEnabled())
+                    log.info("Affinity assignments does not changed. Will skip rebalance [topVer=" +
+                        topVer + ", rebalanceId=" + rebalanceId + ", grp=" + grp.cacheOrGroupName() +
+                        ", oldFut=" + oldFut + ", fut0.result()=" + oldFut.result() + "]");
 
                 oldFut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                     @Override public void applyx(IgniteInternalFuture<Boolean> fut0) {
@@ -352,6 +352,10 @@ public class GridDhtPartitionDemander {
                             fut.sendRebalanceFinishedEvent();
 
                             fut.onDone(fut0.get());
+
+                            log.info("Skipped affinity assignments [fut.topVer=" +
+                                fut.topologyVersion() + ", fut.rebalanceId=" + fut.rebalanceId + ", grp=" + grp.cacheOrGroupName() +
+                                ", fut0.topVer=" + oldFut.topologyVersion() + ", fut0.result()=" + oldFut.result() + "]");
                         }
                         catch (IgniteCheckedException e) {
                             fut.cancel();
@@ -383,6 +387,8 @@ public class GridDhtPartitionDemander {
             else {
                 if (!oldFut.isInitial())
                     oldFut.cancel();
+                else
+                    fut.listen(f -> oldFut.onDone(f.result()));
 
                 rebalanceFut = fut;
 

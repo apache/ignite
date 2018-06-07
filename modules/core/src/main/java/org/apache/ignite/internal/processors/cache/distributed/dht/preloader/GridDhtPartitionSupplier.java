@@ -171,17 +171,13 @@ class GridDhtPartitionSupplier {
         AffinityTopologyVersion curTop = grp.affinity().lastVersion();
         AffinityTopologyVersion demTop = d.topologyVersion();
 
-        boolean sameAssignm = grp.affinity().cachedAffinity(curTop).clientEventChange();
-
-        if (curTop.compareTo(demTop) > 0 && !sameAssignm) {
+        if (curTop.compareTo(demTop) > 0) {
             if (log.isDebugEnabled())
                 log.debug("Demand request outdated [grp=" + grp.cacheOrGroupName()
                         + ", currentTopVer=" + curTop
                         + ", demandTopVer=" + demTop
                         + ", from=" + nodeId
                         + ", topicId=" + topicId + "]");
-
-            return;
         }
 
         T3<UUID, Integer, AffinityTopologyVersion> contextId = new T3<>(nodeId, topicId, demTop);
