@@ -64,7 +64,6 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -86,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Ign
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtPartitionsToReloadMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.RebalanceReassignExchangeTask;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.StopCachesOnClientReconnectExchangeTask;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -2418,13 +2418,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     boolean forcePreload = false;
 
+                    boolean skipAssigns = true;
+
                     GridDhtPartitionExchangeId exchId;
 
                     GridDhtPartitionsExchangeFuture exchFut = null;
 
                     AffinityTopologyVersion resVer = null;
-
-                    boolean affChanged = false;
 
                     try {
                         if (isCancelled())
@@ -2546,14 +2546,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 GridDhtPreloaderAssignments assigns = null;
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
-                                if ((delay == 0 || forcePreload) && !disableRebalance) {
-                                    T2<GridDhtPreloaderAssignments, Boolean> res =
-                                        grp.preloader().generateAssignments(exchId, exchFut);
+                                if ((delay == 0 || forcePreload) && !disableRebalance)
+                                    assigns = grp.preloader().generateAssignments(exchId, exchFut);
 
-                                    assigns = res.get1();
-
-                                    affChanged = affChanged || res.get2();
-                                }
+                                skipAssigns = skipAssigns && !assigns.rebalanceNeeded();
 
                                 assignsMap.put(grp.groupId(), assigns);
                             }
@@ -2597,17 +2593,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             for (Integer grpId : orderMap.get(order)) {
                                 CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
 
-                                if (affChanged) {
-                                    GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
+                                GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
 
-                                    if (assigns != null)
-                                        assignsCancelled |= assigns.cancelled();
+                                if (assigns != null)
+                                    assignsCancelled |= assigns.cancelled();
 
-                                    // Cancels previous rebalance future (in case it's not done yet).
-                                    // Sends previous rebalance stopped event (if necessary).
-                                    // Creates new rebalance future.
-                                    // Sends current rebalance started event (if necessary).
-                                    // Finishes cache sync future (on empty assignments).
+                                // Cancels previous rebalance future (in case it's not done yet and
+                                // assigments are different to previous rebalance future).
+                                // Sends previous rebalance stopped event (if necessary).
+                                // Creates new rebalance future.
+                                // Sends current rebalance started event (if necessary).
+                                // Finishes cache sync future (on empty assignments).
+                                if (skipAssigns)
+                                    grp.preloader().updateTopology(exchFut.topologyVersion());
+                                else {
                                     Runnable cur = grp.preloader().addAssignments(assigns,
                                         forcePreload,
                                         cnt,
@@ -2620,8 +2619,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         r = cur;
                                     }
                                 }
-                                else
-                                    grp.preloader().updateTopology(resVer);
                             }
                         }
 

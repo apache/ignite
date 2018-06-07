@@ -32,7 +32,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -153,8 +152,8 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public T2<GridDhtPreloaderAssignments, Boolean> generateAssignments(GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionsExchangeFuture exchFut) {
+    @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
+                                                                     GridDhtPartitionsExchangeFuture exchFut) {
         return null;
     }
 
@@ -177,7 +176,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
         // No-op.
     }
 
-    /** */
+    /** {@inheritDoc} */
     @Override public void updateTopology(AffinityTopologyVersion top){
         // No-op;
     }

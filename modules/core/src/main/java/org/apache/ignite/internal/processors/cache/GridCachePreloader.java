@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloaderAssignments;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
@@ -68,8 +67,8 @@ public interface GridCachePreloader {
      * @param exchFut Exchange future.
      * @return Assignments or {@code null} if detected that there are pending exchanges.
      */
-    @Nullable public T2<GridDhtPreloaderAssignments, Boolean> generateAssignments(GridDhtPartitionExchangeId exchId,
-        @Nullable GridDhtPartitionsExchangeFuture exchFut);
+    @Nullable public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId,
+                                                                     @Nullable GridDhtPartitionsExchangeFuture exchFut);
 
     /**
      * Adds assignments to preloader.
@@ -86,12 +85,6 @@ public interface GridCachePreloader {
         long rebalanceId,
         Runnable next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut);
-
-    /**
-     *
-     * @param top
-     */
-    public void updateTopology(AffinityTopologyVersion top);
 
     /**
      * @param p Preload predicate.
@@ -121,7 +114,8 @@ public interface GridCachePreloader {
      * Future result is {@code false} in case rebalancing cancelled or finished with missed partitions and will be
      * restarted at current or pending topology.
      *
-     * Note that topology change creates new futures and finishes previous.
+     * Note that topology change creates new futures which may waits for previous futures to finish (previous future
+     * does not cancel if assignments not changed).
      */
     public IgniteInternalFuture<Boolean> rebalanceFuture();
 
@@ -192,4 +186,10 @@ public interface GridCachePreloader {
      * Dumps debug information.
      */
     public void dumpDebugInfo();
+
+    /**
+     *
+     * @param top Topology.
+     */
+    public void updateTopology(AffinityTopologyVersion top);
 }

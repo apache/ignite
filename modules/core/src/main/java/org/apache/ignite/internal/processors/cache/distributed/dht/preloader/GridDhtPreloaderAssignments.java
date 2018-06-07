@@ -39,6 +39,9 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     /** */
     private boolean cancelled;
 
+    /** */
+    private boolean rebalanceNeeded = true;
+
     /**
      * @param exchangeId Exchange ID.
      * @param topVer Last join order.
@@ -70,6 +73,22 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
      */
     GridDhtPartitionExchangeId exchangeId() {
         return exchangeId;
+    }
+
+    /**
+     *
+     * @return {@code True } if assignments are changed from previously generated and need to be rebalanced.
+     */
+    public boolean rebalanceNeeded() {
+        return rebalanceNeeded;
+    }
+
+    /**
+     *
+     * @param rebalanceNeeded {@code True } if assignments are changed from previously generated and need to be rebalanced.
+     */
+    void rebalanceNeeded(boolean rebalanceNeeded) {
+        this.rebalanceNeeded = rebalanceNeeded;
     }
 
     /**
