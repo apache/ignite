@@ -122,7 +122,7 @@ public interface FileIO extends AutoCloseable {
      *
      * @throws IOException If some I/O error occurs.
      */
-    public void write(byte[] buf, int off, int len) throws IOException;
+    public int write(byte[] buf, int off, int len) throws IOException;
 
     /**
      * Allocates memory mapped buffer for this file with given size.

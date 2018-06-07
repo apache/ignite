@@ -1404,7 +1404,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 while (left > 0) {
                     int toWrite = Math.min(FILL_BUF.length, left);
 
-                    fileIO.write(FILL_BUF, 0, toWrite);
+                    if (fileIO.write(FILL_BUF, 0, toWrite) < toWrite)
+                        throw new IgniteCheckedException("Can't extend file: " + file.getName());
 
                     left -= toWrite;
                 }
