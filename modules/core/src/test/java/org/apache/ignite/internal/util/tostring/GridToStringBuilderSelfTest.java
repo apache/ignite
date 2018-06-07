@@ -156,7 +156,6 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         n1.nodes[2] = n3;
         n1.nodes[3] = n4;
 
-
         info(n1.toString());
         info(n2.toString());
         info(n3.toString());
