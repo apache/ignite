@@ -31,7 +31,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
-import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
@@ -47,6 +46,9 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.lang.System.arraycopy;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_NAME_PATTERN;
+import static org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.WAL_SEGMENT_FILE_COMPACTED_PATTERN;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.HEADER_RECORD_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readPosition;
 
@@ -155,13 +157,24 @@ public class IgniteWalIteratorFactory {
 
         for (File file : filesOrDirs) {
             if (file.isDirectory()) {
-                descriptors.addAll(resolveWalFiles(file.listFiles(), iteratorParametersBuilder));
+                descriptors.addAll(
+                    resolveWalFiles(
+                        file.listFiles(),
+                        iteratorParametersBuilder
+                    )
+                );
 
                 continue;
             }
 
             if (file.length() < HEADER_RECORD_SIZE)
                 continue;  // Filter out this segment as it is too short.
+
+            String fileName = file.getName();
+
+            if (!WAL_NAME_PATTERN.matcher(fileName).matches() &&
+                !WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(fileName).matches())
+                continue;
 
             FileIOFactory ioFactory = iteratorParametersBuilder.ioFactory;
 
@@ -229,7 +242,7 @@ public class IgniteWalIteratorFactory {
         private File[] filesOrDirs;
 
         /** */
-        private int pageSize;
+        private int pageSize = DataStorageConfiguration.DFLT_PAGE_SIZE;
 
         /** Wal records iterator buffer size. */
         private int bufferSize = StandaloneWalRecordsIterator.DFLT_BUF_SIZE;
@@ -259,8 +272,24 @@ public class IgniteWalIteratorFactory {
         /**
          *
          */
+        public IteratorParametersBuilder filesOrDirs(String... filesOrDirs) {
+            File[] filesOrDirs0 = new File[filesOrDirs.length];
+
+            for (int i = 0; i < filesOrDirs.length; i++) {
+                filesOrDirs0[i] = new File(filesOrDirs[i]);
+            }
+
+            return filesOrDirs(filesOrDirs0);
+        }
+
+        /**
+         *
+         */
         public IteratorParametersBuilder filesOrDirs(File... filesOrDirs) {
-            this.filesOrDirs = filesOrDirs;
+            if (this.filesOrDirs == null)
+                this.filesOrDirs = filesOrDirs;
+            else
+                this.filesOrDirs = merge(this.filesOrDirs, filesOrDirs);
 
             return this;
         }
@@ -348,6 +377,15 @@ public class IgniteWalIteratorFactory {
          */
         public void validate() throws IgniteCheckedException {
 
+        }
+
+        private File [] merge(File[] f1,File[] f2){
+            File[] merged = new File[f1.length + f2.length];
+
+            arraycopy(f1, 0, merged, 0, f1.length);
+            arraycopy(f2, 0, merged, f1.length, f2.length);
+
+            return merged;
         }
     }
 }

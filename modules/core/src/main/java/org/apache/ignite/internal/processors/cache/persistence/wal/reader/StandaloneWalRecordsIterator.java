@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
@@ -37,8 +38,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.ReadFileHandle;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
@@ -47,6 +50,8 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer.readSegmentHeader;
 
 /**
  * WAL reader iterator, for creation in standalone WAL reader tool
@@ -65,7 +70,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     @Nullable
     private List<FileDescriptor> walFileDescriptors;
 
-    private int curIdx = 0;
+    private int curIdx = -1;
 
     /** Keep binary. This flag disables converting of non primitive types (BinaryObjects) */
     private boolean keepBinary;
@@ -111,9 +116,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param walFiles files for file-by-file iteration mode
      */
     private void init(List<FileDescriptor> walFiles) throws IgniteCheckedException {
-        curWalSegmIdx = walFiles.get(curIdx).idx();
-
         walFileDescriptors = walFiles;
+
+        if (walFiles.isEmpty())
+            return;
+
+        curWalSegmIdx = walFiles.get(curIdx + 1).idx() - 1;
 
         if (log.isDebugEnabled())
             log.debug("Initialized WAL cursor [curWalSegmIdx=" + curWalSegmIdx + ']');
@@ -131,25 +139,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         curIdx++;
 
+        if (curIdx >= walFileDescriptors.size())
+            return null;
+
         // curHandle.workDir is false
         final FileDescriptor fd = walFileDescriptors.get(curIdx);
-/*
-        if (walFilesDir != null) {
-            File segmentFile = new File(walFilesDir,
-                FileDescriptor.fileName(curWalSegmIdx));
-
-            if (!segmentFile.exists())
-                segmentFile = new File(walFilesDir,
-                    FileDescriptor.fileName(curWalSegmIdx) + ".zip");
-
-            fd = new FileDescriptor(segmentFile);
-        }
-        else {
-            if (walFileDescriptors.isEmpty())
-                return null; //no files to read, stop iteration
-
-            fd = walFileDescriptors.remove(0);
-        }*/
 
         if (log.isDebugEnabled())
             log.debug("Reading next file [absIdx=" + curWalSegmIdx + ", file=" + fd.file().getAbsolutePath() + ']');
@@ -167,6 +161,27 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
             return null;
         }
+    }
+
+    @Override protected AbstractReadFileHandle initReadHandle(
+        @NotNull AbstractFileDescriptor desc,
+        @Nullable FileWALPointer start
+    ) throws IgniteCheckedException, FileNotFoundException {
+
+        try {
+            FileIO fileIO = desc.isCompressed() ? new UnzipFileIO(desc.file()) : ioFactory.create(desc.file());
+
+            readSegmentHeader(fileIO, curWalSegmIdx);
+        }
+        catch (IOException | IgniteCheckedException e) {
+            curIdx++;
+
+            FileDescriptor fd = walFileDescriptors.get(curIdx);
+
+            return initReadHandle(fd, null);
+        }
+
+        return super.initReadHandle(desc, start);
     }
 
     /** {@inheritDoc} */
