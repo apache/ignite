@@ -771,8 +771,11 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         for (BlockingQueue<Transaction> queue : perNodeTxs.values()) {
             Transaction tx;
 
-            while((tx = queue.poll()) != null)
+            while((tx = queue.poll()) != null) {
+                rolledBack.add(1);
+
                 rollbackClo.apply(tx);
+            }
         }
 
         log.info("total=" + total.sum() + ", completed=" + completed.sum() + ", failed=" + failed.sum() +
