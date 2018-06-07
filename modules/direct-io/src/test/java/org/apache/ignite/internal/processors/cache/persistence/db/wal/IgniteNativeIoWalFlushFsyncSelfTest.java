@@ -14,20 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.persistence;
+package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 /**
- * Version of test to be executed in Direct IO suite.
- * Contains reduced number of records, because Direct IO does not support tmpfs.
+ * Native IO version of test
  */
-public class IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest extends LocalWalModeChangeDuringRebalancingSelfTest {
+public class IgniteNativeIoWalFlushFsyncSelfTest extends IgniteWalFlushFsyncSelfTest {
     /** {@inheritDoc} */
-    @Override protected int getKeysCount() {
-        return 1_000;
-    }
+    @Override public void testFailAfterStart() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8742");
 
-    /** {@inheritDoc} */
-    @Override public void testWithExchangesMerge() throws Exception {
-        super.testWithExchangesMerge();
+        super.testFailAfterStart();
     }
 }
