@@ -1374,7 +1374,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 notifyAll();
             }
 
-            U.join(this);
+            U.join(runner());
         }
 
         /**

@@ -1555,7 +1555,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 notifyAll();
             }
 
-            U.join(this);
+            U.join(runner());
         }
 
         /**
@@ -3339,7 +3339,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
             LockSupport.unpark(runner());
 
-            U.join(this);
+            U.join(runner());
         }
 
         /**
