@@ -192,7 +192,7 @@ module.exports = {
             executeOnNode(agent, demo, credentials, params) {
                 return agent
                     .then((agentSock) => agentSock.emitEvent('node:rest',
-                        {uri: 'ignite', demo, params: {...credentials, ...params}}));
+                        {uri: 'ignite', demo, params: _.merge({}, credentials, params)}));
             }
 
             registerVisorTask(taskId, taskCls, ...argCls) {
