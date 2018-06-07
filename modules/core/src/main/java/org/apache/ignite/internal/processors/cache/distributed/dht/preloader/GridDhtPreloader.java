@@ -85,7 +85,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** */
     private boolean stopped;
 
-    /** Topology version on which assignments was generated last run. */
+    /** Topology version on which assignments was generated last call. */
     private AffinityTopologyVersion prevTopVer;
 
     /**

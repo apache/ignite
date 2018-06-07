@@ -250,6 +250,9 @@ public class GridDhtPartitionDemander {
         lastExchangeFut = lastFut;
     }
 
+    /**
+     * Update rebalance future topology version e.g. when assignments not changed from previous version.
+     */
     public void updateTopology(AffinityTopologyVersion top){
         rebalanceFut.topVer = top;
     }

@@ -188,8 +188,9 @@ public interface GridCachePreloader {
     public void dumpDebugInfo();
 
     /**
+     * Update topology version e.g. when assignments not changed from previous version.
      *
-     * @param top Topology.
+     * @param top New topology version.
      */
     public void updateTopology(AffinityTopologyVersion top);
 }

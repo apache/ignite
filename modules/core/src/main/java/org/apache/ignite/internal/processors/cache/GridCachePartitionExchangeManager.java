@@ -2418,6 +2418,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     boolean forcePreload = false;
 
+                    // When assignments not changed we can skip them.
                     boolean skipAssigns = true;
 
                     GridDhtPartitionExchangeId exchId;
