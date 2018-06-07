@@ -105,6 +105,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -296,6 +297,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** Force complete reconnect future. */
     private static final Object STOP_RECONNECT = new Object();
+
+    /** Separator for formatted coordinator properties. */
+    public static final String COORDINATOR_PROPERTIES_SEPARATOR = ",";
 
     static {
         LongJVMPauseDetector.start();
@@ -500,6 +504,24 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert cfg != null;
 
         return Arrays.toString(cfg.getCheckpointSpi());
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getCurrentCoordinatorFormatted() {
+        ClusterNode node = ctx.discovery().oldestAliveServerNode(AffinityTopologyVersion.NONE);
+
+        if (node == null)
+            return "";
+
+        return new StringBuilder()
+            .append(node.addresses())
+            .append(COORDINATOR_PROPERTIES_SEPARATOR)
+            .append(node.id())
+            .append(COORDINATOR_PROPERTIES_SEPARATOR)
+            .append(node.order())
+            .append(COORDINATOR_PROPERTIES_SEPARATOR)
+            .append(node.hostNames())
+            .toString();
     }
 
     /** {@inheritDoc} */
@@ -2024,7 +2046,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             log.info(str);
         }
 
-        if (!cluster().active()) {
+        if (!ctx.state().clusterState().active()) {
             U.quietAndInfo(log, ">>> Ignite cluster is not active (limited functionality available). " +
                 "Use control.(sh|bat) script or IgniteCluster interface to activate.");
         }
@@ -4332,6 +4354,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     ) {
         ctx.io().runIoTest(warmup, duration, threads, maxLatency, rangesCnt, payLoadSize, procFromNioThread,
             new ArrayList(ctx.cluster().get().forServers().forRemotes().nodes()));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clearNodeLocalMap() {
+        ctx.cluster().get().clearNodeMap();
     }
 
     /** {@inheritDoc} */
