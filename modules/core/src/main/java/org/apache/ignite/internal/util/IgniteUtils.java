@@ -6159,16 +6159,6 @@ public abstract class IgniteUtils {
     /**
      * Check if given class is of JDK type or unboxed primitive.
      *
-     * @param cls Class to check.
-     * @return {@code True} if class is JDK type.
-     */
-    public static boolean isJdkOrUnboxedPrimitive(Class cls) {
-        return isJdk(cls) || isJdkOrUnboxedPrimitive(cls.getName());
-    }
-
-    /**
-     * Check if given class is of JDK type or unboxed primitive.
-     *
      * @param s Class name to check.
      * @return {@code True} if class is JDK type.
      */
