@@ -74,15 +74,14 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
                     needWritePointer,
                     marshalledMode,
                     skipPositionCheck,
-                    recordDeserializeFilter
-                );
+                    recordDeserializeFilter);
 
             case 2:
                 RecordDataV2Serializer dataV2Serializer = new RecordDataV2Serializer(
-                    new RecordDataV1Serializer(cctx)
-                );
+                    new RecordDataV1Serializer(cctx));
 
-                return new RecordV2Serializer(dataV2Serializer,
+                return new RecordV2Serializer(
+                    dataV2Serializer,
                     needWritePointer,
                     marshalledMode,
                     skipPositionCheck,

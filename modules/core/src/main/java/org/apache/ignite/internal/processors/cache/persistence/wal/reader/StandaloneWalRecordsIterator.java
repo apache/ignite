@@ -87,14 +87,14 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         @NotNull List<FileDescriptor> walFiles,
         IgniteBiPredicate<RecordType, WALPointer> readTypeFilter,
         boolean keepBinary,
-        int bufSize
+        int initialReadBufferSize
     ) throws IgniteCheckedException {
         super(
             log,
             sharedCtx,
             new RecordSerializerFactoryImpl(sharedCtx, readTypeFilter),
             ioFactory,
-            bufSize
+            initialReadBufferSize
         );
 
         this.keepBinary = keepBinary;

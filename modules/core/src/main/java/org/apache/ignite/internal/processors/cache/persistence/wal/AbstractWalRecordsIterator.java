@@ -225,10 +225,11 @@ public abstract class AbstractWalRecordsIterator
             if (e instanceof WalSegmentTailReachedException)
                 throw (WalSegmentTailReachedException)e;
 
-            if (!(e instanceof SegmentEofException)){
-                handleRecordException(e, actualFilePtr);
+            if (!(e instanceof SegmentEofException)) {
+                boolean isHandled = handleRecordException(e, actualFilePtr);
 
-                throw new IgniteCheckedException(e);
+                if (!isHandled)
+                    throw new IgniteCheckedException(e);
             }
 
             return null;
@@ -251,12 +252,15 @@ public abstract class AbstractWalRecordsIterator
      *
      * @param e problem from records reading
      * @param ptr file pointer was accessed
+     *
+     * @return {@code True} if the error was handled and we can go ahead,
+     *  {@code False} if the error was not handled, and we should stop the iteration.
      */
-    protected void handleRecordException(
-        @NotNull final Exception e,
-        @Nullable final FileWALPointer ptr) {
+    protected boolean handleRecordException(@NotNull final Exception e, @Nullable final FileWALPointer ptr) {
         if (log.isInfoEnabled())
             log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
+
+        return false;
     }
 
     /**
