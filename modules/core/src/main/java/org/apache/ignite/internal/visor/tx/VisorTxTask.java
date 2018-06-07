@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -32,6 +33,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.distributed.near.IgniteTxMappings;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
@@ -179,10 +181,16 @@ public class VisorTxTask extends VisorMultiNodeTask<VisorTxTaskArg, Map<ClusterN
                 int size = 0;
 
                 if (locTx.mappings() != null) {
-                    for (GridDistributedTxMapping mapping : locTx.mappings().mappings()) {
+                    IgniteTxMappings txMappings = locTx.mappings();
+
+                    for (GridDistributedTxMapping mapping :
+                        txMappings.single() ? Collections.singleton(txMappings.singleMapping()) : txMappings.mappings()) {
+                        if (mapping == null)
+                            continue;
+
                         mappings.add(mapping.primary().id());
 
-                        size += mapping.entries().size(); // Entries are not synchronized so no visibility guaranties.
+                        size += mapping.entries().size(); // Entries are not synchronized so no visibility guaranties for size.
                     }
                 }
 
