@@ -18,6 +18,7 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -138,16 +139,13 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             Statement stmt = conn.createStatement();
 
-            stmt.execute("CREATE TABLE TEST (ID INT, NAME VARCHAR(50), VAL VARCHAR(50), PRIMARY KEY (ID, NAME))");
+            stmt.execute("CREATE TABLE TEST (ID INT, NAME VARCHAR(50) default 'default name', " +
+                "age int default 21, VAL VARCHAR(50), PRIMARY KEY (ID, NAME))");
             stmt.execute("CREATE TABLE \"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50)) WITH WRAP_KEY");
             stmt.execute("CREATE INDEX \"MyTestIndex quoted\" on \"Quoted\" (\"Id\" DESC)");
             stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
+            stmt.execute("CREATE TABLE TEST_DECIMAL_COLUMN (ID INT primary key, DEC_COL DECIMAL(8, 3))");
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
     }
 
     /**
@@ -199,11 +197,15 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
+            assertFalse(rs.next());
+
             rs = meta.getTables("", "org", "%", new String[]{"TABLE"});
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
+
+            assertFalse(rs.next());
 
             rs = meta.getTables("", "pers", "%", null);
             assertNotNull(rs);
@@ -211,11 +213,15 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
             assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
+            assertFalse(rs.next());
+
             rs = meta.getTables("", "org", "%", null);
             assertNotNull(rs);
             assertTrue(rs.next());
             assertEquals("TABLE", rs.getString("TABLE_TYPE"));
             assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
+
+            assertFalse(rs.next());
 
             rs = meta.getTables("", "PUBLIC", "", new String[]{"WRONG"});
             assertFalse(rs.next());
@@ -235,7 +241,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "org.ORGANIZATION",
                 "pers.PERSON",
                 "PUBLIC.TEST",
-                "PUBLIC.Quoted"));
+                "PUBLIC.Quoted",
+                "PUBLIC.TEST_DECIMAL_COLUMN"));
 
             Set<String> actualTbls = new HashSet<>(expectedTbls.size());
 
@@ -371,23 +378,35 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             ResultSet rs = meta.getColumns(null, null, null, null);
 
             Set<String> expectedCols = new HashSet<>(Arrays.asList(
-                "org.ORGANIZATION.ID",
-                "org.ORGANIZATION.NAME",
-                "pers.PERSON.ORGID",
-                "pers.PERSON.AGE",
-                "pers.PERSON.NAME",
-                "PUBLIC.TEST.ID",
-                "PUBLIC.TEST.NAME",
-                "PUBLIC.TEST.VAL",
-                "PUBLIC.Quoted.Id",
-                "PUBLIC.Quoted.Name"));
+                "org.ORGANIZATION.ID.null",
+                "org.ORGANIZATION.NAME.null",
+                "pers.PERSON.ORGID.null",
+                "pers.PERSON.AGE.null",
+                "pers.PERSON.NAME.null",
+                "PUBLIC.TEST.ID.null",
+                "PUBLIC.TEST.NAME.'default name'",
+                "PUBLIC.TEST.VAL.null",
+                "PUBLIC.TEST.AGE.21",
+                "PUBLIC.Quoted.Id.null",
+                "PUBLIC.Quoted.Name.null",
+                "PUBLIC.TEST_DECIMAL_COLUMN.ID.null",
+                "PUBLIC.TEST_DECIMAL_COLUMN.DEC_COL.null.8.3"
+            ));
 
             Set<String> actualCols = new HashSet<>(expectedCols.size());
 
             while(rs.next()) {
+                int precision = rs.getInt("COLUMN_SIZE");
+
+                int scale = rs.getInt("DECIMAL_DIGITS");
+
                 actualCols.add(rs.getString("TABLE_SCHEM") + '.'
                     + rs.getString("TABLE_NAME") + "."
-                    + rs.getString("COLUMN_NAME"));
+                    + rs.getString("COLUMN_NAME") + "."
+                    + rs.getString("COLUMN_DEF")
+                    + (precision == 0 ? "" : ("." + precision))
+                    + (scale == 0 ? "" : ("." + scale))
+                );
             }
 
             assert expectedCols.equals(actualCols) : "expectedCols=" + expectedCols +
@@ -521,7 +540,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "pers.PERSON.PK_pers_PERSON._KEY",
                 "PUBLIC.TEST.PK_PUBLIC_TEST.ID",
                 "PUBLIC.TEST.PK_PUBLIC_TEST.NAME",
-                "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id"));
+                "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id",
+                "PUBLIC.TEST_DECIMAL_COLUMN.ID._KEY"));
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 

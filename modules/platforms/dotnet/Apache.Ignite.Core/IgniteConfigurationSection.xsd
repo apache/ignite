@@ -308,6 +308,13 @@
                                                                         <xs:sequence>
                                                                             <xs:element name="queryField" maxOccurs="unbounded">
                                                                                 <xs:complexType>
+                                                                                    <xs:all>
+                                                                                        <xs:element name="defaultValue" minOccurs="0">
+                                                                                            <xs:annotation>
+                                                                                                <xs:documentation>Default field value.</xs:documentation>
+                                                                                            </xs:annotation>
+                                                                                        </xs:element>
+                                                                                    </xs:all>
                                                                                     <xs:attribute name="name" type="xs:string" use="required">
                                                                                         <xs:annotation>
                                                                                             <xs:documentation>Cache name.</xs:documentation>
@@ -331,6 +338,16 @@
                                                                                     <xs:attribute name="notNull" type="xs:boolean">
                                                                                         <xs:annotation>
                                                                                             <xs:documentation>Indicates whether null value is allowed for the field.</xs:documentation>
+                                                                                        </xs:annotation>
+                                                                                    </xs:attribute>
+                                                                                    <xs:attribute name="precision" type="xs:int">
+                                                                                        <xs:annotation>
+                                                                                            <xs:documentation>Precision of field</xs:documentation>
+                                                                                        </xs:annotation>
+                                                                                    </xs:attribute>
+                                                                                    <xs:attribute name="scale" type="xs:int">
+                                                                                        <xs:annotation>
+                                                                                            <xs:documentation>Scale of field</xs:documentation>
                                                                                         </xs:annotation>
                                                                                     </xs:attribute>
                                                                                 </xs:complexType>
@@ -1217,6 +1234,13 @@
                                 <xs:documentation>Delay after which pessimistic recovery entries will be cleaned up for failed node.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="defaultTimeoutOnPartitionMapExchange" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>
+                                    Transaction timeout for partition map synchronization. TimeSpan.Zero for infinite timeout.
+                                </xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="logger" minOccurs="0">
@@ -1440,6 +1464,26 @@
                         <xs:attribute name="threadPoolSize" type="xs:int">
                             <xs:annotation>
                                 <xs:documentation>SQL connector thread pool size.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="idleTimeout" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Idle timeout for client connections on the server side. If no packets come within idle timeout, the connection is closed by the server. Zero or negative for no timeout.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="thinClientEnabled" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Enables thin client connector.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="jdbcEnabled" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Enables JDBC connector.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="odbcEnabled" type="xs:boolean">
+                            <xs:annotation>
+                                <xs:documentation>Enables ODBC connector.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
                     </xs:complexType>
@@ -1831,6 +1875,63 @@
                                 <xs:documentation>Number of concurrent segments in Ignite internal page mapping tables.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                        <xs:attribute name="walAutoArchiveAfterInactivity" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Inactivity time after which to run WAL segment auto archiving.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="sslContextFactory" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Factory for SSL Context.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="keyAlgorithm" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Key manager algorithm that will be used to create a key manager.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="keyStoreType" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Key store type used for context creation.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="keyStoreFilePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path to key store file.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="keyStorePassword" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Key store password.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="protocol" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Protocol for secure transport.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="trustStoreType" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Trust store type used for context creation.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="trustStoreFilePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path to trust store file.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="trustStorePassword" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Trust store password.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="type" type="xs:string" use="required">
+                            <xs:annotation>
+                              <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="pluginConfigurations" minOccurs="0">
@@ -1907,6 +2008,25 @@
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="failureHandler" minOccurs="0">
+                    <xs:complexType>
+                        <xs:attribute name="type" type="xs:string" use="required">
+                            <xs:annotation>
+                                <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="tryStop" type="xs:boolean" default="false">
+                            <xs:annotation>
+                                <xs:documentation>Try stop before halt node parameter, use only for StopNodeOrHaltFailureHandler.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="timeout" type="xs:string" default="0:0:0">
+                            <xs:annotation>
+                                <xs:documentation>Timeout for node stop, use only for StopNodeOrHaltFailureHandler.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
                     </xs:complexType>
                 </xs:element>
             </xs:all>
@@ -2123,6 +2243,11 @@
             <xs:attribute name="isActiveOnStart" type="xs:boolean">
                 <xs:annotation>
                     <xs:documentation>Whether grid should be active on start.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="authenticationEnabled" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Whether user authentication is enabled for the cluster.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">

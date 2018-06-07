@@ -19,15 +19,17 @@ package org.apache.ignite.compatibility.testframework.junits;
 
 import java.io.File;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compatibility.testframework.junits.logger.ListenedGridTestLog4jLogger;
+import org.apache.ignite.compatibility.testframework.util.CompatibilityTestsUtils;
 import org.apache.ignite.compatibility.testframework.util.MavenUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -164,30 +166,25 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                         filteredJvmArgs.add(arg);
                 }
 
-                URLClassLoader ldr = (URLClassLoader)CLASS_LOADER;
-
                 final Collection<Dependency> dependencies = getDependencies(ver);
 
+                Set<String> excluded = dependencies.stream().map(Dependency::localPathTemplate).collect(Collectors.toSet());
+
                 StringBuilder pathBuilder = new StringBuilder();
-                for (URL url : ldr.getURLs()) {
+
+                for (URL url : CompatibilityTestsUtils.classLoaderUrls(CLASS_LOADER)) {
                     String path = url.getPath();
 
-                    boolean excluded = false;
-                    for (Dependency next : dependencies) {
-                        if (path.contains(next.localPathTemplate())) {
-                            excluded = true;
-                            break;
-                        }
-                    }
-                    if (!excluded)
+                    if (excluded.stream().noneMatch(path::contains))
                         pathBuilder.append(path).append(File.pathSeparator);
                 }
 
-                for (Dependency next : dependencies) {
-                    final String artifactVer = next.version() != null ? next.version() : ver;
-                    final String grpName = next.groupName() != null ? next.groupName() : "org.apache.ignite";
-                    String pathToArtifact = MavenUtils.getPathToIgniteArtifact(grpName, next.artifactName(),
-                        artifactVer,  next.classifier());
+                for (Dependency dependency : dependencies) {
+                    final String artifactVer = dependency.version() != null ? dependency.version() : ver;
+                    final String grpName = dependency.groupName() != null ? dependency.groupName() : "org.apache.ignite";
+
+                    String pathToArtifact = MavenUtils.getPathToIgniteArtifact(grpName, dependency.artifactName(),
+                        artifactVer, dependency.classifier());
 
                     pathBuilder.append(pathToArtifact).append(File.pathSeparator);
                 }
@@ -195,7 +192,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                 filteredJvmArgs.add("-cp");
                 filteredJvmArgs.add(pathBuilder.toString());
 
-                final Collection<String> jvmParms = getJvmParms();
+                final Collection<String> jvmParms = getJvmParams();
 
                 if (jvmParms != null)
                     filteredJvmArgs.addAll(jvmParms);
@@ -254,7 +251,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      *
      * @return additional JVM arguments
      */
-    protected Collection<String> getJvmParms() {
+    protected Collection<String> getJvmParams() {
         return new ArrayList<>();
     }
 

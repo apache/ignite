@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -31,10 +31,10 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
  */
 class MapNodeResults {
     /** */
-    private final ConcurrentMap<MapRequestKey, MapQueryResults> res = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<MapRequestKey, MapQueryResults> res = new ConcurrentHashMap<>();
 
     /** Cancel state for update requests. */
-    private final ConcurrentMap<Long, GridQueryCancel> updCancels = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Long, GridQueryCancel> updCancels = new ConcurrentHashMap<>();
 
     /** */
     private final GridBoundedConcurrentLinkedHashMap<Long, Boolean> qryHist =

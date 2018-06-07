@@ -23,7 +23,7 @@ const _ = require('lodash');
 
 module.exports = {
     implements: 'services/users',
-    inject: ['errors', 'settings', 'mongo', 'services/spaces', 'services/mails', 'services/activities', 'agents-handler']
+    inject: ['errors', 'settings', 'mongo', 'services/spaces', 'services/mails', 'services/activities', 'services/utils', 'agents-handler']
 };
 
 /**
@@ -33,22 +33,11 @@ module.exports = {
  * @param {SpacesService} spacesService
  * @param {MailsService} mailsService
  * @param {ActivitiesService} activitiesService
+ * @param {UtilsService} utilsService
  * @param {AgentsHandler} agentHnd
  * @returns {UsersService}
  */
-module.exports.factory = (errors, settings, mongo, spacesService, mailsService, activitiesService, agentHnd) => {
-    const _randomString = () => {
-        const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        const possibleLen = possible.length;
-
-        let res = '';
-
-        for (let i = 0; i < settings.tokenLength; i++)
-            res += possible.charAt(Math.floor(Math.random() * possibleLen));
-
-        return res;
-    };
-
+module.exports.factory = (errors, settings, mongo, spacesService, mailsService, activitiesService, utilsService, agentHnd) => {
     class UsersService {
         /**
          * Save profile information.
@@ -61,8 +50,8 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
             return mongo.Account.count().exec()
                 .then((cnt) => {
                     user.admin = cnt === 0;
-
-                    user.token = _randomString();
+                    user.registered = new Date();
+                    user.token = utilsService.randomString(settings.tokenLength);
 
                     return new mongo.Account(user);
                 })
@@ -80,13 +69,12 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                     });
                 })
                 .then((registered) => {
-                    registered.resetPasswordToken = _randomString();
+                    registered.resetPasswordToken = utilsService.randomString(settings.tokenLength);
 
                     return registered.save()
                         .then(() => mongo.Space.create({name: 'Personal space', owner: registered._id}))
                         .then(() => {
-                            mailsService.emailUserSignUp(host, registered)
-                                .catch((err) => console.error(err));
+                            mailsService.emailUserSignUp(host, registered);
 
                             return registered;
                         });
@@ -147,6 +135,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
 
         /**
          * Get list of user accounts and summary information.
+         *
          * @returns {mongo.Account[]} - returns all accounts with counters object
          */
         static list(params) {
@@ -232,7 +221,7 @@ module.exports.factory = (errors, settings, mongo, spacesService, mailsService, 
                         .catch((err) => console.error(`Failed to cleanup spaces [user=${user.username}, err=${err}`))
                         .then(() => user);
                 })
-                .then((user) => mailsService.emailUserDeletion(host, user).catch((err) => console.error(err)));
+                .then((user) => mailsService.emailUserDeletion(host, user));
         }
 
         /**

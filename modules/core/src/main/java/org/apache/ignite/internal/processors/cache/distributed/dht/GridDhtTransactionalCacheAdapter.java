@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
@@ -61,6 +63,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -74,6 +77,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
@@ -671,11 +675,16 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             f = lockAllAsync(ctx, nearNode, req, null);
 
         // Register listener just so we print out errors.
-        // Exclude lock timeout exception since it's not a fatal exception.
+        // Exclude lock timeout and rollback exceptions since it's not a fatal exception.
         f.listen(CU.errorLogger(log, GridCacheLockTimeoutException.class,
-            GridDistributedLockCancelledException.class));
+            GridDistributedLockCancelledException.class, IgniteTxTimeoutCheckedException.class,
+            IgniteTxRollbackCheckedException.class));
     }
 
+    /**
+     * @param node Node.
+     * @param req Request.
+     */
     private boolean waitForExchangeFuture(final ClusterNode node, final GridNearLockRequest req) {
         assert req.firstClientRequest() : req;
 
@@ -824,6 +833,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             skipStore,
             keepBinary);
 
+        if (fut.isDone()) // Possible in case of cancellation or timeout or rollback.
+            return fut;
+
         for (KeyCacheObject key : keys) {
             try {
                 while (true) {
@@ -832,7 +844,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     try {
                         fut.addEntry(entry);
 
-                        // Possible in case of cancellation or time out.
+                        // Possible in case of cancellation or time out or rollback.
                         if (fut.isDone())
                             return fut;
 
@@ -859,9 +871,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             }
         }
 
-        ctx.mvcc().addFuture(fut);
+        if (!fut.isDone()) {
+            ctx.mvcc().addFuture(fut);
 
-        fut.map();
+            fut.map();
+        }
 
         return fut;
     }
@@ -962,10 +976,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 }
             }
 
-            boolean timedout = false;
+            boolean timedOut = false;
 
             for (KeyCacheObject key : keys) {
-                if (timedout)
+                if (timedOut)
                     break;
 
                 while (true) {
@@ -980,7 +994,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             fut.addEntry(key == null ? null : entry);
 
                             if (fut.isDone()) {
-                                timedout = true;
+                                timedOut = true;
 
                                 break;
                             }
@@ -1079,7 +1093,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (tx != null)
                                 tx.rollbackDhtLocal();
 
-                            return new GridDhtFinishedFuture<>(new IgniteCheckedException(msg));
+                            return new GridDhtFinishedFuture<>(new IgniteTxRollbackCheckedException(msg));
                         }
 
                         tx.topologyVersion(req.topologyVersion());
@@ -1117,7 +1131,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (e != null)
                                 e = U.unwrap(e);
 
-                            assert !t.empty();
+                            // Transaction can be emptied by asynchronous rollback.
+                            assert e != null || !t.empty();
 
                             // Create response while holding locks.
                             final GridNearLockResponse resp = createLockReply(nearNode,
@@ -1180,6 +1195,20 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 catch (IgniteCheckedException ex) {
                     U.error(log, "Failed to rollback the transaction: " + tx, ex);
                 }
+            }
+
+            try {
+                GridNearLockResponse res = createLockReply(nearNode,
+                    Collections.emptyList(),
+                    req,
+                    tx,
+                    tx != null ? tx.xidVersion() : req.version(),
+                    e);
+
+                sendLockReply(nearNode, null, req, res);
+            }
+            catch (Exception ex) {
+                U.error(log, "Failed to send response for request message: " + req, ex);
             }
 
             return new GridDhtFinishedFuture<>(
@@ -1296,13 +1325,11 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                         null,
                                         req.keepBinary());
 
-                                assert e.lockedBy(mappedVer) ||
-                                    (ctx.mvcc().isRemoved(e.context(), mappedVer) && req.timeout() > 0) :
+                                assert e.lockedBy(mappedVer) || ctx.mvcc().isRemoved(e.context(), mappedVer) :
                                     "Entry does not own lock for tx [locNodeId=" + ctx.localNodeId() +
                                         ", entry=" + e +
                                         ", mappedVer=" + mappedVer + ", ver=" + ver +
-                                        ", tx=" + tx + ", req=" + req +
-                                        ", err=" + err + ']';
+                                        ", tx=" + tx + ", req=" + req + ']';
 
                                 boolean filterPassed = false;
 
@@ -1384,12 +1411,14 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Throwable err = res.error();
 
         // Log error before sending reply.
-        if (err != null && !(err instanceof GridCacheLockTimeoutException) && !ctx.kernalContext().isStopping())
+        if (err != null && !(err instanceof GridCacheLockTimeoutException) &&
+            !(err instanceof IgniteTxRollbackCheckedException) && !ctx.kernalContext().isStopping())
             U.error(log, "Failed to acquire lock for request: " + req, err);
 
         try {
-            // Don't send reply message to this node or if lock was cancelled.
-            if (!nearNode.id().equals(ctx.nodeId()) && !X.hasCause(err, GridDistributedLockCancelledException.class)) {
+            // Don't send reply message to this node or if lock was cancelled or tx was rolled back asynchronously.
+            if (!nearNode.id().equals(ctx.nodeId()) && !X.hasCause(err, GridDistributedLockCancelledException.class) &&
+                !X.hasCause(err, IgniteTxRollbackCheckedException.class)) {
                 ctx.io().send(nearNode, res, ctx.ioPolicy());
 
                 if (txLockMsgLog.isDebugEnabled()) {

@@ -83,7 +83,7 @@ class VisorGcCommand extends VisorConsoleCommand {
     def gc(args: String) {
         assert(args != null)
 
-        if (isConnected) {
+        if (checkConnected()) {
             val argLst = parseArgs(args)
 
             try {
@@ -123,8 +123,6 @@ class VisorGcCommand extends VisorConsoleCommand {
                 case e: IgniteException => scold(e)
             }
         }
-        else
-            adviseToConnect()
     }
 
     /**

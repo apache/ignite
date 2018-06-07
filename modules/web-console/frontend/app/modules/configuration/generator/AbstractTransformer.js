@@ -89,8 +89,8 @@ export default class AbstractTransformer {
     }
 
     // Generate communication group.
-    static clusterCommunication(cluster) {
-        return this.toSection(this.generator.clusterCommunication(cluster));
+    static clusterCommunication(cluster, available) {
+        return this.toSection(this.generator.clusterCommunication(cluster, available));
     }
 
     // Generate REST access configuration.
@@ -284,13 +284,13 @@ export default class AbstractTransformer {
     }
 
     // Generate server near cache group.
-    static cacheNearServer(cache) {
-        return this.toSection(this.generator.cacheNearServer(cache));
+    static cacheNearServer(cache, available) {
+        return this.toSection(this.generator.cacheNearServer(cache, available));
     }
 
     // Generate client near cache group.
-    static cacheNearClient(cache) {
-        return this.toSection(this.generator.cacheNearClient(cache));
+    static cacheNearClient(cache, available) {
+        return this.toSection(this.generator.cacheNearClient(cache, available));
     }
 
     // Generate cache statistics group.
@@ -304,8 +304,8 @@ export default class AbstractTransformer {
     }
 
     // Generate caches configs.
-    static clusterCheckpoint(cluster, caches) {
-        return this.toSection(this.generator.clusterCheckpoint(cluster, caches));
+    static clusterCheckpoint(cluster, available, caches) {
+        return this.toSection(this.generator.clusterCheckpoint(cluster, available, caches));
     }
 
     // Generate domain model for general group.

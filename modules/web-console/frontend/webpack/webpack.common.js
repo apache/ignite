@@ -23,7 +23,6 @@ import presetEs2015 from 'babel-preset-es2015';
 import presetStage1 from 'babel-preset-stage-1';
 
 import CopyWebpackPlugin from 'copy-webpack-plugin';
-import ExtractTextPlugin from 'extract-text-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import ProgressBarPlugin from 'progress-bar-webpack-plugin';
 
@@ -42,8 +41,6 @@ export default {
     },
     // Entry points.
     entry: {
-        polyfill: 'babel-polyfill',
-        vendor: path.join(app, 'vendor.js'),
         app: path.join(app, 'app.js'),
         browserUpdate: path.join(app, 'browserUpdate', 'index.js')
     },
@@ -78,10 +75,6 @@ export default {
 
     module: {
         rules: [
-            {
-                test: /\.json$/,
-                loader: 'json'
-            },
             // Exclude tpl.pug files to import in bundle.
             {
                 test: /^(?:(?!tpl\.pug$).)*\.pug$/, // TODO: check this regexp for correct.
@@ -96,6 +89,7 @@ export default {
                     `pug-html?exports=false&basedir=${basedir}`
                 ]
             },
+            { test: /\.worker\.js$/, use: { loader: 'worker-loader' } },
             {
                 test: /\.js$/,
                 enforce: 'pre',
@@ -105,12 +99,13 @@ export default {
                     options: {
                         failOnWarning: false,
                         failOnError: false,
-                        formatter: eslintFormatter
+                        formatter: eslintFormatter,
+                        context: process.cwd()
                     }
                 }]
             },
             {
-                test: /\.js$/,
+                test: /\.(js)$/,
                 exclude: [node_modules],
                 use: [{
                     loader: 'babel-loader',
@@ -128,13 +123,18 @@ export default {
             },
             {
                 test: /\.(ttf|eot|svg|woff(2)?)(\?v=[\d.]+)?(\?[a-z0-9#-]+)?$/,
-                exclude: [contentBase],
+                exclude: [contentBase, IgniteModules],
                 loader: 'file?name=assets/fonts/[name].[ext]'
             },
             {
-                test: /.*\.svg$/,
-                include: [contentBase],
+                test: /^(?:(?!url\.svg$).)*\.svg$/,
+                include: [contentBase, IgniteModules],
                 use: ['svg-sprite-loader']
+            },
+            {
+                test: /.*\.url\.svg$/,
+                include: [contentBase, IgniteModules],
+                loader: 'file?name=assets/fonts/[name].[ext]'
             },
             {
                 test: /\.(jpe?g|png|gif)$/i,
@@ -154,6 +154,12 @@ export default {
         ]
     },
 
+    optimization: {
+        splitChunks: {
+            chunks: 'all'
+        }
+    },
+
     // Load plugins.
     plugins: [
         new webpack.LoaderOptionsPlugin({
@@ -169,7 +175,7 @@ export default {
         }),
         new webpack.ProvidePlugin({
             $: 'jquery',
-            jQuery: 'jquery',
+            'window.jQuery': 'jquery',
             _: 'lodash',
             nv: 'nvd3',
             io: 'socket.io-client'
@@ -178,7 +184,6 @@ export default {
         new HtmlWebpackPlugin({
             template: './views/index.pug'
         }),
-        new ExtractTextPlugin({filename: 'assets/css/[name].[hash].css', allChunks: true}),
         new CopyWebpackPlugin([
             { context: 'public', from: '**/*.png' },
             { context: 'public', from: '**/*.svg' },

@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -75,7 +76,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -118,7 +118,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
     private final GridLocalEventListener discoLsnr;
 
     /** Total executed tasks. */
-    private final LongAdder8 execTasks = new LongAdder8();
+    private final LongAdder execTasks = new LongAdder();
 
     /** */
     private final ThreadLocal<Map<GridTaskThreadContextKey, Object>> thCtx = new ThreadLocal<>();
@@ -171,7 +171,7 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         IgniteClientDisconnectedCheckedException err = disconnectedError(reconnectFut);
 
         for (GridTaskWorker<?, ?> worker : tasks.values())
-            worker.finishTask(null, err);
+            worker.finishTask(null, err, false);
     }
 
     /**
@@ -197,6 +197,8 @@ public class GridTaskProcessor extends GridProcessorAdapter implements IgniteCha
         finally {
             lock.writeUnlock();
         }
+
+        startLatch.countDown();
 
         int size = tasks.size();
 

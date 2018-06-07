@@ -478,12 +478,19 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 }
 
                 if (v == null) {
-                    boolean fastLocGet = allowLocRead && cctx.allowFastLocalRead(part, affNodes, topVer);
+                    boolean fastLocGet = allowLocRead && cctx.reserveForFastLocalGet(part, topVer);
 
-                    if (fastLocGet && localDhtGet(key, part, topVer, isNear))
-                        break;
+                    if (fastLocGet) {
+                        try {
+                            if (localDhtGet(key, part, topVer, isNear))
+                                break;
+                        }
+                        finally {
+                            cctx.releaseForFastLocalGet(part, topVer);
+                        }
+                    }
 
-                    ClusterNode affNode = affinityNode(affNodes);
+                    ClusterNode affNode = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
 
                     if (affNode == null) {
                         onDone(serverNotFoundError(topVer));
@@ -491,7 +498,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         return saved;
                     }
 
-                    if (cctx.cache().configuration().isStatisticsEnabled() && !skipVals && !affNode.isLocal())
+                    if (cctx.statisticsEnabled() && !skipVals && !affNode.isLocal())
                         cache().metrics0().onRead(false);
 
                     LinkedHashMap<KeyCacheObject, Boolean> keys = mapped.get(affNode);
@@ -619,7 +626,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 }
 
                 if (v != null) {
-                    if (cctx.cache().configuration().isStatisticsEnabled() && !skipVals)
+                    if (cctx.statisticsEnabled() && !skipVals)
                         cache().metrics0().onRead(true);
 
                     addResult(key, v, ver);

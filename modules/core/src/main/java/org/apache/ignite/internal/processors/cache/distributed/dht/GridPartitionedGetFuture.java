@@ -395,12 +395,19 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         }
 
         boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
-            cctx.allowFastLocalRead(part, affNodes, topVer);
+            cctx.reserveForFastLocalGet(part, topVer);
 
-        if (fastLocGet && localGet(topVer, key, part, locVals))
-            return false;
+        if (fastLocGet) {
+            try {
+                if (localGet(topVer, key, part, locVals))
+                    return false;
+            }
+            finally {
+                cctx.releaseForFastLocalGet(part, topVer);
+            }
+        }
 
-        ClusterNode node = affinityNode(affNodes);
+        ClusterNode node = cctx.selectAffinityNodeBalanced(affNodes, canRemap);
 
         if (node == null) {
             onDone(serverNotFoundError(topVer));
@@ -551,7 +558,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
                 // Entry not found, do not continue search if topology did not change and there is no store.
                 if (!cctx.readThroughConfigured() && (topStable || partitionOwned(part))) {
-                    if (!skipVals && cctx.config().isStatisticsEnabled())
+                    if (!skipVals && cctx.statisticsEnabled())
                         cache.metrics0().onRead(false);
 
                     return true;

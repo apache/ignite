@@ -181,6 +181,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default query parallelism. */
     public static final int DFLT_QUERY_PARALLELISM = 1;
 
+    /** Default value for events disabled flag. */
+    public static final boolean DFLT_EVENTS_DISABLED = false;
+
+    /** Default SQL on-heap cache size. */
+    public static final int DFLT_SQL_ONHEAP_CACHE_MAX_SIZE = 0;
+
     /** Cache name. */
     private String name;
 
@@ -209,6 +215,12 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** */
     private boolean onheapCache;
+
+    /** Use on-heap cache for rows for SQL queries. */
+    private boolean sqlOnheapCache;
+
+    /** SQL on-heap cache max size. */
+    private int sqlOnheapCacheMaxSize = DFLT_SQL_ONHEAP_CACHE_MAX_SIZE;
 
     /** Eviction filter. */
     private EvictionFilter<?, ?> evictFilter;
@@ -358,6 +370,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache key configuration. */
     private CacheKeyConfiguration[] keyCfg;
 
+    /** Events disabled. */
+    private boolean evtsDisabled = DFLT_EVENTS_DISABLED;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -449,6 +464,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeSync = cc.getWriteSynchronizationMode();
         storeConcurrentLoadAllThreshold = cc.getStoreConcurrentLoadAllThreshold();
         maxQryIterCnt = cc.getMaxQueryIteratorsCount();
+        sqlOnheapCache = cc.isSqlOnheapCacheEnabled();
+        sqlOnheapCacheMaxSize = cc.getSqlOnheapCacheMaxSize();
+        evtsDisabled = cc.isEventsDisabled();
     }
 
     /**
@@ -624,6 +642,61 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setOnheapCacheEnabled(boolean onheapCache) {
         this.onheapCache = onheapCache;
+
+        return this;
+    }
+
+    /**
+     * Gets whether SQL on-heap cache is enabled. When enabled, Ignite will cache SQL rows as they are accessed by
+     * query engine. Rows are invalidated and evicted from cache when relevant cache entry is either changed or
+     * evicted.
+     *
+     * @return Whether SQL onheap cache is enabled.
+     */
+    public boolean isSqlOnheapCacheEnabled() {
+        return sqlOnheapCache;
+    }
+
+    /**
+     * Sets whether SQL on-heap cache is enabled. When enabled, Ignite will cache SQL rows as they are accessed by
+     * query engine. Rows are invalidated and evicted from cache when relevant cache entry is either changed or
+     * evicted.
+     *
+     * @param sqlOnheapCache Whether SQL onheap cache is enabled.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setSqlOnheapCacheEnabled(boolean sqlOnheapCache) {
+        this.sqlOnheapCache = sqlOnheapCache;
+
+        return this;
+    }
+
+    /**
+     * Gets maximum SQL on-heap cache. Measured in number of rows. When maximum size is reached oldest cached rows
+     * will be evicted.
+     * <p>
+     * Zero or negative value stand for unlimited size.
+     * <p>
+     * Defaults to {@link #DFLT_SQL_ONHEAP_CACHE_MAX_SIZE}.
+     *
+     * @return SQL on-heap cache max size.
+     */
+    public int getSqlOnheapCacheMaxSize() {
+        return sqlOnheapCacheMaxSize;
+    }
+
+    /**
+     * Sets maximum SQL on-heap cache. Measured in number of rows. When maximum size is reached oldest cached rows
+     * will be evicted.
+     * <p>
+     * Zero or negative value stand for unlimited size.
+     * <p>
+     * Defaults to {@link #DFLT_SQL_ONHEAP_CACHE_MAX_SIZE}.
+     *
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setSqlOnheapCacheMaxSize(int sqlOnheapCacheMaxSize) {
+        this.sqlOnheapCacheMaxSize = sqlOnheapCacheMaxSize;
 
         return this;
     }
@@ -2078,7 +2151,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         return cfg;
     }
 
-
     /**
      * @param cls Class.
      * @return Masked class.
@@ -2150,6 +2222,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** {@inheritDoc} */
     @Override public CacheConfiguration<K, V> setStoreByValue(boolean isStoreByVal) {
         super.setStoreByValue(isStoreByVal);
+
+        return this;
+    }
+
+    /**
+     * Checks whether events are disabled for this cache.
+     *
+     * @return Events disabled flag.
+     */
+    public Boolean isEventsDisabled() {
+        return evtsDisabled;
+    }
+
+    /**
+     * Sets events disabled flag.
+     *
+     * @param evtsDisabled Events disabled flag.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setEventsDisabled(boolean evtsDisabled) {
+        this.evtsDisabled = evtsDisabled;
 
         return this;
     }

@@ -120,11 +120,17 @@ public final class IgniteNodeAttributes {
     /** Internal attribute name constant. */
     public static final String ATTR_MACS = ATTR_PREFIX + ".macs";
 
+    /** Allows to override {@link #ATTR_MACS} by adding this attribute in the user attributes. */
+    public static final String ATTR_MACS_OVERRIDE = "override." + ATTR_MACS;
+
     /** Internal attribute name constant. */
     public static final String ATTR_PHY_RAM = ATTR_PREFIX + ".phy.ram";
 
     /** Internal attribute name constant. */
     public static final String ATTR_OFFHEAP_SIZE = ATTR_PREFIX + ".offheap.size";
+
+    /** Internal attribute name constant. */
+    public static final String ATTR_DATA_REGIONS_OFFHEAP_SIZE = ATTR_PREFIX + ".data.regions.offheap.size";
 
     /** Internal attribute name constant. */
     public static final String ATTR_JVM_PID = ATTR_PREFIX + ".jvm.pid";
@@ -189,6 +195,9 @@ public final class IgniteNodeAttributes {
 
     /** Data storage configuration. */
     public static final String ATTR_DATA_STORAGE_CONFIG = ATTR_PREFIX + ".data.storage.config";
+
+    /** User authentication enabled flag. */
+    public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
 
     /**
      * Enforces singleton.

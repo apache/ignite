@@ -23,6 +23,7 @@ namespace Apache.Ignite.Linq
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Linq.Impl;
@@ -37,8 +38,7 @@ namespace Apache.Ignite.Linq
         /// Gets an <see cref="IQueryable{T}"/> instance over this cache.
         /// <para />
         /// Resulting query will be translated to cache SQL query and executed over the cache instance 
-        /// via either <see cref="ICache{TK,TV}.Query"/> or <see cref="ICache{TK,TV}.QueryFields"/>,
-        /// depending on requested result. 
+        /// via <see cref="ICache{TK,TV}.Query(SqlFieldsQuery)"/>. 
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable"/>
         /// for introspection, or converted with <see cref="ToCacheQueryable{T}"/> extension method.
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Linq
         /// Gets an <see cref="IQueryable{T}"/> instance over this cache.
         /// <para />
         /// Resulting query will be translated to cache SQL query and executed over the cache instance 
-        /// via either <see cref="ICache{TK,TV}.Query"/> or <see cref="ICache{TK,TV}.QueryFields"/>,
+        /// via <see cref="ICache{TK,TV}.Query(SqlFieldsQuery)"/>. 
         /// depending on requested result. 
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable"/> for introspection.
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Linq
         /// Gets an <see cref="IQueryable{T}" /> instance over this cache.
         /// <para />
         /// Resulting query will be translated to cache SQL query and executed over the cache instance
-        /// via either <see cref="ICache{TK,TV}.Query" /> or <see cref="ICache{TK,TV}.QueryFields" />,
+        /// via <see cref="ICache{TK,TV}.Query(SqlFieldsQuery)"/>. 
         /// depending on requested result.
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable" /> for introspection.
@@ -112,7 +112,7 @@ namespace Apache.Ignite.Linq
         /// Gets an <see cref="IQueryable{T}" /> instance over this cache.
         /// <para />
         /// Resulting query will be translated to cache SQL query and executed over the cache instance
-        /// via either <see cref="ICache{TK,TV}.Query" /> or <see cref="ICache{TK,TV}.QueryFields" />,
+        /// via <see cref="ICache{TK,TV}.Query(SqlFieldsQuery)"/>. 
         /// depending on requested result.
         /// <para />
         /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable" /> for introspection.
@@ -193,5 +193,33 @@ namespace Apache.Ignite.Linq
             return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression,
                 Expression.Quote(predicate)));
         }
+
+        /// <summary>
+        /// Updates all rows that are matched by the specified query.
+        /// <para />
+        /// This method results in "UPDATE" distributed SQL query, performing bulk update 
+        /// (as opposed to fetching all rows locally).
+        /// </summary>
+        /// <typeparam name="TKey">Key type.</typeparam>
+        /// <typeparam name="TValue">Value type.</typeparam>
+        /// <param name="query">The query.</param>
+        /// <param name="updateDescription">The update description.</param>
+        /// <returns>Affected row count.</returns>
+        public static int UpdateAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query,
+            Expression<Func<IUpdateDescriptor<TKey,TValue>, IUpdateDescriptor<TKey,TValue>>> updateDescription)
+        {
+            IgniteArgumentCheck.NotNull(query, "query");
+            IgniteArgumentCheck.NotNull(updateDescription, "updateDescription");
+
+            var method = UpdateAllExpressionNode.UpdateAllMethodInfo
+                .MakeGenericMethod(typeof(TKey), typeof(TValue)); // TODO: cache?
+
+            return query.Provider.Execute<int>(Expression.Call(null, method, new[]
+            {
+                query.Expression,
+                Expression.Quote(updateDescription)
+            }));
+        }
+
     }
 }

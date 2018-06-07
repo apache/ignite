@@ -295,6 +295,72 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
     }
 
     /**
+     * Checks if JDBC connection enabled and others are disabled, JDBC still works.
+     *
+     * @throws Exception If failed.
+     */
+    public void testJdbcConnectionEnabled() throws Exception {
+        IgniteConfiguration cfg = baseConfiguration();
+
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+            .setJdbcEnabled(true)
+            .setOdbcEnabled(false)
+            .setThinClientEnabled(false));
+
+        Ignition.start(cfg);
+
+        checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
+    }
+
+    /**
+     * Checks if JDBC connection disabled and others are enabled, JDBC doesn't work.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testJdbcConnectionDisabled() throws Exception {
+        IgniteConfiguration cfg = baseConfiguration();
+
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+            .setJdbcEnabled(false)
+            .setOdbcEnabled(true)
+            .setThinClientEnabled(true));
+
+        Ignition.start(cfg);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
+
+                return null;
+            }
+        }, SQLException.class, "JDBC connection is not allowed, see ClientConnectorConfiguration.jdbcEnabled");
+    }
+
+    /**
+     *  Checks if JDBC connection disabled for daemon node.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public void testJdbcConnectionDisabledForDaemon() throws Exception {
+        final IgniteConfiguration cfg = baseConfiguration().setDaemon(true);
+
+        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
+            .setJdbcEnabled(true)
+            .setThinClientEnabled(true));
+
+        Ignition.start(cfg);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
+                return null;
+            }
+        }, SQLException.class, "Failed to connect");
+    }
+
+    /**
      * Get base node configuration.
      *
      * @return Configuration.

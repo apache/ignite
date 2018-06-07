@@ -36,14 +36,12 @@ import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListe
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -76,7 +74,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         pCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
             .setPersistenceEnabled(true)
-            .setMaxSize(100 * 1024 * 1024));
+            .setMaxSize(100L * 1024 * 1024));
 
         pCfg.setCheckpointFrequency(1000);
 
@@ -124,14 +122,14 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
 
         System.clearProperty(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
     }
@@ -193,8 +191,8 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         CountDownLatch cnt = checkpointLatch(node);
 
-        node.context().query().querySqlFieldsNoCache(
-            new SqlFieldsQuery("create table \"Person\" (\"id\" int primary key, \"name\" varchar)"), false).getAll();
+        node.context().query().querySqlFields(
+            new SqlFieldsQuery("create table \"Person\" (\"id\" int primary key, \"name\" varchar)"), false);
 
         assertEquals(0, indexCnt(node, SQL_CACHE_NAME));
 
@@ -212,7 +210,7 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
 
         checkDynamicSchemaChanges(node, SQL_CACHE_NAME);
 
-        node.context().query().querySqlFieldsNoCache(new SqlFieldsQuery("drop table \"Person\""), false).getAll();
+        node.context().query().querySqlFields(new SqlFieldsQuery("drop table \"Person\""), false).getAll();
     }
 
     /** */
@@ -250,13 +248,6 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
     }
 
     /**
-     *
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
-    }
-
-    /**
      * @param node Node whose checkpoint to wait for.
      * @return Latch released when checkpoint happens.
      */
@@ -280,13 +271,17 @@ public class IgnitePersistentStoreSchemaLoadTest extends GridCommonAbstractTest 
      * @param schema Schema name.
      */
     private void makeDynamicSchemaChanges(IgniteEx node, String schema) {
-        node.context().query().querySqlFieldsNoCache(
+        node.context().query().querySqlFields(
             new SqlFieldsQuery("create index \"my_idx\" on \"Person\" (\"id\", \"name\")").setSchema(schema), false)
                 .getAll();
 
-        node.context().query().querySqlFieldsNoCache(
-            new SqlFieldsQuery("alter table \"Person\" add column \"age\" int").setSchema(schema), false)
-                .getAll();
+        node.context().query().querySqlFields(
+            new SqlFieldsQuery("alter table \"Person\" add column (\"age\" int, \"city\" char)")
+            .setSchema(schema), false).getAll();
+
+        node.context().query().querySqlFields(
+            new SqlFieldsQuery("alter table \"Person\" drop column \"city\"").setSchema(schema), false)
+            .getAll();
     }
 
     /**

@@ -51,13 +51,12 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         /** Members that are missing on .NET side and should be added in future. */
         private static readonly string[] MissingMembers =
         {
-            "queryMetrics",  // IGNITE-6681
-            "resetQueryMetrics",  // IGNITE-6681
             "queryDetailMetrics",  // IGNITE-6680
             "resetQueryDetailMetrics",  // IGNITE-6680
             "sizeLong",  // 	IGNITE-6563
             "sizeLongAsync",  // IGNITE-6563
             "localSizeLong",  // IGNITE-6563
+            "enableStatistics"  // IGNITE-7276
         };
 
         /// <summary>

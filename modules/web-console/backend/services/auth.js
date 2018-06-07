@@ -21,37 +21,19 @@
 
 module.exports = {
     implements: 'services/auth',
-    inject: ['mongo', 'settings', 'errors']
+    inject: ['mongo', 'settings', 'errors', 'services/utils']
 };
 
 /**
  * @param mongo
  * @param settings
  * @param errors
+ * @param {UtilsService} utilsService
  * @returns {AuthService}
  */
 
-module.exports.factory = (mongo, settings, errors) => {
+module.exports.factory = (mongo, settings, errors, utilsService) => {
     class AuthService {
-        /**
-         * Generate token string.
-         *
-         * @param length - length of string
-         * @returns {string} - generated token
-         */
-        static generateResetToken(length) {
-            length = length || settings.tokenLength;
-            const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            const possibleLen = possible.length;
-
-            let res = '';
-
-            for (let i = 0; i < length; i++)
-                res += possible.charAt(Math.floor(Math.random() * possibleLen));
-
-            return res;
-        }
-
         /**
          * Reset password reset token for user.
          *
@@ -64,7 +46,7 @@ module.exports.factory = (mongo, settings, errors) => {
                     if (!user)
                         throw new errors.MissingResourceException('Account with that email address does not exists!');
 
-                    user.resetPasswordToken = AuthService.generateResetToken(settings.tokenLength);
+                    user.resetPasswordToken = utilsService.randomString(settings.tokenLength);
 
                     return user.save();
                 });

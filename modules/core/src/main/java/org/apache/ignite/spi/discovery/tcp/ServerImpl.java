@@ -50,6 +50,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -66,11 +67,16 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
@@ -93,6 +99,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.plugin.security.SecurityPermissionSet;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.IgniteSpiContext;
@@ -131,10 +138,10 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingRequest;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRedirectToClient;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
@@ -146,6 +153,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
@@ -194,7 +203,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private RingMessageWorker msgWorker;
 
     /** Client message workers. */
-    protected ConcurrentMap<UUID, ClientMessageWorker> clientMsgWorkers = new ConcurrentHashMap8<>();
+    protected ConcurrentMap<UUID, ClientMessageWorker> clientMsgWorkers = new ConcurrentHashMap<>();
 
     /** IP finder cleaner. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -242,7 +251,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /**
      * @param adapter Adapter.
@@ -729,6 +738,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                             break;
                         else if (!spi.failureDetectionTimeoutEnabled() && reconCnt == spi.getReconnectCount())
                             break;
+
+                        if (spi.isNodeStopping0()) {
+                            if (log.isDebugEnabled())
+                                log.debug("Stop pinging node, because node is stopping: [rmtNodeId=" + nodeId + ']');
+
+                            break;
+                        }
                     }
                     finally {
                         U.closeQuiet(sock);
@@ -781,8 +797,16 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
         try {
-            msgWorker.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
-                U.marshal(spi.marshaller(), evt)));
+            TcpDiscoveryAbstractMessage msg;
+
+            if (((CustomMessageWrapper)evt).delegate() instanceof DiscoveryServerOnlyCustomMessage)
+                msg = new TcpDiscoveryServerOnlyCustomEventMessage(getLocalNodeId(), evt,
+                    U.marshal(spi.marshaller(), evt));
+            else
+                msg = new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt,
+                    U.marshal(spi.marshaller(), evt));
+
+            msgWorker.addMessage(msg);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to marshal custom event: " + evt, e);
@@ -1084,7 +1108,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     log.debug("Concurrent discovery SPI start has been detected (local node should wait).");
 
                 try {
-                    U.sleep(2000);
+                    U.sleep(spi.getReconnectDelay());
                 }
                 catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
@@ -1118,7 +1142,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 try {
-                    U.sleep(2000);
+                    U.sleep(spi.getReconnectDelay());
                 }
                 catch (IgniteInterruptedCheckedException ex) {
                     throw new IgniteSpiException("Thread has been interrupted.", ex);
@@ -1449,7 +1473,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      *
      * @return {@code true} if local node is coordinator.
      */
-    private boolean isLocalNodeCoordinator() {
+    public boolean isLocalNodeCoordinator() {
         synchronized (mux) {
             boolean crd = spiState == CONNECTED && locNode.equals(resolveCoordinator());
 
@@ -2591,12 +2615,20 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
+            Throwable err = null;
+
             try {
                 super.body();
             }
+            catch (InterruptedException e) {
+                if (!spi.isNodeStopping0())
+                    err = e;
+
+                throw e;
+            }
             catch (Throwable e) {
                 if (!spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING) {
-                        final Ignite ignite = spi.ignite();
+                    final Ignite ignite = spi.ignite();
 
                     if (ignite != null) {
                         U.error(log, "TcpDiscoverSpi's message worker thread failed abnormally. " +
@@ -2619,8 +2651,21 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
+                err = e;
+
                 // Must be processed by IgniteSpiThread as well.
                 throw e;
+            }
+            finally {
+                if (err == null && !spi.isNodeStopping0())
+                    err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly.");
+
+                FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
+
+                if (err instanceof OutOfMemoryError)
+                    failure.process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
 
@@ -3304,7 +3349,7 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @return Whether to redirect message to client nodes.
          */
         private boolean redirectToClients(TcpDiscoveryAbstractMessage msg) {
-            return msg.verified() && U.getAnnotation(msg.getClass(), TcpDiscoveryRedirectToClient.class) != null;
+            return msg.verified() && U.hasDeclaredAnnotation(msg, TcpDiscoveryRedirectToClient.class);
         }
 
         /**
@@ -3515,6 +3560,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                             return;
                         }
                         else {
+                            String authFailedMsg = null;
+
                             if (!(subj instanceof Serializable)) {
                                 // Node has not pass authentication.
                                 LT.warn(log, "Authentication subject is not Serializable [nodeId=" + node.id() +
@@ -3523,9 +3570,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         ", addrs=" +
                                         U.addressesAsString(node) + ']');
 
+                                authFailedMsg = "Authentication subject is not serializable";
+                            }
+                            else if (!node.isClient() &&
+                                !subj.systemOperationAllowed(SecurityPermission.JOIN_AS_SERVER))
+                                authFailedMsg = "Node is not authorised to join as a server node";
+
+                            if (authFailedMsg != null) {
                                 // Always output in debug.
                                 if (log.isDebugEnabled())
-                                    log.debug("Authentication subject is not serializable [nodeId=" + node.id() +
+                                    log.debug(authFailedMsg + " [nodeId=" + node.id() +
                                         ", addrs=" + U.addressesAsString(node));
 
                                 try {
@@ -3567,36 +3621,43 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                final IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
+                IgniteNodeValidationResult err;
+
+                err = spi.getSpiContext().validateNode(node);
+
+                if (err == null)
+                    err = spi.getSpiContext().validateNode(node, msg.gridDiscoveryData().unmarshalJoiningNodeData(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), false, log));
 
                 if (err != null) {
+                    final IgniteNodeValidationResult err0 = err;
+
                     if (log.isDebugEnabled())
                         log.debug("Node validation failed [res=" + err + ", node=" + node + ']');
 
                     utilityPool.execute(
                         new Runnable() {
                             @Override public void run() {
-                                boolean ping = node.id().equals(err.nodeId()) ? pingNode(node) : pingNode(err.nodeId());
+                                boolean ping = node.id().equals(err0.nodeId()) ? pingNode(node) : pingNode(err0.nodeId());
 
                                 if (!ping) {
                                     if (log.isDebugEnabled())
                                         log.debug("Conflicting node has already left, need to wait for event. " +
                                             "Will ignore join request for now since it will be recent [req=" + msg +
-                                            ", err=" + err.message() + ']');
+                                            ", err=" + err0.message() + ']');
 
                                     // Ignore join request.
                                     return;
                                 }
 
-                                LT.warn(log, err.message());
+                                LT.warn(log, err0.message());
 
                                 // Always output in debug.
                                 if (log.isDebugEnabled())
-                                    log.debug(err.message());
+                                    log.debug(err0.message());
 
                                 try {
                                     trySendMessageDirectly(node,
-                                        new TcpDiscoveryCheckFailedMessage(err.nodeId(), err.sendMessage()));
+                                        new TcpDiscoveryCheckFailedMessage(err0.nodeId(), err0.sendMessage()));
                                 }
                                 catch (IgniteSpiException e) {
                                     if (log.isDebugEnabled())
@@ -4152,6 +4213,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
 
                     assert dataPacket != null : msg;
+
+                    dataPacket.joiningNodeClient(msg.client());
 
                     if (dataPacket.hasJoiningNodeData())
                         spi.onExchange(dataPacket, U.resolveClassLoader(spi.ignite().configuration()));
@@ -5570,7 +5633,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException {
+        @Override protected void body() {
+            Throwable err = null;
+
             try {
                 while (!isInterrupted()) {
                     Socket sock = srvrSock.accept();
@@ -5603,13 +5668,30 @@ class ServerImpl extends TcpDiscoveryImpl {
                 onException("Failed to accept TCP connection.", e);
 
                 if (!isInterrupted()) {
+                    err = e;
+
                     if (U.isMacInvalidArgumentError(e))
                         U.error(log, "Failed to accept TCP connection\n\t" + U.MAC_INVALID_ARG_MSG, e);
                     else
                         U.error(log, "Failed to accept TCP connection.", e);
                 }
             }
+            catch (Throwable t) {
+                err = t;
+
+                throw t;
+            }
             finally {
+                if (err == null && !spi.isNodeStopping0())
+                    err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly.");
+
+                FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
+
+                if (err instanceof OutOfMemoryError)
+                    failure.process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+
                 U.closeQuiet(srvrSock);
             }
         }

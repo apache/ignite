@@ -108,11 +108,6 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -145,7 +140,7 @@ public class JdbcThinComplexDmlDdlSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, SQLException.class, "Failed to parse query: SELECT * from Person");
+        }, SQLException.class, "Table \"PERSON\" not found");
 
         sql(new UpdateChecker(0),
             "CREATE TABLE person (id int, name varchar, age int, company varchar, city varchar, " +

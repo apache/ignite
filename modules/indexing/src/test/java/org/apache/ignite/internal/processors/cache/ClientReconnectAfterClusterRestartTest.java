@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import javax.cache.CacheException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -31,24 +36,21 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
 
 /**
  */
 public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTest {
+    /** Server id. */
+    private static final int SERVER_ID = 0;
+
     /** Client id. */
-    public static final int CLIENT_ID = 1;
+    private static final int CLIENT_ID = 1;
 
     /** Cache params. */
-    public static final String CACHE_PARAMS = "PPRB_PARAMS";
+    private static final String CACHE_PARAMS = "PPRB_PARAMS";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -57,9 +59,9 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
         cfg.setMarshaller(new BinaryMarshaller());
         cfg.setIncludeEventTypes(EventType.EVTS_CACHE);
 
-        if (getTestIgniteInstanceName(CLIENT_ID).equals(igniteInstanceName))
+        if (getTestIgniteInstanceName(CLIENT_ID).equals(igniteInstanceName)) {
             cfg.setClientMode(true);
-        else {
+
             CacheConfiguration ccfg = getCacheConfiguration();
 
             cfg.setCacheConfiguration(ccfg);
@@ -87,7 +89,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
         LinkedHashMap<String, String> fields = new LinkedHashMap<>();
 
-        fields.put("ID", "java.lang.Long" );
+        fields.put("ID", "java.lang.Long");
         fields.put("PARTITIONID", "java.lang.Long");
         fields.put("CLIENTID", "java.lang.Long");
         fields.put("PARAMETRCODE", "java.lang.Long");
@@ -113,11 +115,13 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
     /** */
     public void testReconnectClient() throws Exception {
         try {
-            startGrid(0);
+            startGrid(SERVER_ID);
 
-            Ignite client = startGrid(1);
+            Ignite client = startGrid(CLIENT_ID);
 
             checkTopology(2);
+
+            IgniteCache<Long, BinaryObject> cache = client.getOrCreateCache(CACHE_PARAMS).withKeepBinary();
 
             client.events().localListen(new IgnitePredicate<Event>() {
 
@@ -159,29 +163,19 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
 
             Thread.sleep(2_000);
 
-            startGrid(0);
+            startGrid(SERVER_ID);
 
-            assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    try {
-                        checkTopology(2);
+            try {
+                assertNull(cache.get(1L));
+            } catch (CacheException ce) {
+                IgniteClientDisconnectedException icde = (IgniteClientDisconnectedException)ce.getCause();
 
-                        return true;
-                    } catch (Exception ex) {
-                        return false;
-                    }
-                }
-            }, 30_000);
+                icde.reconnectFuture().get();
+
+                assertNull(cache.get(1L));
+            }
 
             info("Pre-insert");
-
-            streamer = client.dataStreamer("PPRB_PARAMS");
-            streamer.allowOverwrite(true);
-            streamer.keepBinary(true);
-            streamer.perNodeBufferSize(10000);
-            streamer.perNodeParallelOperations(100);
-
-            IgniteCache<Long, BinaryObject> cache = client.getOrCreateCache(CACHE_PARAMS).withKeepBinary();
 
             builder = client.binary().builder("PARAMS");
             builder.setField("ID", 2L);

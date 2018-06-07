@@ -60,7 +60,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.resource.GridResourceIoc;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -421,7 +420,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             0,
                             needVer);
 
-                        if (configuration().isStatisticsEnabled() && !skipVals)
+                        if (ctx.statisticsEnabled() && !skipVals)
                             metrics0().onRead(true);
 
                         if (evt) {
@@ -522,7 +521,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                 }
             }
             if (!success) {
-                if (!storeEnabled && configuration().isStatisticsEnabled() && !skipVals)
+                if (!storeEnabled && ctx.statisticsEnabled() && !skipVals)
                     metrics0().onRead(false);
             }
         }
@@ -549,9 +548,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     @Override public <T> EntryProcessorResult<T> invoke(K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException {
-        EntryProcessorResult<T> res = invokeAsync(key, entryProcessor, args).get();
-
-        return res != null ? res : new CacheInvokeResult<T>();
+        return invokeAsync(key, entryProcessor, args).get();
     }
 
     /** {@inheritDoc} */
@@ -614,10 +611,10 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                 if (resMap != null) {
                     assert resMap.isEmpty() || resMap.size() == 1 : resMap.size();
 
-                    return resMap.isEmpty() ? null : resMap.values().iterator().next();
+                    return resMap.isEmpty() ? new CacheInvokeResult<>() : resMap.values().iterator().next();
                 }
 
-                return null;
+                return new CacheInvokeResult<>();
             }
         });
     }
@@ -1075,7 +1072,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
                             if (computed != null)
                                 invokeRes = CacheInvokeResult.fromResult(ctx.unwrapTemporary(computed));
 
-                            if (invokeEntry.modified()) {
+                            if (invokeEntry.modified() && updated != null) {
                                 validation = true;
 
                                 ctx.validateKeyAndValue(entry.key(), updated);
@@ -1349,7 +1346,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         for (int i = 0; i < entries.size(); i++) {
             GridCacheEntryEx entry = entries.get(i);
 
-            assert Thread.holdsLock(entry);
+            assert entry.lockedByCurrentThread();
 
             if (entry.obsolete() ||
                 (storeErr != null && storeErr.failedKeys().contains(entry.key().value(ctx.cacheObjectContext(), false))))
@@ -1429,12 +1426,12 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             for (int i = 0; i < locked.size(); i++) {
                 GridCacheEntryEx entry = locked.get(i);
 
-                GridUnsafe.monitorEnter(entry);
+                entry.lockEntry();
 
                 if (entry.obsolete()) {
                     // Unlock all locked.
                     for (int j = 0; j <= i; j++)
-                        GridUnsafe.monitorExit(locked.get(j));
+                        locked.get(j).unlockEntry();
 
                     // Clear entries.
                     locked.clear();
@@ -1465,7 +1462,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
      */
     private void unlockEntries(Iterable<GridCacheEntryEx> locked) {
         for (GridCacheEntryEx entry : locked)
-            GridUnsafe.monitorExit(entry);
+            entry.unlockEntry();
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 

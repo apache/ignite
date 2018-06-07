@@ -44,13 +44,7 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName).
             setCacheConfiguration(defaultCacheConfiguration().setCacheMode(PARTITIONED));
 
-        cfg.getTransactionConfiguration().setTxManagerFactory(new Factory<TransactionManager>() {
-            private static final long serialVersionUID = 0L;
-
-            @Override public TransactionManager create() {
-                return jotm.getTransactionManager();
-            }
-        });
+        cfg.getTransactionConfiguration().setTxManagerFactory(new TestTxManagerFactory());
 
         return cfg;
     }
@@ -68,10 +62,6 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-
         jotm.stop();
     }
 
@@ -203,6 +193,19 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
             jtaTm.rollback();
 
             cache.removeAll();
+        }
+    }
+
+    /**
+     *
+     */
+    static class TestTxManagerFactory implements Factory<TransactionManager> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public TransactionManager create() {
+            return jotm.getTransactionManager();
         }
     }
 }

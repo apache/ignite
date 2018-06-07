@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -36,7 +36,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.PersistentStore;
     using Apache.Ignite.Core.Tests.Plugin;
@@ -148,7 +147,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.NetworkSendRetryCount, resCfg.NetworkSendRetryCount);
                 Assert.AreEqual(cfg.NetworkTimeout, resCfg.NetworkTimeout);
                 Assert.AreEqual(cfg.NetworkSendRetryDelay, resCfg.NetworkSendRetryDelay);
-                Assert.AreEqual(cfg.WorkDirectory.Trim('\\'), resCfg.WorkDirectory.Trim('\\'));
+                Assert.AreEqual(cfg.WorkDirectory.Trim(Path.DirectorySeparatorChar),
+                    resCfg.WorkDirectory.Trim(Path.DirectorySeparatorChar));
                 Assert.AreEqual(cfg.JvmClasspath, resCfg.JvmClasspath);
                 Assert.AreEqual(cfg.JvmOptions, resCfg.JvmOptions);
                 Assert.AreEqual(cfg.JvmDllPath, resCfg.JvmDllPath);
@@ -170,6 +170,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(tx.DefaultTransactionIsolation, resTx.DefaultTransactionIsolation);
                 Assert.AreEqual(tx.PessimisticTransactionLogLinger, resTx.PessimisticTransactionLogLinger);
                 Assert.AreEqual(tx.PessimisticTransactionLogSize, resTx.PessimisticTransactionLogSize);
+                Assert.AreEqual(tx.DefaultTimeoutOnPartitionMapExchange, resTx.DefaultTimeoutOnPartitionMapExchange);
 
                 var com = (TcpCommunicationSpi) cfg.CommunicationSpi;
                 var resCom = (TcpCommunicationSpi) resCfg.CommunicationSpi;
@@ -252,7 +253,7 @@ namespace Apache.Ignite.Core.Tests
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 DataStorageConfiguration = null,
-                SpringConfigUrl = @"config\spring-test.xml",
+                SpringConfigUrl = Path.Combine("Config", "spring-test.xml"),
                 NetworkSendRetryDelay = TimeSpan.FromSeconds(45),
                 MetricsHistorySize = 57
             };
@@ -315,7 +316,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestDefaultSpi()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 DiscoverySpi =
                     new TcpDiscoverySpi
@@ -325,10 +326,7 @@ namespace Apache.Ignite.Core.Tests
                         JoinTimeout = TimeSpan.MaxValue,
                         NetworkTimeout = TimeSpan.MaxValue,
                         SocketTimeout = TimeSpan.MaxValue
-                    },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                Localhost = "127.0.0.1"
+                    }
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -348,16 +346,14 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestInvalidTimeouts()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 DiscoverySpi =
                     new TcpDiscoverySpi
                     {
                         AckTimeout = TimeSpan.FromMilliseconds(-5),
-                        JoinTimeout = TimeSpan.MinValue,
-                    },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
+                        JoinTimeout = TimeSpan.MinValue
+                    }
             };
 
             Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
@@ -397,7 +393,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                WorkDirectory = IgniteUtils.GetTempDirectoryName()
+                WorkDirectory = TestUtils.GetTempDirectoryName()
             };
 
             using (Ignition.Start(cfg))
@@ -431,6 +427,7 @@ namespace Apache.Ignite.Core.Tests
                 using (var ignite = Ignition.Start(cfg))
                 {
                     Assert.AreEqual(id, ignite.GetConfiguration().ConsistentId);
+                    Assert.AreEqual(id ?? "127.0.0.1:47500", ignite.GetCluster().GetLocalNode().ConsistentId);
                 }
             }
         }
@@ -442,16 +439,13 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="ipFinder2">The ip finder2.</param>
         private static void TestIpFinders(TcpDiscoveryIpFinderBase ipFinder, TcpDiscoveryIpFinderBase ipFinder2)
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 DiscoverySpi =
                     new TcpDiscoverySpi
                     {
                         IpFinder = ipFinder
-                    },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                Localhost = "127.0.0.1"
+                    }
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -497,6 +491,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultClientConnectorConfigurationEnabled, 
                 cfg.ClientConnectorConfigurationEnabled);
             Assert.AreEqual(IgniteConfiguration.DefaultRedirectJavaConsoleOutput, cfg.RedirectJavaConsoleOutput);
+            Assert.AreEqual(IgniteConfiguration.DefaultAuthenticationEnabled, cfg.AuthenticationEnabled);
 
             // Thread pools.
             Assert.AreEqual(IgniteConfiguration.DefaultManagementThreadPoolSize, cfg.ManagementThreadPoolSize);
@@ -568,6 +563,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(DataStorageConfiguration.DefaultSystemRegionMaxSize, cfg.SystemRegionMaxSize);
             Assert.AreEqual(DataStorageConfiguration.DefaultPageSize, cfg.PageSize);
             Assert.AreEqual(DataStorageConfiguration.DefaultConcurrencyLevel, cfg.ConcurrencyLevel);
+            Assert.AreEqual(DataStorageConfiguration.DefaultWalAutoArchiveAfterInactivity, 
+                cfg.WalAutoArchiveAfterInactivity);
         }
 
         /// <summary>
@@ -600,6 +597,10 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(ClientConnectorConfiguration.DefaultSocketBufferSize, cfg.SocketSendBufferSize);
             Assert.AreEqual(ClientConnectorConfiguration.DefaultTcpNoDelay, cfg.TcpNoDelay);
             Assert.AreEqual(ClientConnectorConfiguration.DefaultThreadPoolSize, cfg.ThreadPoolSize);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultIdleTimeout, cfg.IdleTimeout);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultThinClientEnabled, cfg.ThinClientEnabled);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultJdbcEnabled, cfg.JdbcEnabled);
+            Assert.AreEqual(ClientConnectorConfiguration.DefaultOdbcEnabled, cfg.OdbcEnabled);
         }
 
         /// <summary>
@@ -648,7 +649,7 @@ namespace Apache.Ignite.Core.Tests
         private static IgniteConfiguration GetCustomConfig()
         {
             // CacheConfiguration is not tested here - see CacheConfigurationTest
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 DiscoverySpi = new TcpDiscoverySpi
                 {
@@ -683,8 +684,6 @@ namespace Apache.Ignite.Core.Tests
                 NetworkTimeout = TimeSpan.FromMinutes(10),
                 NetworkSendRetryDelay = TimeSpan.FromMinutes(11),
                 WorkDirectory = Path.GetTempPath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
                 Localhost = "127.0.0.1",
                 IsDaemon = false,
                 IsLateAffinityAssignment = false,
@@ -701,7 +700,8 @@ namespace Apache.Ignite.Core.Tests
                     DefaultTimeout = TimeSpan.FromSeconds(25),
                     DefaultTransactionIsolation = TransactionIsolation.Serializable,
                     PessimisticTransactionLogLinger = TimeSpan.FromHours(1),
-                    PessimisticTransactionLogSize = 240
+                    PessimisticTransactionLogSize = 240,
+                    DefaultTimeoutOnPartitionMapExchange = TimeSpan.FromSeconds(25)
                 },
                 CommunicationSpi = new TcpCommunicationSpi
                 {
@@ -795,6 +795,7 @@ namespace Apache.Ignite.Core.Tests
                     SystemRegionMaxSize = 128 * 1024 * 1024,
                     ConcurrencyLevel = 1,
                     PageSize = 8 * 1024,
+                    WalAutoArchiveAfterInactivity = TimeSpan.FromMinutes(5),
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
                         Name = "reg1",
@@ -807,7 +808,7 @@ namespace Apache.Ignite.Core.Tests
                         PersistenceEnabled = false,
                         MetricsRateTimeInterval = TimeSpan.FromMinutes(2),
                         MetricsSubIntervalCount = 6,
-                        SwapPath = IgniteUtils.GetTempDirectoryName(),
+                        SwapPath = TestUtils.GetTempDirectoryName(),
                         CheckpointPageBufferSize = 28 * 1024 * 1024
                     },
                     DataRegionConfigurations = new[]
@@ -824,10 +825,11 @@ namespace Apache.Ignite.Core.Tests
                             PersistenceEnabled = false,
                             MetricsRateTimeInterval = TimeSpan.FromMinutes(3),
                             MetricsSubIntervalCount = 7,
-                            SwapPath = IgniteUtils.GetTempDirectoryName()
+                            SwapPath = TestUtils.GetTempDirectoryName()
                         }
                     }
-                }
+                },
+                AuthenticationEnabled = false
             };
         }
 
