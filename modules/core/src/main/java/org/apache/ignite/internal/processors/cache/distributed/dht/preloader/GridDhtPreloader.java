@@ -297,7 +297,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
         }
 
-        assignments.rebalanceNeeded(prevTopVer == null || !assignmNotChanged);
+        assignments.needRebalance(prevTopVer == null || !assignmNotChanged);
 
         prevTopVer = topVer;
 

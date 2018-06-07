@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -40,7 +39,7 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     private boolean cancelled;
 
     /** */
-    private boolean rebalanceNeeded = true;
+    private boolean needRebalance = true;
 
     /**
      * @param exchangeId Exchange ID.
@@ -79,16 +78,16 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
      *
      * @return {@code True } if assignments are changed from previously generated and need to be rebalanced.
      */
-    public boolean rebalanceNeeded() {
-        return rebalanceNeeded;
+    public boolean needRebalance() {
+        return needRebalance;
     }
 
     /**
      *
-     * @param rebalanceNeeded {@code True } if assignments are changed from previously generated and need to be rebalanced.
+     * @param needRebalance {@code True } if assignments are changed from previously generated and need to be rebalanced.
      */
-    void rebalanceNeeded(boolean rebalanceNeeded) {
-        this.rebalanceNeeded = rebalanceNeeded;
+    void needRebalance(boolean needRebalance) {
+        this.needRebalance = needRebalance;
     }
 
     /**
