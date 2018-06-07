@@ -28,6 +28,7 @@
     <ClCompile Include="..\..\src\test_utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\complex_type.h" />
     <ClInclude Include="..\..\include\teamcity\teamcity_messages.h" />
     <ClInclude Include="..\..\include\test_utils.h" />
   </ItemGroup>
