@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal;
+package org.apache.ignite.internal.processors.cache.persistence.wal.memtracker;
 
 import java.nio.ByteBuffer;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -55,12 +57,12 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
 import org.mockito.Mockito;
-
-import static org.junit.Assert.fail;
 
 /**
  * Page memory tracker.
@@ -81,14 +83,14 @@ public class PageMemoryTracker implements IgnitePlugin {
     /** Grid context. */
     private final GridKernalContext gridCtx;
 
-    /** Last allocated page index. */
-    private final AtomicInteger lastPageIdx = new AtomicInteger();
-
     /** Pages. */
     private final Map<FullPageId, DirectMemoryPage> pages = new ConcurrentHashMap<>();
 
     /** Page allocator mutex. */
     private final Object pageAllocatorMux = new Object();
+
+    /** Last allocated page index. */
+    private volatile int lastPageIdx;
 
     /** Page size. */
     private volatile int pageSize;
@@ -107,6 +109,9 @@ public class PageMemoryTracker implements IgnitePlugin {
 
     /** Tracking started. */
     private volatile boolean started = false;
+
+    /** Tracker was started with empty PDS. */
+    private volatile boolean emptyPds;
 
     /** Statistics. */
     private final ConcurrentMap<WALRecord.RecordType, AtomicInteger> stats = new ConcurrentHashMap<>();
@@ -138,6 +143,12 @@ public class PageMemoryTracker implements IgnitePlugin {
 
                     return res;
                 }
+
+                @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+                    super.resumeLogging(lastPtr);
+
+                    emptyPds = (lastPtr == null);
+                }
             };
         else
             return new FileWriteAheadLogManager(gridCtx) {
@@ -147,6 +158,12 @@ public class PageMemoryTracker implements IgnitePlugin {
                     applyWalRecord(record);
 
                     return res;
+                }
+
+                @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+                    super.resumeLogging(lastPtr);
+
+                    emptyPds = (lastPtr == null);
                 }
             };
     }
@@ -159,13 +176,14 @@ public class PageMemoryTracker implements IgnitePlugin {
             return;
 
         pageSize = ctx.igniteConfiguration().getDataStorageConfiguration().getPageSize();
+
         pageMemoryMock = Mockito.mock(PageMemory.class);
 
         Mockito.doReturn(pageSize).when(pageMemoryMock).pageSize();
 
         GridCacheSharedContext sharedCtx = gridCtx.cache().context();
 
-        // Initialize memory region.
+        // Initialize one memory region for all data regions of target ignite node.
         long maxMemorySize = 0;
 
         for (DataRegion dataRegion : sharedCtx.database().dataRegions()) {
@@ -187,7 +205,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             checkpointLsnr = new DbCheckpointListener() {
                 @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
                     if (!checkPages(false))
-                        fail("Page memory is inconsistent after applying WAL delta records.");
+                        throw new IgniteCheckedException("Page memory is inconsistent after applying WAL delta records.");
                 }
             };
 
@@ -210,7 +228,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         stats.clear();
 
-        lastPageIdx.set(0);
+        lastPageIdx = 0;
 
         memoryProvider.shutdown();
 
@@ -227,7 +245,7 @@ public class PageMemoryTracker implements IgnitePlugin {
      *
      * @param fullPageId Full page id.
      */
-    private DirectMemoryPage allocatePage(FullPageId fullPageId) {
+    private DirectMemoryPage allocatePage(FullPageId fullPageId) throws IgniteCheckedException {
         synchronized (pageAllocatorMux) {
             // Double check.
             DirectMemoryPage page = pages.get(fullPageId);
@@ -235,10 +253,10 @@ public class PageMemoryTracker implements IgnitePlugin {
             if (page != null)
                 return page;
 
-            int pageIdx = lastPageIdx.getAndIncrement();
+            if (lastPageIdx >= maxPages)
+                throw new IgniteCheckedException("Can't allocate new page");
 
-            if (pageIdx >= maxPages)
-                fail("Can't allocate new page");
+            int pageIdx = lastPageIdx++;
 
             long pageAddr = memoryRegion.address() + ((long)pageIdx) * pageSize;
 
@@ -258,7 +276,7 @@ public class PageMemoryTracker implements IgnitePlugin {
      * @param fullPageId Full page id.
      * @return Page.
      */
-    private DirectMemoryPage page(FullPageId fullPageId) {
+    private DirectMemoryPage page(FullPageId fullPageId) throws IgniteCheckedException {
         DirectMemoryPage page = pages.get(fullPageId);
 
         if (page == null)
@@ -266,7 +284,6 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         return page;
     }
-
 
     /**
      * Apply WAL record to local memory region.
@@ -323,10 +340,12 @@ public class PageMemoryTracker implements IgnitePlugin {
 
                 page.changeHistory().add(record);
 
+/*
                 // Page corruptor TODO: remove
                 if (new Random().nextInt(5000) == 0)
                     GridUnsafe.putByte(page.address() + new Random().nextInt(pageSize),
                         (byte)(new Random().nextInt(256)));
+*/
             }
             finally {
                 page.unlock();
@@ -351,6 +370,22 @@ public class PageMemoryTracker implements IgnitePlugin {
     }
 
     /**
+     * Total count of allocated pages in page store.
+     */
+    private long pageStoreAllocatedPages() {
+        IgnitePageStoreManager pageStoreMgr = gridCtx.cache().context().pageStore();
+
+        assert pageStoreMgr != null;
+
+        long totalAllocated = pageStoreMgr.pagesAllocated(MetaStorage.METASTORAGE_CACHE_ID);
+
+        for (CacheGroupContext ctx : gridCtx.cache().cacheGroups())
+            totalAllocated += pageStoreMgr.pagesAllocated(ctx.groupId());
+
+        return totalAllocated;
+    }
+
+    /**
      * Checks if there are any differences between the Ignite's data regions content and pages inside the tracker.
      *
      * @param checkAll Check all tracked pages, otherwise check until first error.
@@ -358,36 +393,40 @@ public class PageMemoryTracker implements IgnitePlugin {
      */
     public boolean checkPages(boolean checkAll) throws IgniteCheckedException {
         if (!started)
-            throw new IgniteCheckedException("Page tracking is not started.");
+            throw new IgniteCheckedException("Page memory checking only possible when tracker is started.");
 
         GridCacheProcessor cacheProc = gridCtx.cache();
 
+        boolean res = true;
+
         synchronized (pageAllocatorMux) {
-            IgnitePageStoreManager pageStoreMgr = cacheProc.context().pageStore();
-
-            assert pageStoreMgr != null;
-
-            long totalAllocated = pageStoreMgr.pagesAllocated(MetaStorage.METASTORAGE_CACHE_ID);
-
-            for (CacheGroupContext ctx : cacheProc.cacheGroups())
-                totalAllocated += pageStoreMgr.pagesAllocated(ctx.groupId());
+            long totalAllocated = pageStoreAllocatedPages();
 
             long metaId = ((PageMemoryEx)cacheProc.context().database().metaStorage().pageMemory()).metaPageId(
                 MetaStorage.METASTORAGE_CACHE_ID);
 
             // Meta storage meta page is counted as allocated, but never used in current implementation.
+            // This behavior will be fixed by https://issues.apache.org/jira/browse/IGNITE-8735
             if (!pages.containsKey(new FullPageId(metaId, MetaStorage.METASTORAGE_CACHE_ID))
                 && pages.containsKey(new FullPageId(metaId + 1, MetaStorage.METASTORAGE_CACHE_ID)))
                 totalAllocated--;
 
             log.info(">>> Total tracked pages: " + pages.size());
             log.info(">>> Total allocated pages: " + totalAllocated);
+
+            dumpStats();
+
+            if (emptyPds && pages.size() != totalAllocated) {
+                res = false;
+
+                log.error("Started from empty PDS, but tracked pages count not equals to allocated pages count");
+
+                if (!checkAll)
+                    return false;
+            }
         }
-        // TODO: How to determine we are started with clear persistence dir
 
-        dumpStats();
-
-        boolean res = true;
+        Set<Integer> groupsWarned = new HashSet<>();
 
         for (DirectMemoryPage page : pages.values()) {
             FullPageId fullPageId = page.fullPageId();
@@ -396,8 +435,21 @@ public class PageMemoryTracker implements IgnitePlugin {
 
             if (fullPageId.groupId() == MetaStorage.METASTORAGE_CACHE_ID)
                 pageMem = cacheProc.context().database().metaStorage().pageMemory();
-            else
-                pageMem = cacheProc.cacheGroup(fullPageId.groupId()).dataRegion().pageMemory();
+            else {
+                CacheGroupContext ctx = cacheProc.cacheGroup(fullPageId.groupId());
+
+                if (ctx != null)
+                    pageMem = ctx.dataRegion().pageMemory();
+                else {
+                    if (!groupsWarned.contains(fullPageId.groupId())) {
+                        log.warning("Cache group " + fullPageId.groupId() + " not found.");
+
+                        groupsWarned.add(fullPageId.groupId());
+                    }
+
+                    continue;
+                }
+            }
 
             assert pageMem instanceof PageMemoryImpl;
 
@@ -413,7 +465,7 @@ public class PageMemoryTracker implements IgnitePlugin {
                         if (rmtPageAddr == 0L) {
                             res = false;
 
-                            log.info("Can't lock page: " + fullPageId);
+                            log.error("Can't lock page: " + fullPageId);
 
                             dumpHistory(page);
                         }
@@ -424,7 +476,7 @@ public class PageMemoryTracker implements IgnitePlugin {
                             if (!locBuf.equals(rmtBuf)) {
                                 res = false;
 
-                                log.info("Page buffers are not equals: " + fullPageId);
+                                log.error("Page buffers are not equals: " + fullPageId);
 
                                 dumpDiff(locBuf, rmtBuf);
 
@@ -469,23 +521,23 @@ public class PageMemoryTracker implements IgnitePlugin {
      * @param buf2 Buffer 2.
      */
     private void dumpDiff(ByteBuffer buf1, ByteBuffer buf2) {
-        log.info(">>> Diff:");
+        log.error(">>> Diff:");
 
         for (int i = 0; i < Math.min(buf1.remaining(), buf2.remaining()); i++) {
             byte b1 = buf1.get(buf1.position() + i);
             byte b2 = buf2.get(buf2.position() + i);
 
             if (b1 != b2)
-                log.info(String.format("        0x%04X: %02X %02X", i, b1, b2));
+                log.error(String.format("        0x%04X: %02X %02X", i, b1, b2));
         }
 
         if (buf1.remaining() < buf2.remaining()) {
             for (int i = buf1.remaining(); i < buf2.remaining(); i++)
-                log.info(String.format("        0x%04X:    %02X", i, buf2.get(buf2.position() + i)));
+                log.error(String.format("        0x%04X:    %02X", i, buf2.get(buf2.position() + i)));
         }
         else if (buf1.remaining() > buf2.remaining()) {
             for (int i = buf2.remaining(); i < buf1.remaining(); i++)
-                log.info(String.format("        0x%04X: %02X", i, buf1.get(buf1.position() + i)));
+                log.error(String.format("        0x%04X: %02X", i, buf1.get(buf1.position() + i)));
         }
     }
 
@@ -495,10 +547,10 @@ public class PageMemoryTracker implements IgnitePlugin {
      * @param page Page.
      */
     private void dumpHistory(DirectMemoryPage page) {
-        log.info(">>> Change history:");
+        log.error(">>> Change history:");
 
         for (WALRecord record : page.changeHistory())
-            log.info("        " + record);
+            log.error("        " + record);
     }
 
     /**

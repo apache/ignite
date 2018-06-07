@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence.wal;
+package org.apache.ignite.internal.processors.cache.persistence.wal.memtracker;
 
 import java.io.Serializable;
 import java.util.UUID;
@@ -39,10 +39,13 @@ import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * PageMemory tracker plugin provider.
  */
 public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemoryTrackerConfiguration>,
     IgniteChangeGlobalStateSupport {
+    /** System property name to implicitly enable page memory tracker . */
+    public static final String IGNITE_ENABLE_PAGE_MEMORY_TRACKER = "IGNITE_ENABLE_PAGE_MEMORY_TRACKER";
+
     /** Plugin name. */
     private static final String PLUGIN_NAME = "PageMemory tracker plugin";
 
@@ -95,6 +98,15 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
                     return;
                 }
             }
+        }
+
+        if (Boolean.getBoolean(IGNITE_ENABLE_PAGE_MEMORY_TRACKER) && CU.isPersistenceEnabled(igniteCfg)) {
+            plugin = new PageMemoryTracker(ctx, new PageMemoryTrackerConfiguration()
+                .setEnabled(true)
+                .setCheckPagesOnCheckpoint(true)
+            );
+
+            log.info("PageMemory tracking enabled by system property.");
         }
     }
 
