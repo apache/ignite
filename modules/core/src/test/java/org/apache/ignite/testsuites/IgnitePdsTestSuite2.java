@@ -109,6 +109,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgnitePdsPartitionFilesDestroyTest.class);
 
         suite.addTestSuite(LocalWalModeChangeDuringRebalancingSelfTest.class);
+
+        suite.addTestSuite(IgniteWalFlushFsyncSelfTest.class);
     }
 
     /**
@@ -135,8 +137,6 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         // Failover test
         suite.addTestSuite(IgniteWalFlushFailoverTest.class);
-
-        suite.addTestSuite(IgniteWalFlushFsyncSelfTest.class);
 
         suite.addTestSuite(IgniteWalFlushFsyncWithDedicatedWorkerSelfTest.class);
 
