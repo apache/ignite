@@ -383,7 +383,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             if (dsCfg.isWalCompactionEnabled()) {
                 compressor = new FileCompressor();
 
-                decompressor = new FileDecompressor();
+                decompressor = new FileDecompressor(log);
             }
 
             if (mode != WALMode.NONE) {
@@ -463,7 +463,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 compressor.start();
 
             if (decompressor != null)
-                decompressor.start();
+                new IgniteThread(decompressor).start();
         }
     }
 
@@ -1915,7 +1915,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /**
      * Responsible for decompressing previously compressed segments of WAL archive if they are needed for replay.
      */
-    private class FileDecompressor extends Thread {
+    private class FileDecompressor extends GridWorker {
         /** Current thread stopping advice. */
         private volatile boolean stopped;
 
@@ -1929,64 +1929,75 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         private byte[] arr = new byte[tlbSize];
 
         /**
-         *
+         * @param log Logger.
          */
-        FileDecompressor() {
-            super("wal-file-decompressor%" + cctx.igniteInstanceName());
+        FileDecompressor(IgniteLogger log) {
+            super(cctx.igniteInstanceName(), "wal-file-decompressor%" + cctx.igniteInstanceName(), log,
+                cctx.kernalContext().workersRegistry());
         }
 
         /** {@inheritDoc} */
-        @Override public void run() {
-            while (!Thread.currentThread().isInterrupted() && !stopped) {
-                long segmentToDecompress = -1L;
-
-                try {
-                    segmentToDecompress = segmentsQueue.take();
-
-                    if (stopped)
-                        break;
-
-                    File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".zip");
-                    File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".tmp");
-                    File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
-
-                    try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
-                        FileIO io = ioFactory.create(unzipTmp)) {
-                        zis.getNextEntry();
-
-                        int bytesRead;
-                        while ((bytesRead = zis.read(arr)) > 0)
-                            io.write(arr, 0, bytesRead);
-                    }
+        @Override protected void body() {
+            try {
+                while (!Thread.currentThread().isInterrupted() && !stopped) {
+                    long segmentToDecompress = -1L;
 
                     try {
-                        Files.move(unzipTmp.toPath(), unzip.toPath());
-                    }
-                    catch (FileAlreadyExistsException e) {
-                        U.error(log, "Can't rename temporary unzipped segment: raw segment is already present " +
-                            "[tmp=" + unzipTmp + ", raw=" + unzip + ']', e);
+                        segmentToDecompress = segmentsQueue.take();
 
-                        if (!unzipTmp.delete())
-                            U.error(log, "Can't delete temporary unzipped segment [tmp=" + unzipTmp + ']');
-                    }
+                        if (stopped)
+                            break;
 
-                    synchronized (this) {
-                        decompressionFutures.remove(segmentToDecompress).onDone();
-                    }
-                }
-                catch (InterruptedException ignore) {
-                    Thread.currentThread().interrupt();
-                }
-                catch (Throwable t) {
-                    if (!stopped && segmentToDecompress != -1L) {
-                        IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
-                            "decompression [segmentIdx=" + segmentToDecompress + ']', t);
+                        File zip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".zip");
+                        File unzipTmp = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress) + ".tmp");
+                        File unzip = new File(walArchiveDir, FileDescriptor.fileName(segmentToDecompress));
+
+                        try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(new FileInputStream(zip)));
+                             FileIO io = ioFactory.create(unzipTmp)) {
+                            zis.getNextEntry();
+
+                            int bytesRead;
+                            while ((bytesRead = zis.read(arr)) > 0)
+                                io.write(arr, 0, bytesRead);
+                        }
+
+                        try {
+                            Files.move(unzipTmp.toPath(), unzip.toPath());
+                        }
+                        catch (FileAlreadyExistsException e) {
+                            U.error(log, "Can't rename temporary unzipped segment: raw segment is already present " +
+                                "[tmp=" + unzipTmp + ", raw=" + unzip + ']', e);
+
+                            if (!unzipTmp.delete())
+                                U.error(log, "Can't delete temporary unzipped segment [tmp=" + unzipTmp + ']');
+                        }
 
                         synchronized (this) {
-                            decompressionFutures.remove(segmentToDecompress).onDone(e);
+                            decompressionFutures.remove(segmentToDecompress).onDone();
+                        }
+                    }
+                    catch (InterruptedException ignore) {
+                        Thread.currentThread().interrupt();
+                    }
+                    catch (Throwable t) {
+                        if (t instanceof OutOfMemoryError)
+                            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, t));
+
+                        if (!stopped && segmentToDecompress != -1L) {
+                            IgniteCheckedException e = new IgniteCheckedException("Error during WAL segment " +
+                                "decompression [segmentIdx=" + segmentToDecompress + ']', t);
+
+                            synchronized (this) {
+                                decompressionFutures.remove(segmentToDecompress).onDone(e);
+                            }
                         }
                     }
                 }
+            }
+            finally {
+                if (!stopped)
+                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION,
+                        new IllegalStateException("Worker " + name() + " is terminated unexpectedly")));
             }
         }
 
@@ -2024,7 +2035,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 segmentsQueue.put(-1L);
             }
 
-            U.join(this);
+            U.join(runner());
         }
     }
 
