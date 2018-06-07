@@ -101,8 +101,8 @@ public class MarshallerUtils {
      * @return Class name filter for marshaller.
      */
     public static IgnitePredicate<String> classNameFilter(ClassLoader clsLdr) throws IgniteCheckedException {
-        ClassSet whiteList = classWhiteList(clsLdr);
-        ClassSet blackList = classBlackList(clsLdr);
+        final ClassSet whiteList = classWhiteList(clsLdr);
+        final ClassSet blackList = classBlackList(clsLdr);
 
         return new IgnitePredicate<String>() {
             @Override public boolean apply(String s) {
