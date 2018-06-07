@@ -40,7 +40,7 @@ def array_get_attribute(self):
 def array_set_attribute(self, value):
     iter_var = iter(value)
     for i in range(self.length):
-        self.elements[i].set_atribute(iter_var.next())
+        self.elements[i].set_attribute(iter_var.__next__())
 
 
 def array_data_class(python_var, tc_hint, length=None, **kwargs):

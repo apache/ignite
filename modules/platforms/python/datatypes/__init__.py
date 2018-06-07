@@ -39,7 +39,7 @@ def iter_type(var):
         iter_var = iter(var)
     except TypeError:
         return ITER_TYPE_NON_ITERABLE
-    first_type = type(iter_var.next())
+    first_type = type(iter_var.__next__())
     if all([type(x) == first_type for x in iter_var]):
         return ITER_TYPE_UNIFORM
     return ITER_TYPE_HETEROGENEOUS
