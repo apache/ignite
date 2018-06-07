@@ -17,6 +17,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteNativeIoPdsRecoveryAfterFileCorruptionTest;
 
 /**
@@ -34,6 +35,8 @@ public class IgnitePdsNativeIoTestSuite2 extends TestSuite {
 
         //Integrity test with reduced count of pages.
         suite.addTestSuite(IgniteNativeIoPdsRecoveryAfterFileCorruptionTest.class);
+
+        suite.addTestSuite(IgniteNativeIoLocalWalModeChangeDuringRebalancingSelfTest.class);
 
         return suite;
     }

@@ -1552,8 +1552,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (updated)
                     scheduleResendPartitions();
             }
-            else
-                exchangeFuture(msg.exchangeId(), null, null, null, null).onReceiveSingleMessage(node, msg);
+            else {
+                GridDhtPartitionsExchangeFuture exchFut = exchangeFuture(msg.exchangeId(), null, null, null, null);
+
+                if (log.isDebugEnabled())
+                    log.debug("Notifying exchange future about single message: " + exchFut);
+
+                exchFut.onReceiveSingleMessage(node, msg);
+            }
         }
         finally {
             leaveBusy();
@@ -2352,7 +2358,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         /**
          *
          */
-        private void body0() throws InterruptedException, IgniteInterruptedCheckedException {
+        private void body0() throws InterruptedException, IgniteCheckedException {
             long timeout = cctx.gridConfig().getNetworkTimeout();
 
             long cnt = 0;
@@ -2656,6 +2662,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to wait for completion of partition map exchange " +
                         "(preloading will not start): " + task, e);
+
+                    throw e;
                 }
             }
         }

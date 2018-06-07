@@ -73,7 +73,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)
-                .setMaxSize(200 * 1024 * 1024))
+                .setMaxSize(200L * 1024 * 1024))
             .setWalMode(walMode)
             .setWalSegmentSize(WAL_SEGMENT_SIZE)
             .setWalHistorySize(500)

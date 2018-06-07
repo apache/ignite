@@ -181,6 +181,12 @@ public class CommandHandler {
     /** */
     private static final String BASELINE_SET_VERSION = "version";
 
+    /** Parameter name for validate_indexes command. */
+    static final String VI_CHECK_FIRST = "checkFirst";
+
+    /** Parameter name for validate_indexes command. */
+    static final String VI_CHECK_THROUGH = "checkThrough";
+
     /** */
     static final String WAL_PRINT = "print";
 
@@ -583,10 +589,12 @@ public class CommandHandler {
         usage("  Show information about caches, groups or sequences that match a regex:", CACHE, " list regexPattern [groups|seq] [nodeId]");
         usage("  Show hot keys that are point of contention for multiple transactions:", CACHE, " contention minQueueSize [nodeId] [maxPrint]");
         usage("  Verify partition counters and hashes between primary and backups on idle cluster:", CACHE, " idle_verify [cache1,...,cacheN]");
-        usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId]");
+        usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId] [checkFirst|checkThrough]");
 
-        log("  If [nodeId] is not specified, cont and validate_indexes commands will be broadcasted to all server nodes.");
+        log("  If [nodeId] is not specified, contention and validate_indexes commands will be broadcasted to all server nodes.");
         log("  Another commands where [nodeId] is optional will run on a random server node.");
+        log("  checkFirst numeric parameter for validate_indexes specifies number of first K keys to be validated.");
+        log("  checkThrough numeric parameter for validate_indexes allows to check each Kth key.");
         nl();
     }
 
@@ -624,7 +632,11 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheValidateIndexes(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-        VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(cacheArgs.caches());
+        VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(
+            cacheArgs.caches(),
+            cacheArgs.checkFirst(),
+            cacheArgs.checkThrough()
+        );
 
         UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
 
@@ -1407,7 +1419,8 @@ public class CommandHandler {
                 break;
 
             case IDLE_VERIFY:
-                parseCacheNamesIfPresent(cacheArgs);
+                if (hasNextCacheArg())
+                    parseCacheNames(nextArg(""), cacheArgs);
 
                 break;
 
@@ -1425,10 +1438,53 @@ public class CommandHandler {
                 break;
 
             case VALIDATE_INDEXES:
-                parseCacheNamesIfPresent(cacheArgs);
+                int argsCnt = 0;
 
-                if (hasNextCacheArg())
-                    cacheArgs.nodeId(UUID.fromString(nextArg("")));
+                while (hasNextCacheArg() && argsCnt++ < 4) {
+                    String arg = nextArg("");
+
+                    if (VI_CHECK_FIRST.equals(arg) || VI_CHECK_THROUGH.equals(arg)) {
+                        if (!hasNextCacheArg())
+                            throw new IllegalArgumentException("Numeric value for '" + arg + "' parameter expected.");
+
+                        int numVal;
+
+                        String numStr = nextArg("");
+
+                        try {
+                            numVal = Integer.parseInt(numStr);
+                        }
+                        catch (IllegalArgumentException e) {
+                            throw new IllegalArgumentException(
+                                "Not numeric value was passed for '"
+                                    + arg
+                                    + "' parameter: "
+                                    + numStr
+                            );
+                        }
+
+                        if (numVal <= 0)
+                            throw new IllegalArgumentException("Value for '" + arg + "' property should be positive.");
+
+                        if (VI_CHECK_FIRST.equals(arg))
+                            cacheArgs.checkFirst(numVal);
+                        else
+                            cacheArgs.checkThrough(numVal);
+
+                        continue;
+                    }
+
+                    try {
+                        cacheArgs.nodeId(UUID.fromString(arg));
+
+                        continue;
+                    }
+                    catch (IllegalArgumentException ignored) {
+                        //No-op.
+                    }
+
+                    parseCacheNames(arg, cacheArgs);
+                }
 
                 break;
 
@@ -1473,22 +1529,18 @@ public class CommandHandler {
     /**
      * @param cacheArgs Cache args.
      */
-    private void parseCacheNamesIfPresent(CacheArguments cacheArgs) {
-        if (hasNextCacheArg()) {
-            String cacheNames = nextArg("");
+    private void parseCacheNames(String cacheNames, CacheArguments cacheArgs) {
+        String[] cacheNamesArr = cacheNames.split(",");
+        Set<String> cacheNamesSet = new HashSet<>();
 
-            String[] cacheNamesArr = cacheNames.split(",");
-            Set<String> cacheNamesSet = new HashSet<>();
+        for (String cacheName : cacheNamesArr) {
+            if (F.isEmpty(cacheName))
+                throw new IllegalArgumentException("Non-empty cache names expected.");
 
-            for (String cacheName : cacheNamesArr) {
-                if (F.isEmpty(cacheName))
-                    throw new IllegalArgumentException("Non-empty cache names expected.");
-
-                cacheNamesSet.add(cacheName.trim());
-            }
-
-            cacheArgs.caches(cacheNamesSet);
+            cacheNamesSet.add(cacheName.trim());
         }
+
+        cacheArgs.caches(cacheNamesSet);
     }
 
     /**
