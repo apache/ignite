@@ -2132,7 +2132,7 @@ public class GridNioServer<T> {
                                 processSelectedKeysOptimized(selectedKeys.flip());
                         }
 
-                        if (Thread.interrupted())
+                        if (!closed && !isCancelled  && Thread.interrupted())
                             throw new InterruptedException();
                     }
                     finally {
