@@ -147,6 +147,10 @@
     }
 
     .ui-grid-header--subcategories {
+        .ui-grid-header-canvas {
+            background-color: white;
+        }
+
         .ui-grid-header-span.ui-grid-header-cell {
             background: initial;
 

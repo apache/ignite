@@ -104,8 +104,6 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
         caches = null;
 
         ignites = null;
