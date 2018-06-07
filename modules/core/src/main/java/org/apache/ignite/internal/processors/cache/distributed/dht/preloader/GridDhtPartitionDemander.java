@@ -283,7 +283,6 @@ public class GridDhtPartitionDemander {
     Runnable addAssignments(
         final GridDhtPreloaderAssignments assignments,
         boolean force,
-        boolean skipAssigns,
         long rebalanceId,
         final Runnable next,
         @Nullable final GridCompoundFuture<Boolean, Boolean> forcedRebFut
@@ -339,10 +338,10 @@ public class GridDhtPartitionDemander {
             if (grp.affinity().cachedAffinity(topVer).clientEventChange() // Caused by no affinity change event
                 && !oldFut.isInitial() // Rebalance should have at least one non empty result
                 && !force // Do not need provide results if rebalance was forced
-                && skipAssigns // Calculated assignments not changed from previous calculation
+                && !assignments.needRebalance() // Calculated assignments not changed from previous calculation
                 ) {
-                if (log.isInfoEnabled())
-                    log.info("Affinity assignments does not changed. Will skip rebalance [topVer=" +
+                if (log.isDebugEnabled())
+                    log.debug("Affinity assignments does not changed. Will skip rebalance [topVer=" +
                         topVer + ", rebalanceId=" + rebalanceId + ", grp=" + grp.cacheOrGroupName() +
                         ", oldFut=" + oldFut + ", fut0.result()=" + oldFut.result() + "]");
 
@@ -352,10 +351,6 @@ public class GridDhtPartitionDemander {
                             fut.sendRebalanceFinishedEvent();
 
                             fut.onDone(fut0.get());
-
-                            log.info("Skipped affinity assignments [fut.topVer=" +
-                                fut.topologyVersion() + ", fut.rebalanceId=" + fut.rebalanceId + ", grp=" + grp.cacheOrGroupName() +
-                                ", fut0.topVer=" + oldFut.topologyVersion() + ", fut0.result()=" + oldFut.result() + "]");
                         }
                         catch (IgniteCheckedException e) {
                             fut.cancel();
