@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -38,6 +37,7 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl;
@@ -169,6 +170,26 @@ public class PageMemoryTracker implements IgnitePlugin {
     }
 
     /**
+     * Creates page store manager.
+     */
+    IgnitePageStoreManager createPageStoreManager() {
+        return new FilePageStoreManager(gridCtx) {
+            @Override public void shutdownForCacheGroup(CacheGroupContext grp, boolean destroy) throws IgniteCheckedException {
+                super.shutdownForCacheGroup(grp, destroy);
+
+                pages.keySet().removeIf(fullPageId -> fullPageId.groupId() == grp.groupId());
+            }
+
+            @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
+                super.onPartitionDestroyed(grpId, partId, tag);
+
+                pages.keySet().removeIf(fullPageId -> fullPageId.groupId() == grpId
+                    && PageIdUtils.partId(fullPageId.pageId()) == partId);
+            }
+        };
+    }
+
+    /**
      * Start tracking pages.
      */
     synchronized void start() {
@@ -202,11 +223,9 @@ public class PageMemoryTracker implements IgnitePlugin {
         maxPages = (int)(maxMemorySize / pageSize);
 
         if (cfg != null && cfg.isCheckPagesOnCheckpoint()) {
-            checkpointLsnr = new DbCheckpointListener() {
-                @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
-                    if (!checkPages(false))
-                        throw new IgniteCheckedException("Page memory is inconsistent after applying WAL delta records.");
-                }
+            checkpointLsnr = ctx -> {
+                if (!checkPages(false))
+                    throw new IgniteCheckedException("Page memory is inconsistent after applying WAL delta records.");
             };
 
             ((GridCacheDatabaseSharedManager)gridCtx.cache().context().database()).addCheckpointListener(checkpointLsnr);
@@ -416,7 +435,6 @@ public class PageMemoryTracker implements IgnitePlugin {
 
             dumpStats();
 
-/*
             if (emptyPds && pages.size() != totalAllocated) {
                 res = false;
 
@@ -425,7 +443,6 @@ public class PageMemoryTracker implements IgnitePlugin {
                 if (!checkAll)
                     return false;
             }
-*/
         }
 
         Set<Integer> groupsWarned = new HashSet<>();

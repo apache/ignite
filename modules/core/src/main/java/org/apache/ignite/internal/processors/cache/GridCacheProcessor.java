@@ -2429,7 +2429,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             dbMgr = new GridCacheDatabaseSharedManager(ctx);
 
-            pageStoreMgr = new FilePageStoreManager(ctx);
+            pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
+
+            if (pageStoreMgr == null)
+                pageStoreMgr = new FilePageStoreManager(ctx);
 
             walMgr = ctx.plugins().createComponent(IgniteWriteAheadLogManager.class);
 

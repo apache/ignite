@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -116,6 +117,8 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
         if (plugin != null) {
             if (IgniteWriteAheadLogManager.class.equals(cls))
                 return (T)plugin.createWalManager();
+            else if (IgnitePageStoreManager.class.equals(cls))
+                return (T)plugin.createPageStoreManager();
         }
 
         return null;
