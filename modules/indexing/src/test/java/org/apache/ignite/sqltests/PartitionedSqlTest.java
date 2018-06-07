@@ -35,88 +35,80 @@ public class PartitionedSqlTest extends BaseSqlTest {
      * Check distributed INNER JOIN.
      */
     public void testInnerDistributedJoin() {
-        Arrays.asList(true, false).forEach(forceOrder -> {
-            testAllNodes(node -> {
-                final String qryTpl = "SELECT d.id, d.name, a.address " +
-                    "FROM Department d INNER JOIN Address a " +
-                    "ON d.%s = a.%s";
+        Arrays.asList(true, false).forEach(forceOrder -> testAllNodes(node -> {
+            final String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d INNER JOIN Address a " +
+                "ON d.%s = a.%s";
 
-                Result actIdxOnOn = executeFrom(distributedJoinQry(forceOrder, qryTpl, "id", "depId"), node);
-                Result actIdxOffOn = executeFrom(distributedJoinQry(true, qryTpl, "idNoidx", "depId"), node);
+            Result actIdxOnOn = executeFrom(distributedJoinQry(forceOrder, qryTpl, "id", "depId"), node);
+            Result actIdxOffOn = executeFrom(distributedJoinQry(true, qryTpl, "idNoidx", "depId"), node);
 
-                List<List<Object>> exp = doInnerJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
-                    (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
-                    (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
+            List<List<Object>> exp = doInnerJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
+                (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
+                (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
 
-                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result. " +
-                    "Preserve join order = " + forceOrder + ".", actIdxOnOn.values(), exp);
-                assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result. " +
-                    "Preserve join order = " + forceOrder + ".", actIdxOffOn.values(), exp);
-            });
-        });
+            assertContainsEq("Distributed join on 'idx = idx' returned unexpected result. " +
+                "Preserve join order = " + forceOrder + ".", actIdxOnOn.values(), exp);
+            assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result. " +
+                "Preserve join order = " + forceOrder + ".", actIdxOffOn.values(), exp);
+        }));
     }
 
     /**
      * Check that if required index is missed, correct exception will be thrown.
      */
     public void testInnerDistJoinMissedIndex() {
-        Arrays.asList(true, false).forEach(forceOrder -> {
-            testAllNodes(node -> {
-                String qryTpl = "SELECT d.id, d.name, a.address " +
-                    "FROM Department d INNER JOIN Address a " +
-                    "ON d.%s = a.%s";
+        Arrays.asList(true, false).forEach(forceOrder -> testAllNodes(node -> {
+            String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d INNER JOIN Address a " +
+                "ON d.%s = a.%s";
 
-                assertDistJoinHasIncorrectIndex(
-                    () -> executeFrom(distributedJoinQry(forceOrder, qryTpl, "idNoidx", "depIdNoidx"), node));
+            assertDistJoinHasIncorrectIndex(
+                () -> executeFrom(distributedJoinQry(forceOrder, qryTpl, "idNoidx", "depIdNoidx"), node));
 
-                assertDistJoinHasIncorrectIndex(
-                    () -> executeFrom(distributedJoinQry(true, qryTpl, "id", "depIdNoidx"), node));
-            });
-        });
+            assertDistJoinHasIncorrectIndex(
+                () -> executeFrom(distributedJoinQry(true, qryTpl, "id", "depIdNoidx"), node));
+        }));
     }
 
     /**
      * Check distributed LEFT JOIN.
      */
     public void testLeftDistributedJoin() {
-        Arrays.asList(true, false).forEach(forceOrder -> {
-            testAllNodes(node -> {
-                final String qryTpl = "SELECT d.id, d.name, a.depId, a.address " +
-                    "FROM Department d LEFT JOIN Address a " +
-                    "ON d.%s = a.%s";
+        Arrays.asList(true, false).forEach(forceOrder -> testAllNodes(node -> {
+            final String qryTpl = "SELECT d.id, d.name, a.depId, a.address " +
+                "FROM Department d LEFT JOIN Address a " +
+                "ON d.%s = a.%s";
 
-                Result actIdxOnOn = executeFrom(distributedJoinQry(forceOrder, qryTpl, "id", "depId"), node);
-                Result actIdxOffOn = executeFrom(distributedJoinQry(true, qryTpl, "idNoidx", "depId"), node);
+            Result actIdxOnOn = executeFrom(distributedJoinQry(forceOrder, qryTpl, "id", "depId"), node);
+            Result actIdxOffOn = executeFrom(distributedJoinQry(true, qryTpl, "idNoidx", "depId"), node);
 
-                List<List<Object>> exp = doLeftJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
-                    (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
-                    (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("DEPID"), addr.get("ADDRESS")));
+            List<List<Object>> exp = doLeftJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
+                (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
+                (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("DEPID"), addr.get("ADDRESS")));
 
-                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result. " +
-                    "Preserve join order = " + forceOrder + ".", actIdxOnOn.values(), exp);
-                assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result. " +
-                    "Preserve join order = " + forceOrder + ".", actIdxOffOn.values(), exp);
-            });
-        });
+            assertContainsEq("Distributed join on 'idx = idx' returned unexpected result. " +
+                "Preserve join order = " + forceOrder + ".", actIdxOnOn.values(), exp);
+            assertContainsEq("Distributed join on 'noidx = idx' returned unexpected result. " +
+                "Preserve join order = " + forceOrder + ".", actIdxOffOn.values(), exp);
+        }));
     }
 
     /**
      * Check that if required index is missed, correct exception will be thrown.
      */
     public void testLeftDistributedJoinMissedIndex() {
-        Arrays.asList(true, false).forEach(forceOrder -> {
-            testAllNodes(node -> {
-                String qryTpl = "SELECT d.id, d.name, a.address " +
-                    "FROM Department d LEFT JOIN Address a " +
-                    "ON d.%s = a.%s";
+        Arrays.asList(true, false).forEach(forceOrder -> testAllNodes(node -> {
+            String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d LEFT JOIN Address a " +
+                "ON d.%s = a.%s";
 
-                assertDistJoinHasIncorrectIndex(
-                    () -> executeFrom(distributedJoinQry(forceOrder, qryTpl, "id", "depIdNoidx"), node));
+            assertDistJoinHasIncorrectIndex(
+                () -> executeFrom(distributedJoinQry(forceOrder, qryTpl, "id", "depIdNoidx"), node));
 
-                assertDistJoinHasIncorrectIndex(
-                    () -> executeFrom(distributedJoinQry(true, qryTpl, "idNoIdx", "depIdNoidx"), node));
-            });
-        });
+            assertDistJoinHasIncorrectIndex(
+                () -> executeFrom(distributedJoinQry(true, qryTpl, "idNoIdx", "depIdNoidx"), node));
+        }));
     }
 
     /**
@@ -125,44 +117,40 @@ public class PartitionedSqlTest extends BaseSqlTest {
     public void testRightDistributedJoin() {
         setExplain(true);
 
-        Arrays.asList(true, false).forEach(forceOrder -> {
-            testAllNodes(node -> {
-                final String qryTpl = "SELECT d.id, d.name, a.address " +
-                    "FROM Department d RIGHT JOIN Address a " +
-                    "ON d.%s = a.%s";
+        Arrays.asList(true, false).forEach(forceOrder -> testAllNodes(node -> {
+            final String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d RIGHT JOIN Address a " +
+                "ON d.%s = a.%s";
 
-                Result actIdxOnOn = executeFrom(distributedJoinQry(forceOrder, qryTpl, "id", "depId"), node);
-                Result actIdxOnOff = executeFrom(distributedJoinQry(true, qryTpl, "id", "depIdNoidx"), node);
+            Result actIdxOnOn = executeFrom(distributedJoinQry(forceOrder, qryTpl, "id", "depId"), node);
+            Result actIdxOnOff = executeFrom(distributedJoinQry(true, qryTpl, "id", "depIdNoidx"), node);
 
-                List<List<Object>> exp = doRightJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
-                    (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
-                    (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
+            List<List<Object>> exp = doRightJoin(node.cache(DEP_CACHE_NAME), node.cache(ADDR_CACHE_NAME),
+                (dep, addr) -> sqlEq(dep.get("ID"), addr.get("DEPID")),
+                (dep, addr) -> Arrays.asList(dep.get("ID"), dep.get("NAME"), addr.get("ADDRESS")));
 
-                assertContainsEq("Distributed join on 'idx = idx' returned unexpected result. " +
-                    "Preserve join order = " + forceOrder + ".", actIdxOnOn.values(), exp);
+            assertContainsEq("Distributed join on 'idx = idx' returned unexpected result. " +
+                "Preserve join order = " + forceOrder + ".", actIdxOnOn.values(), exp);
 
-                assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result. " +
-                    "Preserve join order = " + forceOrder + ".", actIdxOnOff.values(), exp);
-            });
-        });
+            assertContainsEq("Distributed join on 'idx = noidx' returned unexpected result. " +
+                "Preserve join order = " + forceOrder + ".", actIdxOnOff.values(), exp);
+        }));
     }
 
     /**
      * Check that if required index is missed, correct exception will be thrown.
      */
     public void testRightDistributedJoinMissedIndex() {
-        Arrays.asList(true, false).forEach(forceOrder -> {
-            testAllNodes(node -> {
-                String qryTpl = "SELECT d.id, d.name, a.address " +
-                    "FROM Department d RIGHT JOIN Address a " +
-                    "ON d.%s = a.%s";
+        Arrays.asList(true, false).forEach(forceOrder -> testAllNodes(node -> {
+            String qryTpl = "SELECT d.id, d.name, a.address " +
+                "FROM Department d RIGHT JOIN Address a " +
+                "ON d.%s = a.%s";
 
-                assertDistJoinHasIncorrectIndex(
-                    () -> executeFrom(distributedJoinQry(forceOrder, qryTpl, "idNoidx", "depIdNoidx"), node));
+            assertDistJoinHasIncorrectIndex(
+                () -> executeFrom(distributedJoinQry(forceOrder, qryTpl, "idNoidx", "depIdNoidx"), node));
 
-                assertDistJoinHasIncorrectIndex(
-                    () -> executeFrom(distributedJoinQry(true, qryTpl, "idNoidx", "depId"), node));
-            });
-        });
+            assertDistJoinHasIncorrectIndex(
+                () -> executeFrom(distributedJoinQry(true, qryTpl, "idNoidx", "depId"), node));
+        }));
     }
 }
