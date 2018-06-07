@@ -173,11 +173,11 @@ public class BinaryTypeMismatchLoggingTest extends GridCommonAbstractTest {
         String capturedMessages = this.capture.toString();
 
         assertContainsExactlyOnce(capturedMessages,
-            "Rejected row(s) for indexing [cacheName=binary, " + MESSAGE_PAYLOAD_VALUE + "]");
+            "Key-value pair is not indexed into any SQL table [cacheName=binary, " + MESSAGE_PAYLOAD_VALUE + "]");
         assertContainsExactlyOnce(capturedMessages,
-            "Make sure that declared Indexed Type names match actual Type names exactly.");
+            "Value type(s) specified via CacheConfiguration.indexedTypes or CacheConfiguration.queryEntities.");
         assertContainsExactlyOnce(capturedMessages,
-            "If Java package names present in Type names, they should be used consistently.");
+            "Make sure that same type(s) used when adding Object or BinaryObject to cache.");
         assertContainsExactlyOnce(capturedMessages,
             "Otherwise, entries will be stored in cache, but not appear as SQL Table rows.");
     }

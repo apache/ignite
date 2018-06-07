@@ -1882,11 +1882,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                 if (!missedCacheTypes.contains(missedCacheTypeKey)) {
                     if (missedCacheTypes.add(missedCacheTypeKey)) {
-                        LT.warn(log, "Rejected row(s) for indexing [cacheName=" + cacheName + ", " +
-                            describeTypeMismatch(cacheName, val) + "]");
+                        LT.warn(log, "Key-value pair is not indexed into any SQL table [cacheName=" + cacheName +
+                            ", " + describeTypeMismatch(cacheName, val) + "]");
 
-                        LT.warn(log, "  ^-- Make sure that declared Indexed Type names match actual Type names exactly.");
-                        LT.warn(log, "  ^-- If Java package names present in Type names, they should be used consistently.");
+                        LT.warn(log, "  ^-- Value type(s) specified via CacheConfiguration.indexedTypes or CacheConfiguration.queryEntities.");
+                        LT.warn(log, "  ^-- Make sure that same type(s) used when adding Object or BinaryObject to cache.");
                         LT.warn(log, "  ^-- Otherwise, entries will be stored in cache, but not appear as SQL Table rows.");
                     }
                 }
