@@ -25,9 +25,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -56,6 +62,9 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
     private static final int CACHES = 10;
 
     /** */
+    private static final int PARTITIONS_CNT = 32;
+
+    /** */
     private static final long TEST_TIME = 60_000;
 
     /** */
@@ -73,13 +82,14 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
             CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES];
 
             for (int i = 0; i < CACHES; i++) {
-                CacheConfiguration ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+                CacheConfiguration ccfg = new CacheConfiguration();
 
                 ccfg.setCacheMode(PARTITIONED);
                 ccfg.setAtomicityMode(TRANSACTIONAL);
                 ccfg.setBackups(1);
                 ccfg.setName("cache-" + i);
                 ccfg.setWriteSynchronizationMode(FULL_SYNC);
+                ccfg.setAffinity(new RendezvousAffinityFunction(PARTITIONS_CNT, null));
 
                 ccfgs[i] = ccfg;
             }
@@ -113,7 +123,7 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed
      */
-    public void testClientReconnectOnExchangeHistoryExchaustion() throws Exception {
+    public void testClientReconnectOnExchangeHistoryExhaustion() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE, "1");
 
         try {
@@ -124,9 +134,87 @@ public class IgniteCacheClientReconnectTest extends GridCommonAbstractTest {
             startGridsMultiThreaded(SRV_CNT, CLIENTS_CNT);
 
             waitForTopology(SRV_CNT + CLIENTS_CNT);
+
+            verifyPartitionToNodeMappings();
+
+            verifyAffinityTopologyVersions();
+
+            verifyCacheOperationsOnClients();
         }
         finally {
             System.clearProperty(IgniteSystemProperties.IGNITE_EXCHANGE_HISTORY_SIZE);
+        }
+    }
+
+    /**
+     * Verifies basic cache operations from all clients.
+     */
+    private void verifyCacheOperationsOnClients() {
+        for (int i = SRV_CNT; i < SRV_CNT + CLIENTS_CNT; i++) {
+            IgniteEx cl = grid(i);
+
+            assertTrue(cl.localNode().isClient());
+
+            for (int j = 0; j < CACHES; j++) {
+                IgniteCache<Object, Object> cache = cl.cache("cache-" + j);
+
+                String keyPrefix = "cl-" + i + "_key-";
+
+                for (int k = 0; k < 1_000; k++)
+                    cache.put(keyPrefix + k, "val-" + k);
+
+                for (int k = 999; k >= 0; k--)
+                    assertEquals("val-" + k, cache.get(keyPrefix + k));
+            }
+        }
+    }
+
+    /**
+     * Verifies that affinity mappings are the same on clients and servers.
+     */
+    private void verifyPartitionToNodeMappings() {
+        IgniteEx refSrv = grid(0);
+        String cacheName;
+
+        for (int i = 0; i < CACHES; i++) {
+            cacheName = "cache-" + i;
+
+            Affinity<Object> refAffinity = refSrv.affinity(cacheName);
+
+            for (int j = 0; j < PARTITIONS_CNT; j++) {
+                ClusterNode refAffNode = refAffinity.mapPartitionToNode(j);
+
+                assertNotNull("Affinity node for " + j + " partition is null", refAffNode);
+
+                for (int k = SRV_CNT; k < SRV_CNT + CLIENTS_CNT; k++) {
+                    ClusterNode clAffNode = grid(k).affinity(cacheName).mapPartitionToNode(j);
+
+                    assertNotNull("Affinity node for " + k + " client and " + j + " partition is null", clAffNode);
+
+                    assertEquals("Affinity node for "
+                        + k
+                        + " client and "
+                        + j
+                        + " partition is different on client",
+                        refAffNode.id(),
+                        clAffNode.id());
+                }
+            }
+        }
+    }
+
+    /**
+     * Verifies {@link AffinityTopologyVersion}s: one obtained from coordinator and all from each client node.
+     */
+    private void verifyAffinityTopologyVersions() {
+        IgniteEx srv = grid(0);
+
+        AffinityTopologyVersion srvTopVer = srv.context().discovery().topologyVersionEx();
+
+        for (int i = SRV_CNT; i < SRV_CNT + CLIENTS_CNT; i++) {
+            AffinityTopologyVersion clntTopVer = grid(i).context().discovery().topologyVersionEx();
+
+            assertTrue(clntTopVer.equals(srvTopVer));
         }
     }
 
