@@ -128,15 +128,8 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
             U.warn(log, "Failed to start TCP binary REST server (possibly all ports in range are in use) " +
                 "[firstPort=" + cfg.getPort() + ", lastPort=" + lastPort + ", host=" + host + ']');
         }
-        catch (SSLException e) {
-            U.warn(log, "Failed to start " + name() + " protocol on port " + port + ": " + e.getMessage(),
-                "Failed to start " + name() + " protocol on port " + port + ". Check if SSL context factory is " +
-                    "properly configured.");
-        }
         catch (IOException e) {
-            U.warn(log, "Failed to start " + name() + " protocol on port " + port + ": " + e.getMessage(),
-                "Failed to start " + name() + " protocol on port " + port + ". " +
-                    "Check restTcpHost configuration property.");
+            U.warn(log, "Failed to start " + name() + " protocol on port " + port + ": " + e.getMessage());
         }
     }
 
