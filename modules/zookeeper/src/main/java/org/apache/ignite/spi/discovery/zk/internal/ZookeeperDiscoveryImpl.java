@@ -3658,7 +3658,7 @@ public class ZookeeperDiscoveryImpl {
         ZkDiscoveryCustomEventData ackEvtData = new ZkDiscoveryCustomEventData(
             evtId,
             origEvt.eventId(),
-            origEvt.topologyVersion(), // Use topology version from original event.
+            rtState.evtsData.topVer, // Use actual topology version because topology version must be growing.
             locNode.id(),
             null,
             null);

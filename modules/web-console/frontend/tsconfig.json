@@ -6,5 +6,8 @@
         "allowJs": true,
         "checkJs": true,
         "baseUrl": "."
-    }
+    },
+    "exclude": [
+        "build"
+    ]
 }

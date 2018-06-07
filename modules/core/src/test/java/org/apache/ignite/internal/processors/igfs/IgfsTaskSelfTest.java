@@ -94,11 +94,6 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids(false);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         igfs.clear();
     }

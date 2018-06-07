@@ -65,5 +65,6 @@ public final class RecordTypes {
         DELTA_TYPE_SET.add(WALRecord.RecordType.PAGE_LIST_META_RESET_COUNT_RECORD);
         DELTA_TYPE_SET.add(WALRecord.RecordType.DATA_PAGE_UPDATE_RECORD);
         DELTA_TYPE_SET.add(WALRecord.RecordType.BTREE_META_PAGE_INIT_ROOT2);
+        DELTA_TYPE_SET.add(WALRecord.RecordType.ROTATED_ID_PART_RECORD);
     }
 }

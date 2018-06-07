@@ -31,11 +31,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /** */
 public class GridServiceDeploymentCompoundFutureSelfTest extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */

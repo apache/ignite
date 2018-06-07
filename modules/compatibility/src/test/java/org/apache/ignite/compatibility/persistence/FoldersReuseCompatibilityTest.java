@@ -175,7 +175,7 @@ public class FoldersReuseCompatibilityTest extends IgnitePersistenceCompatibilit
         final MemoryConfiguration memCfg = new MemoryConfiguration();
         final MemoryPolicyConfiguration memPolCfg = new MemoryPolicyConfiguration();
 
-        memPolCfg.setMaxSize(32 * 1024 * 1024); // we don't need much memory for this test
+        memPolCfg.setMaxSize(32L * 1024 * 1024); // we don't need much memory for this test
         memCfg.setMemoryPolicies(memPolCfg);
         cfg.setMemoryConfiguration(memCfg);
     }

@@ -100,8 +100,8 @@ import static org.apache.ignite.internal.commandline.Command.BASELINE;
 import static org.apache.ignite.internal.commandline.Command.CACHE;
 import static org.apache.ignite.internal.commandline.Command.DEACTIVATE;
 import static org.apache.ignite.internal.commandline.Command.STATE;
-import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.Command.TX;
+import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
@@ -181,6 +181,12 @@ public class CommandHandler {
     /** */
     private static final String BASELINE_SET_VERSION = "version";
 
+    /** Parameter name for validate_indexes command. */
+    static final String VI_CHECK_FIRST = "checkFirst";
+
+    /** Parameter name for validate_indexes command. */
+    static final String VI_CHECK_THROUGH = "checkThrough";
+
     /** */
     static final String WAL_PRINT = "print";
 
@@ -255,6 +261,9 @@ public class CommandHandler {
 
     /** */
     private Object lastOperationRes;
+
+    /** */
+    private GridClientConfiguration clientCfg;
 
     /** Check if experimental commands are enabled. Default {@code false}. */
     private final boolean enableExperimental = IgniteSystemProperties.getBoolean(IGNITE_ENABLE_EXPERIMENTAL_COMMAND, false);
@@ -447,18 +456,6 @@ public class CommandHandler {
     }
 
     /**
-     * @param client Client.
-     * @param arg Task argument.
-     * @return Task result.
-     * @throws GridClientException If failed to execute task.
-     */
-    private Map<UUID, VisorTxTaskResult> executeTransactionsTask(GridClient client,
-        VisorTxTaskArg arg) throws GridClientException {
-
-        return executeTask(client, VisorTxTask.class, arg);
-    }
-
-    /**
      *
      * @param client Client.
      * @param taskCls Task class.
@@ -497,8 +494,28 @@ public class CommandHandler {
 
         GridClientNode node = null;
 
-        if (nodeId == null)
-            node = getBalancedNode(compute);
+        if (nodeId == null) {
+            Collection<GridClientNode> nodes = compute.nodes(GridClientNode::connectable);
+
+            // Prefer node from connect string.
+            String origAddr = clientCfg.getServers().iterator().next();
+
+            for (GridClientNode clientNode : nodes) {
+                Iterator<String> it = F.concat(clientNode.tcpAddresses().iterator(), clientNode.tcpHostNames().iterator());
+
+                while (it.hasNext()) {
+                    if (origAddr.equals(it.next() + ":" + clientNode.tcpPort())) {
+                        node = clientNode;
+
+                        break;
+                    }
+                }
+            }
+
+            // Otherwise choose random node.
+            if (node == null)
+                node = getBalancedNode(compute);
+        }
         else {
             for (GridClientNode n : compute.nodes()) {
                 if (n.connectable() && nodeId.equals(n.nodeId())) {
@@ -572,10 +589,12 @@ public class CommandHandler {
         usage("  Show information about caches, groups or sequences that match a regex:", CACHE, " list regexPattern [groups|seq] [nodeId]");
         usage("  Show hot keys that are point of contention for multiple transactions:", CACHE, " contention minQueueSize [nodeId] [maxPrint]");
         usage("  Verify partition counters and hashes between primary and backups on idle cluster:", CACHE, " idle_verify [cache1,...,cacheN]");
-        usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId]");
+        usage("  Validate custom indexes on idle cluster:", CACHE, " validate_indexes [cache1,...,cacheN] [nodeId] [checkFirst|checkThrough]");
 
-        log("  If [nodeId] is not specified, cont and validate_indexes commands will be broadcasted to all server nodes.");
+        log("  If [nodeId] is not specified, contention and validate_indexes commands will be broadcasted to all server nodes.");
         log("  Another commands where [nodeId] is optional will run on a random server node.");
+        log("  checkFirst numeric parameter for validate_indexes specifies number of first K keys to be validated.");
+        log("  checkThrough numeric parameter for validate_indexes allows to check each Kth key.");
         nl();
     }
 
@@ -613,7 +632,11 @@ public class CommandHandler {
      * @param cacheArgs Cache args.
      */
     private void cacheValidateIndexes(GridClient client, CacheArguments cacheArgs) throws GridClientException {
-        VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(cacheArgs.caches());
+        VisorValidateIndexesTaskArg taskArg = new VisorValidateIndexesTaskArg(
+            cacheArgs.caches(),
+            cacheArgs.checkFirst(),
+            cacheArgs.checkThrough()
+        );
 
         UUID nodeId = cacheArgs.nodeId() == null ? BROADCAST_UUID : cacheArgs.nodeId();
 
@@ -635,15 +658,30 @@ public class CommandHandler {
         boolean errors = false;
 
         for (Map.Entry<UUID, VisorValidateIndexesJobResult> nodeEntry : taskRes.results().entrySet()) {
-            Map<PartitionKey, ValidateIndexesPartitionResult> map = nodeEntry.getValue().response();
+            Map<PartitionKey, ValidateIndexesPartitionResult> partRes = nodeEntry.getValue().partitionResult();
 
-            for (Map.Entry<PartitionKey, ValidateIndexesPartitionResult> e : map.entrySet()) {
+            for (Map.Entry<PartitionKey, ValidateIndexesPartitionResult> e : partRes.entrySet()) {
                 ValidateIndexesPartitionResult res = e.getValue();
 
                 if (!res.issues().isEmpty()) {
                     errors = true;
 
                     log(e.getKey().toString() + " " + e.getValue().toString());
+
+                    for (IndexValidationIssue is : res.issues())
+                        log(is.toString());
+                }
+            }
+
+            Map<String, ValidateIndexesPartitionResult> idxRes = nodeEntry.getValue().indexResult();
+
+            for (Map.Entry<String, ValidateIndexesPartitionResult> e : idxRes.entrySet()) {
+                ValidateIndexesPartitionResult res = e.getValue();
+
+                if (!res.issues().isEmpty()) {
+                    errors = true;
+
+                    log("SQL Index " + e.getKey() + " " + e.getValue().toString());
 
                     for (IndexValidationIssue is : res.issues())
                         log(is.toString());
@@ -1381,7 +1419,8 @@ public class CommandHandler {
                 break;
 
             case IDLE_VERIFY:
-                parseCacheNamesIfPresent(cacheArgs);
+                if (hasNextCacheArg())
+                    parseCacheNames(nextArg(""), cacheArgs);
 
                 break;
 
@@ -1399,10 +1438,53 @@ public class CommandHandler {
                 break;
 
             case VALIDATE_INDEXES:
-                parseCacheNamesIfPresent(cacheArgs);
+                int argsCnt = 0;
 
-                if (hasNextCacheArg())
-                    cacheArgs.nodeId(UUID.fromString(nextArg("")));
+                while (hasNextCacheArg() && argsCnt++ < 4) {
+                    String arg = nextArg("");
+
+                    if (VI_CHECK_FIRST.equals(arg) || VI_CHECK_THROUGH.equals(arg)) {
+                        if (!hasNextCacheArg())
+                            throw new IllegalArgumentException("Numeric value for '" + arg + "' parameter expected.");
+
+                        int numVal;
+
+                        String numStr = nextArg("");
+
+                        try {
+                            numVal = Integer.parseInt(numStr);
+                        }
+                        catch (IllegalArgumentException e) {
+                            throw new IllegalArgumentException(
+                                "Not numeric value was passed for '"
+                                    + arg
+                                    + "' parameter: "
+                                    + numStr
+                            );
+                        }
+
+                        if (numVal <= 0)
+                            throw new IllegalArgumentException("Value for '" + arg + "' property should be positive.");
+
+                        if (VI_CHECK_FIRST.equals(arg))
+                            cacheArgs.checkFirst(numVal);
+                        else
+                            cacheArgs.checkThrough(numVal);
+
+                        continue;
+                    }
+
+                    try {
+                        cacheArgs.nodeId(UUID.fromString(arg));
+
+                        continue;
+                    }
+                    catch (IllegalArgumentException ignored) {
+                        //No-op.
+                    }
+
+                    parseCacheNames(arg, cacheArgs);
+                }
 
                 break;
 
@@ -1447,22 +1529,18 @@ public class CommandHandler {
     /**
      * @param cacheArgs Cache args.
      */
-    private void parseCacheNamesIfPresent(CacheArguments cacheArgs) {
-        if (hasNextCacheArg()) {
-            String cacheNames = nextArg("");
+    private void parseCacheNames(String cacheNames, CacheArguments cacheArgs) {
+        String[] cacheNamesArr = cacheNames.split(",");
+        Set<String> cacheNamesSet = new HashSet<>();
 
-            String[] cacheNamesArr = cacheNames.split(",");
-            Set<String> cacheNamesSet = new HashSet<>();
+        for (String cacheName : cacheNamesArr) {
+            if (F.isEmpty(cacheName))
+                throw new IllegalArgumentException("Non-empty cache names expected.");
 
-            for (String cacheName : cacheNamesArr) {
-                if (F.isEmpty(cacheName))
-                    throw new IllegalArgumentException("Non-empty cache names expected.");
-
-                cacheNamesSet.add(cacheName.trim());
-            }
-
-            cacheArgs.caches(cacheNamesSet);
+            cacheNamesSet.add(cacheName.trim());
         }
+
+        cacheArgs.caches(cacheNamesSet);
     }
 
     /**
@@ -1662,12 +1740,12 @@ public class CommandHandler {
                             " delete [consistentId1,consistentId2,....,consistentIdN] [--force]");
                 }
 
-                log("The utility has --cache subcommand to view and control state of caches in cluster.");
-                log("  More info:    control.sh --cache help");
+                log("  View caches information in a cluster. For more details type:");
+                log("    control.sh --cache help");
                 nl();
 
-                log("By default commands affecting the cluster require interactive confirmation. ");
-                log("  --force option can be used to execute commands without prompting for confirmation.");
+                log("By default commands affecting the cluster require interactive confirmation.");
+                log("Use --force option to disable it.");
                 nl();
 
                 log("Default values:");
@@ -1695,20 +1773,20 @@ public class CommandHandler {
                 return EXIT_CODE_OK;
             }
 
-            GridClientConfiguration cfg = new GridClientConfiguration();
+            clientCfg = new GridClientConfiguration();
 
-            cfg.setPingInterval(args.pingInterval());
+            clientCfg.setPingInterval(args.pingInterval());
 
-            cfg.setPingTimeout(args.pingTimeout());
+            clientCfg.setPingTimeout(args.pingTimeout());
 
-            cfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
+            clientCfg.setServers(Collections.singletonList(args.host() + ":" + args.port()));
 
             if (!F.isEmpty(args.user())) {
-                cfg.setSecurityCredentialsProvider(
+                clientCfg.setSecurityCredentialsProvider(
                     new SecurityCredentialsBasicProvider(new SecurityCredentials(args.user(), args.password())));
             }
 
-            try (GridClient client = GridClientFactory.start(cfg)) {
+            try (GridClient client = GridClientFactory.start(clientCfg)) {
                 switch (args.command()) {
                     case ACTIVATE:
                         activate(client);

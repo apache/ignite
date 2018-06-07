@@ -72,11 +72,6 @@ public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstra
         startGrid(0);
     }
 
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
     /**
      * @param base Base.
      * @return Salary.
