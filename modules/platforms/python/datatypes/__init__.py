@@ -23,9 +23,26 @@ from .simple import simple_data_class, simple_data_object
 from .standard import standard_data_class, standard_data_object
 from .string import string_class, string_object
 from .fractional import fractional_class, fractional_object
+from .arrays import array_data_class, array_data_object
 
 
 NoneType = type(None)
+
+
+ITER_TYPE_NON_ITERABLE = 0
+ITER_TYPE_HETEROGENEOUS = 1
+ITER_TYPE_UNIFORM = 2
+
+
+def iter_type(var):
+    try:
+        iter_var = iter(var)
+    except TypeError:
+        return ITER_TYPE_NON_ITERABLE
+    first_type = type(iter_var.next())
+    if all([type(x) == first_type for x in iter_var]):
+        return ITER_TYPE_UNIFORM
+    return ITER_TYPE_HETEROGENEOUS
 
 
 def data_class(python_var, tc_hint, **kwargs):
@@ -41,7 +58,7 @@ def data_class(python_var, tc_hint, **kwargs):
     """
     python_type = type(python_var)
 
-    if python_type is NoneType:
+    if python_type is NoneType and tc_hint is None:
         return null_class()
 
     if python_type in simple_python_types or (
@@ -49,20 +66,25 @@ def data_class(python_var, tc_hint, **kwargs):
     ):
         return simple_data_class(python_var, tc_hint, **kwargs)
 
-    if python_type in standard_python_types or (
-        python_type is NoneType and tc_hint in standard_types
-    ):
-        return standard_data_class(python_var, tc_hint, **kwargs)
-
     if python_type in (str, bytes) or (
         python_type is NoneType and tc_hint == TC_STRING
     ):
         return string_class(python_var, tc_hint, **kwargs)
 
+    if python_type in standard_python_types or (
+        python_type is NoneType and tc_hint in standard_types
+    ):
+        return standard_data_class(python_var, tc_hint, **kwargs)
+
     if python_type is Decimal or (
         python_type is NoneType and tc_hint == TC_DECIMAL
     ):
         return fractional_class(python_var, tc_hint, **kwargs)
+
+    if iter_type(python_type) == ITER_TYPE_UNIFORM or (
+        python_type is NoneType and tc_hint in array_types
+    ):
+        return array_data_class(python_var, tc_hint, **kwargs)
 
     else:
         raise NotImplementedError('This data type is not supported.')
@@ -80,10 +102,12 @@ def data_object(connection: socket.socket):
         return null_object(connection, initial=initial)
     if initial in simple_types:
         return simple_data_object(connection, initial=initial)
-    if initial in standard_types:
-        return standard_data_object(connection, initial=initial)
     if initial == TC_STRING:
         return string_object(connection, initial=initial)
+    if initial in standard_types:
+        return standard_data_object(connection, initial=initial)
     if initial == TC_DECIMAL:
         return fractional_object(connection, initial=initial)
+    if initial in array_types:
+        return array_data_object(connection, initial=initial)
     raise NotImplementedError('This data type is not supported.')

@@ -32,19 +32,13 @@ def init(self):
         getattr(self, '_type_code'),
         byteorder=PROTOCOL_BYTE_ORDER,
     )
-    if hasattr(self, 'length'):
-        self.length = (
-            ctypes.sizeof(self)
-            - ctypes.sizeof(ctypes.c_int)
-            - ctypes.sizeof(ctypes.c_byte)
-        )
 
 
 def set_attribute(self, value):
     self.value = value
 
 
-def simple_data_class(python_var, tc_hint=None, **kwargs):
+def simple_data_class(python_var, tc_hint=None, payload=False, **kwargs):
     python_type = type(python_var)
     if python_type is int:
         type_code = tc_hint or TC_LONG
@@ -56,17 +50,19 @@ def simple_data_class(python_var, tc_hint=None, **kwargs):
         'Can not map python type {} to simple data class.'.format(python_type)
     )
     class_name, ctypes_type = simple_type_config[type_code]
+    fields = [
+        ('value', ctypes_type),
+    ]
+    if not payload:
+        fields.insert(0, ('type_code', ctypes.c_byte))
     return type(
         class_name,
         (ctypes.LittleEndianStructure,),
         {
             '_pack_': 1,
-            '_fields_': [
-                ('type_code', ctypes.c_byte),
-                ('value', ctypes_type),
-            ],
+            '_fields_': fields,
             '_type_code': type_code,
-            'init': init,
+            'init': (lambda self: None) if payload else init,
             'get_attribute': lambda self: self.value,
             'set_attribute': set_attribute,
         },

@@ -26,7 +26,23 @@ from uuid import UUID
 from constants import *
 from datatypes.class_configs import standard_from_python, standard_type_config
 from datatypes.type_codes import *
-from .simple import init
+
+
+def payload_init(self):
+    if hasattr(self, 'length'):
+        self.length = (
+            ctypes.sizeof(self)
+            - ctypes.sizeof(ctypes.c_int)
+            - ctypes.sizeof(ctypes.c_byte)
+        )
+
+
+def init(self):
+    self.type_code = int.from_bytes(
+        getattr(self, '_type_code'),
+        byteorder=PROTOCOL_BYTE_ORDER,
+    )
+    payload_init(self)
 
 
 standard_get_attribute = {
@@ -96,7 +112,7 @@ def from_python(python_type):
         pass
 
 
-def standard_data_class(python_var, tc_hint=None, **kwargs):
+def standard_data_class(python_var, tc_hint=None, payload=False, **kwargs):
     python_type = type(python_var)
     type_code = tc_hint or from_python(python_type)
     assert type_code is not None, (
@@ -105,6 +121,11 @@ def standard_data_class(python_var, tc_hint=None, **kwargs):
         )
     )
     class_name, ctypes_type = standard_type_config[type_code]
+    fields = [
+        ('value', ctypes_type),
+    ]
+    if not payload:
+        fields.insert(0, ('type_code', ctypes.c_byte))
     return type(
         class_name,
         (ctypes.LittleEndianStructure,),
@@ -115,7 +136,7 @@ def standard_data_class(python_var, tc_hint=None, **kwargs):
                 ('value', ctypes_type),
             ],
             '_type_code': type_code,
-            'init': init,
+            'init': payload_init if payload else init,
             'get_attribute': standard_get_attribute[type_code],
             'set_attribute': standard_set_attribute[type_code],
         },

@@ -22,6 +22,7 @@ import pytest
 from constants import *
 from datatypes import data_object
 from datatypes.type_codes import *
+from datatypes.class_configs import array_types
 
 
 class MockSocket:
@@ -106,7 +107,9 @@ def test_bool(conn, expected_value):
     'conn, expected_value',
     [
         (
-            MockSocket(b'\x0a\x1ePf\xda\x88\xa5MZ\x86\xdc#\xdf\xd0\xa9\x13\x03'),
+            MockSocket(
+                b'\x0a\x1ePf\xda\x88\xa5MZ\x86\xdc#\xdf\xd0\xa9\x13\x03'
+            ),
             uuid.UUID('1e5066da-88a5-4d5a-86dc-23dfd0a91303'),
         ),
     ]
@@ -218,3 +221,25 @@ def test_decimal(conn, expected_data):
 
     decimal_var.set_attribute(expected_data)
     assert decimal_var.get_attribute() == expected_data
+
+
+@pytest.mark.parametrize(
+    'conn, expected_length, expected_data',
+    [
+        (
+            MockSocket(
+                b'\x0f\x02\x00\x00\x00'
+                b'\x0a\x00\x00\x00\x00\x00\x00\x00'
+                b'\x10\x00\x00\x00\x00\x00\x00\x00'
+            ),
+            2,
+            (10, 16),
+        ),
+    ]
+)
+def test_int_array(conn, expected_length, expected_data):
+    array_var = data_object(conn)
+    assert bytes([array_var.type_code]) in array_types
+    assert array_var.length == expected_length
+    for i in range(array_var.length):
+        assert array_var.elements[i].get_attribute() == expected_data[i]

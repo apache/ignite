@@ -74,3 +74,28 @@ standard_from_python = {
 standard_types = list(standard_type_config.keys())
 
 standard_python_types = list(standard_from_python.keys())
+
+array_type_mappings = {
+    TC_BYTE_ARRAY: TC_BYTE,
+    TC_SHORT_ARRAY: TC_SHORT,
+    TC_INT_ARRAY: TC_INT,
+    TC_LONG_ARRAY: TC_LONG,
+    TC_FLOAT_ARRAY: TC_FLOAT,
+    TC_DOUBLE_ARRAY: TC_DOUBLE,
+    TC_CHAR_ARRAY: TC_CHAR,
+    TC_BOOL_ARRAY: TC_BOOL,
+    TC_UUID_ARRAY: TC_UUID,
+    TC_DATE_ARRAY: TC_DATE,
+    TC_TIME_ARRAY: TC_TIME,
+    TC_TIMESTAMP_ARRAY: TC_TIMESTAMP,
+    TC_ENUM_ARRAY: TC_ENUM,
+}
+
+array_types = list(array_type_mappings.keys())
+
+composite_type_mappings = {
+    TC_STRING_ARRAY: TC_STRING,
+    TC_DECIMAL_ARRAY: TC_DECIMAL,
+}
+
+composite_types = list(composite_type_mappings.keys())
