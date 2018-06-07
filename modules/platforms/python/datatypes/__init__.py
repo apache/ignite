@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from decimal import Decimal
 import socket
 
 from datatypes.class_configs import *
@@ -21,6 +22,7 @@ from .null import null_class, null_object
 from .simple import simple_data_class, simple_data_object
 from .standard import standard_data_class, standard_data_object
 from .string import string_class, string_object
+from .fractional import fractional_class, fractional_object
 
 
 NoneType = type(None)
@@ -57,6 +59,11 @@ def data_class(python_var, tc_hint, **kwargs):
     ):
         return string_class(python_var, tc_hint, **kwargs)
 
+    if python_type is Decimal or (
+        python_type is NoneType and tc_hint == TC_DECIMAL
+    ):
+        return fractional_class(python_var, tc_hint, **kwargs)
+
     else:
         raise NotImplementedError('This data type is not supported.')
 
@@ -77,4 +84,6 @@ def data_object(connection: socket.socket):
         return standard_data_object(connection, initial=initial)
     if initial == TC_STRING:
         return string_object(connection, initial=initial)
+    if initial == TC_DECIMAL:
+        return fractional_object(connection, initial=initial)
     raise NotImplementedError('This data type is not supported.')

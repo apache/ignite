@@ -14,6 +14,7 @@
 # limitations under the License.
 
 from datetime import datetime, timedelta
+from decimal import Decimal
 import uuid
 
 import pytest
@@ -195,4 +196,25 @@ def test_string(conn,  expected_length, expected_data):
         byteorder=PROTOCOL_BYTE_ORDER
     )
     assert string_var.length == expected_length
-    assert string_var.data.decode(PROTOCOL_STRING_ENCODING) == expected_data
+    assert string_var.get_attribute() == expected_data
+
+
+@pytest.mark.parametrize(
+    'conn, expected_data',
+    [
+        (
+            MockSocket(b'\x1e\xfc\xff\xff\xff\x02\x00\x00\x00\xb3\x34'),
+            Decimal('-0.0034'),
+        ),
+    ]
+)
+def test_decimal(conn, expected_data):
+    decimal_var = data_object(conn)
+    assert decimal_var.type_code == int.from_bytes(
+        TC_DECIMAL,
+        byteorder=PROTOCOL_BYTE_ORDER
+    )
+    assert decimal_var.get_attribute() == expected_data
+
+    decimal_var.set_attribute(expected_data)
+    assert decimal_var.get_attribute() == expected_data
