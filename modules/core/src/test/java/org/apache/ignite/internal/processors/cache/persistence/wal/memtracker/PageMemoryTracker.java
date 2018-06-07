@@ -416,6 +416,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
             dumpStats();
 
+/*
             if (emptyPds && pages.size() != totalAllocated) {
                 res = false;
 
@@ -424,6 +425,7 @@ public class PageMemoryTracker implements IgnitePlugin {
                 if (!checkAll)
                     return false;
             }
+*/
         }
 
         Set<Integer> groupsWarned = new HashSet<>();
