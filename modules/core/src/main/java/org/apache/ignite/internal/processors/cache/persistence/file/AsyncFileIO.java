@@ -154,7 +154,7 @@ public class AsyncFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(byte[] buf, int off, int len) throws IOException {
+    @Override public int write(byte[] buf, int off, int len) throws IOException {
         ChannelOpFuture fut = holder.get();
         fut.reset();
 
@@ -166,6 +166,8 @@ public class AsyncFileIO implements FileIO {
         catch (IgniteCheckedException e) {
             throw new IOException(e);
         }
+
+        return 0;
     }
 
     /** {@inheritDoc} */
