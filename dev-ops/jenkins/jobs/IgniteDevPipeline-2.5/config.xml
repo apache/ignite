@@ -1,0 +1,71 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@2.17">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@1.2.7"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@1.2.7">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.BooleanParameterDefinition>
+          <name>Run_UnitTests</name>
+          <description></description>
+          <defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps@2.45">
+    <script>#!/usr/bin/env groovy
+
+pipeline {
+    agent any
+    stages {
+        stage(&quot;Build Code&quot;) {
+            steps {
+                build(&quot;BuildIgniteSourceCode-2.5&quot;)
+            }
+        }
+        stage(&quot;Run Tests&quot;) {
+           when {
+                expression {
+                    &quot;${params.Run_UnitTests}&quot; == &quot;true&quot;
+                }
+            }            
+            steps {
+               build(job: &quot;RunIgniteCoreBasicUnitTests-2.5&quot;, propagate: false)
+            }
+        }
+        stage(&quot;Build Assembly&quot;) {
+            steps {
+                build(&quot;BuildIgniteAssembly-2.5&quot;)
+            }
+        }
+        stage(&quot;Build Docker Image&quot;) {
+            steps {
+                build(&quot;BuildIgniteDockerImage-2.5&quot;)
+            }
+        }
+        stage(&quot;Validate Docker Container&quot;) {
+            steps {
+                build(&quot;ValidateIgniteDockerContainer-2.5&quot;)
+            }
+        }        
+        stage(&quot;Publish Docker Image&quot;) {
+            steps {
+                build(&quot;PushIgniteDockerImage-2.5&quot;)
+            }
+        }        
+    }
+}</script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
