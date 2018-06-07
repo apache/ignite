@@ -69,7 +69,7 @@
             }
         }
 
-        &:last-child > .bssm-item-button {
+        &:last-of-type > .bssm-item-button {
             border-bottom: none;
             padding-bottom: 10px;
         }

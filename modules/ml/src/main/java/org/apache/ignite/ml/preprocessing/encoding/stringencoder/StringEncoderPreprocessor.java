@@ -15,34 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.imputer;
+package org.apache.ignite.ml.preprocessing.encoding.stringencoder;
 
+import java.util.Map;
+import org.apache.ignite.ml.math.exceptions.preprocessing.UnknownStringValue;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
- * Preprocessing function that makes imputing.
+ * Preprocessing function that makes String encoding.
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.
  */
-public class ImputerPreprocessor<K, V> implements IgniteBiFunction<K, V, double[]> {
+public class StringEncoderPreprocessor<K, V> implements IgniteBiFunction<K, V, double[]> {
     /** */
-    private static final long serialVersionUID = 6887800576392623469L;
+    private static final long serialVersionUID = 6237812226382623469L;
 
     /** Filling values. */
-    private final double[] imputingValues;
+    private final Map<String, Integer>[] encodingValues;
 
     /** Base preprocessor. */
-    private final IgniteBiFunction<K, V, double[]> basePreprocessor;
+    private final IgniteBiFunction<K, V, String[]> basePreprocessor;
 
     /**
-     * Constructs a new instance of imputing preprocessor.
+     * Constructs a new instance of String Encoder preprocessor.
      *
      * @param basePreprocessor Base preprocessor.
      */
-    public ImputerPreprocessor(double[] imputingValues,
-        IgniteBiFunction<K, V, double[]> basePreprocessor) {
-        this.imputingValues = imputingValues;
+    public StringEncoderPreprocessor(Map<String, Integer>[] encodingValues,
+        IgniteBiFunction<K, V, String[]> basePreprocessor) {
+        this.encodingValues = encodingValues;
         this.basePreprocessor = basePreprocessor;
     }
 
@@ -54,13 +56,14 @@ public class ImputerPreprocessor<K, V> implements IgniteBiFunction<K, V, double[
      * @return Preprocessed row.
      */
     @Override public double[] apply(K k, V v) {
-        double[] res = basePreprocessor.apply(k, v);
-
-        assert res.length == imputingValues.length;
+        String[] tmp = basePreprocessor.apply(k, v);
+        double[] res = new double[tmp.length];
 
         for (int i = 0; i < res.length; i++) {
-            if (Double.valueOf(res[i]).equals(Double.NaN))
-                res[i] = imputingValues[i];
+            if (encodingValues[i].containsKey(tmp[i]))
+                res[i] = encodingValues[i].get(tmp[i]);
+            else
+                throw new UnknownStringValue(tmp[i]);
         }
         return res;
     }

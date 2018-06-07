@@ -16,7 +16,7 @@
 
 include /app/helpers/jade/mixins
 
-form(id='cluster' name='ui.inputForm' novalidate ng-submit='$ctrl.save()')
+form(id='cluster' name='ui.inputForm' novalidate)
     .panel-group
         include ./templates/general
 
@@ -72,7 +72,6 @@ form(id='cluster' name='ui.inputForm' novalidate ng-submit='$ctrl.save()')
 
 .pc-form-actions-panel(n_g-show='$ctrl.$scope.selectedItem')
     button-preview-project(cluster='$ctrl.cluster' ng-hide='$ctrl.isNew')
-    button-download-project(cluster='$ctrl.cluster' ng-hide='$ctrl.isNew')
 
     .pc-form-actions-panel__right-after
 
@@ -81,7 +80,4 @@ form(id='cluster' name='ui.inputForm' novalidate ng-submit='$ctrl.save()')
         ng-click='$ctrl.confirmAndReset()'
     )
         | Cancel
-    button.btn-ignite.btn-ignite--success(
-        form='cluster'
-        type='submit'
-    ) Save
+    pc-split-button(actions=`::$ctrl.formActions`)

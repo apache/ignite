@@ -15,44 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.preprocessing.normalization;
+/**
+ * @typedef {{icon: string, text: string, click: ng.ICompiledExpression}} ActionMenuItem
+ */
 
 /**
- * Partition data used in normalization preprocessor.
- *
- * @see NormalizationTrainer
- * @see NormalizationPreprocessor
+ * @typedef {Array<ActionMenuItem>} ActionsMenu
  */
-public class NormalizationPartitionData implements AutoCloseable {
-    /** Minimal values. */
-    private final double[] min;
 
-    /** Maximum values. */
-    private final double[] max;
+/**
+ * Groups multiple buttons into a single button with all but first buttons in a dropdown
+ */
+export default class SplitButton {
+    /** @type {ActionsMenu} */
+    actions = [];
+
+    static $inject = ['$element'];
 
     /**
-     * Constructs a new instance of normalization partition data.
-     *
-     * @param min Minimal values.
-     * @param max Maximum values.
+     * @param {JQLite} $element Component root element
      */
-    public NormalizationPartitionData(double[] min, double[] max) {
-        this.min = min;
-        this.max = max;
+    constructor($element, $transclude) {
+        this.$element = $element;
     }
 
-    /** */
-    public double[] getMin() {
-        return min;
-    }
-
-    /** */
-    public double[] getMax() {
-        return max;
-    }
-
-    /** */
-    @Override public void close() {
-        // Do nothing, GC will clean up.
+    $onInit() {
+        this.$element[0].classList.add('btn-ignite-group');
     }
 }
