@@ -37,7 +37,14 @@ import org.apache.ignite.ml.selection.split.mapper.UniformMapper;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
 
 /**
- * Cross validation score calculator.
+ * Cross validation score calculator. Cross validation is an approach that allows to avoid overfitting that is made the
+ * following way: the training set is split into k smaller sets. The following procedure is followed for each of the k
+ * “folds”:
+ * <ul>
+ *     <li>A model is trained using k-1 of the folds as training data;</li>
+ *     <li>the resulting model is validated on the remaining part of the data (i.e., it is used as a test set to compute
+ *     a performance measure such as accuracy).</li>
+ * </ul>
  *
  * @param <M> Type of model.
  * @param <L> Type of a label (truth or prediction).
