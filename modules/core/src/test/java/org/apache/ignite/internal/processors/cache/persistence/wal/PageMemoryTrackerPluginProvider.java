@@ -19,16 +19,21 @@ package org.apache.ignite.internal.processors.cache.persistence.wal;
 
 import java.io.Serializable;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.ExtensionRegistry;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginConfiguration;
 import org.apache.ignite.plugin.PluginContext;
+import org.apache.ignite.plugin.PluginNotFoundException;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.plugin.PluginValidationException;
 import org.jetbrains.annotations.Nullable;
@@ -36,16 +41,20 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemoryTrackerConfiguration> {
-    /** Plugin config. */
-    private PageMemoryTrackerConfiguration cfg;
+public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemoryTrackerConfiguration>,
+    IgniteChangeGlobalStateSupport {
+    /** Plugin name. */
+    private static final String PLUGIN_NAME = "PageMemory tracker plugin";
 
     /** Plugin instance */
     private PageMemoryTracker plugin;
 
+    /** Logger. */
+    private IgniteLogger log;
+
     /** {@inheritDoc} */
     @Override public String name() {
-        return "PageMemory tracker plugin";
+        return PLUGIN_NAME;
     }
 
     /** {@inheritDoc} */
@@ -59,21 +68,29 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T extends IgnitePlugin> T plugin() {
         return (T)plugin;
     }
 
     /** {@inheritDoc} */
-    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) throws IgniteCheckedException {
+    @Override public void initExtensions(PluginContext ctx, ExtensionRegistry registry) {
         IgniteConfiguration igniteCfg = ctx.igniteConfiguration();
+
+        log = ctx.log(getClass());
 
         if (igniteCfg.getPluginConfigurations() != null) {
             for (PluginConfiguration pluginCfg : igniteCfg.getPluginConfigurations()) {
                 if (pluginCfg instanceof PageMemoryTrackerConfiguration) {
                     PageMemoryTrackerConfiguration cfg = (PageMemoryTrackerConfiguration)pluginCfg;
 
-                    if (cfg.isEnabled())
-                        plugin = new PageMemoryTracker(ctx, cfg);
+                    if (cfg.isEnabled()) {
+                        if (CU.isPersistenceEnabled(igniteCfg))
+                            plugin = new PageMemoryTracker(ctx, cfg);
+                        else
+                            log.warning("Page memory tracker plugin enabled, " +
+                                "but there are no persistable data regions in configuration");
+                    }
 
                     return;
                 }
@@ -82,6 +99,7 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Nullable @Override public <T> T createComponent(PluginContext ctx, Class<T> cls) {
         if (plugin != null) {
             if (IgniteWriteAheadLogManager.class.equals(cls))
@@ -97,23 +115,24 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
     }
 
     /** {@inheritDoc} */
-    @Override public void start(PluginContext ctx) throws IgniteCheckedException {
+    @Override public void start(PluginContext ctx) {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+    @Override public void stop(boolean cancel) {
         // No-op
     }
 
     /** {@inheritDoc} */
-    @Override public void onIgniteStart() throws IgniteCheckedException {
+    @Override public void onIgniteStart() {
         // No-op
     }
 
     /** {@inheritDoc} */
     @Override public void onIgniteStop(boolean cancel) {
-        // No-op
+        if (plugin != null)
+            plugin.stop();
     }
 
     /** {@inheritDoc} */
@@ -129,5 +148,37 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
     /** {@inheritDoc} */
     @Override public void validateNewNode(ClusterNode node) throws PluginValidationException {
         // No-op
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onActivate(GridKernalContext kctx) {
+        if (plugin != null) {
+            try {
+                plugin.start();
+            }
+            catch (Exception e) {
+                log.error("Can't start plugin", e);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDeActivate(GridKernalContext kctx) {
+        if (plugin != null)
+            plugin.stop();
+    }
+
+    /**
+     * Gets PageMemory tracker for ignite instance or null if it's not enabled.
+     *
+     * @param ignite Ignite.
+     */
+    public static PageMemoryTracker tracker(Ignite ignite) {
+        try {
+            return ignite.plugin(PLUGIN_NAME);
+        }
+        catch (PluginNotFoundException ignore) {
+            return null;
+        }
     }
 }

@@ -31,8 +31,6 @@ public class WalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
     public final void testWalDeltaConsistency() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        PageMemoryTracker tracker = trackPageMemory(ignite);
-
         ignite.cluster().active(true);
 
         GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)ignite.context().cache().context().database();
@@ -56,6 +54,6 @@ public class WalDeltaConsistencyTest extends AbstractWalDeltaConsistencyTest {
         for (int i = 4_000; i < 7_000; i++)
             cache.remove(i);
 
-        assertTrue(tracker.checkPages(true));
+        assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
     }
 }

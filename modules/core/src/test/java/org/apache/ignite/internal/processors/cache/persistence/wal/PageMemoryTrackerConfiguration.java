@@ -26,8 +26,8 @@ public class PageMemoryTrackerConfiguration implements PluginConfiguration {
     /** Plugin enabled. */
     private boolean enabled;
 
-    /** Perform memory check on each checkpoint. */
-    private boolean checkOnCheckpoint;
+    /** Perform page memory check on each checkpoint. */
+    private boolean checkPagesOnCheckpoint;
 
     /**
      * Gets enabled flag.
@@ -40,22 +40,30 @@ public class PageMemoryTrackerConfiguration implements PluginConfiguration {
      * Sets enabled flag.
      *
      * @param enabled Enabled.
+     * @return {@code this} for chaining.
      */
-    public void setEnabled(boolean enabled) {
+    public PageMemoryTrackerConfiguration setEnabled(boolean enabled) {
         this.enabled = enabled;
+
+        return this;
     }
 
     /**
+     * Perform page memory check on each checkpoint.
+     */
+    public boolean isCheckPagesOnCheckpoint() {
+        return checkPagesOnCheckpoint;
+    }
+
+    /**
+     * Perform page memory check on each checkpoint.
      *
+     * @param checkPagesOnCheckpoint Check on checkpoint.
+     * @return {@code this} for chaining.
      */
-    public boolean isCheckOnCheckpoint() {
-        return checkOnCheckpoint;
-    }
+    public PageMemoryTrackerConfiguration setCheckPagesOnCheckpoint(boolean checkPagesOnCheckpoint) {
+        this.checkPagesOnCheckpoint = checkPagesOnCheckpoint;
 
-    /**
-     * @param checkOnCheckpoint Check on checkpoint.
-     */
-    public void setCheckOnCheckpoint(boolean checkOnCheckpoint) {
-        this.checkOnCheckpoint = checkOnCheckpoint;
+        return this;
     }
 }

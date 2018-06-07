@@ -17,11 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.wal;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.Map;
@@ -43,8 +38,8 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
@@ -68,7 +63,10 @@ import org.mockito.Mockito;
 import static org.junit.Assert.fail;
 
 /**
+ * Page memory tracker.
  *
+ * Replicates Ignite's page memory changes to own managed memory region by intercepting WAL records and
+ * applying page snapshots and deltas.
  */
 public class PageMemoryTracker implements IgnitePlugin {
     /** Plugin context. */
@@ -80,12 +78,6 @@ public class PageMemoryTracker implements IgnitePlugin {
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Page size. */
-    private final int pageSize;
-
-    /** Page memory mock. */
-    private final PageMemory pageMemoryMock;
-
     /** Grid context. */
     private final GridKernalContext gridCtx;
 
@@ -94,6 +86,15 @@ public class PageMemoryTracker implements IgnitePlugin {
 
     /** Pages. */
     private final Map<FullPageId, DirectMemoryPage> pages = new ConcurrentHashMap<>();
+
+    /** Page allocator mutex. */
+    private final Object pageAllocatorMux = new Object();
+
+    /** Page size. */
+    private volatile int pageSize;
+
+    /** Page memory mock. */
+    private volatile PageMemory pageMemoryMock;
 
     /** Memory provider. */
     private volatile DirectMemoryProvider memoryProvider;
@@ -107,34 +108,30 @@ public class PageMemoryTracker implements IgnitePlugin {
     /** Tracking started. */
     private volatile boolean started = false;
 
-    /** Tracking stopped. */
-    private volatile boolean stopped = false;
+    /** Statistics. */
+    private final ConcurrentMap<WALRecord.RecordType, AtomicInteger> stats = new ConcurrentHashMap<>();
 
-    /** Statisctics. */
-    private final ConcurrentMap<WALRecord.RecordType, AtomicInteger> stats = new ConcurrentHashMap();
+    /** Checkpoint listener. */
+    private DbCheckpointListener checkpointLsnr;
 
     /**
      * @param ctx Plugin context.
      * @param cfg Configuration.
      */
-    public PageMemoryTracker(PluginContext ctx, PageMemoryTrackerConfiguration cfg) {
+    PageMemoryTracker(PluginContext ctx, PageMemoryTrackerConfiguration cfg) {
         this.ctx = ctx;
         this.cfg = cfg;
-        this.log = ctx.log(PageMemoryTracker.class);
-        this.pageSize = ctx.igniteConfiguration().getDataStorageConfiguration().getPageSize();
-        this.pageMemoryMock = Mockito.mock(PageMemory.class);
+        this.log = ctx.log(getClass());
         this.gridCtx = ((IgniteEx)ctx.grid()).context();
-
-        Mockito.doReturn(pageSize).when(pageMemoryMock).pageSize();
     }
 
     /**
      * Creates WAL manager.
      */
-    public IgniteWriteAheadLogManager createWalManager() {
+    IgniteWriteAheadLogManager createWalManager() {
         if (ctx.igniteConfiguration().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC)
             return new FsyncModeFileWriteAheadLogManager(gridCtx) {
-                @Override public WALPointer log(WALRecord record) throws IgniteCheckedException, StorageException {
+                @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
                     WALPointer res = super.log(record);
 
                     applyWalRecord(record);
@@ -144,7 +141,7 @@ public class PageMemoryTracker implements IgnitePlugin {
             };
         else
             return new FileWriteAheadLogManager(gridCtx) {
-                @Override public WALPointer log(WALRecord record) throws IgniteCheckedException, StorageException {
+                @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
                     WALPointer res = super.log(record);
 
                     applyWalRecord(record);
@@ -154,13 +151,17 @@ public class PageMemoryTracker implements IgnitePlugin {
             };
     }
 
-
     /**
      * Start tracking pages.
      */
-    public void start() throws Exception {
+    synchronized void start() {
         if (started)
-            throw new IgniteCheckedException("Page tracking is already started");
+            return;
+
+        pageSize = ctx.igniteConfiguration().getDataStorageConfiguration().getPageSize();
+        pageMemoryMock = Mockito.mock(PageMemory.class);
+
+        Mockito.doReturn(pageSize).when(pageMemoryMock).pageSize();
 
         GridCacheSharedContext sharedCtx = gridCtx.cache().context();
 
@@ -181,20 +182,44 @@ public class PageMemoryTracker implements IgnitePlugin {
         memoryRegion = memoryProvider.nextRegion();
 
         maxPages = (int)(maxMemorySize / pageSize);
+
+        if (cfg != null && cfg.isCheckPagesOnCheckpoint()) {
+            checkpointLsnr = new DbCheckpointListener() {
+                @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
+                    if (!checkPages(false))
+                        fail("Page memory is inconsistent after applying WAL delta records.");
+                }
+            };
+
+            ((GridCacheDatabaseSharedManager)gridCtx.cache().context().database()).addCheckpointListener(checkpointLsnr);
+        }
+
+        started = true;
     }
 
     /**
      * Stop tracking, release resources.
      */
-    public void stop() {
-        if (!started || stopped)
+    synchronized void stop() {
+        if (!started)
             return;
 
-        stopped = true;
+        started = false;
 
         pages.clear();
 
+        stats.clear();
+
+        lastPageIdx.set(0);
+
         memoryProvider.shutdown();
+
+        if (checkpointLsnr != null) {
+            ((GridCacheDatabaseSharedManager)gridCtx.cache().context().database())
+                .removeCheckpointListener(checkpointLsnr);
+
+            checkpointLsnr = null;
+        }
     }
 
     /**
@@ -202,27 +227,29 @@ public class PageMemoryTracker implements IgnitePlugin {
      *
      * @param fullPageId Full page id.
      */
-    private synchronized DirectMemoryPage allocatePage(FullPageId fullPageId) {
-        // Double check.
-        DirectMemoryPage page = pages.get(fullPageId);
+    private DirectMemoryPage allocatePage(FullPageId fullPageId) {
+        synchronized (pageAllocatorMux) {
+            // Double check.
+            DirectMemoryPage page = pages.get(fullPageId);
 
-        if (page != null)
+            if (page != null)
+                return page;
+
+            int pageIdx = lastPageIdx.getAndIncrement();
+
+            if (pageIdx >= maxPages)
+                fail("Can't allocate new page");
+
+            long pageAddr = memoryRegion.address() + ((long)pageIdx) * pageSize;
+
+            page = new DirectMemoryPage(pageAddr);
+
+            page.fullPageId(fullPageId);
+
+            pages.put(fullPageId, page);
+
             return page;
-
-        int pageIdx = lastPageIdx.getAndIncrement();
-
-        if (pageIdx >= maxPages)
-            fail("Can't allocate new page");
-
-        long pageAddr = memoryRegion.address() + ((long)pageIdx) * pageSize;
-
-        page = new DirectMemoryPage(pageAddr);
-
-        page.fullPageId(fullPageId);
-
-        pages.put(fullPageId, page);
-
-        return page;
+        }
     }
 
     /**
@@ -245,7 +272,7 @@ public class PageMemoryTracker implements IgnitePlugin {
      * Apply WAL record to local memory region.
      */
     private void applyWalRecord(WALRecord record) throws IgniteCheckedException {
-        if (!started || stopped)
+        if (!started)
             return;
 
         if (record instanceof PageSnapshot) {
@@ -333,16 +360,17 @@ public class PageMemoryTracker implements IgnitePlugin {
         if (!started)
             throw new IgniteCheckedException("Page tracking is not started.");
 
-        if (stopped)
-            throw new IgniteCheckedException("Page tracking is already stopped.");
-
         GridCacheProcessor cacheProc = gridCtx.cache();
 
-        synchronized (this) {
-            long totalAllocated = cacheProc.context().pageStore().pagesAllocated(MetaStorage.METASTORAGE_CACHE_ID);
+        synchronized (pageAllocatorMux) {
+            IgnitePageStoreManager pageStoreMgr = cacheProc.context().pageStore();
+
+            assert pageStoreMgr != null;
+
+            long totalAllocated = pageStoreMgr.pagesAllocated(MetaStorage.METASTORAGE_CACHE_ID);
 
             for (CacheGroupContext ctx : cacheProc.cacheGroups())
-                totalAllocated += cacheProc.context().pageStore().pagesAllocated(ctx.groupId());
+                totalAllocated += pageStoreMgr.pagesAllocated(ctx.groupId());
 
             long metaId = ((PageMemoryEx)cacheProc.context().database().metaStorage().pageMemory()).metaPageId(
                 MetaStorage.METASTORAGE_CACHE_ID);
@@ -405,7 +433,7 @@ public class PageMemoryTracker implements IgnitePlugin {
                         }
 
                         if (!res && !checkAll)
-                            return res;
+                            return false;
                     }
                     finally {
                         page.unlock();
