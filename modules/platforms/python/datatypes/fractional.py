@@ -87,14 +87,14 @@ def fractional_class(python_var, length=None, **kwargs):
     )
 
 
-def fractional_object(connection: socket.socket, initial=None):
+def fractional_object(connection: socket.socket, initial=None, **kwargs):
     buffer = initial or connection.recv(1)
     type_code = buffer
     assert type_code == TC_DECIMAL, 'Can not create decimal: wrong type code.'
     buffer += connection.recv(ctypes.sizeof(FractionalBase) - 1)
     header = FractionalBase.from_buffer_copy(buffer)
     length = header.length
-    data_class = fractional_class(None, length=length)
+    data_class = fractional_class(None, length=length, **kwargs)
     buffer += connection.recv(length)
     data_object = data_class.from_buffer_copy(buffer)
     return data_object

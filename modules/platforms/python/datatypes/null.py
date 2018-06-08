@@ -41,6 +41,6 @@ def null_class(*args, **kwargs):
     )
 
 
-def null_object(connection: socket.socket, initial=None):
+def null_object(connection: socket.socket, initial=None, **kwargs):
     buffer = initial or connection.recv(1)
     return null_class().from_buffer_copy(buffer)

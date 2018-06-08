@@ -13,11 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Arrays of fixed length elements.
+"""
+
 import ctypes
 import socket
 
 from constants import *
-from datatypes.class_configs import array_type_mappings, array_types
+from datatypes.class_configs import (
+    array_types,
+    array_type_mappings,
+    get_array_type_code_by_python,
+)
 
 
 def init(self):
@@ -43,8 +51,10 @@ def array_set_attribute(self, value):
         self.elements[i].set_attribute(iter_var.__next__())
 
 
-def array_data_class(python_var, tc_hint, length=None, **kwargs):
+def array_data_class(python_var, tc_hint=None, length=None, **kwargs):
     from datatypes import data_class
+
+    type_code = tc_hint or get_array_type_code_by_python(python_var)
 
     if python_var:
         element_class = data_class(python_var[0], payload=True, **kwargs)
@@ -52,7 +62,7 @@ def array_data_class(python_var, tc_hint, length=None, **kwargs):
     else:
         element_class = data_class(
             None,
-            tc_hint=array_type_mappings[tc_hint],
+            tc_hint=array_type_mappings[type_code],
             payload=True
         )
 
@@ -66,6 +76,7 @@ def array_data_class(python_var, tc_hint, length=None, **kwargs):
                 ('length', ctypes.c_int),
                 ('elements', element_class*length),
             ],
+            '_type_code': type_code,
             'init': init,
             'get_attribute': array_get_attribute,
             'set_attribute': array_set_attribute,

@@ -22,7 +22,7 @@ import pytest
 from constants import *
 from datatypes import data_object
 from datatypes.type_codes import *
-from datatypes.class_configs import array_types
+from datatypes.class_configs import array_types, vararray_types
 
 
 class MockSocket:
@@ -243,3 +243,25 @@ def test_int_array(conn, expected_length, expected_data):
     assert array_var.length == expected_length
     for i in range(array_var.length):
         assert array_var.elements[i].get_attribute() == expected_data[i]
+
+
+@pytest.mark.parametrize(
+    'conn, expected_length, expected_data',
+    [
+        (
+            MockSocket(
+                b'\x14\x02\x00\x00\x00'
+                b'\x0c\x00\x00\x00first_string'
+                b'\x0d\x00\x00\x00second_string'
+            ),
+            2,
+            ('first_string', 'second_string'),
+        ),
+    ]
+)
+def test_string_array(conn, expected_length, expected_data):
+    vararray_var = data_object(conn)
+    assert bytes([vararray_var.type_code]) in vararray_types
+    assert vararray_var.length == expected_length
+    for i in range(vararray_var.length):
+        assert vararray_var.elements[i] == expected_data[i]

@@ -69,10 +69,10 @@ def simple_data_class(python_var, tc_hint=None, payload=False, **kwargs):
     )
 
 
-def simple_data_object(connection: socket.socket, initial=None):
+def simple_data_object(connection: socket.socket, initial=None, **kwargs):
     buffer = initial or connection.recv(1)
     type_code = buffer
-    data_class = simple_data_class(None, tc_hint=type_code)
+    data_class = simple_data_class(None, tc_hint=type_code, **kwargs)
     buffer += connection.recv(ctypes.sizeof(simple_type_config[type_code][1]))
     data_object = data_class.from_buffer_copy(buffer)
     return data_object

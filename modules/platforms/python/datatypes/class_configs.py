@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import ctypes
+from decimal import Decimal
 from datetime import date, datetime, timedelta
 from uuid import UUID
 
@@ -75,6 +76,7 @@ standard_types = list(standard_type_config.keys())
 
 standard_python_types = list(standard_from_python.keys())
 
+# chose array element type code based on array type code
 array_type_mappings = {
     TC_BYTE_ARRAY: TC_BYTE,
     TC_SHORT_ARRAY: TC_SHORT,
@@ -93,9 +95,33 @@ array_type_mappings = {
 
 array_types = list(array_type_mappings.keys())
 
-composite_type_mappings = {
+vararray_type_mappings = {
     TC_STRING_ARRAY: TC_STRING,
     TC_DECIMAL_ARRAY: TC_DECIMAL,
 }
 
-composite_types = list(composite_type_mappings.keys())
+vararray_types = list(vararray_type_mappings.keys())
+
+# chose array type code based on pythonic type of data element
+array_from_python = {
+    # simple types
+    int: TC_LONG_ARRAY,
+    float: TC_FLOAT_ARRAY,
+    # fixed-length types
+    bool: TC_BOOL_ARRAY,
+    date: TC_DATE_ARRAY,
+    datetime: TC_DATE_ARRAY,
+    timedelta: TC_TIME_ARRAY,
+    UUID: TC_UUID_ARRAY,
+    tuple: TC_ENUM_ARRAY,
+    list: TC_ENUM_ARRAY,
+    # variable-length types
+    Decimal: TC_DECIMAL_ARRAY,
+    str: TC_STRING_ARRAY,
+}
+
+
+def get_array_type_code_by_python(python_var):
+    iter_var = iter(python_var)
+    element_type = type(next(iter_var))
+    return array_from_python[element_type]

@@ -24,17 +24,20 @@ from .type_codes import *
 from constants import *
 
 
+def payload_init(self):
+    self.length = ctypes.sizeof(self) - ctypes.sizeof(ctypes.c_int)
+
+
 def init(self):
     self.type_code = int.from_bytes(
         getattr(self, '_type_code'),
         byteorder=PROTOCOL_BYTE_ORDER,
     )
-    if hasattr(self, 'length'):
-        self.length = (
-            ctypes.sizeof(self)
-            - ctypes.sizeof(ctypes.c_int)
-            - ctypes.sizeof(ctypes.c_byte)
-        )
+    self.length = (
+        ctypes.sizeof(self)
+        - ctypes.sizeof(ctypes.c_int)
+        - ctypes.sizeof(ctypes.c_byte)
+    )
 
 
 def string_get_attribute(self):
@@ -52,37 +55,40 @@ def string_set_attribute(self, value):
         self.data = bytes(value, encoding='utf-8')
 
 
-def string_class(python_var, length=None, **kwargs):
+def string_class(python_var, length=None, payload=False, **kwargs):
     # python_var is of type str or bytes
     if type(python_var) is bytes:
         length = len(python_var)
     elif python_var is not None:
         length = len(bytes(python_var, encoding=PROTOCOL_STRING_ENCODING))
+
+    fields = [
+        ('length', ctypes.c_int),
+        ('data', ctypes.c_char * length),
+    ]
+    if not payload:
+        fields.insert(0, ('type_code', ctypes.c_byte))
     return type(
         'String',
         (ctypes.LittleEndianStructure,),
         {
             '_pack_': 1,
-            '_fields_': [
-                ('type_code', ctypes.c_byte),
-                ('length', ctypes.c_int),
-                ('data', ctypes.c_char * length),
-            ],
+            '_fields_': fields,
             '_type_code': TC_STRING,
-            'init': init,
+            'init': payload_init if payload else init,
             'get_attribute': string_get_attribute,
             'set_attribute': string_set_attribute,
         },
     )
 
 
-def string_object(connection: socket.socket, initial=None):
+def string_object(connection: socket.socket, initial=None, **kwargs):
     buffer = initial or connection.recv(1)
     type_code = buffer
     assert type_code == TC_STRING, 'Can not create string: wrong type code.'
     length_buffer = connection.recv(4)
     length = int.from_bytes(length_buffer, byteorder='little')
-    data_class = string_class(None, length)
+    data_class = string_class(None, length=length, **kwargs)
     buffer += length_buffer + connection.recv(length)
     data_object = data_class.from_buffer_copy(buffer)
     return data_object
