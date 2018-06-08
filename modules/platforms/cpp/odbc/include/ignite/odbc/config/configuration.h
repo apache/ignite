@@ -98,6 +98,12 @@ namespace ignite
 
                     /** Default value for skipReducerOnUpdate attribute. */
                     static const bool skipReducerOnUpdate;
+
+                    /** Default value for user attribute. */
+                    static const std::string user;
+
+                    /** Default value for password attribute. */
+                    static const std::string password;
                 };
 
                 /**
@@ -489,6 +495,48 @@ namespace ignite
                 bool IsPageSizeSet() const;
 
                 /**
+                 * Get user.
+                 *
+                 * @return User.
+                 */
+                const std::string& GetUser() const;
+
+                /**
+                 * Set user.
+                 *
+                 * @param user User.
+                 */
+                void SetUser(const std::string& user);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsUserSet() const;
+
+                /**
+                 * Get password.
+                 *
+                 * @return Password.
+                 */
+                const std::string& GetPassword() const;
+
+                /**
+                 * Set password.
+                 *
+                 * @param pass Password.
+                 */
+                void SetPassword(const std::string& pass);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsPasswordSet() const;
+
+                /**
                  * Get argument map.
                  *
                  * @param res Resulting argument map.
@@ -559,6 +607,12 @@ namespace ignite
 
                 /** SSL certificate authority file path. */
                 SettableValue<std::string> sslCaFile;
+
+                /** User. */
+                SettableValue<std::string> user;
+
+                /** Password. */
+                SettableValue<std::string> password;
             };
 
             template<>

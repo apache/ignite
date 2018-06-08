@@ -143,8 +143,6 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
         stopAllGrids(true);
 
         stores.clear();
-
-        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */

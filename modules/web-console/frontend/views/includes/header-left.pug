@@ -14,30 +14,15 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.wch-nav-item
-    a(ui-sref='base.configuration.tabs' ui-sref-active='active')
-        | Configure
+a.wch-nav-item(
+    ui-sref='base.configuration.overview'
+    ui-sref-active='{active: "base.configuration"}'
+)
+    | Configure
 
-.wch-nav-item(ng-if='!$root.user.becomeUsed' ng-controller='notebookController')
-    a(ng-if='IgniteDemoMode' ui-sref='base.sql.demo' ui-sref-active='active')
+.wch-nav-item(ng-if='!$root.user.becomeUsed')
+    a(ui-sref='base.sql.tabs' ui-sref-active='active')
         | Queries
-
-    div(ng-if='!IgniteDemoMode')
-        div(ng-if='!notebooks.length' ng-class='{active: $state.includes("base.sql")}')
-            a(ng-click='createNotebook()') Queries
-
-        div(ng-if='notebooks.length'
-            ng-click='$event.stopPropagation()'
-            ng-class='{active: $state.includes("base.sql")}'
-            bs-dropdown='notebooks'
-            data-placement='bottom-left'
-            data-trigger='hover focus'
-            data-container='self'
-            aria-haspopup='true'
-            aria-expanded='false'
-        )
-            span Queries
-                span.caret
 
 .wch-content(ignite-navbar)
     .wch-nav-item(ng-repeat='item in navbar.items')

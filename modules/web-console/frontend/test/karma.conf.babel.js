@@ -30,6 +30,8 @@ export default (config) => {
         // List of files / patterns to load in the browser.
         files: [
             'node_modules/babel-polyfill/dist/polyfill.js',
+            'node_modules/angular/angular.js',
+            'node_modules/angular-mocks/angular-mocks.js',
             'test/**/*.test.js',
             'app/**/*.spec.js'
         ],
@@ -83,6 +85,14 @@ export default (config) => {
             ChromeHeadlessNoSandbox: {
                 base: 'ChromeHeadless',
                 flags: ['--no-sandbox']
+            },
+            ChromeDebug: {
+                base: 'Chrome',
+                flags: [
+                    '--start-maximized',
+                    '--auto-open-devtools-for-tabs'
+                ],
+                debug: true
             }
         },
 

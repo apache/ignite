@@ -70,12 +70,19 @@ import org.apache.ignite.configuration.SqlConnectorConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
+import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicyFactory;
 import org.apache.ignite.internal.processors.platform.events.PlatformLocalEventListener;
 import org.apache.ignite.internal.processors.platform.plugin.cache.PlatformCachePluginConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
@@ -492,6 +499,7 @@ public class PlatformConfigurationUtils {
         Set<String> keyFields = new HashSet<>(cnt);
         Set<String> notNullFields = new HashSet<>(cnt);
         Map<String, Object> defVals = new HashMap<>(cnt);
+        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>(cnt);
 
         if (cnt > 0) {
             LinkedHashMap<String, String> fields = new LinkedHashMap<>(cnt);
@@ -511,6 +519,13 @@ public class PlatformConfigurationUtils {
                 Object defVal = in.readObject();
                 if (defVal != null)
                     defVals.put(fieldName, defVal);
+
+                int precision = in.readInt();
+
+                int scale = in.readInt();
+
+                if (precision != -1 || scale != -1)
+                    decimalInfo.put(fieldName, F.t(precision, scale));
             }
 
             res.setFields(fields);
@@ -523,6 +538,9 @@ public class PlatformConfigurationUtils {
 
             if (!defVals.isEmpty())
                 res.setDefaultFieldValues(defVals);
+
+            if (!decimalInfo.isEmpty())
+                res.setDecimalInfo(decimalInfo);
         }
 
         // Aliases
@@ -621,6 +639,8 @@ public class PlatformConfigurationUtils {
             cfg.setLongQueryWarningTimeout(in.readLong());
         if (in.readBoolean())
             cfg.setActiveOnStart(in.readBoolean());
+        if (in.readBoolean())
+            cfg.setAuthenticationEnabled(in.readBoolean());
 
         Object consId = in.readObjectDetached();
 
@@ -719,6 +739,7 @@ public class PlatformConfigurationUtils {
             tx.setDefaultTxIsolation(TransactionIsolation.fromOrdinal(in.readInt()));
             tx.setDefaultTxTimeout(in.readLong());
             tx.setPessimisticTxLogLinger(in.readInt());
+            tx.setTxTimeoutOnPartitionMapExchange(in.readLong());
 
             cfg.setTransactionConfiguration(tx);
         }
@@ -755,6 +776,25 @@ public class PlatformConfigurationUtils {
 
         if (in.readBoolean())
             cfg.setSslContextFactory(readSslContextFactory(in));
+
+        if (in.readBoolean()) {
+            switch (in.readByte()) {
+                case 0:
+                    cfg.setFailureHandler(new NoOpFailureHandler());
+
+                    break;
+
+                case 1:
+                    cfg.setFailureHandler(new StopNodeFailureHandler());
+
+                    break;
+
+                case 2:
+                    cfg.setFailureHandler(new StopNodeOrHaltFailureHandler(in.readBoolean(), in.readLong()));
+
+                    break;
+            }
+        }
 
         readPluginConfiguration(cfg, in);
 
@@ -1010,6 +1050,7 @@ public class PlatformConfigurationUtils {
             Set<String> keyFields = qryEntity.getKeyFields();
             Set<String> notNullFields = qryEntity.getNotNullFields();
             Map<String, Object> defVals = qryEntity.getDefaultFieldValues();
+            Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = qryEntity.getDecimalInfo();
 
             writer.writeInt(fields.size());
 
@@ -1019,6 +1060,12 @@ public class PlatformConfigurationUtils {
                 writer.writeBoolean(keyFields != null && keyFields.contains(field.getKey()));
                 writer.writeBoolean(notNullFields != null && notNullFields.contains(field.getKey()));
                 writer.writeObject(defVals != null ? defVals.get(field.getKey()) : null);
+
+                IgniteBiTuple<Integer, Integer> precisionAndScale =
+                    decimalInfo == null ? null : decimalInfo.get(field.getKey());
+
+                writer.writeInt(precisionAndScale == null ? -1 : precisionAndScale.get1());
+                writer.writeInt(precisionAndScale == null ? -1 : precisionAndScale.get2());
             }
         }
         else
@@ -1118,6 +1165,8 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getLongQueryWarningTimeout());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isActiveOnStart());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isAuthenticationEnabled());
         w.writeObject(cfg.getConsistentId());
 
         // Thread pools.
@@ -1227,6 +1276,7 @@ public class PlatformConfigurationUtils {
             writeEnumInt(w, tx.getDefaultTxIsolation(), TransactionConfiguration.DFLT_TX_ISOLATION);
             w.writeLong(tx.getDefaultTxTimeout());
             w.writeInt(tx.getPessimisticTxLogLinger());
+            w.writeLong(tx.getTxTimeoutOnPartitionMapExchange());
         }
         else
             w.writeBoolean(false);
@@ -1257,6 +1307,29 @@ public class PlatformConfigurationUtils {
         writeDataStorageConfiguration(w, cfg.getDataStorageConfiguration());
 
         writeSslContextFactory(w, cfg.getSslContextFactory());
+
+        FailureHandler failureHnd = cfg.getFailureHandler();
+
+        if (failureHnd instanceof NoOpFailureHandler) {
+            w.writeBoolean(true);
+
+            w.writeByte((byte) 0);
+        }
+        else if (failureHnd instanceof StopNodeFailureHandler) {
+            w.writeBoolean(true);
+
+            w.writeByte((byte) 1);
+        }
+        else if (failureHnd instanceof StopNodeOrHaltFailureHandler) {
+            w.writeBoolean(true);
+
+            w.writeByte((byte) 2);
+
+            w.writeBoolean(((StopNodeOrHaltFailureHandler)failureHnd).tryStop());
+
+            w.writeLong(((StopNodeOrHaltFailureHandler)failureHnd).timeout());
+        } else
+            w.writeBoolean(false);
 
         w.writeString(cfg.getIgniteHome());
 

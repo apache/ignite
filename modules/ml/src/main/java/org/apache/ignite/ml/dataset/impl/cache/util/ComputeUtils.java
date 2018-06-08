@@ -23,10 +23,10 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.locks.LockSupport;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -35,9 +35,11 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.ml.dataset.PartitionContextBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 
 /**
@@ -133,6 +135,7 @@ public class ComputeUtils {
      *
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
+     * @param filter Filter for {@code upstream} data.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param datasetId Dataset ID.
      * @param part Partition index.
@@ -144,7 +147,7 @@ public class ComputeUtils {
      * @return Partition {@code data}.
      */
     public static <K, V, C extends Serializable, D extends AutoCloseable> D getData(Ignite ignite,
-        String upstreamCacheName, String datasetCacheName, UUID datasetId, int part,
+        String upstreamCacheName, IgniteBiPredicate<K, V> filter, String datasetCacheName, UUID datasetId, int part,
         PartitionDataBuilder<K, V, C, D> partDataBuilder) {
 
         PartitionDataStorage dataStorage = (PartitionDataStorage)ignite
@@ -161,11 +164,22 @@ public class ComputeUtils {
             ScanQuery<K, V> qry = new ScanQuery<>();
             qry.setLocal(true);
             qry.setPartition(part);
+            qry.setFilter(filter);
 
-            long cnt = upstreamCache.localSizeLong(part);
-            try (QueryCursor<Cache.Entry<K, V>> cursor = upstreamCache.query(qry)) {
-                return partDataBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator(), cnt), cnt, ctx);
+            long cnt = computeCount(upstreamCache, qry);
+
+            if (cnt > 0) {
+                try (QueryCursor<UpstreamEntry<K, V>> cursor = upstreamCache.query(qry,
+                    e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
+
+                    Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(cursor.iterator(), cnt,
+                        "Cache expected to be not modified during dataset data building [partition=" + part + ']');
+
+                    return partDataBuilder.build(iter, cnt, ctx);
+                }
             }
+
+            return null;
         });
     }
 
@@ -174,6 +188,7 @@ public class ComputeUtils {
      *
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
+     * @param filter Filter for {@code upstream} data.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param ctxBuilder Partition {@code context} builder.
      * @param <K> Type of a key in {@code upstream} data.
@@ -181,7 +196,8 @@ public class ComputeUtils {
      * @param <C> Type of a partition {@code context}.
      */
     public static <K, V, C extends Serializable> void initContext(Ignite ignite, String upstreamCacheName,
-        String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder, int retries, int interval) {
+        IgniteBiPredicate<K, V> filter, String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder, int retries,
+        int interval) {
         affinityCallWithRetries(ignite, Arrays.asList(datasetCacheName, upstreamCacheName), part -> {
             Ignite locIgnite = Ignition.localIgnite();
 
@@ -190,11 +206,18 @@ public class ComputeUtils {
             ScanQuery<K, V> qry = new ScanQuery<>();
             qry.setLocal(true);
             qry.setPartition(part);
+            qry.setFilter(filter);
 
-            long cnt = locUpstreamCache.localSizeLong(part);
+            long cnt = computeCount(locUpstreamCache, qry);
+
             C ctx;
-            try (QueryCursor<Cache.Entry<K, V>> cursor = locUpstreamCache.query(qry)) {
-                ctx = ctxBuilder.build(new UpstreamCursorAdapter<>(cursor.iterator(), cnt), cnt);
+            try (QueryCursor<UpstreamEntry<K, V>> cursor = locUpstreamCache.query(qry,
+                e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
+
+                Iterator<UpstreamEntry<K, V>> iter = new IteratorWithConcurrentModificationChecker<>(cursor.iterator(), cnt,
+                    "Cache expected to be not modified during dataset data building [partition=" + part + ']');
+
+                ctx = ctxBuilder.build(iter, cnt);
             }
 
             IgniteCache<Integer, C> datasetCache = locIgnite.cache(datasetCacheName);
@@ -210,6 +233,7 @@ public class ComputeUtils {
      *
      * @param ignite Ignite instance.
      * @param upstreamCacheName Name of an {@code upstream} cache.
+     * @param filter Filter for {@code upstream} data.
      * @param datasetCacheName Name of a partition {@code context} cache.
      * @param ctxBuilder Partition {@code context} builder.
      * @param retries Number of retries for the case when one of partitions not found on the node.
@@ -218,8 +242,9 @@ public class ComputeUtils {
      * @param <C> Type of a partition {@code context}.
      */
     public static <K, V, C extends Serializable> void initContext(Ignite ignite, String upstreamCacheName,
-        String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder, int retries) {
-        initContext(ignite, upstreamCacheName, datasetCacheName, ctxBuilder, retries, 0);
+        IgniteBiPredicate<K, V> filter, String datasetCacheName, PartitionContextBuilder<K, V, C> ctxBuilder,
+        int retries) {
+        initContext(ignite, upstreamCacheName, filter, datasetCacheName, ctxBuilder, retries, 0);
     }
 
     /**
@@ -247,5 +272,39 @@ public class ComputeUtils {
     public static <C extends Serializable> void saveContext(Ignite ignite, String datasetCacheName, int part, C ctx) {
         IgniteCache<Integer, C> datasetCache = ignite.cache(datasetCacheName);
         datasetCache.put(part, ctx);
+    }
+
+    /**
+     * Computes number of entries selected from the cache by the query.
+     *
+     * @param cache Ignite cache with upstream data.
+     * @param qry Cache query.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return Number of entries supplied by the iterator.
+     */
+    private static  <K, V> long computeCount(IgniteCache<K, V> cache, ScanQuery<K, V> qry) {
+        try (QueryCursor<UpstreamEntry<K, V>> cursor = cache.query(qry,
+            e -> new UpstreamEntry<>(e.getKey(), e.getValue()))) {
+            return computeCount(cursor.iterator());
+        }
+    }
+
+    /**
+     * Computes number of entries supplied by the iterator.
+     *
+     * @param iter Iterator.
+     * @return Number of entries supplied by the iterator.
+     */
+    private static long computeCount(Iterator<?> iter) {
+        long res = 0;
+
+        while (iter.hasNext()) {
+            iter.next();
+
+            res++;
+        }
+
+        return res;
     }
 }

@@ -22,16 +22,18 @@ import path from 'path';
 
 import commonCfg from './webpack.common';
 
-import ExtractTextPlugin from 'extract-text-webpack-plugin';
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 const backendPort = process.env.BACKEND_PORT || 3000;
 const devServerPort = process.env.PORT || 9000;
 const devServerHost = process.env.HOST || '0.0.0.0';
 
 export default merge(commonCfg, {
+    mode: 'development',
     devtool: 'source-map',
     watch: true,
     module: {
+        exprContextCritical: false,
         rules: [
             {
                 test: /\.css$/,
@@ -39,28 +41,31 @@ export default merge(commonCfg, {
             },
             {
                 test: /\.scss$/,
-                // Version without extract plugin fails on some machines. https://github.com/sass/node-sass/issues/1895
-                use: ExtractTextPlugin.extract({
-                    fallback: 'style-loader',
-                    use: [
-                        {
-                            loader: 'css',
-                            options: {
-                                sourceMap: true
-                            }
-                        },
-                        {
-                            loader: 'sass',
-                            options: {
-                                sourceMap: true
-                            }
+                use: [
+                    MiniCssExtractPlugin.loader, // style-loader does not work with styles in IgniteModules
+                    {
+                        loader: 'css-loader',
+                        options: {
+                            sourceMap: true
                         }
-                    ]
-                })
+                    },
+                    {
+                        loader: 'sass-loader',
+                        options: {
+                            sourceMap: true
+                        }
+                    }
+                ]
             }
         ]
     },
+    plugins: [
+        new MiniCssExtractPlugin({filename: 'assets/css/[name].css'})
+    ],
     devServer: {
+        headers: {
+            'Content-Security-Policy': `script-src 'self' 'unsafe-inline' 'unsafe-eval' data: http: https:;`
+        },
         compress: true,
         historyApiFallback: true,
         disableHostCheck: true,
@@ -76,7 +81,7 @@ export default merge(commonCfg, {
                 target: `http://localhost:${backendPort}`,
                 ws: true
             },
-            '/api/v1/*': {
+            '/api/*': {
                 target: `http://localhost:${backendPort}`
             }
         },
@@ -87,8 +92,5 @@ export default merge(commonCfg, {
         stats: 'errors-only',
         host: devServerHost,
         port: devServerPort
-    },
-    plugins: [
-        new webpack.optimize.CommonsChunkPlugin({name: 'vendor'})
-    ]
+    }
 });

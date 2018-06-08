@@ -47,9 +47,6 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     /** Segment initialized flag. */
     private boolean segmentInitialized;
 
-    /** Archived segment index. */
-    private long archivedSegIdx;
-
     /** Archive directory. */
     private File archiveDir;
 
@@ -76,7 +73,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     ) throws IgniteCheckedException {
         super(log, sharedCtx, initLogicalRecordsSerializerFactory(sharedCtx), ioFactory, bufSize);
 
-        this.archivedSegIdx = archivedSegIdx;
+        curWalSegmIdx = archivedSegIdx;
         this.archiveDir = archiveDir;
         this.advanceC = advanceC;
 
@@ -105,7 +102,8 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
         else {
             segmentInitialized = true;
 
-            FileDescriptor fd = new FileDescriptor(new File(archiveDir, FileDescriptor.fileName(archivedSegIdx)));
+            FileDescriptor fd = new FileDescriptor(
+                new File(archiveDir, FileDescriptor.fileName(curWalSegmIdx)));
 
             try {
                 return initReadHandle(fd, null);

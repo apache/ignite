@@ -72,6 +72,7 @@ import org.h2.value.DataType;
 /**
  * Tests for CREATE/DROP TABLE.
  */
+@SuppressWarnings("ThrowableNotThrown")
 public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
     private static final int CLIENT = 2;
@@ -88,7 +89,14 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Bad data region name. */
     public static final String DATA_REGION_NAME_BAD = "my_data_region_bad";
 
+    /** Cache with backups. */
+    private static final String CACHE_NAME_BACKUPS = CACHE_NAME + "_backups";
+
+    /** Number of backups for backup test. */
+    private static final int DFLT_BACKUPS = 2;
+
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -98,16 +106,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         client().addCacheConfiguration(cacheConfiguration());
         client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME + "_async")
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC));
+
+        client().addCacheConfiguration(cacheConfiguration().setName(CACHE_NAME_BACKUPS).setBackups(DFLT_BACKUPS));
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
-        super.afterTestsStopped();
-    }
-
-    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -120,6 +124,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute("DROP TABLE IF EXISTS PUBLIC.\"Person\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"City\"");
         execute("DROP TABLE IF EXISTS PUBLIC.\"NameTest\"");
+        execute("DROP TABLE IF EXISTS PUBLIC.\"BackupTest\"");
 
         super.afterTest();
     }
@@ -496,6 +501,32 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test backups propagation.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testBackups() throws Exception {
+        String cacheName = "BackupTestCache";
+
+        execute("CREATE TABLE \"BackupTest\" (id BIGINT PRIMARY KEY, name VARCHAR) WITH \"template=" +
+            CACHE_NAME_BACKUPS + ", cache_name=" + cacheName + "\"");
+
+        CacheConfiguration ccfg = grid(0).cache(cacheName).getConfiguration(CacheConfiguration.class);
+
+        assertEquals(DFLT_BACKUPS, ccfg.getBackups());
+
+        execute("DROP TABLE PUBLIC.\"BackupTest\"");
+
+        execute("CREATE TABLE \"BackupTest\" (id BIGINT PRIMARY KEY, name VARCHAR) WITH \"template=" +
+            CACHE_NAME_BACKUPS + ", cache_name=" + cacheName + ", backups=1\"");
+
+        ccfg = grid(0).cache(cacheName).getConfiguration(CacheConfiguration.class);
+
+        assertEquals(1, ccfg.getBackups());
+    }
+
+    /**
      * Test that {@code CREATE TABLE} with given template cache name actually creates new cache,
      * H2 table and type descriptor on all nodes, optionally with cache type check.
      * @param tplCacheName Template cache name.
@@ -680,6 +711,23 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
                 return null;
             }
         }, IgniteSQLException.class, "Table already exists: Person");
+    }
+
+    /**
+     * Test that attempting to use a non-existing column name for the primary key when {@code CREATE TABLE}
+     * yields an error.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableWithWrongColumnNameAsKey() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
+                    ", \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"c_ity\")) WITH " +
+                    "\"template=cache\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "PRIMARY KEY column is not defined: c_ity");
     }
 
     /**

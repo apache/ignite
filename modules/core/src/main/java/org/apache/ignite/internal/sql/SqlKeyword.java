@@ -62,6 +62,9 @@ public class SqlKeyword {
     /** Keyword: CHARACTER. */
     public static final String CHARACTER = "CHARACTER";
 
+    /** Keyword: CHARSET. */
+    public static final String CHARSET = "CHARSET";
+
     /** Keyword: COPY. */
     public static final String COPY = "COPY";
 
@@ -182,6 +185,9 @@ public class SqlKeyword {
     /** Keyword: ON. */
     public static final String ON = "ON";
 
+    /** Keyword: ORDERED. */
+    public static final String ORDERED = "ORDERED";
+
     /** Keyword: PER_NODE_PARALLEL_OPERATIONS. */
     public static final String PER_NODE_PARALLEL_OPERATIONS = "PER_NODE_PARALLEL_OPERATIONS";
 
@@ -250,6 +256,15 @@ public class SqlKeyword {
 
     /** Keyword: PARALLEL. */
     public static final String PARALLEL = "PARALLEL";
+
+    /** Keyword: USER. */
+    public static final String USER = "USER";
+
+    /** Keyword: WITH. */
+    public static final String WITH = "WITH";
+
+    /** Keyword: PASSWORD. */
+    public static final String PASSWORD = "PASSWORD";
 
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;

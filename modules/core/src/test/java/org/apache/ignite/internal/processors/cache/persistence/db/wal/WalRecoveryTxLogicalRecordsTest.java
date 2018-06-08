@@ -115,7 +115,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         dbCfg.setWalHistorySize(WAL_HIST_SIZE);
 
         dbCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-            .setMaxSize(100 * 1024 * 1024)
+            .setMaxSize(100L * 1024 * 1024)
             .setPersistenceEnabled(true));
 
         if (checkpointFreq != null)

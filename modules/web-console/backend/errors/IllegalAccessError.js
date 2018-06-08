@@ -22,7 +22,8 @@ const AppErrorException = require('./AppErrorException');
 class IllegalAccessError extends AppErrorException {
     constructor(message) {
         super(message);
-        this.httpCode = 403;
+
+        this.code = 403;
     }
 }
 

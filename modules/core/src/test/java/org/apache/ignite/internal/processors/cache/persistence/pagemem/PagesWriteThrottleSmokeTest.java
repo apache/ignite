@@ -76,8 +76,8 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dbCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(400 * 1024 * 1024)
-                .setCheckpointPageBufferSize(200 * 1000 * 1000)
+                .setMaxSize(400L * 1024 * 1024)
+                .setCheckpointPageBufferSize(200L * 1000 * 1000)
                 .setName("dfltDataRegion")
                 .setMetricsEnabled(true)
                 .setPersistenceEnabled(true))
@@ -319,8 +319,8 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
                 }
 
                 /** {@inheritDoc} */
-                @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
-                    return delegate.map(maxWalSegmentSize);
+                @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+                    return delegate.map(sizeBytes);
                 }
             };
         }

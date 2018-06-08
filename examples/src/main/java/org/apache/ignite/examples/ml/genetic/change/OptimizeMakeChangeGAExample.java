@@ -48,14 +48,20 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run ExampleNodeStartup in
  * another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
  */
-
 public class OptimizeMakeChangeGAExample {
+    /** Ignite instance */
     private static Ignite ignite = null;
+
+    /** GAGrid */
     private static GAGrid gaGrid = null;
+
+    /** GAConfiguration */
     private static GAConfiguration gaConfig = null;
 
+    /** amount of change */
     private static String sAmountChange = null;
 
+    /** Ignite logger */
     private static IgniteLogger logger = null;
 
     /**

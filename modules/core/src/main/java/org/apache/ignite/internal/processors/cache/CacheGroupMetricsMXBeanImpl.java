@@ -25,12 +25,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.LongAdder;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 
 /**
@@ -39,6 +45,9 @@ import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /** Cache group context. */
     private final CacheGroupContext ctx;
+
+    /** */
+    private final GroupAllocationTracker groupPageAllocationTracker;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -52,12 +61,58 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     }
 
     /**
-     * Creates MBean;
+     *
+     */
+    public static class GroupAllocationTracker implements AllocatedPageTracker {
+        /** */
+        private final LongAdder totalAllocatedPages = new LongAdder();
+
+        /** */
+        private final AllocatedPageTracker delegate;
+
+        /**
+         * @param delegate Delegate allocation tracker.
+         */
+        public GroupAllocationTracker(AllocatedPageTracker delegate) {
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateTotalAllocatedPages(long delta) {
+            totalAllocatedPages.add(delta);
+
+            delegate.updateTotalAllocatedPages(delta);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class NoopAllocationTracker implements AllocatedPageTracker{
+        /** {@inheritDoc} */
+        @Override public void updateTotalAllocatedPages(long delta) {
+            // No-op.
+        }
+    }
+
+    /**
+     * Creates Group metrics MBean.
      *
      * @param ctx Cache group context.
      */
     public CacheGroupMetricsMXBeanImpl(CacheGroupContext ctx) {
         this.ctx = ctx;
+
+        DataRegion region = ctx.dataRegion();
+
+        // On client node, region is null.
+        if (region != null) {
+            DataRegionMetricsImpl dataRegionMetrics = ctx.dataRegion().memoryMetrics();
+
+            this.groupPageAllocationTracker = dataRegionMetrics.getOrAllocateGroupPageAllocationTracker(ctx.groupId());
+        }
+        else
+            this.groupPageAllocationTracker = new GroupAllocationTracker(new NoopAllocationTracker());
     }
 
     /** {@inheritDoc} */
@@ -174,14 +229,47 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         return cnt;
     }
 
+    /**
+     * Count of partitions with a given state on the local node.
+     *
+     * @param state State.
+     */
+    private int localNodePartitionsCountByState(GridDhtPartitionState state) {
+        int cnt = 0;
+
+        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
+            if (part.state() == state)
+                cnt++;
+        }
+
+        return cnt;
+    }
+
     /** {@inheritDoc} */
     @Override public int getLocalNodeOwningPartitionsCount() {
-        return nodePartitionsCountByState(ctx.shared().localNodeId(), GridDhtPartitionState.OWNING);
+        return localNodePartitionsCountByState(GridDhtPartitionState.OWNING);
     }
 
     /** {@inheritDoc} */
     @Override public int getLocalNodeMovingPartitionsCount() {
-        return nodePartitionsCountByState(ctx.shared().localNodeId(), GridDhtPartitionState.MOVING);
+        return localNodePartitionsCountByState(GridDhtPartitionState.MOVING);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getLocalNodeRentingPartitionsCount() {
+        return localNodePartitionsCountByState(GridDhtPartitionState.RENTING);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLocalNodeRentingEntriesCount() {
+        long entriesCnt = 0;
+
+        for (GridDhtLocalPartition part : ctx.topology().localPartitions()) {
+            if (part.state() == GridDhtPartitionState.RENTING)
+                entriesCnt += part.dataStore().fullSize();
+        }
+
+        return entriesCnt;
     }
 
     /** {@inheritDoc} */
@@ -251,5 +339,34 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         }
 
         return assignmentMap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getType() {
+        CacheMode type = ctx.config().getCacheMode();
+
+        return String.valueOf(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Integer> getPartitionIds() {
+        List<GridDhtLocalPartition> parts = ctx.topology().localPartitions();
+
+        List<Integer> partsRes = new ArrayList<>(parts.size());
+
+        for (GridDhtLocalPartition part : parts)
+            partsRes.add(part.id());
+
+        return partsRes;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalAllocatedPages() {
+        return groupPageAllocationTracker.totalAllocatedPages.longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        return getTotalAllocatedPages() * ctx.dataRegion().pageMemory().pageSize();
     }
 }

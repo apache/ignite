@@ -122,12 +122,16 @@ import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisito
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
+import org.apache.ignite.internal.sql.SqlStrictParseException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
+import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -192,8 +196,9 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  */
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class IgniteH2Indexing implements GridQueryIndexing {
+    /** A pattern for commands having internal implementation in Ignite. */
     public static final Pattern INTERNAL_CMD_RE = Pattern.compile(
-        "^(create|drop)\\s+index|^alter\\s+table|^copy|^set", Pattern.CASE_INSENSITIVE);
+        "^(create|drop)\\s+index|^alter\\s+table|^copy|^set|^(create|alter|drop)\\s+user", Pattern.CASE_INSENSITIVE);
 
     /*
      * Register IO for indexes.
@@ -365,6 +370,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
     };
 
+    /** H2 JDBC connection for INFORMATION_SCHEMA. Holds H2 open until node is stopped. */
+    private Connection sysConn;
+
     /**
      * @return Kernal context.
      */
@@ -383,6 +391,26 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @return H2 JDBC connection to INFORMATION_SCHEMA.
+     */
+    private Connection systemConnection() {
+        assert Thread.holdsLock(schemaMux);
+
+        if (sysConn == null) {
+            try {
+                sysConn = DriverManager.getConnection(dbUrl);
+
+                sysConn.setSchema("INFORMATION_SCHEMA");
+            }
+            catch (SQLException e) {
+                throw new IgniteSQLException("Failed to initialize system DB connection: " + dbUrl, e);
+            }
+        }
+
+        return sysConn;
     }
 
     /**
@@ -553,10 +581,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed to create db schema.
      */
     private void createSchema(String schema) throws IgniteCheckedException {
-        executeStatement("INFORMATION_SCHEMA", "CREATE SCHEMA IF NOT EXISTS " + H2Utils.withQuotes(schema));
-
-        // This method is typically called from internal Ignite threads on bootstrap, no need to cache this connection.
-        conns.remove(Thread.currentThread());
+        executeSystemStatement("CREATE SCHEMA IF NOT EXISTS " + H2Utils.withQuotes(schema));
 
         if (log.isDebugEnabled())
             log.debug("Created H2 schema for index database: " + schema);
@@ -569,7 +594,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException If failed to create db schema.
      */
     private void dropSchema(String schema) throws IgniteCheckedException {
-        executeStatement("INFORMATION_SCHEMA", "DROP SCHEMA IF EXISTS " + H2Utils.withQuotes(schema));
+        executeSystemStatement("DROP SCHEMA IF EXISTS " + H2Utils.withQuotes(schema));
 
         if (log.isDebugEnabled())
             log.debug("Dropped H2 schema for index database: " + schema);
@@ -587,6 +612,30 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             Connection c = connectionForThread(schema);
 
             stmt = c.createStatement();
+
+            stmt.executeUpdate(sql);
+        }
+        catch (SQLException e) {
+            onSqlException();
+
+            throw new IgniteSQLException("Failed to execute statement: " + sql, e);
+        }
+        finally {
+            U.close(stmt, log);
+        }
+    }
+
+    /**
+     * Execute statement on H2 INFORMATION_SCHEMA.
+     * @param sql SQL statement.
+     */
+    public void executeSystemStatement(String sql) {
+        assert Thread.holdsLock(schemaMux);
+
+        Statement stmt = null;
+
+        try {
+            stmt = systemConnection().createStatement();
 
             stmt.executeUpdate(sql);
         }
@@ -1512,10 +1561,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // COPY
             // ALTER TABLE
             // SET STREAMING
-            if (!(cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand ||
-                cmd instanceof SqlAlterTableCommand || cmd instanceof SqlBulkLoadCommand ||
-                cmd instanceof SqlSetStreamingCommand))
+            // CREATE/ALTER/DROP USER
+            if (!(cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand
+                || cmd instanceof SqlAlterTableCommand || cmd instanceof SqlBulkLoadCommand
+                || cmd instanceof SqlSetStreamingCommand
+                || cmd instanceof SqlCreateUserCommand || cmd instanceof SqlAlterUserCommand
+                || cmd instanceof SqlDropUserCommand))
                 return null;
+        }
+        catch (SqlStrictParseException e) {
+            throw new IgniteSQLException(e.getMessage(), IgniteQueryErrorCode.PARSING, e);
         }
         catch (Exception e) {
             // Cannot parse, return.
@@ -1550,7 +1605,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (on)
                 cliCtx.enableStreaming(setCmd.allowOverwrite(), setCmd.flushFrequency(),
-                    setCmd.perNodeBufferSize(), setCmd.perNodeParallelOperations());
+                    setCmd.perNodeBufferSize(), setCmd.perNodeParallelOperations(), setCmd.isOrdered());
             else
                 cliCtx.disableStreaming();
 
@@ -2722,6 +2777,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");
+
+        // Close system H2 connection to INFORMATION_SCHEMA
+        synchronized (schemaMux) {
+            if (sysConn != null) {
+                U.close(sysConn, log);
+
+                sysConn = null;
+            }
+        }
     }
 
     /**

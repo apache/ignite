@@ -28,6 +28,9 @@ import org.apache.ignite.ml.math.Vector;
  * Base class for SVM linear classification model.
  */
 public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>, Exportable<SVMLinearBinaryClassificationModel>, Serializable {
+    /** */
+    private static final long serialVersionUID = -996984622291440226L;
+
     /** Output label format. -1 and +1 for false value and raw distances from the separating hyperplane otherwise. */
     private boolean isKeepingRawLabels = false;
 
@@ -162,7 +165,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        if (weights.size() < 10) {
+        if (weights.size() < 20) {
             StringBuilder builder = new StringBuilder();
 
             for (int i = 0; i < weights.size(); i++) {
