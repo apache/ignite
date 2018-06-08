@@ -42,25 +42,26 @@ def init(self):
         )
 
 
-def vararray_get_attribute(self):
-    pass
+def vararray_get_item(self, i):
+    result = getattr(
+        self,
+        'element_{}'.format(i)
+    ).data.decode(PROTOCOL_STRING_ENCODING)
+    return result
 
 
 def vararray_set_attribute(self, value):
-    pass
+    raise AssertionError('Variable-length arrays are immutable')
 
 
 def vararray_data_class(python_var, tc_hint=None, length=None, **kwargs):
     from datatypes import data_class
 
-    element_class = None
     elements = []
-
     fields = [
         ('type_code', ctypes.c_byte),
         ('length', ctypes.c_int),
     ]
-
     type_code = tc_hint or get_array_type_code_by_python(python_var)
     element_type_code = vararray_type_mappings[type_code]
 
@@ -87,7 +88,6 @@ def vararray_data_class(python_var, tc_hint=None, length=None, **kwargs):
             '_fields_': fields,
             '_type_code': type_code,
             'init': init,
-            'get_attribute': vararray_get_attribute,
             'set_attribute': vararray_set_attribute,
         }
     )
@@ -127,6 +127,8 @@ def vararray_data_object(connection: socket.socket, initial=None, **kwargs):
         {
             '_pack_': 1,
             '_fields_': elements,
+            'set_attribute': vararray_set_attribute,
+            '__getitem__': vararray_get_item,
         }
     )
     final_class = type(
@@ -138,8 +140,6 @@ def vararray_data_object(connection: socket.socket, initial=None, **kwargs):
                 ('elements', elements_class),
             ],
             'init': init,
-            'get_attribute': vararray_get_attribute,
-            'set_attribute': vararray_set_attribute,
         }
     )
     data_object = final_class.from_buffer_copy(buffer)
