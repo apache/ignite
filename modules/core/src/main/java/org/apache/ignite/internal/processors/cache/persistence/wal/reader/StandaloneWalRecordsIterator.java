@@ -68,7 +68,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * <code>null</code> value means directory scan mode
      */
     @Nullable
-    private List<FileDescriptor> walFileDescriptors;
+    private final List<FileDescriptor> walFileDescriptors;
 
     /** */
     private int curIdx = -1;
@@ -105,6 +105,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         this.keepBinary = keepBinary;
 
+        walFileDescriptors = walFiles;
+
         init(walFiles);
 
         advance();
@@ -116,10 +118,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      *
      * @param walFiles files for file-by-file iteration mode
      */
-    private void init(List<FileDescriptor> walFiles) throws IgniteCheckedException {
-        walFileDescriptors = walFiles;
-
-        if (walFiles.isEmpty())
+    private void init(List<FileDescriptor> walFiles) {
+        if (walFiles == null || walFiles.isEmpty())
             return;
 
         curWalSegmIdx = walFiles.get(curIdx + 1).idx() - 1;
