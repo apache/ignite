@@ -28,6 +28,7 @@ import org.apache.ignite.spi.checkpoint.s3.S3SessionCheckpointSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderAwsCredentialsSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderBucketEndpointSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderKeyPrefixSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
@@ -56,6 +57,7 @@ public class IgniteS3TestSuite extends TestSuite {
         suite.addTestSuite(TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest.class);
         suite.addTestSuite(TcpDiscoveryS3IpFinderBucketEndpointSelfTest.class);
         suite.addTestSuite(TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest.class);
+        suite.addTestSuite(TcpDiscoveryS3IpFinderKeyPrefixSelfTest.class);
 
         return suite;
     }
