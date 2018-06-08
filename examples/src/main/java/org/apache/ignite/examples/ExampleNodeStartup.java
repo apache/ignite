@@ -36,28 +36,5 @@ public class ExampleNodeStartup {
      */
     public static void main(String[] args) throws IgniteException {
         Ignite ig = Ignition.start("examples/config/example-ignite.xml");
-
-        ig.cluster().setBaselineTopology(ig.cluster().nodes());
-
-        if (ig.cache("cache1") == null) {
-            ig.createCache(new CacheConfiguration<>().setName("cache1").setCacheMode(CacheMode.REPLICATED).setStatisticsEnabled(true));
-            ig.createCache(new CacheConfiguration<>().setName("cache2").setCacheMode(CacheMode.REPLICATED).setStatisticsEnabled(true));
-            ig.createCache(new CacheConfiguration<>().setName("cache3").setCacheMode(CacheMode.REPLICATED).setStatisticsEnabled(true));
-
-            try (IgniteDataStreamer<Integer, Integer> streamer = ig.dataStreamer("cache1")) {
-                for (int k = 0; k < 1_000_000; k++)
-                    streamer.addData(k, k);
-            }
-
-            try (IgniteDataStreamer<Integer, Integer> streamer = ig.dataStreamer("cache2")) {
-                for (int k = 0; k < 1_000_000; k++)
-                    streamer.addData(k, k);
-            }
-
-            try (IgniteDataStreamer<Integer, Integer> streamer = ig.dataStreamer("cache3")) {
-                for (int k = 0; k < 1_000_000; k++)
-                    streamer.addData(k, k);
-            }
-        }
     }
 }
