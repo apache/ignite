@@ -323,7 +323,7 @@ public class PageMemoryTracker implements IgnitePlugin {
     }
 
     /**
-     * Allocates new page for given FullPageId
+     * Allocates new page for given FullPageId.
      *
      * @param fullPageId Full page id.
      */
@@ -385,7 +385,7 @@ public class PageMemoryTracker implements IgnitePlugin {
     }
 
     /**
-     * Gets or allocates page for given FullPageId
+     * Gets or allocates page for given FullPageId.
      *
      * @param fullPageId Full page id.
      * @return Page.
@@ -797,7 +797,7 @@ public class PageMemoryTracker implements IgnitePlugin {
         }
 
         /**
-         * @param owningPage New owning page.
+         * @param owningPage Owning page.
          */
         public void owningPage(DirectMemoryPage owningPage) {
             this.owningPage = owningPage;
