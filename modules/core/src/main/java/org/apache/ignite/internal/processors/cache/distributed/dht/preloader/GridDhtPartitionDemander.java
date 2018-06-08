@@ -382,8 +382,6 @@ public class GridDhtPartitionDemander {
             else {
                 if (!oldFut.isInitial())
                     oldFut.cancel();
-                else
-                    fut.listen(f -> oldFut.onDone(f.result()));
 
                 rebalanceFut = fut;
 
