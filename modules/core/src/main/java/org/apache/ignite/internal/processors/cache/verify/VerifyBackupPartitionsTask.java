@@ -56,6 +56,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
+ * Legacy version of {@link VerifyBackupPartitionsTaskV2}.
  * Task for comparing update counters and checksums between primary and backup partitions of specified caches.
  * <br>
  * Argument: Set of cache names, 'null' will trigger verification for all caches.
@@ -154,7 +155,8 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
     }
 
     /**
-     *
+     * Even though {@link VerifyBackupPartitionsTask} is deprecated, instances of this job is produced by newer
+     * version of the task - {@link VerifyBackupPartitionsTaskV2}.
      */
     public static class VerifyBackupPartitionsJob extends ComputeJobAdapter {
         /** */
@@ -177,7 +179,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
         /**
          * @param names Names.
          */
-        private VerifyBackupPartitionsJob(Set<String> names) {
+        public VerifyBackupPartitionsJob(Set<String> names) {
             cacheNames = names;
         }
 
@@ -244,7 +246,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                 Future<Map<PartitionKey, PartitionHashRecord>> fut = partHashCalcFutures.get(i);
 
                 try {
-                    Map<PartitionKey, PartitionHashRecord> partHash = fut.get(10, TimeUnit.SECONDS);
+                    Map<PartitionKey, PartitionHashRecord> partHash = fut.get(100, TimeUnit.MILLISECONDS);
 
                     res.putAll(partHash);
 
@@ -261,7 +263,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
                     else
                         throw new IgniteException(e.getCause());
                 }
-                catch (TimeoutException e) {
+                catch (TimeoutException ignored) {
                     if (U.currentTimeMillis() - lastProgressLogTs > 3 * 60 * 1000L) {
                         lastProgressLogTs = U.currentTimeMillis();
 
@@ -303,13 +305,23 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
 
             int partHash = 0;
             long partSize;
-            long updateCntrBefore;
+            long updateCntrBefore = part.updateCounter();
+
+            PartitionKey partKey = new PartitionKey(grpCtx.groupId(), part.id(), grpCtx.cacheOrGroupName());
+
+            Object consId = ignite.context().discovery().localNode().consistentId();
+
+            boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
 
             try {
-                if (part.state() != GridDhtPartitionState.OWNING)
-                    return Collections.emptyMap();
+                if (part.state() == GridDhtPartitionState.MOVING) {
+                    PartitionHashRecord movingHashRecord = new PartitionHashRecord(partKey, isPrimary, consId,
+                        partHash, updateCntrBefore, PartitionHashRecord.MOVING_PARTITION_SIZE);
 
-                updateCntrBefore = part.updateCounter();
+                    return Collections.singletonMap(partKey, movingHashRecord);
+                }
+                else if (part.state() != GridDhtPartitionState.OWNING)
+                    return Collections.emptyMap();
 
                 partSize = part.dataStore().fullSize();
 
@@ -340,12 +352,6 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
             finally {
                 part.release();
             }
-
-            Object consId = ignite.context().discovery().localNode().consistentId();
-
-            boolean isPrimary = part.primary(grpCtx.topology().readyTopologyVersion());
-
-            PartitionKey partKey = new PartitionKey(grpCtx.groupId(), part.id(), grpCtx.cacheOrGroupName());
 
             PartitionHashRecord partRec = new PartitionHashRecord(
                 partKey, isPrimary, consId, partHash, updateCntrBefore, partSize);

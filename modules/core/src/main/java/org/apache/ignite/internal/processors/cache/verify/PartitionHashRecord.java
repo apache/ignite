@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.verify;
 
 import java.io.Serializable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -27,6 +28,9 @@ public class PartitionHashRecord implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Moving partition size. */
+    public static final long MOVING_PARTITION_SIZE = Long.MIN_VALUE;
+
     /** Partition key. */
     @GridToStringExclude
     private final PartitionKey partKey;
@@ -35,15 +39,18 @@ public class PartitionHashRecord implements Serializable {
     private final boolean isPrimary;
 
     /** Consistent id. */
+    @GridToStringInclude
     private final Object consistentId;
 
     /** Partition hash. */
+    @GridToStringExclude
     private final int partHash;
 
     /** Update counter. */
     private final long updateCntr;
 
     /** Size. */
+    @GridToStringExclude
     private final long size;
 
     /**
@@ -108,7 +115,9 @@ public class PartitionHashRecord implements Serializable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PartitionHashRecord.class, this, "consistentId", consistentId);
+        return size == MOVING_PARTITION_SIZE ?
+            S.toString(PartitionHashRecord.class, this, "state", "MOVING") :
+            S.toString(PartitionHashRecord.class, this, "size", size, "partHash", partHash);
     }
 
     /** {@inheritDoc} */
