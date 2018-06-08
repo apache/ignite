@@ -109,6 +109,23 @@ namespace ignite
                 }
             }
 
+            void DataRouter::InternalSyncMessage(interop::InteropUnpooledMemory& mem, int32_t timeout)
+            {
+                common::concurrent::CsLockGuard lock(ioMutex);
+
+                bool success = Send(mem.Data(), mem.Length(), timeout);
+
+                if (!success)
+                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Can not send message to remote host: timeout");
+
+                success = Receive(mem, timeout);
+
+                if (!success)
+                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        "Can not send message to remote host: timeout");
+            }
+
             bool DataRouter::Send(const int8_t* data, size_t len, int32_t timeout)
             {
                 if (socket.get() == 0)

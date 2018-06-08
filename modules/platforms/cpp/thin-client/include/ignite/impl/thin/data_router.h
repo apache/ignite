@@ -140,6 +140,35 @@ namespace ignite
                 }
 
                 /**
+                 * Generate message to send.
+                 *
+                 * @param req Request to serialize.
+                 * @param mem Memory to write request to.
+                 * @return Message ID.
+                 */
+                template<typename ReqT>
+                int64_t GenerateRequestMessage(const ReqT& req, interop::InteropUnpooledMemory& mem)
+                {
+                    interop::InteropOutputStream outStream(&mem);
+                    binary::BinaryWriterImpl writer(&outStream, &typeMgr);
+
+                    // Space for RequestSize + OperationCode + RequestID.
+                    outStream.Reserve(4 + 2 + 8);
+
+                    req.Write(writer, currentVersion);
+
+                    int64_t id = GenerateRequestId();
+
+                    outStream.WriteInt32(0, outStream.Position() - 4);
+                    outStream.WriteInt16(4, ReqT::GetOperationCode());
+                    outStream.WriteInt64(6, id);
+
+                    outStream.Synchronize();
+
+                    return id;
+                }
+
+                /**
                  * Synchronously send request message and receive response.
                  * Uses provided timeout. Does not try to restore connection on
                  * fail.
@@ -158,35 +187,10 @@ namespace ignite
                     int32_t metaVer = typeMgr.GetVersion();
 
                     interop::InteropUnpooledMemory mem(BUFFER_SIZE);
-                    interop::InteropOutputStream outStream(&mem);
-                    binary::BinaryWriterImpl writer(&outStream, &typeMgr);
 
-                    // Space for RequestSize + OperationCode + RequestID.
-                    outStream.Reserve(4 + 2 + 8);
+                    int64_t id = GenerateMessage(req, mem);
 
-                    req.Write(writer, currentVersion);
-
-                    int64_t id = GenerateRequestId();
-
-                    outStream.WriteInt32(0, outStream.Position() - 4);
-                    outStream.WriteInt16(4, ReqT::GetOperationCode());
-                    outStream.WriteInt64(6, id);
-
-                    { // Locking scope
-                        common::concurrent::CsLockGuard lock(ioMutex);
-
-                        bool success = Send(mem.Data(), outStream.Position(), timeout);
-
-                        if (!success)
-                            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                                "Can not send message to remote host: timeout");
-
-                        success = Receive(mem, timeout);
-
-                        if (!success)
-                            throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
-                                "Can not send message to remote host: timeout");
-                    }
+                    InternalSyncMessage(mem, timeout);
 
                     interop::InteropInputStream inStream(&mem);
 
@@ -210,6 +214,15 @@ namespace ignite
 
                     rsp.Read(reader, currentVersion);
                 }
+
+                /**
+                 * Send message stored in memory and synchronously receives
+                 * response and stores it in the same memory.
+                 *
+                 * @param mem Memory.
+                 * @param timeout Opration timeout.
+                 */
+                void InternalSyncMessage(interop::InteropUnpooledMemory& mem, int32_t timeout);
 
                 /**
                  * Send data by established connection.
