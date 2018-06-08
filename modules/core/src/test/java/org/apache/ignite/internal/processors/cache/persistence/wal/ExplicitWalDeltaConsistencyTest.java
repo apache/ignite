@@ -77,6 +77,8 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
 
         ignite = startGrid(0);
 
+        ignite.cluster().active(true);
+
         cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
 
         for (int i = 2_000; i < 5_000; i++)

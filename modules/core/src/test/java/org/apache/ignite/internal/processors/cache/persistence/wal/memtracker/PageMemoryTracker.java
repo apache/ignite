@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.memtracker;
 
 import java.nio.ByteBuffer;
+import java.util.BitSet;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -63,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFile
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
 import org.mockito.Mockito;
@@ -86,14 +88,23 @@ public class PageMemoryTracker implements IgnitePlugin {
     /** Grid context. */
     private final GridKernalContext gridCtx;
 
-    /** Pages. */
-    private final Map<FullPageId, DirectMemoryPage> pages = new ConcurrentHashMap<>();
-
     /** Page allocator mutex. */
     private final Object pageAllocatorMux = new Object();
 
+    /** Pages. */
+    private final Map<FullPageId, DirectMemoryPage> pages = new ConcurrentHashMap<>();
+
+    /** Page slots. */
+    private volatile DirectMemoryPageSlot[] pageSlots;
+
+    /** Free page slots. */
+    private final BitSet freeSlots = new BitSet();
+
     /** Last allocated page index. */
     private volatile int lastPageIdx;
+
+    /** Free page slots count. */
+    private volatile int freeSlotsCnt;
 
     /** Page size. */
     private volatile int pageSize;
@@ -187,13 +198,13 @@ public class PageMemoryTracker implements IgnitePlugin {
                     boolean destroy) throws IgniteCheckedException {
                     super.shutdownForCacheGroup(grp, destroy);
 
-                    pages.keySet().removeIf(fullPageId -> fullPageId.groupId() == grp.groupId());
+                    cleanupPages(fullPageId -> fullPageId.groupId() == grp.groupId());
                 }
 
                 @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
                     super.onPartitionDestroyed(grpId, partId, tag);
 
-                    pages.keySet().removeIf(fullPageId -> fullPageId.groupId() == grpId
+                    cleanupPages(fullPageId -> fullPageId.groupId() == grpId
                         && PageIdUtils.partId(fullPageId.pageId()) == partId);
                 }
             };
@@ -225,7 +236,7 @@ public class PageMemoryTracker implements IgnitePlugin {
                 maxMemorySize += dataRegion.config().getMaxSize();
         }
 
-        long[] chunks = new long[] { maxMemorySize };
+        long[] chunks = new long[] {maxMemorySize};
 
         memoryProvider = new UnsafeMemoryProvider(log);
 
@@ -234,6 +245,10 @@ public class PageMemoryTracker implements IgnitePlugin {
         memoryRegion = memoryProvider.nextRegion();
 
         maxPages = (int)(maxMemorySize / pageSize);
+
+        pageSlots = new DirectMemoryPageSlot[maxPages];
+
+        freeSlotsCnt = maxPages;
 
         if (cfg.isCheckPagesOnCheckpoint()) {
             checkpointLsnr = ctx -> {
@@ -262,6 +277,10 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         pages.clear();
 
+        pageSlots = null;
+
+        freeSlots.clear();
+
         stats.clear();
 
         memoryProvider.shutdown();
@@ -283,6 +302,26 @@ public class PageMemoryTracker implements IgnitePlugin {
         return (cfg != null && cfg.isEnabled() && CU.isPersistenceEnabled(ctx.igniteConfiguration()));
     }
 
+
+    /**
+     * Cleanup pages by predicate.
+     *
+     * @param pred Predicate.
+     */
+    private void cleanupPages(IgnitePredicate<FullPageId> pred) {
+        synchronized (pageAllocatorMux) {
+            for (Map.Entry<FullPageId, DirectMemoryPage> pageEntry : pages.entrySet()) {
+                if (pred.apply(pageEntry.getKey())) {
+                    pages.remove(pageEntry.getKey());
+
+                    freeSlots.set(pageEntry.getValue().slot().index());
+
+                    freeSlotsCnt++;
+                }
+            }
+        }
+    }
+
     /**
      * Allocates new page for given FullPageId
      *
@@ -296,18 +335,43 @@ public class PageMemoryTracker implements IgnitePlugin {
             if (page != null)
                 return page;
 
-            if (lastPageIdx >= maxPages)
+            if (freeSlotsCnt == 0)
                 throw new IgniteCheckedException("Can't allocate new page");
 
-            int pageIdx = lastPageIdx++;
+            int pageIdx;
+
+            if (lastPageIdx < maxPages)
+                pageIdx = lastPageIdx++;
+            else {
+                pageIdx = freeSlots.nextSetBit(0);
+
+                assert pageIdx >= 0;
+
+                freeSlots.clear(pageIdx);
+            }
+
+            freeSlotsCnt--;
 
             long pageAddr = memoryRegion.address() + ((long)pageIdx) * pageSize;
 
-            page = new DirectMemoryPage(pageAddr);
+            DirectMemoryPageSlot pageSlot = pageSlots[pageIdx];
+            if (pageSlot == null)
+                pageSlot = pageSlots[pageIdx] = new DirectMemoryPageSlot(pageAddr, pageIdx);
 
-            page.fullPageId(fullPageId);
+            pageSlot.lock();
 
-            pages.put(fullPageId, page);
+            try {
+                page = new DirectMemoryPage(pageSlot);
+
+                page.fullPageId(fullPageId);
+
+                pages.put(fullPageId, page);
+
+                pageSlot.owningPage(page);
+            }
+            finally {
+                pageSlot.unlock();
+            }
 
             return page;
         }
@@ -600,11 +664,8 @@ public class PageMemoryTracker implements IgnitePlugin {
      *
      */
     private static class DirectMemoryPage {
-        /** Page address. */
-        private final long addr;
-
-        /** Page lock. */
-        private final Lock lock = new ReentrantLock();
+        /** Page slot. */
+        private final DirectMemoryPageSlot slot;
 
         /** Change history. */
         private final List<WALRecord> changeHist = new LinkedList<>();
@@ -613,31 +674,37 @@ public class PageMemoryTracker implements IgnitePlugin {
         private volatile FullPageId fullPageId;
 
         /**
-         * @param addr Page address.
+         * @param slot Memory page slot.
          */
-        private DirectMemoryPage(long addr) {
-            this.addr = addr;
+        private DirectMemoryPage(DirectMemoryPageSlot slot) {
+            this.slot = slot;
         }
 
         /**
          * Lock page.
          */
-        public void lock() {
-            lock.lock();
+        public void lock() throws IgniteCheckedException {
+            slot.lock();
+
+            if (slot.owningPage() != this) {
+                slot.unlock();
+
+                throw new IgniteCheckedException("Memory slot owning page changed, can't access page buffer.");
+            }
         }
 
         /**
          * Unlock page.
          */
         public void unlock() {
-            lock.unlock();
+            slot.unlock();
         }
 
         /**
          * @return Page address.
          */
         public long address() {
-            return addr;
+            return slot.address();
         }
 
         /**
@@ -659,6 +726,81 @@ public class PageMemoryTracker implements IgnitePlugin {
          */
         public void fullPageId(FullPageId fullPageId) {
             this.fullPageId = fullPageId;
+        }
+
+        /**
+         * @return Memory page slot.
+         */
+        public DirectMemoryPageSlot slot() {
+            return slot;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class DirectMemoryPageSlot {
+        /** Page slot address. */
+        private final long addr;
+
+        /** Page slot index */
+        private final int idx;
+
+        /** Page lock. */
+        private final Lock lock = new ReentrantLock();
+
+        /** Owning page. */
+        private DirectMemoryPage owningPage;
+
+        /**
+         * @param addr Page address.
+         * @param idx
+         */
+        private DirectMemoryPageSlot(long addr, int idx) {
+            this.addr = addr;
+            this.idx = idx;
+        }
+
+        /**
+         * Lock page slot.
+         */
+        public void lock() {
+            lock.lock();
+        }
+
+        /**
+         * Unlock page slot.
+         */
+        public void unlock() {
+            lock.unlock();
+        }
+
+        /**
+         * @return Page slot address.
+         */
+        public long address() {
+            return addr;
+        }
+
+        /**
+         * @return Page slot index.
+         */
+        public int index() {
+            return idx;
+        }
+
+        /**
+         * @return Owning page.
+         */
+        public DirectMemoryPage owningPage() {
+            return owningPage;
+        }
+
+        /**
+         * @param owningPage New owning page.
+         */
+        public void owningPage(DirectMemoryPage owningPage) {
+            this.owningPage = owningPage;
         }
     }
 }
