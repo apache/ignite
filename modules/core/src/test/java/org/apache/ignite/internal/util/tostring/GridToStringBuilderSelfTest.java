@@ -31,7 +31,6 @@ import org.apache.ignite.IgniteSystemProperties;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_COLLECTION_LIMIT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_TO_STRING_MAX_LENGTH;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -351,7 +350,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
     public void testToStringColAndMapLimitWithRecursion() throws Exception {
         int limit = IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
         Map strMap = new TreeMap<>();
-        List strList = new ArrayList<>(U.capacity(limit+1));
+        List strList = new ArrayList<>(limit+1);
 
         TestClass1 testClass = new TestClass1();
         testClass.strMap = strMap;
@@ -359,6 +358,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
 
         Map m = new TreeMap();
         m.put("m", strMap);
+
         List l = new ArrayList();
         l.add(strList);
 
