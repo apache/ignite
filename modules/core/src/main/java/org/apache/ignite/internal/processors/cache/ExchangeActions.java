@@ -107,9 +107,19 @@ public class ExchangeActions {
      * @param ctx Context.
      */
     public void completeRequestFutures(GridCacheSharedContext ctx) {
-        completeRequestFutures(cachesToStart, ctx);
-        completeRequestFutures(cachesToStop, ctx);
-        completeRequestFutures(cachesToResetLostParts, ctx);
+        completeRequestFutures(cachesToStart, ctx, null);
+        completeRequestFutures(cachesToStop, ctx, null);
+        completeRequestFutures(cachesToResetLostParts, ctx, null);
+    }
+
+    /**
+     * @param ctx Context.
+     * @param err Error if any.
+     */
+    public void completeRequestFutures(GridCacheSharedContext ctx, Throwable err) {
+        completeRequestFutures(cachesToStart, ctx, err);
+        completeRequestFutures(cachesToStop, ctx, err);
+        completeRequestFutures(cachesToResetLostParts, ctx, err);
     }
 
     /**
@@ -130,10 +140,13 @@ public class ExchangeActions {
      * @param map Actions map.
      * @param ctx Context.
      */
-    private void completeRequestFutures(Map<String, CacheActionData> map, GridCacheSharedContext ctx) {
+    private void completeRequestFutures(
+        Map<String, CacheActionData> map,
+        GridCacheSharedContext ctx,
+        @Nullable Throwable err) {
         if (map != null) {
             for (CacheActionData req : map.values())
-                ctx.cache().completeCacheStartFuture(req.req, true, null);
+                ctx.cache().completeCacheStartFuture(req.req, (err == null), err);
         }
     }
 

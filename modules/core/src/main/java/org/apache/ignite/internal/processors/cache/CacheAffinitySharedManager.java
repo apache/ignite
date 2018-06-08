@@ -731,6 +731,42 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Called during the rollback of the exchange partitions procedure
+     * in order to stop the given cache even if it's not fully initialized (e.g. failed on cache init stage).
+     *
+     * @param fut Exchange future.
+     * @param crd Coordinator flag.
+     * @param exchActions Cache change requests.
+     */
+    public void forceCloseCaches(
+        GridDhtPartitionsExchangeFuture fut,
+        boolean crd,
+        final ExchangeActions exchActions) {
+        assert exchActions != null && !exchActions.empty() && exchActions.cacheStartRequests().isEmpty(): exchActions;
+
+        caches.updateCachesInfo(exchActions);
+
+        for (ExchangeActions.CacheActionData action : exchActions.cacheStopRequests())
+            cctx.cache().blockGateway(action.request().cacheName(), true, false);
+
+        for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop())
+            cctx.exchange().clearClientTopology(action.descriptor().groupId());
+
+        if (crd) {
+            for (ExchangeActions.CacheGroupActionData data : exchActions.cacheGroupsToStop()) {
+                if (data.descriptor().config().getCacheMode() != LOCAL) {
+                    CacheGroupHolder cacheGrp = grpHolders.remove(data.descriptor().groupId());
+
+                    if (cacheGrp != null)
+                        cctx.io().removeHandler(true, cacheGrp.groupId(), GridDhtAffinityAssignmentResponse.class);
+                }
+            }
+        }
+
+        cctx.cache().forceCloseCaches(exchActions);
+    }
+
+    /**
      * Called on exchange initiated for cache start/stop request.
      *
      * @param fut Exchange future.

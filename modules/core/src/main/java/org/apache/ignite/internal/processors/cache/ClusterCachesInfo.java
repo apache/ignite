@@ -396,6 +396,51 @@ class ClusterCachesInfo {
     }
 
     /**
+     * @param failMsg Dynamic change request fail message.
+     * @return {@code True} if minor topology version should be increased.
+     */
+    public boolean onCacheChangeRequested(DynamicCacheChangeFailureMessage failMsg) {
+        ExchangeActions exchangeActions = new ExchangeActions();
+
+        Set<Integer> groupsTobeDestroyed = new HashSet<>();
+
+        for (String cacheName : failMsg.cacheNames()) {
+            DynamicCacheDescriptor cacheDescr = registeredCaches.remove(cacheName);
+
+            ctx.discovery().removeCacheFilter(cacheName);
+
+            exchangeActions.addCacheToStop(
+                DynamicCacheChangeRequest.stopRequest(ctx, cacheName, cacheDescr.sql(), true), cacheDescr);
+
+            CacheGroupDescriptor grpDescr = registeredCacheGrps.get(cacheDescr.groupId());
+
+            grpDescr.onCacheStopped(cacheDescr.cacheName(), cacheDescr.groupId());
+
+            if (!grpDescr.hasCaches()) {
+                registeredCacheGrps.remove(grpDescr.groupId());
+
+                ctx.discovery().removeCacheGroup(grpDescr);
+
+                exchangeActions.addCacheGroupToStop(grpDescr, true);
+
+                groupsTobeDestroyed.add(grpDescr.groupId());
+            }
+        }
+
+        // If all caches in a group will be destroyed
+        // it is not necessary to destroy a single cache that resides in that group
+        // because the group will be stopped anyway.
+        for (ExchangeActions.CacheActionData action : exchangeActions.cacheStopRequests()) {
+            if (groupsTobeDestroyed.contains(action.descriptor().groupId()))
+                action.request().destroy(false);
+        }
+
+        failMsg.exchangeActions(exchangeActions);
+
+        return false;
+    }
+
+    /**
      * @param batch Cache change request.
      * @param topVer Topology version.
      * @return {@code True} if minor topology version should be increased.
