@@ -367,6 +367,13 @@ public class PageMemoryTracker implements IgnitePlugin {
 
                 pages.put(fullPageId, page);
 
+                if (pageSlot.owningPage() != null) {
+                    // Clear memory if slot was already used.
+                    ByteBuffer pageBuf = GridUnsafe.wrapPointer(pageAddr, pageSize);
+
+                    pageBuf.put(new byte[pageSize]);
+                }
+
                 pageSlot.owningPage(page);
             }
             finally {
@@ -446,13 +453,6 @@ public class PageMemoryTracker implements IgnitePlugin {
                     page.fullPageId(new FullPageId(((InitNewPageRecord)record).newPageId(), grpId));
 
                 page.changeHistory().add(record);
-
-/*
-                // Page corruptor TODO: remove
-                if (new Random().nextInt(5000) == 0)
-                    GridUnsafe.putByte(page.address() + new Random().nextInt(pageSize),
-                        (byte)(new Random().nextInt(256)));
-*/
             }
             finally {
                 page.unlock();
