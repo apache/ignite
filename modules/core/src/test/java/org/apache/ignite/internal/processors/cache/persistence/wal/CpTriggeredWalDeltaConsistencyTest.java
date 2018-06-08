@@ -59,5 +59,7 @@ public class CpTriggeredWalDeltaConsistencyTest extends AbstractWalDeltaConsiste
         }
 
         forceCheckpoint();
+
+        stopAllGrids();
     }
 }

@@ -69,5 +69,7 @@ public class SysPropWalDeltaConsistencyTest extends AbstractWalDeltaConsistencyT
             cache1.put(i, "Cache value " + i);
 
         forceCheckpoint();
+
+        stopAllGrids();
     }
 }

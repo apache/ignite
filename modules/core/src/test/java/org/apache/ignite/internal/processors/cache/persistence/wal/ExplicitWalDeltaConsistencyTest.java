@@ -56,6 +56,8 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
             cache.remove(i);
 
         assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
+
+        stopAllGrids();
     }
 
     /**
@@ -75,6 +77,8 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
 
         ignite = startGrid(0);
 
+        cache = ignite.getOrCreateCache(DEFAULT_CACHE_NAME);
+
         for (int i = 2_000; i < 5_000; i++)
             cache.put(i, "Changed cache value " + i);
 
@@ -82,5 +86,7 @@ public class ExplicitWalDeltaConsistencyTest extends AbstractWalDeltaConsistency
             cache.remove(i);
 
         assertTrue(PageMemoryTrackerPluginProvider.tracker(ignite).checkPages(true));
+
+        stopAllGrids();
     }
 }
