@@ -225,7 +225,7 @@ public abstract class AbstractWalRecordsIterator
             if (e instanceof WalSegmentTailReachedException)
                 throw (WalSegmentTailReachedException)e;
 
-            if (!(e instanceof SegmentEofException)) {
+            if (!(e instanceof SegmentEofException) && !(e instanceof EOFException)) {
                 boolean isHandled = handleRecordException(e, actualFilePtr);
 
                 if (!isHandled)
