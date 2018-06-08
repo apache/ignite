@@ -542,7 +542,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         log.info("Total tx found loaded using archive directory (file-by-file): " + txCntObservedArch);
 
-        assertTrue("txCntObservedArch=" + txCntObservedArch + " >= minTxCnt=" + txCntObservedArch,
+        assertTrue("txCntObservedArch=" + txCntObservedArch + " >= minTxCnt=" + minTxCnt,
             txCntObservedArch >= minTxCnt);
 
         assertTrue("entries=" + entries + " >= minCntEntries=" + minCntEntries,

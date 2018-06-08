@@ -70,6 +70,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     @Nullable
     private List<FileDescriptor> walFileDescriptors;
 
+    /** */
     private int curIdx = -1;
 
     /** Keep binary. This flag disables converting of non primitive types (BinaryObjects) */
@@ -142,8 +143,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         if (curIdx >= walFileDescriptors.size())
             return null;
 
-        // curHandle.workDir is false
-        final FileDescriptor fd = walFileDescriptors.get(curIdx);
+        FileDescriptor fd = walFileDescriptors.get(curIdx);
 
         if (log.isDebugEnabled())
             log.debug("Reading next file [absIdx=" + curWalSegmIdx + ", file=" + fd.file().getAbsolutePath() + ']');
@@ -163,25 +163,35 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         }
     }
 
+    /** {@inheritDoc} */
     @Override protected AbstractReadFileHandle initReadHandle(
         @NotNull AbstractFileDescriptor desc,
         @Nullable FileWALPointer start
     ) throws IgniteCheckedException, FileNotFoundException {
 
-        try {
-            FileIO fileIO = desc.isCompressed() ? new UnzipFileIO(desc.file()) : ioFactory.create(desc.file());
+        AbstractFileDescriptor fd = desc;
 
-            readSegmentHeader(fileIO, curWalSegmIdx);
+        while (true) {
+            try {
+                FileIO fileIO = fd.isCompressed() ? new UnzipFileIO(fd.file()) : ioFactory.create(fd.file());
+
+                readSegmentHeader(fileIO, curWalSegmIdx);
+
+                break;
+            }
+            catch (IOException | IgniteCheckedException e) {
+                log.error("Failed to init segment curWalSegmIdx=" + curWalSegmIdx + ", curIdx=" + curIdx, e);
+
+                curIdx++;
+
+                if (curIdx >= walFileDescriptors.size())
+                    return null;
+
+                fd = walFileDescriptors.get(curIdx);
+            }
         }
-        catch (IOException | IgniteCheckedException e) {
-            curIdx++;
 
-            FileDescriptor fd = walFileDescriptors.get(curIdx);
-
-            return initReadHandle(fd, null);
-        }
-
-        return super.initReadHandle(desc, start);
+        return super.initReadHandle(fd, start);
     }
 
     /** {@inheritDoc} */
