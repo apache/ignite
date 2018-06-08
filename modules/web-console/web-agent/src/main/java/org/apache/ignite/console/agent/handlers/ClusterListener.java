@@ -375,6 +375,11 @@ public class ClusterListener implements AutoCloseable {
             RestResult res = restExecutor.sendRequest(cfg.nodeURIs(), params, null);
 
             switch (res.getStatus()) {
+                case STATUS_SUCCESS:
+                    sesTok = res.getSessionToken();
+
+                    return res;
+                    
                 case STATUS_FAILED:
                     if (res.getError().startsWith(EXPIRED_SES_ERROR_MSG)) {
                         sesTok = null;
