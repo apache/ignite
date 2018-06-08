@@ -515,14 +515,16 @@ public class IgniteWalIteratorFactory {
         @Override public void warning(String msg, @Nullable Throwable e) {
             OUT.println(msg);
 
-            e.printStackTrace(OUT);
+            if (e != null)
+                e.printStackTrace(OUT);
         }
 
         /** {@inheritDoc} */
         @Override public void error(String msg, @Nullable Throwable e) {
             ERR.println(msg);
 
-            e.printStackTrace(ERR);
+            if (e != null)
+                e.printStackTrace(ERR);
         }
 
         /** {@inheritDoc} */
