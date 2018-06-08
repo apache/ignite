@@ -903,6 +903,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SKIP_PARTITION_SIZE_VALIDATION = "IGNITE_SKIP_PARTITION_SIZE_VALIDATION";
 
     /**
+     * Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet.
+     *
+     * Default is 500.
+     */
+    public static final String IGNITE_UNWIND_THROTTLING = "IGNITE_UNWIND_THROTTLING";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
