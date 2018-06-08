@@ -22,9 +22,9 @@ export default [
         field: 'name',
         cellTemplate: `
             <div class='ui-grid-cell-contents'>
-                <connected-clusters-cell-icon
+                <cluster-security-icon
                     secured='row.entity.secured'
-                ></connected-clusters-cell-icon>
+                ></cluster-security-icon>
                 {{ COL_FIELD }}
             </div>
         `,

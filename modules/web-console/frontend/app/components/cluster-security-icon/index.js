@@ -15,15 +15,10 @@
  * limitations under the License.
  */
 
-import template from './template.pug';
+import angular from 'angular';
 
-class controller {
-}
+import component from './component';
 
-export default {
-    controller,
-    template,
-    bindings: {
-        secured: '<'
-    }
-};
+export default angular
+    .module('ignite-console.cluster-security-icon', [])
+    .component('clusterSecurityIcon', component);

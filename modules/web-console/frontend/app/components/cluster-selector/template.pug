@@ -29,7 +29,7 @@ button.btn-ignite.btn-ignite--primary(
 button.btn-ignite.btn-ignite--primary(
     data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length == 1'
 )
-    svg(ignite-icon='{{ $ctrl.cluster.secured ? "lockClosed" : "lockOpened" }}')
+    cluster-security-icon(secured='$ctrl.cluster.secured')
     | {{ $ctrl.cluster.name }}
 
 span(data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1')
@@ -47,7 +47,7 @@ span(data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1')
         span(ng-if='!$ctrl.cluster') No clusters available
         
         span(ng-if='$ctrl.cluster')
-            svg(ignite-icon='{{ $ctrl.cluster.secured ? "lockClosed" : "lockOpened" }}')
+            cluster-security-icon(secured='$ctrl.cluster.secured')
             | {{ $ctrl.cluster.name }}
             span.icon-right.fa.fa-caret-down
 
