@@ -94,8 +94,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.apache.ignite.internal.util.worker.GridWorkerListener;
+import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
@@ -1818,17 +1817,7 @@ public class IgnitionEx {
 
             validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
 
-            GridWorkerListener workerRegistryWrapper = new GridWorkerListener() {
-                @Override public void onStarted(GridWorker w) {
-                    if (grid != null && grid.context() != null && grid.context().workersRegistry() != null)
-                        grid.context().workersRegistry().onStarted(w);
-                }
-
-                @Override public void onStopped(GridWorker w) {
-                    if (grid != null && grid.context() != null && grid.context().workersRegistry() != null)
-                        grid.context().workersRegistry().onStopped(w);
-                }
-            };
+            WorkersRegistry workerRegistry = new WorkersRegistry();
 
             stripedExecSvc = new StripedExecutor(
                 cfg.getStripedPoolSize(),
@@ -1841,7 +1830,7 @@ public class IgnitionEx {
                             grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                     }
                 },
-                workerRegistryWrapper);
+                workerRegistry);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1890,7 +1879,7 @@ public class IgnitionEx {
                     }
                 },
                 true,
-                workerRegistryWrapper);
+                workerRegistry);
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             validateThreadPoolSize(cfg.getIgfsThreadPoolSize(), "IGFS");
@@ -2050,11 +2039,9 @@ public class IgnitionEx {
                         @Override public void apply() {
                             startLatch.countDown();
                         }
-                    }
+                    },
+                    workerRegistry
                 );
-
-                stripedExecSvc.start();
-                dataStreamerExecSvc.start();
 
                 state = STARTED;
 

@@ -33,8 +33,6 @@ public class StripedExecutorTest extends GridCommonAbstractTest {
         stripedExecSvc = new StripedExecutor(3, "foo name", "pool name", new JavaLogger(), new Consumer<Throwable>() {
             @Override public void accept(Throwable throwable) {}
         }, null);
-
-        stripedExecSvc.start();
     }
 
     /** {@inheritDoc} */
