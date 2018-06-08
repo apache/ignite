@@ -52,6 +52,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.sortAddresses;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.splitAddresses;
 
@@ -348,84 +349,107 @@ public class ClusterListener implements AutoCloseable {
         }
     }
 
-    /**
-     * Execute REST command under agent user.
-     *
-     * @param params Command params.
-     * @return Command result.
-     * @throws IOException If failed to execute.
-     */
-    private RestResult restCommand(Map<String, Object> params) throws IOException {
-        if (!F.isEmpty(cfg.nodeLogin()) && !F.isEmpty(cfg.nodePassword())) {
-            params.put("user", cfg.nodeLogin());
-            params.put("password", cfg.nodePassword());
-        }
+    /** */
+    private class WatchTask implements Runnable {
+        /** */
+        private String EXPIRED_SES_ERROR_MSG = "Failed to handle request - unknown session token (maybe expired session)";
 
-        return restExecutor.sendRequest(cfg.nodeURIs(), params, null);
-    }
+        /** */
+        private String sesTok;
 
-    /**
-     * Collect topology.
-     *
-     * @param full Full.
-     */
-    private RestResult topology(boolean full) throws IOException {
-        Map<String, Object> params = U.newHashMap(3);
+        /**
+         * Execute REST command under agent user.
+         *
+         * @param params Command params.
+         * @return Command result.
+         * @throws IOException If failed to execute.
+         */
+        private RestResult restCommand(Map<String, Object> params) throws IOException {
+            if (!F.isEmpty(sesTok))
+                params.put("sessionToken", sesTok);
+            else if (!F.isEmpty(cfg.nodeLogin()) && !F.isEmpty(cfg.nodePassword())) {
+                params.put("user", cfg.nodeLogin());
+                params.put("password", cfg.nodePassword());
+            }
 
-        params.put("cmd", "top");
-        params.put("attr", true);
-        params.put("mtr", full);
+            RestResult res = restExecutor.sendRequest(cfg.nodeURIs(), params, null);
 
-        return restCommand(params);
-    }
+            switch (res.getStatus()) {
+                case STATUS_FAILED:
+                    if (res.getError().startsWith(EXPIRED_SES_ERROR_MSG)) {
+                        sesTok = null;
+                        
+                        params.remove("sessionToken");
 
-    /**
-     * @param ver Cluster version.
-     * @param nid Node ID.
-     * @return Cluster active state.
-     * @throws IOException If failed to collect cluster active state.
-     */
-    public boolean active(IgniteProductVersion ver, UUID nid) throws IOException {
-        Map<String, Object> params = U.newHashMap(10);
+                        return restCommand(params);
+                    }
 
-        boolean v23 = ver.compareTo(IGNITE_2_3) >= 0;
-
-        if (v23)
-            params.put("cmd", "currentState");
-        else {
-            params.put("cmd", "exe");
-            params.put("name", "org.apache.ignite.internal.visor.compute.VisorGatewayTask");
-            params.put("p1", nid);
-            params.put("p2", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask");
-            params.put("p3", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg");
-            params.put("p4", false);
-            params.put("p5", EVT_LAST_ORDER_KEY);
-            params.put("p6", EVT_THROTTLE_CNTR_KEY);
-
-            if (ver.compareTo(IGNITE_2_1) >= 0)
-                params.put("p7", false);
-            else {
-                params.put("p7", 10);
-                params.put("p8", false);
+                default:
+                    return res;
             }
         }
 
-        RestResult res = restCommand(params);
+        /**
+         * Collect topology.
+         *
+         * @param full Full.
+         */
+        private RestResult topology(boolean full) throws IOException {
+            Map<String, Object> params = U.newHashMap(3);
 
-        switch (res.getStatus()) {
-            case STATUS_SUCCESS:
-                if (v23)
-                    return Boolean.valueOf(res.getData());
+            params.put("cmd", "top");
+            params.put("attr", true);
+            params.put("mtr", full);
 
-                return res.getData().contains("\"active\":true");
-
-            default:
-                throw new IOException(res.getError());
+            return restCommand(params);
         }
-    }
 
-    /** */
-    private class WatchTask implements Runnable {
+        /**
+         * @param ver Cluster version.
+         * @param nid Node ID.
+         * @return Cluster active state.
+         * @throws IOException If failed to collect cluster active state.
+         */
+        public boolean active(IgniteProductVersion ver, UUID nid) throws IOException {
+            Map<String, Object> params = U.newHashMap(10);
+
+            boolean v23 = ver.compareTo(IGNITE_2_3) >= 0;
+
+            if (v23)
+                params.put("cmd", "currentState");
+            else {
+                params.put("cmd", "exe");
+                params.put("name", "org.apache.ignite.internal.visor.compute.VisorGatewayTask");
+                params.put("p1", nid);
+                params.put("p2", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask");
+                params.put("p3", "org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg");
+                params.put("p4", false);
+                params.put("p5", EVT_LAST_ORDER_KEY);
+                params.put("p6", EVT_THROTTLE_CNTR_KEY);
+
+                if (ver.compareTo(IGNITE_2_1) >= 0)
+                    params.put("p7", false);
+                else {
+                    params.put("p7", 10);
+                    params.put("p8", false);
+                }
+            }
+
+            RestResult res = restCommand(params);
+
+            switch (res.getStatus()) {
+                case STATUS_SUCCESS:
+                    if (v23)
+                        return Boolean.valueOf(res.getData());
+
+                    return res.getData().contains("\"active\":true");
+
+                default:
+                    throw new IOException(res.getError());
+            }
+        }
+
+
         /** {@inheritDoc} */
         @Override public void run() {
             try {
