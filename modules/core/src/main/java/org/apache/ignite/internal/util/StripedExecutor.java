@@ -63,8 +63,6 @@ public class StripedExecutor implements ExecutorService {
     private final IgniteLogger log;
 
     /**
-     * Creates not started instance.
-     *
      * @param cnt Count.
      * @param igniteInstanceName Node name.
      * @param poolName Pool name.
@@ -84,8 +82,6 @@ public class StripedExecutor implements ExecutorService {
     }
 
     /**
-     * Creates not started instance.
-     *
      * @param cnt Count.
      * @param igniteInstanceName Node name.
      * @param poolName Pool name.
@@ -122,6 +118,9 @@ public class StripedExecutor implements ExecutorService {
                     : new StripeConcurrentQueue(igniteInstanceName, poolName, i, log, errHnd, gridWorkerLsnr);
             }
 
+            for (int i = 0; i < cnt; i++)
+                stripes[i].start();
+
             success = true;
         }
         catch (Error | RuntimeException e) {
@@ -130,39 +129,17 @@ public class StripedExecutor implements ExecutorService {
             throw e;
         }
         finally {
-            if (!success)
-                stopStripesNullSafe();
-        }
-    }
+            if (!success) {
+                for (Stripe stripe : stripes) {
+                    if (stripe != null)
+                        stripe.signalStop();
+                }
 
-    /**
-     * Starts an instance.
-     */
-    public void start() {
-        try {
-            for (Stripe stripe : stripes)
-                stripe.start();
-        }
-        catch (Error | RuntimeException e) {
-            U.error(log, "Failed to start striped pool.", e);
-
-            stopStripesNullSafe();
-
-            throw e;
-        }
-
-    }
-
-    /** */
-    private void stopStripesNullSafe() {
-        for (Stripe stripe : stripes) {
-            if (stripe != null)
-                stripe.signalStop();
-        }
-
-        for (Stripe stripe : stripes) {
-            if (stripe != null)
-                stripe.awaitStop();
+                for (Stripe stripe : stripes) {
+                    if (stripe != null)
+                        stripe.awaitStop();
+                }
+            }
         }
     }
 
