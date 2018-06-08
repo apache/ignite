@@ -343,7 +343,7 @@ public class GridDhtPartitionDemander {
                 if (log.isDebugEnabled())
                     log.debug("Affinity assignments does not changed. Will skip rebalance [topVer=" +
                         topVer + ", rebalanceId=" + rebalanceId + ", grp=" + grp.cacheOrGroupName() +
-                        ", oldFut=" + oldFut + ", fut0.result()=" + oldFut.result() + "]");
+                        ", oldFut=" + oldFut + ", result=" + oldFut.result() + "]");
 
                 oldFut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                     @Override public void applyx(IgniteInternalFuture<Boolean> fut0) {
@@ -386,6 +386,11 @@ public class GridDhtPartitionDemander {
                     fut.listen(f -> oldFut.onDone(f.result()));
 
                 rebalanceFut = fut;
+
+                if (log.isDebugEnabled())
+                    log.debug("Prepare rebalance routine future task [topVer=" +
+                        topVer + ", rebalanceId=" + rebalanceId + ", grp=" + grp.cacheOrGroupName() +
+                        ", oldFut=" + oldFut + ", result=" + oldFut.result() + "]");
 
                 return () -> {
                     if (next != null)
