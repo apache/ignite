@@ -134,6 +134,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZkTestClientCnxnSocketNIO;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 
@@ -1281,8 +1282,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSegmentation3() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8183");
-
         sesTimeout = 5000;
 
         Ignite node0 = startGrid(0);
@@ -1305,7 +1304,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             srvs.get(0).stop();
             srvs.get(1).stop();
 
-            assertTrue(l.await(20, TimeUnit.SECONDS));
+            QuorumPeer qp = srvs.get(2).getQuorumPeer();
+
+            // Zookeeper's socket timeout [tickTime * initLimit] + 5 additional seconds for other logic
+            assertTrue(l.await(qp.getTickTime() * qp.getInitLimit() + 5000, TimeUnit.MILLISECONDS));
         }
         finally {
             zkCluster.close();
