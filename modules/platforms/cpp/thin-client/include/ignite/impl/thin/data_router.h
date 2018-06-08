@@ -155,6 +155,8 @@ namespace ignite
                     // Allocating 64KB to lessen number of reallocations.
                     enum { BUFFER_SIZE = 1024 * 64 };
 
+                    int32_t metaVer = typeMgr.GetVersion();
+
                     interop::InteropUnpooledMemory mem(BUFFER_SIZE);
                     interop::InteropOutputStream outStream(&mem);
                     binary::BinaryWriterImpl writer(&outStream, &typeMgr);
@@ -195,6 +197,14 @@ namespace ignite
                     if (id != rspId)
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Protocol error: Response message ID does not equal Request ID");
+
+                    if (typeMgr.IsUpdatedSince(metaVer))
+                    {
+                        IgniteError err;
+
+                        if (!typeMgr.ProcessPendingUpdates(err))
+                            throw err;
+                    }
 
                     binary::BinaryReaderImpl reader(&inStream);
 
