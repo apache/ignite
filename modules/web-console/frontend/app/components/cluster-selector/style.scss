@@ -63,6 +63,12 @@ cluster-selector {
         color: $ignite-brand-success;
     }
 
+    [ignite-icon='lockClosed'], [ignite-icon='lockOpened'] {
+        margin-right: 5px;
+        height: 10px;
+        width: 8px;
+    }
+
     .bs-select-menu {
         color: $text-color;
     }

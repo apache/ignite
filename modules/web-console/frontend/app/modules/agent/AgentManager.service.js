@@ -67,10 +67,6 @@ class ConnectionState {
         return cluster;
     }
 
-    secured() {
-        return this.cluster.secured;
-    }
-
     update(demo, count, clusters) {
         _.forEach(clusters, (cluster) => {
             cluster.name = cluster.id;
@@ -456,6 +452,9 @@ export default class AgentManager {
     _executeOnCurrentCluster(event, params) {
         return this.connectionSbj.first().toPromise()
             .then(({cluster}) => {
+                if (_.isNil(cluster))
+                    throw new Error('Failed to execute request on cluster.');
+
                 if (cluster.secured) {
                     return Promise.resolve(this.clustersSecrets.get(cluster.id))
                         .then((secrets) => {
