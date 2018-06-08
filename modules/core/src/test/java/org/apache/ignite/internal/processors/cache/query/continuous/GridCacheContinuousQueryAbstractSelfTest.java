@@ -451,11 +451,11 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         CacheContinuousQueryManager qm = grid(0).context().cache().
             internalCache(CACHE_NAME).context().continuousQueries();
 
-        assert (qm.getCancelableTask() != null);
+        assertNotNull(qm.getCancelableTask());
 
         cache.destroy();
 
-        assert (qm.getCancelableTask() == null);
+        assertNull(qm.getCancelableTask());
     }
 
     /**
