@@ -449,8 +449,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
         }
 
-        U.interrupt(tcpSrvr.runner());
-        U.join(tcpSrvr.runner(), log);
+        if (tcpSrvr != null) {
+            U.interrupt(tcpSrvr.runner());
+            U.join(tcpSrvr.runner(), log);
+        }
 
         tcpSrvr = null;
 
@@ -466,12 +468,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.interrupt(ipFinderCleaner);
         U.join(ipFinderCleaner, log);
 
-        U.interrupt(msgWorker.runner());
-        U.join(msgWorker.runner(), log);
+        if (msgWorker != null) {
+            U.interrupt(msgWorker.runner());
+            U.join(msgWorker.runner(), log);
+        }
 
         for (ClientMessageWorker clientWorker : clientMsgWorkers.values()) {
-            U.interrupt(clientWorker.runner());
-            U.join(clientWorker.runner(), log);
+            if (clientWorker != null) {
+                U.interrupt(clientWorker.runner());
+                U.join(clientWorker.runner(), log);
+            }
         }
 
         clientMsgWorkers.clear();
@@ -1660,8 +1666,10 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Override void simulateNodeFailure() {
         U.warn(log, "Simulating node failure: " + getLocalNodeId());
 
-        U.interrupt(tcpSrvr.runner());
-        U.join(tcpSrvr.runner(), log);
+        if (tcpSrvr != null) {
+            U.interrupt(tcpSrvr.runner());
+            U.join(tcpSrvr.runner(), log);
+        }
 
         U.interrupt(ipFinderCleaner);
         U.join(ipFinderCleaner, log);
@@ -1675,13 +1683,16 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.interrupt(tmp);
         U.joinThreads(tmp, log);
 
-        U.interrupt(msgWorker.runner());
-        U.join(msgWorker.runner(), log);
+        if (msgWorker != null) {
+            U.interrupt(msgWorker.runner());
+            U.join(msgWorker.runner(), log);
+        }
 
         for (ClientMessageWorker msgWorker : clientMsgWorkers.values()) {
-            U.interrupt(msgWorker.runner());
-
-            U.join(msgWorker.runner(), log);
+            if (msgWorker != null) {
+                U.interrupt(msgWorker.runner());
+                U.join(msgWorker.runner(), log);
+            }
         }
 
         U.interrupt(statsPrinter);
