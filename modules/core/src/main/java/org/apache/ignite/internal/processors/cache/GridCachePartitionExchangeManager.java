@@ -1558,7 +1558,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (log.isDebugEnabled())
                     log.debug("Notifying exchange future about single message: " + exchFut);
 
-                if (msg.client() && !exchFut.isDone()) {
+                if (node.isClient() && !exchFut.isDone()) {
                     if (exchFut.initialVersion().compareTo(readyAffinityVersion()) <= 0) {
                         U.warn(log, "Client node tries to connect but its exchange " +
                             "info is cleaned up from exchange history." +
