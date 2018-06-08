@@ -134,6 +134,9 @@ public class RecordV1Serializer implements RecordSerializer {
                 throw new SegmentEofException("WAL segment rollover detected (will end iteration) [expPtr=" + expPtr +
                         ", readPtr=" + ptr + ']', null);
 
+            if (recType == null)
+                throw new IOException("Unknown record type: " + recType);
+
             final WALRecord rec = dataSerializer.readRecord(recType, in);
 
             rec.position(ptr);
