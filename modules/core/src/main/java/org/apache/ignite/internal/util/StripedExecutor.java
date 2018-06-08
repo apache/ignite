@@ -35,17 +35,17 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.Consumer;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerListener;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 
@@ -75,7 +75,7 @@ public class StripedExecutor implements ExecutorService {
         String igniteInstanceName,
         String poolName,
         final IgniteLogger log,
-        Consumer<Throwable> errHnd,
+        IgniteInClosure<Throwable> errHnd,
         GridWorkerListener gridWorkerLsnr
     ) {
         this(cnt, igniteInstanceName, poolName, log, errHnd, false, gridWorkerLsnr);
@@ -95,7 +95,7 @@ public class StripedExecutor implements ExecutorService {
         String igniteInstanceName,
         String poolName,
         final IgniteLogger log,
-        Consumer<Throwable> errHnd,
+        IgniteInClosure<Throwable> errHnd,
         boolean stealTasks,
         GridWorkerListener gridWorkerLsnr
     ) {
@@ -430,9 +430,6 @@ public class StripedExecutor implements ExecutorService {
         private final String igniteInstanceName;
 
         /** */
-        private final String poolName;
-
-        /** */
         protected final int idx;
 
         /** */
@@ -451,7 +448,7 @@ public class StripedExecutor implements ExecutorService {
         protected Thread thread;
 
         /** Critical failure handler. */
-        private Consumer<Throwable> errHnd;
+        private IgniteInClosure<Throwable> errHnd;
 
         /**
          * @param igniteInstanceName Ignite instance name.
@@ -466,13 +463,12 @@ public class StripedExecutor implements ExecutorService {
             String poolName,
             int idx,
             IgniteLogger log,
-            Consumer<Throwable> errHnd,
+            IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr
         ) {
             super(igniteInstanceName, poolName + "-stripe-" + idx, log, gridWorkerLsnr);
 
             this.igniteInstanceName = igniteInstanceName;
-            this.poolName = poolName;
             this.idx = idx;
             this.log = log;
             this.errHnd = errHnd;
@@ -544,14 +540,14 @@ public class StripedExecutor implements ExecutorService {
                 }
                 catch (Throwable e) {
                     if (e instanceof OutOfMemoryError)
-                        errHnd.accept(e);
+                        errHnd.apply(e);
 
                     U.error(log, "Failed to execute runnable.", e);
                 }
             }
 
             if (!stopping) {
-                errHnd.accept(new IllegalStateException("Thread " + Thread.currentThread().getName() +
+                errHnd.apply(new IllegalStateException("Thread " + Thread.currentThread().getName() +
                     " is terminated unexpectedly"));
             }
         }
@@ -617,7 +613,7 @@ public class StripedExecutor implements ExecutorService {
             String poolName,
             int idx,
             IgniteLogger log,
-            Consumer<Throwable> errHnd,
+            IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr
         ) {
             this(igniteInstanceName, poolName, idx, log, null, errHnd, gridWorkerLsnr);
@@ -637,7 +633,7 @@ public class StripedExecutor implements ExecutorService {
             int idx,
             IgniteLogger log,
             Stripe[] others,
-            Consumer<Throwable> errHnd,
+            IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr
         ) {
             super(
@@ -753,7 +749,7 @@ public class StripedExecutor implements ExecutorService {
             String poolName,
             int idx,
             IgniteLogger log,
-            Consumer<Throwable> errHnd,
+            IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr
         ) {
             super(igniteInstanceName,
@@ -815,7 +811,7 @@ public class StripedExecutor implements ExecutorService {
             String poolName,
             int idx,
             IgniteLogger log,
-            Consumer<Throwable> errHnd,
+            IgniteInClosure<Throwable> errHnd,
             GridWorkerListener gridWorkerLsnr
         ) {
             super(igniteInstanceName,
