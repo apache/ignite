@@ -214,12 +214,11 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
                     HashMap::putAll
                 );
 
-        final List<String> runningExecutors = new ArrayList<>();
-        executors.forEach((name, executor) -> {
-            if (!(executor == null || executor.isTerminated()))
-                runningExecutors.add(name + " ExecutorService not terminated. ");
-        });
-        if (!runningExecutors.isEmpty())
-            Assert.fail(runningExecutors.stream().collect(Collectors.joining("\n")));
+        String errs = executors.entrySet().stream()
+            .filter(e -> !(e.getValue() == null || e.getValue().isTerminated()))
+            .map(e -> e.getKey() + " not terminated.")
+            .collect(Collectors.joining("\n"));
+
+        assertTrue(errs, errs == null || errs.isEmpty());
     }
 }
