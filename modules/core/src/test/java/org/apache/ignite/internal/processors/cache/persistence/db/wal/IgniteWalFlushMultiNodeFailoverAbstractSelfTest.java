@@ -114,6 +114,8 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        cfg.setConsistentId(gridName);
+
         CacheConfiguration cacheCfg = new CacheConfiguration(TEST_CACHE)
                 .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
                 .setBackups(1);
@@ -270,6 +272,9 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
                 /** {@inheritDoc} */
                 @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+                    if (fail != null && fail.get())
+                        throw new IOException("No space left on deive");
+
                     return delegate.map(sizeBytes);
                 }
             };
