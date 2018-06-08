@@ -120,6 +120,72 @@ namespace ignite
             {
                 value.Read(reader);
             }
+
+            void BinaryTypeGetRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+            {
+                writer.WriteInt32(typeId);
+            }
+
+            void BinaryTypePutRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+            {
+                writer.WriteInt32(snapshot.GetTypeId());
+                writer.WriteString(snapshot.GetTypeName());
+
+                // Affinity Key Field name.
+                writer.WriteNull();
+
+                const binary::Snap::FieldMap& fields = snapshot.GetFieldMap();
+
+                writer.WriteInt32(fields.size());
+
+                for (binary::Snap::FieldMap::const_iterator it = fields.begin(); it != fields.end(); ++it)
+                {
+                    writer.WriteString(it->first);
+                    writer.WriteInt32(it->second.GetTypeId());
+                    writer.WriteInt32(it->second.GetFieldId());
+                }
+
+                // Is enum: always false for now as we do not support enums.
+                writer.WriteBool(false);
+
+                // Schemas. Compact schema is not supported for now.
+                writer.WriteInt32(0);
+            }
+
+            void BinaryTypeGetResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                int32_t typeId = reader.ReadInt32();
+
+                std::string typeName;
+                reader.ReadString(typeName);
+
+                // Unused for now.
+                std::string affKeyFieldNameUnused;
+                reader.ReadString(affKeyFieldNameUnused);
+
+                snapshot = binary::SPSnap(new binary::Snap(typeName, typeId));
+
+                int32_t fieldsNum = reader.ReadInt32();
+
+                for (int32_t i = 0; i < fieldsNum; ++i)
+                {
+                    std::string fieldName;
+                    reader.ReadString(fieldName);
+
+                    int32_t fieldTypeId = reader.ReadInt32();
+                    int32_t fieldId = reader.ReadInt32();
+
+                    snapshot.Get()->AddField(fieldId, fieldName, fieldTypeId);
+                }
+
+                // Check if the type is enum.
+                bool isEnum = reader.ReadBool();
+
+                if (isEnum)
+                    throw IgniteError(IgniteError::IGNITE_ERR_BINARY, "Enum types is not supported.");
+
+                // Ignoring schemas for now.
+            }
         }
     }
 }

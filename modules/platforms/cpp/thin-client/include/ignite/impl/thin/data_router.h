@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <vector>
+#include <memory>
 
 #include <ignite/common/concurrent.h>
 
@@ -156,7 +157,7 @@ namespace ignite
 
                     interop::InteropUnpooledMemory mem(BUFFER_SIZE);
                     interop::InteropOutputStream outStream(&mem);
-                    binary::BinaryWriterImpl writer(&outStream, 0);
+                    binary::BinaryWriterImpl writer(&outStream, &typeMgr);
 
                     // Space for RequestSize + OperationCode + RequestID.
                     outStream.Reserve(4 + 2 + 8);
@@ -322,6 +323,12 @@ namespace ignite
 
                 /** Sync IO mutex. */
                 common::concurrent::CriticalSection ioMutex;
+
+                /** Type updater. */
+                std::auto_ptr<binary::BinaryTypeUpdater> typeUpdater;
+
+                /** Metadata manager. */
+                binary::BinaryTypeManager typeMgr;
             };
 
             /** Shared pointer type. */

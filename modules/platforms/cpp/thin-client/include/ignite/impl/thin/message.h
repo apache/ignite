@@ -131,6 +131,12 @@ namespace ignite
 
                     /** Cache get and put if absent. */
                     CACHE_GET_AND_PUT_IF_ABSENT = 1008,
+
+                    /** Get binary type info. */
+                    GET_BINARY_TYPE = 3002,
+
+                    /** Put binary type info. */
+                    PUT_BINARY_TYPE = 3003,
                 };
             };
 
@@ -307,6 +313,80 @@ namespace ignite
             };
 
             /**
+             * Cache get binary type request.
+             */
+            class BinaryTypeGetRequest : public Request<RequestType::GET_BINARY_TYPE>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param typeId Type ID.
+                 */
+                BinaryTypeGetRequest(int32_t typeId) :
+                    typeId(typeId)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~BinaryTypeGetRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Cache ID. */
+                int32_t typeId;
+            };
+
+            /**
+             * Cache put binary type request.
+             */
+            class BinaryTypePutRequest : public Request<RequestType::PUT_BINARY_TYPE>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param snapshot Type snapshot.
+                 */
+                BinaryTypePutRequest(const binary::Snap& snapshot) :
+                    snapshot(snapshot)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~BinaryTypePutRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Cache ID. */
+                const binary::Snap& snapshot;
+            };
+
+            /**
              * General response.
              */
             class Response
@@ -390,6 +470,41 @@ namespace ignite
             private:
                 /** Value. */
                 Readable& value;
+            };
+
+            /**
+             * Cache put request.
+             */
+            class BinaryTypeGetResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param snapshot Type snapshot.
+                 */
+                BinaryTypeGetResponse(binary::SPSnap& snapshot) :
+                    snapshot(snapshot)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~BinaryTypeGetResponse()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Cache ID. */
+                binary::SPSnap& snapshot;
             };
         }
     }

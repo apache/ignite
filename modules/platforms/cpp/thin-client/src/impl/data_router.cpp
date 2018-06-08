@@ -29,6 +29,7 @@
 #include <ignite/impl/thin/ssl/ssl_gateway.h>
 #include <ignite/impl/thin/ssl/secure_socket_client.h>
 #include <ignite/impl/thin/net/tcp_socket_client.h>
+#include <ignite/impl/thin/net/remote_type_updater.h>
 
 
 namespace ignite
@@ -56,9 +57,11 @@ namespace ignite
                 socket(),
                 config(cfg),
                 currentVersion(VERSION_CURRENT),
-                reqIdCounter(0)
+                reqIdCounter(0),
+                typeUpdater(),
+                typeMgr()
             {
-                // No-op.
+                typeUpdater.reset(new net::RemoteTypeUpdater(*this));
             }
 
             DataRouter::~DataRouter()
@@ -96,6 +99,8 @@ namespace ignite
 
             void DataRouter::Close()
             {
+                typeMgr.SetUpdater(0);
+
                 if (socket.get() != 0)
                 {
                     socket->Close();
@@ -369,6 +374,8 @@ namespace ignite
 
                 if (!connected)
                     Close();
+
+                typeMgr.SetUpdater(typeUpdater.get());
 
                 return connected;
             }
