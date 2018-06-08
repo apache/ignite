@@ -48,12 +48,15 @@ public class CpTriggeredWalDeltaConsistencyTest extends AbstractWalDeltaConsiste
         for (int i = 1_000; i < 4_000; i++)
             cache0.remove(i);
 
-        IgniteCache cache1 = ignite.getOrCreateCache("cache1");
+        for (int i = 5; i >= 0; i--) {
+            IgniteCache cache1 = ignite.getOrCreateCache("cache1");
 
-        for (int i = 0; i < 3_000; i++)
-            cache1.put(i, "Cache value " + i);
+            for (int j = 0; j < 300; j++)
+                cache1.put(j + i * 100, "Cache value " + j);
 
-        ignite.destroyCache("cache0");
+            if (i != 0)
+                ignite.destroyCache("cache1");
+        }
 
         forceCheckpoint();
     }

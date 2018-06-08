@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.memtracker;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -61,6 +61,8 @@ import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemor
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginContext;
 import org.mockito.Mockito;
@@ -135,65 +137,76 @@ public class PageMemoryTracker implements IgnitePlugin {
      * Creates WAL manager.
      */
     IgniteWriteAheadLogManager createWalManager() {
-        if (ctx.igniteConfiguration().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC)
-            return new FsyncModeFileWriteAheadLogManager(gridCtx) {
-                @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
-                    WALPointer res = super.log(record);
+        if (isEnabled()) {
+            if (ctx.igniteConfiguration().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC) {
+                return new FsyncModeFileWriteAheadLogManager(gridCtx) {
+                    @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
+                        WALPointer res = super.log(record);
 
-                    applyWalRecord(record);
+                        applyWalRecord(record);
 
-                    return res;
-                }
+                        return res;
+                    }
 
-                @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
-                    super.resumeLogging(lastPtr);
+                    @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+                        super.resumeLogging(lastPtr);
 
-                    emptyPds = (lastPtr == null);
-                }
-            };
-        else
-            return new FileWriteAheadLogManager(gridCtx) {
-                @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
-                    WALPointer res = super.log(record);
+                        emptyPds = (lastPtr == null);
+                    }
+                };
+            }
+            else {
+                return new FileWriteAheadLogManager(gridCtx) {
+                    @Override public WALPointer log(WALRecord record) throws IgniteCheckedException {
+                        WALPointer res = super.log(record);
 
-                    applyWalRecord(record);
+                        applyWalRecord(record);
 
-                    return res;
-                }
+                        return res;
+                    }
 
-                @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
-                    super.resumeLogging(lastPtr);
+                    @Override public void resumeLogging(WALPointer lastPtr) throws IgniteCheckedException {
+                        super.resumeLogging(lastPtr);
 
-                    emptyPds = (lastPtr == null);
-                }
-            };
+                        emptyPds = (lastPtr == null);
+                    }
+                };
+            }
+        }
+
+        return null;
     }
 
     /**
      * Creates page store manager.
      */
     IgnitePageStoreManager createPageStoreManager() {
-        return new FilePageStoreManager(gridCtx) {
-            @Override public void shutdownForCacheGroup(CacheGroupContext grp, boolean destroy) throws IgniteCheckedException {
-                super.shutdownForCacheGroup(grp, destroy);
+        if (isEnabled()) {
+            return new FilePageStoreManager(gridCtx) {
+                @Override public void shutdownForCacheGroup(CacheGroupContext grp,
+                    boolean destroy) throws IgniteCheckedException {
+                    super.shutdownForCacheGroup(grp, destroy);
 
-                pages.keySet().removeIf(fullPageId -> fullPageId.groupId() == grp.groupId());
-            }
+                    pages.keySet().removeIf(fullPageId -> fullPageId.groupId() == grp.groupId());
+                }
 
-            @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
-                super.onPartitionDestroyed(grpId, partId, tag);
+                @Override public void onPartitionDestroyed(int grpId, int partId, int tag) throws IgniteCheckedException {
+                    super.onPartitionDestroyed(grpId, partId, tag);
 
-                pages.keySet().removeIf(fullPageId -> fullPageId.groupId() == grpId
-                    && PageIdUtils.partId(fullPageId.pageId()) == partId);
-            }
-        };
+                    pages.keySet().removeIf(fullPageId -> fullPageId.groupId() == grpId
+                        && PageIdUtils.partId(fullPageId.pageId()) == partId);
+                }
+            };
+        }
+
+        return null;
     }
 
     /**
      * Start tracking pages.
      */
     synchronized void start() {
-        if (started)
+        if (!isEnabled() || started)
             return;
 
         pageSize = ctx.igniteConfiguration().getDataStorageConfiguration().getPageSize();
@@ -222,7 +235,7 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         maxPages = (int)(maxMemorySize / pageSize);
 
-        if (cfg != null && cfg.isCheckPagesOnCheckpoint()) {
+        if (cfg.isCheckPagesOnCheckpoint()) {
             checkpointLsnr = ctx -> {
                 if (!checkPages(false))
                     throw new IgniteCheckedException("Page memory is inconsistent after applying WAL delta records.");
@@ -231,7 +244,11 @@ public class PageMemoryTracker implements IgnitePlugin {
             ((GridCacheDatabaseSharedManager)gridCtx.cache().context().database()).addCheckpointListener(checkpointLsnr);
         }
 
+        lastPageIdx = 0;
+
         started = true;
+
+        log.info("PageMemory tracker started, " + U.readableSize(maxMemorySize, false) + " offheap memory allocated.");
     }
 
     /**
@@ -247,8 +264,6 @@ public class PageMemoryTracker implements IgnitePlugin {
 
         stats.clear();
 
-        lastPageIdx = 0;
-
         memoryProvider.shutdown();
 
         if (checkpointLsnr != null) {
@@ -257,6 +272,15 @@ public class PageMemoryTracker implements IgnitePlugin {
 
             checkpointLsnr = null;
         }
+
+        log.info("PageMemory tracker stopped.");
+    }
+
+    /**
+     * Is plugin enabled.
+     */
+    private boolean isEnabled() {
+        return (cfg != null && cfg.isEnabled() && CU.isPersistenceEnabled(ctx.igniteConfiguration()));
     }
 
     /**
@@ -583,7 +607,7 @@ public class PageMemoryTracker implements IgnitePlugin {
         private final Lock lock = new ReentrantLock();
 
         /** Change history. */
-        private final Queue<WALRecord> changeHist = new LinkedList<>();
+        private final List<WALRecord> changeHist = new LinkedList<>();
 
         /** Full page id. */
         private volatile FullPageId fullPageId;
@@ -619,7 +643,7 @@ public class PageMemoryTracker implements IgnitePlugin {
         /**
          * Change history.
          */
-        public Queue<WALRecord> changeHistory() {
+        public List<WALRecord> changeHistory() {
             return changeHist;
         }
 

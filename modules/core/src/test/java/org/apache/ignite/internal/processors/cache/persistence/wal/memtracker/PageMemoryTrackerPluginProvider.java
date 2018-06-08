@@ -88,12 +88,11 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
                 if (pluginCfg instanceof PageMemoryTrackerConfiguration) {
                     PageMemoryTrackerConfiguration cfg = (PageMemoryTrackerConfiguration)pluginCfg;
 
-                    if (cfg.isEnabled()) {
-                        if (CU.isPersistenceEnabled(igniteCfg))
-                            plugin = new PageMemoryTracker(ctx, cfg);
-                        else
-                            log.warning("Page memory tracker plugin enabled, " +
-                                "but there are no persistable data regions in configuration");
+                    plugin = new PageMemoryTracker(ctx, cfg);
+
+                    if (cfg.isEnabled() && !CU.isPersistenceEnabled(igniteCfg)) {
+                        log.warning("Page memory tracker plugin enabled, " +
+                            "but there are no persistable data regions in configuration. Tracker will be disabled.");
                     }
 
                     return;
@@ -109,6 +108,8 @@ public class PageMemoryTrackerPluginProvider implements PluginProvider<PageMemor
 
             log.info("PageMemory tracking enabled by system property.");
         }
+        else
+            plugin = new PageMemoryTracker(ctx, null);
     }
 
     /** {@inheritDoc} */
