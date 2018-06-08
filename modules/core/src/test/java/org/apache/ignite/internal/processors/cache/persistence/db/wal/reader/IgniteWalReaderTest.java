@@ -128,8 +128,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        //cfg.setConsistentId("NODE$" + gridName.substring(gridName.length() - 1));
-
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
         CacheConfiguration<Integer, IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
@@ -156,9 +154,9 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         if (archiveIncompleteSegmentAfterInactivityMs > 0)
             dsCfg.setWalAutoArchiveAfterInactivity(archiveIncompleteSegmentAfterInactivityMs);
 
-        final String workDir = U.defaultWorkDirectory();
-        final File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
-        final File wal = new File(db, "wal");
+        String workDir = U.defaultWorkDirectory();
+        File db = U.resolveWorkDirectory(workDir, DFLT_STORE_DIR, false);
+        File wal = new File(db, "wal");
 
         if(setWalAndArchiveToSameValue) {
             String walAbsPath = wal.getAbsolutePath();
@@ -223,7 +221,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 .filesOrDirs(db);
 
         // Check iteratorArchiveDirectory and iteratorArchiveFiles are same.
-        final int cntArchiveDir = iterateAndCount(factory.iterator(params));
+        int cntArchiveDir = iterateAndCount(factory.iterator(params));
 
         log.info("Total records loaded using directory : " + cntArchiveDir);
 
@@ -538,11 +536,14 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         int txCntObservedArch = cntArch.size();
 
         if (cntArch.containsKey(null))
-            txCntObservedArch -= 1; // exclude non transactional updates
+            txCntObservedArch -= 1; // Exclude non transactional updates.
 
         int entries = valuesSum(cntArch.values());
 
         log.info("Total tx found loaded using archive directory (file-by-file): " + txCntObservedArch);
+
+        assertTrue("txCntObservedArch=" + txCntObservedArch + " >= minTxCnt=" + txCntObservedArch,
+            txCntObservedArch >= minTxCnt);
 
         assertTrue("entries=" + entries + " >= minCntEntries=" + minCntEntries,
             entries >= minCntEntries);
@@ -655,7 +656,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
         assertTrue(" Control Map for strings in entries is not empty after" +
             " reading records: " + ctrlStringsToSearch, ctrlStringsToSearch.isEmpty());
 
-        final IgniteBiInClosure<Object, Object> binObjConsumer = (key13, val12) -> {
+        IgniteBiInClosure<Object, Object> binObjConsumer = (key13, val12) -> {
             log.info("K(KeepBinary): [" + key13 + ", " +
                 (key13 != null ? key13.getClass().getName() : "?") + "]" +
                 " V(KeepBinary): [" + val12 + ", " +
@@ -735,7 +736,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         assertTrue(" Control Map for strings in entries is not empty after" +
                 " reading records: " + ctrlStringsForBinaryObjSearch, ctrlStringsForBinaryObjSearch.isEmpty());
-
     }
 
     /**
@@ -903,6 +903,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
     /**
      * Tests transaction generation and WAL for putAll cache operation.
+     *
      * @throws Exception if failed.
      */
     public void testPutAllTxIntoTwoNodes() throws Exception {
@@ -997,7 +998,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
 
         assertTrue("Create operations count should be at least " + cntEntries + " in log: " + operationsFound,
             createsFound != null && createsFound >= cntEntries);
-
     }
 
     /**
@@ -1095,8 +1095,6 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
                 IgniteBiTuple<WALPointer, WALRecord> tup = stIt.nextX();
 
                 WALRecord walRecord = tup.get2();
-
-                System.out.println("ptr " + tup.get1() + " rec " + walRecord);
 
                 if (walRecord.type() == DATA_RECORD && walRecord instanceof DataRecord) {
                     DataRecord dataRecord = (DataRecord)walRecord;
