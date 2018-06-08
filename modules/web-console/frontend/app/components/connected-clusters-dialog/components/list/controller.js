@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+
 import columnDefs from './column-defs';
 
 export default class SnapshotsListCachesCtrl {
@@ -29,7 +31,7 @@ export default class SnapshotsListCachesCtrl {
 
     $onInit() {
         this.gridOptions = {
-            data: this.data,
+            data: _.orderBy(this.data, ['name'], ['asc']),
             columnDefs,
             columnVirtualizationThreshold: 30,
             rowHeight: 46,
