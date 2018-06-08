@@ -33,6 +33,8 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.IgniteProperties;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -85,9 +87,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
  */
 @SuppressWarnings("PublicInnerClass")
 public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager {
-    /** Throttling timeout during which avoid excessive unwind tries
-     * if PendingTree has nothing to be cleaned yet. */
-    public static final int UNWIND_THROTTLING_TIMEOUT = 100;
+    /** Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet. */
+    public static final long UNWIND_THROTTLING_TIMEOUT = Long.getLong(IgniteSystemProperties.IGNITE_UNWIND_THROTTLING ,500L);
 
     /** */
     protected GridCacheSharedContext ctx;
