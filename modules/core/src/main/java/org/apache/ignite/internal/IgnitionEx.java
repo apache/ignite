@@ -45,7 +45,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.logging.Handler;
 import javax.management.JMException;
 import javax.management.MBeanServer;
@@ -96,6 +95,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.worker.WorkersRegistry;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.logger.LoggerNodeIdAware;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.apache.ignite.marshaller.Marshaller;
@@ -1824,8 +1824,8 @@ public class IgnitionEx {
                 cfg.getIgniteInstanceName(),
                 "sys",
                 log,
-                new Consumer<Throwable>() {
-                    @Override public void accept(Throwable t) {
+                new IgniteInClosure<Throwable>() {
+                    @Override public void apply(Throwable t) {
                         if (grid != null)
                             grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                     }
@@ -1872,8 +1872,8 @@ public class IgnitionEx {
                 cfg.getIgniteInstanceName(),
                 "data-streamer",
                 log,
-                new Consumer<Throwable>() {
-                    @Override public void accept(Throwable t) {
+                new IgniteInClosure<Throwable>() {
+                    @Override public void apply(Throwable t) {
                         if (grid != null)
                             grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                     }
