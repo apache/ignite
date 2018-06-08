@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.wal.reader;
 import java.io.DataInput;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager.FileDescriptor;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.jetbrains.annotations.NotNull;
@@ -57,7 +59,16 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  */
 public class IgniteWalIteratorFactory {
     /** Logger. */
-    private final IgniteLogger log;
+    private IgniteLogger log = ConsoleLogger.INSTANCE;
+
+    /**
+     * Creates WAL files iterator factory.
+     * WAL iterator supports automatic converting from CacheObjects and KeyCacheObject into BinaryObjects
+     *
+     */
+    public IgniteWalIteratorFactory() {
+
+    }
 
     /**
      * Creates WAL files iterator factory.
@@ -78,16 +89,42 @@ public class IgniteWalIteratorFactory {
      * Parameter should contain direct file links to '.wal' files from work directory.
      * 'Consistent ID'-based subfolder name (if any) should not contain special symbols.
      * Special symbols should be already masked.
-     * @return closable WAL records iterator, should be closed when non needed
+     * @return closable WAL records iterator, should be closed when non needed.
      * @throws IgniteCheckedException if failed to read files
+     * @throws IllegalArgumentException If parameter validation failed.
      */
-    public WALIterator iterator(@NotNull File... filesOrDirs) throws IgniteCheckedException {
+    public WALIterator iterator(
+        @NotNull File... filesOrDirs
+    ) throws IgniteCheckedException, IllegalArgumentException {
         return iterator(new IteratorParametersBuilder().filesOrDirs(filesOrDirs));
     }
 
+    /**
+     * Creates iterator for file by file scan mode.
+     * This method may be used for work folder, file indexes are scanned from the file context.
+     * In this mode only provided WAL segments will be scanned. New WAL files created during iteration will be ignored.
+     *
+     * @param filesOrDirs files to scan. Order is not important, but it is significant to provide all segments without omissions.
+     * Parameter should contain direct file links to '.wal' files from work directory.
+     * 'Consistent ID'-based subfolder name (if any) should not contain special symbols.
+     * Special symbols should be already masked.
+     * @return closable WAL records iterator, should be closed when non needed.
+     * @throws IgniteCheckedException If failed to read files.
+     * @throws IllegalArgumentException If parameter validation failed.
+     */
+    public WALIterator iterator(
+        @NotNull String... filesOrDirs
+    ) throws IgniteCheckedException, IllegalArgumentException {
+        return iterator(new IteratorParametersBuilder().filesOrDirs(filesOrDirs));
+    }
+
+    /**
+     * @param iteratorParametersBuilder Iterator parameters builder.
+     * @return closable WAL records iterator, should be closed when non needed
+     */
     public WALIterator iterator(
         @NotNull IteratorParametersBuilder iteratorParametersBuilder
-    ) throws IgniteCheckedException {
+    ) throws IgniteCheckedException, IllegalArgumentException {
         iteratorParametersBuilder.validate();
 
         return new StandaloneWalRecordsIterator(log,
@@ -103,13 +140,33 @@ public class IgniteWalIteratorFactory {
         );
     }
 
-    public List<T2<Long, Long>> hasGaps(@NotNull File... filesOrDirs) throws IgniteCheckedException {
+    /**
+     * @param filesOrDirs Paths to files or directories for scan.
+     * @return List of tuples, low and high index segments with gap.
+     */
+    public List<T2<Long, Long>> hasGaps(
+        @NotNull String... filesOrDirs
+    ) throws IllegalArgumentException {
         return hasGaps(new IteratorParametersBuilder().filesOrDirs(filesOrDirs));
     }
 
+    /**
+     * @param filesOrDirs Files or directories to scan.
+     * @return List of tuples, low and high index segments with gap.
+     */
+    public List<T2<Long, Long>> hasGaps(
+        @NotNull File... filesOrDirs
+    ) throws IllegalArgumentException {
+        return hasGaps(new IteratorParametersBuilder().filesOrDirs(filesOrDirs));
+    }
+
+    /**
+     * @param iteratorParametersBuilder Iterator parameters builder.
+     * @return List of tuples, low and high index segments with gap.
+     */
     public List<T2<Long, Long>> hasGaps(
         @NotNull IteratorParametersBuilder iteratorParametersBuilder
-    ) throws IgniteCheckedException {
+    ) throws IllegalArgumentException {
         iteratorParametersBuilder.validate();
 
         List<T2<Long, Long>> gaps = new ArrayList<>();
@@ -149,7 +206,10 @@ public class IgniteWalIteratorFactory {
      * @param iteratorParametersBuilder IteratorParametersBuilder.
      * @return list of file descriptors with checked header records, having correct file index is set
      */
-    private List<FileDescriptor> resolveWalFiles(File[] filesOrDirs, IteratorParametersBuilder iteratorParametersBuilder) {
+    private List<FileDescriptor> resolveWalFiles(
+        File[] filesOrDirs,
+        IteratorParametersBuilder iteratorParametersBuilder
+    ) {
         if (filesOrDirs == null || filesOrDirs.length == 0)
             return Collections.emptyList();
 
@@ -162,7 +222,7 @@ public class IgniteWalIteratorFactory {
                         file.listFiles(),
                         iteratorParametersBuilder
                     )
-                );
+                ); // Recursive search.
 
                 continue;
             }
@@ -174,7 +234,7 @@ public class IgniteWalIteratorFactory {
 
             if (!WAL_NAME_PATTERN.matcher(fileName).matches() &&
                 !WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(fileName).matches())
-                continue;
+                continue;   // Filter out this because it is not segment file.
 
             FileIOFactory ioFactory = iteratorParametersBuilder.ioFactory;
 
@@ -237,6 +297,9 @@ public class IgniteWalIteratorFactory {
         );
     }
 
+    /**
+     * Wal iterator parameter builder.
+     */
     public static class IteratorParametersBuilder {
         /** */
         private File[] filesOrDirs;
@@ -270,7 +333,8 @@ public class IgniteWalIteratorFactory {
         @Nullable private IgniteBiPredicate<RecordType, WALPointer> filter;
 
         /**
-         *
+         * @param filesOrDirs Paths to files or directories.
+         * @return IteratorParametersBuilder Self reference.
          */
         public IteratorParametersBuilder filesOrDirs(String... filesOrDirs) {
             File[] filesOrDirs0 = new File[filesOrDirs.length];
@@ -283,7 +347,8 @@ public class IgniteWalIteratorFactory {
         }
 
         /**
-         *
+         * @param filesOrDirs Files or directories.
+         * @return IteratorParametersBuilder Self reference.
          */
         public IteratorParametersBuilder filesOrDirs(File... filesOrDirs) {
             if (this.filesOrDirs == null)
@@ -295,7 +360,8 @@ public class IgniteWalIteratorFactory {
         }
 
         /**
-         *
+         * @param pageSize Page size.
+         * @return IteratorParametersBuilder Self reference.
          */
         public IteratorParametersBuilder pageSize(int pageSize) {
             this.pageSize = pageSize;
@@ -304,7 +370,8 @@ public class IgniteWalIteratorFactory {
         }
 
         /**
-         *
+         * @param bufferSize Initial size of buffer for reading segments.
+         * @return IteratorParametersBuilder Self reference.
          */
         public IteratorParametersBuilder bufferSize(int bufferSize) {
             this.bufferSize = bufferSize;
@@ -313,7 +380,7 @@ public class IgniteWalIteratorFactory {
         }
 
         /**
-         *
+         * @return IteratorParametersBuilder Self reference.
          */
         public IteratorParametersBuilder keepBinary(boolean keepBinary) {
             this.keepBinary = keepBinary;
@@ -322,7 +389,8 @@ public class IgniteWalIteratorFactory {
         }
 
         /**
-         *
+         * @param ioFactory Custom IO factory for reading files.
+         * @return IteratorParametersBuilder Self reference.
          */
         public IteratorParametersBuilder ioFactory(FileIOFactory ioFactory) {
             this.ioFactory = ioFactory;
@@ -331,7 +399,8 @@ public class IgniteWalIteratorFactory {
         }
 
         /**
-         *
+         * @param binaryMetadataFileStoreDir Path to the binary metadata.
+         * @return IteratorParametersBuilder Self reference.
          */
         public IteratorParametersBuilder binaryMetadataFileStoreDir(File binaryMetadataFileStoreDir) {
             this.binaryMetadataFileStoreDir = binaryMetadataFileStoreDir;
@@ -339,8 +408,10 @@ public class IgniteWalIteratorFactory {
             return this;
         }
 
+
         /**
-         *
+         * @param marshallerMappingFileStoreDir Path to the marshaller mapping.
+         * @return IteratorParametersBuilder Self reference.
          */
         public IteratorParametersBuilder marshallerMappingFileStoreDir(File marshallerMappingFileStoreDir) {
             this.marshallerMappingFileStoreDir = marshallerMappingFileStoreDir;
@@ -349,7 +420,8 @@ public class IgniteWalIteratorFactory {
         }
 
         /**
-         *
+         * @param filter Record filter for skip records during iteration.
+         * @return IteratorParametersBuilder Self reference.
          */
         public IteratorParametersBuilder filter(IgniteBiPredicate<RecordType, WALPointer> filter) {
             this.filter = filter;
@@ -358,7 +430,9 @@ public class IgniteWalIteratorFactory {
         }
 
         /**
+         * Copy current state of builder to new instance.
          *
+         * @return IteratorParametersBuilder Self reference.
          */
         public IteratorParametersBuilder copy() {
             return new IteratorParametersBuilder()
@@ -373,19 +447,107 @@ public class IgniteWalIteratorFactory {
         }
 
         /**
-         *
+         * @throws IllegalArgumentException If validation failed.
          */
-        public void validate() throws IgniteCheckedException {
+        public void validate() throws IllegalArgumentException {
+            A.ensure(pageSize >= 1024 && pageSize <= 16 * 1024, "Page size must be between 1kB and 16kB.");
+            A.ensure(U.isPow2(pageSize), "Page size must be a power of 2.");
 
+            A.ensure(bufferSize >= pageSize * 2, "Buffer to small.");
         }
 
-        private File [] merge(File[] f1,File[] f2){
+        /**
+         * Merge file arrays.
+         *
+         * @param f1 Files array one.
+         * @param f2 Files array two.
+         * @return Merged arrays from one and two arrays.
+         */
+        private File[] merge(File[] f1, File[] f2) {
             File[] merged = new File[f1.length + f2.length];
 
             arraycopy(f1, 0, merged, 0, f1.length);
             arraycopy(f2, 0, merged, f1.length, f2.length);
 
             return merged;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ConsoleLogger implements IgniteLogger {
+        /** */
+        private static final ConsoleLogger INSTANCE = new ConsoleLogger();
+
+        /** */
+        private static final PrintStream OUT = System.out;
+
+        /** */
+        private static final PrintStream ERR = System.err;
+
+        /** */
+        private ConsoleLogger() {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteLogger getLogger(Object ctgr) {
+            return this;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void trace(String msg) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public void debug(String msg) {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public void info(String msg) {
+            OUT.println(msg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void warning(String msg, @Nullable Throwable e) {
+            OUT.println(msg);
+
+            e.printStackTrace(OUT);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void error(String msg, @Nullable Throwable e) {
+            ERR.println(msg);
+
+            e.printStackTrace(ERR);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isTraceEnabled() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isDebugEnabled() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isInfoEnabled() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isQuiet() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String fileName() {
+            return "SYSTEM.OUT";
         }
     }
 }
