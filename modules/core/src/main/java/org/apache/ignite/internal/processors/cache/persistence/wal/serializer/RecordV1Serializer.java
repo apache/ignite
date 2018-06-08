@@ -344,7 +344,12 @@ public class RecordV1Serializer implements RecordSerializer {
         if (type == WALRecord.RecordType.STOP_ITERATION_RECORD_TYPE)
             throw new SegmentEofException("Reached logical end of the segment", null);
 
-        return RecordType.fromOrdinal(type - 1);
+        RecordType recType = RecordType.fromOrdinal(type - 1);
+
+        if (recType == null)
+            throw new IOException("Unknown record type: " + type);
+
+        return recType;
     }
 
     /**

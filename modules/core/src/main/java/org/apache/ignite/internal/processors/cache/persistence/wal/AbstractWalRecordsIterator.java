@@ -225,7 +225,7 @@ public abstract class AbstractWalRecordsIterator
             if (e instanceof WalSegmentTailReachedException)
                 throw (WalSegmentTailReachedException)e;
 
-            if (!(e instanceof SegmentEofException) && !(e instanceof EOFException)) {
+            if (!(e instanceof SegmentEofException)) {
                 boolean isHandled = handleRecordException(e, actualFilePtr);
 
                 if (!isHandled)
@@ -260,7 +260,7 @@ public abstract class AbstractWalRecordsIterator
         if (log.isInfoEnabled())
             log.info("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
 
-        return false;
+        return true;
     }
 
     /**
