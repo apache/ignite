@@ -18,7 +18,7 @@ UTF-8-encoded human-readable strings.
 """
 
 import ctypes
-import socket
+from connection import Connection
 
 from .type_codes import *
 from constants import *
@@ -82,7 +82,7 @@ def string_class(python_var, length=None, payload=False, **kwargs):
     )
 
 
-def string_object(connection: socket.socket, initial=None, **kwargs):
+def string_object(connection: Connection, initial=None, **kwargs):
     buffer = initial or connection.recv(1)
     type_code = buffer
     assert type_code == TC_STRING, 'Can not create string: wrong type code.'

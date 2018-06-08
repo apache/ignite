@@ -13,16 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import socket
-
+from connection import Connection
 from queries import HandshakeRequest, read_response
 from queries.common import hashcode
 from queries.key_value import cache_create, cache_get, cache_put
 
 
 def test_put_get():
-    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    conn.connect(('localhost', 10900))
+    conn = Connection()
+    conn.connect('localhost', 10900)
     hs_request = HandshakeRequest()
     conn.send(hs_request)
     hs_response = read_response(conn)

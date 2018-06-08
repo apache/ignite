@@ -13,14 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import socket
-
+from connection import Connection
 from queries import HandshakeRequest, read_response
 
 
 def test_handshake():
-    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    conn.connect(('localhost', 10900))
+    conn = Connection()
+    conn.connect('localhost', 10900)
     hs_request = HandshakeRequest()
     conn.send(hs_request)
     hs_response = read_response(conn)
@@ -28,8 +27,8 @@ def test_handshake():
 
     # intentionally pass wrong protocol version
     conn.close()
-    conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    conn.connect(('localhost', 10900))
+    conn = Connection()
+    conn.connect('localhost', 10900)
     hs_request = HandshakeRequest()
     hs_request.version_major = 10
     conn.send(hs_request)

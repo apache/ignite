@@ -20,9 +20,9 @@ and python type.
 
 from datetime import datetime, timedelta
 import ctypes
-import socket
 from uuid import UUID
 
+from connection import Connection
 from constants import *
 from datatypes.class_configs import standard_from_python, standard_type_config
 from datatypes.type_codes import *
@@ -143,7 +143,7 @@ def standard_data_class(python_var, tc_hint=None, payload=False, **kwargs):
     )
 
 
-def standard_data_object(connection: socket.socket, initial=None, **kwargs):
+def standard_data_object(connection: Connection, initial=None, **kwargs):
     buffer = initial or connection.recv(1)
     type_code = buffer
     data_class = standard_data_class(None, tc_hint=type_code, **kwargs)

@@ -18,7 +18,7 @@ Null type.
 """
 
 import ctypes
-import socket
+from connection import Connection
 
 from .type_codes import *
 from .simple import init
@@ -41,6 +41,6 @@ def null_class(*args, **kwargs):
     )
 
 
-def null_object(connection: socket.socket, initial=None, **kwargs):
+def null_object(connection: Connection, initial=None, **kwargs):
     buffer = initial or connection.recv(1)
     return null_class().from_buffer_copy(buffer)

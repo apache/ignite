@@ -13,9 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from decimal import Decimal
-import socket
-
+from connection import Connection
 from datatypes.class_configs import *
 from datatypes.type_codes import *
 from .null import null_class, null_object
@@ -99,7 +97,7 @@ def data_class(python_var, tc_hint, **kwargs):
         raise NotImplementedError('This data type is not supported.')
 
 
-def data_object(connection: socket.socket, initial=None, **kwargs):
+def data_object(connection: Connection, initial=None, **kwargs):
     """
     Dispatcher function for parsing binary stream into data objects.
 

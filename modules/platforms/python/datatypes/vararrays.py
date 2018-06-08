@@ -18,8 +18,8 @@ Arrays of elements of variable length.
 """
 
 import ctypes
-import socket
 
+from connection import Connection
 from constants import *
 from .class_configs import (
     get_array_type_code_by_python,
@@ -93,7 +93,7 @@ def vararray_data_class(python_var, tc_hint=None, length=None, **kwargs):
     )
 
 
-def vararray_data_object(connection: socket.socket, initial=None, **kwargs):
+def vararray_data_object(connection: Connection, initial=None, **kwargs):
     from datatypes import data_class, data_object
 
     buffer = initial or connection.recv(1)

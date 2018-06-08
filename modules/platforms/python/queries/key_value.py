@@ -14,15 +14,15 @@
 # limitations under the License.
 
 import ctypes
-import socket
 
+from connection import Connection
 from constants import *
 from datatypes import data_class, data_object, string_class, string_object
 from .common import QueryHeader, ResponseHeader
 from .op_codes import *
 
 
-def cache_create(conn, name):
+def cache_create(conn: Connection, name):
     query_class = type(
         'QueryClass',
         (QueryHeader,),
@@ -53,7 +53,7 @@ def cache_create(conn, name):
 
 
 def cache_put(
-    conn, hash_code, key, value,
+    conn: Connection, hash_code, key, value,
     binary=False, key_hint=None, value_hint=None
 ):
     """
@@ -96,7 +96,7 @@ def cache_put(
     }
 
 
-def cache_get(conn, hash_code, key, binary=False, key_hint=None):
+def cache_get(conn: Connection, hash_code, key, binary=False, key_hint=None):
     """
     This code will be moved to another place, maybe to another class.
     """

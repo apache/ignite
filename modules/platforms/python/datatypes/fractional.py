@@ -20,8 +20,8 @@ with standard Python decimal.Decimal class.
 
 import ctypes
 from decimal import Decimal
-import socket
 
+from connection import Connection
 from constants import *
 from datatypes.type_codes import *
 
@@ -87,7 +87,7 @@ def fractional_class(python_var, length=None, **kwargs):
     )
 
 
-def fractional_object(connection: socket.socket, initial=None, **kwargs):
+def fractional_object(connection: Connection, initial=None, **kwargs):
     buffer = initial or connection.recv(1)
     type_code = buffer
     assert type_code == TC_DECIMAL, 'Can not create decimal: wrong type code.'

@@ -18,7 +18,7 @@ Arrays of fixed length elements.
 """
 
 import ctypes
-import socket
+from connection import Connection
 
 from constants import *
 from datatypes.class_configs import (
@@ -84,7 +84,7 @@ def array_data_class(python_var, tc_hint=None, length=None, **kwargs):
     )
 
 
-def array_data_object(connection: socket.socket, initial=None, **kwargs):
+def array_data_object(connection: Connection, initial=None, **kwargs):
     buffer = initial or connection.recv(1)
     type_code = buffer
     assert type_code in array_types, 'Can not create array: wrong type code.'
