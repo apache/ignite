@@ -59,7 +59,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.wal.serial
  */
 public class IgniteWalIteratorFactory {
     /** Logger. */
-    private IgniteLogger log = ConsoleLogger.INSTANCE;
+    private final IgniteLogger log;
 
     /**
      * Creates WAL files iterator factory.
@@ -67,7 +67,7 @@ public class IgniteWalIteratorFactory {
      *
      */
     public IgniteWalIteratorFactory() {
-
+        this(ConsoleLogger.INSTANCE);
     }
 
     /**
