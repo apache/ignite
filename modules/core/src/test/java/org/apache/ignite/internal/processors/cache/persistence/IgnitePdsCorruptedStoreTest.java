@@ -33,11 +33,13 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
+import org.apache.ignite.internal.processors.cache.persistence.file.PersistentStorageIOException;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -309,7 +311,6 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
      */
     public void testReadOnlyMetaStore() throws Exception {
         IgniteEx ignite0 = startGrid(0);
-        IgniteEx ignite1 = startGrid(1);
 
         ignite0.cluster().active(true);
 
@@ -328,15 +329,24 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         metaStoreFile.setWritable(false);
 
         try {
-            ignite0.cluster().active(true);
+            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    try {
+                        ignite0.cluster().active(true);
+                    }
+                    catch (Exception ignore) {
+                        // No-op.
+                    }
+                }
+            });
 
-            cache.put(1, 1);
-        }
-        catch (Exception e) {
-            // No-op.
-        }
+            waitFailure(PersistentStorageIOException.class);
 
-        waitFailure(StorageException.class);
+            fut.cancel();
+        }
+        finally {
+            metaStoreFile.setWritable(true);
+        }
     }
 
     /**
