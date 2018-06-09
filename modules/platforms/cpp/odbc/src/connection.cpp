@@ -112,10 +112,12 @@ namespace ignite
 
             parser.ParseConnectionString(connectStr, &GetDiagnosticRecords());
 
-            std::string dsn = config.GetDsn();
+            if (config.IsDsnSet())
+            {
+                std::string dsn = config.GetDsn();
 
-            if (!dsn.empty())
                 ReadDsnConfiguration(dsn.c_str(), config);
+            }
 
             return InternalEstablish(config);
         }

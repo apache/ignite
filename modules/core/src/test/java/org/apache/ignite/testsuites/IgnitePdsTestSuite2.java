@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalF
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushLogOnlySelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalFlushLogOnlyWithMmapBufferSelfTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalHistoryReservationsTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalIteratorSwitchSegmentTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalSerializerVersionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalCompactionTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.crc.IgniteDataIntegrityTests;
@@ -72,7 +73,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         addRealPageStoreTests(suite);
 
-        addRealPageStoreTestsLongRunning(suite);
+        addRealPageStoreTestsNotForDirectIo(suite);
 
         // BaselineTopology tests
         suite.addTestSuite(IgniteAllBaselineNodesOnlineFullApiSelfTest.class);
@@ -91,7 +92,7 @@ public class IgnitePdsTestSuite2 extends TestSuite {
      *
      * @param suite suite to add tests into.
      */
-    private static void addRealPageStoreTestsLongRunning(TestSuite suite) {
+    private static void addRealPageStoreTestsNotForDirectIo(TestSuite suite) {
         suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
 
         suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
@@ -106,6 +107,10 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         suite.addTestSuite(IgnitePdsRecoveryAfterFileCorruptionTest.class);
 
         suite.addTestSuite(IgnitePdsPartitionFilesDestroyTest.class);
+
+        suite.addTestSuite(LocalWalModeChangeDuringRebalancingSelfTest.class);
+
+        suite.addTestSuite(IgniteWalFlushFsyncSelfTest.class);
     }
 
     /**
@@ -132,8 +137,6 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         // Failover test
         suite.addTestSuite(IgniteWalFlushFailoverTest.class);
-
-        suite.addTestSuite(IgniteWalFlushFsyncSelfTest.class);
 
         suite.addTestSuite(IgniteWalFlushFsyncWithDedicatedWorkerSelfTest.class);
 
@@ -165,8 +168,8 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         suite.addTestSuite(IgnitePdsCorruptedStoreTest.class);
 
-        suite.addTestSuite(LocalWalModeChangeDuringRebalancingSelfTest.class);
-
         suite.addTestSuite(IgnitePdsCorruptedCacheDataTest.class);
+
+        suite.addTestSuite(IgniteWalIteratorSwitchSegmentTest.class);
     }
 }
