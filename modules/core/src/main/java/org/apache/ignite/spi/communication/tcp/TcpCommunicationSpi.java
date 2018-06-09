@@ -2504,8 +2504,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (nioSrvr != null)
             nioSrvr.stop();
 
-        U.interrupt(commWorker.runner());
-        U.join(commWorker.runner(), log);
+        if (commWorker != null) {
+            U.interrupt(commWorker.runner());
+            U.join(commWorker.runner(), log);
+        }
 
         U.cancel(shmemAcceptWorker);
         U.join(shmemAcceptWorker, log);
@@ -3868,7 +3870,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (nioSrvr != null)
             nioSrvr.stop();
 
-        U.interrupt(commWorker.runner());
+        if (commWorker != null)
+            U.interrupt(commWorker.runner());
 
         U.join(commWorker, log);
 
