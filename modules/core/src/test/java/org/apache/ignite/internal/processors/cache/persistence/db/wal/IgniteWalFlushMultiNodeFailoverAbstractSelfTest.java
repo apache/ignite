@@ -61,7 +61,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
     private static final String TEST_CACHE = "testCache";
 
     /** */
-    private static final int ITRS = 100;
+    private static final int ITRS = 1000;
 
     /** */
     private AtomicBoolean canFail = new AtomicBoolean();
