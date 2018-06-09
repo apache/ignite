@@ -80,6 +80,7 @@ import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -88,7 +89,6 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
-import static org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager.SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_LONG;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_REF;
 import static org.apache.ignite.internal.processors.datastructures.DataStructureType.ATOMIC_SEQ;
@@ -116,6 +116,10 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
     /** Atomics system cache name. */
     public static final String ATOMICS_CACHE_NAME = "ignite-sys-atomic-cache";
+
+    /** Non collocated IgniteSet will use separate cache if all nodes in cluster is not older then specified version. */
+    // TODO Set current snapshot version before merge.
+    private static final IgniteProductVersion SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE = IgniteProductVersion.fromString("2.5.0");
 
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
@@ -1064,17 +1068,23 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
             assert metaCache0 != null;
         }
 
-        final IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache = metaCache0;
-
-        final IgniteInternalCache cache;
-
-        AtomicDataStructureValue oldVal = metaCache.get(new GridCacheInternalKeyImpl(name, grpName));
-
         if (cfg != null && cfg.getCacheMode() != CacheMode.PARTITIONED && !cfg.isCollocated()) {
             log.warning("Non-collocated mode does not make sense for " + cfg.getCacheMode().name() +
                 " cache mode, collocated mode was enabled for " + type.name().toLowerCase() + " " + name + ".");
 
             cfg.setCollocated(true);
+        }
+
+        IgniteInternalCache cache = null;
+        CollectionConfiguration oldCfg = null;
+        AtomicDataStructureValue oldVal = metaCache0.get(new GridCacheInternalKeyImpl(name, grpName));
+
+        if (oldVal == null && create) {
+            cache = compatibleCache(cfg, grpName, type, name);
+
+            DistributedCollectionMetadata newVal = new DistributedCollectionMetadata(type, cfg, cache.name());
+
+            oldVal = metaCache0.getAndPutIfAbsent(new GridCacheInternalKeyImpl(name, grpName), newVal);
         }
 
         if (oldVal != null) {
@@ -1084,33 +1094,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     ", newType=" + type +
                     ", existingType=" + oldVal.type() + ']');
 
-            cache = ctx.cache().getOrStartCache(((DistributedCollectionMetadata)oldVal).cacheName());
-        }
-        else if (create) {
-            cache = compatibleCache(cfg, grpName, type, name);
-
-            DistributedCollectionMetadata newVal = new DistributedCollectionMetadata(type, cfg, cache.name());
-
-            oldVal = metaCache.getAndPutIfAbsent(new GridCacheInternalKeyImpl(name, grpName), newVal);
-
-            if (oldVal != null && oldVal.type() != type) {
-                if (type == SET && !cfg.isCollocated())
-                    ctx.cache().dynamicDestroyCache(cache.name(), false, true, false).get();
-
-                throw new IgniteCheckedException("Another data structure with the same name already created " +
-                    "[name=" + name +
-                    ", newType=" + type +
-                    ", existingType=" + oldVal.type() + ']');
-            }
-        }
-        else
-            return null;
-
-        CollectionConfiguration oldCfg = null;
-
-        if (oldVal != null) {
-            assert oldVal instanceof DistributedCollectionMetadata;
-
             oldCfg = ((DistributedCollectionMetadata)oldVal).configuration();
 
             if (cfg != null && oldCfg.isCollocated() != cfg.isCollocated()) {
@@ -1119,13 +1102,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     ", newCollocated=" + cfg.isCollocated() +
                     ", existingCollocated=" + !cfg.isCollocated() + ']');
             }
+
+            cache = ctx.cache().getOrStartCache(((DistributedCollectionMetadata)oldVal).cacheName());
         }
 
+        if (cache == null)
+            return null;
+
         final CollectionConfiguration cfg0 = oldCfg == null ? cfg : oldCfg;
+        final GridCacheContext cctx0 = cache.context();
 
         return retryTopologySafe(new IgniteOutClosureX<T>() {
             @Override public T applyx() throws IgniteCheckedException {
-                return c.applyx(cache.context(), cfg0);
+                return c.applyx(cctx0, cfg0);
             }
         });
     }

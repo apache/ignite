@@ -148,7 +148,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                         map.size());
 
                     assertFalse("Cache " + cache.name() + " was not destroyed.",
-                        cache.name().contains("_" + DataStructureType.SET + "_"));
+                        cache.name().contains("_" + DataStructureType.SET.name() + "_"));
                 }
             }
         }

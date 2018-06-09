@@ -280,14 +280,14 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
             @Override public boolean apply() {
                 for (int i = 0; i < NODE_CNT; i++) {
                     for (IgniteInternalCache cache : grid(i).context().cache().caches()) {
-                        if (cache.name().contains("_" + DataStructureType.SET + "_"))
+                        if (cache.name().contains("_" + DataStructureType.SET.name() + "_"))
                             return false;
                     }
                 }
 
                 return true;
             }
-        }, 10_000);
+        }, 5_000);
 
         assertTrue(noCaches);
     }

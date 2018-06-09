@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
@@ -39,6 +40,10 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.datastructures.DataStructureType;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -277,7 +282,9 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
         final int THREADS = DS_TYPES * 3;
 
         for (int iter = 0; iter < 20; iter++) {
-            log.info("Iteration: " + iter);
+            Boolean collocated = ThreadLocalRandom.current().nextBoolean();
+
+            log.info("Iteration=" + iter + ", collocated=" + collocated);
 
             List<IgniteInternalFuture<Object>> futs = new ArrayList<>(THREADS);
 
@@ -329,14 +336,14 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
                                 case 4:
                                     log.info("Create queue, grid: " + ignite.name());
 
-                                    res = ignite.queue(name, 0, config(false));
+                                    res = ignite.queue(name, 0, config(collocated));
 
                                     break;
 
                                 case 5:
                                     log.info("Create set, grid: " + ignite.name());
 
-                                    res = ignite.set(name, config(false));
+                                    res = ignite.set(name, config(collocated));
 
                                     break;
 
@@ -397,6 +404,34 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
             assertEquals(3, createdCnt);
 
             dataStructure.close();
+
+            if (dataStructure instanceof IgniteSet && !collocated)
+                waitSetResourcesCleared(singleGrid ? 1 : gridCount(), name);
         }
+    }
+
+    /**
+     * Wait until all set caches will be destroyed.
+     *
+     * @param gridCnt Grid count.
+     * @param name Data structure name,
+     * @throws IgniteInterruptedCheckedException If thread was interrupted.
+     */
+    private void waitSetResourcesCleared(int gridCnt, String name) throws IgniteInterruptedCheckedException {
+        boolean noCaches = GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                for (int i = 0; i < gridCnt; i++) {
+                    for (IgniteInternalCache cache : grid(i).context().cache().caches()) {
+                        if (cache.context().dataStructuresCache() &&
+                            cache.name().contains("_" + DataStructureType.SET.name() + "_" + name + "@"))
+                            return false;
+                    }
+                }
+
+                return true;
+            }
+        }, 5_000);
+
+        assertTrue(noCaches);
     }
 }

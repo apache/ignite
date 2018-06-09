@@ -68,7 +68,6 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
@@ -80,10 +79,6 @@ import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
  *
  */
 public class CacheDataStructuresManager extends GridCacheManagerAdapter {
-    /** Non collocated IgniteSet will use separate cache if all nodes in cluster is not older then specified version. */
-    // TODO Set current snapshot version before merge.
-    public static final IgniteProductVersion SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE = IgniteProductVersion.fromString("2.5.0");
-
     /** Known classes which are safe to use on server nodes. */
     private static final Collection<Class<?>> KNOWN_CLS = new HashSet<>();
 

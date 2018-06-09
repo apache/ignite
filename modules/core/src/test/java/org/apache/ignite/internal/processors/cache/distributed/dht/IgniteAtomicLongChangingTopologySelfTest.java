@@ -38,6 +38,10 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.datastructures.DataStructureType;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -186,6 +190,8 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
 
                     set.close();
                 }
+
+                waitSetResourcesCleared();
             }
         });
     }
@@ -426,5 +432,29 @@ public class IgniteAtomicLongChangingTopologySelfTest extends GridCommonAbstract
                 }
             }
         }, 1, "grunner-" + i);
+    }
+
+    /**
+     * Wait until all set caches will be destroyed.
+     */
+    private void waitSetResourcesCleared() {
+        try {
+            assertTrue(GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    for (int i = 0; i < GRID_CNT; i++) {
+                        for (IgniteInternalCache cache : grid(i).context().cache().caches()) {
+                            if (cache.context().dataStructuresCache() &&
+                                cache.name().contains("_" + DataStructureType.SET.name() + "_"))
+                                return false;
+                        }
+                    }
+
+                    return true;
+                }
+            }, 5_000));
+        }
+        catch (IgniteInterruptedCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 }
