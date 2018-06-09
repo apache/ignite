@@ -19,11 +19,20 @@
 #        |- libs
 #
 
-# Start from a Java image.
-FROM openjdk:8
+# Debian package
+FROM debian:stretch
 
 # Ignite version
 ENV IGNITE_VERSION 2.5.0
+
+# Oracle JDK Linux x64 download information
+ENV JAVA_VERSION=8 \
+    JAVA_UPDATE=172 \
+    JAVA_BUILD=11 \
+    JAVA_PATH=a58eab1ec242421181065cdc37240b08
+    
+# Java home    
+ENV JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-oracle
 
 # JobCase home
 ENV JOBCASE_HOME /opt/jobcase
@@ -79,8 +88,22 @@ ENV JVM_OPTS="-XX:MaxMetaspaceSize=${JVM_METASPACE_SIZE} -server -Xms${JVM_HEAP_
 RUN apt-get update && apt-get install -y --no-install-recommends \
         unzip \
         curl \
+        wget \
+        ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p ${JOBCASE_LOGS}
+
+# Install Oracle JDK and Java Cryptography Extension (JCE) Unlimited Strength
+RUN cd "/tmp" && \
+    wget --header "Cookie: oraclelicense=accept-securebackup-cookie;" \
+        "http://download.oracle.com/otn-pub/java/jdk/${JAVA_VERSION}u${JAVA_UPDATE}-b${JAVA_BUILD}/${JAVA_PATH}/jdk-${JAVA_VERSION}u${JAVA_UPDATE}-linux-x64.tar.gz" && \
+    tar -xzf "jdk-${JAVA_VERSION}u${JAVA_UPDATE}-linux-x64.tar.gz" && \    
+    mkdir -p "/usr/lib/jvm" && \
+    mv "/tmp/jdk1.${JAVA_VERSION}.0_${JAVA_UPDATE}" "${JAVA_HOME}" && \
+    wget --header "Cookie: oraclelicense=accept-securebackup-cookie;" \
+        "http://download.oracle.com/otn-pub/java/jce/${JAVA_VERSION}/jce_policy-${JAVA_VERSION}.zip" && \
+    unzip -jo -d "${JAVA_HOME}/jre/lib/security" "jce_policy-${JAVA_VERSION}.zip" && \
+    rm /tmp/*
         
 # Copy apache ignite binaries
 COPY ./apache-ignite-fabric-${IGNITE_VERSION}-SNAPSHOT-bin ${IGNITE_HOME}/
