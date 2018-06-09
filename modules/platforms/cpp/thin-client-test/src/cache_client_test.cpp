@@ -118,6 +118,28 @@ BOOST_AUTO_TEST_CASE(CacheClientCreateCacheNonexisting)
     client.CreateCache<std::string, int32_t>("unknown");
 }
 
+BOOST_AUTO_TEST_CASE(CacheClientDestroyCacheExisting)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110"); 
+
+    IgniteClient client = IgniteClient::Start(cfg);
+    
+    client.DestroyCache("local");
+}
+
+BOOST_AUTO_TEST_CASE(CacheClientDestroyCacheNonexisting)
+{
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110"); 
+
+    IgniteClient client = IgniteClient::Start(cfg);
+    
+    BOOST_REQUIRE_THROW(client.DestroyCache("unknown"), ignite::IgniteError);
+}
+
 BOOST_AUTO_TEST_CASE(CacheClientPutGetBasicKeyValue)
 {
     IgniteClientConfiguration cfg;
