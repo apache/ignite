@@ -45,6 +45,9 @@ public class VerifyBackupPartitionsTaskV2 extends ComputeTaskAdapter<VisorIdleVe
     /** First version of Ignite that is capable of executing Idle Verify V2. */
     public static final IgniteProductVersion V2_SINCE_VER = IgniteProductVersion.fromString("2.5.3");
 
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(
         List<ClusterNode> subgrid, VisorIdleVerifyTaskArg arg) throws IgniteException {
