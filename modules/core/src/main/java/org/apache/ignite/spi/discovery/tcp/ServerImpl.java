@@ -1726,19 +1726,27 @@ class ServerImpl extends TcpDiscoveryImpl {
             threads.add((IgniteSpiThread)t);
         }
 
-        Thread tcpServerThread = tcpSrvr.runner();
+        TcpServer tcpSrvr0 = tcpSrvr;
 
-        assert tcpServerThread instanceof IgniteSpiThread;
+        if (tcpSrvr0 != null) {
+            Thread tcpServerThread = tcpSrvr0.runner();
 
-        threads.add((IgniteSpiThread)tcpServerThread);
+            if (tcpServerThread != null) {
+                assert tcpServerThread instanceof IgniteSpiThread;
+
+                threads.add((IgniteSpiThread)tcpServerThread);
+            }
+        }
 
         threads.add(ipFinderCleaner);
 
         Thread msgWorkerThread = msgWorker.runner();
 
-        assert msgWorkerThread instanceof IgniteSpiThread;
+        if (msgWorkerThread != null) {
+            assert msgWorkerThread instanceof IgniteSpiThread;
 
-        threads.add((IgniteSpiThread)msgWorkerThread);
+            threads.add((IgniteSpiThread)msgWorkerThread);
+        }
 
         threads.add(statsPrinter);
 
