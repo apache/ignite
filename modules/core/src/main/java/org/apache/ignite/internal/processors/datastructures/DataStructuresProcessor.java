@@ -30,6 +30,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.event.EventType;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -50,6 +51,7 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -78,7 +80,9 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -672,6 +676,20 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                                             afterRmv.applyx(null);
                                     }
                                 }
+
+                                ctx.closure().broadcast(new IgniteClosure<GridCacheInternalKey, Object>() {
+                                    /** Injected grid instance. */
+                                    @IgniteInstanceResource
+                                    protected Ignite ignite;
+
+                                    @Override public Object apply(GridCacheInternalKey k) {
+                                        GridCacheRemovable val = ((IgniteEx)ignite).context().dataStructures().dsMap.remove(k);
+                                        if (val != null)
+                                            val.onRemoved();
+
+                                        return null;
+                                    }
+                                }, key, ctx.cluster().get().nodes(), null).get();
 
                                 break;
                             }
@@ -1484,17 +1502,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                                 ", actual=" + reentrantLock.getClass() + ", value=" + reentrantLock + ']');
                         }
                     }
-                }
-                else {
-                    assert evt.getEventType() == EventType.REMOVED : evt;
-
-                    GridCacheInternal key = evt.getKey();
-
-                    // Entry's val is null if entry deleted.
-                    GridCacheRemovable obj = dsMap.remove(key);
-
-                    if (obj != null)
-                        obj.onRemoved();
                 }
             }
         }
