@@ -980,6 +980,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     private static class TimeMeasureFileIOFactory implements FileIOFactory {
+        /** */
+        private static final long serialVersionUID = 0L;
 
         private final FileIOFactory delegate;
 
