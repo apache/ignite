@@ -16,7 +16,7 @@
 from connection import Connection
 from queries import HandshakeRequest, read_response
 from queries.common import hashcode
-from queries.key_value import cache_create, cache_get, cache_put
+from api import cache_create, cache_get, cache_put, cache_get_names
 
 
 def test_put_get():
@@ -27,13 +27,33 @@ def test_put_get():
     hs_response = read_response(conn)
     assert hs_response.op_code != 0
 
-    cache_create(conn, 'my_bucket')
+    result = cache_create(conn, 'my_bucket')
 
     result = cache_put(conn, hashcode('my_bucket'), 'my_key', 5)
-    assert 0 in result.keys()
+    assert result.status == 0
 
     result = cache_get(conn, hashcode('my_bucket'), 'my_key')
-    assert 0 in result.keys()
-    assert result['result'] == 5
+    assert result.status == 0
+    assert result.value == 5
 
     conn.close()
+
+
+def test_get_names():
+    conn = Connection()
+    conn.connect('localhost', 10900)
+    hs_request = HandshakeRequest()
+    conn.send(hs_request)
+    hs_response = read_response(conn)
+    assert hs_response.op_code != 0
+
+    result = cache_create(conn, 'my_bucket')
+
+    result = cache_create(conn, 'my_bucket_2')
+
+    result = cache_create(conn, 'my_bucket_3')
+
+    result = cache_get_names(conn)
+    assert result.status == 0
+    assert type(result.value) == list
+    assert len(result.value) == 3

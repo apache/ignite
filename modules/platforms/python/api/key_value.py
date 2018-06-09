@@ -16,48 +16,32 @@
 import ctypes
 
 from connection import Connection
-from constants import *
-from datatypes import data_class, data_object, string_class, string_object
-from .common import QueryHeader, ResponseHeader
-from .op_codes import *
-
-
-def cache_create(conn: Connection, name):
-    query_class = type(
-        'QueryClass',
-        (QueryHeader,),
-        {
-            '_pack_': 1,
-            '_fields_': [
-                ('cache_name', string_class(name)),
-            ],
-        },
-    )
-    query = query_class()
-    query.op_code = OP_CACHE_CREATE_WITH_NAME
-    query.cache_name = name
-    conn.send(query)
-    buffer = conn.recv(ctypes.sizeof(ResponseHeader))
-    response_header = ResponseHeader.from_buffer_copy(buffer)
-
-    if response_header.status_code == 0:
-        return {0: 'Success'}
-
-    error_msg = string_object(conn)
-    return {
-        response_header.status_code: str(
-            error_msg.data,
-            encoding=PROTOCOL_STRING_ENCODING,
-        ),
-    }
+from datatypes import data_class, data_object, string_object
+from queries.common import QueryHeader, ResponseHeader
+from queries.op_codes import *
+from .result import APIResult
 
 
 def cache_put(
-    conn: Connection, hash_code, key, value,
+    conn: Connection, hash_code: int, key, value,
     binary=False, key_hint=None, value_hint=None
 ):
     """
-    This code will be moved to another place, maybe to another class.
+    Puts a value with a given key to cache (overwriting existing value if any).
+
+    :param conn: connection to Ignite server,
+    :param hash_code: hash code of the cache. Can be obtained by applying
+     the `hashcode()` function to the cache name,
+    :param key: key for the cache entry. Can be of any supported type,
+    :param value: value for the key,
+    :param binary: pass True to keep the value in binary form. False
+     by default,
+    :param key_hint: (optional) Ignite data type, for which the given key
+     should be converted,
+    :param value_hint: (optional) Ignite data type, for which the given value
+     should be converted.
+    :return: API result data object. Contains zero status if a value
+     is written, non-zero status and an error description otherwise.
     """
     value_class = data_class(value, tc_hint=value_hint)
     key_class = data_class(key, tc_hint=key_hint)
@@ -83,22 +67,30 @@ def cache_put(
     conn.send(query)
     buffer = conn.recv(ctypes.sizeof(ResponseHeader))
     response_header = ResponseHeader.from_buffer_copy(buffer)
-
-    if response_header.status_code == 0:
-        return {0: 'Success'}
-
-    error_msg = string_object(conn)
-    return {
-        response_header.status_code: str(
-            error_msg.data,
-            encoding=PROTOCOL_STRING_ENCODING,
-        ),
-    }
+    result = APIResult(status=response_header.status_code)
+    if result.status != 0:
+        error_msg = string_object(conn)
+        result.message = error_msg.get_attribute()
+    return result
 
 
-def cache_get(conn: Connection, hash_code, key, binary=False, key_hint=None):
+def cache_get(
+    conn: Connection, hash_code: int, key,
+    binary=False, key_hint=None
+):
     """
-    This code will be moved to another place, maybe to another class.
+    Retrieves a value from cache by key.
+
+    :param conn: connection to Ignite server,
+    :param hash_code: hash code of the cache. Can be obtained by applying
+     the `hashcode()` function to the cache name,
+    :param key: key for the cache entry. Can be of any supported type,
+    :param binary: pass True to keep the value in binary form. False
+     by default,
+    :param key_hint: (optional) Ignite data type, for which the given key
+     should be converted,
+    :return: API result data object. Contains zero status and a value
+     retrieved on success, non-zero status and an error description on failure.
     """
     key_class = data_class(key, tc_hint=key_hint)
     query_class = type(
@@ -121,17 +113,11 @@ def cache_get(conn: Connection, hash_code, key, binary=False, key_hint=None):
     conn.send(query)
     buffer = conn.recv(ctypes.sizeof(ResponseHeader))
     response_header = ResponseHeader.from_buffer_copy(buffer)
-    if response_header.status_code == 0:
+    result = APIResult(status=response_header.status_code)
+    if result.status != 0:
+        error_msg = string_object(conn)
+        result.message = error_msg.get_attribute()
+    else:
         result_object = data_object(conn)
-        return {
-            0: 'Success',
-            'result': result_object.get_attribute(),
-        }
-
-    error_msg = string_object(conn)
-    return {
-        response_header.status_code: str(
-            error_msg.data,
-            encoding=PROTOCOL_STRING_ENCODING,
-        ),
-    }
+        result.value = result_object.get_attribute()
+    return result

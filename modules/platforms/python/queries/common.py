@@ -16,6 +16,8 @@
 import ctypes
 from random import randint
 
+import attr
+
 from constants import *
 
 
