@@ -30,10 +30,8 @@ import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -103,25 +101,24 @@ public class GridToStringBuilder {
     private static final int COLLECTION_LIMIT =
         IgniteSystemProperties.getInteger(IGNITE_TO_STRING_COLLECTION_LIMIT, 100);
 
-    /** */
-    private static ThreadLocal<Queue<GridToStringThreadLocal>> threadCache = new ThreadLocal<Queue<GridToStringThreadLocal>>() {
-        @Override protected Queue<GridToStringThreadLocal> initialValue() {
-            Queue<GridToStringThreadLocal> queue = new LinkedList<>();
+    /** Every thread have its own string builder. */
+    private static ThreadLocal<SBLimitedLength> threadLocSB = new ThreadLocal<SBLimitedLength>() {
+        @Override protected SBLimitedLength initialValue() {
+            SBLimitedLength sb = new SBLimitedLength(256);
 
-            queue.offer(new GridToStringThreadLocal());
+            sb.initLimit(new SBLengthLimit());
 
-            return queue;
+            return sb;
         }
     };
 
-    /** */
-    private static ThreadLocal<SBLengthLimit> threadCurLen = new ThreadLocal<SBLengthLimit>() {
-        @Override protected SBLengthLimit initialValue() {
-            return new SBLengthLimit();
-        }
-    };
-
-    /** Contains objects currently printing in the string builder. */
+    /**
+     * Contains objects currently printing in the string builder.
+     * <p>
+     * Since {@code toString()} methods can be chain-called from the same thread we
+     * have to keep a map of this objects pointed to the position of previous occurrence
+     * and remove/add them in each {@code toString()} apply.
+     */
     private static ThreadLocal<IdentityHashMap<Object, Integer>> savedObjects = new ThreadLocal<IdentityHashMap<Object, Integer>>() {
         @Override protected IdentityHashMap<Object, Integer> initialValue() {
             return new IdentityHashMap<>();
@@ -276,18 +273,11 @@ public class GridToStringBuilder {
         assert name3 != null;
         assert name4 != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        Object[] addNames = tmp.getAdditionalNames();
-        Object[] addVals = tmp.getAdditionalValues();
-        boolean[] addSens = tmp.getAdditionalSensitives();
+        Object[] addNames = new Object[5];
+        Object[] addVals = new Object[5];
+        boolean[] addSens = new boolean[5];
 
         addNames[0] = name0;
         addVals[0] = val0;
@@ -305,20 +295,16 @@ public class GridToStringBuilder {
         addVals[4] = val4;
         addSens[4] = sens4;
 
-        SBLengthLimit lenLim = threadCurLen.get();
-
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 5);
+            return toStringImpl(cls, tmp, obj, addNames, addVals, addSens, 5);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 
@@ -364,18 +350,11 @@ public class GridToStringBuilder {
         assert name4 != null;
         assert name5 != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        Object[] addNames = tmp.getAdditionalNames();
-        Object[] addVals = tmp.getAdditionalValues();
-        boolean[] addSens = tmp.getAdditionalSensitives();
+        Object[] addNames = new Object[6];
+        Object[] addVals = new Object[6];
+        boolean[] addSens = new boolean[6];
 
         addNames[0] = name0;
         addVals[0] = val0;
@@ -396,20 +375,16 @@ public class GridToStringBuilder {
         addVals[5] = val5;
         addSens[5] = sens5;
 
-        SBLengthLimit lenLim = threadCurLen.get();
-
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 6);
+            return toStringImpl(cls, tmp, obj, addNames, addVals, addSens, 6);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 
@@ -460,18 +435,11 @@ public class GridToStringBuilder {
         assert name5 != null;
         assert name6 != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        Object[] addNames = tmp.getAdditionalNames();
-        Object[] addVals = tmp.getAdditionalValues();
-        boolean[] addSens = tmp.getAdditionalSensitives();
+        Object[] addNames = new Object[7];
+        Object[] addVals = new Object[7];
+        boolean[] addSens = new boolean[7];
 
         addNames[0] = name0;
         addVals[0] = val0;
@@ -495,20 +463,16 @@ public class GridToStringBuilder {
         addVals[6] = val6;
         addSens[6] = sens6;
 
-        SBLengthLimit lenLim = threadCurLen.get();
-
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 7);
+            return toStringImpl(cls, tmp, obj, addNames, addVals, addSens, 7);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 
@@ -572,18 +536,11 @@ public class GridToStringBuilder {
         assert name2 != null;
         assert name3 != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        Object[] addNames = tmp.getAdditionalNames();
-        Object[] addVals = tmp.getAdditionalValues();
-        boolean[] addSens = tmp.getAdditionalSensitives();
+        Object[] addNames = new Object[4];
+        Object[] addVals = new Object[4];
+        boolean[] addSens = new boolean[4];
 
         addNames[0] = name0;
         addVals[0] = val0;
@@ -598,20 +555,16 @@ public class GridToStringBuilder {
         addVals[3] = val3;
         addSens[3] = sens3;
 
-        SBLengthLimit lenLim = threadCurLen.get();
-
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 4);
+            return toStringImpl(cls, tmp, obj, addNames, addVals, addSens, 4);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 
@@ -667,18 +620,11 @@ public class GridToStringBuilder {
         assert name1 != null;
         assert name2 != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        Object[] addNames = tmp.getAdditionalNames();
-        Object[] addVals = tmp.getAdditionalValues();
-        boolean[] addSens = tmp.getAdditionalSensitives();
+        Object[] addNames = new Object[3];
+        Object[] addVals = new Object[3];
+        boolean[] addSens = new boolean[3];
 
         addNames[0] = name0;
         addVals[0] = val0;
@@ -690,20 +636,16 @@ public class GridToStringBuilder {
         addVals[2] = val2;
         addSens[2] = sens2;
 
-        SBLengthLimit lenLim = threadCurLen.get();
-
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 3);
+            return toStringImpl(cls, tmp, obj, addNames, addVals, addSens, 3);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 
@@ -747,18 +689,11 @@ public class GridToStringBuilder {
         assert name0 != null;
         assert name1 != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        Object[] addNames = tmp.getAdditionalNames();
-        Object[] addVals = tmp.getAdditionalValues();
-        boolean[] addSens = tmp.getAdditionalSensitives();
+        Object[] addNames = new Object[2];
+        Object[] addVals = new Object[2];
+        boolean[] addSens = new boolean[2];
 
         addNames[0] = name0;
         addVals[0] = val0;
@@ -767,20 +702,16 @@ public class GridToStringBuilder {
         addVals[1] = val1;
         addSens[1] = sens1;
 
-        SBLengthLimit lenLim = threadCurLen.get();
-
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 2);
+            return toStringImpl(cls, tmp, obj, addNames, addVals, addSens, 2);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 
@@ -814,37 +745,26 @@ public class GridToStringBuilder {
         assert obj != null;
         assert name != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        Object[] addNames = tmp.getAdditionalNames();
-        Object[] addVals = tmp.getAdditionalValues();
-        boolean[] addSens = tmp.getAdditionalSensitives();
+        Object[] addNames = new Object[1];
+        Object[] addVals = new Object[1];
+        boolean[] addSens = new boolean[1];
 
         addNames[0] = name;
         addVals[0] = val;
         addSens[0] = sens;
 
-        SBLengthLimit lenLim = threadCurLen.get();
-
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, addNames, addVals, addSens, 1);
+            return toStringImpl(cls, tmp, obj, addNames, addVals, addSens, 1);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 
@@ -860,30 +780,18 @@ public class GridToStringBuilder {
         assert cls != null;
         assert obj != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
-
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        SBLengthLimit lenLim = threadCurLen.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(cls, tmp.getStringBuilder(lenLim), obj, tmp.getAdditionalNames(),
-                tmp.getAdditionalValues(), null, 0);
+            return toStringImpl(cls, tmp, obj, EMPTY_ARRAY, EMPTY_ARRAY, null, 0);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 
@@ -952,7 +860,7 @@ public class GridToStringBuilder {
             else if (isMap)
                 addMap(buf, (Map<?, ?>) val);
             else
-                toStringImpl0((Class) cls, buf, val, EMPTY_ARRAY, EMPTY_ARRAY, null, 0);
+                buf.a(val);
         }
         finally {
             svdObjs.remove(val);
@@ -1098,8 +1006,6 @@ public class GridToStringBuilder {
         assert addLen <= addNames.length;
 
         IdentityHashMap<Object, Integer> svdObjs = savedObjects.get();
-
-        buf.setLength(0);
 
         svdObjs.put(obj, buf.length());
 
@@ -1307,37 +1213,26 @@ public class GridToStringBuilder {
     public static String toString(String str, String name, @Nullable Object val, boolean sens) {
         assert name != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        Object[] propNames = tmp.getAdditionalNames();
-        Object[] propVals = tmp.getAdditionalValues();
-        boolean[] propSens = tmp.getAdditionalSensitives();
+        Object[] propNames = new Object[1];
+        Object[] propVals = new Object[1];
+        boolean[] propSens = new boolean[1];
 
         propNames[0] = name;
         propVals[0] = val;
         propSens[0] = sens;
 
-        SBLengthLimit lenLim = threadCurLen.get();
-
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 1);
+            return toStringImpl(str, tmp, propNames, propVals, propSens, 1);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 
@@ -1374,18 +1269,11 @@ public class GridToStringBuilder {
         assert name0 != null;
         assert name1 != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        Object[] propNames = tmp.getAdditionalNames();
-        Object[] propVals = tmp.getAdditionalValues();
-        boolean[] propSens = tmp.getAdditionalSensitives();
+        Object[] propNames = new Object[2];
+        Object[] propVals = new Object[2];
+        boolean[] propSens = new boolean[2];
 
         propNames[0] = name0;
         propVals[0] = val0;
@@ -1394,20 +1282,16 @@ public class GridToStringBuilder {
         propVals[1] = val1;
         propSens[1] = sens1;
 
-        SBLengthLimit lenLim = threadCurLen.get();
-
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 2);
+            return toStringImpl(str, tmp, propNames, propVals, propSens, 2);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 
@@ -1434,18 +1318,11 @@ public class GridToStringBuilder {
         assert name1 != null;
         assert name2 != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        Object[] propNames = tmp.getAdditionalNames();
-        Object[] propVals = tmp.getAdditionalValues();
-        boolean[] propSens = tmp.getAdditionalSensitives();
+        Object[] propNames = new Object[3];
+        Object[] propVals = new Object[3];
+        boolean[] propSens = new boolean[3];
 
         propNames[0] = name0;
         propVals[0] = val0;
@@ -1457,20 +1334,16 @@ public class GridToStringBuilder {
         propVals[2] = val2;
         propSens[2] = sens2;
 
-        SBLengthLimit lenLim = threadCurLen.get();
-
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 3);
+            return toStringImpl(str, tmp, propNames, propVals, propSens, 3);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 
@@ -1502,18 +1375,11 @@ public class GridToStringBuilder {
         assert name2 != null;
         assert name3 != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        Object[] propNames = tmp.getAdditionalNames();
-        Object[] propVals = tmp.getAdditionalValues();
-        boolean[] propSens = tmp.getAdditionalSensitives();
+        Object[] propNames = new Object[4];
+        Object[] propVals = new Object[4];
+        boolean[] propSens = new boolean[4];
 
         propNames[0] = name0;
         propVals[0] = val0;
@@ -1528,20 +1394,16 @@ public class GridToStringBuilder {
         propVals[3] = val3;
         propSens[3] = sens3;
 
-        SBLengthLimit lenLim = threadCurLen.get();
-
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 4);
+            return toStringImpl(str, tmp, propNames, propVals, propSens, 4);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 
@@ -1578,18 +1440,11 @@ public class GridToStringBuilder {
         assert name3 != null;
         assert name4 != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        Object[] propNames = tmp.getAdditionalNames();
-        Object[] propVals = tmp.getAdditionalValues();
-        boolean[] propSens = tmp.getAdditionalSensitives();
+        Object[] propNames = new Object[5];
+        Object[] propVals = new Object[5];
+        boolean[] propSens = new boolean[5];
 
         propNames[0] = name0;
         propVals[0] = val0;
@@ -1607,20 +1462,16 @@ public class GridToStringBuilder {
         propVals[4] = val4;
         propSens[4] = sens4;
 
-        SBLengthLimit lenLim = threadCurLen.get();
-
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 5);
+            return toStringImpl(str, tmp, propNames, propVals, propSens, 5);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 
@@ -1662,18 +1513,11 @@ public class GridToStringBuilder {
         assert name4 != null;
         assert name5 != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        Object[] propNames = tmp.getAdditionalNames();
-        Object[] propVals = tmp.getAdditionalValues();
-        boolean[] propSens = tmp.getAdditionalSensitives();
+        Object[] propNames = new Object[6];
+        Object[] propVals = new Object[6];
+        boolean[] propSens = new boolean[6];
 
         propNames[0] = name0;
         propVals[0] = val0;
@@ -1694,20 +1538,16 @@ public class GridToStringBuilder {
         propVals[5] = val5;
         propSens[5] = sens5;
 
-        SBLengthLimit lenLim = threadCurLen.get();
-
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 6);
+            return toStringImpl(str, tmp, propNames, propVals, propSens, 6);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 
@@ -1754,18 +1594,11 @@ public class GridToStringBuilder {
         assert name5 != null;
         assert name6 != null;
 
-        Queue<GridToStringThreadLocal> queue = threadCache.get();
+        SBLimitedLength tmp = threadLocSB.get();
 
-        assert queue != null;
-
-        // Since string() methods can be chain-called from the same thread we
-        // have to keep a list of thread-local objects and remove/add them
-        // in each string() apply.
-        GridToStringThreadLocal tmp = queue.isEmpty() ? new GridToStringThreadLocal() : queue.remove();
-
-        Object[] propNames = tmp.getAdditionalNames();
-        Object[] propVals = tmp.getAdditionalValues();
-        boolean[] propSens = tmp.getAdditionalSensitives();
+        Object[] propNames = new Object[7];
+        Object[] propVals = new Object[7];
+        boolean[] propSens = new boolean[7];
 
         propNames[0] = name0;
         propVals[0] = val0;
@@ -1789,20 +1622,16 @@ public class GridToStringBuilder {
         propVals[6] = val6;
         propSens[6] = sens6;
 
-        SBLengthLimit lenLim = threadCurLen.get();
-
         boolean newStr = false;
 
         try {
-            newStr = lenLim.length() == 0;
+            newStr = tmp.length() == 0;
 
-            return toStringImpl(str, tmp.getStringBuilder(lenLim), propNames, propVals, propSens, 7);
+            return toStringImpl(str, tmp, propNames, propVals, propSens, 7);
         }
         finally {
-            queue.offer(tmp);
-
             if (newStr)
-                lenLim.reset();
+                tmp.reset();
         }
     }
 

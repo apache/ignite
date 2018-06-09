@@ -51,6 +51,19 @@ public class SBLimitedLength extends GridStringBuilder {
     }
 
     /**
+     * Resets buffer.
+     */
+    public void reset() {
+        super.setLength(0);
+
+        lenLimit.reset();
+
+        if (tail != null)
+            tail.reset();
+    }
+
+
+    /**
      * @return tail string builder.
      */
     public CircularStringBuilder getTail() {
