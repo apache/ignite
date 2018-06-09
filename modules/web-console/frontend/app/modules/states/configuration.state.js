@@ -26,6 +26,14 @@ import ConfigurationResource from './configuration/Configuration.resource';
 import summaryTabs from './configuration/summary/summary-tabs.directive';
 import IgniteSummaryZipper from './configuration/summary/summary-zipper.service';
 
+import sidebarTpl from 'views/configuration/sidebar.tpl.pug';
+import clustersTpl from 'views/configuration/clusters.tpl.pug';
+import cachesTpl from 'views/configuration/caches.tpl.pug';
+import domainsTpl from 'views/configuration/domains.tpl.pug';
+import igfsTpl from 'views/configuration/igfs.tpl.pug';
+import summaryTpl from 'views/configuration/summary.tpl.pug';
+import summaryTabsTemplateUrl from 'views/configuration/summary-tabs.pug';
+
 angular.module('ignite-console.states.configuration', ['ui.router'])
     .directive(...previewPanel)
     // Summary screen
@@ -33,18 +41,21 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
     // Services.
     .service('IgniteSummaryZipper', IgniteSummaryZipper)
     .service('IgniteConfigurationResource', ConfigurationResource)
+    .run(['$templateCache', ($templateCache) => {
+        $templateCache.put('summary-tabs.html', summaryTabsTemplateUrl);
+    }])
     // Configure state provider.
     .config(['$stateProvider', 'AclRouteProvider', ($stateProvider, AclRoute) => {
         // Setup the states.
         $stateProvider
             .state('base.configuration', {
                 url: '/configuration',
-                templateUrl: '/configuration/sidebar.html',
+                templateUrl: sidebarTpl,
                 abstract: true
             })
             .state('base.configuration.clusters', {
                 url: '/clusters',
-                templateUrl: '/configuration/clusters.html',
+                templateUrl: clustersTpl,
                 onEnter: AclRoute.checkAccess('configuration'),
                 params: {
                     linkId: null
@@ -55,7 +66,7 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
             })
             .state('base.configuration.caches', {
                 url: '/caches',
-                templateUrl: '/configuration/caches.html',
+                templateUrl: cachesTpl,
                 onEnter: AclRoute.checkAccess('configuration'),
                 params: {
                     linkId: null
@@ -66,7 +77,7 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
             })
             .state('base.configuration.domains', {
                 url: '/domains',
-                templateUrl: '/configuration/domains.html',
+                templateUrl: domainsTpl,
                 onEnter: AclRoute.checkAccess('configuration'),
                 params: {
                     linkId: null
@@ -77,7 +88,7 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
             })
             .state('base.configuration.igfs', {
                 url: '/igfs',
-                templateUrl: '/configuration/igfs.html',
+                templateUrl: igfsTpl,
                 onEnter: AclRoute.checkAccess('configuration'),
                 params: {
                     linkId: null
@@ -88,7 +99,7 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
             })
             .state('base.configuration.summary', {
                 url: '/summary',
-                templateUrl: '/configuration/summary.html',
+                templateUrl: summaryTpl,
                 onEnter: AclRoute.checkAccess('configuration'),
                 controller: ConfigurationSummaryCtrl,
                 controllerAs: 'ctrl',

@@ -22,12 +22,15 @@ import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.h2.command.Command;
 import org.h2.command.CommandContainer;
 import org.h2.command.Prepared;
@@ -45,6 +48,7 @@ import org.h2.expression.Alias;
 import org.h2.expression.CompareLike;
 import org.h2.expression.Comparison;
 import org.h2.expression.ConditionAndOr;
+import org.h2.expression.ConditionExists;
 import org.h2.expression.ConditionIn;
 import org.h2.expression.ConditionInConstantSet;
 import org.h2.expression.ConditionInSelect;
@@ -78,6 +82,7 @@ import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperatio
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.DIVIDE;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EQUAL_NULL_SAFE;
+import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.EXISTS;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IN;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IS_NOT_NULL;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.IS_NULL;
@@ -184,7 +189,10 @@ public class GridSqlQueryParser {
         "compareType");
 
     /** */
-    private static final Getter<ConditionInSelect, Query> QUERY = getter(ConditionInSelect.class, "query");
+    private static final Getter<ConditionInSelect, Query> QUERY_IN = getter(ConditionInSelect.class, "query");
+
+    /** */
+    private static final Getter<ConditionExists, Query> QUERY_EXISTS = getter(ConditionExists.class, "query");
 
     /** */
     private static final Getter<CompareLike, Expression> LEFT = getter(CompareLike.class, "left");
@@ -415,7 +423,7 @@ public class GridSqlQueryParser {
         res.distinct(select.isDistinct());
 
         Expression where = CONDITION.get(select);
-        res.where(parseExpression(where, false));
+        res.where(parseExpression(where, true));
 
         ArrayList<TableFilter> tableFilters = new ArrayList<>();
 
@@ -447,7 +455,7 @@ public class GridSqlQueryParser {
             GridSqlElement gridFilter = parseTableFilter(f);
 
             from = from == null ? gridFilter : new GridSqlJoin(from, gridFilter, f.isJoinOuter(),
-                parseExpression(f.getJoinCondition(), false));
+                parseExpression(f.getJoinCondition(), true));
         }
 
         res.from(from);
@@ -940,7 +948,7 @@ public class GridSqlQueryParser {
 
             res.addChild(parseExpression(LEFT_CIS.get((ConditionInSelect)expression), calcTypes));
 
-            Query qry = QUERY.get((ConditionInSelect)expression);
+            Query qry = QUERY_IN.get((ConditionInSelect)expression);
 
             res.addChild(parseQueryExpression(qry));
 
@@ -1043,8 +1051,60 @@ public class GridSqlQueryParser {
             return res;
         }
 
+        if (expression instanceof ConditionExists) {
+            Query qry = QUERY_EXISTS.get((ConditionExists)expression);
+
+            GridSqlOperation res = new GridSqlOperation(EXISTS);
+
+            res.addChild(parseQueryExpression(qry));
+
+            return res;
+        }
+
         throw new IgniteException("Unsupported expression: " + expression + " [type=" +
             expression.getClass().getSimpleName() + ']');
+    }
+
+    /**
+     * @param stmt Prepared statement.
+     * @return Tables set.
+     */
+    public static Set<GridH2Table> getTables(Prepared stmt) {
+        Set<GridH2Table> res = new HashSet<>();
+
+        Set<Table> tbls = null;
+
+        if (stmt instanceof Query)
+            tbls = ((Query)stmt).getTables();
+
+        else if (stmt instanceof Merge)
+            tbls = Collections.singleton(MERGE_TABLE.get((Merge)stmt));
+
+        else if (stmt instanceof Insert)
+            tbls = Collections.singleton(INSERT_TABLE.get((Insert)stmt));
+
+        else if (stmt instanceof Delete) {
+            TableFilter filter = DELETE_FROM.get((Delete)stmt);
+
+            if (filter != null)
+                tbls = Collections.singleton(filter.getTable());
+        }
+
+        else if (stmt instanceof Update) {
+            TableFilter filter = UPDATE_TARGET.get((Update)stmt);
+
+            if (filter != null)
+                tbls = Collections.singleton(filter.getTable());
+        }
+
+        if (tbls != null) {
+            for (Table table : tbls) {
+                if (table instanceof GridH2Table)
+                    res.add((GridH2Table)table);
+            }
+        }
+
+        return res;
     }
 
     /**

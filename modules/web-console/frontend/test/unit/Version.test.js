@@ -19,6 +19,7 @@ import VersionService from '../../app/modules/configuration/Version.service';
 
 const INSTANCE = new VersionService();
 
+import { suite, test } from 'mocha';
 import { assert } from 'chai';
 
 suite('VersionServiceTestsSuite', () => {

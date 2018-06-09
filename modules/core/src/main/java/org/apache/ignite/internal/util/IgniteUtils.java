@@ -136,6 +136,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import javax.management.DynamicMBean;
 import javax.management.JMException;
+import javax.management.MBeanRegistrationException;
 import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
@@ -152,6 +153,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteDeploymentException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -509,11 +511,14 @@ public abstract class IgniteUtils {
         }
     };
 
+    /** Ignite MBeans disabled flag. */
+    public static boolean IGNITE_MBEANS_DISABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MBEANS_DISABLED);
+
     /** */
     private static final boolean assertionsEnabled;
 
-    /*
-     *
+    /**
+     * Initializes enterprise check.
      */
     static {
         boolean assertionsEnabled0 = true;
@@ -1850,15 +1855,16 @@ public abstract class IgniteUtils {
 
     /**
      * @param addrs Addresses.
+     * @return List of reachable addresses.
      */
-    public static List<InetAddress> filterReachable(List<InetAddress> addrs) {
-        final int reachTimeout = 2000;
-
+    public static List<InetAddress> filterReachable(Collection<InetAddress> addrs) {
         if (addrs.isEmpty())
             return Collections.emptyList();
 
+        final int reachTimeout = 2000;
+
         if (addrs.size() == 1) {
-            InetAddress addr = addrs.get(0);
+            InetAddress addr = F.first(addrs);
 
             if (reachable(addr, reachTimeout))
                 return Collections.singletonList(addr);
@@ -1872,32 +1878,36 @@ public abstract class IgniteUtils {
 
         ExecutorService executor = Executors.newFixedThreadPool(Math.min(10, addrs.size()));
 
-        for (final InetAddress addr : addrs) {
-            futs.add(executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    if (reachable(addr, reachTimeout)) {
-                        synchronized (res) {
-                            res.add(addr);
+        try {
+            for (final InetAddress addr : addrs) {
+                futs.add(executor.submit(new Runnable() {
+                    @Override public void run() {
+                        if (reachable(addr, reachTimeout)) {
+                            synchronized (res) {
+                                res.add(addr);
+                            }
                         }
                     }
+                }));
+            }
+
+            for (Future<?> fut : futs) {
+                try {
+                    fut.get();
                 }
-            }));
-        }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
 
-        for (Future<?> fut : futs) {
-            try {
-                fut.get();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-
-                throw new IgniteException("Thread has been interrupted.", e);
-            } catch (ExecutionException e) {
-                throw new IgniteException(e);
+                    throw new IgniteException("Thread has been interrupted.", e);
+                }
+                catch (ExecutionException e) {
+                    throw new IgniteException(e);
+                }
             }
         }
-
-        executor.shutdown();
+        finally {
+            executor.shutdown();
+        }
 
         return res;
     }
@@ -4213,6 +4223,30 @@ public abstract class IgniteUtils {
 
     /**
      * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * messages as quiet message or normal log WARN message with {@link IgniteLogger#DEV_ONLY DEV_ONLY} marker.
+     * If {@code log} is {@code null} or in QUIET mode it will add {@code (wrn)} prefix to the message.
+     * If property {@link IgniteSystemProperties#IGNITE_DEV_ONLY_LOGGING_DISABLED IGNITE_DEV_ONLY_LOGGING_DISABLED}
+     * is set to true, the message will not be logged.
+     *
+     * @param log Optional logger to use when QUIET mode is not enabled.
+     * @param msg Message to log.
+     */
+    public static void warnDevOnly(@Nullable IgniteLogger log, Object msg) {
+        assert msg != null;
+
+        // don't log message if DEV_ONLY messages are disabled
+        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED))
+            return;
+
+        if (log != null)
+            log.warning(IgniteLogger.DEV_ONLY, compact(msg.toString()), null);
+        else
+            X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (wrn) " +
+                compact(msg.toString()));
+    }
+
+    /**
+     * Depending on whether or not log is provided and quiet mode is enabled logs given
      * messages as quiet message or normal log INFO message.
      * <p>
      * <b>NOTE:</b> unlike the normal logging when INFO level may not be enabled and
@@ -4375,9 +4409,9 @@ public abstract class IgniteUtils {
             sb.a("grid=").a(gridName).a(',');
 
         if (grp != null)
-            sb.a("group=").a(grp).a(',');
+            sb.a("group=").a(escapeObjectNameValue(grp)).a(',');
 
-        sb.a("name=").a(name);
+        sb.a("name=").a(escapeObjectNameValue(name));
 
         return new ObjectName(sb.toString());
     }
@@ -4415,36 +4449,16 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Constructs JMX object name with given properties.
-     * Map with ordered {@code groups} used for proper object name construction.
+     * Escapes the given string to be used as a value in the ObjectName syntax.
      *
-     * @param gridName Grid name.
-     * @param cacheName Name of the cache.
-     * @param name Name of mbean.
-     * @return JMX object name.
-     * @throws MalformedObjectNameException Thrown in case of any errors.
+     * @param s A string to be escape.
+     * @return An escaped string.
      */
-    public static ObjectName makeCacheMBeanName(@Nullable String gridName, @Nullable String cacheName, String name)
-        throws MalformedObjectNameException {
-        SB sb = new SB(JMX_DOMAIN + ':');
+    private static String escapeObjectNameValue(String s) {
+        if (MBEAN_CACHE_NAME_PATTERN.matcher(s).matches())
+            return s;
 
-        appendClassLoaderHash(sb);
-
-        appendJvmId(sb);
-
-        if (gridName != null && !gridName.isEmpty())
-            sb.a("grid=").a(gridName).a(',');
-
-        cacheName = maskName(cacheName);
-
-        if (!MBEAN_CACHE_NAME_PATTERN.matcher(cacheName).matches())
-            sb.a("group=").a('\"').a(cacheName).a('\"').a(',');
-        else
-            sb.a("group=").a(cacheName).a(',');
-
-        sb.a("name=").a(name);
-
-        return new ObjectName(sb.toString());
+        return '\"' + s.replaceAll("[\\\\\"?*]", "\\\\$0") + '\"';
     }
 
     /**
@@ -4452,25 +4466,23 @@ public abstract class IgniteUtils {
      *
      * @param <T> Type of mbean.
      * @param mbeanSrv MBean server.
-     * @param gridName Grid name.
+     * @param igniteInstanceName Grid name.
      * @param grp Name of the group.
      * @param name Name of mbean.
      * @param impl MBean implementation.
      * @param itf MBean interface.
      * @return JMX object name.
+     * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
      */
-    public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, @Nullable String gridName, @Nullable String grp,
-        String name, T impl, @Nullable Class<T> itf) throws JMException {
-        assert mbeanSrv != null;
-        assert name != null;
-        assert itf != null;
-
-        DynamicMBean mbean = new IgniteStandardMXBean(impl, itf);
-
-        mbean.getMBeanInfo();
-
-        return mbeanSrv.registerMBean(mbean, makeMBeanName(gridName, grp, name)).getObjectName();
+    public static <T> ObjectName registerMBean(
+        MBeanServer mbeanSrv,
+        @Nullable String igniteInstanceName,
+        @Nullable String grp,
+        String name, T impl,
+        @Nullable Class<T> itf
+    ) throws JMException {
+        return registerMBean(mbeanSrv, makeMBeanName(igniteInstanceName, grp, name), impl, itf);
     }
 
     /**
@@ -4482,10 +4494,14 @@ public abstract class IgniteUtils {
      * @param impl MBean implementation.
      * @param itf MBean interface.
      * @return JMX object name.
+     * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
      */
     public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, ObjectName name, T impl, Class<T> itf)
         throws JMException {
+        if(IGNITE_MBEANS_DISABLED)
+            throw new MBeanRegistrationException(new IgniteIllegalStateException("MBeans are disabled."));
+
         assert mbeanSrv != null;
         assert name != null;
         assert itf != null;
@@ -4495,32 +4511,6 @@ public abstract class IgniteUtils {
         mbean.getMBeanInfo();
 
         return mbeanSrv.registerMBean(mbean, name).getObjectName();
-    }
-
-    /**
-     * Registers MBean with the server.
-     *
-     * @param <T> Type of mbean.
-     * @param mbeanSrv MBean server.
-     * @param gridName Grid name.
-     * @param cacheName Name of the cache.
-     * @param name Name of mbean.
-     * @param impl MBean implementation.
-     * @param itf MBean interface.
-     * @return JMX object name.
-     * @throws JMException If MBean creation failed.
-     */
-    public static <T> ObjectName registerCacheMBean(MBeanServer mbeanSrv, @Nullable String gridName,
-        @Nullable String cacheName, String name, T impl, Class<T> itf) throws JMException {
-        assert mbeanSrv != null;
-        assert name != null;
-        assert itf != null;
-
-        DynamicMBean mbean = new IgniteStandardMXBean(impl, itf);
-
-        mbean.getMBeanInfo();
-
-        return mbeanSrv.registerMBean(mbean, makeCacheMBeanName(gridName, cacheName, name)).getObjectName();
     }
 
     /**
@@ -4553,11 +4543,24 @@ public abstract class IgniteUtils {
      * @return {@code true} if thread has finished, {@code false} otherwise.
      */
     public static boolean join(@Nullable Thread t, @Nullable IgniteLogger log) {
-        if (t != null)
-            try {
-                t.join();
+        return join(t, log, 0);
+    }
 
-                return true;
+    /**
+     * Waits for completion of a given thread. If thread is {@code null} then
+     * this method returns immediately returning {@code true}
+     *
+     * @param t Thread to join.
+     * @param log Logger for logging errors.
+     * @param timeout Join timeout.
+     * @return {@code true} if thread has finished, {@code false} otherwise.
+     */
+    public static boolean join(@Nullable Thread t, @Nullable IgniteLogger log, long timeout) {
+        if (t != null) {
+            try {
+                t.join(timeout);
+
+                return !t.isAlive();
             }
             catch (InterruptedException ignore) {
                 warn(log, "Got interrupted while waiting for completion of a thread: " + t);
@@ -4566,6 +4569,7 @@ public abstract class IgniteUtils {
 
                 return false;
             }
+        }
 
         return true;
     }
@@ -6116,6 +6120,21 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Check if given class represents a Enum.
+     *
+     * @param cls Class to check.
+     * @return {@code True} if this is a Enum class.
+     */
+    public static boolean isEnum(Class cls) {
+        if (cls.isEnum())
+            return true;
+
+        Class sCls = cls.getSuperclass();
+
+        return sCls != null && sCls.isEnum();
+    }
+
+    /**
      * Converts {@link InterruptedException} to {@link IgniteCheckedException}.
      *
      * @param mux Mux to wait on.
@@ -7213,35 +7232,23 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Casts this throwable as {@link IgniteCheckedException}. Creates wrapping
-     * {@link IgniteCheckedException}, if needed.
+     * Casts the passed {@code Throwable t} to {@link IgniteCheckedException}.<br>
+     * If {@code t} is a {@link GridClosureException}, it is unwrapped and then cast to {@link IgniteCheckedException}.
+     * If {@code t} is an {@link IgniteCheckedException}, it is returned.
+     * If {@code t} is not a {@link IgniteCheckedException}, a new {@link IgniteCheckedException} caused by {@code t}
+     * is returned.
      *
      * @param t Throwable to cast.
-     * @return Grid exception.
+     * @return {@code t} cast to {@link IgniteCheckedException}.
      */
     public static IgniteCheckedException cast(Throwable t) {
         assert t != null;
 
-        while (true) {
-            if (t instanceof Error)
-                throw (Error)t;
+        t = unwrap(t);
 
-            if (t instanceof GridClosureException) {
-                t = ((GridClosureException)t).unwrap();
-
-                continue;
-            }
-
-            if (t instanceof IgniteCheckedException)
-                return (IgniteCheckedException)t;
-
-            if (!(t instanceof IgniteException) || t.getCause() == null)
-                return new IgniteCheckedException(t);
-
-            assert t.getCause() != null; // ...and it is IgniteException.
-
-            t = t.getCause();
-        }
+        return t instanceof IgniteCheckedException
+            ? (IgniteCheckedException)t
+            : new IgniteCheckedException(t);
     }
 
     /**
@@ -9409,6 +9416,40 @@ public abstract class IgniteUtils {
             return new GridLeanMap<>(limit);
 
         return new HashMap<>(capacity(limit), 0.75f);
+    }
+
+    /**
+     * Returns an immutable map if argument is singleton mutable map,
+     * otherwise returns argument.
+     *
+     * @param map map.
+     * @param <K> type of map keys.
+     * @param <V> type of map values.
+     * @return argument or singleton map.
+     */
+    public static <K, V> Map<K, V> unwrapSingletonMap(Map<K, V> map) {
+        if (map instanceof MutableSingletonMap)
+            return ((MutableSingletonMap<K, V>)map).singletonMap();
+
+        return map;
+    }
+
+    /**
+     * Returns an immutable collection if argument is singleton mutable collection,
+     * otherwise returns argument.
+     *
+     * @param col collection.
+     * @param <T> type of collection elements.
+     * @return argument or immutable singleton collection.
+     */
+    public static <T> Collection<T> unwrapSingletonCollection(Collection<T> col) {
+        if (col instanceof MutableSingletonList)
+            return ((MutableSingletonList<T>)col).singletonList();
+
+        if (col instanceof MutableSingletonSet)
+            return ((MutableSingletonSet<T>)col).singletonSet();
+
+        return col;
     }
 
     /**

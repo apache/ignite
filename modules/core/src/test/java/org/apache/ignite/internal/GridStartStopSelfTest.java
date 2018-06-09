@@ -85,54 +85,61 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cc);
 
-        final Ignite g0 = G.start(cfg);
+        try {
+            final Ignite g0 = G.start(cfg);
 
-        cfg = new IgniteConfiguration();
+            cfg = new IgniteConfiguration();
 
-        cfg.setGridName(getTestGridName(1));
+            cfg.setGridName(getTestGridName(1));
 
-        cc = new CacheConfiguration();
+            cc = new CacheConfiguration();
 
-        cc.setAtomicityMode(TRANSACTIONAL);
+            cc.setAtomicityMode(TRANSACTIONAL);
 
-        cfg.setCacheConfiguration(cc);
+            cfg.setCacheConfiguration(cc);
 
-        final CountDownLatch latch = new CountDownLatch(1);
+            final CountDownLatch latch = new CountDownLatch(1);
 
-        Ignite g1 = G.start(cfg);
+            Ignite g1 = G.start(cfg);
 
-        Thread stopper = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    try (Transaction ignored = g0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        g0.cache(null).get(1);
+            Thread stopper = new Thread(new Runnable() {
+                @Override public void run() {
+                    try {
+                        try (Transaction ignored = g0.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            g0.cache(null).get(1);
 
-                        latch.countDown();
+                            latch.countDown();
 
-                        Thread.sleep(500);
+                            Thread.sleep(500);
 
-                        info("Before stop.");
+                            info("Before stop.");
 
-                        G.stop(getTestGridName(1), true);
+                            G.stop(getTestGridName(1), true);
+                        }
+                    }
+                    catch (Exception e) {
+                        error("Error.", e);
                     }
                 }
-                catch (Exception e) {
-                    error("Error.", e);
-                }
+            });
+
+            stopper.start();
+
+            assert latch.await(1, SECONDS);
+
+            info("Before remove.");
+
+            try {
+                g1.cache(null).remove(1);
             }
-        });
+            catch (CacheException ignore) {
+                // No-op.
+            }
 
-        stopper.start();
-
-        assert latch.await(1, SECONDS);
-
-        info("Before remove.");
-
-        try {
-            g1.cache(null).remove(1);
+            stopper.join();
         }
-        catch (CacheException ignore) {
-            // No-op.
+        finally {
+            stopAllGrids();
         }
     }
 

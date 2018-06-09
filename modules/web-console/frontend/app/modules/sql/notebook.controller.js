@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
+import templateUrl from 'views/sql/notebook-new.tpl.pug';
+
 // Controller that load notebooks in navigation bar .
 export default ['$scope', '$modal', '$state', 'IgniteMessages', 'IgniteNotebook',
     (scope, $modal, $state, Messages, Notebook) => {
         // Pre-fetch modal dialogs.
-        const nameModal = $modal({scope, templateUrl: '/sql/notebook-new.html', show: false});
+        const nameModal = $modal({scope, templateUrl, show: false});
 
         scope.create = (name) => {
             return Notebook.create(name)

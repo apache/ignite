@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvi
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexGetSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridIndexingWithNoopSwapSelfTest;
+import org.apache.ignite.internal.processors.cache.GridLostPartitionValidationQueryTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimitiveTypesSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
 import org.apache.ignite.internal.processors.cache.IgniteClientReconnectQueriesTest;
@@ -83,6 +84,8 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
         suite.addTestSuite(CacheIndexingOffheapCleanupTest.class);
 
         suite.addTestSuite(ClientReconnectAfterClusterRestartTest.class);
+
+        suite.addTestSuite(GridLostPartitionValidationQueryTest.class);
 
         return suite;
     }

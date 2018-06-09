@@ -26,6 +26,7 @@ import org.apache.ignite.internal.binary.BinaryObjectExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.util.IgniteUtils;
 
 /**
  *
@@ -109,8 +110,8 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (val.getClass().isEnum()) {
-            String clsName = val.getClass().getName();
+        if (IgniteUtils.isEnum(val.getClass())) {
+            String clsName = ((Enum)val).getDeclaringClass().getName();
 
             int typeId = writer.context().typeId(clsName);
             String typeName = writer.context().userTypeName(clsName);
@@ -120,7 +121,7 @@ class BinaryBuilderSerializer {
             writer.context().updateMetadata(typeId, meta);
 
             // Need register class for marshaller to be able to deserialize enum value.
-            writer.context().descriptorForClass(val.getClass(), false);
+            writer.context().descriptorForClass(((Enum)val).getDeclaringClass(), false);
 
             writer.writeByte(GridBinaryMarshaller.ENUM);
             writer.writeInt(typeId);

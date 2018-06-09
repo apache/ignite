@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-import templateUrl from './loading.jade';
-import './loading.css';
+import template from './loading.pug';
+import './loading.scss';
 
-export default ['igniteLoading', ['IgniteLoading', '$templateCache', '$compile', (Loading, $templateCache, $compile) => {
+export default ['igniteLoading', ['IgniteLoading', '$compile', (Loading, $compile) => {
     const link = (scope, element) => {
-        const compiledTemplate = $compile($templateCache.get(templateUrl));
+        const compiledTemplate = $compile(template);
 
         const build = () => {
             scope.position = scope.position || 'middle';

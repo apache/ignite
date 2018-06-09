@@ -769,7 +769,7 @@ public class PlatformUtils {
      * @param resObj Result.
      * @param err Error.
      */
-    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Exception err)
+    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Throwable err)
     {
         if (err == null) {
             writer.writeBoolean(true);
@@ -951,7 +951,7 @@ public class PlatformUtils {
         for (Object obj : col)
             col0.add(unwrapBinary(obj));
 
-        return col0;
+        return U.unwrapSingletonCollection(col0);
     }
 
     /**
@@ -981,7 +981,7 @@ public class PlatformUtils {
         for (Map.Entry<Object, Object> e : map.entrySet())
             map0.put(unwrapBinary(e.getKey()), unwrapBinary(e.getValue()));
 
-        return map0;
+        return U.unwrapSingletonMap(map0);
     }
     /**
      * Create Java object.

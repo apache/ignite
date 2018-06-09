@@ -19,7 +19,6 @@ package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cache.spi.access.SoftLock;
@@ -60,7 +59,7 @@ public class HibernateReadOnlyAccessStrategy extends HibernateAccessStrategyAdap
      * @param ignite Grid.
      * @param cache Cache.
      */
-    public HibernateReadOnlyAccessStrategy(Ignite ignite, IgniteInternalCache<Object, Object> cache) {
+    public HibernateReadOnlyAccessStrategy(Ignite ignite, HibernateCacheProxy cache) {
         super(ignite, cache);
     }
 

@@ -82,6 +82,8 @@ public class GridLuceneOutputStream extends IndexOutput {
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         flush();
+
+        file.releaseRef();
     }
 
     /** {@inheritDoc} */
@@ -174,7 +176,7 @@ public class GridLuceneOutputStream extends IndexOutput {
      *
      * @return Bytes used.
      */
-    public long sizeInBytes() {
+    long sizeInBytes() {
         return (long)file.numBuffers() * (long)BUFFER_SIZE;
     }
 

@@ -2475,14 +2475,21 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private class DeadlockDetectionListener implements GridMessageListener {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public void onMessage(UUID nodeId, Object msg) {
+        @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
             GridCacheMessage cacheMsg = (GridCacheMessage)msg;
 
-            unmarshall(nodeId, cacheMsg);
+            Throwable err = null;
 
-            if (cacheMsg.classError() != null) {
+            try {
+                unmarshall(nodeId, cacheMsg);
+            }
+            catch (Exception e) {
+                err = e;
+            }
+
+            if (err != null || cacheMsg.classError() != null) {
                 try {
-                    processFailedMessage(nodeId, cacheMsg);
+                    processFailedMessage(nodeId, cacheMsg, err);
                 }
                 catch(Throwable e){
                     U.error(log, "Failed to process message [senderId=" + nodeId +
@@ -2535,7 +2542,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
          * @param nodeId Node ID.
          * @param msg Message.
          */
-        private void processFailedMessage(UUID nodeId, GridCacheMessage msg) throws IgniteCheckedException {
+        private void processFailedMessage(UUID nodeId, GridCacheMessage msg, Throwable err) throws IgniteCheckedException {
             switch (msg.directType()) {
                 case -24: {
                     TxLocksRequest req = (TxLocksRequest)msg;
@@ -2567,7 +2574,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         return;
                     }
 
-                    fut.onResult(nodeId, res);
+                    if (err == null)
+                        fut.onResult(nodeId, res);
+                    else
+                        fut.onDone(null, err);
                 }
 
                 break;

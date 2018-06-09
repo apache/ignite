@@ -300,10 +300,10 @@ public final class GridH2CollocationModel {
             assert childFilters == null;
 
             // We are at table instance.
-            GridH2Table tbl = (GridH2Table)filter().getTable();
+            Table tbl = filter().getTable();
 
             // Only partitioned tables will do distributed joins.
-            if (!tbl.isPartitioned()) {
+            if (!(tbl instanceof GridH2Table) || !((GridH2Table)tbl).isPartitioned()) {
                 type = Type.REPLICATED;
                 multiplier = MULTIPLIER_COLLOCATED;
 
@@ -593,7 +593,7 @@ public final class GridH2CollocationModel {
     private GridH2CollocationModel child(int i, boolean create) {
         GridH2CollocationModel child = children[i];
 
-        if (child == null && create && isChildTableOrView(i, null)) {
+        if (child == null && create) {
             TableFilter f = childFilters[i];
 
             if (f.getTable().isView()) {

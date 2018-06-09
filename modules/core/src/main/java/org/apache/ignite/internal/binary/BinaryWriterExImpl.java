@@ -403,17 +403,19 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
             out.unsafeWriteByte(GridBinaryMarshaller.DECIMAL);
 
+            out.unsafeWriteInt(val.scale());
+
             BigInteger intVal = val.unscaledValue();
 
-            if (intVal.signum() == -1) {
+            boolean negative = intVal.signum() == -1;
+
+            if (negative)
                 intVal = intVal.negate();
 
-                out.unsafeWriteInt(val.scale() | 0x80000000);
-            }
-            else
-                out.unsafeWriteInt(val.scale());
-
             byte[] vals = intVal.toByteArray();
+
+            if (negative)
+                vals[0] |= -0x80;
 
             out.unsafeWriteInt(vals.length);
             out.writeByteArray(vals);
@@ -781,7 +783,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            BinaryClassDescriptor desc = ctx.descriptorForClass(val.getClass(), false);
+            BinaryClassDescriptor desc = ctx.descriptorForClass(val.getDeclaringClass(), false);
 
             out.unsafeEnsure(1 + 4);
 
@@ -791,7 +793,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
                 out.unsafeWriteInt(desc.typeId());
             else {
                 out.unsafeWriteInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
-                doWriteString(val.getClass().getName());
+                doWriteString(val.getDeclaringClass().getName());
             }
 
             out.writeInt(val.ordinal());

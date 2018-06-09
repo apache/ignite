@@ -216,4 +216,5 @@ public class IgniteCacheInsertSqlQuerySelfTest extends IgniteCacheAbstractInsert
 
         assertEquals(1, (int)p.get(id));
     }
+
 }

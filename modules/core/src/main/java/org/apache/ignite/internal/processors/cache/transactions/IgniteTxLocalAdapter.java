@@ -37,6 +37,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -956,11 +957,18 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             throw ex;
                         }
                         else {
+                            boolean nodeStopping = X.hasCause(ex, NodeStoppingException.class);
+
                             IgniteCheckedException err = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
                                 "(all transaction entries will be invalidated, however there was a window when " +
                                 "entries for this transaction were visible to others): " + this, ex);
 
-                            U.error(log, "Heuristic transaction failure.", err);
+                            if (nodeStopping) {
+                                U.warn(log, "Failed to commit transaction, node is stopping " +
+                                    "[tx=" + this + ", err=" + ex + ']');
+                            }
+                            else
+                                U.error(log, "Heuristic transaction failure.", err);
 
                             COMMIT_ERR_UPD.compareAndSet(this, null, err);
 
@@ -968,7 +976,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                             try {
                                 // Courtesy to minimize damage.
-                                uncommit();
+                                uncommit(nodeStopping);
                             }
                             catch (Throwable ex1) {
                                 U.error(log, "Failed to uncommit transaction: " + this, ex1);
@@ -1009,17 +1017,20 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * Commits transaction to transaction manager. Used for one-phase commit transactions only.
      *
      * @param commit If {@code true} commits transaction, otherwise rollbacks.
+     * @param nodeStop If {@code true} tx is cancelled on node stop.
      * @throws IgniteCheckedException If failed.
      */
-    public void tmFinish(boolean commit) throws IgniteCheckedException {
+    public void tmFinish(boolean commit, boolean nodeStop) throws IgniteCheckedException {
         assert onePhaseCommit();
 
         if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
-            // Unlock all locks.
-            if (commit)
-                cctx.tm().commitTx(this);
-            else
-                cctx.tm().rollbackTx(this);
+            if (!nodeStop) {
+                // Unlock all locks.
+                if (commit)
+                    cctx.tm().commitTx(this);
+                else
+                    cctx.tm().rollbackTx(this);
+            }
 
             state(commit ? COMMITTED : ROLLED_BACK);
 
@@ -1823,8 +1834,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         for (Iterator<KeyCacheObject> it = missed.keySet().iterator(); it.hasNext(); ) {
                             KeyCacheObject cacheKey = it.next();
 
-                            K keyVal =
-                                (K)(keepCacheObjects ? cacheKey : cacheKey.value(cacheCtx.cacheObjectContext(), false));
+                            K keyVal = (K)(keepCacheObjects ? cacheKey
+                                : cacheCtx.cacheObjectContext()
+                                    .unwrapBinaryIfNeeded(cacheKey, !deserializeBinary, false));
 
                             if (retMap.containsKey(keyVal))
                                 it.remove();
@@ -2672,17 +2684,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     /**
      * @param cctx Cache context.
      * @param key Key.
-     * @param val Value.
+     * @param val0 Value.
      * @param filter Filter.
      * @return {@code True} if filter passed.
      */
     private boolean isAll(GridCacheContext cctx,
         KeyCacheObject key,
-        CacheObject val,
+        final CacheObject val0,
         CacheEntryPredicate[] filter) {
-        GridCacheEntryEx e = new GridDhtDetachedCacheEntry(cctx, key, 0, val, null, 0) {
+        GridCacheEntryEx e = new GridDhtDetachedCacheEntry(cctx, key, 0) {
             @Nullable @Override public CacheObject peekVisibleValue() {
-                return rawGet();
+                return val0;
             }
         };
 

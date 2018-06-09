@@ -61,7 +61,7 @@ public class HibernateTransactionalAccessStrategy extends HibernateAccessStrateg
      * @param ignite Grid.
      * @param cache Cache.
      */
-    public HibernateTransactionalAccessStrategy(Ignite ignite, IgniteInternalCache<Object, Object> cache) {
+    public HibernateTransactionalAccessStrategy(Ignite ignite, HibernateCacheProxy cache) {
         super(ignite, cache);
     }
 

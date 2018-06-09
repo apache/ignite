@@ -358,16 +358,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public boolean invalidate(@Nullable GridCacheVersion curVer, GridCacheVersion newVer)
+    @Override public boolean invalidate(GridCacheVersion newVer)
         throws IgniteCheckedException {
-        assert false;
-
-        return false;
-    }
-
-    /** @inheritDoc */
-    @Override public boolean invalidate(@Nullable CacheEntryPredicate[] filter)
-        throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert false;
 
         return false;

@@ -49,6 +49,9 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
     private static volatile CountDownLatch latch;
 
     /** */
+    protected static volatile CountDownLatch entLatch;
+
+    /** */
     private static volatile ExpectedData expData;
 
     /** {@inheritDoc} */
@@ -66,36 +69,40 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
         return null;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param igniteInstanceName Ignite instance name.
+     * @return Cache configuration.
+     * @throws Exception In case of error.
+     */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration ccfg0 = super.cacheConfiguration(igniteInstanceName);
 
-        assert cfg.getCacheConfiguration().length == 1;
-
-        CacheConfiguration ccfg0 = cfg.getCacheConfiguration()[0];
 
         ccfg0.setReadThrough(true);
         ccfg0.setWriteThrough(true);
         ccfg0.setWriteBehindBatchSize(10);
         ccfg0.setWriteBehindFlushSize(10);
-        ccfg0.setWriteBehindFlushFrequency(60_000);
+        ccfg0.setWriteBehindFlushFrequency(600);
         ccfg0.setWriteBehindEnabled(true);
 
         ccfg0.setCacheStoreFactory(singletonFactory(new TestStore()));
 
-        CacheConfiguration ccfg1 = cacheConfiguration(gridName);
+        return ccfg0;
+    }
 
-        ccfg1.setReadThrough(true);
-        ccfg1.setWriteThrough(true);
-        ccfg1.setWriteBehindBatchSize(10);
-        ccfg1.setWriteBehindFlushSize(10);
-        ccfg1.setWriteBehindFlushFrequency(60_000);
-        ccfg1.setWriteBehindEnabled(true);
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        assert cfg.getCacheConfiguration().length == 1;
+
+        CacheConfiguration ccfg0 = cacheConfiguration(igniteInstanceName);
+
+        CacheConfiguration ccfg1 = cacheConfiguration(igniteInstanceName);
 
         ccfg1.setName(CACHE_NAME1);
-
-        ccfg1.setCacheStoreFactory(singletonFactory(new TestStore()));
 
         cfg.setCacheConfiguration(ccfg0, ccfg1);
 
@@ -120,6 +127,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
 
         try {
             latch = new CountDownLatch(2);
+            entLatch = new CountDownLatch(11);
 
             expData = new ExpectedData("writeAll", cacheName);
 
@@ -127,13 +135,17 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
                 cache.put(i, i);
 
             assertTrue(latch.await(10_000, TimeUnit.MILLISECONDS));
+
+            assertTrue(entLatch.await(10_000,TimeUnit.MILLISECONDS));
         }
         finally {
             latch = null;
+            entLatch = null;
         }
 
         try {
             latch = new CountDownLatch(2);
+            entLatch = new CountDownLatch(11);
 
             expData = new ExpectedData("deleteAll", cacheName);
 
@@ -141,16 +153,20 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
                 cache.remove(i);
 
             assertTrue(latch.await(10_000, TimeUnit.MILLISECONDS));
+
+            assertTrue(entLatch.await(10_000,TimeUnit.MILLISECONDS));
         }
         finally {
             latch = null;
+            entLatch = null;
         }
     }
 
     /**
      *
      */
-    private class TestStore implements CacheStore<Object, Object> {
+    protected class TestStore implements CacheStore<Object, Object> {
+
         /** Auto-injected store session. */
         @CacheStoreSessionResource
         private CacheStoreSession ses;
@@ -195,6 +211,9 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
             assertTrue("Unexpected entries: " + entries, entries.size() == 10 || entries.size() == 1);
 
             checkSession("writeAll");
+
+            for (int i = 0; i < entries.size(); i++)
+                entLatch.countDown();
         }
 
         /** {@inheritDoc} */
@@ -209,6 +228,9 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
             assertTrue("Unexpected keys: " + keys, keys.size() == 10 || keys.size() == 1);
 
             checkSession("deleteAll");
+
+            for (int i = 0; i < keys.size(); i++)
+                entLatch.countDown();
         }
 
         /**
@@ -221,7 +243,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
         /**
          * @param mtd Called stored method.
          */
-        private void checkSession(String mtd) {
+        protected void checkSession(String mtd) {
             assertNotNull(ignite);
 
             CacheStoreSession ses = session();
