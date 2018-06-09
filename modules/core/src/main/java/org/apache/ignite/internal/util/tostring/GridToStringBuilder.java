@@ -28,14 +28,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -88,10 +87,7 @@ public class GridToStringBuilder {
     private static final Object[] EMPTY_ARRAY = new Object[0];
 
     /** */
-    private static final Map<String, GridToStringClassDescriptor> classCache = new HashMap<>();
-
-    /** */
-    private static final ReadWriteLock rwLock = new ReentrantReadWriteLock();
+    private static final Map<String, GridToStringClassDescriptor> classCache = new ConcurrentHashMap<>();
 
     /** {@link IgniteSystemProperties#IGNITE_TO_STRING_INCLUDE_SENSITIVE} */
     public static final boolean INCLUDE_SENSITIVE =
@@ -1076,16 +1072,10 @@ public class GridToStringBuilder {
         }
         // Specifically catching all exceptions.
         catch (Exception e) {
-            rwLock.writeLock().lock();
 
             // Remove entry from cache to avoid potential memory leak
             // in case new class loader got loaded under the same identity hash.
-            try {
-                classCache.remove(cls.getName() + System.identityHashCode(cls.getClassLoader()));
-            }
-            finally {
-                rwLock.writeLock().unlock();
-            }
+            classCache.remove(cls.getName() + System.identityHashCode(cls.getClassLoader()));
 
             // No other option here.
             throw new IgniteException(e);
@@ -1719,14 +1709,7 @@ public class GridToStringBuilder {
 
         GridToStringClassDescriptor cd;
 
-        rwLock.readLock().lock();
-
-        try {
-            cd = classCache.get(key);
-        }
-        finally {
-            rwLock.readLock().unlock();
-        }
+        cd = classCache.get(key);
 
         if (cd == null) {
             cd = new GridToStringClassDescriptor(cls);
@@ -1788,18 +1771,7 @@ public class GridToStringBuilder {
 
             cd.sortFields();
 
-            /*
-             * Allow multiple puts for the same class - they will simply override.
-             */
-
-            rwLock.writeLock().lock();
-
-            try {
-                classCache.put(key, cd);
-            }
-            finally {
-                rwLock.writeLock().unlock();
-            }
+            classCache.putIfAbsent(key, cd);
         }
 
         return cd;

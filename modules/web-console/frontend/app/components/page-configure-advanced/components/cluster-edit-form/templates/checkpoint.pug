@@ -32,7 +32,7 @@ panel-collapsible(ng-form=form)
                 .ignite-form-field
                     +ignite-form-field__label('Checkpoint SPI configurations:', '"checkpointSPIConfigurations"')
                     .ignite-form-field__control
-                        list-editable(ng-model=model name='checkpointSPIConfigurations')
+                        list-editable.pc-list-editable-with-form-grid(ng-model=model name='checkpointSPIConfigurations')
                             list-editable-item-edit(item-name='$checkpointSPI').pc-form-grid-row
                                 .pc-form-grid-col-60
                                     +dropdown-required('Checkpoint SPI:', '$checkpointSPI.kind', '"checkpointKind"', 'true', 'true', 'Choose checkpoint configuration variant', '[\
