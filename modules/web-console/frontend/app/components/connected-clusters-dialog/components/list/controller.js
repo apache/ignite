@@ -48,8 +48,8 @@ export default class SnapshotsListCachesCtrl {
     }
 
     adjustHeight(rows) {
-        // Add header height.
-        const height = Math.min(rows, 6) * 48 + 49 + (rows ? 8 : 0);
+        // One row for grid-no-data.
+        const height = Math.max(1, Math.min(rows, 6)) * 48 + 49 + (rows ? 8 : 0);
 
         this.gridApi.grid.element.css('height', height + 'px');
 
