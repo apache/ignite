@@ -2266,8 +2266,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnectSessionExpire1_1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8131");
-
         clientReconnectSessionExpire(false);
     }
 
@@ -2275,8 +2273,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnectSessionExpire1_2() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8131");
-
         clientReconnectSessionExpire(true);
     }
 
