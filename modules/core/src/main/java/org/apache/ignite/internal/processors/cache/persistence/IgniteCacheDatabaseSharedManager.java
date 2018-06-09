@@ -76,7 +76,7 @@ import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE
 public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter
     implements IgniteChangeGlobalStateSupport, CheckpointLockStateChecker {
     /** DataRegionConfiguration name reserved for internal caches. */
-    static final String SYSTEM_DATA_REGION_NAME = "sysMemPlc";
+    public static final String SYSTEM_DATA_REGION_NAME = "sysMemPlc";
 
     /** Minimum size of memory chunk */
     private static final long MIN_PAGE_MEMORY_SIZE = 10L * 1024 * 1024;
