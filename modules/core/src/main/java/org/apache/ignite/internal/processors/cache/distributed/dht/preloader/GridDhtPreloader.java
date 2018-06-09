@@ -192,7 +192,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         final AffinityTopologyVersion rebTopVer = demander.lastRebalancedTopologyVersion() == null ?
             topVer : demander.lastRebalancedTopologyVersion();
 
-        // We should get affinity assigns based on previous rebalance with successfull result to calculate difference.
+        // We should get assigns based on previous rebalance with successfull result to calculate difference.
+        // The limit of history affinity assignments size described by IGNITE_AFFINITY_HISTORY_SIZE constant.
         AffinityAssignment prevAff = grp.affinity().cachedVersions().contains(rebTopVer) ?
             grp.affinity().cachedAffinity(rebTopVer) : aff;
 

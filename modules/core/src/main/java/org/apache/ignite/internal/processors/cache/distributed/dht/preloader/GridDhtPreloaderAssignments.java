@@ -38,7 +38,10 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     /** */
     private boolean cancelled;
 
-    /** */
+    /**
+     * Does this assignments need to be rebalanced. Cancelled and empty assignments will always have {code True}
+     * because they are not fully calculated.
+     */
     private boolean needRebalance = true;
 
     /**
