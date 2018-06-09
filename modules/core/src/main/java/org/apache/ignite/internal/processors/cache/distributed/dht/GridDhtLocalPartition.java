@@ -825,7 +825,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 break;
             }
             catch (IgniteFutureTimeoutCheckedException ignored) {
-                log.warning("Failed to await partition destroy within timeout " + this);
+                U.warn(log, "Failed to await partition destroy within timeout " + this);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to await partition destroy " + this, e);
