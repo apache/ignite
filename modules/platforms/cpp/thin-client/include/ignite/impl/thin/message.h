@@ -150,6 +150,14 @@ namespace ignite
             {
             public:
                 /**
+                 * Destructor.
+                 */
+                virtual ~Request()
+                {
+                    // No-op.
+                }
+
+                /**
                  * Get operation code.
                  *
                  * @return Operation code.
@@ -157,6 +165,16 @@ namespace ignite
                 static int32_t GetOperationCode()
                 {
                     return OpCode;
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+                {
+                    // No-op.
                 }
             };
 
@@ -176,7 +194,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                ~GetOrCreateCacheWithNameRequest()
+                virtual ~GetOrCreateCacheWithNameRequest()
                 {
                     // No-op.
                 }
@@ -186,7 +204,7 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
 
             private:
                 /** Name. */
@@ -209,7 +227,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                ~CreateCacheWithNameRequest()
+                virtual ~CreateCacheWithNameRequest()
                 {
                     // No-op.
                 }
@@ -219,7 +237,7 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
 
             private:
                 /** Name. */
@@ -246,7 +264,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                ~DestroyCacheRequest()
+                virtual ~DestroyCacheRequest()
                 {
                     // No-op.
                 }
@@ -256,7 +274,7 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
 
             private:
                 /** Cache ID. */
@@ -282,7 +300,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                ~CachePutRequest()
+                virtual ~CachePutRequest()
                 {
                     // No-op.
                 }
@@ -292,7 +310,7 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
 
             private:
                 /** Cache ID. */
@@ -326,7 +344,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                ~CacheGetRequest()
+                virtual ~CacheGetRequest()
                 {
                     // No-op.
                 }
@@ -336,7 +354,7 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
 
             private:
                 /** Cache ID. */
@@ -369,7 +387,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                ~BinaryTypeGetRequest()
+                virtual ~BinaryTypeGetRequest()
                 {
                     // No-op.
                 }
@@ -379,7 +397,7 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
 
             private:
                 /** Cache ID. */
@@ -406,7 +424,7 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                ~BinaryTypePutRequest()
+                virtual ~BinaryTypePutRequest()
                 {
                     // No-op.
                 }
@@ -416,7 +434,7 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
 
             private:
                 /** Cache ID. */
@@ -510,7 +528,7 @@ namespace ignite
             };
 
             /**
-             * Cache put request.
+             * Cache put response.
              */
             class BinaryTypeGetResponse : public Response
             {
@@ -542,6 +560,41 @@ namespace ignite
             private:
                 /** Cache ID. */
                 binary::SPSnap& snapshot;
+            };
+
+            /**
+             * Get cache names response.
+             */
+            class GetCacheNamesResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheNames Cache names.
+                 */
+                GetCacheNamesResponse(std::vector<std::string>& cacheNames) :
+                    cacheNames(cacheNames)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~GetCacheNamesResponse()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Cache ID. */
+                std::vector<std::string>& cacheNames;
             };
         }
     }

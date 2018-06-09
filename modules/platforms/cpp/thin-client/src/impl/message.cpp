@@ -20,6 +20,8 @@
 #include <ignite/impl/thin/readable.h>
 
 #include <ignite/impl/thin/message.h>
+#include "..\..\include\ignite\impl\thin\message.h"
+#include "ignite/binary/binary_raw_reader.h"
 
 namespace ignite
 {
@@ -190,6 +192,21 @@ namespace ignite
             void DestroyCacheRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
             {
                 writer.WriteInt32(cacheId);
+            }
+
+            void GetCacheNamesResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                int32_t len = reader.ReadInt32();
+
+                cacheNames.reserve(static_cast<size_t>(len));
+
+                for (int32_t i = 0; i < len; i++)
+                {
+                    std::string res;
+                    reader.ReadString(res);
+
+                    cacheNames.push_back(res);
+                }
             }
         }
     }

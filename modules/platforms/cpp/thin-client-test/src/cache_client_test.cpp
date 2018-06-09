@@ -140,6 +140,38 @@ BOOST_AUTO_TEST_CASE(CacheClientDestroyCacheNonexisting)
     BOOST_REQUIRE_THROW(client.DestroyCache("unknown"), ignite::IgniteError);
 }
 
+BOOST_AUTO_TEST_CASE(CacheClientGetCacheNames)
+{
+    std::set<std::string> expectedNames;
+
+    expectedNames.insert("local_atomic");
+    expectedNames.insert("partitioned_atomic_near");
+    expectedNames.insert("partitioned_near");
+    expectedNames.insert("partitioned2");
+    expectedNames.insert("partitioned");
+    expectedNames.insert("replicated");
+    expectedNames.insert("replicated_atomic");
+    expectedNames.insert("local");
+    expectedNames.insert("partitioned_atomic");
+
+    IgniteClientConfiguration cfg;
+
+    cfg.SetEndPoints("127.0.0.1:11110"); 
+
+    IgniteClient client = IgniteClient::Start(cfg);
+
+    std::vector<std::string> caches;
+
+    client.GetCacheNames(caches);
+
+    BOOST_CHECK_EQUAL(expectedNames.size(), caches.size());
+
+    for (std::vector<std::string>::const_iterator it = caches.begin(); it != caches.end(); ++it)
+    {
+        BOOST_CHECK_EQUAL(expectedNames.count(*it), 1);
+    }
+}
+
 BOOST_AUTO_TEST_CASE(CacheClientPutGetBasicKeyValue)
 {
     IgniteClientConfiguration cfg;

@@ -89,6 +89,14 @@ namespace ignite
                  */
                 void DestroyCache(const char* name);
 
+                /**
+                 * Get names of currently available caches or an empty collection
+                 * if no caches are available.
+                 *
+                 * @param cacheNames Cache names. Output parameter.
+                 */
+                void GetCacheNames(std::vector<std::string>& cacheNames);
+
             private:
                 /**
                  * Check cache name.

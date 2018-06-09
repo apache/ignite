@@ -20,6 +20,7 @@
 
 #include <ignite/impl/thin/ignite_client_impl.h>
 #include <ignite/impl/thin/cache/cache_client_impl.h>
+#include "..\include\ignite\thin\ignite_client.h"
 
 using namespace ignite::impl::thin;
 using namespace cache;
@@ -55,6 +56,11 @@ namespace ignite
         void IgniteClient::DestroyCache(const char* name)
         {
             GetClientImpl(impl).DestroyCache(name);
+        }
+
+        void IgniteClient::GetCacheNames(std::vector<std::string>& cacheNames)
+        {
+            GetClientImpl(impl).GetCacheNames(cacheNames);
         }
 
         IgniteClient::SP_Void IgniteClient::InternalGetCache(const char* name)

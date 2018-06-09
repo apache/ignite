@@ -20,6 +20,7 @@
 #include <ignite/impl/thin/cache/cache_client_impl.h>
 #include <ignite/impl/thin/message.h>
 #include <ignite/impl/thin/response_status.h>
+#include "..\..\include\ignite\impl\thin\ignite_client_impl.h"
 
 namespace ignite
 {
@@ -95,6 +96,17 @@ namespace ignite
 
                 DestroyCacheRequest req(cacheId);
                 Response rsp;
+
+                router.Get()->SyncMessage(req, rsp);
+
+                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
+            }
+
+            void IgniteClientImpl::GetCacheNames(std::vector<std::string>& cacheNames)
+            {
+                Request<RequestType::CACHE_GET_NAMES> req;
+                GetCacheNamesResponse rsp(cacheNames);
 
                 router.Get()->SyncMessage(req, rsp);
 
