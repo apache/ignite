@@ -25,7 +25,8 @@
 #include <ignite/impl/binary/binary_reader_impl.h>
 
 #include <ignite/impl/thin/protocol_version.h>
-#include <ignite/thin/ignite_client_configuration.h>
+#include <ignite/impl/thin/writable.h>
+#include <ignite/impl/thin/readable.h>
 
 namespace ignite
 {
@@ -327,9 +328,12 @@ namespace ignite
             };
 
             /**
-             * Cache put request.
+             * Cache key request.
+             *
+             * Request to cache containing single key.
              */
-            class CacheGetRequest : public Request<RequestType::CACHE_GET>
+            template<int32_t OpCode>
+            class CacheKeyRequest : public Request<OpCode>
             {
             public:
                 /**
@@ -339,12 +343,18 @@ namespace ignite
                  * @param binary Binary cache flag.
                  * @param key Key.
                  */
-                CacheGetRequest(int32_t cacheId, bool binary, const Writable& key);
+                CacheKeyRequest(int32_t cacheId, bool binary, const Writable& key) :
+                    cacheId(cacheId),
+                    binary(binary),
+                    key(key)
+                {
+                    // No-op.
+                }
 
                 /**
                  * Destructor.
                  */
-                virtual ~CacheGetRequest()
+                virtual ~CacheKeyRequest()
                 {
                     // No-op.
                 }
@@ -354,7 +364,13 @@ namespace ignite
                  * @param writer Writer.
                  * @param ver Version.
                  */
-                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+                virtual void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const
+                {
+                    writer.WriteInt32(cacheId);
+                    writer.WriteBool(binary);
+
+                    key.Write(writer);
+                }
 
             private:
                 /** Cache ID. */
@@ -595,6 +611,49 @@ namespace ignite
             private:
                 /** Cache ID. */
                 std::vector<std::string>& cacheNames;
+            };
+
+            /**
+             * Get cache names response.
+             */
+            class BoolResponse : public Response
+            {
+            public:
+                /**
+                 * Constructor.
+                 */
+                BoolResponse() :
+                    value(false)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                virtual ~BoolResponse()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Get received value.
+                 *
+                 * @return Received bool value.
+                 */
+                bool GetValue() const
+                {
+                    return value;
+                }
+
+                /**
+                 * Read data if response status is ResponseStatus::SUCCESS.
+                 */
+                virtual void ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&);
+
+            private:
+                /** Value. */
+                bool value;
             };
         }
     }

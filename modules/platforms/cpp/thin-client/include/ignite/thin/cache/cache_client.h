@@ -64,7 +64,7 @@ namespace ignite
                 }
 
                 /**
-                 * Put value to cache.
+                 * Associate the specified value with the specified key in the cache.
                  *
                  * @param key Key.
                  * @param value Value.
@@ -78,7 +78,7 @@ namespace ignite
                 }
 
                 /**
-                 * Get value from cache.
+                 * Get value from the cache.
                  *
                  * @param key Key.
                  * @param value Value.
@@ -104,6 +104,19 @@ namespace ignite
                     Get(key, value);
 
                     return value;
+                }
+
+                /**
+                 * Check if the cache contains a value for the specified key.
+                 *
+                 * @param key Key whose presence in this cache is to be tested.
+                 * @return @c true if the cache contains specified key.
+                 */
+                bool ContainsKey(const KeyType& key)
+                {
+                    impl::thin::WritableImpl<KeyType> wrKey(key);
+
+                    return proxy.ContainsKey(wrKey);
                 }
 
             private:

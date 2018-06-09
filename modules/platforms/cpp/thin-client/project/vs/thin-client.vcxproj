@@ -155,7 +155,6 @@
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\net\tcp_socket_client.cpp" />
     <ClCompile Include="..\..\src\ignite_client.cpp" />
-    <ClCompile Include="..\..\src\impl\cache\cache_client.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_client_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_client_proxy.cpp" />
     <ClCompile Include="..\..\src\impl\data_router.cpp" />

@@ -17,6 +17,7 @@
 
 #include <ignite/impl/thin/cache/cache_client_impl.h>
 #include <ignite/impl/thin/cache/cache_client_proxy.h>
+#include "..\..\..\include\ignite\impl\thin\cache\cache_client_proxy.h"
 
 using namespace ignite::impl::thin;
 using namespace cache;
@@ -52,6 +53,11 @@ namespace ignite
                 void CacheClientProxy::Get(const Writable& key, Readable& value)
                 {
                     GetCacheImpl(impl).Get(key, value);
+                }
+
+                bool CacheClientProxy::ContainsKey(const Writable & key)
+                {
+                    return GetCacheImpl(impl).ContainsKey(key);
                 }
             }
         }

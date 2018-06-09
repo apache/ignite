@@ -41,13 +41,26 @@ namespace ignite
 
                 void CacheClientImpl::Get(const Writable& key, Readable& value)
                 {
-                    CacheGetRequest req(id, binary, key);
+                    CacheKeyRequest<RequestType::CACHE_GET> req(id, binary, key);
                     CacheGetResponse rsp(value);
 
                     router.Get()->SyncMessage(req, rsp);
 
                     if (rsp.GetStatus() != ResponseStatus::SUCCESS)
                         throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
+                }
+
+                bool CacheClientImpl::ContainsKey(const Writable& key)
+                {
+                    CacheKeyRequest<RequestType::CACHE_CONTAINS_KEY> req(id, binary, key);
+                    BoolResponse rsp;
+
+                    router.Get()->SyncMessage(req, rsp);
+
+                    if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                        throw IgniteError(IgniteError::IGNITE_ERR_CACHE, rsp.GetError().c_str());
+
+                    return rsp.GetValue();
                 }
             }
         }

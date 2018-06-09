@@ -91,22 +91,6 @@ namespace ignite
                 value.Write(writer);
             }
 
-            CacheGetRequest::CacheGetRequest(int32_t cacheId, bool binary, const Writable& key) :
-                cacheId(cacheId),
-                binary(binary),
-                key(key)
-            {
-                // No-op.
-            }
-
-            void CacheGetRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
-            {
-                writer.WriteInt32(cacheId);
-                writer.WriteBool(binary);
-
-                key.Write(writer);
-            }
-
             CacheGetResponse::CacheGetResponse(Readable& value) :
                 value(value)
             {
@@ -207,6 +191,11 @@ namespace ignite
 
                     cacheNames.push_back(res);
                 }
+            }
+
+            void BoolResponse::ReadOnSuccess(binary::BinaryReaderImpl& reader, const ProtocolVersion&)
+            {
+                value = reader.ReadBool();
             }
         }
     }

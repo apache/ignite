@@ -85,6 +85,14 @@ namespace ignite
                      */
                     void Get(const Writable& key, Readable& value);
 
+                    /**
+                     * Check if the cache contains a value for the specified key.
+                     *
+                     * @param key Key whose presence in this cache is to be tested.
+                     * @return @c true if the cache contains specified key.
+                     */
+                    bool ContainsKey(const Writable& key);
+
                 private:
                     /** Data router. */
                     SP_DataRouter router;
