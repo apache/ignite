@@ -32,9 +32,4 @@ public class GridCacheNearAtomicMetricsSelfTest extends GridCacheNearMetricsSelf
 
         return ccfg;
     }
-
-    /** {@inheritDoc} */
-    @Override public void testNearRead() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-8073");
-    }
 }
