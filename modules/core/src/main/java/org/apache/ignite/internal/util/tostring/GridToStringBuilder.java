@@ -835,7 +835,7 @@ public class GridToStringBuilder {
         boolean isCol = val instanceof Collection;
         boolean isMap = val instanceof Map;
 
-        if (cls.isPrimitive() || isJdkClass(cls) && !cls.isArray() && !isCol && !isMap) {
+        if (cls.isPrimitive()) {
             buf.a(val);
 
             return;
@@ -861,16 +861,6 @@ public class GridToStringBuilder {
         finally {
             svdObjs.remove(val);
         }
-    }
-
-    /**
-     * @param cls Class to check.
-     * @return {@code True} if given class is from JDK, which means possibility to call {@code Object.toString()}.
-     */
-    private static boolean isJdkClass(Class cls) {
-        return cls.getName().startsWith("com.oracle.") || cls.getName().startsWith("com.sun.") ||
-            cls.getName().startsWith("java.") || cls.getName().startsWith("javax.") ||
-            cls.getName().startsWith("jdk.") || cls.getName().startsWith("sun.");
     }
 
     /**
