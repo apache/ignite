@@ -95,7 +95,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
             return createPageStore(type, file, ver, allocatedTracker);
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Error while creating file page store [file=" + file + "]:", e);
+            throw new IgniteCheckedException("Error while creating file page store [file=" + file + "]:", e);
         }
     }
 

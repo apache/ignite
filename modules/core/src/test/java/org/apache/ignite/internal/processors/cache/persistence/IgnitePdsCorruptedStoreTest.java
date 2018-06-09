@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.io.File;
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -307,7 +309,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Test node invalidation when meta store is read only.
      */
     public void testReadOnlyMetaStore() throws Exception {
         IgniteEx ignite0 = startGrid(0);
@@ -340,7 +342,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
                 }
             });
 
-            waitFailure(PersistentStorageIOException.class);
+            waitFailure(IOException.class);
 
             fut.cancel();
         }
@@ -355,7 +357,7 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
     private void waitFailure(Class<? extends Throwable> expError) throws IgniteInterruptedCheckedException {
         assertTrue(GridTestUtils.waitForCondition(() -> failureHnd.failure(), 5_000L));
 
-        assertTrue(expError.isInstance(failureHnd.error()));
+        assertTrue(X.hasCause(failureHnd.error(), expError));
     }
 
     /**
