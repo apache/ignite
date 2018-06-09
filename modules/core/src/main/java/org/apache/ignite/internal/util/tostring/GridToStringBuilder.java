@@ -296,7 +296,7 @@ public class GridToStringBuilder {
         try {
             newStr = sb.length() == 0;
 
-            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 5);
+            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 5, newStr);
         }
         finally {
             if (newStr)
@@ -376,7 +376,7 @@ public class GridToStringBuilder {
         try {
             newStr = sb.length() == 0;
 
-            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 6);
+            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 6, newStr);
         }
         finally {
             if (newStr)
@@ -464,7 +464,7 @@ public class GridToStringBuilder {
         try {
             newStr = sb.length() == 0;
 
-            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 7);
+            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 7, newStr);
         }
         finally {
             if (newStr)
@@ -556,7 +556,7 @@ public class GridToStringBuilder {
         try {
             newStr = sb.length() == 0;
 
-            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 4);
+            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 4, newStr);
         }
         finally {
             if (newStr)
@@ -637,7 +637,7 @@ public class GridToStringBuilder {
         try {
             newStr = sb.length() == 0;
 
-            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 3);
+            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 3, newStr);
         }
         finally {
             if (newStr)
@@ -703,7 +703,7 @@ public class GridToStringBuilder {
         try {
             newStr = sb.length() == 0;
 
-            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 2);
+            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 2, newStr);
         }
         finally {
             if (newStr)
@@ -756,7 +756,7 @@ public class GridToStringBuilder {
         try {
             newStr = sb.length() == 0;
 
-            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 1);
+            return toStringImpl(cls, sb, obj, addNames, addVals, addSens, 1, newStr);
         }
         finally {
             if (newStr)
@@ -783,7 +783,7 @@ public class GridToStringBuilder {
         try {
             newStr = sb.length() == 0;
 
-            return toStringImpl(cls, sb, obj, EMPTY_ARRAY, EMPTY_ARRAY, null, 0);
+            return toStringImpl(cls, sb, obj, EMPTY_ARRAY, EMPTY_ARRAY, null, 0, newStr);
         }
         finally {
             if (newStr)
@@ -965,6 +965,7 @@ public class GridToStringBuilder {
     /**
      * Creates an uniformed string presentation for the given object.
      *
+     * @param <T> Type of object.
      * @param cls Class of the object.
      * @param buf String builder buffer.
      * @param obj Object for which to get string presentation.
@@ -972,8 +973,8 @@ public class GridToStringBuilder {
      * @param addVals Additional values to be included.
      * @param addSens Sensitive flag of values or {@code null} if all values are not sensitive.
      * @param addLen How many additional values will be included.
+     * @param newStr {@code True} if it is the first call of {@code GridToStringBuilder} in the stack.
      * @return String presentation of the given object.
-     * @param <T> Type of object.
      */
     private static <T> String toStringImpl(
         Class<T> cls,
@@ -982,7 +983,8 @@ public class GridToStringBuilder {
         Object[] addNames,
         Object[] addVals,
         @Nullable boolean[] addSens,
-        int addLen) {
+        int addLen,
+        boolean newStr) {
         assert cls != null;
         assert buf != null;
         assert obj != null;
@@ -993,13 +995,20 @@ public class GridToStringBuilder {
 
         IdentityHashMap<Object, Integer> svdObjs = savedObjects.get();
 
-        svdObjs.put(obj, buf.length());
+        if (newStr)
+            svdObjs.put(obj, buf.length());
 
         try {
-            return toStringImpl0(cls, buf, obj, addNames, addVals, addSens, addLen);
+            String s = toStringImpl0(cls, buf, obj, addNames, addVals, addSens, addLen);
+
+            if (newStr)
+                return s;
+
+            return "";
         }
         finally {
-            svdObjs.remove(obj);
+            if (newStr)
+                svdObjs.remove(obj);
         }
     }
 

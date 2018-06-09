@@ -159,6 +159,7 @@ public class GridToStringBuilderSelfTest extends GridCommonAbstractTest {
         info(n2.toString());
         info(n3.toString());
         info(n4.toString());
+        info(GridToStringBuilder.toString("Test", "Appended vals", n1));
     }
 
     /** */
