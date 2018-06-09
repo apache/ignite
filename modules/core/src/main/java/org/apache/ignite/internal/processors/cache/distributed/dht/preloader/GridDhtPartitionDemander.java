@@ -203,7 +203,7 @@ public class GridDhtPartitionDemander {
      * @return {@code null} if rebalance has initial state or finished with false result.
      * Otherwise return {@link AffinityTopologyVersion} of current active rebalance.
      */
-    AffinityTopologyVersion activeRebalanceTopologyVersion() {
+    AffinityTopologyVersion lastRebalancedTopologyVersion() {
         final RebalanceFuture fut = rebalanceFut;
 
         return fut.isInitial() || (fut.isDone() && !fut.result()) ? null : fut.topologyVersion();
@@ -285,6 +285,7 @@ public class GridDhtPartitionDemander {
      *
      * @param assignments Assignments.
      * @param force {@code True} if dummy reassign.
+     * @param cancelAssigns {@code True} If all current assigns was cancelled due to pending exchenges.
      * @param rebalanceId Rebalance id.
      * @param next Runnable responsible for cache rebalancing start.
      * @param forcedRebFut External future for forced rebalance.
@@ -293,6 +294,7 @@ public class GridDhtPartitionDemander {
     Runnable addAssignments(
         final GridDhtPreloaderAssignments assignments,
         boolean force,
+        boolean cancelAssigns,
         long rebalanceId,
         final Runnable next,
         @Nullable final GridCompoundFuture<Boolean, Boolean> forcedRebFut
@@ -369,7 +371,7 @@ public class GridDhtPartitionDemander {
                 });
             }
             // 2) Current assignments can be cancelled due to ExchageWorker has another pending exchanges.
-            else if (assignments.cancelled()) { // Pending exchange.
+            else if (cancelAssigns) { // Pending exchange.
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing skipped due to cancelled assignments.");
 

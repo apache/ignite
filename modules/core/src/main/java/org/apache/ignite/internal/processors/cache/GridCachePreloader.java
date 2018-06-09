@@ -75,6 +75,7 @@ public interface GridCachePreloader {
      *
      * @param assignments Assignments to add.
      * @param forcePreload Force preload flag.
+     * @param cancelAssigns {@code True} If all current assigns was cancelled due to pending exchenges.
      * @param rebalanceId Rebalance id.
      * @param next Runnable responsible for cache rebalancing start.
      * @param forcedRebFut Rebalance future.
@@ -82,6 +83,7 @@ public interface GridCachePreloader {
      */
     public Runnable addAssignments(GridDhtPreloaderAssignments assignments,
         boolean forcePreload,
+        boolean cancelAssigns,
         long rebalanceId,
         Runnable next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut);

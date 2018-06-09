@@ -189,11 +189,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
-        final AffinityTopologyVersion rebTopVer = demander.activeRebalanceTopologyVersion() == null ?
-            topVer : demander.activeRebalanceTopologyVersion();
+        final AffinityTopologyVersion rebTopVer = demander.lastRebalancedTopologyVersion() == null ?
+            topVer : demander.lastRebalancedTopologyVersion();
 
         // We should get affinity assigns based on previous rebalance with successfull result to calculate difference.
-        AffinityAssignment prevAff = grp.affinity().cachedAffinity(rebTopVer);
+        AffinityAssignment prevAff = grp.affinity().cachedVersions().contains(rebTopVer) ?
+            grp.affinity().cachedAffinity(rebTopVer) : aff;
 
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
@@ -202,8 +203,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         for (int p = 0; p < partCnt; p++) {
             if (ctx.exchange().hasPendingExchange()) {
                 if (log.isDebugEnabled())
-                    log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
-                        exchId);
+                    log.debug("Skipping assignments creation, exchange worker has pending assignments [exchId=" +
+                        exchId + ", topVer=" + topVer + "]");
 
                 assignments.cancelled(true);
 
@@ -386,11 +387,12 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     @Override public Runnable addAssignments(
         GridDhtPreloaderAssignments assignments,
         boolean forceRebalance,
+        boolean cancelAssigns,
         long rebalanceId,
         Runnable next,
         @Nullable GridCompoundFuture<Boolean, Boolean> forcedRebFut
     ) {
-        return demander.addAssignments(assignments, forceRebalance, rebalanceId, next, forcedRebFut);
+        return demander.addAssignments(assignments, forceRebalance, cancelAssigns, rebalanceId, next, forcedRebFut);
     }
 
     /**
