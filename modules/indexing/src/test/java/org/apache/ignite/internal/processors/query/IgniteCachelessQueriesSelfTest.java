@@ -130,7 +130,7 @@ public class IgniteCachelessQueriesSelfTest extends GridCommonAbstractTest {
     public void testDistributedQueryOnReplicatedCaches() {
         createCachesAndExecuteQuery(TestCacheMode.REPLICATED, TestCacheMode.REPLICATED, false, false);
 
-        assertDistributedQuery();
+        assertLocalQuery();
     }
 
     /**

@@ -1584,7 +1584,6 @@ public class GridSqlQueryParser {
             }
         }
 
-        // Either no PARTITIONED caches, or no caches at all.
         return true;
     }
 
