@@ -1066,43 +1066,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         final IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache = metaCache0;
 
-        AtomicDataStructureValue oldVal;
-
         final IgniteInternalCache cache;
 
-        if (create) {
-            // Non collocated mode enabled only for PARTITIONED cache.
-            if (cfg.getCacheMode() != CacheMode.PARTITIONED && !cfg.isCollocated()) {
-                log.warning("Non-collocated mode does not make sense for " + cfg.getCacheMode().name() +
-                    " cache mode, collocated mode was enabled for " + type.name().toLowerCase() + " " + name + ".");
+        AtomicDataStructureValue oldVal = metaCache.get(new GridCacheInternalKeyImpl(name, grpName));
 
-                cfg.setCollocated(true);
-            }
+        if (cfg != null && cfg.getCacheMode() != CacheMode.PARTITIONED && !cfg.isCollocated()) {
+            log.warning("Non-collocated mode does not make sense for " + cfg.getCacheMode().name() +
+                " cache mode, collocated mode was enabled for " + type.name().toLowerCase() + " " + name + ".");
 
-            cache = compatibleCache(cfg, grpName, type, name);
-
-            DistributedCollectionMetadata newVal = new DistributedCollectionMetadata(type, cfg, cache.name());
-
-            oldVal = metaCache.getAndPutIfAbsent(new GridCacheInternalKeyImpl(name, grpName), newVal);
+            cfg.setCollocated(true);
         }
-        else {
-            oldVal = metaCache.get(new GridCacheInternalKeyImpl(name, grpName));
-
-            if (oldVal == null)
-                return null;
-            else if (!(oldVal instanceof DistributedCollectionMetadata))
-                throw new IgniteCheckedException("Another data structure with the same name already created " +
-                    "[name=" + name +
-                    ", newType=" + type +
-                    ", existingType=" + oldVal.type() + ']');
-
-            cache = ctx.cache().getOrStartCache(((DistributedCollectionMetadata)oldVal).cacheName());
-
-            if (cache == null)
-                return null;
-        }
-
-        CollectionConfiguration oldCfg = null;
 
         if (oldVal != null) {
             if (oldVal.type() != type)
@@ -1111,6 +1084,31 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                     ", newType=" + type +
                     ", existingType=" + oldVal.type() + ']');
 
+            cache = ctx.cache().getOrStartCache(((DistributedCollectionMetadata)oldVal).cacheName());
+        }
+        else if (create) {
+            cache = compatibleCache(cfg, grpName, type, name);
+
+            DistributedCollectionMetadata newVal = new DistributedCollectionMetadata(type, cfg, cache.name());
+
+            oldVal = metaCache.getAndPutIfAbsent(new GridCacheInternalKeyImpl(name, grpName), newVal);
+
+            if (oldVal != null && oldVal.type() != type) {
+                if (type == SET && !cfg.isCollocated())
+                    ctx.cache().dynamicDestroyCache(cache.name(), false, true, false).get();
+
+                throw new IgniteCheckedException("Another data structure with the same name already created " +
+                    "[name=" + name +
+                    ", newType=" + type +
+                    ", existingType=" + oldVal.type() + ']');
+            }
+        }
+        else
+            return null;
+
+        CollectionConfiguration oldCfg = null;
+
+        if (oldVal != null) {
             assert oldVal instanceof DistributedCollectionMetadata;
 
             oldCfg = ((DistributedCollectionMetadata)oldVal).configuration();

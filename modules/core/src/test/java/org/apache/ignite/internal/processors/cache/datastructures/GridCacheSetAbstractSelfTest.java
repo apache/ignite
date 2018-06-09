@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -42,8 +43,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
+import org.apache.ignite.internal.processors.datastructures.DataStructureType;
+import org.apache.ignite.internal.processors.datastructures.GridCacheSetProxy;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
@@ -56,7 +61,6 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader.V2;
 
 /**
  * Cache set tests.
@@ -129,18 +133,23 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         for (int i = 0; i < gridCount(); i++) {
             IgniteKernal grid = (IgniteKernal)grid(i);
 
-            for (IgniteCache cache : grid.caches()) {
-                CacheDataStructuresManager dsMgr = grid.internalCache(cache.getName()).context().dataStructures();
+            for (IgniteInternalCache cache : grid(i).context().cache().caches()) {
+                if (cache.context().dataStructuresCache()) {
+                    CacheDataStructuresManager dsMgr = grid.internalCache(cache.name()).context().dataStructures();
 
-                Map map = GridTestUtils.getFieldValue(dsMgr, "setsMap");
+                    Map map = GridTestUtils.getFieldValue(dsMgr, "setsMap");
 
-                assertEquals("Set not removed [grid=" + i + ", map=" + map + ']', 0, map.size());
+                    assertEquals("Set not removed [grid=" + i + ", map=" + map + ']', 0, map.size());
 
-                map = GridTestUtils.getFieldValue(dsMgr, "setDataMap");
+                    map = GridTestUtils.getFieldValue(dsMgr, "setDataMap");
 
-                assertEquals("Set data not removed [grid=" + i + ", cache=" + cache.getName() + ", map=" + map + ']',
-                    0,
-                    map.size());
+                    assertEquals("Set data not removed [grid=" + i + ", cache=" + cache.name() + ", map=" + map + ']',
+                        0,
+                        map.size());
+
+                    assertFalse("Cache " + cache.name() + " was not destroyed.",
+                        cache.name().contains("_" + DataStructureType.SET + "_"));
+                }
             }
         }
     }
@@ -942,6 +951,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                     ". This operation is supported only for collocated sets.");
         }
 
+        waitSetResourcesCleared();
+
         colCfg.setCollocated(true);
 
         try (final IgniteSet<Integer> set2 = grid(0).set("Set2", colCfg)) {
@@ -1083,6 +1094,9 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         IgniteSet set11 = ignite.set("set11", colCfg);
 
         assertTrue(cctx(set3).groupId() != cctx(set11).groupId());
+
+        for (Closeable set : new Closeable[]{set1, set2, set3, set4, set5, set6, set7, set8, set9, set10, set11})
+            set.close();
     }
 
     /**

@@ -616,6 +616,10 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         IgniteQueue queue2 = grid(0).queue("Queue2", 0, colCfg);
 
         assertEquals(getQueueCache(queue1), getQueueCache(queue2));
+
+        queue1.close();
+
+        queue2.close();
     }
 
     /**
@@ -636,6 +640,10 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         IgniteQueue queue2 = grid(0).queue("Queue2", 0, colCfg2);
 
         assertNotSame(getQueueCache(queue1), getQueueCache(queue2));
+
+        queue1.close();
+
+        queue2.close();
     }
 
     /**

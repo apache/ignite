@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.datastructures.DataStructureType;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader;
@@ -423,8 +424,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
             if (create) {
-                int hdrVer = U.isOldestNodeVersionAtLeast(SEPARATE_CACHE_PER_NON_COLLOCATED_SET_SINCE,
-                    cctx.grid().cluster().nodes()) ? GridCacheSetHeader.V2 : GridCacheSetHeader.V1;
+                int hdrVer = cctx.name().contains(DataStructureType.SET.name() + "_" + name + "@") ?
+                    GridCacheSetHeader.V2 : GridCacheSetHeader.V1;
 
                 hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated, hdrVer);
 
