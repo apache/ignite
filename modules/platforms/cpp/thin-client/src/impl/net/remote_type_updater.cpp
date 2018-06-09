@@ -45,7 +45,7 @@ namespace ignite
 
                     try
                     {
-                        router.SyncMessage(req, rsp);
+                        router.SyncMessageNoMetaUpdate(req, rsp);
                     }
                     catch(const IgniteError& e)
                     {

@@ -120,6 +120,34 @@ namespace ignite
                 void SyncMessage(const ReqT& req, RspT& rsp)
                 {
                     EnsureConnected();
+                    
+                    int32_t metaVer = typeMgr.GetVersion();
+
+                    InternalSyncMessage(req, rsp, ioTimeout);
+                    
+                    if (typeMgr.IsUpdatedSince(metaVer))
+                    {
+                        IgniteError err;
+
+                        if (!typeMgr.ProcessPendingUpdates(err))
+                            throw err;
+                    }
+                }
+
+                /**
+                 * Synchronously send request message and receive response.
+                 * Does not update metadata.
+                 * Uses provided timeout.
+                 *
+                 * @param req Request message.
+                 * @param rsp Response message.
+                 * @return @c true on success, @c false on timeout.
+                 * @throw IgniteError on error.
+                 */
+                template<typename ReqT, typename RspT>
+                void SyncMessageNoMetaUpdate(const ReqT& req, RspT& rsp)
+                {
+                    EnsureConnected();
 
                     InternalSyncMessage(req, rsp, ioTimeout);
                 }
@@ -184,8 +212,6 @@ namespace ignite
                     // Allocating 64KB to lessen number of reallocations.
                     enum { BUFFER_SIZE = 1024 * 64 };
 
-                    int32_t metaVer = typeMgr.GetVersion();
-
                     interop::InteropUnpooledMemory mem(BUFFER_SIZE);
 
                     int64_t id = GenerateRequestMessage(req, mem);
@@ -201,14 +227,6 @@ namespace ignite
                     if (id != rspId)
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                             "Protocol error: Response message ID does not equal Request ID");
-
-                    if (typeMgr.IsUpdatedSince(metaVer))
-                    {
-                        IgniteError err;
-
-                        if (!typeMgr.ProcessPendingUpdates(err))
-                            throw err;
-                    }
 
                     binary::BinaryReaderImpl reader(&inStream);
 

@@ -32,7 +32,7 @@
     <ClCompile Include="..\..\src\auth_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\teamcity\cache_client_test.cpp">
+    <ClCompile Include="..\..\src\cache_client_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>

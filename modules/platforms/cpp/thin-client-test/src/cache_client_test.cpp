@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE(CacheClientPutGetComplexValue)
     valIn.strField = "Test value";
     valIn.objField.f1 = 42;
     valIn.objField.f2 = "Inner value";
-
+    
     cache.Put(key, valIn);
 
     ignite::ComplexType valOut = cache.Get(key);
