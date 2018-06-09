@@ -323,8 +323,7 @@ public class GridDhtPartitionDemander {
                     }
                 });
 
-            if (ltstFut.isInitial())
-                fut.listen(f -> ltstFut.onDone(f.result()));
+            fut.listen(f -> ltstFut.onDone(f.result()));
 
             if (forcedRebFut != null)
                 forcedRebFut.add(fut);
@@ -345,9 +344,29 @@ public class GridDhtPartitionDemander {
 
             fut.sendRebalanceStartedEvent();
 
-            // 1) Related discovery event did not cause affinity assignment change.
+             // 1) Current assignments can be cancelled due to ExchageWorker has another pending exchanges.
+            if (cancelAssigns) { // Pending exchange.
+                if (log.isDebugEnabled())
+                    log.debug("Rebalancing skipped due to cancelled assignments.");
+
+                fut.onDone(false);
+
+                fut.sendRebalanceFinishedEvent();
+            }
+            // 2) Refer to method GridCachePreloader#generateAssignments which can produce empty assignments.
+            else if (assignments.isEmpty()) { // Nothing to rebalance.
+                if (log.isDebugEnabled())
+                    log.debug("Rebalancing skipped due to empty assignments.");
+
+                fut.onDone(true);
+
+                ((GridFutureAdapter)grp.preloader().syncFuture()).onDone();
+
+                fut.sendRebalanceFinishedEvent();
+            }
+            // 3) Related discovery event did not cause affinity assignment change.
             // We should wait for current rebalanceFut completion and than assign results to latestRebFut.
-            if (grp.affinity().cachedAffinity(topVer).clientEventChange() // Caused by no affinity change event
+            else if (grp.affinity().cachedAffinity(topVer).clientEventChange() // Caused by no affinity change event
                 && !oldFut.isInitial() // Rebalance should have at least one non empty result
                 && !force // Do not need provide results if rebalance was forced
                 && !assignments.needRebalance() // Calculated assignments not changed from previous calculation
@@ -369,26 +388,6 @@ public class GridDhtPartitionDemander {
                         }
                     }
                 });
-            }
-            // 2) Current assignments can be cancelled due to ExchageWorker has another pending exchanges.
-            else if (cancelAssigns) { // Pending exchange.
-                if (log.isDebugEnabled())
-                    log.debug("Rebalancing skipped due to cancelled assignments.");
-
-                fut.onDone(false);
-
-                fut.sendRebalanceFinishedEvent();
-            }
-            // 3) Refer to method GridCachePreloader#generateAssignments which can produce empty assignments.
-            else if (assignments.isEmpty()) { // Nothing to rebalance.
-                if (log.isDebugEnabled())
-                    log.debug("Rebalancing skipped due to empty assignments.");
-
-                fut.onDone(true);
-
-                ((GridFutureAdapter)grp.preloader().syncFuture()).onDone();
-
-                fut.sendRebalanceFinishedEvent();
             }
             // 4) Assignments checked and rebalance need to be continued.
             else {
