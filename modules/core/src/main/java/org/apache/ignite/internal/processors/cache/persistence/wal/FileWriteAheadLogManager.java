@@ -71,6 +71,8 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -98,6 +100,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.Re
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -272,6 +275,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     /** Events service */
     private final GridEventStorageManager evt;
 
+    /** Failure processor */
+    private final FailureProcessor failureProcessor;
+
     /** */
     private IgniteConfiguration igCfg;
 
@@ -378,6 +384,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         ioFactory = new RandomAccessFileIOFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
+        failureProcessor = ctx.failure();
     }
 
     /**
@@ -1404,8 +1411,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 while (left > 0) {
                     int toWrite = Math.min(FILL_BUF.length, left);
 
-                    if (fileIO.write(FILL_BUF, 0, toWrite) < toWrite)
+                    if (fileIO.write(FILL_BUF, 0, toWrite) < toWrite) {
+                        if (failureProcessor != null)
+                            failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, null), new StopNodeFailureHandler());
                         throw new IgniteCheckedException("Can't extend file: " + file.getName());
+                    }
 
                     left -= toWrite;
                 }
@@ -2158,7 +2168,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                         int bytesRead;
                         while ((bytesRead = zis.read(arr)) > 0)
-                            io.write(arr, 0, bytesRead);
+                            if (io.write(arr, 0, bytesRead) < bytesRead) {
+                                failureProcessor.process(new FailureContext(FailureType.CRITICAL_ERROR, null), new StopNodeFailureHandler());
+                                throw new IgniteCheckedException("Can't extend file: " + unzipTmp.getName());
+                            }
                     }
 
                     try {
