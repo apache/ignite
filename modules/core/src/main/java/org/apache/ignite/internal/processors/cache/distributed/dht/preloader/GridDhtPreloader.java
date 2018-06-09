@@ -85,9 +85,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** */
     private boolean stopped;
 
-    /** Topology version on which assignments was generated last run. */
-    private AffinityTopologyVersion prevTopVer;
-
     /**
      * @param grp Cache group.
      */
@@ -171,6 +168,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut) {
         assert exchFut == null || exchFut.isDone();
 
+        assert !ctx.kernalContext().clientNode() : "Assignments cannot be generated for client node.";
+
         // No assignments for disabled preloader.
         GridDhtPartitionTopology top = grp.topology();
 
@@ -190,11 +189,15 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
-        AffinityAssignment prevAff = prevTopVer == null ? aff : grp.affinity().cachedAffinity(prevTopVer);
+        final AffinityTopologyVersion rebTopVer = demander.activeRebalanceTopologyVersion() == null ?
+            topVer : demander.activeRebalanceTopologyVersion();
+
+        // We should get affinity assigns based on previous rebalance with successfull result to calculate difference.
+        AffinityAssignment prevAff = grp.affinity().cachedAffinity(rebTopVer);
 
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
-        boolean assignmNotChanged = true;
+        boolean assignsChanged = false;
 
         for (int p = 0; p < partCnt; p++) {
             if (ctx.exchange().hasPendingExchange()) {
@@ -211,7 +214,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (aff.get(p).contains(ctx.localNode())) {
                 GridDhtLocalPartition part = top.localPartition(p);
 
-                assignmNotChanged &= prevAff.get(p).contains(ctx.localNode());
+                assignsChanged |= !prevAff.get(p).contains(ctx.localNode());
 
                 assert part != null;
                 assert part.id() == p;
@@ -297,9 +300,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
         }
 
-        assignments.needRebalance(prevTopVer == null || !assignmNotChanged);
-
-        prevTopVer = topVer;
+        assignments.needRebalance(assignsChanged);
 
         return assignments;
     }
