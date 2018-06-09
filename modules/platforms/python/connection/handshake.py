@@ -15,9 +15,10 @@
 
 import ctypes
 
-from connection import Connection
-from.op_codes import OP_HANDSHAKE
 from constants import *
+
+
+OP_HANDSHAKE = 1
 
 
 class HandshakeRequest(ctypes.LittleEndianStructure):
@@ -41,7 +42,7 @@ class HandshakeRequest(ctypes.LittleEndianStructure):
         self.client_code = 2
 
 
-def read_response(conn: Connection):
+def read_response(conn):
     buffer = conn.recv(4)
     length = int.from_bytes(buffer, byteorder='little')
     buffer += conn.recv(length)

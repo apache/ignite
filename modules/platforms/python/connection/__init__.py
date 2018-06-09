@@ -15,6 +15,9 @@
 
 import socket
 
+from constants import *
+from .handshake import HandshakeRequest, read_response
+
 
 class SocketError(Exception):
     pass
@@ -32,9 +35,30 @@ class Connection:
     def __init__(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+    read_response = read_response
+
     def connect(self, host, port):
         if self.socket is not None:
             self.socket.connect((host, port))
+
+        hs_request = HandshakeRequest()
+        self.send(hs_request)
+        hs_response = self.read_response()
+        if hs_response.op_code == 0:
+            self.close()
+            raise SocketError(
+                (
+                    'Ignite protocol version mismatch: requested {}.{}.{}, '
+                    'received {}.{}.{}.'
+                ).format(
+                    PROTOCOL_VERSION_MAJOR,
+                    PROTOCOL_VERSION_MINOR,
+                    PROTOCOL_VERSION_PATCH,
+                    hs_response.version_major,
+                    hs_response.version_minor,
+                    hs_response.version_patch,
+                )
+            )
 
     def send(self, data, flags=None):
         kwargs = {}

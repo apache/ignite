@@ -14,12 +14,12 @@
 # limitations under the License.
 
 from connection import Connection
-from queries import HandshakeRequest, read_response
+from connection.handshake import HandshakeRequest, read_response
 
 
 def test_handshake():
     conn = Connection()
-    conn.connect('localhost', 10900)
+    conn.socket.connect(('localhost', 10900))
     hs_request = HandshakeRequest()
     conn.send(hs_request)
     hs_response = read_response(conn)
@@ -28,7 +28,7 @@ def test_handshake():
     # intentionally pass wrong protocol version
     conn.close()
     conn = Connection()
-    conn.connect('localhost', 10900)
+    conn.socket.connect(('localhost', 10900))
     hs_request = HandshakeRequest()
     hs_request.version_major = 10
     conn.send(hs_request)

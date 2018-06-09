@@ -16,6 +16,23 @@
 import attr
 
 
+def hashcode(string: str) -> int:
+    """
+    Calculate hash code used for referencing cache bucket name
+    in Ignite binary API.
+
+    :param string: bucket name (or other string identifier),
+    :return: hash code.
+    """
+    result = 0
+    for char in string:
+        result = int(
+            (((31 * result + ord(char)) ^ 0x80000000) & 0xFFFFFFFF)
+            - 0x80000000
+        )
+    return result
+
+
 @attr.s
 class APIResult:
     """

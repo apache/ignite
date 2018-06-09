@@ -14,18 +14,12 @@
 # limitations under the License.
 
 from connection import Connection
-from queries import HandshakeRequest, read_response
-from queries.common import hashcode
-from api import cache_create, cache_get, cache_put, cache_get_names
+from api import cache_create, cache_get, cache_put, cache_get_names, hashcode
 
 
 def test_put_get():
     conn = Connection()
     conn.connect('localhost', 10900)
-    hs_request = HandshakeRequest()
-    conn.send(hs_request)
-    hs_response = read_response(conn)
-    assert hs_response.op_code != 0
 
     result = cache_create(conn, 'my_bucket')
 
@@ -42,10 +36,6 @@ def test_put_get():
 def test_get_names():
     conn = Connection()
     conn.connect('localhost', 10900)
-    hs_request = HandshakeRequest()
-    conn.send(hs_request)
-    hs_response = read_response(conn)
-    assert hs_response.op_code != 0
 
     result = cache_create(conn, 'my_bucket')
 

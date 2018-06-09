@@ -42,3 +42,4 @@ from .cache_config import (
     cache_get_names,
 )
 from .key_value import cache_get, cache_put
+from .result import APIResult, hashcode
