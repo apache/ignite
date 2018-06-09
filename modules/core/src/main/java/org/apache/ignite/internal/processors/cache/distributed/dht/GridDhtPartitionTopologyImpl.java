@@ -2503,39 +2503,44 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         lock.readLock().lock();
 
         try {
-            int locPartCnt = 0;
-
-            for (int i = 0; i < locParts.length(); i++) {
-                GridDhtLocalPartition part = locParts.get(i);
-
-                if (part != null)
-                    locPartCnt++;
-            }
-
-            CachePartitionPartialCountersMap res = new CachePartitionPartialCountersMap(locPartCnt);
-
-            for (int i = 0; i < locParts.length(); i++) {
-                GridDhtLocalPartition part = locParts.get(i);
-
-                if (part == null)
-                    continue;
-
-                long updCntr = part.updateCounter();
-                long initCntr = part.initialUpdateCounter();
-
-                if (skipZeros && initCntr == 0L && updCntr == 0L)
-                    continue;
-
-                res.add(part.id(), initCntr, updCntr);
-            }
-
-            res.trim();
-
-            return res;
+            return localUpdateCountersLockFree(skipZeros);
         }
         finally {
             lock.readLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public CachePartitionPartialCountersMap localUpdateCountersLockFree(boolean skipZeros) {
+        int locPartCnt = 0;
+
+        for (int i = 0; i < locParts.length(); i++) {
+            GridDhtLocalPartition part = locParts.get(i);
+
+            if (part != null)
+                locPartCnt++;
+        }
+
+        CachePartitionPartialCountersMap res = new CachePartitionPartialCountersMap(locPartCnt);
+
+        for (int i = 0; i < locParts.length(); i++) {
+            GridDhtLocalPartition part = locParts.get(i);
+
+            if (part == null)
+                continue;
+
+            long updCntr = part.updateCounter();
+            long initCntr = part.initialUpdateCounter();
+
+            if (skipZeros && initCntr == 0L && updCntr == 0L)
+                continue;
+
+            res.add(part.id(), initCntr, updCntr);
+        }
+
+        res.trim();
+
+        return res;
     }
 
     /** {@inheritDoc} */

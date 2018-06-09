@@ -264,37 +264,41 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     void checkRebalanceState(GridDhtPartitionTopology top, Integer checkGrpId) {
         CacheAffinityChangeMessage msg = null;
 
+        Map<Integer, UUID> partWait;
+
         synchronized (mux) {
-            if (waitInfo == null || !waitInfo.topVer.equals(lastAffVer) )
+            if (waitInfo == null || !waitInfo.topVer.equals(lastAffVer))
                 return;
 
-            Map<Integer, UUID> partWait = waitInfo.waitGrps.get(checkGrpId);
+            partWait = waitInfo.waitGrps.get(checkGrpId);
+        }
 
-            boolean rebalanced = true;
+        boolean rebalanced = true;
 
-            if (partWait != null) {
-                CacheGroupHolder grpHolder = grpHolders.get(checkGrpId);
+        if (partWait != null) {
+            CacheGroupHolder grpHolder = grpHolders.get(checkGrpId);
 
-                if (grpHolder != null) {
-                    for (Iterator<Map.Entry<Integer, UUID>> it = partWait.entrySet().iterator(); it.hasNext(); ) {
-                        Map.Entry<Integer, UUID> e = it.next();
+            if (grpHolder != null) {
+                for (Iterator<Map.Entry<Integer, UUID>> it = partWait.entrySet().iterator(); it.hasNext(); ) {
+                    Map.Entry<Integer, UUID> e = it.next();
 
-                        Integer part = e.getKey();
-                        UUID waitNode = e.getValue();
+                    Integer part = e.getKey();
+                    UUID waitNode = e.getValue();
 
-                        GridDhtPartitionState state = top.partitionState(waitNode, part);
+                    GridDhtPartitionState state = top.partitionState(waitNode, part);
 
-                        if (state != GridDhtPartitionState.OWNING) {
-                            rebalanced = false;
+                    if (state != GridDhtPartitionState.OWNING) {
+                        rebalanced = false;
 
-                            break;
-                        }
-                        else
-                            it.remove();
+                        break;
                     }
+                    else
+                        it.remove();
                 }
+            }
 
-                if (rebalanced) {
+            if (rebalanced) {
+                synchronized (mux) {
                     waitInfo.waitGrps.remove(checkGrpId);
 
                     if (waitInfo.waitGrps.isEmpty()) {
@@ -304,14 +308,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     }
                 }
             }
+        }
 
-            try {
-                if (msg != null)
-                    cctx.discovery().sendCustomEvent(msg);
-            }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send affinity change message.", e);
-            }
+        try {
+            if (msg != null)
+                cctx.discovery().sendCustomEvent(msg);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to send affinity change message.", e);
         }
     }
 
