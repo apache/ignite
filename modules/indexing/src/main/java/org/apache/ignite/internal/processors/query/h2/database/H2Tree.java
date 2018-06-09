@@ -46,8 +46,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  */
 public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
-    /** Primary index flag - affects comparisons logic. */
-    private final boolean isPk;
+    /** Whether this is unique index. */
+    private final boolean unique;
 
     /** */
     private final H2RowFactory rowStore;
@@ -81,7 +81,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * Constructor.
      *
      * @param name Tree name.
-     * @param isPk Primary index flag - affects comparisons logic.
+     * @param unique Whether this is unique index.
      * @param reuseList Reuse list.
      * @param grpId Cache group ID.
      * @param pageMem Page memory.
@@ -95,7 +95,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      */
     protected H2Tree(
         String name,
-        boolean isPk,
+        boolean unique,
         ReuseList reuseList,
         int grpId,
         PageMemory pageMem,
@@ -111,7 +111,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         IgniteLogger log) throws IgniteCheckedException {
         super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList);
 
-        this.isPk = isPk;
+        this.unique = unique;
 
         if (!initNew) {
             // Page is ready - read inline size from it.
@@ -249,31 +249,11 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override protected int compare(BPlusIO<SearchRow> io, long pageAddr, int idx,
         SearchRow row) throws IgniteCheckedException {
-        // Default links comparison result is zero to fall back to old behavior
-        // for rows that don't have links like H2's SimpleRow.
-        int linksCmpRes = 0;
-
-        if (linksBasedComparison && row instanceof CacheSearchRow) {
-            long link1 = ((H2RowLinkIO)io).getLink(pageAddr, idx);
-
-            long link2 = ((CacheSearchRow)row).link();
-
-            linksCmpRes = Long.compare(link1, link2);
-
-            // Same rows, we may look no further.
-            if (linksCmpRes == 0)
-                return linksCmpRes;
-        }
-
         if (inlineSize() == 0) {
             int rowsCmpRes = compareRows(getRow(io, pageAddr, idx), row);
 
-            // Let's avoid links comparison result if it's PK idx as rows should be deemed equal
-            // not to confuse update/remove/insert operations.
-            if (rowsCmpRes != 0 || isPk)
+            if (rowsCmpRes != 0)
                 return rowsCmpRes;
-            else
-                return linksCmpRes;
         }
         else {
             int off = io.offset(idx);
@@ -328,17 +308,24 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
                         return InlineIndexHelper.fixSort(c, col.sortType);
                 }
             }
-
-            if (!linksBasedComparison)
-                return 0;
-
-            // If it's PK idx, by this point we have already compared the keys and found them equal.
-            // Let's return 0 as rows should be deemed equal not to confuse update/remove/insert operations.
-            if (isPk)
-                return 0;
-            else
-                return linksCmpRes;
         }
+
+        // Old mode, everything is compared, stop.
+        if (!linksBasedComparison)
+            return 0;
+
+        // Compared against H2 row template, stop.
+        if (!(row instanceof CacheSearchRow))
+            return 0;
+
+        // This is an attempt to insert the same value into unique value; return 0 to force replacement.
+        if (unique)
+            return 0;
+
+        long link1 = ((H2RowLinkIO)io).getLink(pageAddr, idx);
+        long link2 = ((CacheSearchRow)row).link();
+
+        return Long.compare(link1, link2);
     }
 
     /**
