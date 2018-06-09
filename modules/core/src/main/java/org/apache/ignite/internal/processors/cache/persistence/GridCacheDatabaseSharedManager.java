@@ -4274,13 +4274,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * Set last checkpoint as inapplicable for WAL rebalance for given group {@code grpId}.
      *
-     * NOTE: This operation should be invoked within {@link #checkpointLock}.
-     *
      * @param grpId Group ID.
      */
-    public void lastCheckpointInapplicableForWalRebalance(int grpId) {
+    @Override public void lastCheckpointInapplicableForWalRebalance(int grpId) {
+        checkpointReadLock();
+
         try {
-            // Check last recorded checkpoint and current running checkpoint.
             CheckpointEntry lastCp = cpHistory.lastCheckpoint();
             long lastCpTs = lastCp != null ? lastCp.timestamp() : 0;
 
@@ -4289,6 +4288,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
         catch (IgniteCheckedException e) {
             log.error("Failed to mark last checkpoint as inapplicable for WAL rebalance for group: " + grpId, e);
+        }
+        finally {
+            checkpointReadUnlock();
         }
     }
 

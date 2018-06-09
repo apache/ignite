@@ -1108,6 +1108,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Marks last checkpoint as inapplicable for WAL rebalance for given group {@code grpId}.
+     *
+     * @param grpId Group id.
+     */
+    public void lastCheckpointInapplicableForWalRebalance(int grpId) {
+        // No-op.
+    }
+
+    /**
      * Warns on first eviction.
      * @param regCfg data region configuration.
      */

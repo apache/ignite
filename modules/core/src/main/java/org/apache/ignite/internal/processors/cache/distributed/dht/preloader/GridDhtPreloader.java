@@ -291,16 +291,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
         }
 
-        if (!assignments.isEmpty() && grp.persistenceEnabled()) {
-            ctx.database().checkpointReadLock();
-
-            try {
-                ((GridCacheDatabaseSharedManager) ctx.database()).lastCheckpointInapplicableForWalRebalance(grp.groupId());
-            }
-            finally {
-                ctx.database().checkpointReadUnlock();
-            }
-        }
+        if (!assignments.isEmpty())
+            ctx.database().lastCheckpointInapplicableForWalRebalance(grp.groupId());
 
         return assignments;
     }
