@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -301,6 +302,41 @@ public class IgnitePdsCorruptedStoreTest extends GridCommonAbstractTest {
         finally {
             ignite.context().cache().context().database().checkpointReadUnlock();
         }
+    }
+
+    /**
+     *
+     */
+    public void testReadOnlyMetaStore() throws Exception {
+        IgniteEx ignite0 = startGrid(0);
+        IgniteEx ignite1 = startGrid(1);
+
+        ignite0.cluster().active(true);
+
+        IgniteInternalCache cache = ignite0.cachex(CACHE_NAME1);
+
+        cache.put(1, 1);
+
+        ignite0.cluster().active(false);
+
+        FilePageStoreManager storeMgr = ((FilePageStoreManager)ignite0.context().cache().context().pageStore());
+
+        File workDir = storeMgr.workDir();
+        File metaStoreDir = new File(workDir, MetaStorage.METASTORAGE_CACHE_NAME.toLowerCase());
+        File metaStoreFile = new File(metaStoreDir, String.format(FilePageStoreManager.PART_FILE_TEMPLATE, 0));
+
+        metaStoreFile.setWritable(false);
+
+        try {
+            ignite0.cluster().active(true);
+
+            cache.put(1, 1);
+        }
+        catch (Exception e) {
+            // No-op.
+        }
+
+        waitFailure(StorageException.class);
     }
 
     /**
