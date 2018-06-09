@@ -94,26 +94,8 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
 
             ByteBuffer hdr = ByteBuffer.allocate(minHdr).order(ByteOrder.LITTLE_ENDIAN);
 
-            long startTime = U.currentTimeMillis();
-
-            final long timeout = 5_000;
-
-            while (hdr.remaining() > 0) {
-                int bytes = fileIO.read(hdr);
-
-                if (U.currentTimeMillis() - startTime > timeout) {
-                    FileInputStream fis = new FileInputStream(file);
-
-                    StringBuilder hex = new StringBuilder();
-
-                    int oneByte;
-                    while ((oneByte = fis.read()) != -1)
-                        hex.append(Integer.toHexString(oneByte));
-
-                    if (log != null)
-                        U.warn(log, "Too long file read: " + file + ", size = " + file.length() + ". Content: " + hex.toString());
-                }
-            }
+            while (hdr.remaining() > 0)
+                fileIO.read(hdr);
 
             hdr.rewind();
 
