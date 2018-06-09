@@ -21,14 +21,33 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractMetricsSelfTest;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Partitioned atomic cache metrics test.
  */
-public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheAtomicPartitionedMetricsSelfTest {
+public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheAbstractMetricsSelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String igniteInstanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(igniteInstanceName);
+
+        cfg.setCacheMode(PARTITIONED);
+        cfg.setRebalanceMode(SYNC);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setAtomicityMode(ATOMIC);
+
+        return cfg;
     }
 
     /**

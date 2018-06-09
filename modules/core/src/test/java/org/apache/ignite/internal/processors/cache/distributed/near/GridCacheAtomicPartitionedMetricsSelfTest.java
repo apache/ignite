@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractMetricsSelfTest;
 
@@ -58,5 +60,30 @@ public class GridCacheAtomicPartitionedMetricsSelfTest extends GridCacheAbstract
     /** {@inheritDoc} */
     @Override protected int expectedMissesPerPut(boolean isPrimary) {
         return 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutRemoveGetMetrics() throws Exception {
+        try (Ignite initiator = startGrid(gridCount())) {
+            IgniteCache<Integer, Integer> cache0 = initiator.cache(DEFAULT_CACHE_NAME);
+
+            for (int i = 0; ; i++) {
+                if (!initiator.affinity(DEFAULT_CACHE_NAME).isPrimaryOrBackup(initiator.cluster().localNode(), i)) {
+                    cache0.put(i, i);
+
+                    cache0.remove(i);
+
+                    cache0.get(i);
+
+                    assertEquals(1, cache0.localMetrics().getCachePuts());
+                    assertEquals(1, cache0.localMetrics().getCacheRemovals());
+                    assertEquals(1, cache0.localMetrics().getCacheGets());
+
+                    break;
+                }
+            }
+        }
     }
 }
