@@ -905,9 +905,9 @@ public final class IgniteSystemProperties {
     /**
      * Throttling timeout in millis which avoid excessive PendingTree access on unwind if there is nothing to clean yet.
      *
-     * Default is 500.
+     * Default is 500 ms.
      */
-    public static final String IGNITE_UNWIND_THROTTLING = "IGNITE_UNWIND_THROTTLING";
+    public static final String IGNITE_UNWIND_THROTTLING_TIMEOUT = "IGNITE_UNWIND_THROTTLING_TIMEOUT";
 
     /**
      * Enforces singleton.
