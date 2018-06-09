@@ -136,7 +136,7 @@ namespace ignite
 
                 const binary::Snap::FieldMap& fields = snapshot.GetFieldMap();
 
-                writer.WriteInt32(fields.size());
+                writer.WriteInt32(static_cast<int32_t>(fields.size()));
 
                 for (binary::Snap::FieldMap::const_iterator it = fields.begin(); it != fields.end(); ++it)
                 {
@@ -185,6 +185,11 @@ namespace ignite
                     throw IgniteError(IgniteError::IGNITE_ERR_BINARY, "Enum types is not supported.");
 
                 // Ignoring schemas for now.
+            }
+
+            void DestroyCacheRequest::Write(binary::BinaryWriterImpl& writer, const ProtocolVersion&) const
+            {
+                writer.WriteInt32(cacheId);
             }
         }
     }

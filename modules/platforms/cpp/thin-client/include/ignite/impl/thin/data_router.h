@@ -188,7 +188,7 @@ namespace ignite
 
                     interop::InteropUnpooledMemory mem(BUFFER_SIZE);
 
-                    int64_t id = GenerateMessage(req, mem);
+                    int64_t id = GenerateRequestMessage(req, mem);
 
                     InternalSyncMessage(mem, timeout);
 

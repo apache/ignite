@@ -87,6 +87,21 @@ namespace ignite
                 return new cache::CacheClientImpl(router, name, cacheId);
             }
 
+            void IgniteClientImpl::DestroyCache(const char* name)
+            {
+                CheckCacheName(name);
+
+                int32_t cacheId = utility::GetCacheId(name);
+
+                DestroyCacheRequest req(cacheId);
+                Response rsp;
+
+                router.Get()->SyncMessage(req, rsp);
+
+                if (rsp.GetStatus() != ResponseStatus::SUCCESS)
+                    throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, rsp.GetError().c_str());
+            }
+
             void IgniteClientImpl::CheckCacheName(const char* name)
             {
                 if (!name || !strlen(name))

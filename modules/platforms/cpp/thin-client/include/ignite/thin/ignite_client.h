@@ -18,6 +18,8 @@
 #ifndef _IGNITE_THIN_IGNITE_CLIENT
 #define _IGNITE_THIN_IGNITE_CLIENT
 
+#include <vector>
+
 #include <ignite/common/concurrent.h>
 
 #include <ignite/thin/cache/cache_client.h>
@@ -101,6 +103,13 @@ namespace ignite
             {
                 return cache::CacheClient<K, V>(InternalCreateCache(name));
             }
+
+            /**
+             * Destroy cache by name.
+             *
+             * @param name Cache name.
+             */
+            void DestroyCache(const char* name);
     
         private:
             /**

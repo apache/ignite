@@ -227,6 +227,43 @@ namespace ignite
             };
 
             /**
+             * Destroy cache request.
+             */
+            class DestroyCacheRequest : public Request<RequestType::CACHE_DESTROY>
+            {
+            public:
+                /**
+                 * Constructor.
+                 *
+                 * @param cacheId Cache ID.
+                 */
+                DestroyCacheRequest(int32_t cacheId) :
+                    cacheId(cacheId)
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Destructor.
+                 */
+                ~DestroyCacheRequest()
+                {
+                    // No-op.
+                }
+
+                /**
+                 * Write request using provided writer.
+                 * @param writer Writer.
+                 * @param ver Version.
+                 */
+                void Write(binary::BinaryWriterImpl& writer, const ProtocolVersion& ver) const;
+
+            private:
+                /** Cache ID. */
+                int32_t cacheId;
+            };
+
+            /**
              * Cache put request.
              */
             class CachePutRequest : public Request<RequestType::CACHE_PUT>

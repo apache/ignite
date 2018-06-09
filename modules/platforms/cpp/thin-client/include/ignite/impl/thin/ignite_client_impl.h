@@ -82,6 +82,13 @@ namespace ignite
                  */
                 common::concurrent::SharedPointer<cache::CacheClientImpl> CreateCache(const char* name);
 
+                /**
+                 * Destroy cache by name.
+                 *
+                 * @param name Cache name.
+                 */
+                void DestroyCache(const char* name);
+
             private:
                 /**
                  * Check cache name.

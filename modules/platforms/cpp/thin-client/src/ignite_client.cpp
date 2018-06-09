@@ -52,6 +52,11 @@ namespace ignite
 {
     namespace thin
     {
+        void IgniteClient::DestroyCache(const char* name)
+        {
+            GetClientImpl(impl).DestroyCache(name);
+        }
+
         IgniteClient::SP_Void IgniteClient::InternalGetCache(const char* name)
         {
             return GetClientImpl(impl).GetCache(name);
