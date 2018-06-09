@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
@@ -941,8 +942,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      */
     public void setPageStoreFileIOFactories(final FileIOFactory pageStoreFileIoFactory,
         final FileIOFactory pageStoreV1FileIoFactory) {
-        this.pageStoreFileIoFactory = pageStoreFileIoFactory;
-        this.pageStoreV1FileIoFactory = pageStoreV1FileIoFactory;
+        this.pageStoreFileIoFactory = new TimeMeasureFileIOFactory(pageStoreFileIoFactory);
+        this.pageStoreV1FileIoFactory = new TimeMeasureFileIOFactory(pageStoreV1FileIoFactory);
     }
 
     /**
@@ -978,4 +979,22 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         }
     }
 
+    private static class TimeMeasureFileIOFactory implements FileIOFactory {
+
+        private final FileIOFactory delegate;
+
+        public TimeMeasureFileIOFactory(FileIOFactory delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public FileIO create(File file) throws IOException {
+            return new TimeMeasureFileIO(file, delegate.create(file));
+        }
+
+        @Override
+        public FileIO create(File file, OpenOption... modes) throws IOException {
+            return new TimeMeasureFileIO(file, delegate.create(file, modes));
+        }
+    }
 }
