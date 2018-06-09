@@ -18,12 +18,16 @@
 package org.apache.ignite.internal.processors.cache.persistence.file;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Checks version in files if it's present on the disk, creates store with latest version otherwise.
@@ -47,16 +51,23 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
     /** Memory configuration. */
     private final DataStorageConfiguration memCfg;
 
+    private final IgniteLogger log;
+
     /**
      * @param fileIOFactory File IO factory.
      * @param fileIOFactoryStoreV1 File IO factory for V1 page store and for version checking.
      * @param memCfg Memory configuration.
      */
-    public FileVersionCheckingFactory(FileIOFactory fileIOFactory, FileIOFactory fileIOFactoryStoreV1,
-        DataStorageConfiguration memCfg) {
+    public FileVersionCheckingFactory(
+        FileIOFactory fileIOFactory,
+        FileIOFactory fileIOFactoryStoreV1,
+        DataStorageConfiguration memCfg,
+        IgniteLogger log)
+    {
         this.fileIOFactory = fileIOFactory;
         this.fileIOFactoryStoreV1 = fileIOFactoryStoreV1;
         this.memCfg = memCfg;
+        this.log = log;
     }
 
     /**
@@ -64,7 +75,7 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
      * @param memCfg Memory configuration.
      */
     public FileVersionCheckingFactory(FileIOFactory fileIOFactory, DataStorageConfiguration memCfg) {
-        this(fileIOFactory, fileIOFactory, memCfg);
+        this(fileIOFactory, fileIOFactory, memCfg, null);
     }
 
     /** {@inheritDoc} */
@@ -83,8 +94,26 @@ public class FileVersionCheckingFactory implements FilePageStoreFactory {
 
             ByteBuffer hdr = ByteBuffer.allocate(minHdr).order(ByteOrder.LITTLE_ENDIAN);
 
-            while (hdr.remaining() > 0)
-                fileIO.read(hdr);
+            long startTime = U.currentTimeMillis();
+
+            final long timeout = 5_000;
+
+            while (hdr.remaining() > 0) {
+                int bytes = fileIO.read(hdr);
+
+                if (U.currentTimeMillis() - startTime > timeout) {
+                    FileInputStream fis = new FileInputStream(file);
+
+                    StringBuilder hex = new StringBuilder();
+
+                    int oneByte;
+                    while ((oneByte = fis.read()) != -1)
+                        hex.append(Integer.toHexString(oneByte));
+
+                    if (log != null)
+                        U.warn(log, "Too long file read: " + file + ", size = " + file.length() + ". Content: " + hex.toString());
+                }
+            }
 
             hdr.rewind();
 
