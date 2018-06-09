@@ -507,7 +507,7 @@ namespace ignite
 
                 case SQL_ATTR_AUTOCOMMIT:
                 {
-                    SQLUINTEGER val = reinterpret_cast<SQLUINTEGER>(value);
+                    SQLUINTEGER val = static_cast<SQLUINTEGER>(reinterpret_cast<ptrdiff_t>(value));
 
                     if (val != SQL_AUTOCOMMIT_ON)
                         return SqlResult::AI_ERROR;
