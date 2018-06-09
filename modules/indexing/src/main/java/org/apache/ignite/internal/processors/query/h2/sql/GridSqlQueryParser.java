@@ -1559,14 +1559,12 @@ public class GridSqlQueryParser {
 
     /**
      * Check if query may be run locally on all caches mentioned in the query.
-     * @param replicatedOnlyQry replicated-only query flag from original {@link SqlFieldsQuery}.
+     *
      * @return {@code true} if query may be run locally on all caches mentioned in the query, i.e. there's no need
      *     to run distributed query.
      * @see SqlFieldsQuery#isReplicatedOnly()
      */
-    public boolean isLocalQuery(boolean replicatedOnlyQry) {
-        boolean hasCaches = false;
-
+    public boolean isLocalQuery() {
         for (Object o : h2ObjToGridObj.values()) {
             if (o instanceof GridSqlAlias)
                 o = GridSqlAlias.unwrap((GridSqlAst)o);
@@ -1575,19 +1573,19 @@ public class GridSqlQueryParser {
                 GridH2Table tbl = ((GridSqlTable)o).dataTable();
 
                 if (tbl != null) {
-                    hasCaches = true;
-
                     GridCacheContext cctx = tbl.cache();
 
-                    if (!cctx.isLocal() && !(replicatedOnlyQry && cctx.isReplicatedAffinityNode()))
+                    if (cctx.isPartitioned())
+                        return false;
+
+                    if (cctx.isReplicated() && !cctx.isReplicatedAffinityNode())
                         return false;
                 }
             }
         }
 
-        // For consistency with old logic, let's not force locality in absence of caches -
-        // if there are no caches, original SqlFieldsQuery's isLocal flag will be used.
-        return hasCaches;
+        // Either no PARTITIONED caches, or no caches at all.
+        return true;
     }
 
     /**
