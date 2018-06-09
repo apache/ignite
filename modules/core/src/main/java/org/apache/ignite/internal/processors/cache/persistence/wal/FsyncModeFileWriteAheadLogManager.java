@@ -1804,19 +1804,19 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          * Deletes raw WAL segments if they aren't locked and already have compressed copies of themselves.
          */
         private void deleteObsoleteRawSegments() {
-            FsyncModeFileWriteAheadLogManager.FileDescriptor[] descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
+            FileDescriptor[] descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
 
             Set<Long> indices = new HashSet<>();
             Set<Long> duplicateIndices = new HashSet<>();
 
-            for (FsyncModeFileWriteAheadLogManager.FileDescriptor desc : descs) {
+            for (FileDescriptor desc : descs) {
                 if (!indices.add(desc.idx))
                     duplicateIndices.add(desc.idx);
             }
 
             FileArchiver archiver0 = archiver;
 
-            for (FsyncModeFileWriteAheadLogManager.FileDescriptor desc : descs) {
+            for (FileDescriptor desc : descs) {
                 if (desc.isCompressed())
                     continue;
 
@@ -1846,11 +1846,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     if (currReservedSegment == -1)
                         continue;
 
-                    File tmpZip = new File(walArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(currReservedSegment) + ".zip" + ".tmp");
+                    File tmpZip = new File(walArchiveDir, FileDescriptor.fileName(currReservedSegment) + ".zip" + ".tmp");
 
-                    File zip = new File(walArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(currReservedSegment) + ".zip");
+                    File zip = new File(walArchiveDir, FileDescriptor.fileName(currReservedSegment) + ".zip");
 
-                    File raw = new File(walArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(currReservedSegment));
+                    File raw = new File(walArchiveDir, FileDescriptor.fileName(currReservedSegment));
                     if (!Files.exists(raw.toPath()))
                         throw new IgniteCheckedException("WAL archive segment is missing: " + raw);
 

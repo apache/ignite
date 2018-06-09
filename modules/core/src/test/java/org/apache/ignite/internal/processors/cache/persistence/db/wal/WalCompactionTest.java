@@ -247,7 +247,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         File walDir = new File(dbDir, "wal");
         File archiveDir = new File(walDir, "archive");
         File nodeArchiveDir = new File(archiveDir, nodeFolderName);
-        File walSegment = new File(nodeArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(emptyIdx));
+        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(emptyIdx));
 
         try (RandomAccessFile raf = new RandomAccessFile(walSegment, "rw")) {
             raf.setLength(0); // Clear wal segment, but don't delete.
