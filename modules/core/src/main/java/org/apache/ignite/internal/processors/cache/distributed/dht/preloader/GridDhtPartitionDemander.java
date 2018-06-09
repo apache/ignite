@@ -203,10 +203,10 @@ public class GridDhtPartitionDemander {
      * @return {@code null} if rebalance has initial state or finished with false result.
      * Otherwise return {@link AffinityTopologyVersion} of current active rebalance.
      */
-    AffinityTopologyVersion lastRebalancedTopologyVersion() {
+    AffinityTopologyVersion lastRebalanceTopVer() {
         final RebalanceFuture fut = rebalanceFut;
 
-        return fut.isInitial() || (fut.isDone() && !fut.result()) ? null : fut.topologyVersion();
+        return fut.topologyVersion();
     }
 
     /**
@@ -369,7 +369,7 @@ public class GridDhtPartitionDemander {
             else if (grp.affinity().cachedAffinity(topVer).clientEventChange() // Caused by no affinity change event
                 && !oldFut.isInitial() // Rebalance should have at least one non empty result
                 && !force // Do not need provide results if rebalance was forced
-                && !assignments.needRebalance() // Calculated assignments not changed from previous calculation
+                && !assignments.changed() // Calculated assignments not changed from previous calculation
                 ) {
                 if (log.isDebugEnabled())
                     log.debug("Affinity assignments does not changed. Will skip rebalance [topVer=" +

@@ -189,17 +189,17 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
-        final AffinityTopologyVersion rebTopVer = demander.lastRebalancedTopologyVersion() == null ?
-            topVer : demander.lastRebalancedTopologyVersion();
+        final AffinityTopologyVersion rebTopVer = demander.lastRebalanceTopVer();
 
         // We should get assigns based on previous rebalance with successfull result to calculate difference.
         // The limit of history affinity assignments size described by IGNITE_AFFINITY_HISTORY_SIZE constant.
-        AffinityAssignment prevAff = grp.affinity().cachedVersions().contains(rebTopVer) ?
-            grp.affinity().cachedAffinity(rebTopVer) : aff;
+        AffinityAssignment prevAff = rebTopVer == null || !grp.affinity().cachedVersions().contains(rebTopVer) ?
+            aff : grp.affinity().cachedAffinity(rebTopVer);
 
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
-        boolean assignsChanged = false;
+        // If assigns calculated on the same affinities then rebalance need to be scheduled
+        boolean assignsChanged = aff == prevAff;
 
         for (int p = 0; p < partCnt; p++) {
             if (ctx.exchange().hasPendingExchange()) {
@@ -302,7 +302,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
         }
 
-        assignments.needRebalance(assignsChanged);
+        assignments.changed(assignsChanged);
 
         return assignments;
     }
