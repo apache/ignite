@@ -2418,8 +2418,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     boolean forcePreload = false;
 
-                    boolean assignsCancelled = false;
-
                     GridDhtPartitionExchangeId exchId;
 
                     GridDhtPartitionsExchangeFuture exchFut = null;
@@ -2546,11 +2544,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                 GridDhtPreloaderAssignments assigns = null;
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
-                                if ((delay == 0 || forcePreload) && !disableRebalance && !hasPendingExchange()) {
+                                if ((delay == 0 || forcePreload) && !disableRebalance)
                                     assigns = grp.preloader().generateAssignments(exchId, exchFut);
-
-                                    assignsCancelled |= assigns.cancelled();
-                                }
 
                                 assignsMap.put(grp.groupId(), assigns);
                             }
@@ -2583,6 +2578,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                         List<String> rebList = new LinkedList<>();
 
+                        boolean assignsCancelled = false;
+
                         GridCompoundFuture<Boolean, Boolean> forcedRebFut = null;
 
                         if (task instanceof ForceRebalanceExchangeTask)
@@ -2594,15 +2591,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                                 GridDhtPreloaderAssignments assigns = assignsMap.get(grpId);
 
-                                // Cancels previous rebalance future (in case it's not done yet and
-                                // assigments are different to previous rebalance future).
+                                if (assigns != null)
+                                    assignsCancelled |= assigns.cancelled();
+
+                                // Cancels previous rebalance future (in case it's not done yet).
                                 // Sends previous rebalance stopped event (if necessary).
                                 // Creates new rebalance future.
                                 // Sends current rebalance started event (if necessary).
                                 // Finishes cache sync future (on empty assignments).
                                 Runnable cur = grp.preloader().addAssignments(assigns,
                                     forcePreload,
-                                    assignsCancelled,
                                     cnt,
                                     r,
                                     forcedRebFut);
@@ -2618,7 +2616,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (forcedRebFut != null)
                             forcedRebFut.markInitialized();
 
-                        if (r != null) {
+                        if (assignsCancelled) { // Pending exchange.
+                            U.log(log, "Skipping rebalancing (obsolete exchange ID) " +
+                                "[top=" + resVer + ", evt=" + exchId.discoveryEventName() +
+                                ", node=" + exchId.nodeId() + ']');
+                        }
+                        else if (r != null) {
                             Collections.reverse(rebList);
 
                             U.log(log, "Rebalancing scheduled [order=" + rebList + "]");

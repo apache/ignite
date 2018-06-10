@@ -285,7 +285,6 @@ public class GridDhtPartitionDemander {
      *
      * @param assignments Assignments.
      * @param force {@code True} if dummy reassign.
-     * @param cancelAssigns {@code True} If all current assigns was cancelled due to pending exchenges.
      * @param rebalanceId Rebalance id.
      * @param next Runnable responsible for cache rebalancing start.
      * @param forcedRebFut External future for forced rebalance.
@@ -294,7 +293,6 @@ public class GridDhtPartitionDemander {
     Runnable addAssignments(
         final GridDhtPreloaderAssignments assignments,
         boolean force,
-        boolean cancelAssigns,
         long rebalanceId,
         final Runnable next,
         @Nullable final GridCompoundFuture<Boolean, Boolean> forcedRebFut
@@ -345,16 +343,19 @@ public class GridDhtPartitionDemander {
             fut.sendRebalanceStartedEvent();
 
              // 1) Current assignments can be cancelled due to ExchageWorker has another pending exchanges.
-            if (cancelAssigns) { // Pending exchange.
+            if (assignments.cancelled()) { // Pending exchange.
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing skipped due to cancelled assignments.");
 
                 fut.onDone(false);
 
                 fut.sendRebalanceFinishedEvent();
+
+                return null;
             }
+
             // 2) Refer to method GridCachePreloader#generateAssignments which can produce empty assignments.
-            else if (assignments.isEmpty()) { // Nothing to rebalance.
+            if (assignments.isEmpty()) { // Nothing to rebalance.
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing skipped due to empty assignments.");
 
@@ -363,10 +364,13 @@ public class GridDhtPartitionDemander {
                 ((GridFutureAdapter)grp.preloader().syncFuture()).onDone();
 
                 fut.sendRebalanceFinishedEvent();
+
+                return null;
             }
+
             // 3) Related discovery event did not cause affinity assignment change.
             // We should wait for current rebalanceFut completion and than assign results to latestRebFut.
-            else if (grp.affinity().cachedAffinity(topVer).clientEventChange() // Caused by no affinity change event
+            if (grp.affinity().cachedAffinity(topVer).clientEventChange() // Caused by no affinity change event
                 && !oldFut.isInitial() // Rebalance should have at least one non empty result
                 && !force // Do not need provide results if rebalance was forced
                 && !assignments.changed() // Calculated assignments not changed from previous calculation
@@ -388,35 +392,36 @@ public class GridDhtPartitionDemander {
                         }
                     }
                 });
+
+                return null;
             }
+
             // 4) Assignments checked and rebalance need to be continued.
-            else {
-                if (log.isDebugEnabled())
-                    log.debug("Prepare rebalance routine future task [topVer=" +
-                        topVer + ", rebalanceId=" + rebalanceId + ", grp=" + grp.cacheOrGroupName() +
-                        ", oldFut=" + oldFut + ", result=" + oldFut.result() + "]");
+            if (log.isDebugEnabled())
+                log.debug("Prepare rebalance routine future task [topVer=" +
+                    topVer + ", rebalanceId=" + rebalanceId + ", grp=" + grp.cacheOrGroupName() +
+                    ", oldFut=" + oldFut + ", result=" + oldFut.result() + "]");
 
-                return () -> {
-                    if (next != null)
-                        fut.listen(f -> {
-                            try {
-                                if (f.get()) // Not cancelled.
-                                    next.run(); // Starts next cache rebalancing (according to the order).
-                            }
-                            catch (IgniteCheckedException e) {
-                                if (log.isDebugEnabled())
-                                    log.debug(e.getMessage());
-                            }
-                        });
+            return () -> {
+                if (next != null)
+                    fut.listen(f -> {
+                        try {
+                            if (f.get()) // Not cancelled.
+                                next.run(); // Starts next cache rebalancing (according to the order).
+                        }
+                        catch (IgniteCheckedException e) {
+                            if (log.isDebugEnabled())
+                                log.debug(e.getMessage());
+                        }
+                    });
 
-                    if (!oldFut.isInitial())
-                        oldFut.cancel();
+                if (!oldFut.isInitial())
+                    oldFut.cancel();
 
-                    rebalanceFut = fut;
+                rebalanceFut = fut;
 
-                    requestPartitions(fut, assignments);
-                };
-            }
+                requestPartitions(fut, assignments);
+            };
         }
         else if (delay > 0) {
             for (GridCacheContext cctx : grp.caches()) {
