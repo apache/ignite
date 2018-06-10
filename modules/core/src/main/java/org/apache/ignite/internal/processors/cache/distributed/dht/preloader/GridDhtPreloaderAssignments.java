@@ -39,7 +39,7 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
     private boolean cancelled;
 
     /** */
-    private boolean needRebalance = true;
+    private boolean changed = true;
 
     /**
      * @param exchangeId Exchange ID.
@@ -78,16 +78,16 @@ public class GridDhtPreloaderAssignments extends ConcurrentHashMap<ClusterNode, 
      *
      * @return {@code True } if assignments are changed from previously generated and need to be rebalanced.
      */
-    public boolean needRebalance() {
-        return needRebalance;
+    public boolean changed() {
+        return changed;
     }
 
     /**
      *
-     * @param needRebalance {@code True } if assignments are changed from previously generated and need to be rebalanced.
+     * @param changed {@code True } if assignments are changed from previously generated and need to be rebalanced.
      */
-    void needRebalance(boolean needRebalance) {
-        this.needRebalance = needRebalance;
+    void changed(boolean changed) {
+        this.changed = changed;
     }
 
     /**

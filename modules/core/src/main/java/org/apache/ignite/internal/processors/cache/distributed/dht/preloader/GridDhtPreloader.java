@@ -85,9 +85,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** */
     private boolean stopped;
 
-    /** Topology version on which assignments was generated last call. */
-    private AffinityTopologyVersion prevTopVer;
-
     /**
      * @param grp Cache group.
      */
@@ -171,6 +168,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     @Override public GridDhtPreloaderAssignments generateAssignments(GridDhtPartitionExchangeId exchId, GridDhtPartitionsExchangeFuture exchFut) {
         assert exchFut == null || exchFut.isDone();
 
+        assert !ctx.kernalContext().clientNode() : "Assignments cannot be generated for client node.";
+
         // No assignments for disabled preloader.
         GridDhtPartitionTopology top = grp.topology();
 
@@ -190,17 +189,23 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
-        AffinityAssignment prevAff = prevTopVer == null ? aff : grp.affinity().cachedAffinity(prevTopVer);
+        final AffinityTopologyVersion rebTopVer = demander.lastRebalanceTopVer();
+
+        // We should get assigns based on previous rebalance with successfull result to calculate difference.
+        // The limit of history affinity assignments size described by IGNITE_AFFINITY_HISTORY_SIZE constant.
+        AffinityAssignment prevAff = rebTopVer == null || !grp.affinity().cachedVersions().contains(rebTopVer) ?
+            aff : grp.affinity().cachedAffinity(rebTopVer);
 
         CachePartitionFullCountersMap countersMap = grp.topology().fullUpdateCounters();
 
-        boolean assignmNotChanged = true;
+        // If assigns calculated on the same affinities then rebalance need to be scheduled
+        boolean assignsChanged = aff == prevAff;
 
         for (int p = 0; p < partCnt; p++) {
             if (ctx.exchange().hasPendingExchange()) {
                 if (log.isDebugEnabled())
-                    log.debug("Skipping assignments creation, exchange worker has pending assignments: " +
-                        exchId);
+                    log.debug("Skipping assignments creation, exchange worker has pending assignments [exchId=" +
+                        exchId + ", topVer=" + topVer + "]");
 
                 assignments.cancelled(true);
 
@@ -211,7 +216,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (aff.get(p).contains(ctx.localNode())) {
                 GridDhtLocalPartition part = top.localPartition(p);
 
-                assignmNotChanged &= prevAff.get(p).contains(ctx.localNode());
+                assignsChanged |= !prevAff.get(p).contains(ctx.localNode());
 
                 assert part != null;
                 assert part.id() == p;
@@ -297,9 +302,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             }
         }
 
-        assignments.needRebalance(prevTopVer == null || !assignmNotChanged);
-
-        prevTopVer = topVer;
+        assignments.changed(assignsChanged);
 
         return assignments;
     }
