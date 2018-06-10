@@ -18,7 +18,7 @@ import ctypes
 from connection import Connection
 from constants import *
 from datatypes import string_class, string_object
-from queries.common import QueryHeader, ResponseHeader
+from queries import QueryHeader, ResponseHeader
 from queries.op_codes import *
 from .result import APIResult
 
@@ -29,7 +29,7 @@ def cache_get_names(conn: Connection) -> APIResult:
 
     :param conn: connection to Ignite server,
     :return: API result data object. Contains zero status and a list of cache
-    names, non-zero status and an error description otherwise.
+     names, non-zero status and an error description otherwise.
     """
     query = QueryHeader()
     query.op_code = OP_CACHE_GET_NAMES
@@ -60,7 +60,7 @@ def cache_create(conn: Connection, name: str) -> APIResult:
     :param conn: connection to Ignite server,
     :param name: cache name,
     :return: API result data object. Contains zero status if a cache is
-    created successfully, non-zero status and an error description otherwise.
+     created successfully, non-zero status and an error description otherwise.
     """
     query_class = type(
         'QueryClass',
@@ -92,7 +92,7 @@ def cache_get_or_create(conn: Connection, name: str) -> APIResult:
     :param conn: connection to Ignite server,
     :param name: cache name,
     :return: API result data object. Contains zero status if a cache is
-    created successfully, non-zero status and an error description otherwise.
+     created successfully, non-zero status and an error description otherwise.
     """
     query_class = type(
         'QueryClass',

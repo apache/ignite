@@ -13,6 +13,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This module contains some constants, used internally throughout the API.
+"""
+
 PROTOCOL_VERSION_MAJOR = 1
 PROTOCOL_VERSION_MINOR = 1
 PROTOCOL_VERSION_PATCH = 0

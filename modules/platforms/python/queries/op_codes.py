@@ -13,6 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Named constants that represents request operation codes. These are the way
+of telling Ignite server what one want to do in their request.
+"""
+
 OP_RESOURCE_CLOSE = 0
 
 OP_CACHE_GET = 1000

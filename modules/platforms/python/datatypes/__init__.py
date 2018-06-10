@@ -13,6 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+This module contains ctypes classes and class generator functions (metaclasses
+in a broad sense of the word), used internally for parsing and creating binary
+data streams.
+"""
+
 from connection import Connection
 from datatypes.class_configs import *
 from datatypes.type_codes import *
@@ -52,8 +58,8 @@ def data_class(python_var, tc_hint, **kwargs):
     Dispatcher function for data class creation functions.
 
     :param python_var: variable of native Python type to be converted
-    to DataObject. The choice of data class depends on its type.
-    If None, tc_hint is used,
+     to DataObject. The choice of data class depends on its type.
+     If None, tc_hint is used,
     :param tc_hint: direct indicator of required data class type,
     :param kwargs: data class-specific arguments,
     :return: data class.

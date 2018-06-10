@@ -39,9 +39,11 @@ class APIResult:
     Dataclass which represents the result of API request.
 
     Fields are:
-    - status: request status code. 0 if successful,
-    - message: 'Success' if status == 0, verbatim error description otherwise,
-    - value: return value or None.
+
+    * status: request status code. 0 if successful,
+    * message: 'Success' if status == 0, verbatim error description
+      otherwise,
+    * value: return value or None.
     """
 
     status = attr.ib(type=int)

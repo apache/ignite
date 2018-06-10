@@ -17,7 +17,7 @@ import ctypes
 
 from connection import Connection
 from datatypes import data_class, data_object, string_object
-from queries.common import QueryHeader, ResponseHeader
+from queries import QueryHeader, ResponseHeader
 from queries.op_codes import *
 from .result import APIResult
 
@@ -25,7 +25,7 @@ from .result import APIResult
 def cache_put(
     conn: Connection, hash_code: int, key, value,
     binary=False, key_hint=None, value_hint=None
-):
+) -> APIResult:
     """
     Puts a value with a given key to cache (overwriting existing value if any).
 
@@ -77,7 +77,7 @@ def cache_put(
 def cache_get(
     conn: Connection, hash_code: int, key,
     binary=False, key_hint=None
-):
+) -> APIResult:
     """
     Retrieves a value from cache by key.
 
