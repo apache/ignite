@@ -200,13 +200,13 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @return {@code null} if rebalance has initial state or finished with false result.
+     * @return {@code null} if rebalance has initial state or cancelled.
      * Otherwise return {@link AffinityTopologyVersion} of current active rebalance.
      */
     AffinityTopologyVersion lastRebalanceTopVer() {
         final RebalanceFuture fut = rebalanceFut;
 
-        return fut.topologyVersion();
+        return fut.isDone() && !fut.result() ? null : fut.topologyVersion();
     }
 
     /**
@@ -391,11 +391,6 @@ public class GridDhtPartitionDemander {
             }
             // 4) Assignments checked and rebalance need to be continued.
             else {
-                if (!oldFut.isInitial())
-                    oldFut.cancel();
-
-                rebalanceFut = fut;
-
                 if (log.isDebugEnabled())
                     log.debug("Prepare rebalance routine future task [topVer=" +
                         topVer + ", rebalanceId=" + rebalanceId + ", grp=" + grp.cacheOrGroupName() +
@@ -413,6 +408,11 @@ public class GridDhtPartitionDemander {
                                     log.debug(e.getMessage());
                             }
                         });
+
+                    if (!oldFut.isInitial())
+                        oldFut.cancel();
+
+                    rebalanceFut = fut;
 
                     requestPartitions(fut, assignments);
                 };
