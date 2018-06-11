@@ -129,7 +129,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     /** Ordered topic prefix. */
     private String topicPrefix;
     
-    /** ReadWriteLock to control setup of listener */
+    /** ReadWriteLock to control the continuous query setup - this is to prevent the race between cache update and listener setup */
     private final StripedCompositeReadWriteLock listenerLock = new StripedCompositeReadWriteLock(Runtime.getRuntime().availableProcessors()) ;
 
     /** Cancelable future task for backup cleaner */
@@ -201,8 +201,8 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Obtain the listener read lock, which must be held if you need to read when you
-     * call updateListener and use the result afterwards
+     * Obtain the listener read lock, which must be held if any component need to
+     * read the list listener (generally caller to updateListener).
      *
      * @return Read lock for the listener update
      */

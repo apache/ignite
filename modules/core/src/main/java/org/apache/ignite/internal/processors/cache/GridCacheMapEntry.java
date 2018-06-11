@@ -163,6 +163,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     private final ReentrantLock lock = new ReentrantLock();   
     
     /** Read Lock for continuous query listener */
+    @GridToStringExclude
     private final Lock listenerLock;
 
     /**
